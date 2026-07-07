@@ -1,0 +1,196 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Detail Uang Muka / DP</span>
+        <h1>{{ advance.advance_number }}</h1>
+        <p>{{ rule.get('label', advance.advance_type) }} - {{ get_party_label(advance) }}</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('finance.advances') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Advance
+        </a>
+        {% if advance.cash_bank_transaction_id %}
+            <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=advance.cash_bank_transaction_id) }}" class="btn app-btn-secondary">Buku Kas/Bank</a>
+        {% endif %}
+        {% if advance.journal_id %}
+            <a href="{{ url_for('accounting.journal_detail', journal_id=advance.journal_id) }}" class="btn app-btn-secondary">Jurnal</a>
+        {% endif %}
+        {% if field_transaction_link %}
+            <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-primary">Kembali Ke Transaksi Kas Lapangan</a>
+        {% endif %}
+    </div>
+</div>
+{% set precision_key = 'advance' %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Nominal Advance</span>
+        <h3>{{ advance.amount|rupiah }}</h3>
+        <p>Nilai awal DP/panjar</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Sudah Settlement</span>
+        <h3>{{ advance.settled_amount|rupiah }}</h3>
+        <p>Terpakai/ditutup</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Sisa Outstanding</span>
+        <h3>{{ advance.remaining_amount|rupiah }}</h3>
+        <p>Status {{ advance.status }}</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Jejak Akuntansi</h5>
+            <p>Advance wajib traceable ke kas/bank dan jurnal COA 1008.</p>
+        </div>
+        <span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status }}</span>
+    </div>
+    <div class="info-grid">
+        <div><span>Tanggal</span><strong>{{ advance.advance_date.strftime('%d-%m-%Y') }}</strong></div>
+        <div><span>Tipe</span><strong>{{ rule.get('label', advance.advance_type) }}</strong></div>
+        <div><span>Pihak</span><strong>{{ get_party_label(advance) }}</strong></div>
+        <div><span>Kas/Bank</span><strong>{{ advance.account_type }}</strong></div>
+        <div><span>ID Buku Kas/Bank</span><strong>{{ advance.cash_bank_transaction_id or '-' }}</strong></div>
+        <div><span>ID Jurnal</span><strong>{{ advance.journal_id or '-' }}</strong></div>
+        <div><span>Referensi</span><strong>{{ advance.reference_number or '-' }}</strong></div>
+        <div><span>Catatan</span><strong>{{ advance.notes or '-' }}</strong></div>
+    </div>
+</div>
+
+{% if advance.status != 'SETTLED' %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Settlement Advance</h5>
+            <p>Settlement mengurangi outstanding DP. Untuk panjar mandor, pilih kategori biaya agar jurnal beban langsung terbentuk.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('finance.advance_settle', advance_id=advance.id) }}" class="row g-3 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="settlement_date" class="form-control" value="{{ today_date }}" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Tipe Settlement</label>
+            <select name="settlement_type" class="form-select" required>
+                {% if advance.advance_type == 'CLIENT_DP_RECEIVED' %}
+                    <option value="CLIENT_INVOICE">Ke Invoice Client</option>
+                {% elif advance.advance_type == 'SUPPLIER_ADVANCE_PAID' %}
+                    <option value="SUPPLIER_BILL">Ke Supplier Bill</option>
+                {% elif advance.advance_type == 'MANDOR_OPERATIONAL_ADVANCE' %}
+                    <option value="MANDOR_EXPENSE_PROOF">Bukti Panjar Mandor</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Referensi</label>
+            {% if advance.advance_type == 'CLIENT_DP_RECEIVED' %}
+                <select name="reference_id" class="form-select" required>
+                    <option value="">Pilih invoice</option>
+                    {% for invoice in reference_options.invoices %}
+                        <option value="{{ invoice.id }}">{{ invoice.invoice_number }} - {{ invoice.remaining_amount|rupiah }}</option>
+                    {% endfor %}
+                </select>
+            {% elif advance.advance_type == 'SUPPLIER_ADVANCE_PAID' %}
+                <select name="reference_id" class="form-select" required>
+                    <option value="">Pilih supplier bill</option>
+                    {% for bill in reference_options.supplier_bills %}
+                        <option value="{{ bill.id }}">{{ bill.bill_number }} - {{ bill.remaining_amount|rupiah }}</option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <input type="text" name="reference_id" class="form-control" placeholder="Opsional / bukti manual">
+            {% endif %}
+        </div>
+        {% if advance.advance_type == 'MANDOR_OPERATIONAL_ADVANCE' %}
+        <div class="col-md-3">
+            <label class="form-label">Kategori Biaya</label>
+            <select name="expense_account_code" class="form-select" required>
+                <option value="">Pilih kategori biaya</option>
+                {% for item in mandor_expense_proof_choices %}
+                    <option value="{{ item.value }}">{{ item.account_label }} - {{ item.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="col-md-3">
+            <label class="form-label">Nominal</label>
+            <input type="text" name="amount" class="form-control" value="{{ advance.remaining_amount|int }}" required>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Catatan</label>
+            <textarea name="notes" class="form-control" rows="2" placeholder="Opsional"></textarea>
+        </div>
+        <div class="col-md-12">
+            <button type="submit" class="btn app-btn-primary">Simpan Settlement</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Settlement</h5>
+            <p>Setiap settlement punya trace sendiri dan tidak boleh double posting.</p>
+        </div>
+    </div>
+    {% if settlements %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Settlement</th>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Referensi</th>
+                    <th>Nominal</th>
+                    <th>Jurnal</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for settlement in settlements %}
+                <tr>
+                    <td><strong>{{ settlement.settlement_number }}</strong></td>
+                    <td>{{ settlement.settlement_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ settlement.settlement_type }}</td>
+                    <td>{{ settlement.reference_type or '-' }} #{{ settlement.reference_id or '-' }}</td>
+                    <td>{{ settlement.amount|rupiah }}</td>
+                    <td>
+                        {% if settlement.journal_id %}
+                            <a href="{{ url_for('accounting.journal_detail', journal_id=settlement.journal_id) }}" class="btn btn-sm app-btn-secondary">Jurnal</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                        {% set settlement_trace = settlement_field_transaction_links.get(settlement.id) %}
+                        {% if settlement_trace %}
+                            <div class="small mt-2">
+                                <a href="{{ url_for('field_transactions.detail', transaction_id=settlement_trace.field_transaction_id) }}">Jejak Transaksi Kas</a>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ settlement.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-journal-check"></i>
+        <h5>Belum ada settlement</h5>
+        <p>Advance masih outstanding sampai ada invoice/bill/bukti pertanggungjawaban yang valid.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

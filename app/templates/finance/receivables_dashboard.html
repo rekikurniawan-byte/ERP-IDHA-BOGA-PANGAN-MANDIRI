@@ -1,0 +1,344 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell receivables-finance-polish-shell" data-ui-finance-page="UI">
+
+<div class="mb-3 d-flex gap-2 flex-wrap receivables-quick-nav">
+    <a href="/finance/payment-history" class="btn app-btn-secondary btn-sm">
+        Riwayat Pembayaran Invoice
+    </a>
+    <a href="/finance/invoices" class="btn app-btn-secondary btn-sm">
+        Daftar Invoice
+    </a>
+</div>
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Dashboard Piutang Finance</h1>
+        <p>Monitoring invoice belum lunas dari realtime dan manual backfill tanpa membuat jalur piutang baru.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions receivables-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+            Daftar Invoice
+        </a>
+
+        <a href="{{ url_for('finance.receivables_statement', client_id=selected_client_id) }}" class="btn app-btn-primary">
+            Statement of Account
+        </a>
+        <a href="{{ url_for('finance.receivables_print', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to) }}" class="btn app-btn-secondary" target="_blank">
+            <i class="bi bi-printer"></i>
+            Print
+        </a>
+        <a href="{{ url_for('finance.export_receivables_csv', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="app-card mb-4 receivables-filter-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Piutang</h5>
+            <p>Filter existing diperluas untuk tipe pihak, cabang, periode, dan status invoice.</p>
+        </div>
+    </div>
+
+    <div class="receivables-stage-filter-bar">
+        {% for option in filter_options %}
+        <a href="{{ url_for('finance.receivables', filter=option.value, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to) }}"
+           class="btn btn-sm receivables-stage-chip {% if selected_filter == option.value %}app-btn-primary{% else %}app-btn-secondary{% endif %}">
+            <span>{{ option.label }}</span>
+            <strong>{{ option.count }}</strong>
+        </a>
+        {% endfor %}
+    </div>
+
+    <form method="GET" action="{{ url_for('finance.receivables') }}" class="row g-3 align-items-end app-form receivables-filter-form" data-ui-form="true">
+        <input type="hidden" name="filter" value="{{ selected_filter }}">
+
+        <div class="col-md-3">
+            <label class="form-label">Cabang</label>
+            <select name="branch_id" class="form-select app-input">
+                {% for branch in branch_options %}
+                <option value="{{ branch.value }}" {% if selected_branch_id == branch.value %}selected{% endif %}>
+                    {{ branch.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Tipe Pihak Ditagih</label>
+            <select name="bill_to_type" class="form-select app-input">
+                <option value="">Semua Tipe</option>
+                {% for choice in bill_to_type_choices %}
+                <option value="{{ choice.value }}" {% if selected_bill_to_type == choice.value %}selected{% endif %}>
+                    {{ choice.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Status Invoice</label>
+            <select name="status" class="form-select app-input">
+                <option value="">Semua Status</option>
+                {% for status in status_options %}
+                <option value="{{ status.value }}" {% if selected_status == status.value %}selected{% endif %}>
+                    {{ status.label }} ({{ status.count }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Filter Client Existing</label>
+            <select name="client_id" class="form-select app-input">
+                <option value="">Semua Client/Pihak</option>
+                {% for client in client_options %}
+                <option value="{{ client.value }}" {% if selected_client_id == client.value %}selected{% endif %}>
+                    {{ client.label }} - {{ client.invoice_count }} invoice - {{ client.remaining_total|rupiah }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Periode Dari</label>
+            <input type="date" name="period_from" value="{{ selected_period_from }}" class="form-control app-input">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Periode Sampai</label>
+            <input type="date" name="period_to" value="{{ selected_period_to }}" class="form-control app-input">
+        </div>
+
+        <div class="col-md-6 d-flex gap-2 receivables-filter-actions">
+            <button type="submit" class="btn app-btn-primary">
+                Terapkan Filter
+            </button>
+
+            <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
+                Reset
+            </a>
+        </div>
+    </form>
+
+    {% if selected_filter != "ALL" or selected_client_id or selected_bill_to_type or selected_status or selected_period_from or selected_period_to %}
+    <div class="alert alert-light mt-3 mb-0 receivables-active-filter-summary">
+        <strong>Filter aktif:</strong>
+        <span>{{ selected_filter_label }}</span>
+        {% if selected_branch_name %}<span>{{ selected_branch_name }}</span>{% endif %}
+        {% if selected_client_name %}<span>{{ selected_client_name }}</span>{% endif %}
+        {% if selected_bill_to_type %}<span>{{ selected_bill_to_type|replace('_', ' ')|title }}</span>{% endif %}
+        {% if selected_status %}<span>{{ selected_status|replace('_', ' ')|title }}</span>{% endif %}
+        {% if selected_period_from or selected_period_to %}<span>Periode {{ selected_period_from or '-' }} s/d {{ selected_period_to or '-' }}</span>{% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="app-stat-grid app-stat-grid-compact receivables-kpi-grid">
+    <div class="app-stat-card receivables-kpi-card receivables-kpi-card-primary">
+        <i class="bi bi-cash-stack"></i>
+        <span>Total Piutang Aktif</span>
+        <h3>{{ summary.total_receivable|rupiah }}</h3>
+        <p>Sisa tagihan sesuai filter</p>
+    </div>
+
+    <div class="app-stat-card receivables-kpi-card">
+        <i class="bi bi-receipt"></i>
+        <span>Invoice Belum Lunas</span>
+        <h3>{{ summary.invoice_count }}</h3>
+        <p>Invoice sesuai filter</p>
+    </div>
+
+    <div class="app-stat-card receivables-kpi-card">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>Overdue</span>
+        <h3>{{ summary.overdue_count }}</h3>
+        <p>Lewat jatuh tempo</p>
+    </div>
+
+    <div class="app-stat-card receivables-kpi-card">
+        <i class="bi bi-telephone-outbound"></i>
+        <span>Butuh Follow Up</span>
+        <h3>{{ summary.follow_up_count }}</h3>
+        <p>Perlu dipantau atau ditagih</p>
+    </div>
+</div>
+
+<div class="receivables-dashboard-grid receivables-dashboard-grid-compact">
+    <div class="app-card receivables-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Rekap Piutang per Pihak Ditagih</h5>
+                <p>Gabungan mandor, client, kelompok, perorangan, dan client lain.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle receivables-summary-table">
+                <thead>
+                    <tr>
+                        <th>Pihak Ditagih</th>
+                        <th>Tipe</th>
+                        <th>Invoice</th>
+                        <th>Sisa Piutang</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in party_rows %}
+                    <tr>
+                        <td><strong>{{ row.party_name }}</strong></td>
+                        <td><span class="status-badge receivables-party-type-badge">{{ row.bill_to_type_label }}</span></td>
+                        <td><span class="receivables-count-pill">{{ row.invoice_count }}</span></td>
+                        <td class="receivables-money-cell">{{ row.remaining_total|rupiah }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                <i class="bi bi-check-circle"></i>
+                                <p>Tidak ada piutang aktif sesuai filter.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="app-card receivables-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Rekap Stage Piutang</h5>
+                <p>Ringkasan kondisi penagihan berdasarkan warning otomatis.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle receivables-stage-table">
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Jumlah Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stage_rows %}
+                    <tr>
+                        <td><span class="status-badge receivables-stage-badge">{{ row.stage }}</span></td>
+                        <td><span class="receivables-count-pill">{{ row.count }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">
+                            <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                <i class="bi bi-check-circle"></i>
+                                <p>Tidak ada stage piutang aktif sesuai filter.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Prioritas Follow Up Invoice</h5>
+            <p>Daftar invoice belum lunas dari flow lama dan manual backfill, diurutkan berdasarkan urgensi penagihan.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle receivables-priority-table">
+            <thead>
+                <tr>
+                    <th>Prioritas</th>
+                    <th>Invoice</th>
+                    <th>Pihak Ditagih</th>
+                    <th>Tipe</th>
+                    <th>Asal Invoice</th>
+                    <th>Periode</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Sisa Piutang</th>
+                    <th>Peringatan</th>
+                    <th>Follow Up Terakhir</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                {% set invoice = row.invoice %}
+                {% set ar = row.ar %}
+                <tr>
+                    <td><span class="receivables-priority-rank">#{{ loop.index }}</span></td>
+
+                    <td>
+                        <strong class="receivables-invoice-number">{{ invoice.invoice_number }}</strong>
+                        <div class="text-muted small"><span class="status-badge receivables-invoice-status-badge">{{ invoice.status }}</span></div>
+                    </td>
+
+                    <td>
+                        <strong>{{ row.party_name }}</strong>
+                        <div class="text-muted small receivables-party-meta">Client: {{ row.client_name }} | Mandor: {{ row.mandor_name }}</div>
+                    </td>
+                    <td><span class="status-badge receivables-party-type-badge">{{ row.bill_to_type_label }}</span></td>
+                    <td>
+                        <span class="status-badge receivables-source-badge">{{ row.input_source_label }}</span>
+                    </td>
+                    <td>
+                        {{ invoice.period_start.strftime('%d-%m-%Y') if invoice.period_start else '-' }}
+                        s/d
+                        {{ invoice.period_end.strftime('%d-%m-%Y') if invoice.period_end else '-' }}
+                    </td>
+                    <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
+                    <td class="receivables-money-cell"><strong>{{ invoice.remaining_amount|rupiah }}</strong></td>
+
+                    <td>
+                        <span class="status-badge {{ ar.badge_class }}">{{ ar.stage_label }}</span>
+                        <div class="text-muted small">{{ ar.action }}</div>
+                    </td>
+
+                    <td>
+                        {% if row.latest_log %}
+                            <strong>{{ row.latest_log.collection_status }}</strong>
+                            <div class="text-muted small">
+                                {{ row.latest_log.follow_up_date.strftime('%d-%m-%Y') }}
+                                - {{ row.latest_log.contact_person or '-' }}
+                            </div>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a href="{{ url_for('finance.invoice_detail', invoice_id=invoice.id) }}" class="btn btn-sm app-btn-secondary receivables-detail-action">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11">
+                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                            <i class="bi bi-check-circle"></i>
+                            <p>Tidak ada invoice yang sesuai filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

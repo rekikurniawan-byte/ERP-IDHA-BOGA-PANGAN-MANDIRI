@@ -1,0 +1,28 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="dashboard-owner-page-shell" data-ui-dashboard="revenue-explorer" data-fix73c-outlier-page="revenue-explorer">
+{{ page_header(
+    "Omzet & Revenue Explorer",
+    "Analitik read-only untuk membedakan omzet akrual, kas masuk, warung lunas, dan piutang tanpa mengubah transaksi.",
+    "Revenue",
+    "Invoice Catering",
+    url_for('finance.invoices'),
+    "bi-receipt",
+    "Kembali Dashboard",
+    url_for('dashboard.owner' if current_user.role == 'OWNER' else 'dashboard.admin'),
+    "bi-arrow-left",
+    [
+        {"label": "Pembayaran Masuk", "url": url_for('finance.payment_history'), "icon": "bi-cash-coin"},
+        {"label": "Warung", "url": url_for('canteen.index'), "icon": "bi-shop"},
+        {"label": "Piutang", "url": url_for('finance.receivables'), "icon": "bi-hourglass-split"},
+        {"label": "SOP Finance", "url": url_for('sop.role_sop', slug='finance'), "icon": "bi-book"},
+    ]
+) }}
+
+{{ global_filter_bar(filter_bar) }}
+{% include "dashboard/_revenue_explorer_panel.html" %}
+</div>
+{% endblock %}

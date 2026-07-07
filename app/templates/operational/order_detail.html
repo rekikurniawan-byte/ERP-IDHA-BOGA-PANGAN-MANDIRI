@@ -1,0 +1,539 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="order_detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Detail Order</span>
+        <h1>{{ daily_order.order_number }}</h1>
+        <p>Tanggal order: {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+    </div>
+
+    <div class="page-actions order-detail-actions op-prod-delivery-header-actions" data-op-prod-delivery-actions="UI">
+        {% if not daily_order.is_locked %}
+            <form method="POST" action="{{ url_for('operational.lock_order', order_id=daily_order.id) }}" class="order-primary-action app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-lock-fill"></i>
+                    Lock Order
+                </button>
+            </form>
+
+            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+                <button class="btn app-btn-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots"></i>
+                    Aksi Order
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="orderActionDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('operational.orders') }}">
+                            <i class="bi bi-arrow-left"></i>
+                            Kembali ke Daftar Order
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('operational.add_order_detail', order_id=daily_order.id) }}">
+                            <i class="bi bi-plus-circle"></i>
+                            Tambah Lokasi/Mandor
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        {% else %}
+            <form method="POST" action="{{ url_for('operational.generate_production', order_id=daily_order.id) }}" class="order-primary-action app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-egg-fried"></i>
+                    Sinkron Produksi
+                </button>
+            </form>
+
+            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+                <button class="btn app-btn-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots"></i>
+                    Aksi Order
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="orderActionDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('operational.orders') }}">
+                            <i class="bi bi-arrow-left"></i>
+                            Kembali ke Daftar Order
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('operational.add_increase_after_lock_route', order_id=daily_order.id) }}">
+                            <i class="bi bi-plus-circle"></i>
+                            Tambah Revisi Setelah Lock
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('operational.create_order_hpp_snapshot_route', order_id=daily_order.id) }}">
+                            <i class="bi bi-cash-stack"></i>
+                            Buat Snapshot HPP
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+
+{% if daily_order.is_locked %}
+<div class="app-card soft-warning-card">
+    <strong>Catatan alur revisi setelah lock:</strong>
+    <p>
+        Jika ada revisi tambah setelah produksi atau delivery selesai, sistem akan menaikkan rencana produksi.
+        Dapur harus menyelesaikan tambahan produksi dulu sebelum delivery tambahan bisa dibuat.
+    </p>
+</div>
+{% endif %}
+
+{% if delivery_ready_actions %}
+<section class="delivery-next-action-panel mt-4" data-delivery-next-action="order-detail">
+    <div class="delivery-next-action-header">
+        <div>
+            <span class="eyebrow">Next Action Delivery</span>
+            <h2>Produksi selesai, delivery belum masuk ke pengantar</h2>
+            <p>Action ini muncul hanya kalau order LOCKED, produksi batch sudah COMPLETED, masih ada sisa porsi, dan delivery belum/tambahan belum dibuat.</p>
+        </div>
+        <a href="{{ url_for('sop.role_sop', slug='admin') }}" class="btn btn-sm app-btn-secondary">
+            <i class="bi bi-journal-check"></i>
+            SOP Admin
+        </a>
+    </div>
+
+    <div class="delivery-next-action-grid">
+        {% for action in delivery_ready_actions %}
+            <div class="delivery-next-action-card {% if not action.can_create_delivery %}is-blocked{% endif %}">
+                <div class="delivery-next-action-icon"><i class="bi bi-truck-front"></i></div>
+                <div class="delivery-next-action-body">
+                    <strong>{{ action.title }}</strong>
+                    <p>{{ action.description }}</p>
+                    <div class="delivery-next-action-meta">
+                        <span>Order: {{ action.order_number }}</span>
+                        <span>Sisa: {{ action.remaining_qty }} porsi</span>
+                        <span>Driver: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                    </div>
+                </div>
+                <div class="delivery-next-action-controls">
+                    {% if action.can_create_delivery %}
+                        <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=daily_order.id, delivery_type=action.delivery_type) }}" class="app-form" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-truck"></i>
+                                {{ action.action_label }}
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="status-badge status-danger">{{ action.blocking_reason }}</span>
+                    {% endif %}
+                    {% if action.latest_delivery %}
+                        <a href="{{ url_for('delivery.detail', delivery_id=action.latest_delivery.id) }}" class="btn app-btn-secondary">
+                            Lihat Delivery Terakhir
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Default Menu & Profil HPP</h5>
+            <p>Default ini hanya untuk prefill saat membuat Snapshot HPP. Tidak otomatis memotong stok, tidak membuat jurnal, dan tidak mengubah invoice.</p>
+        </div>
+        <div class="table-actions">
+            <a href="{{ url_for('operational.update_order_hpp_defaults_route', order_id=daily_order.id) }}" class="btn btn-sm app-btn-secondary">
+                <i class="bi bi-pencil-square"></i>
+                Atur Default HPP
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="app-stat-card">
+                <span>Menu Siang</span>
+                <strong>{{ daily_order.lunch_menu.menu_name if daily_order.lunch_menu else 'Belum ditentukan' }}</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-stat-card">
+                <span>Menu Sore</span>
+                <strong>{{ daily_order.dinner_menu.menu_name if daily_order.dinner_menu else 'Belum ditentukan' }}</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-stat-card">
+                <span>Kemasan</span>
+                <strong>{{ daily_order.packaging_profile.profile_name if daily_order.packaging_profile else 'Belum ditentukan' }}</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-stat-card">
+                <span>Overhead</span>
+                <strong>{{ daily_order.overhead_profile.profile_name if daily_order.overhead_profile else 'Belum ditentukan' }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if daily_order.is_locked %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Snapshot HPP Order</h5>
+            <p>Snapshot HPP membekukan biaya menu, kemasan, overhead, dan margin untuk order ini. Tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice.</p>
+        </div>
+        <div class="table-actions">
+            <a href="{{ url_for('operational.create_order_hpp_snapshot_route', order_id=daily_order.id) }}" class="btn btn-sm app-btn-primary">
+                <i class="bi bi-cash-stack"></i>
+                Buat Snapshot HPP
+            </a>
+        </div>
+    </div>
+
+    {% if latest_hpp_snapshot %}
+        <div class="app-stat-grid compact-grid">
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+                <div>
+                    <p>Snapshot Terakhir</p>
+                    <h3>{{ latest_hpp_snapshot.snapshot_number }}</h3>
+                    <span class="app-stat-helper">{{ latest_hpp_snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</span>
+                </div>
+            </div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-warning"><i class="bi bi-calculator"></i></div>
+                <div>
+                    <p>HPP Total</p>
+                    <h3>{{ latest_hpp_snapshot.hpp_total|rupiah }}</h3>
+                    <span class="app-stat-helper">{{ latest_hpp_snapshot.hpp_per_portion|rupiah }} / porsi</span>
+                </div>
+            </div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-purple"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                    <p>Estimasi Margin</p>
+                    <h3>{{ latest_hpp_snapshot.gross_margin_amount|rupiah }}</h3>
+                    <span class="app-stat-helper">{{ latest_hpp_snapshot.gross_margin_percentage|round(2) }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive mt-3">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>No Snapshot</th>
+                        <th>Porsi</th>
+                        <th>Revenue</th>
+                        <th>HPP</th>
+                        <th>Margin</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for snapshot in hpp_snapshots %}
+                    <tr>
+                        <td>
+                            <strong>{{ snapshot.snapshot_number }}</strong>
+                            <div class="muted-small">{{ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</div>
+                        </td>
+                        <td>
+                            {{ snapshot.total_portion|qty }}
+                            <div class="muted-small">Alokasi: {{ snapshot.allocations|length }} baris</div>
+                        </td>
+                        <td>{{ snapshot.revenue_total|rupiah }}</td>
+                        <td>{{ snapshot.hpp_total|rupiah }}</td>
+                        <td>
+                            {{ snapshot.gross_margin_amount|rupiah }}
+                            <div class="muted-small">{{ snapshot.gross_margin_percentage|round(2) }}%</div>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
+                                    Detail
+                                </a>
+                                {% if snapshot.stock_consumption %}
+                                    <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-sm app-btn-secondary">
+                                        Pemakaian Stok
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
+                                        Dry-run / Commit
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-cash-stack"></i>
+            <p>Belum ada snapshot HPP untuk order ini.</p>
+            <span>Isi master menu, resep, profil HPP item, kemasan, dan overhead dulu sebelum membuat snapshot real.</span>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-people"></i>
+        </div>
+        <div>
+            <p>Mandor Unik</p>
+            <h3>{{ unique_mandors }}</h3>
+            <span class="app-stat-helper">Jumlah mandor berbeda</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-geo-alt"></i>
+        </div>
+        <div>
+            <p>Total Lokasi</p>
+            <h3>{{ total_locations }}</h3>
+            <span class="app-stat-helper">Detail mandor/lokasi</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-sun"></i>
+        </div>
+        <div>
+            <p>Total Porsi Siang</p>
+            <h3>{{ total_lunch }}</h3>
+            <span class="app-stat-helper">
+                Delivery planned: {{ lunch_delivery_data.total_planned_delivery_qty }} dari {{ lunch_delivery_data.total_order_qty }}
+            </span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-moon"></i>
+        </div>
+        <div>
+            <p>Total Porsi Sore</p>
+            <h3>{{ total_dinner }}</h3>
+            <span class="app-stat-helper">
+                Delivery planned: {{ dinner_delivery_data.total_planned_delivery_qty }} dari {{ dinner_delivery_data.total_order_qty }}
+            </span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger">
+            <i class="bi bi-lock-fill"></i>
+        </div>
+        <div>
+            <p>Status Lock</p>
+            <h3>{% if daily_order.is_locked %}LOCKED{% else %}OPEN{% endif %}</h3>
+            <span class="app-stat-helper">
+                {% if daily_order.is_locked %}
+                    Order sudah dikunci
+                {% else %}
+                    Order masih bisa ditambah
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Mandor & Lokasi</h5>
+            <p>Rincian total porsi operasional per mandor/lokasi. Harga di tabel ini adalah harga awal saat lock. Jika ada harga berbeda setelah lock, lihat Riwayat Revisi.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Harga Awal/Porsi</th>
+                    <th>Siang</th>
+                    <th>Sore</th>
+                    <th>Total</th>
+                    <th>Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in daily_order.details %}
+                <tr>
+                    <td><strong>{{ detail.mandor.name if detail.mandor else '-' }}</strong></td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                    <td>
+                        {{ detail.price_per_portion|rupiah }}
+                        {% if detail.revisions %}
+                            <div class="muted-small">Harga revisi lihat riwayat</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ detail.lunch_qty }}</td>
+                    <td>{{ detail.dinner_qty }}</td>
+                    <td><strong>{{ detail.total_qty }}</strong></td>
+                    <td>{{ detail.notes or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('operational.create_revision', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
+                            Revisi
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-journal-text"></i>
+                            <p>Belum ada detail order.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if daily_order.is_locked %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Status Delivery Order</h5>
+            <p>Menunjukkan apakah masih ada sisa porsi yang belum dibuat delivery.</p>
+        </div>
+
+        <div class="table-actions">
+            {% if lunch_delivery_data.latest_delivery %}
+                <a href="{{ url_for('delivery.detail', delivery_id=lunch_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                    <i class="bi bi-truck"></i>
+                    Lihat Delivery Siang
+                </a>
+            {% endif %}
+            {% if dinner_delivery_data.latest_delivery %}
+                <a href="{{ url_for('delivery.detail', delivery_id=dinner_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                    <i class="bi bi-truck"></i>
+                    Lihat Delivery Sore
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tipe</th>
+                    <th>Total Order</th>
+                    <th>Sudah Masuk Delivery</th>
+                    <th>Sisa Belum Delivery</th>
+                    <th>Jumlah Delivery</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>LUNCH</strong></td>
+                    <td>{{ lunch_delivery_data.total_order_qty }}</td>
+                    <td>{{ lunch_delivery_data.total_planned_delivery_qty }}</td>
+                    <td>
+                        {% if lunch_delivery_data.remaining_qty > 0 %}
+                            <span class="status-badge status-progress">{{ lunch_delivery_data.remaining_qty }}</span>
+                        {% else %}
+                            <span class="status-badge status-locked">0</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ lunch_delivery_data.delivery_count }}</td>
+                </tr>
+                <tr>
+                    <td><strong>DINNER</strong></td>
+                    <td>{{ dinner_delivery_data.total_order_qty }}</td>
+                    <td>{{ dinner_delivery_data.total_planned_delivery_qty }}</td>
+                    <td>
+                        {% if dinner_delivery_data.remaining_qty > 0 %}
+                            <span class="status-badge status-progress">{{ dinner_delivery_data.remaining_qty }}</span>
+                        {% else %}
+                            <span class="status-badge status-locked">0</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ dinner_delivery_data.delivery_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Revisi</h5>
+            <p>Semua perubahan order tercatat untuk kebutuhan audit.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Jenis</th>
+                    <th>Masuk/Keluar</th>
+                    <th>Siang</th>
+                    <th>Sore</th>
+                    <th>Harga Revisi</th>
+                    <th>Alasan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set revision_found = namespace(value=false) %}
+
+                {% for detail in daily_order.details %}
+                    {% for revision in detail.revisions %}
+                        {% set revision_found.value = true %}
+                        <tr>
+                            <td>{{ revision.revision_time.strftime('%d-%m-%Y %H:%M') }}</td>
+                            <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
+                            <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                            <td>{{ revision.revision_type }}</td>
+                            <td>{{ revision.revision_direction }}</td>
+                            <td>{{ revision.lunch_qty_change }}</td>
+                            <td>{{ revision.dinner_qty_change }}</td>
+                            <td>{{ revision.price_per_portion|rupiah if revision.price_per_portion else detail.price_per_portion|rupiah }}</td>
+                            <td>{{ revision.reason or '-' }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+
+                {% if not revision_found.value %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <p>Belum ada revisi order.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

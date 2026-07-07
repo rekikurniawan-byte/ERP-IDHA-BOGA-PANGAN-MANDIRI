@@ -1,0 +1,122 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan • COA 2101 / 2102 / 2103 / 5012</span>
+            <h1>Penyusutan Aset Tetap</h1>
+            <p>Engine penyusutan bersifat opsional. Aset tanpa konfigurasi tetap valid dan tidak membuat jurnal penyusutan.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">Pembelian Aset</a>
+            <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Master Aset</a>
+        </div>
+    </div>
+
+{% set precision_key = 'depreciation' %}
+
+    {% if not schema_ready %}
+    <div class="app-card soft-warning-card mt-4">
+        <strong>Migrasi fitur aset dan penyusutan belum dijalankan</strong>
+        <p>Fitur penyusutan aset sudah tersedia di kode, tetapi tabel <code>fixed_asset_depreciation_configs</code> dan <code>fixed_asset_depreciations</code> belum ada di database aktif. Jalankan migration sebelum memakai fitur ini.</p>
+    </div>
+    {% else %}
+    <div class="app-stat-grid">
+        <div class="app-stat-card">
+            <span>Total Aset</span>
+            <h3>{{ summary.asset_count }}</h3>
+            <p>Aset tetap cabang aktif</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Terkonfigurasi</span>
+            <h3>{{ summary.configured_count }}</h3>
+            <p>Penyusutan siap/aktif/paused</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Jurnal Penyusutan</span>
+            <h3>{{ summary.posted_count }}</h3>
+            <p>Total {{ summary.posted_total|rupiah }}</p>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <form method="GET" action="{{ url_for('finance.fixed_asset_depreciation') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="ALL" {% if status == 'ALL' %}selected{% endif %}>Semua status</option>
+                    <option value="NOT_CONFIGURED" {% if status == 'NOT_CONFIGURED' %}selected{% endif %}>Belum dikonfigurasi</option>
+                    <option value="CONFIGURED" {% if status == 'CONFIGURED' %}selected{% endif %}>Configured</option>
+                    <option value="ACTIVE" {% if status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                    <option value="PAUSED" {% if status == 'PAUSED' %}selected{% endif %}>Paused</option>
+                    <option value="FULLY_DEPRECIATED" {% if status == 'FULLY_DEPRECIATED' %}selected{% endif %}>Fully Depreciated</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn app-btn-primary">Filter</button>
+                <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Daftar Aset & Status Penyusutan</h5>
+                <p>Posting penyusutan hanya bisa dilakukan jika konfigurasi lengkap. Tanpa konfigurasi, tidak ada jurnal otomatis.</p>
+            </div>
+        </div>
+
+        {% if rows %}
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Aset</th>
+                        <th>Kategori</th>
+                        <th>Status</th>
+                        <th>Akun Akumulasi</th>
+                        <th class="text-end">Nilai Perolehan</th>
+                        <th class="text-end">Penyusutan/Bulan</th>
+                        <th class="text-end">Akumulasi</th>
+                        <th class="text-end">Nilai Buku</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% set asset = row.asset %}
+                    {% set config = row.config %}
+                    <tr>
+                        <td>
+                            <strong>{{ asset.asset_code }}</strong><br>
+                            <span class="text-muted">{{ asset.asset_name }}</span>
+                        </td>
+                        <td>{{ asset.asset_category }}</td>
+                        <td><span class="status-badge {{ 'status-warning' if row.status == 'NOT_CONFIGURED' else 'status-info' }}">{{ row.status }}</span></td>
+                        <td>{{ config.accumulated_account_code if config else '-' }}</td>
+                        <td class="text-end">{{ asset.purchase_value|rupiah }}</td>
+                        <td class="text-end">{{ row.monthly_amount|rupiah }}</td>
+                        <td class="text-end">{{ row.posted_total|rupiah }}</td>
+                        <td class="text-end"><strong>{{ row.book_value|rupiah }}</strong></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('finance.fixed_asset_depreciation_configure', asset_id=asset.id) }}" class="btn btn-sm app-btn-secondary">Konfigurasi</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-archive"></i>
+            <h5>Belum ada aset dalam filter ini</h5>
+            <p>Aset tetap tetap valid meski belum dikonfigurasi penyusutan.</p>
+            <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-primary">Catat Pembelian Aset</a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

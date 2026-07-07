@@ -1,0 +1,174 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_request_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Dapur</span>
+        <h1>Buat Permintaan Barang</h1>
+        <p>Ajukan kebutuhan bahan/barang ke Owner/Logistik. Status awal PENDING dan belum mengurangi stok.</p>
+    </div>
+</div>
+
+
+
+<form method="POST" action="{{ url_for('logistics.create_item_request') }}" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    <div class="app-card">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label app-label">Tanggal Permintaan</label>
+                <input type="date" name="request_date" class="form-control app-input" value="{{ today }}" required>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label app-label">Tujuan Permintaan</label>
+                <input type="text" name="purpose" class="form-control app-input"
+                       value="Kebutuhan produksi dapur"
+                       placeholder="Contoh: kebutuhan produksi siang / produksi sore / stok dapur">
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Catatan Umum</label>
+                <textarea name="notes" class="form-control app-input" rows="2"
+                          placeholder="Contoh: untuk produksi makan siang hari ini"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Item yang Diminta</h5>
+                <p>Pilih item dan jumlah yang dibutuhkan dapur.</p>
+            </div>
+
+            <button type="button" class="btn app-btn-secondary" data-app-call="addRow">
+                <i class="bi bi-plus-circle"></i>
+                Tambah Baris
+            </button>
+        </div>
+
+        <div class="empty-state d-none" data-ui-empty-state="UI">Data item belum ada untuk permintaan barang.</div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th class="col-w-42">Item</th>
+                        <th class="col-w-18">Qty Diminta</th>
+                        <th class="col-w-25">Catatan Item</th>
+                        <th class="col-w-10">Stok Sistem</th>
+                        <th class="col-w-5"></th>
+                    </tr>
+                </thead>
+                <tbody id="requestRows">
+                    <tr class="request-row">
+                        <td>
+                            <select name="item_id[]" class="form-select app-input item-select" required data-app-change-call="applyItemInfo" data-app-call-arg="this">
+                                <option value="">Pilih item</option>
+                                {% for row in item_rows %}
+                                    <option value="{{ row.item.id }}"
+                                            data-unit="{{ row.item.unit }}"
+                                            data-stock="{{ row.stock_qty }}">
+                                        {{ row.item.item_code }} - {{ row.item.item_name }} ({{ row.item.unit }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="requested_qty[]" class="form-control app-input qty-input" min="1" step="1" required>
+                        </td>
+                        <td>
+                            <input type="text" name="detail_notes[]" class="form-control app-input" placeholder="Opsional">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control app-input stock-display" value="-" readonly>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-app-call="removeRow" data-app-call-arg="this">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Batal</a>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-send"></i>
+                Kirim Permintaan
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function formatQty(number) {
+    number = Number(number || 0);
+    if (Number.isInteger(number)) return String(number);
+    return number.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function isIntegerUnit(unit) {
+    unit = (unit || '').toLowerCase();
+    const integerUnits = ['pcs', 'pc', 'tabung', 'pak', 'pack', 'dus', 'box', 'unit', 'karung', 'sak'];
+    return integerUnits.some(word => unit.includes(word));
+}
+
+function applyItemInfo(selectElement) {
+    const row = selectElement.closest('tr');
+    const qtyInput = row.querySelector('.qty-input');
+    const stockDisplay = row.querySelector('.stock-display');
+
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const unit = selectedOption.getAttribute('data-unit') || '';
+    const stock = selectedOption.getAttribute('data-stock') || '0';
+
+    stockDisplay.value = formatQty(stock) + ' ' + unit;
+
+    if (isIntegerUnit(unit)) {
+        qtyInput.min = '1';
+        qtyInput.step = '1';
+        qtyInput.placeholder = '1, 2, 3';
+    } else {
+        qtyInput.min = '0.01';
+        qtyInput.step = '0.01';
+        qtyInput.placeholder = '1.5 / 2.25';
+    }
+}
+
+function addRow() {
+    const tbody = document.getElementById('requestRows');
+    const firstRow = tbody.querySelector('.request-row');
+    const newRow = firstRow.cloneNode(true);
+
+    newRow.querySelectorAll('input').forEach(function(input) {
+        if (input.classList.contains('stock-display')) {
+            input.value = '-';
+        } else {
+            input.value = '';
+        }
+    });
+
+    newRow.querySelectorAll('select').forEach(function(select) {
+        select.selectedIndex = 0;
+    });
+
+    tbody.appendChild(newRow);
+}
+
+function removeRow(button) {
+    const rows = document.querySelectorAll('.request-row');
+
+    if (rows.length <= 1) {
+        alert('Minimal harus ada 1 baris item.');
+        return;
+    }
+
+    button.closest('tr').remove();
+}
+</script>
+</div>
+{% endblock %}

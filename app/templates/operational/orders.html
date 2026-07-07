@@ -1,0 +1,117 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="orders">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Modul Operasional</span>
+        <h1>Input Order Harian</h1>
+        <p>Daftar order catering harian berdasarkan mandor, lokasi, porsi siang, dan porsi sore.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Input Order
+        </a>
+    </div>
+</div>
+
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Order</h5>
+            <p>Order yang sudah lock otomatis menjadi dasar produksi. Delivery dibuat dari halaman Kelola Order.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Order</th>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                    <th>Lock</th>
+                    <th>Total Lokasi</th>
+                    <th>Total Porsi</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in daily_orders %}
+                <tr>
+                    <td><strong>{{ order.order_number }}</strong></td>
+                    <td>{{ order.order_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        {% if order.status == "LOCKED" %}
+                            <span class="status-badge status-locked">LOCKED</span>
+                        {% else %}
+                            <span class="status-badge status-draft">DRAFT</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if order.is_locked %}
+                            <span class="status-badge status-locked">LOCKED</span>
+                        {% else %}
+                            <span class="status-badge status-draft">OPEN</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.details|length }}</td>
+                    <td>
+                        {% set total = namespace(value=0) %}
+                        {% for detail in order.details %}
+                            {% set total.value = total.value + detail.total_qty %}
+                        {% endfor %}
+                        {{ total.value }} Porsi
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('operational.order_detail', order_id=order.id) }}" class="btn btn-sm app-btn-secondary">
+                                Kelola Order
+                            </a>
+
+                            {% if not order.is_locked %}
+                                <a href="{{ url_for('operational.add_order_detail', order_id=order.id) }}" class="btn btn-sm app-btn-secondary">
+                                    Tambah Lokasi
+                                </a>
+
+                                <form method="POST" action="{{ url_for('operational.lock_order', order_id=order.id) }}" data-ui-form="true" class="app-form">
+                                    {% include "components/csrf_token.html" %}
+                                    <button type="submit" class="btn btn-sm app-btn-primary">
+                                        Lock
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('operational.generate_production', order_id=order.id) }}" data-ui-form="true" class="app-form">
+                                    {% include "components/csrf_token.html" %}
+                                    <button type="submit" class="btn btn-sm app-btn-primary">
+                                        Sinkron Produksi
+                                    </button>
+                                </form>
+
+                                <a href="{{ url_for('production.index') }}" class="btn btn-sm app-btn-secondary">
+                                    Lihat Produksi
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                            <i class="bi bi-journal-text"></i>
+                            <h6>Belum ada order harian.</h6>
+                            <p>Gunakan tombol Input Order untuk membuat order pertama.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

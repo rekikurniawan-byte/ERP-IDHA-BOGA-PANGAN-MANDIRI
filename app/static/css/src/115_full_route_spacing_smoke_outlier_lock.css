@@ -1,0 +1,268 @@
+/* ==================================================
+   PRODUCTION — Full Route Spacing Smoke Outlier Lock
+   Scope: authenticated app UI only.
+
+   Purpose:
+   - Seal route-smoke outliers found after PRODUCTION static template audit.
+   - Cover dashboard command-center cards, visual QA panels, canteen panels,
+     and remaining report/detail surfaces that are not plain .app-card.
+   - Keep this CSS-only; no database, route, model, service, or template edits.
+   ================================================== */
+
+:root {
+  --ibp-smoke-gap: var(--ibp-card-gap, 12px);
+  --ibp-smoke-inner-gap: var(--ibp-inner-gap, 10px);
+  --ibp-smoke-card-pad-y: var(--ibp-card-pad-y, 14px);
+  --ibp-smoke-card-pad-x: var(--ibp-card-pad-x, 16px);
+  --ibp-smoke-radius: var(--ibp-card-radius, 18px);
+  --ibp-smoke-stat-min-height: var(--ibp-stat-min-height, 104px);
+}
+
+/* 1) Any direct content block rendered by a routed page must obey the page gap,
+   not Bootstrap utility margins. This catches sections and alerts that do not
+   use a module page shell. */
+body.is-authenticated .content-area > .container-fluid > :where(section, article, aside, .app-alert, .alert),
+body.is-authenticated .content-area > .container > :where(section, article, aside, .app-alert, .alert) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 2) Route-smoke card-like outliers. These classes appear in routed templates
+   but are not always combined with .app-card/.content-card. */
+body.is-authenticated .content-area :where(
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-command-backup-chip,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .dashboard-chart-insight,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .final-browser-qa-list,
+  .final-browser-qa-list-item,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .zero-empty-state-success,
+  .compact-empty-state,
+  .accounting-maintenance-summary,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi,
+  .asset-installment-pay-form
+) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: var(--ibp-smoke-card-pad-y) var(--ibp-smoke-card-pad-x) !important;
+  border-radius: var(--ibp-smoke-radius) !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+body.is-authenticated .content-area :where(
+  .dashboard-command-kpi,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .posting-mini-kpi
+) {
+  min-height: var(--ibp-smoke-stat-min-height) !important;
+}
+
+/* 3) Route-smoke grids/stacks. They keep their original display mode, but every
+   route now uses the same final gap scale. */
+body.is-authenticated .content-area :where(
+  .dashboard-command-kpi-grid,
+  .dashboard-command-link-grid,
+  .dashboard-command-reminder-grid,
+  .dashboard-command-link-grid,
+  .dashboard-command-reminder-grid,
+  .dashboard-mini-grid,
+  .dashboard-stat-grid,
+  .dashboard-analytics-grid,
+  .dashboard-chart-legend,
+  .dashboard-chart-legend-pro,
+  .compact-grid,
+  .final-browser-qa-compact-list,
+  .final-browser-qa-list,
+  .visual-sweep-compact-list,
+  .visual-sweep-policy-grid,
+  .sop-summary-grid,
+  .sop-check-list,
+  .detail-list,
+  .print-meta-grid
+) {
+  gap: var(--ibp-smoke-gap) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 4) Section/header outliers: no extra margin jump between title rows, cards,
+   and the next routed block. */
+body.is-authenticated .content-area :where(
+  .dashboard-section-header,
+  .dashboard-section-header-compact,
+  .dashboard-panel-header,
+  .delivery-next-action-header,
+  .card-header-clean,
+  .auth-card-header,
+  .sop-role-card-head
+) {
+  gap: var(--ibp-smoke-inner-gap) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+body.is-authenticated .content-area :where(
+  .dashboard-section-header,
+  .dashboard-section-header-compact,
+  .dashboard-panel-header,
+  .delivery-next-action-header,
+  .card-header-clean,
+  .auth-card-header,
+  .sop-role-card-head
+) > :first-child {
+  margin-top: 0 !important;
+}
+
+body.is-authenticated .content-area :where(
+  .dashboard-section-header,
+  .dashboard-section-header-compact,
+  .dashboard-panel-header,
+  .delivery-next-action-header,
+  .card-header-clean,
+  .auth-card-header,
+  .sop-role-card-head
+) > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* 5) Text rhythm inside route-smoke outlier cards. */
+body.is-authenticated .content-area :where(
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi
+) :where(h2, h3, h4, h5, h6, p, ul, ol) {
+  margin-top: 0 !important;
+}
+
+body.is-authenticated .content-area :where(
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi
+) :where(h2, h3, h4, h5, h6, p):last-child {
+  margin-bottom: 0 !important;
+}
+
+/* 6) Utility margins on route-smoke outliers are neutralized exactly like app-card surfaces. */
+body.is-authenticated .content-area :where(
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi
+):where(.mt-1, .mt-2, .mt-3, .mt-4, .mt-5, .my-1, .my-2, .my-3, .my-4, .my-5) {
+  margin-top: 0 !important;
+}
+
+body.is-authenticated .content-area :where(
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi
+):where(.mb-1, .mb-2, .mb-3, .mb-4, .mb-5, .my-1, .my-2, .my-3, .my-4, .my-5) {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+  body.is-authenticated .content-area :where(
+    .dashboard-command-hero,
+    .dashboard-command-kpi,
+    .dashboard-command-link-card,
+    .dashboard-command-reminder,
+    .dashboard-command-all-clear,
+    .dashboard-stat-card,
+    .dashboard-mini-card,
+    .dashboard-analytics-card,
+    .dashboard-chart-card,
+    .final-browser-qa-alert,
+    .final-browser-qa-mini-panel,
+    .visual-sweep-alert,
+    .zero-empty-state,
+    .compact-empty-state,
+    .canteen-external-panel,
+    .canteen-worker-panel,
+    .receivables-card,
+    .expense-posting-status-card,
+    .posting-mini-kpi
+  ) {
+    padding: var(--ibp-card-pad-y, 12px) var(--ibp-card-pad-x, 14px) !important;
+    border-radius: 16px !important;
+  }
+}

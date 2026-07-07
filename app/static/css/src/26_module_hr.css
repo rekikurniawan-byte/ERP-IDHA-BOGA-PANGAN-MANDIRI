@@ -1,0 +1,404 @@
+/* ==================================================
+   PRODUCTION SOURCE: 26_module_hr.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 6544-6941.
+   Note: HR, master, settings, backup, restore, audit, attachment polish block.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UI HR + Master + Settings Global polish
+   Scope: HR, Master Data, Settings, backup/restore, audit log, digital attachments.
+   Token-only styling: no new hardcoded colors.
+   ================================================== */
+.hr-master-settings-page-shell {
+    display: grid;
+    gap: var(--section-gap);
+}
+
+.hr-master-settings-flow-panel {
+    display: grid;
+    gap: 14px;
+    padding: var(--card-padding);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.hr-master-settings-flow-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 12px;
+    color: var(--text-secondary);
+}
+
+.hr-master-settings-flow-title strong {
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.hr-master-settings-flow-title small {
+    color: var(--text-muted);
+}
+
+.hr-master-settings-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.hr-master-settings-flow-step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "num title"
+        "num desc";
+    gap: 2px 10px;
+    min-height: 78px;
+    padding: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.hr-master-settings-flow-step:hover,
+.hr-master-settings-flow-step:focus {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.hr-master-settings-flow-step span {
+    grid-area: num;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-badge);
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid var(--border-soft);
+}
+
+.hr-master-settings-flow-step strong {
+    grid-area: title;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.hr-master-settings-flow-step small {
+    grid-area: desc;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.hr-master-settings-flow-step.is-active {
+    border-color: var(--primary);
+    background: var(--info-soft);
+}
+
+.hr-master-settings-flow-step.is-active span {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
+}
+
+.hr-master-settings-header-actions[data-hr-master-settings-collapsed="true"] {
+    align-items: center;
+}
+
+.hr-master-settings-header-actions .hr-master-settings-more-dropdown .dropdown-menu {
+    min-width: 278px;
+    padding: 8px;
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.hr-master-settings-header-actions .hr-master-settings-more-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-button-sm);
+    color: var(--text-secondary);
+    font-weight: 650;
+    padding: 8px 10px;
+}
+
+.hr-master-settings-header-actions .hr-master-settings-more-dropdown .dropdown-item:hover,
+.hr-master-settings-header-actions .hr-master-settings-more-dropdown .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+
+.hr-master-settings-page-shell .app-card,
+.hr-master-settings-page-shell .card {
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .card-header,
+.hr-master-settings-page-shell .list-group-item {
+    border-color: var(--border-soft);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .bg-light,
+.hr-master-settings-page-shell .bg-white {
+    background: var(--surface-soft) !important;
+    color: var(--text-primary) !important;
+}
+
+.hr-master-settings-page-shell .bg-dark {
+    background: var(--surface-muted) !important;
+    color: var(--text-primary) !important;
+}
+
+.hr-master-settings-page-shell .border {
+    border-color: var(--border-soft) !important;
+}
+
+.hr-master-settings-page-shell .text-white {
+    color: var(--text-primary) !important;
+}
+
+.hr-master-settings-money,
+.hr-master-settings-qty,
+.hr-master-settings-page-shell td[data-hr-master-settings-money="true"],
+.hr-master-settings-page-shell td[data-hr-master-settings-qty="true"],
+.hr-master-settings-page-shell .app-table td.text-end,
+.hr-master-settings-page-shell .app-table th.text-end {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.hr-master-settings-page-shell .table-responsive {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+
+.hr-master-settings-page-shell .app-table {
+    margin-bottom: 0;
+}
+
+.hr-master-settings-page-shell .app-table th,
+.hr-master-settings-page-shell .app-table td {
+    vertical-align: middle;
+}
+
+.hr-master-settings-page-shell .app-table th {
+    white-space: nowrap;
+}
+
+.hr-master-settings-page-shell .table-actions,
+.hr-master-settings-page-shell .app-table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.hr-master-settings-page-shell .app-table .btn,
+.hr-master-settings-page-shell .app-table form .btn,
+.hr-master-settings-page-shell .btn-sm {
+    min-height: 34px;
+}
+
+.hr-master-settings-page-shell .status-badge,
+.hr-master-settings-page-shell .badge {
+    white-space: nowrap;
+}
+
+.hr-master-settings-page-shell .filter-bar,
+.hr-master-settings-page-shell form[data-form-kind="filter"],
+.hr-master-settings-page-shell .app-filter-form {
+    align-items: end;
+}
+
+.hr-master-settings-page-shell .app-form-actions {
+    justify-content: flex-end;
+}
+
+.hr-master-settings-page-shell .soft-info-card,
+.hr-master-settings-page-shell .alert-info {
+    border-color: var(--info);
+    background: var(--info-soft);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .soft-warning-card,
+.hr-master-settings-page-shell .alert-warning {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .soft-success-card,
+.hr-master-settings-page-shell .alert-success {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .soft-danger-card,
+.hr-master-settings-page-shell .alert-danger {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--text-primary);
+}
+
+.hr-master-settings-page-shell .command-box {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-input);
+    background: var(--surface-muted);
+}
+
+.hr-master-settings-page-shell .command-box code {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: inherit;
+}
+
+.hr-master-settings-prewrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.hr-master-settings-breakword {
+    word-break: break-word;
+}
+
+.hr-master-settings-minw-240 { min-width: 240px; }
+.hr-master-settings-minw-260 { min-width: 260px; }
+.hr-master-settings-minw-360 { min-width: 360px; }
+
+.hr-master-settings-page-shell .payroll-history-table {
+    min-width: 1250px;
+}
+
+.hr-master-settings-page-shell .payroll-history-table th,
+.hr-master-settings-page-shell .payroll-history-table td {
+    white-space: nowrap;
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.hr-master-settings-page-shell .payroll-history-table th {
+    font-size: 0.85rem;
+}
+
+.hr-master-settings-page-shell .payroll-history-table .history-money-col { min-width: 135px; }
+.hr-master-settings-page-shell .payroll-history-table .history-method-col { min-width: 95px; }
+.hr-master-settings-page-shell .payroll-history-table .history-journal-col { min-width: 165px; }
+.hr-master-settings-page-shell .payroll-history-table .history-status-col { min-width: 90px; }
+.hr-master-settings-page-shell .payroll-history-table .history-action-col { min-width: 90px; }
+
+.hr-master-settings-mobile-hint {
+    display: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.hr-master-settings-danger-zone {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+}
+
+@media (max-width: 1199.98px) {
+    .hr-master-settings-flow-steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hr-master-settings-page-shell {
+        gap: 16px;
+    }
+
+    .hr-master-settings-flow-panel {
+        padding: 14px;
+    }
+
+    .hr-master-settings-flow-title {
+        display: block;
+    }
+
+    .hr-master-settings-flow-title small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .hr-master-settings-flow-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .hr-master-settings-flow-step {
+        min-height: 58px;
+    }
+
+    .hr-master-settings-page-shell .summary-grid,
+    .hr-master-settings-page-shell .kpi-grid,
+    .hr-master-settings-page-shell .info-grid,
+    .hr-master-settings-page-shell .detail-grid,
+    .hr-master-settings-page-shell .form-grid,
+    .hr-master-settings-page-shell .row.g-3,
+    .hr-master-settings-page-shell .row.g-4 {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hr-master-settings-page-shell .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .hr-master-settings-page-shell .app-table {
+        min-width: 760px;
+    }
+
+    .hr-master-settings-page-shell .btn,
+    .hr-master-settings-page-shell .app-form-actions .btn,
+    .hr-master-settings-page-shell .page-actions > .btn,
+    .hr-master-settings-page-shell .page-actions > a.btn,
+    .hr-master-settings-page-shell .page-actions .dropdown-toggle,
+    .hr-master-settings-page-shell .page-actions > form .btn,
+    .hr-master-settings-page-shell .page-header > .d-flex .btn {
+        min-height: 44px;
+    }
+
+    .hr-master-settings-page-shell .page-actions,
+    .hr-master-settings-page-shell .page-actions > .btn,
+    .hr-master-settings-page-shell .page-actions > a.btn,
+    .hr-master-settings-page-shell .page-actions > form,
+    .hr-master-settings-page-shell .page-actions > form .btn,
+    .hr-master-settings-page-shell .page-actions .app-action-dropdown,
+    .hr-master-settings-page-shell .page-actions .hr-master-settings-more-dropdown,
+    .hr-master-settings-page-shell .page-actions .dropdown-toggle,
+    .hr-master-settings-page-shell .page-header > .d-flex,
+    .hr-master-settings-page-shell .page-header > .d-flex .btn {
+        width: 100%;
+    }
+
+    .hr-master-settings-mobile-hint {
+        display: block;
+    }
+}

@@ -1,0 +1,197 @@
+{% set analytics = data.analytics if data.analytics is defined else none %}
+{% if analytics and current_user.is_authenticated and current_user.role in ["OWNER", "ADMIN"] %}
+{% set revenue_chart = analytics.revenue_spending %}
+{% set efficiency_chart = analytics.operational_efficiency %}
+{% set max_value = revenue_chart.max_value|default(0, true) %}
+{% include "dashboard/_revenue_explorer_panel.html" %}
+
+<section class="dashboard-section dashboard-analytics-section" data-dashboard-section="analytics" data-dashboard-bar-analytics="true" data-revenue-spending-analytics="true" data-operational-efficiency-analytics="true" data-dashboard-role-access="owner-admin-only" data-mobile-theme="true" data-dashboard-placement="{{ analytics.placement.key|default('owner_admin_dashboard') }}" aria-labelledby="dashboardAnalyticsTitle">
+    <div class="dashboard-section-header dashboard-analytics-header">
+        <div>
+            <span class="eyebrow">Analytics Owner/Admin</span>
+            <h2 id="dashboardAnalyticsTitle">Dashboard Analytics</h2>
+            <p>Read-only chart untuk membaca kesehatan uang dan kesehatan operasional tanpa mengubah transaksi, invoice, delivery, atau jurnal.</p>
+        </div>
+        <form method="get" class="dashboard-analytics-filter-form app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter analytics dashboard">
+            <div class="dashboard-filter-field">
+                <label for="analyticsYear">Tahun</label>
+                <select id="analyticsYear" name="analytics_year" class="form-select form-select-sm dashboard-filter-select">
+                    {% for year_option in revenue_chart.available_years %}
+                        <option value="{{ year_option }}" {% if year_option == analytics.year %}selected{% endif %}>{{ year_option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="dashboard-filter-field">
+                <label for="analyticsMonth">Bulan Operasional</label>
+                <select id="analyticsMonth" name="analytics_month" class="form-select form-select-sm dashboard-filter-select">
+                    {% for month_option in analytics.available_months %}
+                        <option value="{{ month_option.value }}" {% if month_option.value == analytics.month %}selected{% endif %}>{{ month_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <label class="dashboard-checkbox-chip">
+                <input type="checkbox" name="include_asset_purchase" value="1" {% if revenue_chart.include_asset_purchase %}checked{% endif %}>
+                <span>Include asset</span>
+            </label>
+            <button type="submit" class="btn btn-sm app-btn-primary dashboard-filter-submit">
+                <i class="bi bi-funnel"></i> Terapkan
+            </button>
+            <span class="dashboard-period-chip"><i class="bi bi-shield-check"></i> Read-only · Owner/Admin</span>
+        </form>
+    </div>
+
+    <div class="dashboard-analytics-grid">
+        <article class="dashboard-analytics-card dashboard-chart-card dashboard-chart-card-wide dashboard-revenue-spending-card" data-chart-type="bar" data-revenue-spending-bar-chart="true" data-chart-mobile="scroll-safe" aria-labelledby="revenueSpendingTitle">
+            <div class="dashboard-chart-card-header dashboard-chart-card-header-fixed">
+                <div>
+                    <h3 id="revenueSpendingTitle">{{ revenue_chart.title }}</h3>
+                    <p>{{ revenue_chart.subtitle }}</p>
+                </div>
+                <div class="dropdown app-action-dropdown dashboard-chart-menu">
+                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi chart revenue spending">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                        <a class="dropdown-item" href="{{ url_for(revenue_chart.drilldown.revenue_endpoint) }}"><i class="bi bi-receipt"></i> Detail revenue</a>
+                        <a class="dropdown-item" href="{{ url_for(revenue_chart.drilldown.spending_endpoint) }}"><i class="bi bi-bank"></i> Detail spending</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-chart-insight-strip" aria-label="Ringkasan revenue spending">
+                <div class="dashboard-chart-insight dashboard-insight-revenue">
+                    <span>Total Revenue</span>
+                    <strong>{{ revenue_chart.totals.revenue|rupiah }}</strong>
+                    <small>Invoice aktif {{ analytics.year }}</small>
+                </div>
+                <div class="dashboard-chart-insight dashboard-insight-spending">
+                    <span>Total Spending</span>
+                    <strong>{{ revenue_chart.totals.spending|rupiah }}</strong>
+                    <small>{% if revenue_chart.include_asset_purchase %}Termasuk asset{% else %}Operational only{% endif %}</small>
+                </div>
+                <div class="dashboard-chart-insight dashboard-insight-net dashboard-insight-{{ revenue_chart.net_tone }}">
+                    <span>Net</span>
+                    <strong>{{ revenue_chart.totals.net|rupiah }}</strong>
+                    <small>Spending ratio {{ revenue_chart.spending_ratio }}%</small>
+                </div>
+            </div>
+
+            {% if revenue_chart.is_empty %}
+                <div class="dashboard-chart-empty app-empty-state" data-empty-state="true">
+                    <div class="empty-state-icon"><i class="bi bi-bar-chart"></i></div>
+                    <h3>{{ revenue_chart.empty_title }}</h3>
+                    <p>{{ revenue_chart.empty_message }}</p>
+                </div>
+            {% else %}
+                <div class="dashboard-bar-chart dashboard-bar-chart-pro" role="img" aria-label="Revenue dan spending per bulan tahun {{ analytics.year }}">
+                    <div class="dashboard-chart-axis" aria-hidden="true">
+                        {% for axis_value in revenue_chart.axis_steps %}
+                            <span>{{ axis_value|rupiah }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="dashboard-bar-plot dashboard-bar-plot-pro" aria-label="Plot bulanan revenue dan spending">
+                        {% for month in revenue_chart.months %}
+                            <div class="dashboard-bar-group dashboard-bar-group-pro {% if month.has_value %}has-chart-value{% endif %}">
+                                <div class="dashboard-bar-pair dashboard-bar-pair-pro">
+                                    <a href="{{ url_for(revenue_chart.drilldown.revenue_endpoint) }}" class="dashboard-bar dashboard-bar-revenue" style="--bar-height: {{ month.revenue_percent }}%;" title="{{ month.label }} revenue: {{ month.revenue|rupiah }}" aria-label="{{ month.label }} revenue {{ month.revenue|rupiah }}">
+                                        <span class="visually-hidden">{{ month.label }} revenue {{ month.revenue|rupiah }}</span>
+                                    </a>
+                                    <a href="{{ url_for(revenue_chart.drilldown.spending_endpoint) }}" class="dashboard-bar dashboard-bar-spending" style="--bar-height: {{ month.spending_percent }}%;" title="{{ month.label }} spending: {{ month.spending|rupiah }}" aria-label="{{ month.label }} spending {{ month.spending|rupiah }}">
+                                        <span class="visually-hidden">{{ month.label }} spending {{ month.spending|rupiah }}</span>
+                                    </a>
+                                </div>
+                                <span class="dashboard-bar-label">{{ month.label }}</span>
+                                <span class="dashboard-bar-net dashboard-bar-net-{{ month.net_tone }}">{{ month.net|rupiah }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="dashboard-chart-legend dashboard-chart-legend-pro" aria-label="Legenda revenue spending">
+                        <span><i class="dashboard-legend-dot dashboard-legend-revenue"></i> Revenue</span>
+                        <span><i class="dashboard-legend-dot dashboard-legend-spending"></i> Spending</span>
+                        <span><i class="dashboard-legend-line"></i> Net per bulan</span>
+                    </div>
+                </div>
+                <div class="dashboard-chart-footnote">
+                    <span><i class="bi bi-trophy"></i> Revenue tertinggi: <strong>{{ revenue_chart.best_revenue_month.label }}</strong></span>
+                    <span><i class="bi bi-exclamation-circle"></i> Spending tertinggi: <strong>{{ revenue_chart.highest_spending_month.label }}</strong></span>
+                </div>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-analytics-card dashboard-chart-card dashboard-chart-card-compact dashboard-operational-efficiency-card" data-chart-type="donut" data-operational-efficiency-donut-chart="true" data-chart-mobile="fit-safe" aria-labelledby="operationalEfficiencyTitle">
+            <div class="dashboard-chart-card-header">
+                <div>
+                    <h3 id="operationalEfficiencyTitle">{{ efficiency_chart.title }}</h3>
+                    <p>{{ efficiency_chart.period_label }} · {{ efficiency_chart.subtitle }}</p>
+                </div>
+                <div class="dropdown app-action-dropdown dashboard-chart-menu">
+                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi chart operational efficiency">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                        <a class="dropdown-item" href="{{ url_for('delivery.history') }}"><i class="bi bi-truck"></i> Detail delivery</a>
+                        <a class="dropdown-item" href="{{ url_for('delivery.receiving') }}"><i class="bi bi-clipboard-check"></i> Penerimaan</a>
+                    </div>
+                </div>
+            </div>
+
+            {% if efficiency_chart.is_empty %}
+                <div class="dashboard-chart-empty app-empty-state dashboard-donut-empty" data-empty-state="true">
+                    <div class="empty-state-icon"><i class="bi bi-pie-chart"></i></div>
+                    <h3>{{ efficiency_chart.empty_title }}</h3>
+                    <p>{{ efficiency_chart.empty_message }}</p>
+                    <small>{{ efficiency_chart.data_contract.accuracy_note }}</small>
+                </div>
+            {% else %}
+                {% set on_time = efficiency_chart.donut_style.on_time_percent|default(0, true) %}
+                {% set late_stop = efficiency_chart.donut_style.late_stop_percent|default(0, true) %}
+                <div class="dashboard-donut-hero" aria-label="Ringkasan operational efficiency {{ efficiency_chart.period_label }}">
+                    <a href="{{ url_for('delivery.history', date_from=efficiency_chart.period.start_date, date_to=efficiency_chart.period.end_date) }}" class="dashboard-donut-chart dashboard-donut-chart-pro" style="--donut-on-time: {{ on_time|round(2) }}%; --donut-late-stop: {{ late_stop|round(2) }}%;" aria-label="Operational efficiency: on time {{ efficiency_chart.ok_rate|round(1) }} persen, late {{ efficiency_chart.late_rate|round(1) }} persen, issue {{ efficiency_chart.issue_rate|round(1) }} persen">
+                        <span class="dashboard-donut-hole dashboard-donut-hole-pro">
+                            <strong>{{ efficiency_chart.ok_rate|round(1) }}%</strong>
+                            <small>On-time rate</small>
+                            <em>{{ efficiency_chart.total }} delivery detail</em>
+                        </span>
+                    </a>
+                    <div class="dashboard-donut-status-card">
+                        <span>Status dominan</span>
+                        <strong>{{ efficiency_chart.dominant_segment.label }}</strong>
+                        <small>{{ efficiency_chart.dominant_segment.percent_label }} dari total detail</small>
+                    </div>
+                </div>
+
+                <div class="dashboard-donut-summary-strip" aria-label="Ringkasan porsi delivery">
+                    <div>
+                        <span>Planned</span>
+                        <strong>{{ efficiency_chart.totals.planned_qty }}</strong>
+                    </div>
+                    <div>
+                        <span>Delivered</span>
+                        <strong>{{ efficiency_chart.totals.delivered_qty }}</strong>
+                    </div>
+                    <div>
+                        <span>Shortage</span>
+                        <strong>{{ efficiency_chart.totals.shortage_qty }}</strong>
+                    </div>
+                </div>
+
+                <div class="dashboard-donut-metrics dashboard-donut-metrics-pro">
+                    {% for segment in efficiency_chart.segments %}
+                        <a href="{{ url_for(segment.endpoint, date_from=efficiency_chart.period.start_date, date_to=efficiency_chart.period.end_date) }}" class="dashboard-donut-metric dashboard-donut-metric-{{ segment.key }} dashboard-donut-metric-{{ segment.tone }}" title="{{ segment.description }}">
+                            <span><i class="dashboard-legend-dot"></i>{{ segment.label }}</span>
+                            <strong>{{ segment.percent_label }}</strong>
+                            <small>{{ segment.count_label }} · {{ segment.description }}</small>
+                        </a>
+                    {% endfor %}
+                </div>
+
+                <div class="dashboard-donut-footnote">
+                    <span><i class="bi bi-check2-circle"></i> Fulfillment {{ efficiency_chart.fulfillment_rate|round(1) }}%</span>
+                    <span><i class="bi bi-exclamation-triangle"></i> Shortage rate {{ efficiency_chart.shortage_rate|round(1) }}%</span>
+                    <small>{{ efficiency_chart.data_contract.accuracy_note }}</small>
+                </div>
+            {% endif %}
+        </article>
+    </div>
+</section>
+{% endif %}

@@ -1,0 +1,425 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="purchase_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Tambah Pembelian Barang</h1>
+        <p>Catat belanja bahan/barang. Supplier tetap boleh dipilih, tapi pembelian manual dari toko/pasar tetap bisa tanpa supplier.</p>
+    </div>
+</div>
+
+
+
+<form method="POST" action="{{ url_for('logistics.create_purchase') }}" enctype="multipart/form-data" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    <div class="app-card">
+        <div class="alert alert-info border-0 shadow-sm mb-4">
+            <strong>Supplier tetap opsional.</strong>
+            Pilih supplier hanya kalau pembelian berasal dari supplier tetap. Kalau belanja dari toko/pasar tidak tetap, kosongkan supplier dan isi Tempat Belanja manual.
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label app-label">Tanggal Belanja</label>
+                <input type="date" name="procurement_date" id="procurementDateInput" class="form-control app-input" value="{{ today }}" required data-app-change-call="syncCreditDueDate" data-app-call-args="false">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Tipe Pembelian</label>
+                <select name="purchase_type" id="purchaseTypeSelect" class="form-select app-input" required data-app-change-call="handlePurchaseTypeChange">
+                    <option value="CASH">Tunai / Cash</option>
+                    <option value="CREDIT">Hutang / Credit</option>
+                </select>
+                <div class="form-text">Tunai langsung membuat buku kas/bank keluar. Credit belum keluar kas/bank sampai pembayaran supplier.</div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Supplier Tetap</label>
+                <select name="supplier_id" id="supplierSelect" class="form-select app-input" data-app-change-call="handleSupplierChange">
+                    <option value="" data-name="" data-terms="0">Tidak pakai supplier tetap</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}"
+                                data-name="{{ supplier.supplier_name }}"
+                                data-terms="{{ supplier.default_payment_terms_days or 0 }}"
+                                {% if selected_supplier_id and selected_supplier_id == supplier.id|string %}selected{% endif %}>
+                            {{ supplier.supplier_code }} - {{ supplier.supplier_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Opsional. Kosongkan untuk toko/pasar tidak tetap.</div>
+            </div>
+
+            <div class="col-md-5">
+                <label class="form-label app-label">Tempat Belanja</label>
+                <input type="text" name="purchase_place" id="purchasePlaceInput" class="form-control app-input"
+                       placeholder="Contoh: Pasar Induk Palembang">
+                <div class="form-text">Tetap boleh manual walaupun supplier tidak dipilih. Kalau supplier dipilih, field ini boleh diedit sesuai nota.</div>
+            </div>
+
+            <div class="col-md-7">
+                <label class="form-label app-label">Status Supplier</label>
+                <div id="supplierLihat Data" class="form-control app-input bg-light form-preview-box">
+                    Manual / toko tidak tetap. Supplier master tidak dipakai untuk pembelian ini.
+                </div>
+            </div>
+
+            <div class="col-md-12" id="cashLedgerBox">
+                <div class="alert alert-light border shadow-sm mb-0">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label app-label">Sumber Pembayaran Tunai</label>
+                            <select name="payment_account_type" id="paymentAccountType" class="form-select app-input" data-app-change-call="handlePembayaranAccountChange">
+                                <option value="CASH">Kas</option>
+                                <option value="BANK">Bank / Transfer</option>
+                            </select>
+                            <div class="form-text">Dipakai hanya untuk pembelian tunai.</div>
+                        </div>
+
+                        <div class="col-md-5" id="bankAccountBox">
+                            <label class="form-label app-label">Rekening Bank Keluar</label>
+                            <select name="bank_account_id" id="purchaseBankAccountId" class="form-select app-input">
+                                <option value="">Pilih rekening bank</option>
+                                {% for account in active_bank_accounts %}
+                                    <option value="{{ account.id }}">
+                                        {{ account.bank_name }} - {{ account.account_name }} ({{ account.account_number }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if active_bank_accounts %}
+                                <div class="form-text">Wajib dipilih kalau uang keluar dari bank/transfer.</div>
+                            {% else %}
+                                <div class="form-text text-warning">Belum ada rekening bank aktif. Tambahkan dulu di Master Data &gt; Rekening Bank jika pembayaran dari bank.</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3">
+                            <div id="cashLedgerLihat Data" class="form-control app-input bg-light form-preview-box">
+                                Buku Kas/Bank OUT akan dicatat dari Kas.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12" id="creditInfoBox" style="display: none;">
+                <div class="alert alert-warning border-0 shadow-sm mb-0">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-6">
+                            <strong>Pembelian hutang akan masuk Hutang Supplier/AP.</strong>
+                            <div class="small mt-1">Buku kas/bank OUT belum dibuat sekarang. Uang keluar baru dicatat nanti saat fitur pembayaran hutang supplier/AP dipakai.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label app-label">Jatuh Tempo Hutang</label>
+                            <input type="date" name="supplier_bill_due_date" id="supplierBillDueDate" class="form-control app-input" value="{{ today }}">
+                            <div class="form-text">Wajib untuk pembelian hutang. Jika supplier punya tempo default, sistem bantu isi otomatis.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div id="apLihat Data" class="form-control app-input bg-light form-preview-box">
+                                Supplier bill/AP akan dibuat saat disimpan.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="2"
+                          placeholder="Contoh: belanja mingguan, stok untuk produksi besar, beli mendadak karena stok habis"></textarea>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Bukti Digital Nota / Struk</h5>
+                <p>Opsional. Upload foto nota, struk, atau PDF bukti pembelian supaya dokumen belanja lebih kuat.</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label app-label">Jenis Bukti</label>
+                <select name="proof_type" class="form-select app-input">
+                    <option value="NOTA_PEMBELIAN">Nota Pembelian</option>
+                    <option value="STRUK_BELANJA">Struk Belanja</option>
+                    <option value="BUKTI_TRANSFER">Bukti Transfer</option>
+                    <option value="LAINNYA">Lainnya</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label app-label">File Bukti</label>
+                <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                <div class="form-text">Format: {{ allowed_extensions|join(', ') }}. Maksimal {{ max_upload_mb }} MB.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label app-label">Catatan Bukti</label>
+                <input type="text" name="proof_notes" class="form-control app-input" placeholder="Contoh: nota pasar pagi / transfer BCA">
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Item Pembelian</h5>
+                <p>Isi barang yang dibeli. Satu nota belanja bisa berisi banyak item.</p>
+            </div>
+
+            <button type="button" class="btn app-btn-secondary" data-app-call="addRow">
+                <i class="bi bi-plus-circle"></i>
+                Tambah Baris
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th class="col-w-38">Item</th>
+                        <th class="col-w-15">Qty</th>
+                        <th class="col-w-22">Harga Satuan</th>
+                        <th class="col-w-20">Subtotal</th>
+                        <th class="col-w-5"></th>
+                    </tr>
+                </thead>
+                <tbody id="purchaseRows">
+                    <tr class="purchase-row">
+                        <td>
+                            <select name="item_id[]" class="form-select app-input item-select" required data-app-change-call="applyQtyRule,calculateTotal" data-app-call-arg="this">
+                                <option value="">Pilih item</option>
+                                {% for item in items %}
+                                    <option value="{{ item.id }}" data-unit="{{ item.unit }}">
+                                        {{ item.item_code }} - {{ item.item_name }} ({{ item.unit }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="qty[]" class="form-control app-input qty-input" min="1" step="1" required data-app-input-call="calculateTotal">
+                        </td>
+                        <td>
+                            <input type="number" name="unit_price[]" class="form-control app-input price-input" min="1" step="1" required data-app-input-call="calculateTotal">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control app-input subtotal-input" value="Rp 0" readonly>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-app-call="removeRow" data-app-call-arg="this">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="text-muted">
+                Untuk satuan tabung/pcs/pak wajib angka bulat. Untuk kg/liter boleh desimal.
+            </div>
+
+            <div>
+                <span class="text-muted me-2">Total Belanja:</span>
+                <strong id="grandTotal" class="fs-5">Rp 0</strong>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                Simpan Pembelian
+            </button>
+            <a href="{{ url_for('logistics.purchases') }}" class="btn app-btn-secondary">Batal</a>
+        </div>
+    </div>
+</form>
+
+<script>
+function rupiah(number) {
+    number = Number(number || 0);
+    return 'Rp ' + number.toLocaleString('id-ID', {maximumFractionDigits: 0});
+}
+
+function isIntegerUnit(unit) {
+    unit = (unit || '').toLowerCase();
+    const integerUnits = ['pcs', 'pc', 'tabung', 'pak', 'pack', 'dus', 'box', 'unit', 'karung', 'sak'];
+    return integerUnits.some(word => unit.includes(word));
+}
+
+function handleSupplierChange() {
+    const supplierSelect = document.getElementById('supplierSelect');
+    const purchasePlaceInput = document.getElementById('purchasePlaceInput');
+    const supplierLihat Data = document.getElementById('supplierLihat Data');
+    const selectedOption = supplierSelect.options[supplierSelect.selectedIndex];
+    const supplierName = selectedOption.getAttribute('data-name') || '';
+    const terms = selectedOption.getAttribute('data-terms') || '0';
+    const currentPlace = (purchasePlaceInput.value || '').trim();
+
+    if (!supplierName) {
+        supplierLihat Data.innerText = 'Manual / toko tidak tetap. Supplier master tidak dipakai untuk pembelian ini.';
+        syncCreditDueDate(false);
+        return;
+    }
+
+    if (!currentPlace || currentPlace === 'Pembelian sendiri') {
+        purchasePlaceInput.value = supplierName;
+    }
+
+    supplierLihat Data.innerText = 'Supplier tetap: ' + supplierName + ' | Tempo default: ' + terms + ' hari. Tempat Belanja tetap bisa diedit sesuai nota.';
+    syncCreditDueDate(true);
+}
+
+function addDays(dateText, days) {
+    const date = dateText ? new Date(dateText + 'T00:00:00') : new Date();
+    date.setDate(date.getDate() + Number(days || 0));
+    return date.toISOString().slice(0, 10);
+}
+
+function syncCreditDueDate(forceUpdate) {
+    const purchaseTypeSelect = document.getElementById('purchaseTypeSelect');
+    const procurementDateInput = document.getElementById('procurementDateInput');
+    const dueDateInput = document.getElementById('supplierBillDueDate');
+    const supplierSelect = document.getElementById('supplierSelect');
+    const apLihat Data = document.getElementById('apLihat Data');
+
+    if (!purchaseTypeSelect || !dueDateInput || purchaseTypeSelect.value !== 'CREDIT') {
+        return;
+    }
+
+    const selectedOption = supplierSelect.options[supplierSelect.selectedIndex];
+    const terms = Number(selectedOption.getAttribute('data-terms') || 0);
+    const supplierName = selectedOption.getAttribute('data-name') || 'Manual / toko tidak tetap';
+    const baseDate = procurementDateInput.value || dueDateInput.value;
+    const suggestedDate = addDays(baseDate, terms);
+
+    if (forceUpdate || !dueDateInput.value || dueDateInput.value < baseDate) {
+        dueDateInput.value = suggestedDate;
+    }
+
+    if (apLihat Data) {
+        apLihat Data.innerText = 'AP untuk ' + supplierName + ' | Tempo ' + terms + ' hari | Jatuh tempo: ' + dueDateInput.value;
+    }
+}
+
+function handlePurchaseTypeChange() {
+    const purchaseTypeSelect = document.getElementById('purchaseTypeSelect');
+    const cashLedgerBox = document.getElementById('cashLedgerBox');
+    const creditInfoBox = document.getElementById('creditInfoBox');
+    const paymentAccountType = document.getElementById('paymentAccountType');
+    const bankSelect = document.getElementById('purchaseBankAccountId');
+
+    const purchaseType = purchaseTypeSelect ? purchaseTypeSelect.value : 'CASH';
+
+    if (purchaseType === 'CREDIT') {
+        cashLedgerBox.style.display = 'none';
+        creditInfoBox.style.display = 'block';
+        paymentAccountType.required = false;
+        bankSelect.required = false;
+        syncCreditDueDate(false);
+        return;
+    }
+
+    cashLedgerBox.style.display = 'block';
+    creditInfoBox.style.display = 'none';
+    paymentAccountType.required = true;
+    handlePembayaranAccountChange();
+}
+
+function handlePembayaranAccountChange() {
+    const paymentAccountType = document.getElementById('paymentAccountType');
+    const bankAccountBox = document.getElementById('bankAccountBox');
+    const bankSelect = document.getElementById('purchaseBankAccountId');
+    const preview = document.getElementById('cashLedgerLihat Data');
+    const selectedType = paymentAccountType ? paymentAccountType.value : 'CASH';
+
+    if (selectedType === 'BANK') {
+        bankAccountBox.style.display = 'block';
+        bankSelect.required = true;
+        preview.innerText = 'Buku Kas/Bank OUT akan dicatat dari Bank.';
+        return;
+    }
+
+    bankAccountBox.style.display = 'none';
+    bankSelect.required = false;
+    bankSelect.value = '';
+    preview.innerText = 'Buku Kas/Bank OUT akan dicatat dari Kas.';
+}
+
+function applyQtyRule(selectElement) {
+    const row = selectElement.closest('tr');
+    const qtyInput = row.querySelector('.qty-input');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const unit = selectedOption.getAttribute('data-unit') || '';
+
+    if (isIntegerUnit(unit)) {
+        qtyInput.min = '1';
+        qtyInput.step = '1';
+        qtyInput.placeholder = '1, 2, 3';
+    } else {
+        qtyInput.min = '0.01';
+        qtyInput.step = '0.01';
+        qtyInput.placeholder = '1.5 / 2.25';
+    }
+}
+
+function calculateTotal() {
+    let grandTotal = 0;
+
+    document.querySelectorAll('.purchase-row').forEach(function(row) {
+        const qty = parseFloat(row.querySelector('.qty-input').value || 0);
+        const price = parseFloat(row.querySelector('.price-input').value || 0);
+        const subtotal = qty * price;
+
+        row.querySelector('.subtotal-input').value = rupiah(subtotal);
+        grandTotal += subtotal;
+    });
+
+    document.getElementById('grandTotal').innerText = rupiah(grandTotal);
+}
+
+function addRow() {
+    const tbody = document.getElementById('purchaseRows');
+    const firstRow = tbody.querySelector('.purchase-row');
+    const newRow = firstRow.cloneNode(true);
+
+    newRow.querySelectorAll('input').forEach(function(input) {
+        if (input.classList.contains('subtotal-input')) {
+            input.value = 'Rp 0';
+        } else {
+            input.value = '';
+        }
+    });
+
+    newRow.querySelectorAll('select').forEach(function(select) {
+        select.selectedIndex = 0;
+    });
+
+    tbody.appendChild(newRow);
+    calculateTotal();
+}
+
+function removeRow(button) {
+    const rows = document.querySelectorAll('.purchase-row');
+
+    if (rows.length <= 1) {
+        alert('Minimal harus ada 1 baris item.');
+        return;
+    }
+
+    button.closest('tr').remove();
+    calculateTotal();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    handleSupplierChange();
+    handlePurchaseTypeChange();
+    calculateTotal();
+});
+</script>
+</div>
+{% endblock %}

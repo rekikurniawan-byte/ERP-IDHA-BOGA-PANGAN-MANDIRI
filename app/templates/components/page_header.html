@@ -1,0 +1,76 @@
+{# ==================================================
+   UI Page Header + Action System Global
+   Enterprise V3/V4 compatible reusable components.
+   Usage is optional per template now, but this file is the source pattern for
+   all next UI polish cleanupes.
+   ================================================== #}
+
+{% macro page_header(title, description='', eyebrow='', primary_label='', primary_url='', primary_icon='bi-plus-circle', secondary_label='', secondary_url='', secondary_icon='bi-arrow-left', more_actions=[]) %}
+<div class="page-header app-page-header" data-page-header>
+    <div class="page-header-main">
+        {% if eyebrow %}<span class="eyebrow">{{ eyebrow }}</span>{% endif %}
+        <h1 class="page-title">{{ title }}</h1>
+        {% if description %}<p class="page-description">{{ description }}</p>{% endif %}
+    </div>
+
+    {% if primary_label or secondary_label or more_actions %}
+    <div class="page-actions" data-page-actions aria-label="Aksi halaman">
+        {% if primary_label and primary_url %}
+            <a href="{{ primary_url }}" class="btn app-btn-primary" data-action-tier="primary">
+                {% if primary_icon %}<i class="bi {{ primary_icon }}" aria-hidden="true"></i>{% endif %}
+                <span>{{ primary_label }}</span>
+            </a>
+        {% endif %}
+
+        {% if (secondary_label and secondary_url) or more_actions %}
+            <div class="dropdown app-action-dropdown page-action-more" data-action-dropdown="true">
+                <button class="btn app-btn-secondary action-more-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                    <span>Aksi lainnya</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                    {% if secondary_label and secondary_url %}
+                        <a href="{{ secondary_url }}" class="dropdown-item" data-action-tier="secondary">
+                            {% if secondary_icon %}<i class="bi {{ secondary_icon }}" aria-hidden="true"></i>{% endif %}
+                            <span>{{ secondary_label }}</span>
+                        </a>
+                    {% endif %}
+                    {% for action in more_actions %}
+                        <a href="{{ action.url }}" class="dropdown-item {{ action.class if action.class is defined else '' }}">
+                            {% if action.icon is defined and action.icon %}<i class="bi {{ action.icon }}" aria-hidden="true"></i>{% endif %}
+                            <span>{{ action.label }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro row_actions(detail_url='', edit_url='', more_actions=[]) %}
+<div class="table-actions" data-row-actions>
+    {% if detail_url %}
+        <a href="{{ detail_url }}" class="btn btn-sm app-btn-secondary" data-action-tier="secondary">Detail</a>
+    {% endif %}
+    {% if edit_url and not more_actions %}
+        <a href="{{ edit_url }}" class="btn btn-sm app-btn-ghost" data-action-tier="ghost">Edit</a>
+    {% elif edit_url or more_actions %}
+        <div class="dropdown row-action-more">
+            <button class="btn btn-sm app-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi lainnya">
+                <i class="bi bi-three-dots" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                {% if edit_url %}<a href="{{ edit_url }}" class="dropdown-item">Edit</a>{% endif %}
+                {% for action in more_actions %}
+                    <a href="{{ action.url }}" class="dropdown-item {{ action.class if action.class is defined else '' }}">
+                        {% if action.icon is defined and action.icon %}<i class="bi {{ action.icon }}" aria-hidden="true"></i>{% endif %}
+                        <span>{{ action.label }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endmacro %}

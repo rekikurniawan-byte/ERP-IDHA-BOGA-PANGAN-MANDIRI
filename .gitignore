@@ -1,0 +1,91 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# Production database backups
+backups/*.db
+backups/*.sha256.txt
+!backups/.gitkeep
+
+# PRODUCTION production runtime data: never commit real database/uploads/backups
+instance/*.db
+instance/*.sqlite
+instance/backups/*
+!instance/backups/.gitkeep
+instance/uploads/*
+!instance/uploads/.gitkeep
+
+# Legacy root backup folder remains ignored if it exists
+backups/*.zip
+backups/*.json
+backups/*.log
+
+# Keep PRODUCTION runtime folder structure visible without committing runtime files
+!instance/backups/_staging/
+!instance/backups/_staging/.gitkeep
+!instance/backups/_restore_preview/
+!instance/backups/_restore_preview/.gitkeep
+!instance/backups/_logs/
+!instance/backups/_logs/.gitkeep
+!instance/uploads/digital_attachments/
+instance/uploads/digital_attachments/*
+!instance/uploads/digital_attachments/.gitkeep
+
+
+# Runtime logs
+instance/logs/*
+!instance/logs/.gitkeep
+*.log
+# POSTGRES-ONLY LOCK: no SQLite/local DB files in repo/package
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+instance/*.db
+instance/*.sqlite
+instance/*.sqlite3
+
+# ============================================================
+# PRODUCTION AUDIT: Staging/Development Artifact Exclusions
+# ============================================================
+
+# Staging seed data (contains demo credentials, not for production)
+data_cutover_templates/
+seeders/
+
+# Development artifact files (roadmaps, reports, batch scripts)
+CHECK_UI_*.bat
+*_ROADMAP_*.md
+*_INVENTORY_REPORT.md
+*_INVENTORY_RESULT.json
+RUN_PROJECT.bat
+
+# Staging/demo seed tools (excluded from production deploy)
+tools/full_clean_demo_every_module_seed.py
+tools/full_staging_seed_cutover_foundation.py
+.aider*
+
+# Generated assistant/Codex artifacts and stage reports
+IDHA_BOGA_*_REPORT_*.md
+IDHA_BOGA_TAHAP_*.md
+IDHA_BOGA_NEXT_CHAT_*.md
+*_codex_patch.diff
+*.dump
+
+# Local database handoff dumps; keep the shared dump file trackable when exported
+# and ignore other local SQL dumps by default.
+database_share/*.sql
+!database_share/idha_boga_staging_dump.sql
+
+# Build/test byproducts
+app/static/css/css_build_report.json
+.pytest_cache/

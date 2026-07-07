@@ -1,0 +1,195 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Detail Audit Log{% endblock %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <p class="text-muted small mb-1">Sistem</p>
+        <h1 class="h3 mb-1">Detail Audit Log</h1>
+        <p class="text-muted mb-0">Baca detail aktivitas, target data, metadata, dan perubahan nilai yang tercatat.</p>
+    </div>
+    <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">
+        <i class="bi bi-arrow-left"></i> Kembali ke Audit Log
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card app-card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <strong>{{ log.event_type }}</strong>
+                    <div class="text-muted small">{{ log.module }} · {{ log.action }}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    {% if log.audit_severity == 'CRITICAL' %}
+                        <span class="badge bg-danger">CRITICAL</span>
+                    {% elif log.audit_severity == 'HIGH' %}
+                        <span class="badge bg-warning text-dark">HIGH</span>
+                    {% elif log.audit_severity == 'MEDIUM' %}
+                        <span class="badge bg-info text-dark">MEDIUM</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
+                    {% endif %}
+                    {% if log.audit_is_critical %}<span class="badge bg-danger-subtle text-danger border">critical audit</span>{% endif %}
+                    <span class="badge bg-light text-dark border">#{{ log.id }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small">Waktu</div>
+                        <div class="fw-semibold">{{ log.created_at.strftime('%d-%m-%Y %H:%M:%S') if log.created_at else '-' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">User</div>
+                        <div class="fw-semibold">{{ log.username_snapshot or '-' }}</div>
+                        <div class="text-muted small">{{ log.user_role_snapshot or '-' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Target Tabel</div>
+                        <div class="fw-semibold">
+                            {% if log.table_name %}
+                                {{ log.table_name }}{% if log.record_id %} #{{ log.record_id }}{% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Cabang</div>
+                        <div class="fw-semibold">
+                            {% if log.branch %}
+                                {{ log.branch.name }}
+                            {% elif log.branch_id %}
+                                Cabang #{{ log.branch_id }}
+                            {% else %}
+                                Sistem / global
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Reference</div>
+                        <div class="fw-semibold">
+                            {% if log.audit_reference_type %}
+                                {{ log.audit_reference_type }}{% if log.audit_reference_id %} #{{ log.audit_reference_id }}{% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Policy Version</div>
+                        <div class="fw-semibold small">{{ log.audit_policy_version or '-' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Reason / Alasan</div>
+                        <div class="border rounded bg-light p-3">{{ log.audit_reason or '-' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Deskripsi</div>
+                        <div class="border rounded bg-light p-3">{{ log.description or '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card app-card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <strong>Metadata</strong>
+                <div class="text-muted small">Informasi tambahan yang dikirim dari route/service saat event dicatat.</div>
+            </div>
+            <div class="card-body">
+                {% if detail.metadata_pretty %}
+                    <pre class="bg-dark text-white rounded p-3 mb-0 small hr-master-settings-prewrap">{{ detail.metadata_pretty }}</pre>
+                {% else %}
+                    <div class="text-muted">Tidak ada metadata tambahan.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card app-card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white">
+                        <strong>Old Value</strong>
+                        <div class="text-muted small">Nilai sebelum perubahan, kalau tersedia.</div>
+                    </div>
+                    <div class="card-body">
+                        {% if detail.old_value_pretty %}
+                            <pre class="bg-light border rounded p-3 mb-0 small hr-master-settings-prewrap">{{ detail.old_value_pretty }}</pre>
+                        {% else %}
+                            <div class="text-muted">Tidak ada old value.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card app-card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white">
+                        <strong>New Value</strong>
+                        <div class="text-muted small">Nilai setelah perubahan, kalau tersedia.</div>
+                    </div>
+                    <div class="card-body">
+                        {% if detail.new_value_pretty %}
+                            <pre class="bg-light border rounded p-3 mb-0 small hr-master-settings-prewrap">{{ detail.new_value_pretty }}</pre>
+                        {% else %}
+                            <div class="text-muted">Tidak ada new value.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card app-card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <strong>Ringkasan Teknis</strong>
+            </div>
+            <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Module</span>
+                    <span class="fw-semibold text-end">{{ log.module }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Event Type</span>
+                    <span class="fw-semibold text-end">{{ log.event_type }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Action</span>
+                    <span class="fw-semibold text-end">{{ log.action }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Severity</span>
+                    <span class="fw-semibold text-end">{{ log.audit_severity }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Critical Audit</span>
+                    <span class="fw-semibold text-end">{{ 'Ya' if log.audit_is_critical else 'Tidak' }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">Record ID</span>
+                    <span class="fw-semibold text-end">{{ log.record_id or '-' }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between gap-3">
+                    <span class="text-muted">IP Address</span>
+                    <span class="fw-semibold text-end">{{ log.ip_address or '-' }}</span>
+                </div>
+                <div class="list-group-item">
+                    <div class="text-muted mb-1">User Agent</div>
+                    <div class="small hr-master-settings-breakword">{{ log.user_agent or '-' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info small mb-0">
+            <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Catatan</div>
+            Halaman ini hanya membaca audit log. Tidak ada perubahan data dari tombol detail ini.
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

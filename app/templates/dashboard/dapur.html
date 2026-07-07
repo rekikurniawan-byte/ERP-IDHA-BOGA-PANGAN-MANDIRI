@@ -1,0 +1,139 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header dashboard-role-header" data-ui-dashboard="dapur">
+    <div class="dashboard-command-title-block">
+        <span class="eyebrow">Dashboard Dapur</span>
+        <h1>Produksi Dapur</h1>
+        <p>Fokus pada produksi lunch, dinner, realisasi porsi, dan status pekerjaan dapur hari ini.</p>
+    </div>
+
+    <div class="page-actions dashboard-page-actions">
+        <a href="{{ url_for('production.index') }}" class="btn app-btn-primary">
+            <i class="bi bi-egg-fried"></i>
+            Buka Produksi
+        </a>
+        <a href="{{ url_for('settings.live_reminders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-bell"></i>
+            Reminder
+            {% if global_live_reminder_badge.total > 0 %}
+                <span class="badge {{ global_live_reminder_badge.badge_class }} ms-1">{{ global_live_reminder_badge.total }}</span>
+            {% endif %}
+        </a>
+    </div>
+</div>
+
+<section class="dashboard-section" data-dashboard-section="kpi">
+    <div class="dashboard-section-header">
+        <div>
+            <h2>Status Produksi</h2>
+            <p>Ringkasan dapur dibuat langsung terbaca untuk layar laptop maupun HP.</p>
+        </div>
+    </div>
+
+    <div class="app-stat-grid dashboard-stat-grid">
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-calendar-event"></i></div>
+            <div>
+                <p>Produksi Hari Ini</p>
+                <h3>{{ data.today_productions|length }}</h3>
+                <span class="app-stat-helper">Lunch dan dinner</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon {% if data.draft_count > 0 %}stat-warning{% else %}stat-success{% endif %}"><i class="bi bi-pencil-square"></i></div>
+            <div>
+                <p>Draft</p>
+                <h3>{{ data.draft_count }}</h3>
+                <span class="app-stat-helper">Belum mulai produksi</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <p>In Progress</p>
+                <h3>{{ data.in_progress_count }}</h3>
+                <span class="app-stat-helper">Sedang diproses</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <p>Completed</p>
+                <h3>{{ data.completed_count }}</h3>
+                <span class="app-stat-helper">Selesai produksi</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-dashboard-section="priority">
+    <div class="dashboard-mini-grid dashboard-priority-strip">
+        <div class="dashboard-mini-card">
+            <span>Fokus Dapur</span>
+            <strong>{{ data.draft_count + data.in_progress_count }} produksi perlu dipantau</strong>
+        </div>
+        <div class="dashboard-mini-card">
+            <span>Reminder Live</span>
+            <strong>{{ global_live_reminder_badge.total }} catatan aktif</strong>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-dashboard-section="recent">
+    <div class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <h3>Daftar Produksi Terbaru</h3>
+                <p>Produksi yang perlu diproses atau dicek realisasinya.</p>
+            </div>
+            <a href="{{ url_for('production.index') }}" class="btn btn-sm app-btn-secondary">Lihat Semua</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Tipe</th>
+                        <th>Status</th>
+                        <th>Planned</th>
+                        <th>Actual</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for production in data.recent_productions %}
+                        {% set detail = production.details[0] if production.details else none %}
+                        <tr>
+                            <td>{{ production.production_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ production.production_type }}</td>
+                            <td><span class="badge bg-secondary-subtle text-secondary border">{{ production.status }}</span></td>
+                            <td>{{ detail.planned_qty|int if detail else 0 }}</td>
+                            <td>{{ detail.actual_qty|int if detail else 0 }}</td>
+                            <td>
+                                <a href="{{ url_for('production.detail', production_id=production.id) }}" class="btn btn-sm app-btn-secondary">
+                                    Detail
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="dashboard-empty-state">
+                                <i class="bi bi-egg-fried"></i>
+                                <strong>Belum ada produksi.</strong>
+                                <span>Produksi baru akan muncul di sini setelah order dikirim ke dapur.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

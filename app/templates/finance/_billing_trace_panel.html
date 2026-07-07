@@ -1,0 +1,146 @@
+{% if billing_trace is defined and billing_trace %}
+<div class="app-card mt-4" data-billing-trace-panel="true">
+    <div class="card-header-clean">
+        <div>
+            <h5>Jejak Proses Tagihan</h5>
+            <p>Audit baca-saja dari sumber data → invoice/piutang → pembayaran → jurnal → buku kas/bank.</p>
+        </div>
+        <span class="status-badge {{ billing_trace.overall_status_class }}">{{ billing_trace.overall_status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tahap</th>
+                    <th>Status</th>
+                    <th>Referensi</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for step in billing_trace.steps %}
+                <tr>
+                    <td><strong>{{ step.name }}</strong></td>
+                    <td><span class="status-badge {{ step.status_class }}">{{ step.status }}</span></td>
+                    <td>
+                        {% if step.ref_type == 'INVOICE' and step.ref_id %}
+                            <a href="{{ url_for('finance.invoice_detail', invoice_id=step.ref_id) }}">{{ step.ref_number or ('Invoice #' ~ step.ref_id) }}</a>
+                        {% elif step.ref_type == 'MANUAL_BILLING_BATCH' and step.ref_id %}
+                            <a href="{{ url_for('finance.manual_billing_batch_detail', batch_id=step.ref_id) }}">{{ step.ref_number or ('Rekap #' ~ step.ref_id) }}</a>
+                        {% elif step.ref_type == 'JOURNAL' and step.ref_id %}
+                            <a href="{{ url_for('accounting.journal_detail', journal_id=step.ref_id) }}">{{ step.ref_number or ('Jurnal #' ~ step.ref_id) }}</a>
+                        {% elif step.ref_number %}
+                            {{ step.ref_number }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ step.note }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <i class="bi bi-diagram-3"></i>
+                            <p>Belum ada jejak proses.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% set invoice_trace = billing_trace.invoice_trace if billing_trace.invoice_trace is defined else billing_trace %}
+    {% if invoice_trace and invoice_trace.invoice_journal and invoice_trace.invoice_journal.journal %}
+    <div class="mt-4">
+        <div class="card-header-clean mb-2">
+            <div>
+                <h6>Jurnal Invoice</h6>
+                <p>{{ invoice_trace.invoice_journal.journal.journal_number }} — {{ invoice_trace.invoice_journal.status }}</p>
+            </div>
+            <span class="status-badge {{ invoice_trace.invoice_journal.status_class }}">{{ invoice_trace.invoice_journal.status }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Akun</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end">Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in invoice_trace.invoice_journal.details %}
+                    <tr>
+                        <td>{{ row.account_code }} — {{ row.account_name }}</td>
+                        <td class="text-end">{{ row.debit|rupiah }}</td>
+                        <td class="text-end">{{ row.credit|rupiah }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td class="text-end"><strong>{{ invoice_trace.invoice_journal.total_debit|rupiah }}</strong></td>
+                        <td class="text-end"><strong>{{ invoice_trace.invoice_journal.total_credit|rupiah }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if invoice_trace and invoice_trace.payments %}
+    <div class="mt-4">
+        <div class="card-header-clean mb-2">
+            <div>
+                <h6>Jejak Pembayaran</h6>
+                <p>Setiap pembayaran harus punya jurnal pembayaran dan buku kas/bank.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Pembayaran</th>
+                        <th>Tanggal</th>
+                        <th class="text-end">Nominal</th>
+                        <th>Jurnal</th>
+                        <th>Buku Kas/Bank</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in invoice_trace.payments %}
+                    <tr>
+                        <td><strong>{{ row.payment.payment_number }}</strong></td>
+                        <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') if row.payment.payment_date else '-' }}</td>
+                        <td class="text-end">{{ row.payment.amount|rupiah }}</td>
+                        <td>
+                            <span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span>
+                            {% if row.journal.journal %}
+                                <div class="small mt-1">
+                                    <a href="{{ url_for('accounting.journal_detail', journal_id=row.journal.journal.id) }}">{{ row.journal.journal.journal_number }}</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge {{ row.cash_bank.status_class }}">{{ row.cash_bank.status }}</span>
+                            {% if row.cash_bank.transaction %}
+                                <div class="small mt-1">
+                                    {{ row.cash_bank.transaction.transaction_date.strftime('%d-%m-%Y') if row.cash_bank.transaction.transaction_date else '-' }} — {{ row.cash_bank.transaction.account_type }} — {{ row.cash_bank.transaction.amount|rupiah }}
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="alert alert-light mt-3 mb-0">
+        <strong>Catatan:</strong> Panel ini tidak mengubah data. Kalau statusnya “Belum Lengkap”, artinya dokumen sudah ada tetapi salah satu jejak jurnal/buku kas belum ditemukan.
+    </div>
+</div>
+{% endif %}

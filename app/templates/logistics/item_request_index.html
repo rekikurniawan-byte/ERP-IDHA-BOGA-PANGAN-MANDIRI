@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_request_index">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Permintaan Barang Dapur</h1>
+        <p>Daftar permintaan bahan/barang dari dapur ke logistik.</p>
+    </div>
+
+    <div class="page-actions">
+        {% if current_user.role == "DAPUR" %}
+        <a href="{{ url_for('logistics.create_item_request') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Buat Permintaan
+        </a>
+        {% endif %}
+
+        {% if current_user.role == "OWNER" %}
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Dashboard Stok
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div>
+            <p>Pending</p>
+            <h3>{{ pending_count }}</h3>
+            <span class="app-stat-helper">Menunggu owner</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success">
+            <i class="bi bi-check-circle"></i>
+        </div>
+        <div>
+            <p>Approved</p>
+            <h3>{{ approved_count }}</h3>
+            <span class="app-stat-helper">Disetujui</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+            <p>Fulfilled</p>
+            <h3>{{ fulfilled_count }}</h3>
+            <span class="app-stat-helper">Sudah dipenuhi</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('logistics.item_requests') }}" class="filter-bar app-form" data-ui-form="true">
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Pending</option>
+            <option value="APPROVED" {% if status_filter == "APPROVED" %}selected{% endif %}>Approved</option>
+            <option value="FULFILLED" {% if status_filter == "FULFILLED" %}selected{% endif %}>Fulfilled</option>
+            <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>Rejected</option>
+        </select>
+        <button type="submit" class="btn app-btn-primary">Filter</button>
+        <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Permintaan</h5>
+            <p>Status PENDING belum mengurangi stok. Stok baru berkurang saat permintaan dipenuhi.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Request</th>
+                    <th>Tanggal</th>
+                    <th>Tujuan</th>
+                    <th>Total Item</th>
+                    <th>Status</th>
+                    <th>Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in requests_data %}
+                <tr>
+                    <td><strong>{{ row.request_number }}</strong></td>
+                    <td>{{ row.request_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.purpose }}</td>
+                    <td>{{ row.details|length }}</td>
+                    <td>
+                        {% if row.status == "PENDING" %}
+                            <span class="status-badge status-progress">PENDING</span>
+                        {% elif row.status == "APPROVED" %}
+                            <span class="status-badge status-locked">APPROVED</span>
+                        {% elif row.status == "FULFILLED" %}
+                            <span class="status-badge status-locked">FULFILLED</span>
+                        {% elif row.status == "REJECTED" %}
+                            <span class="status-badge status-danger">REJECTED</span>
+                        {% else %}
+                            <span class="status-badge">{{ row.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.notes or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('logistics.item_request_detail', request_id=row.id) }}" class="btn btn-sm app-btn-secondary">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-basket"></i>
+                            <p>Belum ada permintaan barang dapur.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

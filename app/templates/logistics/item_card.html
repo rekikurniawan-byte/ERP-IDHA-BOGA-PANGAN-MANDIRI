@@ -1,0 +1,101 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_card">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Kartu Stok</span>
+        <h1>{{ item.item_name }}</h1>
+        <p>{{ item.item_code }} | {{ item.category }} | Satuan {{ item.unit }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+            <p>Stok Saat Ini</p>
+            <h3>{{ stock_qty|qty }}</h3>
+            <span class="app-stat-helper">{{ item.unit }}</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div>
+            <p>Stok Minimum</p>
+            <h3>{{ item.minimum_stock|qty }}</h3>
+            <span class="app-stat-helper">{{ item.unit }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Pergerakan</h5>
+            <p>Semua pergerakan masuk, keluar, rusak, waste, dan penyesuaian untuk item ini.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Masuk</th>
+                    <th>Keluar</th>
+                    <th>Sumber / Tujuan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movement in movements %}
+                <tr>
+                    <td>{{ movement.movement_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ movement.movement_type }}</td>
+                    <td>
+                        {% if movement.movement_type in ["IN", "ADJUSTMENT_IN"] %}
+                            {{ movement.qty|qty }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if movement.movement_type in ["OUT", "ADJUSTMENT_OUT", "DAMAGED", "WASTE"] %}
+                            {{ movement.qty|qty }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ movement.notes or movement.reference_type }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <p>Belum ada pergerakan stok untuk item ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

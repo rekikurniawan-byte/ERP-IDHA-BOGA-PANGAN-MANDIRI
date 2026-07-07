@@ -1,0 +1,137 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="employees">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / MASTER KARYAWAN</span>
+        <h1>Karyawan Internal</h1>
+        <p>Data karyawan internal perusahaan. Mandor adalah PIC lapangan/partner, bukan payroll internal.</p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        <a href="{{ url_for('hr.create_employee') }}" class="btn app-btn-primary">
+            <i class="bi bi-person-plus"></i>
+            Tambah Karyawan
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="employeeActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi SDM
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="employeeActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-cash-coin"></i> Payroll</a></li>
+                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div><div><p>Total Karyawan</p><h3>{{ employee_summary.total }}</h3><span class="app-stat-helper">Semua data internal</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Aktif</p><h3>{{ employee_summary.active }}</h3><span class="app-stat-helper">Masuk payroll</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-person-dash"></i></div><div><p>Inactive</p><h3>{{ employee_summary.inactive }}</h3><span class="app-stat-helper">Tidak ikut payroll aktif</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-telephone-x"></i></div><div><p>Tanpa No HP</p><h3>{{ employee_summary.without_phone }}</h3><span class="app-stat-helper">Perlu dilengkapi</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-cash"></i></div><div><p>Tanpa Gaji Aktif</p><h3>{{ employee_summary.without_salary }}</h3><span class="app-stat-helper">Aktif tapi belum ada salary history</span></div></div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter-form hr-filter-form" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="" {% if not status_filter %}selected{% endif %}>Semua Status</option>
+                    <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+                    <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Skill</label>
+                <select name="skill" class="form-select">
+                    <option value="" {% if not skill_filter %}selected{% endif %}>Semua Skill</option>
+                    {% for skill in skill_options %}
+                        <option value="{{ skill }}" {% if skill_filter == skill %}selected{% endif %}>{{ skill }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="hr-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <div class="hr-section-title">
+            <div>
+                <span>Employee Directory</span>
+                <h2>Daftar Karyawan Internal</h2>
+            </div>
+            <span class="hr-table-count">{{ employees|length }} baris tampil</span>
+        </div>
+        {% if employees %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>No. HP</th>
+                            <th>Tanggal Masuk</th>
+                            <th>Skill</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in employees %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ employee.full_name }}</div>
+                                    <small class="text-muted">ID Karyawan #{{ employee.id }}</small>
+                                </td>
+                                <td>{{ employee.phone or "-" }}</td>
+                                <td>{{ employee.join_date or "-" }}</td>
+                                <td>
+                                    {% if employee.skills %}
+                                        <div class="hr-badge-wrap">
+                                            {% for skill in employee.skills %}
+                                                <span class="hr-soft-badge">{{ skill.skill_name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Belum ada skill</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="hr-status-badge is-{{ employee.status|lower }}">{{ employee.status }}</span></td>
+                                <td class="text-end">
+                                    <div class="table-actions" data-row-actions="true">
+                                        <a href="{{ url_for('hr.edit_employee', employee_id=employee.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                                        <form action="{{ url_for('hr.toggle_employee', employee_id=employee.id) }}" method="post" class="d-inline app-form" data-ui-form="true">
+                                            {% include "components/csrf_token.html" %}
+                                            <button class="btn btn-sm app-btn-secondary" type="submit">Toggle</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-person-plus"></i></div>
+                <h3>Belum ada karyawan sesuai filter.</h3>
+                <p>Tambah karyawan internal atau reset filter untuk melihat semua data karyawan.</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="{{ url_for('hr.create_employee') }}" class="btn app-btn-primary">Tambah Karyawan</a>
+                    <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary">Reset Filter</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

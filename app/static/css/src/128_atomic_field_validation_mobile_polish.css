@@ -1,0 +1,83 @@
+/* ==================================================
+   TAHAP 10.17 — Atomic Field Validation & Mobile Polish
+   Scope: custom select/date controls from Tahap 10.15-10.16.
+
+   Purpose:
+   - Surface native validation messages on the visible atomic controls.
+   - Keep required/disabled/error states consistent after dynamic form changes.
+   - Improve keyboard date navigation and mobile popover containment.
+   ================================================== */
+
+body.is-authenticated .app-atomic-field-shell.is-required .app-atomic-select-trigger::before,
+body.is-authenticated .app-atomic-field-shell.is-required .app-atomic-date-trigger::before {
+  content: "";
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--red, #dc2626);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red, #dc2626) 10%, transparent);
+}
+
+body.is-authenticated .app-atomic-field-shell.is-invalid .app-atomic-select-trigger,
+body.is-authenticated .app-atomic-field-shell.is-invalid .app-atomic-date-trigger {
+  border-color: var(--red, #dc2626);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--red, #dc2626) 12%, transparent);
+}
+
+body.is-authenticated .app-atomic-feedback {
+  margin-top: 7px;
+  padding: 0 2px;
+  color: var(--red, #dc2626);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+body.is-authenticated .app-atomic-feedback[hidden] {
+  display: none !important;
+}
+
+body.is-authenticated .app-date-picker-day:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--accent, #111111) 28%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent, #111111) 10%, transparent);
+}
+
+body.is-authenticated .app-date-picker-day[tabindex="0"]:not(.is-selected):not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent, #111111) 22%, var(--border-soft, rgba(15, 23, 42, 0.10)));
+}
+
+body.is-authenticated .app-atomic-menu,
+body.is-authenticated .app-date-picker-popover {
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+body.is-authenticated .app-atomic-field-shell.is-disabled .app-atomic-feedback {
+  display: none !important;
+}
+
+@media (max-width: 575.98px) {
+  body.is-authenticated .app-atomic-select-trigger,
+  body.is-authenticated .app-atomic-date-trigger {
+    min-height: 46px;
+    border-radius: 13px;
+    padding-inline: 12px;
+  }
+
+  body.is-authenticated .app-atomic-menu,
+  body.is-authenticated .app-date-picker-popover {
+    width: min(100%, calc(100vw - 28px));
+    min-width: min(100%, calc(100vw - 28px));
+    border-radius: 15px;
+  }
+
+  body.is-authenticated .app-atomic-options {
+    max-height: min(300px, 42vh);
+  }
+
+  body.is-authenticated .app-date-picker-grid {
+    gap: 4px;
+  }
+}

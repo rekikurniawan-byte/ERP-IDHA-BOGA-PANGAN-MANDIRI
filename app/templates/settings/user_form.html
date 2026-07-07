@@ -1,0 +1,149 @@
+{% extends "layouts/base.html" %}
+{% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+
+{% set is_edit = target_user is not none %}
+{% set selected_branch = form_data.get('branch_id') if form_data else (target_user.branch_id if target_user else current_user.branch_id) %}
+{% set selected_role = form_data.get('role') if form_data else (target_user.role if target_user else 'ADMIN') %}
+{% set selected_active = form_data.get('is_active') if form_data else (target_user.is_active if target_user else True) %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Manajemen User</span>
+        <h1>{{ 'Edit User' if is_edit else 'Tambah User' }}</h1>
+        <p>{{ 'Perbarui data akun login tanpa menampilkan password hash.' if is_edit else 'Buat akun baru untuk akses sistem production.' }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('settings.users') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+<div class="app-card soft-info-card mb-4">
+    <strong>Aturan:</strong>
+    role dan cabang menentukan akses sistem. Password minimal 8 karakter. User yang sedang login tidak bisa mengubah role, cabang, atau status aktif miliknya sendiri dari halaman ini. Role detail FINANCE/ACCOUNTING/LOGISTICS/HR sudah tersedia sebagai persiapan pemisahan akses per modul, tanpa mengubah user existing.
+</div>
+
+<form method="POST" action="{{ url_for('settings.edit_user_page', user_id=target_user.id) if is_edit else url_for('settings.create_user_page') }}" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Identitas User</h3>
+                <p>Data dasar akun login.</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="full_name" class="form-control app-input" required value="{{ form_data.get('full_name') if form_data else (target_user.full_name if target_user else '') }}">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Username <span class="text-danger">*</span></label>
+                <input type="text" name="username" class="form-control app-input" required value="{{ form_data.get('username') if form_data else (target_user.username if target_user else '') }}">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Role <span class="text-danger">*</span></label>
+                <select name="role" class="form-select app-input" {% if is_edit and target_user.id == current_user.id %}disabled{% endif %}>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>{{ role_labels.get(role, role) }} — {{ role }}</option>
+                    {% endfor %}
+                </select>
+                {% if is_edit and target_user.id == current_user.id %}
+                    <input type="hidden" name="role" value="{{ target_user.role }}">
+                    <div class="form-text">Role akun sendiri tidak bisa diubah dari halaman ini.</div>
+                {% else %}
+                    <div class="form-text">{{ role_descriptions.get(selected_role, 'Pilih role sesuai tugas operasional user.') }}</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Cabang <span class="text-danger">*</span></label>
+                <select name="branch_id" class="form-select app-input" {% if is_edit and target_user.id == current_user.id %}disabled{% endif %}>
+                    {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch|string == branch.id|string %}selected{% endif %}>{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if is_edit and target_user.id == current_user.id %}
+                    <input type="hidden" name="branch_id" value="{{ target_user.branch_id }}">
+                    <div class="form-text">Cabang akun sendiri tidak bisa diubah dari halaman ini.</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if selected_active == True or selected_active == 'on' %}checked{% endif %} {% if is_edit and target_user.id == current_user.id %}disabled{% endif %}>
+                    <label class="form-check-label" for="is_active">User aktif</label>
+                </div>
+                {% if is_edit and target_user.id == current_user.id %}
+                    <input type="hidden" name="is_active" value="on">
+                    <div class="form-text">Akun yang sedang dipakai tidak bisa dinonaktifkan dari halaman ini.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if not is_edit %}
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Password Awal</h3>
+                <p>Password awal wajib diganti setelah user mulai memakai sistem.</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Password <span class="text-danger">*</span></label>
+                <input type="password" name="password" class="form-control app-input" required minlength="8" autocomplete="new-password">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Konfirmasi Password <span class="text-danger">*</span></label>
+                <input type="password" name="password_confirmation" class="form-control app-input" required minlength="8" autocomplete="new-password">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Referensi Role</h3>
+                <p>Ringkasan role yang bisa dipilih. OWNER tetap akses penuh, user existing tidak otomatis berubah.</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {% for role in roles %}
+                <div class="col-md-6 col-xl-3">
+                    <div class="border rounded-3 p-3 h-100 bg-light">
+                        <div class="fw-semibold">{{ role_labels.get(role, role) }}</div>
+                        <div class="text-muted small mb-2">{{ role }}</div>
+                        <div class="small">{{ role_descriptions.get(role, '-') }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {{ sensitive_guard_fields("Edit/buat user dan role akses", "Contoh: membuat akun finance baru sesuai pembagian tugas owner") }}
+
+    <div class="app-card">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="text-muted">
+                Perubahan user hanya memengaruhi akun login, bukan transaksi bisnis.
+            </div>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                {{ 'Simpan Perubahan' if is_edit else 'Buat User' }}
+            </button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}

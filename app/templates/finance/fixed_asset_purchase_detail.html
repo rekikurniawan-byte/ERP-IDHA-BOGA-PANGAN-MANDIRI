@@ -1,0 +1,135 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Detail Pembelian Aset</h1>
+        <p>{{ purchase.purchase_number }}</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('finance.cash_bank_ledger', reference_type='FIXED_ASSET_PURCHASE') }}" class="btn app-btn-secondary">
+            <i class="bi bi-wallet2"></i>
+            Buku Kas/Bank Aset
+        </a>
+        {% if journal %}
+            <a href="{{ url_for('accounting.journal_detail', journal_id=journal.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-journal-check"></i>
+                Detail Jurnal
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Nominal Pembelian</span>
+        <h3>{{ purchase.amount|rupiah }}</h3>
+        <p>{{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Aset</span>
+        <h3>{{ asset.asset_code if asset else '-' }}</h3>
+        <p>{{ asset.asset_name if asset else '-' }}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Buku Kas/Bank</span>
+        <h3>{% if ledger_transaction %}OUT{% else %}Belum{% endif %}</h3>
+        <p>{% if ledger_transaction %}{{ ledger_transaction.amount|rupiah }}{% else %}-{% endif %}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Jurnal</span>
+        <h3>{% if journal %}Balance{% else %}Belum{% endif %}</h3>
+        <p>{% if journal %}{{ journal.journal_number }}{% else %}-{% endif %}</p>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Data Pembelian</h5>
+                    <p>Transaksi ini mengurangi saldo kas/bank.</p>
+                </div>
+            </div>
+            <table class="table app-table">
+                <tbody>
+                    <tr><th>Nomor</th><td>{{ purchase.purchase_number }}</td></tr>
+                    <tr><th>Tanggal</th><td>{{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}</td></tr>
+                    <tr><th>Vendor</th><td>{{ purchase.vendor_name or '-' }}</td></tr>
+                    <tr><th>Referensi</th><td>{{ purchase.reference_number or '-' }}</td></tr>
+                    <tr><th>Akun Aset</th><td>{{ purchase.asset_account_code }}</td></tr>
+                    <tr><th>Bayar Dari</th><td>{{ 'Bank' if purchase.account_type == 'BANK' else 'Kas Operasional' }}</td></tr>
+                    <tr><th>Rekening</th><td>{% if purchase.bank_account %}{{ purchase.bank_account.bank_name }} - {{ purchase.bank_account.account_name }}{% else %}-{% endif %}</td></tr>
+                    <tr><th>Catatan</th><td>{{ purchase.notes or '-' }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Data Aset</h5>
+                    <p>Aset tetap yang dikapitalisasi dari transaksi ini.</p>
+                </div>
+            </div>
+            {% if asset %}
+            <table class="table app-table">
+                <tbody>
+                    <tr><th>Kode</th><td>{{ asset.asset_code }}</td></tr>
+                    <tr><th>Nama</th><td>{{ asset.asset_name }}</td></tr>
+                    <tr><th>Kategori</th><td>{{ asset.asset_category }}</td></tr>
+                    <tr><th>Nilai Beli</th><td>{{ asset.purchase_value|rupiah }}</td></tr>
+                    <tr><th>Nilai Buku</th><td>{{ asset.book_value|rupiah }}</td></tr>
+                    <tr><th>Umur Manfaat</th><td>{{ asset.useful_life_years }} tahun</td></tr>
+                    <tr><th>Status</th><td>{{ asset.status }}</td></tr>
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty-state"><p>Aset tidak ditemukan.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Jejak Buku Kas/Bank & Jurnal</h5>
+            <p>Guard integrasi: satu pembelian aset punya satu buku kas/bank OUT dan satu jurnal balanced.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Komponen</th>
+                    <th>Status</th>
+                    <th>Nomor/Detail</th>
+                    <th class="text-end">Nominal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Cash/Bank Buku Kas/Bank OUT</td>
+                    <td>{% if ledger_transaction %}<span class="status-badge status-locked">Ada</span>{% else %}<span class="status-badge status-cancelled">Belum</span>{% endif %}</td>
+                    <td>{{ ledger_transaction.description if ledger_transaction else '-' }}</td>
+                    <td class="text-end">{{ ledger_transaction.amount|rupiah if ledger_transaction else '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Jurnal Akuntansi</td>
+                    <td>{% if journal %}<span class="status-badge status-locked">Ada</span>{% else %}<span class="status-badge status-cancelled">Belum</span>{% endif %}</td>
+                    <td>{{ journal.journal_number if journal else '-' }}</td>
+                    <td class="text-end">{{ purchase.amount|rupiah }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

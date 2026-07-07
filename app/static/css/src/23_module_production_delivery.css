@@ -1,0 +1,326 @@
+/* ==================================================
+   PRODUCTION SOURCE: 23_module_production_delivery.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 5596-5914.
+   Note: Accounting global polish block.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UI Accounting Global polish
+   Scope: journal, COA, opening balance, accounting reports, daily closing, data health, audit trace, print/export.
+   New rules use 4-theme token system only; print hard-copy overrides stay isolated in accounting print partial.
+   ================================================== */
+
+.accounting-page-shell,
+.accounting-print-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+.accounting-page-shell .page-header,
+.accounting-page-shell .app-page-header,
+.accounting-print-shell .page-header {
+    margin-bottom: 0;
+}
+
+.accounting-flow-panel {
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+
+.accounting-flow-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.accounting-flow-title strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 15px;
+}
+
+.accounting-flow-title small,
+.accounting-flow-step small {
+    color: var(--text-muted);
+}
+
+.accounting-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.accounting-flow-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "num title"
+        "num desc";
+    gap: 2px 10px;
+    align-items: center;
+    min-height: 66px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.accounting-flow-step:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.accounting-flow-step span {
+    grid-area: num;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-badge);
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid var(--border-soft);
+}
+
+.accounting-flow-step strong {
+    grid-area: title;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.accounting-flow-step small {
+    grid-area: desc;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.accounting-flow-step.is-active {
+    border-color: var(--primary);
+    background: var(--info-soft);
+}
+
+.accounting-flow-step.is-active span {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
+}
+
+.accounting-header-actions[data-accounting-collapsed="true"] {
+    align-items: center;
+}
+
+.accounting-header-actions .accounting-more-dropdown .dropdown-menu {
+    min-width: 272px;
+    padding: 8px;
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.accounting-header-actions .accounting-more-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-button-sm);
+    color: var(--text-secondary);
+    font-weight: 650;
+    padding: 8px 10px;
+}
+
+.accounting-header-actions .accounting-more-dropdown .dropdown-item:hover,
+.accounting-header-actions .accounting-more-dropdown .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+
+.accounting-money,
+.accounting-page-shell td[data-money="true"],
+.accounting-page-shell .app-table td.text-end,
+.accounting-page-shell .app-table th.text-end,
+.accounting-page-shell .print-table td[data-accounting-money="true"] {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.accounting-page-shell .table-responsive,
+.accounting-print-shell .table-responsive {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+
+.accounting-page-shell .app-table,
+.accounting-page-shell .table-sm {
+    margin-bottom: 0;
+}
+
+.accounting-page-shell .app-table th,
+.accounting-page-shell .table-sm th {
+    white-space: nowrap;
+}
+
+.accounting-page-shell .app-table td,
+.accounting-page-shell .app-table th,
+.accounting-page-shell .table-sm td,
+.accounting-page-shell .table-sm th {
+    vertical-align: middle;
+}
+
+.accounting-page-shell .app-table .btn,
+.accounting-page-shell .table-sm .btn,
+.accounting-page-shell .app-table form .btn {
+    min-height: 34px;
+}
+
+.accounting-page-shell .soft-warning-card,
+.accounting-page-shell .alert-warning {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+}
+
+.accounting-page-shell .alert-info,
+.accounting-page-shell .soft-info-card {
+    border-color: var(--info);
+    background: var(--info-soft);
+    color: var(--text-primary);
+}
+
+.accounting-page-shell .alert-danger,
+.accounting-page-shell .soft-danger-card {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--text-primary);
+}
+
+.accounting-page-shell form[data-form-kind="filter"],
+.accounting-page-shell .app-filter-form {
+    align-items: end;
+}
+
+.accounting-page-shell .app-form-actions {
+    justify-content: flex-end;
+}
+
+.accounting-table-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.accounting-mobile-hint {
+    display: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.accounting-page-shell .print-report-shell,
+.accounting-print-shell .print-report-shell {
+    max-width: 1180px;
+}
+
+@media (max-width: 1023.98px) {
+    .accounting-flow-steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .accounting-page-shell,
+    .accounting-print-shell {
+        gap: 16px;
+    }
+
+    .accounting-flow-panel {
+        padding: 14px;
+    }
+
+    .accounting-flow-title {
+        display: block;
+    }
+
+    .accounting-flow-title .status-badge {
+        margin-top: 8px;
+    }
+
+    .accounting-flow-title small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .accounting-flow-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .accounting-flow-step {
+        min-height: 58px;
+    }
+
+    .accounting-page-shell .summary-grid,
+    .accounting-page-shell .kpi-grid,
+    .accounting-page-shell .info-grid,
+    .accounting-page-shell .detail-grid,
+    .accounting-page-shell .print-summary-grid,
+    .accounting-page-shell .print-meta-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .accounting-page-shell .table-responsive,
+    .accounting-print-shell .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .accounting-page-shell .app-table,
+    .accounting-page-shell .table-sm {
+        min-width: 760px;
+    }
+
+    .accounting-page-shell .app-card,
+    .accounting-print-shell .app-card {
+        border-radius: var(--radius-card);
+    }
+
+    .accounting-page-shell .btn,
+    .accounting-page-shell .app-form-actions .btn,
+    .accounting-page-shell .accounting-header-actions > .btn,
+    .accounting-page-shell .accounting-header-actions > a.btn,
+    .accounting-page-shell .accounting-header-actions .dropdown-toggle {
+        min-height: 44px;
+    }
+
+    .accounting-page-shell .accounting-header-actions,
+    .accounting-page-shell .accounting-header-actions > .btn,
+    .accounting-page-shell .accounting-header-actions > a.btn,
+    .accounting-page-shell .accounting-header-actions > form,
+    .accounting-page-shell .accounting-header-actions > form .btn,
+    .accounting-page-shell .accounting-header-actions .app-action-dropdown,
+    .accounting-page-shell .accounting-header-actions .accounting-more-dropdown,
+    .accounting-page-shell .accounting-header-actions .dropdown-toggle {
+        width: 100%;
+    }
+
+    .accounting-mobile-hint {
+        display: block;
+    }
+}

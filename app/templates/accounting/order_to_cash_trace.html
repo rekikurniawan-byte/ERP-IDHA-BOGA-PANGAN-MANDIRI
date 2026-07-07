@@ -1,0 +1,380 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-ui-accounting-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Jejak Order</span>
+        <h1>Jejak Order sampai Lunas</h1>
+        <p>Jejak baca-saja dari order, produksi, pengiriman, invoice, payment, sampai jurnal.</p>
+    </div>
+
+    <div class="page-actions accounting-header-actions">
+        <a href="{{ url_for('accounting.print_order_to_cash_trace', order_number=report.selected_order_number) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        <a href="{{ url_for('accounting.export_order_to_cash_trace_csv', order_number=report.selected_order_number) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+        <a href="{{ url_for('accounting.reports') }}" class="btn app-btn-secondary">
+            <i class="bi bi-bar-chart-line"></i>
+            Laporan Akuntansi
+        </a>
+    </div>
+</div>
+
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('accounting.order_to_cash_trace') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-5">
+            <label class="form-label app-label">Cari Nomor Order</label>
+            <input type="text" name="order_number" value="{{ report.selected_order_number }}" class="form-control app-input" placeholder="Contoh: ORD-YYYYMMDD-001">
+        </div>
+
+        <div class="col-md-5">
+            <label class="form-label app-label">Pilih Order Terakhir</label>
+            <select class="form-select app-input" data-app-select-navigate="{{ url_for('accounting.order_to_cash_trace') }}" data-app-select-param="order_number">
+                <option value="">Pilih nomor order</option>
+                {% for order in report.order_options %}
+                <option value="{{ order.order_number }}" {% if order.order_number == report.selected_order_number %}selected{% endif %}>
+                    {{ order.order_number }} - {{ order.order_date.strftime('%d-%m-%Y') }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button type="submit" class="btn app-btn-primary w-100">
+                <i class="bi bi-search"></i>
+                Tampilkan
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card soft-info-card mt-4">
+    <strong>Status:
+        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status }}</span>
+    </strong>
+    <p>
+        Halaman ini hanya membaca data. Tidak membuat invoice, payment, jurnal, stock movement,
+        cash daily, dan tidak mengubah database. Terakhir dicek: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}.
+    </p>
+</div>
+
+{% if not report.has_order %}
+<div class="app-card mt-4">
+    <div class="empty-state">
+        <i class="bi bi-search"></i>
+        <h5>{{ report.empty_message }}</h5>
+        <p>Input atau pilih nomor order untuk melihat jejak order sampai lunas.</p>
+    </div>
+</div>
+{% else %}
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+        <div>
+            <p>Order</p>
+            <h3>{{ report.order_summary.order.order_number }}</h3>
+            <span class="app-stat-helper">{{ report.order_summary.order.status }}</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-truck"></i></div>
+        <div>
+            <p>Terkirim</p>
+            <h3>{{ report.delivery.total_delivered }}</h3>
+            <span class="app-stat-helper">dari {{ report.delivery.total_planned }} porsi</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-receipt"></i></div>
+        <div>
+            <p>Invoice Aktif</p>
+            <h3>{{ report.invoice.total_amount|rupiah }}</h3>
+            <span class="app-stat-helper">{{ report.invoice.status }}</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-cash-coin"></i></div>
+        <div>
+            <p>Piutang</p>
+            <h3>{{ report.invoice.remaining_amount|rupiah }}</h3>
+            <span class="app-stat-helper">{{ report.receivable_status }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Alur Utama</h5>
+            <p>Ringkasan status dari order sampai jurnal.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tahap</th>
+                    <th>Status</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for step in report.steps %}
+                <tr>
+                    <td><strong>{{ step.name }}</strong></td>
+                    <td><span class="status-badge {{ step.status_class }}">{{ step.status }}</span></td>
+                    <td>{{ step.note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Order</h5>
+            <p>Client, PIC lapangan, lokasi, porsi, dan harga.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>ID Detail</th>
+                    <th>Client</th>
+                    <th>PIC/Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Lunch</th>
+                    <th>Dinner</th>
+                    <th>Total</th>
+                    <th>Harga</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.order_summary.details %}
+                <tr>
+                    <td>#{{ row.id }}</td>
+                    <td>{{ row.client_name }}</td>
+                    <td>{{ row.mandor_name }}</td>
+                    <td>{{ row.location_name }}</td>
+                    <td>{{ row.lunch_qty }}</td>
+                    <td>{{ row.dinner_qty }}</td>
+                    <td>{{ row.total_qty }}</td>
+                    <td>{{ row.price_per_portion|rupiah }}</td>
+                    <td>{{ row.subtotal|rupiah }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-info-circle"></i>
+                            <p>Belum ada detail order.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Produksi</h5>
+            <p>Rencana dan realisasi produksi yang terkait order.</p>
+        </div>
+        <span class="status-badge {{ report.production.status_class }}">{{ report.production.status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>Planned</th>
+                    <th>Actual</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.production.rows %}
+                <tr>
+                    <td>{{ row.production_type }}</td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td>{{ row.planned_qty|round(0) }}</td>
+                    <td>{{ row.actual_qty|round(0) }}</td>
+                    <td>{{ row.detail_count }} item</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-egg-fried"></i>
+                            <p>Belum ada data produksi untuk order ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Pengiriman</h5>
+            <p>Rencana, jumlah terkirim, dan selisih pengiriman.</p>
+        </div>
+        <span class="status-badge {{ report.delivery.status_class }}">{{ report.delivery.status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Nomor Delivery</th>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>Planned</th>
+                    <th>Terkirim</th>
+                    <th>Selisih</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.delivery.rows %}
+                <tr>
+                    <td>{{ row.delivery_number }}</td>
+                    <td>{{ row.delivery_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.delivery_type }}</td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td>{{ row.planned_qty }}</td>
+                    <td>{{ row.delivered_qty }}</td>
+                    <td>{{ row.shortage_qty }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-truck"></i>
+                            <p>Belum ada data pengiriman untuk order ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Invoice dan Piutang</h5>
+            <p>Invoice aktif, payment, dan sisa piutang.</p>
+        </div>
+        <span class="status-badge {{ report.invoice.status_class }}">{{ report.invoice.status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Status</th>
+                    <th>Bill To</th>
+                    <th>Total</th>
+                    <th>Dibayar</th>
+                    <th>Piutang</th>
+                    <th>Jurnal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.invoice.rows %}
+                <tr>
+                    <td>{{ row.invoice.invoice_number }}</td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.invoice.status }}</span></td>
+                    <td>{{ row.invoice.bill_to_type }}</td>
+                    <td>{{ row.total_amount|rupiah }}</td>
+                    <td>{{ row.paid_amount|rupiah }}</td>
+                    <td>{{ row.remaining_amount|rupiah }}</td>
+                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-receipt"></i>
+                            <p>Belum ada invoice untuk order ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Pembayaran dan Jurnal</h5>
+            <p>Pembayaran yang tercatat untuk invoice aktif.</p>
+        </div>
+        <span class="status-badge {{ report.payment.status_class }}">{{ report.payment.status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Pembayaran</th>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th>Amount</th>
+                    <th>Jurnal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.payment.rows %}
+                <tr>
+                    <td>{{ row.payment.payment_number }}</td>
+                    <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.payment.payment_method }}</td>
+                    <td>{{ row.amount|rupiah }}</td>
+                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-credit-card"></i>
+                            <p>Belum ada payment untuk invoice aktif order ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

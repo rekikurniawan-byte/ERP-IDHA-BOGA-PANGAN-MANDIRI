@@ -1,0 +1,146 @@
+from app.models.master import Client, ClientPic, Mandor
+from app.services.company_settings_service import get_company_settings
+
+
+def clean_text(value):
+    return str(value or "").strip()
+
+
+def get_active_client_pics(client_id):
+    if not client_id:
+        return []
+    return ClientPic.query.filter_by(client_id=client_id, is_active=True).order_by(
+        ClientPic.name.asc(),
+        ClientPic.id.asc(),
+    ).all()
+
+
+def pick_default_client_pic(client_id):
+    if not client_id:
+        return None
+    return ClientPic.query.filter_by(client_id=client_id, is_active=True).order_by(
+        ClientPic.id.asc(),
+    ).first()
+
+
+def get_required_client_pic(client_id, client_pic_id=None):
+    if not client_id:
+        return None, "Client invoice belum valid."
+
+    pic = None
+    if client_pic_id:
+        pic = ClientPic.query.filter_by(
+            id=client_pic_id,
+            client_id=client_id,
+            is_active=True,
+        ).first()
+        if not pic:
+            return None, "PIC client tidak valid / tidak aktif untuk client ini."
+    else:
+        pic = pick_default_client_pic(client_id)
+
+    if not pic:
+        return None, "Client belum punya PIC resmi aktif. Tambahkan PIC client dulu di Master Client."
+
+    return pic, None
+
+
+def build_company_bank_snapshot(branch_id):
+    settings = get_company_settings(branch_id)
+    return {
+        "company_bank_name_snapshot": clean_text(settings.get("payment_bank_name")),
+        "company_bank_account_number_snapshot": clean_text(settings.get("payment_account_number")),
+        "company_bank_account_name_snapshot": clean_text(settings.get("payment_account_name")),
+    }
+
+
+def build_invoice_identity_snapshot(client, client_pic, branch_id):
+    data = {
+        "client_name_snapshot": clean_text(getattr(client, "name", "")),
+        "client_code_snapshot": clean_text(getattr(client, "client_code", "")),
+        "client_pic_id": getattr(client_pic, "id", None),
+        "client_pic_name_snapshot": clean_text(getattr(client_pic, "name", "")),
+        "client_pic_position_snapshot": clean_text(getattr(client_pic, "position", "")),
+        "client_pic_phone_snapshot": clean_text(getattr(client_pic, "phone", "")),
+        "client_pic_email_snapshot": clean_text(getattr(client_pic, "email", "")),
+    }
+    data.update(build_company_bank_snapshot(branch_id))
+    return data
+
+
+def apply_invoice_identity_snapshot(invoice, client=None, client_pic=None, branch_id=None):
+    if client is None and getattr(invoice, "client_id", None):
+        client = Client.query.get(invoice.client_id)
+
+    if client_pic is None and getattr(invoice, "client_pic_id", None):
+        client_pic = ClientPic.query.get(invoice.client_pic_id)
+
+    if branch_id is None:
+        branch_id = getattr(invoice, "branch_id", None)
+
+    snapshot = build_invoice_identity_snapshot(client, client_pic, branch_id)
+    for key, value in snapshot.items():
+        if hasattr(invoice, key):
+            setattr(invoice, key, value)
+    return invoice
+
+
+def get_invoice_official_identity(invoice):
+    client = Client.query.get(invoice.client_id) if getattr(invoice, "client_id", None) else None
+    pic = ClientPic.query.get(invoice.client_pic_id) if getattr(invoice, "client_pic_id", None) else None
+    mandor = Mandor.query.get(invoice.mandor_id) if getattr(invoice, "mandor_id", None) else None
+
+    bill_to_type = clean_text(getattr(invoice, "bill_to_type", "")).upper()
+
+    client_name = clean_text(getattr(invoice, "client_name_snapshot", "")) or clean_text(getattr(client, "name", ""))
+    if bill_to_type == "MANDOR":
+        client_name = client_name or clean_text(getattr(mandor, "name", ""))
+
+    client_code = clean_text(getattr(invoice, "client_code_snapshot", "")) or clean_text(getattr(client, "client_code", ""))
+    pic_name = clean_text(getattr(invoice, "client_pic_name_snapshot", "")) or clean_text(getattr(pic, "name", ""))
+    pic_position = clean_text(getattr(invoice, "client_pic_position_snapshot", "")) or clean_text(getattr(pic, "position", ""))
+    pic_phone = clean_text(getattr(invoice, "client_pic_phone_snapshot", "")) or clean_text(getattr(pic, "phone", ""))
+    if bill_to_type == "MANDOR" and not pic_phone:
+        pic_phone = clean_text(getattr(mandor, "phone", ""))
+    pic_email = clean_text(getattr(invoice, "client_pic_email_snapshot", "")) or clean_text(getattr(pic, "email", ""))
+
+    bank_name = clean_text(getattr(invoice, "company_bank_name_snapshot", ""))
+    bank_number = clean_text(getattr(invoice, "company_bank_account_number_snapshot", ""))
+    bank_account_name = clean_text(getattr(invoice, "company_bank_account_name_snapshot", ""))
+
+    if not bank_name or not bank_number or not bank_account_name:
+        live_bank = build_company_bank_snapshot(getattr(invoice, "branch_id", None))
+        bank_name = bank_name or live_bank["company_bank_name_snapshot"]
+        bank_number = bank_number or live_bank["company_bank_account_number_snapshot"]
+        bank_account_name = bank_account_name or live_bank["company_bank_account_name_snapshot"]
+
+    missing = []
+    if bill_to_type == "CLIENT":
+        if not client_code:
+            missing.append("Kode client")
+        if not pic_name:
+            missing.append("PIC resmi client")
+    elif bill_to_type == "MANDOR":
+        if not client_name:
+            missing.append("Nama pihak ditagih")
+    else:
+        if not client_name:
+            missing.append("Nama pihak ditagih")
+
+    if not bank_name or not bank_number or not bank_account_name:
+        missing.append("rekening pembayaran PT")
+
+    return {
+        "client_name": client_name,
+        "client_code": client_code,
+        "pic_name": pic_name,
+        "pic_position": pic_position,
+        "pic_phone": pic_phone,
+        "pic_email": pic_email,
+        "bank_name": bank_name,
+        "bank_account_number": bank_number,
+        "bank_account_name": bank_account_name,
+        "missing": missing,
+        "is_complete": not missing,
+        "bill_to_type": bill_to_type,
+    }

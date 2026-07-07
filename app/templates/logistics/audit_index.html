@@ -1,0 +1,114 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="audit_index">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Audit Stok</h1>
+        <p>Riwayat pengecekan stok fisik dibandingkan dengan stok sistem.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Dashboard Stok
+        </a>
+        <a href="{{ url_for('logistics.create_audit') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Audit Stok Baru
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success">
+            <i class="bi bi-plus-circle"></i>
+        </div>
+        <div>
+            <p>Stok Ditambah</p>
+            <h3>{{ plus_count }}</h3>
+            <span class="app-stat-helper">Selisih fisik lebih banyak</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger">
+            <i class="bi bi-dash-circle"></i>
+        </div>
+        <div>
+            <p>Stok Dikurangi</p>
+            <h3>{{ minus_count }}</h3>
+            <span class="app-stat-helper">Selisih fisik lebih sedikit</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+            <p>Stok Sesuai</p>
+            <h3>{{ same_count }}</h3>
+            <span class="app-stat-helper">Sistem dan fisik sama</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Audit Stok</h5>
+            <p>Jika ada selisih, sistem otomatis membuat penyesuaian stok.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Item</th>
+                    <th>Tipe Hasil</th>
+                    <th>Qty Selisih</th>
+                    <th>Satuan</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movement in movements %}
+                <tr>
+                    <td>{{ movement.movement_date.strftime('%d-%m-%Y') }}</td>
+                    <td><strong>{{ movement.item.item_name if movement.item else '-' }}</strong></td>
+                    <td>
+                        {% if movement.movement_type == "ADJUSTMENT_IN" %}
+                            <span class="status-badge status-locked">STOK DITAMBAH</span>
+                        {% elif movement.movement_type == "ADJUSTMENT_OUT" %}
+                            <span class="status-badge status-danger">STOK DIKURANGI</span>
+                        {% else %}
+                            <span class="status-badge status-progress">SESUAI</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ movement.qty|qty }}</td>
+                    <td>{{ movement.item.unit if movement.item else '-' }}</td>
+                    <td>{{ movement.notes or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-clipboard-check"></i>
+                            <p>Belum ada audit stok.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

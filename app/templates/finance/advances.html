@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • COA 1008</span>
+        <h1>Uang Muka / DP</h1>
+        <p>DP client, uang muka supplier, dan panjar mandor bersifat optional. Jika tidak ada DP, tidak ada jurnal DP.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        {% if schema_ready %}
+            <a href="{{ url_for('finance.advance_create') }}" class="btn app-btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Buat Advance
+            </a>
+        {% endif %}
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            Buku Kas/Bank
+        </a>
+    </div>
+</div>
+{% set precision_key = 'advance' %}
+
+{% if not schema_ready %}
+<div class="app-card soft-warning-card mt-4">
+    <strong>Migrasi fitur DP / uang muka belum dijalankan</strong>
+    <p>Fitur DP sudah tersedia di kode, tetapi tabel <code>advance_transactions</code> dan <code>advance_settlements</code> belum ada di database aktif. Jalankan migration sebelum memakai fitur ini.</p>
+</div>
+{% else %}
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Advance</span>
+        <h3>{{ summary.total }}</h3>
+        <p>Semua DP/panjar tercatat</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Open / Partial</span>
+        <h3>{{ summary.open }}</h3>
+        <p>Masih perlu settlement</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Sisa Outstanding</span>
+        <h3>{{ summary.remaining|rupiah }}</h3>
+        <p>Nilai DP/panjar belum selesai</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('finance.advances') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-4">
+            <label class="form-label">Tipe Advance</label>
+            <select name="type" class="form-select">
+                <option value="ALL" {% if selected_type == 'ALL' %}selected{% endif %}>Semua tipe</option>
+                {% for key, item in advance_types.items() %}
+                    <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ item.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
+                <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>OPEN</option>
+                <option value="PARTIAL" {% if selected_status == 'PARTIAL' %}selected{% endif %}>PARTIAL</option>
+                <option value="SETTLED" {% if selected_status == 'SETTLED' %}selected{% endif %}>SETTLED</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary">Filter</button>
+            <a href="{{ url_for('finance.advances') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Uang Muka / DP</h5>
+            <p>Semua transaksi di bawah ini wajib punya buku kas/bank dan jurnal COA 1008.</p>
+        </div>
+    </div>
+
+    {% if advances %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Advance</th>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Pihak</th>
+                    <th>Nominal</th>
+                    <th>Settled</th>
+                    <th>Sisa</th>
+                    <th>Status</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for advance in advances %}
+                <tr>
+                    <td><strong>{{ advance.advance_number }}</strong></td>
+                    <td>{{ advance.advance_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ advance_types.get(advance.advance_type, {}).get('label', advance.advance_type) }}</td>
+                    <td>{{ get_party_label(advance) }}</td>
+                    <td>{{ advance.amount|rupiah }}</td>
+                    <td>{{ advance.settled_amount|rupiah }}</td>
+                    <td><strong>{{ advance.remaining_amount|rupiah }}</strong></td>
+                    <td><span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status }}</span></td>
+                    <td class="text-end">
+                        <a href="{{ url_for('finance.advance_detail', advance_id=advance.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-wallet2"></i>
+        <h5>Belum ada DP/uang muka</h5>
+        <p>Ini aman. DP memang optional dan hanya dibuat kalau transaksi advance benar-benar terjadi.</p>
+        <a href="{{ url_for('finance.advance_create') }}" class="btn app-btn-primary">Buat Advance Pertama</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

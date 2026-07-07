@@ -1,0 +1,190 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="recipe_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 2</span>
+        <h1>Resep / BOM Menu</h1>
+        <p>{{ menu.menu_code }} - {{ menu.menu_name }}. Isi kebutuhan bahan per porsi. Belum memotong stok dan belum membuat jurnal.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('costing.hpp_calculator', menu_id=menu.id, portion_qty=100) }}" class="btn app-btn-primary">
+            <i class="bi bi-graph-up-arrow"></i>
+            Hitung HPP
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card mb-3">
+    <div class="alert alert-info mb-3">
+        <strong>Aman:</strong> Resep/BOM ini baru master kebutuhan bahan per porsi. Stok, jurnal, invoice, dan order lama belum berubah.
+    </div>
+    {% if recipe and recipe.recipe_status == "FINAL" %}
+    <div class="alert alert-success mb-3">
+        <strong>Resep FINAL:</strong> Resep ini sudah ditandai siap sebagai acuan HPP. Kalau item resep ditambah/dihapus, status otomatis kembali DRAFT supaya dicek ulang.
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-3">
+        <strong>Resep DRAFT:</strong> HPP masih bisa dihitung, tapi sebaiknya finalkan resep sebelum dipakai sebagai dasar belanja, snapshot HPP, atau operasional produksi.
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('costing.menu_recipe', menu_id=menu.id) }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <input type="hidden" name="action" value="save_header">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Nama Resep</label>
+                <input type="text" name="recipe_name" class="form-control app-input" value="{{ recipe.recipe_name if recipe else 'Resep ' ~ menu.menu_name }}" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Base Porsi</label>
+                <input type="number" name="base_portion" class="form-control app-input" value="{{ recipe.base_portion if recipe else 1 }}" min="0.0001" step="0.0001" required>
+                <small class="text-muted">Tetap dihitung per porsi.</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status Resep</label>
+                <select name="recipe_status" class="form-select app-input">
+                    {% for status in recipe_statuses %}
+                    <option value="{{ status }}" {% if (recipe and recipe.recipe_status == status) or (not recipe and status == "DRAFT") %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">FINAL = siap jadi acuan.</small>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Label Versi</label>
+                <input type="text" name="version_label" class="form-control app-input" value="{{ recipe.version_label if recipe and recipe.version_label else 'v1' }}" maxlength="50" placeholder="v1 / 2026-06">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="is_active" id="recipeActive" {% if not recipe or recipe.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="recipeActive">Resep aktif</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Catatan Versi</label>
+                <textarea name="version_note" class="form-control app-input" rows="2" placeholder="Contoh: versi standar nasi box proyek Juni.">{{ recipe.version_note if recipe else '' }}</textarea>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Catatan Resep</label>
+                <textarea name="notes" class="form-control app-input" rows="2" placeholder="Catatan umum resep.">{{ recipe.notes if recipe else '' }}</textarea>
+            </div>
+            {% if recipe and recipe.finalized_at %}
+            <div class="col-md-12">
+                <small class="text-muted">Terakhir difinalkan: {{ recipe.finalized_at.strftime('%d-%m-%Y %H:%M') }}</small>
+            </div>
+            {% endif %}
+        </div>
+        <div class="form-actions mt-3">
+            <button type="submit" class="btn app-btn-secondary">Simpan Header Resep</button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mb-3">
+    <h5 class="mb-3">Tambah Item Resep</h5>
+    <form method="POST" action="{{ url_for('costing.menu_recipe', menu_id=menu.id) }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <input type="hidden" name="action" value="add_item">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Bahan / Kemasan / Overhead Awal</label>
+                <select name="item_id" class="form-select app-input" required>
+                    <option value="">- Pilih item -</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}">{{ item.item_code }} - {{ item.item_name }} ({{ item.category }})</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Item boleh belum punya profil HPP, tapi kalkulator akan memberi warning.</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Qty / Porsi</label>
+                <input type="number" name="qty_per_portion" class="form-control app-input" min="0.0001" step="0.0001" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Satuan</label>
+                <input list="recipeUnitList" type="text" name="unit" class="form-control app-input" placeholder="GRAM / ML / PCS" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Catatan Item</label>
+                <input type="text" name="item_notes" class="form-control app-input" placeholder="Opsional">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn app-btn-primary w-100">Tambah</button>
+            </div>
+        </div>
+        <datalist id="recipeUnitList">
+            {% for unit in recipe_units %}
+            <option value="{{ unit }}">
+            {% endfor %}
+        </datalist>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Kategori</th>
+                    <th>Qty / Porsi</th>
+                    <th>Profil HPP</th>
+                    <th>Status Resep</th>
+                    <th>Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in recipe_items %}
+                <tr>
+                    <td>
+                        <strong>{{ line.item.item_code }}</strong><br>
+                        <span>{{ line.item.item_name }}</span>
+                    </td>
+                    <td>{{ line.item.category }}</td>
+                    <td>{{ line.qty_per_portion|qty }} {{ line.unit }}</td>
+                    <td>
+                        {% if line.item.cost_profile %}
+                            <span class="status-badge status-locked">ADA</span><br>
+                            <small class="text-muted">{{ line.item.cost_profile.effective_cost_per_base_unit|rupiah }} / {{ line.item.cost_profile.base_unit }}</small>
+                        {% else %}
+                            <span class="status-badge status-draft">BELUM ADA</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if recipe and recipe.recipe_status == "FINAL" %}
+                            <span class="status-badge status-locked">FINAL</span>
+                        {% else %}
+                            <span class="status-badge status-draft">DRAFT</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ line.notes or '-' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('costing.delete_recipe_item', recipe_item_id=line.id) }}" data-app-confirm="Hapus item resep ini? Status resep akan kembali DRAFT." data-ui-form="true" class="app-form">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-journal-plus"></i>
+                            <p>Belum ada item resep. Tambahkan bahan per porsi dulu.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="sop-page" data-fix69b-sop="index">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">SOP CENTER</span>
+            <h1 class="page-title">SOP Center Per Role</h1>
+            <p class="page-description">Panduan kerja sistem PT Idha Boga Pangan Mandiri: SOP per role, manual backfill, Piutang Finance, warung, atomic UI, SOP Disaster Recovery, SOP Backup & Restore, langkah input, output, jurnal, audit, dan recovery saat error.</p>
+        </div>
+        <div class="page-actions sop-no-print">
+            <button type="button" class="btn app-btn-secondary" data-app-action="print">
+                <i class="bi bi-printer"></i>
+                Print SOP Index
+            </button>
+        </div>
+    </div>
+
+    <div class="app-stat-grid sop-summary-grid">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+            <div>
+                <p>Total SOP Role</p>
+                <h3>{{ total_roles }}</h3>
+                <span class="app-stat-helper">Owner sampai UI Operasional + Recovery SOP</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <p>Mode Implementasi</p>
+                <h3>Read-only</h3>
+                <span class="app-stat-helper">Tidak butuh migration DB</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <p>Fokus Kontrol</p>
+                <h3>Recovery</h3>
+                <span class="app-stat-helper">Manual backfill, piutang, UI, audit, dan recovery</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sop-hero-card card app-card">
+        <div class="card-body">
+            <div class="sop-hero-content">
+                <div>
+                    <span class="sop-mini-label">Cara pakai</span>
+                    <h2>Buka SOP sesuai role sebelum input transaksi penting.</h2>
+                    <p>Halaman ini sudah disinkronkan dengan sistem terakhir: realtime order tetap dipisah dari manual backfill, Piutang Finance mencakup pihak ditagih fleksibel, warung/canteen punya SOP sendiri, dan atomic UI terbaru dijelaskan agar user tidak bingung saat input, print, export, confirm, atau melihat notifikasi.</p>
+                </div>
+                <div class="sop-hero-badge">
+                    <i class="bi bi-shield-check"></i>
+                    <strong>No DB Change</strong>
+                    <span>Aman untuk production clean</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="app-card mb-4" data-fix70-f1="sop-safety-index">
+        <div class="section-title">
+            <div>
+                <h3>Safety & Recovery SOP</h3>
+                <p>Panduan wajib sebelum patch besar, backup penting, restore planning, atau saat sistem error.</p>
+            </div>
+            <span class="status-badge info">Recovery</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <a class="sop-role-card card app-card h-100" href="{{ url_for('sop.disaster_recovery') }}">
+                    <div class="card-body">
+                        <div class="sop-role-card-head">
+                            <span class="sop-role-icon"><i class="bi bi-life-preserver"></i></span>
+                            <i class="bi bi-arrow-right-short"></i>
+                        </div>
+                        <h2>Disaster Recovery SOP</h2>
+                        <p>Langkah anti-panik saat database error, file bukti hilang, backup perlu dipakai, atau patch besar akan dilakukan.</p>
+                        <span class="sop-card-link">Buka SOP Recovery</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a class="sop-role-card card app-card h-100" href="{{ url_for('sop.backup_restore') }}">
+                    <div class="card-body">
+                        <div class="sop-role-card-head">
+                            <span class="sop-role-icon"><i class="bi bi-database-check"></i></span>
+                            <i class="bi bi-arrow-right-short"></i>
+                        </div>
+                        <h2>Backup & Restore SOP</h2>
+                        <p>Panduan full backup verified, restore preview dry-run, active restore manual-assisted, dan restore drill mingguan.</p>
+                        <span class="sop-card-link">Buka SOP Backup</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="sop-role-grid">
+        {% for item in sop_items %}
+            <a class="sop-role-card card app-card" href="{{ item.url }}">
+                <div class="card-body">
+                    <div class="sop-role-card-head">
+                        <span class="sop-role-icon"><i class="bi {{ item.icon }}"></i></span>
+                        <i class="bi bi-arrow-right-short"></i>
+                    </div>
+                    <h2>{{ item.title }}</h2>
+                    <p>{{ item.summary }}</p>
+                    <span class="sop-card-link">Buka SOP</span>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

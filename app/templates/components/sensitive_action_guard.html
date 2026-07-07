@@ -1,0 +1,23 @@
+{% macro sensitive_guard_fields(action_label='Aksi sensitif', reason_placeholder='Tulis alasan aksi sensitif ini', reason_name='sensitive_reason', password_name='confirm_password', compact=False) %}
+<div class="app-card soft-warning-card {% if compact %}p-3{% else %}mb-3{% endif %}" data-sensitive-action-guard="true">
+    <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start mb-2">
+        <div>
+            <strong>Guard Aksi Sensitif</strong>
+            <div class="text-muted small">{{ action_label }} wajib memakai alasan dan konfirmasi password akun aktif.</div>
+        </div>
+        <span class="status-badge warning">Critical Audit</span>
+    </div>
+    <input type="hidden" name="sensitive_action_confirmed" value="1">
+    <div class="row g-3">
+        <div class="col-md-7">
+            <label class="form-label">Alasan <span class="text-danger">*</span></label>
+            <textarea name="{{ reason_name }}" class="form-control app-input" rows="2" minlength="8" required placeholder="{{ reason_placeholder }}"></textarea>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Konfirmasi Password Akun Aktif <span class="text-danger">*</span></label>
+            <input type="password" name="{{ password_name }}" class="form-control app-input" autocomplete="current-password" required>
+            <div class="form-text">Password tidak disimpan di audit log.</div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

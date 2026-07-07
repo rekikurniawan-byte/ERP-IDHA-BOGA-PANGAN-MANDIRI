@@ -1,0 +1,98 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="adjustment">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Penyesuaian Stok</h1>
+        <p>Catat koreksi stok, barang rusak, hilang, atau waste produksi.</p>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="POST" action="{{ url_for('logistics.adjustment') }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label app-label">Tanggal</label>
+                <input type="date" name="movement_date" class="form-control app-input" value="{{ today }}" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Jenis Penyesuaian</label>
+                <select name="adjustment_type" class="form-select app-input" required>
+                    <option value="ADJUSTMENT_IN">Koreksi Tambah</option>
+                    <option value="ADJUSTMENT_OUT">Koreksi Kurang</option>
+                    <option value="DAMAGED">Barang Rusak</option>
+                    <option value="WASTE">Waste / Sisa Tidak Terpakai</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Qty</label>
+                <input type="number" name="qty" id="qtyInput" class="form-control app-input" min="1" step="1" required>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Item</label>
+                <select name="item_id" class="form-select app-input" required>
+                    <option value="">Pilih item stok</option>
+                    {% for item in items %}
+                        <option value="{{ item.id }}" data-unit="{{ item.unit }}">{{ item.item_code }} - {{ item.item_name }} ({{ item.unit }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Wajib jelas, contoh: 2 kg beras rusak karena basah."></textarea>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">Batal</a>
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-save"></i>
+                    Simpan Penyesuaian
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function applyQtyRule() {
+    const itemSelect = document.querySelector('select[name="item_id"]');
+    const qtyInput = document.getElementById('qtyInput');
+
+    if (!itemSelect || !qtyInput) return;
+
+    const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+    const unit = (selectedOption.getAttribute('data-unit') || '').toLowerCase();
+
+    const integerUnits = ['pcs', 'pc', 'tabung', 'pak', 'pack', 'dus', 'box', 'unit', 'karung', 'sak'];
+    const mustInteger = integerUnits.some(word => unit.includes(word));
+
+    if (mustInteger) {
+        qtyInput.min = '1';
+        qtyInput.step = '1';
+        qtyInput.placeholder = 'Contoh: 1, 2, 3';
+    } else {
+        qtyInput.min = '0.01';
+        qtyInput.step = '0.01';
+        qtyInput.placeholder = 'Contoh: 1.5 atau 2.25';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const itemSelect = document.querySelector('select[name="item_id"]');
+    if (itemSelect) {
+        itemSelect.addEventListener('change', applyQtyRule);
+        applyQtyRule();
+    }
+});
+</script>
+</div>
+{% endblock %}

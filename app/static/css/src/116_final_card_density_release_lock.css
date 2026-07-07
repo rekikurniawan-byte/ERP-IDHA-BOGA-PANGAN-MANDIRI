@@ -1,0 +1,231 @@
+/* ==================================================
+   PRODUCTION — Final Card Density Release Lock
+   Scope: authenticated app UI only.
+
+   Purpose:
+   - Freeze PRODUCTION/X/Y/Z spacing decisions as the final card-density release.
+   - Add only low-risk safety guards: box sizing, overflow control, and final
+     page/card rhythm markers.
+   - Keep this CSS-only; no database, route, model, service, template, or
+     migration edits.
+
+   Important:
+   - Legacy CSS/HTML/JSON is not deleted in this fix. Deletion still requires
+     a separate legacy deletion audit so no old route loses required styling.
+   ================================================== */
+
+:root {
+  --ibp-final-card-density-release: PRODUCTION;
+  --ibp-final-page-gap: var(--ibp-page-gap, 12px);
+  --ibp-final-card-gap: var(--ibp-card-gap, 12px);
+  --ibp-final-inner-gap: var(--ibp-inner-gap, 10px);
+  --ibp-final-card-pad-y: var(--ibp-card-pad-y, 14px);
+  --ibp-final-card-pad-x: var(--ibp-card-pad-x, 16px);
+  --ibp-final-card-radius: var(--ibp-card-radius, 18px);
+}
+
+/* 1) Final page stack seal. The page container owns vertical rhythm; individual
+   cards/rows must not re-create their own outside spacing. */
+body.is-authenticated .content-area > :where(.container, .container-fluid),
+body.is-authenticated .content-area > :where(.container, .container-fluid) > * {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+body.is-authenticated .content-area > .container-fluid,
+body.is-authenticated .content-area > .container {
+  gap: var(--ibp-final-page-gap) !important;
+}
+
+/* 2) Final card surface seal. This list intentionally mirrors the stable
+   surfaces guarded by 112-115 and only adds sizing safety, not a new design. */
+body.is-authenticated .content-area :where(
+  .page-header,
+  .app-page-header,
+  .dashboard-owner-header,
+  .dashboard-admin-header,
+  .dashboard-role-header,
+  .app-card,
+  .content-card,
+  .section-card,
+  .report-card,
+  .table-card,
+  .form-card,
+  .filter-card,
+  .summary-card,
+  .detail-card,
+  .chart-card,
+  .settings-card,
+  .sop-card,
+  .print-box,
+  .receipt-section,
+  .soft-info-card,
+  .soft-warning-card,
+  .soft-danger-card,
+  .master-menu-card,
+  .posting-inline-card,
+  .posting-section-card,
+  .expense-explain-card,
+  .expense-component-card,
+  .expense-component-card-compact,
+  .expense-unposted-card,
+  .expense-detail-card,
+  .sla-summary-card,
+  .delivery-next-action-card,
+  .asset-installment-card,
+  .canteen-rule-card,
+  .sop-role-card,
+  .sop-card-link,
+  .hr-lifecycle-card,
+  .visual-sweep-policy-card,
+  .dashboard-section,
+  .dashboard-panel,
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-command-all-clear,
+  .dashboard-command-backup-chip,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .dashboard-analytics-card,
+  .dashboard-chart-card,
+  .dashboard-chart-insight,
+  .final-browser-qa-alert,
+  .final-browser-qa-mini-panel,
+  .final-browser-qa-list,
+  .final-browser-qa-list-item,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .zero-empty-state-success,
+  .compact-empty-state,
+  .accounting-maintenance-summary,
+  .canteen-external-panel,
+  .canteen-worker-panel,
+  .receivables-card,
+  .expense-posting-status-card,
+  .posting-mini-kpi,
+  .asset-installment-pay-form,
+  .global-filter-bar-v2,
+  .app-empty-state,
+  .empty-state,
+  .hr-empty-state,
+  .dashboard-empty-state,
+  .dashboard-chart-empty
+) {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 3) Final grid/row overflow seal. This prevents right-left card gaps from
+   looking different when Bootstrap columns contain long content or tables. */
+body.is-authenticated .content-area :where(.row, .app-stat-grid, .dashboard-stat-grid, .dashboard-command-kpi-grid, .dashboard-command-link-grid, .dashboard-command-reminder-grid, .master-menu-grid, .hr-enterprise-grid, .hr-lifecycle-grid, .hr-kpi-grid, .quick-item-grid, .canteen-rule-grid, .sop-role-grid, .detail-grid, .receipt-grid, .form-grid, .info-grid) {
+  box-sizing: border-box !important;
+  gap: var(--ibp-final-card-gap) !important;
+}
+
+body.is-authenticated .content-area .row > *,
+body.is-authenticated .content-area :where(.app-stat-grid, .dashboard-stat-grid, .dashboard-command-kpi-grid, .dashboard-command-link-grid, .dashboard-command-reminder-grid, .master-menu-grid, .hr-enterprise-grid, .hr-lifecycle-grid, .hr-kpi-grid, .quick-item-grid, .canteen-rule-grid, .sop-role-grid, .detail-grid, .receipt-grid, .form-grid, .info-grid) > * {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 4) Final nested body seal. Only card-like surfaces lose duplicated card-body
+   padding; normal Bootstrap cards outside the app shell are not globally reset. */
+body.is-authenticated .content-area :where(
+  .app-card,
+  .content-card,
+  .section-card,
+  .report-card,
+  .table-card,
+  .form-card,
+  .filter-card,
+  .summary-card,
+  .detail-card,
+  .settings-card,
+  .sop-card,
+  .soft-info-card,
+  .soft-warning-card,
+  .soft-danger-card,
+  .master-menu-card,
+  .posting-inline-card,
+  .posting-section-card,
+  .expense-explain-card,
+  .expense-component-card,
+  .expense-detail-card,
+  .sla-summary-card,
+  .delivery-next-action-card,
+  .canteen-rule-card,
+  .sop-role-card,
+  .hr-lifecycle-card,
+  .dashboard-section,
+  .dashboard-panel
+) > .card-body {
+  padding: 0 !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+/* 5) Final internal text rhythm: first/last elements inside final card surfaces
+   cannot create accidental top/bottom jumps. */
+body.is-authenticated .content-area :where(
+  .app-card,
+  .content-card,
+  .section-card,
+  .report-card,
+  .table-card,
+  .form-card,
+  .filter-card,
+  .summary-card,
+  .detail-card,
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .final-browser-qa-alert,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel
+) > :first-child {
+  margin-top: 0 !important;
+}
+
+body.is-authenticated .content-area :where(
+  .app-card,
+  .content-card,
+  .section-card,
+  .report-card,
+  .table-card,
+  .form-card,
+  .filter-card,
+  .summary-card,
+  .detail-card,
+  .dashboard-command-hero,
+  .dashboard-command-kpi,
+  .dashboard-command-link-card,
+  .dashboard-command-reminder,
+  .dashboard-stat-card,
+  .dashboard-mini-card,
+  .final-browser-qa-alert,
+  .visual-sweep-alert,
+  .zero-empty-state,
+  .compact-empty-state,
+  .canteen-external-panel,
+  .canteen-worker-panel
+) > :last-child {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+  body.is-authenticated .content-area > .container-fluid,
+  body.is-authenticated .content-area > .container {
+    gap: var(--ibp-final-card-gap) !important;
+  }
+}

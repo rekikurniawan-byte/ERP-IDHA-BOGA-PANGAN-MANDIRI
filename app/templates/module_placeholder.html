@@ -1,0 +1,103 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header placeholder-header">
+    <div>
+        <span class="eyebrow">Roadmap Sistem</span>
+        <h1>{{ title }}</h1>
+        <p>Area ini disiapkan sebagai bagian dari pengembangan bertahap. Untuk demo operasional, gunakan modul aktif yang sudah tersedia.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-primary">
+            <i class="bi bi-grid-1x2-fill"></i>
+            Kembali ke Dashboard
+        </a>
+        <a href="{{ url_for('sop.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-book"></i>
+            Lihat SOP Sistem
+        </a>
+    </div>
+</div>
+
+<div class="placeholder-panel">
+    <div class="placeholder-icon">
+        <i class="bi bi-map"></i>
+    </div>
+
+    <div class="placeholder-content">
+        <span class="placeholder-badge">Tidak ditampilkan di menu utama</span>
+        <h2>{{ title }} ada di roadmap</h2>
+        <p>
+            Halaman ini bukan error. Modul ini belum dijadikan alur utama karena sistem memprioritaskan fitur yang sudah aktif,
+            stabil, dan siap dipakai untuk proses operasional catering.
+        </p>
+
+        <div class="placeholder-note-grid">
+            <div class="placeholder-note">
+                <i class="bi bi-check2-circle"></i>
+                <div>
+                    <strong>Route tetap aman</strong>
+                    <span>Route tidak dihapus agar link lama tetap tidak rusak.</span>
+                </div>
+            </div>
+
+            <div class="placeholder-note">
+                <i class="bi bi-eye-slash"></i>
+                <div>
+                    <strong>Tidak masuk menu utama</strong>
+                    <span>Menu utama hanya menampilkan modul yang sudah siap digunakan.</span>
+                </div>
+            </div>
+
+            <div class="placeholder-note">
+                <i class="bi bi-phone"></i>
+                <div>
+                    <strong>Demo lebih fokus</strong>
+                    <span>User diarahkan ke modul aktif supaya tampilan tidak ramai di HP.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="placeholder-actions">
+            {% if current_user.role == "OWNER" %}
+                <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-receipt"></i>
+                    Invoice
+                </a>
+                <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-calculator"></i>
+                    Akuntansi
+                </a>
+            {% elif current_user.role == "ADMIN" %}
+                <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-journal-text"></i>
+                    Input Order Harian
+                </a>
+                <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-receipt"></i>
+                    Invoice
+                </a>
+            {% elif current_user.role == "DAPUR" %}
+                <a href="{{ url_for('production.index') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-egg-fried"></i>
+                    Produksi
+                </a>
+                <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-basket"></i>
+                    Permintaan Barang
+                </a>
+            {% elif current_user.role == "PENGANTAR" %}
+                <a href="{{ url_for('delivery.today') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-truck"></i>
+                    Pengiriman Hari Ini
+                </a>
+                <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
+                    <i class="bi bi-clipboard-check"></i>
+                    Penerimaan
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

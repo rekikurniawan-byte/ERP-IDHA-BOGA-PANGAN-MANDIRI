@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Laporan Piutang Finance</title>
+    <style>
+        :root {
+            --ink: #111827;
+            --muted: #4b5563;
+            --line: #d1d5db;
+            --soft: #f8fafc;
+            --soft-strong: #eef2f7;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            color: var(--ink);
+            margin: 24px;
+            line-height: 1.35;
+            background: #fff;
+        }
+
+        .print-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .print-toolbar button {
+            border: 1px solid var(--line);
+            background: var(--soft);
+            color: var(--ink);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .report-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: start;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--ink);
+        }
+
+        h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+        h2 { margin: 24px 0 8px; font-size: 15px; }
+        .muted { color: var(--muted); font-size: 12px; }
+        .report-meta { text-align: right; font-size: 12px; color: var(--muted); }
+        .filter-line { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .filter-line span {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px 8px;
+            background: var(--soft);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin: 18px 0;
+        }
+
+        .box {
+            border: 1px solid var(--line);
+            padding: 11px;
+            border-radius: 8px;
+            background: var(--soft);
+            min-height: 66px;
+        }
+
+        .box span { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
+        .box strong { display: block; margin-top: 4px; font-size: 15px; overflow-wrap: anywhere; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        th, td { border: 1px solid var(--line); padding: 6px; vertical-align: top; }
+        th { background: var(--soft-strong); text-align: left; font-weight: 800; }
+        .right { text-align: right; white-space: nowrap; }
+        .nowrap { white-space: nowrap; }
+        .report-footer { margin-top: 18px; color: var(--muted); font-size: 11px; }
+
+        @media print {
+            .print-toolbar { display: none; }
+            body { margin: 12mm; }
+            .summary { grid-template-columns: repeat(4, 1fr); }
+            a { color: inherit; text-decoration: none; }
+        }
+
+        @media screen and (max-width: 760px) {
+            body { margin: 14px; }
+            .report-header { grid-template-columns: 1fr; }
+            .report-meta { text-align: left; }
+            .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            table { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-toolbar">
+        <button data-app-action="print">Print / Save PDF</button>
+        <button data-app-action="close">Tutup</button>
+    </div>
+
+    <header class="report-header">
+        <div>
+            <h1>Laporan Piutang Finance</h1>
+            <div class="muted">Gabungan piutang realtime dan manual backfill dari halaman finance existing.</div>
+            <div class="filter-line">
+                <span>Cabang: {{ selected_branch_name or '-' }}</span>
+                <span>Stage: {{ selected_filter_label }}</span>
+                <span>Tipe: {{ selected_bill_to_type|replace('_', ' ')|title if selected_bill_to_type else 'Semua' }}</span>
+                <span>Status: {{ selected_status|replace('_', ' ')|title if selected_status else 'Semua' }}</span>
+                <span>Periode: {{ selected_period_from or '-' }} s/d {{ selected_period_to or '-' }}</span>
+            </div>
+        </div>
+        <div class="report-meta">
+            <strong>PT Idha Boga Pangan Mandiri</strong><br>
+            Dicetak dari Finance / Piutang<br>
+            Mode: Print / Save PDF Browser
+        </div>
+    </header>
+
+    <div class="summary">
+        <div class="box"><span>Total Piutang Aktif</span><strong>{{ summary.total_receivable|rupiah }}</strong></div>
+        <div class="box"><span>Invoice Belum Lunas</span><strong>{{ summary.invoice_count }}</strong></div>
+        <div class="box"><span>Overdue</span><strong>{{ summary.overdue_count }}</strong></div>
+        <div class="box"><span>Butuh Follow Up</span><strong>{{ summary.follow_up_count }}</strong></div>
+    </div>
+
+    <h2>Rekap per Pihak Ditagih</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Pihak Ditagih</th>
+                <th>Tipe</th>
+                <th class="nowrap">Invoice</th>
+                <th class="right">Sisa Piutang</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in party_rows %}
+            <tr>
+                <td>{{ row.party_name }}</td>
+                <td>{{ row.bill_to_type_label }}</td>
+                <td class="nowrap">{{ row.invoice_count }}</td>
+                <td class="right">{{ row.remaining_total|rupiah }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Tidak ada piutang aktif sesuai filter.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Detail Invoice</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Invoice</th>
+                <th>Pihak Ditagih</th>
+                <th>Tipe</th>
+                <th>Asal</th>
+                <th>Periode</th>
+                <th>Jatuh Tempo</th>
+                <th>Status</th>
+                <th class="right">Total</th>
+                <th class="right">Dibayar</th>
+                <th class="right">Sisa</th>
+                <th>Stage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            {% set invoice = row.invoice %}
+            <tr>
+                <td class="nowrap">{{ loop.index }}</td>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ row.party_name }}</td>
+                <td>{{ row.bill_to_type_label }}</td>
+                <td>{{ row.input_source_label }}</td>
+                <td>
+                    {{ invoice.period_start.strftime('%d-%m-%Y') if invoice.period_start else '-' }}
+                    s/d
+                    {{ invoice.period_end.strftime('%d-%m-%Y') if invoice.period_end else '-' }}
+                </td>
+                <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
+                <td>{{ invoice.status }}</td>
+                <td class="right">{{ invoice.total_amount|rupiah }}</td>
+                <td class="right">{{ invoice.paid_amount|rupiah }}</td>
+                <td class="right">{{ invoice.remaining_amount|rupiah }}</td>
+                <td>{{ row.ar.stage_label }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="12">Tidak ada invoice yang sesuai filter.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="report-footer">
+        Catatan: laporan ini hanya membaca data piutang existing. Pembayaran tetap dilakukan dari detail invoice seperti flow lama.
+    </div>
+
+    <script>
+        window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 200); });
+    </script>
+</body>
+</html>

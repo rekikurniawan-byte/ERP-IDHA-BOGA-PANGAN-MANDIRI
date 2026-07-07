@@ -1,0 +1,264 @@
+/* ==================================================
+   PRODUCTION SOURCE: 135_atomic_table_scroll_density_polish.css
+   Tahap 10.24 — Atomic Table, Scroll & Data Density Polish
+   Purpose:
+   - Normalize table readability, density, responsive scrolling and action cells
+     across Finance, Accounting, Logistics, Master, HR, Canteen and print-adjacent pages.
+   - Works through CSS/JS decoration only; no route/service/data-flow changes.
+   ================================================== */
+
+.table-responsive.app-table-scroll-shell,
+.app-table-scroll-shell {
+    position: relative;
+    width: 100%;
+    border: 1px solid color-mix(in srgb, var(--border, rgba(15, 23, 42, 0.12)) 86%, transparent);
+    border-radius: 22px;
+    background: var(--surface, #ffffff);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-muted, #64748b) 42%, transparent) transparent;
+}
+
+.table-responsive.app-table-scroll-shell:focus-visible,
+.app-table-scroll-shell:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent);
+    border-color: color-mix(in srgb, var(--accent, #2563eb) 42%, var(--border, rgba(15, 23, 42, 0.12)));
+}
+
+.app-table-scroll-shell::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+.app-table-scroll-shell::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.app-table-scroll-shell::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-muted, #64748b) 42%, transparent);
+    background-clip: padding-box;
+}
+
+.app-table-scroll-shell.is-scrollable::before,
+.app-table-scroll-shell.is-scrollable::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    bottom: 0;
+    z-index: 6;
+    display: block;
+    width: 22px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.app-table-scroll-shell.is-scrollable::before {
+    left: 0;
+    float: left;
+    box-shadow: 14px 0 22px -18px rgba(15, 23, 42, 0.45) inset;
+    opacity: 0;
+}
+
+.app-table-scroll-shell.is-scrollable::after {
+    right: 0;
+    float: right;
+    box-shadow: -14px 0 22px -18px rgba(15, 23, 42, 0.45) inset;
+    opacity: 1;
+}
+
+.app-table-scroll-shell.is-scroll-middle::before,
+.app-table-scroll-shell.is-scroll-end::before {
+    opacity: 1;
+}
+
+.app-table-scroll-shell.is-scroll-end::after {
+    opacity: 0;
+}
+
+.table.app-atomic-table,
+.app-table.app-atomic-table,
+.app-atomic-table {
+    width: 100%;
+    margin-bottom: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: var(--text-primary, #111111);
+    font-variant-numeric: tabular-nums;
+}
+
+.app-atomic-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 13px 14px !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--border, rgba(15, 23, 42, 0.12)) 88%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-muted, #f8fafc) 94%, var(--surface, #ffffff)) !important;
+    color: var(--text-secondary, #475569) !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.055em !important;
+    line-height: 1.35 !important;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.app-atomic-table tbody td,
+.app-atomic-table tbody th {
+    padding: 13px 14px !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-soft, rgba(15, 23, 42, 0.08)) 88%, transparent) !important;
+    color: var(--text-primary, #111111) !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    vertical-align: middle !important;
+}
+
+.app-atomic-table tbody tr:last-child > td,
+.app-atomic-table tbody tr:last-child > th {
+    border-bottom: 0 !important;
+}
+
+.app-atomic-table tbody tr {
+    transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.app-atomic-table tbody tr:hover {
+    background: color-mix(in srgb, var(--accent, #2563eb) 4%, var(--surface-soft, #f8fafc)) !important;
+}
+
+.app-atomic-table .app-table-number-cell,
+.app-atomic-table td.text-end,
+.app-atomic-table th.text-end,
+.app-atomic-table .money-cell,
+.app-atomic-table .table-money {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.app-atomic-table .app-table-action-cell {
+    width: 1%;
+    min-width: 116px;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.app-atomic-table .app-table-action-cell form,
+.app-atomic-table .app-table-action-cell .btn-group,
+.app-atomic-table .app-table-action-cell .dropdown,
+.app-atomic-table .app-table-action-cell .d-inline,
+.app-atomic-table .app-table-action-cell .d-inline-flex {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 !important;
+    vertical-align: middle;
+}
+
+.app-atomic-table .badge,
+.app-atomic-table .app-badge,
+.app-atomic-table .status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.app-atomic-table .text-muted,
+.app-atomic-table small,
+.app-atomic-table .small {
+    color: var(--text-muted, #64748b) !important;
+}
+
+.app-atomic-table tfoot td,
+.app-atomic-table tfoot th {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    padding: 13px 14px !important;
+    border-top: 1px solid var(--border, rgba(15, 23, 42, 0.12)) !important;
+    background: var(--surface-muted, #f8fafc) !important;
+    font-weight: 900;
+}
+
+.app-atomic-table.app-table-short tbody td,
+.app-atomic-table.app-table-short tbody th {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.app-table-auto-wrapper {
+    margin-block: 10px 14px;
+}
+
+.app-table-scroll-shell + .empty-state,
+.app-table-scroll-shell + .app-empty-state {
+    margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+    .table-responsive.app-table-scroll-shell,
+    .app-table-scroll-shell {
+        border-radius: 18px;
+        margin-inline: -2px;
+    }
+
+    .app-atomic-table {
+        min-width: max-content;
+    }
+
+    .app-atomic-table thead th,
+    .app-atomic-table tbody td,
+    .app-atomic-table tbody th,
+    .app-atomic-table tfoot td,
+    .app-atomic-table tfoot th {
+        padding: 11px 12px !important;
+        font-size: 12.5px !important;
+    }
+
+    .app-atomic-table .app-table-action-cell {
+        position: sticky;
+        right: 0;
+        z-index: 3;
+        min-width: 104px;
+        background: color-mix(in srgb, var(--surface, #ffffff) 94%, transparent);
+        box-shadow: -12px 0 18px -18px rgba(15, 23, 42, 0.5);
+    }
+
+    .app-atomic-table thead .app-table-action-cell,
+    .app-atomic-table thead th:last-child {
+        z-index: 7;
+    }
+}
+
+@media print {
+    .app-table-scroll-shell,
+    .table-responsive.app-table-scroll-shell {
+        display: block !important;
+        overflow: visible !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .app-table-scroll-shell::before,
+    .app-table-scroll-shell::after {
+        display: none !important;
+    }
+
+    .app-atomic-table thead th,
+    .app-atomic-table tfoot td,
+    .app-atomic-table tfoot th {
+        position: static !important;
+    }
+}

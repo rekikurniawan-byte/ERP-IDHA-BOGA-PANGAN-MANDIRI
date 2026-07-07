@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% include "accounting/_accounting_print_report_styles.html" %}
+
+<div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <h1>Laba/Rugi Ringkas</h1>
+            <p>Halaman print-ready ringkasan pendapatan, beban/HPP, dan laba/rugi.</p>
+        </div>
+        <div class="page-actions accounting-header-actions">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('accounting.reports', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>LABA/RUGI RINGKAS</h4>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Periode: {{ data.start_date.strftime('%d-%m-%Y') }} s/d {{ data.end_date.strftime('%d-%m-%Y') }}</p>
+            </div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Pendapatan</span><strong>{{ summary.revenue_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Beban/HPP</span><strong>{{ summary.expense_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Laba/Rugi</span><strong>{{ summary.net_income|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status</span><strong>{{ 'LABA' if summary.net_income >= 0 else 'RUGI' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Jurnal</span><strong>{{ summary.journal_count }}</strong></div>
+            <div class="app-stat-card print-box"><span>Detail Jurnal</span><strong>{{ summary.detail_count }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Periode</span><strong>{{ 'BALANCE' if summary.is_period_balanced else 'TIDAK BALANCE' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Neraca</span><strong>{{ 'BALANCE' if summary.is_trial_balanced else 'CEK ULANG' }}</strong></div>
+        </div>
+
+        <div class="empty-state d-none" data-ui-empty-state="UI">Data belum ada untuk periode laporan ini.</div>
+
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Nilai</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Pendapatan</td>
+                    <td class="text-end">{{ summary.revenue_total|rupiah }}</td>
+                    <td>Akun bertipe REVENUE pada periode laporan.</td>
+                </tr>
+                <tr>
+                    <td>Beban / HPP</td>
+                    <td class="text-end">{{ summary.expense_total|rupiah }}</td>
+                    <td>Akun bertipe EXPENSE/COGS/COST/HPP pada periode laporan.</td>
+                </tr>
+                <tr>
+                    <td><strong>Laba/Rugi Ringkas</strong></td>
+                    <td class="text-end"><strong>{{ summary.net_income|rupiah }}</strong></td>
+                    <td>{{ 'Laba' if summary.net_income >= 0 else 'Rugi' }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat read-only. Laporan ini adalah ringkasan awal berdasarkan klasifikasi akun.</p>
+    </div>
+</div>
+{% endblock %}

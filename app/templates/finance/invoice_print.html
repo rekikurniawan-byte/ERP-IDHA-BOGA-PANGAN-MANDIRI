@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Invoice {{ invoice.invoice_number }}</title>
+
+    <style>
+        :root {
+            --text-primary: CanvasText;
+            --text-secondary: CanvasText;
+            --text-muted: GrayText;
+            --surface: Canvas;
+            --surface-muted: Canvas;
+            --border-soft: ButtonBorder;
+            --primary: Highlight;
+            --primary-text: HighlightText;
+            --warning-soft: Canvas;
+            --shadow-card: none;
+            --finance-print-ink: var(--text-primary);
+            --finance-print-muted: var(--text-muted);
+            --finance-print-soft: var(--surface-muted);
+            --finance-print-page: var(--surface);
+            --finance-print-border: var(--border-soft);
+            --finance-print-heading: var(--text-primary);
+            --finance-print-accent: var(--primary);
+            --finance-print-warning: var(--warning-soft);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: var(--finance-print-ink);
+            margin: 0;
+            padding: 16px;
+            background: var(--finance-print-soft);
+            font-size: 12px;
+        }
+
+        .print-actions {
+            max-width: 860px;
+            margin: 0 auto 10px auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 8px;
+            padding: 8px 13px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .app-btn-primary {
+            background: var(--finance-print-accent);
+            color: var(--primary-text);
+        }
+
+        .app-btn-secondary {
+            background: var(--finance-print-page);
+            color: var(--finance-print-ink);
+            border: 1px solid var(--finance-print-border);
+        }
+
+        .print-page {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--finance-print-page);
+            padding: 22px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            border-bottom: 3px solid var(--finance-print-heading);
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+
+        .company h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 0.4px;
+            line-height: 1.1;
+        }
+
+        .company p {
+            margin: 5px 0 0;
+            color: var(--finance-print-muted);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .invoice-title {
+            text-align: right;
+            min-width: 210px;
+        }
+
+        .invoice-title h2 {
+            margin: 0;
+            font-size: 26px;
+            line-height: 1;
+        }
+
+        .invoice-title p {
+            margin: 5px 0 0;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .small-muted {
+            color: var(--finance-print-muted);
+            font-size: 10.5px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .box {
+            border: 1px solid var(--finance-print-border);
+            border-radius: 10px;
+            padding: 11px 12px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .box-title {
+            font-weight: 800;
+            margin-bottom: 7px;
+            color: var(--finance-print-ink);
+            border-bottom: 1px solid var(--finance-print-border);
+            padding-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 5px 0;
+            font-size: 12px;
+            line-height: 1.25;
+        }
+
+        .row span:first-child {
+            color: var(--finance-print-muted);
+        }
+
+        .row strong {
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 7px;
+            page-break-inside: auto;
+            break-inside: auto;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        th {
+            background: var(--finance-print-heading);
+            color: var(--primary-text);
+            padding: 7px 8px;
+            font-size: 11px;
+            text-align: left;
+            line-height: 1.2;
+        }
+
+        td {
+            border-bottom: 1px solid var(--finance-print-border);
+            padding: 7px 8px;
+            font-size: 11px;
+            vertical-align: top;
+            line-height: 1.18;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .summary {
+            width: 330px;
+            margin-left: auto;
+            margin-top: 12px;
+            border: 1px solid var(--finance-print-border);
+            border-radius: 10px;
+            overflow: hidden;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--finance-print-border);
+            font-size: 12px;
+        }
+
+        .summary-row:last-child {
+            border-bottom: 0;
+        }
+
+        .summary-row.total {
+            background: var(--finance-print-heading);
+            color: var(--primary-text);
+            font-weight: 800;
+        }
+
+        .summary-row.remaining {
+            background: var(--finance-print-warning);
+            font-weight: 800;
+        }
+
+        .payment-box {
+            margin-top: 12px;
+        }
+
+        .notes {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--finance-print-soft);
+            border: 1px solid var(--finance-print-border);
+            font-size: 11px;
+            color: var(--finance-print-ink);
+            line-height: 1.35;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .signature {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            margin-top: 24px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .signature-box {
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .signature-space {
+            height: 42px;
+        }
+
+        .footer-note {
+            margin-top: 10px;
+            text-align: center;
+            color: var(--finance-print-muted);
+            font-size: 10px;
+        }
+
+        .official-print-warning {
+            border-color: #f59e0b;
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        @media print {
+            body {
+                background: var(--finance-print-page);
+                padding: 0;
+                font-size: 11px;
+            }
+
+            .print-actions {
+                display: none;
+            }
+
+            html,
+            body {
+                width: auto !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            .print-page {
+                width: 100% !important;
+                max-width: none !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0;
+            }
+
+            table {
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+
+            thead {
+                display: table-header-group !important;
+            }
+
+            tfoot {
+                display: table-footer-group !important;
+            }
+
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .invoice-header {
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+            }
+
+            .company h1 {
+                font-size: 20px;
+            }
+
+            .company p {
+                font-size: 11px;
+            }
+
+            .invoice-title h2 {
+                font-size: 24px;
+            }
+
+            .box {
+                padding: 9px 10px;
+            }
+
+            th {
+                padding: 6px 7px;
+                font-size: 10.5px;
+            }
+
+            td {
+                padding: 6px 7px;
+                font-size: 10.5px;
+            }
+
+            .summary-row {
+                padding: 8px 10px;
+            }
+
+            .summary,
+            .notes,
+            .payment-box,
+            .signature,
+            .signature-box,
+            .footer-note {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .signature {
+                margin-top: 18px;
+            }
+
+            .signature-space {
+                height: 34px;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="print-actions">
+    <a href="{{ url_for('finance.invoice_detail', invoice_id=invoice.id) }}" class="btn app-btn-secondary">
+        Kembali ke Detail
+    </a>
+
+    {% if whatsapp and whatsapp.url %}
+    <a href="{{ url_for('finance.invoice_whatsapp_send', invoice_id=invoice.id) }}" class="btn app-btn-secondary" target="_blank">
+        Kirim WhatsApp
+    </a>
+
+    <button type="button" data-app-call="copyInvoiceWhatsAppMessage" class="btn app-btn-secondary">
+        Salin Pesan WA
+    </button>
+    {% endif %}
+
+    <button data-app-action="print" class="btn app-btn-primary">
+        Cetak / Save PDF
+    </button>
+</div>
+
+<div class="print-page" data-ui-print-export="UI">
+    <div class="invoice-header">
+        <div class="company">
+            <h1>{{ (company_settings.company_name or "PT Idha Boga Pangan Mandiri")|upper }}</h1>
+            <p>
+                {{ company_settings.company_subtitle or "Sistem Manajemen Catering" }}
+                {% if company_settings.company_address %}<br>{{ company_settings.company_address }}{% endif %}
+                {% if company_settings.company_phone %}<br>Telp: {{ company_settings.company_phone }}{% endif %}
+                {% if company_settings.company_email %} | Email: {{ company_settings.company_email }}{% endif %}
+                {% if company_settings.company_npwp %}<br>NPWP: {{ company_settings.company_npwp }}{% endif %}
+            </p>
+        </div>
+
+        <div class="invoice-title">
+            <h2>INVOICE</h2>
+            <p>{{ invoice.invoice_number }}</p>
+            <div class="small-muted">Status: {% if invoice.status == 'DRAFT' %}OPEN / BELUM LUNAS{% else %}{{ invoice.status }}{% endif %}</div>
+        </div>
+    </div>
+
+    {% if official_identity and official_identity.missing %}
+    <div class="box official-print-warning">
+        <strong>PERINGATAN DOKUMEN RESMI:</strong> Data belum lengkap: {{ official_identity.missing|join(', ') }}. Lengkapi sebelum invoice dikirim ke client.
+    </div>
+    {% endif %}
+
+    <div class="info-grid">
+        <div class="box">
+            <div class="box-title">Ditagihkan Kepada</div>
+
+            <div class="row">
+                <span>Pihak Ditagih / Perusahaan</span>
+                <strong>{{ official_identity.client_name if official_identity and official_identity.client_name else bill_to }}</strong>
+            </div>
+
+            <div class="row">
+                <span>Kode Client</span>
+                <strong>{{ official_identity.client_code if official_identity and official_identity.client_code else '-' }}</strong>
+            </div>
+
+            <div class="row">
+                <span>PIC Penagihan</span>
+                <strong>{{ official_identity.pic_name if official_identity and official_identity.pic_name else '-' }}</strong>
+            </div>
+
+            {% if official_identity and official_identity.pic_position %}
+            <div class="row">
+                <span>Jabatan PIC</span>
+                <strong>{{ official_identity.pic_position }}</strong>
+            </div>
+            {% endif %}
+
+            {% if official_identity and official_identity.pic_phone %}
+            <div class="row">
+                <span>No. WhatsApp PIC</span>
+                <strong>{{ official_identity.pic_phone }}</strong>
+            </div>
+            {% endif %}
+
+            {% if official_identity and official_identity.pic_email %}
+            <div class="row">
+                <span>Email PIC</span>
+                <strong>{{ official_identity.pic_email }}</strong>
+            </div>
+            {% endif %}
+
+            {% if invoice.mandor_id %}
+            <div class="row">
+                <span>Penanggung Jawab Lapangan</span>
+                <strong>{{ mandor_name if mandor_name is defined and mandor_name else (bill_to if invoice.bill_to_type == "MANDOR" else "-") }}</strong>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <span>Jenis Tagihan</span>
+                <strong>
+                    {% if invoice.source_type == "PERIOD_INVOICE" %}
+                        Invoice Periode
+                    {% elif invoice.source_type == "DAILY_ORDER" %}
+                        Invoice Order
+                    {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
+                        Invoice Rekap Tagihan Mandor
+                    {% else %}
+                        {{ invoice.source_type or "-" }}
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="row">
+                <span>Tipe</span>
+                <strong>{{ invoice.bill_to_type }}</strong>
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Informasi Invoice</div>
+
+            <div class="row">
+                <span>Tanggal Invoice</span>
+                <strong>{{ invoice.invoice_date.strftime('%d-%m-%Y') }}</strong>
+            </div>
+
+            <div class="row">
+                <span>Jatuh Tempo</span>
+                <strong>{{ invoice.due_date.strftime('%d-%m-%Y') }}</strong>
+            </div>
+
+            {% if invoice.period_start and invoice.period_end %}
+            <div class="row">
+                <span>Periode</span>
+                <strong>{{ invoice.period_start.strftime('%d-%m-%Y') }} s/d {{ invoice.period_end.strftime('%d-%m-%Y') }}</strong>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <span>Sumber</span>
+                <strong>{{ invoice.source_type or "-" }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Rincian Catering Harian</div>
+
+        {% if print_data.catering %}
+        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th style="width: 16%;">No Order</th>
+                    <th style="width: 13%;">Mandor</th>
+                    <th style="width: 13%;">Lokasi</th>
+                    <th class="text-right" style="width: 7%;">Sarapan</th>
+                    <th class="text-right" style="width: 7%;">Lunch</th>
+                    <th class="text-right" style="width: 7%;">Dinner</th>
+                    <th class="text-right" style="width: 7%;">Qty</th>
+                    <th class="text-right" style="width: 14%;">Harga</th>
+                    <th class="text-right" style="width: 17%;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in print_data.catering %}
+                <tr>
+                    <td>
+                        <strong>{{ row.order_number }}</strong>
+                        {% if row.source_meta %}
+                            <br><span class="small-muted">{{ row.source_meta }}</span>
+                        {% elif row.order_date %}
+                            <br><span class="small-muted">Tanggal {{ row.order_date }}</span>
+                        {% elif row.source_label %}
+                            <br><span class="small-muted">{{ row.source_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.mandor }}</td>
+                    <td>{{ row.location }}</td>
+                    <td class="text-right">{{ row.breakfast or '-' }}</td>
+                    <td class="text-right">{{ row.lunch }}</td>
+                    <td class="text-right">{{ row.dinner }}</td>
+                    <td class="text-right">{{ row.qty|int }}</td>
+                    <td class="text-right">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-right"><strong>{{ row.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="8" class="text-right"><strong>Total Catering</strong></td>
+                    <td class="text-right"><strong>{{ print_data.totals.catering|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="small-muted">Tidak ada rincian catering pada invoice ini.</p>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <div class="box-title">Rincian Revisi Tambah Setelah Lock</div>
+
+        {% if print_data.revision %}
+        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th style="width: 16%;">No Order</th>
+                    <th style="width: 13%;">Mandor</th>
+                    <th style="width: 13%;">Lokasi</th>
+                    <th class="text-right" style="width: 7%;">Sarapan +</th>
+                    <th class="text-right" style="width: 7%;">Lunch +</th>
+                    <th class="text-right" style="width: 7%;">Dinner +</th>
+                    <th class="text-right" style="width: 7%;">Qty</th>
+                    <th class="text-right" style="width: 14%;">Harga</th>
+                    <th class="text-right" style="width: 17%;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in print_data.revision %}
+                <tr>
+                    <td>
+                        <strong>{{ row.order_number }}</strong>
+                        {% if row.source_meta %}
+                            <br><span class="small-muted">{{ row.source_meta }}</span>
+                        {% elif row.order_date %}
+                            <br><span class="small-muted">Tanggal {{ row.order_date }}</span>
+                        {% elif row.source_label %}
+                            <br><span class="small-muted">{{ row.source_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.mandor }}</td>
+                    <td>{{ row.location }}</td>
+                    <td class="text-right">{{ row.breakfast or '-' }}</td>
+                    <td class="text-right">{{ row.lunch }}</td>
+                    <td class="text-right">{{ row.dinner }}</td>
+                    <td class="text-right">{{ row.qty|int }}</td>
+                    <td class="text-right">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-right"><strong>{{ row.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="8" class="text-right"><strong>Total Revisi Tambah</strong></td>
+                    <td class="text-right"><strong>{{ print_data.totals.revision|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="small-muted">Tidak ada revisi tambah pada invoice ini.</p>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <div class="box-title">Rincian Hutang Warung Pekerja</div>
+
+        {% if print_data.warung %}
+        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Nama Pekerja</th>
+                    <th style="width: 35%;">Keterangan</th>
+                    <th class="text-right" style="width: 13%;">Total Hutang</th>
+                    <th class="text-right" style="width: 13%;">Sudah Dibayar</th>
+                    <th class="text-right" style="width: 14%;">Sisa Ditagih</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in print_data.warung %}
+                <tr>
+                    <td>
+                        <strong>{{ row.worker_name }}</strong>
+                        {% if row.source_label %}
+                            <br><span class="small-muted">{{ row.source_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.note }}</td>
+                    <td class="text-right">{{ row.debt_amount|rupiah }}</td>
+                    <td class="text-right">{{ row.paid_amount|rupiah }}</td>
+                    <td class="text-right"><strong>{{ row.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="4" class="text-right"><strong>Total Hutang Warung Ditagihkan</strong></td>
+                    <td class="text-right"><strong>{{ print_data.totals.warung|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="small-muted">Tidak ada hutang warung pekerja pada invoice ini.</p>
+        {% endif %}
+    </div>
+
+    {% if print_data.other %}
+    <div class="box">
+        <div class="box-title">Rincian Lainnya</div>
+
+        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>Deskripsi</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Harga</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in print_data.other %}
+                <tr>
+                    <td>{{ row.item_type }}</td>
+                    <td>{{ row.description }}</td>
+                    <td class="text-right">{{ row.qty|int }}</td>
+                    <td class="text-right">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-right"><strong>{{ row.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="4" class="text-right"><strong>Total Lainnya</strong></td>
+                    <td class="text-right"><strong>{{ print_data.totals.other|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="summary">
+        <div class="summary-row">
+            <span>Total Catering</span>
+            <span>{{ print_data.totals.catering|rupiah }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Total Revisi Tambah</span>
+            <span>{{ print_data.totals.revision|rupiah }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Total Hutang Warung</span>
+            <span>{{ print_data.totals.warung|rupiah }}</span>
+        </div>
+
+        {% if print_data.totals.other > 0 %}
+        <div class="summary-row">
+            <span>Total Lainnya</span>
+            <span>{{ print_data.totals.other|rupiah }}</span>
+        </div>
+        {% endif %}
+
+        <div class="summary-row total">
+            <span>Grand Total Invoice</span>
+            <span>{{ invoice.total_amount|rupiah }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Sudah Dibayar</span>
+            <span>{{ invoice.paid_amount|rupiah }}</span>
+        </div>
+
+        <div class="summary-row remaining">
+            <span>Sisa Tagihan</span>
+            <span>{{ invoice.remaining_amount|rupiah }}</span>
+        </div>
+    </div>
+
+    {% if official_identity and (official_identity.bank_name or official_identity.bank_account_number or official_identity.bank_account_name) %}
+    <div class="box payment-box">
+        <div class="box-title">Informasi Pembayaran PT</div>
+        {% if official_identity.bank_name %}
+        <div class="row">
+            <span>Bank</span>
+            <strong>{{ official_identity.bank_name }}</strong>
+        </div>
+        {% endif %}
+        {% if official_identity.bank_account_number %}
+        <div class="row">
+            <span>No. Rekening</span>
+            <strong>{{ official_identity.bank_account_number }}</strong>
+        </div>
+        {% endif %}
+        {% if official_identity.bank_account_name %}
+        <div class="row">
+            <span>Atas Nama</span>
+            <strong>{{ official_identity.bank_account_name }}</strong>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="box official-print-warning">
+        <strong>Rekening pembayaran PT belum diisi.</strong> Lengkapi di Settings → Identitas Perusahaan sebelum invoice resmi dikirim.
+    </div>
+    {% endif %}
+
+    {% if company_settings.invoice_terms %}
+    <div class="notes">
+        <strong>Syarat & Ketentuan:</strong>
+        {{ company_settings.invoice_terms }}
+    </div>
+    {% endif %}
+
+    {% if payments %}
+    <div class="box payment-box">
+        <div class="box-title">Riwayat Pembayaran</div>
+
+        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>No Pembayaran</th>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th class="text-right">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>{{ payment.payment_number }}</td>
+                    <td>{{ payment.payment_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ payment.payment_method }}</td>
+                    <td class="text-right">{{ payment.amount|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if invoice.notes %}
+    <div class="notes">
+        <strong>Catatan:</strong>
+        {{ invoice.notes }}
+    </div>
+    {% endif %}
+
+    <div class="signature">
+        <div class="signature-box">
+            <p>Penerima Invoice</p>
+            <div class="signature-space"></div>
+            <strong>{{ official_identity.pic_name if official_identity and official_identity.pic_name else bill_to }}</strong>
+            <div class="small-muted">{{ official_identity.client_name if official_identity and official_identity.client_name else bill_to }}</div>
+        </div>
+
+        <div class="signature-box">
+            <p>{{ company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</p>
+            <div class="signature-space"></div>
+            <strong>{{ company_settings.invoice_authorized_name or "Admin/Owner" }}</strong>
+            {% if company_settings.invoice_authorized_position %}<div class="small-muted">{{ company_settings.invoice_authorized_position }}</div>{% endif %}
+        </div>
+    </div>
+
+    <div class="footer-note">
+        {{ company_settings.invoice_footer or ("Invoice ini dicetak dari Sistem Manajemen " ~ (company_settings.company_name or "PT Idha Boga Pangan Mandiri") ~ ".") }}
+    </div>
+</div>
+
+
+<script>
+function copyInvoiceWhatsAppMessage() {
+    const message = {{ whatsapp.message|tojson if whatsapp and whatsapp.message else '""' }};
+
+    if (!message) {
+        alert("Pesan WhatsApp belum tersedia.");
+        return;
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(message).then(function () {
+            alert("Pesan WhatsApp berhasil disalin.");
+        }).catch(function () {
+            fallbackCopyInvoiceWhatsAppMessage(message);
+        });
+    } else {
+        fallbackCopyInvoiceWhatsAppMessage(message);
+    }
+}
+
+function fallbackCopyInvoiceWhatsAppMessage(message) {
+    const textarea = document.createElement("textarea");
+    textarea.value = message;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand("copy");
+        alert("Pesan WhatsApp berhasil disalin.");
+    } catch (error) {
+        alert("Gagal menyalin pesan. Silakan salin manual dari WhatsApp.");
+    }
+
+    document.body.removeChild(textarea);
+}
+</script>
+
+</body>
+</html>

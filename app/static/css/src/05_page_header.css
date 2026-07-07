@@ -1,0 +1,305 @@
+/* ==================================================
+   PRODUCTION SOURCE: 05_page_header.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 1360-1657.
+   Note: Page header and mobile shell legacy section.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UIUX-6 Responsive Mobile Layout
+   ================================================== */
+
+.sidebar-backdrop {
+    display: none;
+}
+
+.app-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-header,
+.page-heading,
+.content-header,
+.section-header,
+.card-header,
+.filter-bar,
+.toolbar,
+.page-actions,
+.action-bar,
+.btn-toolbar,
+.form-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.page-actions,
+.action-bar,
+.form-actions,
+.btn-toolbar {
+    display: flex;
+    align-items: center;
+}
+
+.page-actions .btn,
+.action-bar .btn,
+.form-actions .btn,
+.btn-toolbar .btn,
+.page-actions .app-btn,
+.action-bar .app-btn,
+.form-actions .app-btn {
+    white-space: normal;
+}
+
+.table-responsive,
+.table-wrapper,
+.app-table-wrapper,
+.app-table-card,
+.table-card,
+.data-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive > table,
+.table-wrapper > table,
+.app-table-wrapper > table,
+.app-table-card table,
+.table-card table,
+.data-table-wrapper table {
+    min-width: 720px;
+}
+
+@media (max-width: 1199.98px) {
+    .content-area {
+        padding: 22px;
+    }
+
+    .summary-grid,
+    .dashboard-grid,
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991.98px) {
+    .app-shell {
+        display: block;
+    }
+
+    .app-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: min(82vw, 320px);
+        height: 100vh;
+        z-index: 1060;
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        box-shadow: 18px 0 45px rgba(0, 0, 0, 0.28);
+    }
+
+    .app-sidebar.is-open,
+    .app-sidebar.show {
+        transform: translateX(0);
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        display: none;
+        background: rgba(15, 23, 42, 0.48);
+        backdrop-filter: blur(2px);
+    }
+
+    .sidebar-backdrop.is-visible {
+        display: block;
+    }
+
+    body.sidebar-open {
+        overflow: hidden;
+    }
+
+    .app-main {
+        margin-left: 0;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .app-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 1040;
+        min-height: 62px;
+        padding: 10px 14px;
+    }
+
+    .topbar-title,
+    .app-title,
+    .system-title {
+        max-width: 56vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .topbar-actions,
+    .topbar-right {
+        gap: 8px;
+    }
+
+    .content-area {
+        padding: 18px 14px 24px;
+    }
+
+    .content-card,
+    .app-card,
+    .card {
+        border-radius: 16px;
+    }
+
+    .page-header,
+    .content-header,
+    .section-header {
+        align-items: flex-start;
+    }
+
+    .page-actions,
+    .action-bar,
+    .form-actions,
+    .btn-toolbar {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .content-area {
+        padding: 14px 10px 22px;
+    }
+
+    .summary-grid,
+    .dashboard-grid,
+    .stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-title,
+    .content-title,
+    h1 {
+        font-size: 1.35rem;
+        line-height: 1.25;
+    }
+
+    h2 {
+        font-size: 1.18rem;
+    }
+
+    h3 {
+        font-size: 1.05rem;
+    }
+
+    .page-subtitle,
+    .text-muted,
+    .small-muted {
+        font-size: 0.88rem;
+    }
+
+    .page-actions .btn,
+    .action-bar .btn,
+    .form-actions .btn,
+    .btn-toolbar .btn,
+    .page-actions .app-btn,
+    .action-bar .app-btn,
+    .form-actions .app-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-group,
+    .btn-group-sm,
+    .btn-group-lg {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .btn-group > .btn,
+    .btn-group-sm > .btn,
+    .btn-group-lg > .btn {
+        flex: 1 1 auto;
+        border-radius: 10px !important;
+    }
+
+    .table-responsive > table,
+    .table-wrapper > table,
+    .app-table-wrapper > table,
+    .app-table-card table,
+    .table-card table,
+    .data-table-wrapper table {
+        min-width: 680px;
+    }
+
+    .modal-dialog {
+        margin: 10px;
+    }
+
+    .form-control,
+    .form-select,
+    .btn,
+    .app-btn {
+        min-height: 42px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-sidebar {
+        width: min(88vw, 300px);
+    }
+
+    .brand-title {
+        font-size: 0.95rem;
+    }
+
+    .brand-subtitle {
+        font-size: 0.72rem;
+    }
+
+    .app-topbar {
+        padding: 9px 10px;
+    }
+
+    .topbar-title,
+    .app-title,
+    .system-title {
+        max-width: 48vw;
+        font-size: 0.95rem;
+    }
+
+    .user-chip,
+    .topbar-user,
+    .status-pill {
+        max-width: 42vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .content-card,
+    .app-card,
+    .card {
+        padding: 14px;
+    }
+
+    .table-responsive > table,
+    .table-wrapper > table,
+    .app-table-wrapper > table,
+    .app-table-card table,
+    .table-card table,
+    .data-table-wrapper table {
+        min-width: 620px;
+    }
+}

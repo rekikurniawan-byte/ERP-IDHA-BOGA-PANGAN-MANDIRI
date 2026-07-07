@@ -1,0 +1,127 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • COA 5003 / 5011</span>
+        <h1>Transport & BBM</h1>
+        <p>Biaya transport dan BBM diposting langsung ke COA yang tepat: 5003 untuk transportasi, 5011 untuk BBM kendaraan.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        {% if schema_ready %}
+            <a href="{{ url_for('finance.transport_expense_create') }}" class="btn app-btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Catat Biaya
+            </a>
+        {% endif %}
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Buku Kas/Bank</a>
+    </div>
+</div>
+{% set precision_key = 'transport' %}
+
+{% if not schema_ready %}
+<div class="app-card soft-warning-card mt-4">
+    <strong>Migrasi fitur transport dan BBM belum dijalankan</strong>
+    <p>Fitur Transport & BBM sudah tersedia di kode, tetapi tabel <code>transport_vehicle_expenses</code> belum ada di database aktif. Jalankan migration sebelum memakai fitur ini.</p>
+</div>
+{% else %}
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Transaksi</span>
+        <h3>{{ summary.count }}</h3>
+        <p>Biaya transport/BBM tercatat</p>
+    </div>
+    <div class="app-stat-card">
+        <span>BBM Kendaraan</span>
+        <h3>{{ summary.fuel_total|rupiah }}</h3>
+        <p>Posting ke 5011</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Transportasi</span>
+        <h3>{{ summary.transport_total|rupiah }}</h3>
+        <p>Posting ke 5003</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('finance.transport_expenses') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-4">
+            <label class="form-label">Jenis Biaya</label>
+            <select name="type" class="form-select">
+                <option value="ALL" {% if selected_type == 'ALL' %}selected{% endif %}>Semua jenis</option>
+                {% for key, item in expense_types.items() %}
+                    <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ item.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Sumber Dana</label>
+            <select name="account" class="form-select">
+                <option value="ALL" {% if selected_account == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="CASH" {% if selected_account == 'CASH' %}selected{% endif %}>Kas</option>
+                <option value="BANK" {% if selected_account == 'BANK' %}selected{% endif %}>Bank</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary">Filter</button>
+            <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Biaya Transport & BBM</h5>
+            <p>Setiap row harus punya buku kas/bank OUT dan jurnal debit ke 5003/5011.</p>
+        </div>
+    </div>
+
+    {% if expenses %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Biaya</th>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Akun COA</th>
+                    <th>Driver</th>
+                    <th>Delivery</th>
+                    <th class="text-end">Nominal</th>
+                    <th>Sumber</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td><strong>{{ expense.expense_number }}</strong></td>
+                    <td>{{ expense.expense_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ expense_types.get(expense.expense_type, {}).get('label', expense.expense_type) }}</td>
+                    <td><span class="status-badge status-info">{{ expense.account_code }}</span></td>
+                    <td>{{ get_driver_label(expense) }}</td>
+                    <td>{{ get_delivery_label(expense) }}</td>
+                    <td class="text-end"><strong>{{ expense.amount|rupiah }}</strong></td>
+                    <td>{{ 'Kas' if expense.account_type == 'CASH' else 'Bank' }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('finance.transport_expense_detail', expense_id=expense.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-fuel-pump"></i>
+        <h5>Belum ada biaya transport/BBM</h5>
+        <p>Ini aman. Biaya hanya dicatat kalau event kas/bank keluar memang terjadi.</p>
+        <a href="{{ url_for('finance.transport_expense_create') }}" class="btn app-btn-primary">Catat Biaya Pertama</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

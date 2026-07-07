@@ -1,0 +1,914 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>{{ invoice.invoice_number }}</h1>
+        <p>
+            Invoice untuk {{ bill_to }}{% if official_identity and official_identity.client_code %} ({{ official_identity.client_code }}){% endif %}
+            {% if invoice.source_type == "PERIOD_INVOICE" %}
+                - Invoice Periode
+            {% elif invoice.source_type == "DAILY_ORDER" %}
+                - Invoice Order
+            {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
+                - Invoice Rekap Tagihan Mandor
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        {% if invoice.remaining_amount > 0 and invoice.status not in ['CANCELLED', 'CANCELED'] %}
+            <a href="#payment-section" class="btn app-btn-primary">
+                <i class="bi bi-credit-card"></i>
+                Terima Pembayaran
+            </a>
+        {% endif %}
+
+        <div class="dropdown app-action-dropdown">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="invoiceActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi Invoice
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="invoiceActionDropdown">
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('finance.invoice_print', invoice_id=invoice.id) }}" target="_blank">
+                        <i class="bi bi-printer"></i>
+                        Cetak Invoice
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('finance.invoice_profit_detail', invoice_id=invoice.id) }}">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Profit / HPP Invoice
+                    </a>
+                </li>
+                {% if whatsapp and whatsapp.url %}
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('finance.invoice_whatsapp_send', invoice_id=invoice.id) }}" target="_blank">
+                        <i class="bi bi-whatsapp"></i>
+                        Kirim WhatsApp
+                    </a>
+                </li>
+                <li>
+                    <button type="button"
+                            class="dropdown-item"
+                            data-app-call="copyInvoiceWhatsAppMessage">
+                        <i class="bi bi-clipboard"></i>
+                        Salin Pesan WA
+                    </button>
+                </li>
+                {% endif %}
+                <li>
+                    <a class="dropdown-item" href="/finance/payment-history">
+                        <i class="bi bi-clock-history"></i>
+                        Riwayat Pembayaran
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('finance.invoices') }}">
+                        <i class="bi bi-arrow-left"></i>
+                        Daftar Invoice
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Invoice</span>
+        <h3>{{ invoice.total_amount|rupiah }}</h3>
+        <p>Nilai tagihan</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Sudah Dibayar</span>
+        <h3>{{ invoice.paid_amount|rupiah }}</h3>
+        <p>Total pembayaran</p>
+    </div>
+
+    {# HYGIENE7A_CANCELLED_REMAINING_CARD #}
+    <div class="app-stat-card">
+        {% if invoice.status in ['CANCELLED', 'CANCELED'] %}
+            <span>Nilai Arsip</span>
+            <h3>{{ invoice.remaining_amount|rupiah }}</h3>
+            <p>Tidak dihitung piutang aktif</p>
+        {% else %}
+            <span>Sisa</span>
+            <h3>{{ invoice.remaining_amount|rupiah }}</h3>
+            <p>Piutang tersisa</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if posting_status is defined and posting_status %}
+<div class="posting-inline-card mt-4" data-posting-inline="invoice">
+    <div>
+        <h5>Status Posting Jurnal</h5>
+        <p>{{ posting_status.reason }}</p>
+        {% if posting_status.journal_url %}
+            <a href="{{ posting_status.journal_url }}" class="posting-journal-link">Lihat jurnal {{ posting_status.journal_number }}</a>
+        {% endif %}
+    </div>
+    <div class="posting-row-actions">
+        <span class="posting-badge is-{{ posting_status.class }}"><i class="bi {{ posting_status.icon }}"></i>{{ posting_status.label }}</span>
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Status Center</a>
+    </div>
+</div>
+{% endif %}
+
+{% include "finance/_billing_trace_panel.html" %}
+
+{% set ar = finance_ar_warning(invoice) %}
+
+{% if invoice.status in ['CANCELLED', 'CANCELED'] %}
+{# HYGIENE5C_CANCELLED_DETAIL_NOTICE #}
+<div class="app-card soft-warning-card mt-4">
+    <strong>Invoice Dibatalkan</strong>
+    <p>Invoice ini berstatus CANCELLED sehingga tidak dihitung sebagai piutang aktif, tidak bisa menerima pembayaran, dan tidak perlu follow up penagihan.</p>
+</div>
+{% endif %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Peringatan Piutang</h5>
+            <p>Status penagihan otomatis berdasarkan jatuh tempo, pembayaran, dan riwayat follow up.</p>
+        </div>
+        <span class="status-badge {{ ar.badge_class }}">{{ ar.stage_label }}</span>
+    </div>
+
+    <div class="info-grid">
+        <div>
+            <span>Level</span>
+            <strong>{{ ar.level }}</strong>
+        </div>
+
+        <div>
+            <span>Progress Bayar</span>
+            <strong>{{ ar.paid_percent }}% dari target {{ ar.expected_percent }}%</strong>
+        </div>
+
+        <div>
+            <span>Status Collection Terakhir</span>
+            <strong>{{ ar.latest_status }}</strong>
+        </div>
+
+        <div>
+            <span>Follow Up Terakhir</span>
+            <strong>{{ ar.latest_date }}</strong>
+        </div>
+
+        <div>
+            <span>PIC Terakhir</span>
+            <strong>{{ ar.latest_pic }}</strong>
+        </div>
+
+        <div>
+            <span>Tindakan Disarankan</span>
+            <strong>{{ ar.action }}</strong>
+        </div>
+    </div>
+
+    <div class="alert alert-light mt-3 mb-0">
+        <strong>Catatan Sistem:</strong> {{ ar.message }}
+    </div>
+</div>
+
+{% if manual_billing_batch %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rekap Tagihan Mandor</h5>
+            {% if manual_billing_batch.input_source == 'MANUAL_BACKFILL' %}
+            <p>Invoice ini dibuat dari Input Rekap Manual dari Buku. Status rekap ikut berubah saat invoice dibayar sebagian atau lunas.</p>
+            {% else %}
+            <p>Invoice ini dibuat dari batch rekap tagihan mandor yang sumber datanya sudah tercatat di sistem.</p>
+            {% endif %}
+        </div>
+        <span class="status-badge status-progress">{{ manual_billing_batch.status }}</span>
+    </div>
+    <div class="info-grid">
+        <div>
+            <span>No Rekap</span>
+            <strong>{{ manual_billing_batch.batch_number }}</strong>
+        </div>
+        <div>
+            <span>Periode Rekap</span>
+            <strong>{{ manual_billing_batch.period_start.strftime('%d-%m-%Y') }} s/d {{ manual_billing_batch.period_end.strftime('%d-%m-%Y') }}</strong>
+        </div>
+        <div>
+            <span>Total Rekap</span>
+            <strong>{{ manual_billing_batch.total_amount|rupiah }}</strong>
+        </div>
+        <div>
+            <span>Jumlah Sumber</span>
+            <strong>{{ manual_billing_batch.items|length }}</strong>
+        </div>
+        <div>
+            <span>Sumber Input Rekap</span>
+            <strong>{{ input_source_context.label }}</strong>
+        </div>
+        {% if manual_billing_batch.input_source == 'MANUAL_BACKFILL' %}
+        <div>
+            <span>Status Rekap Setelah Bayar</span>
+            <strong>{{ manual_billing_batch.status }}</strong>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Informasi Invoice</h5>
+            <p>Detail dasar invoice dan periode tagihan.</p>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <span>No Invoice</span>
+            <strong>{{ invoice.invoice_number }}</strong>
+        </div>
+
+        <div>
+            <span>Jenis Invoice</span>
+            <strong>
+                {% if invoice.source_type == "PERIOD_INVOICE" %}
+                    Invoice Periode
+                {% elif invoice.source_type == "DAILY_ORDER" %}
+                    Invoice Order Harian
+                {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
+                    Invoice Rekap Tagihan Mandor
+                {% else %}
+                    {{ invoice.source_type or "-" }}
+                {% endif %}
+            </strong>
+        </div>
+
+        <div>
+            <span>Sumber Input</span>
+            <strong>
+                <span class="status-badge {{ input_source_context.badge_class }}">{{ input_source_context.label }}</span>
+            </strong>
+            <small class="text-muted d-block mt-1">{{ input_source_context.helper }}</small>
+        </div>
+
+        <div>
+            <span>Periode Tagihan</span>
+            <strong>
+                {% if invoice.period_start and invoice.period_end %}
+                    {{ invoice.period_start.strftime('%d-%m-%Y') }} s/d {{ invoice.period_end.strftime('%d-%m-%Y') }}
+                {% else %}
+                    -
+                {% endif %}
+            </strong>
+        </div>
+
+        <div>
+            <span>Tanggal Invoice</span>
+            <strong>{{ invoice.invoice_date.strftime('%d-%m-%Y') }}</strong>
+        </div>
+
+        <div>
+            <span>Jatuh Tempo</span>
+            <strong>{{ invoice.due_date.strftime('%d-%m-%Y') }}</strong>
+        </div>
+
+        <div>
+            <span>Ditagihkan Ke</span>
+            <strong>{{ bill_to }}</strong>
+        </div>
+
+        {% if invoice.mandor_id %}
+        <div>
+            <span>Penanggung Jawab Lapangan</span>
+            <strong>{{ mandor_name if mandor_name is defined and mandor_name else (bill_to if invoice.bill_to_type == "MANDOR" else "-") }}</strong>
+        </div>
+        {% endif %}
+
+        {% if invoice.client_id %}
+        <div>
+            <span>{% if invoice.bill_to_type == 'MANDOR' %}Pihak Ditagih{% else %}Pihak Ditagih / Perusahaan{% endif %}</span>
+            <strong>{{ client_name if client_name is defined and client_name else (bill_to if invoice.bill_to_type == "CLIENT" else "-") }}</strong>
+        </div>
+        {% endif %}
+
+        <div>
+            <span>Status</span>
+            <strong>
+                {% if invoice.status == 'DRAFT' %}
+                    OPEN / BELUM LUNAS
+                {% else %}
+                    {{ invoice.status }}
+                {% endif %}
+            </strong>
+            {% if invoice.status == 'DRAFT' %}
+                <small class="text-muted d-block">Status database masih DRAFT, artinya invoice aktif menunggu pembayaran.</small>
+            {% endif %}
+        </div>
+
+        <div>
+            <span>Sumber Sistem</span>
+            <strong>{{ invoice.source_type or "-" }}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4 official-invoice-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Identitas Resmi Invoice</h5>
+            {% if invoice.bill_to_type == 'MANDOR' %}
+            <p>Invoice ini ditagihkan langsung ke mandor/kelompok. PT/PIC client hanya konteks opsional, bukan syarat invoice.</p>
+            {% else %}
+            <p>Client/perusahaan adalah pihak tagihan utama. Mandor hanya PIC lapangan. Data di bawah dikunci sebagai snapshot invoice resmi.</p>
+            {% endif %}
+        </div>
+        {% if official_identity and official_identity.is_complete %}
+            <span class="status-badge status-locked">RESMI LENGKAP</span>
+        {% else %}
+            <span class="status-badge status-progress">PERLU CEK</span>
+        {% endif %}
+    </div>
+
+    {% if official_identity and official_identity.missing %}
+    <div class="alert alert-warning">
+        <strong>Perhatian:</strong> Data resmi belum lengkap: {{ official_identity.missing|join(', ') }}. Lengkapi sebelum print/kirim invoice resmi.
+    </div>
+    {% endif %}
+
+    <div class="info-grid">
+        <div>
+            <span>{% if invoice.bill_to_type == 'MANDOR' %}Pihak Ditagih{% else %}Pihak Ditagih / Perusahaan{% endif %}</span>
+            <strong>{{ official_identity.client_name if official_identity else client_name }}</strong>
+        </div>
+        {% if invoice.bill_to_type == 'CLIENT' %}
+        <div>
+            <span>Kode Client</span>
+            <strong>{{ official_identity.client_code if official_identity and official_identity.client_code else '-' }}</strong>
+        </div>
+        <div>
+            <span>PIC Penagihan</span>
+            <strong>{{ official_identity.pic_name if official_identity and official_identity.pic_name else '-' }}</strong>
+            {% if official_identity and official_identity.pic_position %}<small class="d-block text-muted">{{ official_identity.pic_position }}</small>{% endif %}
+        </div>
+        <div>
+            <span>Kontak PIC</span>
+            <strong>{{ official_identity.pic_phone if official_identity and official_identity.pic_phone else '-' }}</strong>
+            {% if official_identity and official_identity.pic_email %}<small class="d-block text-muted">{{ official_identity.pic_email }}</small>{% endif %}
+        </div>
+        {% else %}
+        <div>
+            <span>Tipe Tagihan</span>
+            <strong>Mandor / Kelompok</strong>
+        </div>
+        <div>
+            <span>Kontak Mandor</span>
+            <strong>{{ official_identity.pic_phone if official_identity and official_identity.pic_phone else '-' }}</strong>
+        </div>
+        <div>
+            <span>Konteks Client/PT</span>
+            <strong>{{ client_name if client_name else '-' }}</strong>
+        </div>
+        {% endif %}
+        <div>
+            <span>Rekening Pembayaran PT</span>
+            <strong>{{ official_identity.bank_name if official_identity and official_identity.bank_name else '-' }}</strong>
+            {% if official_identity and official_identity.bank_account_number %}<small class="d-block text-muted">{{ official_identity.bank_account_number }} a.n. {{ official_identity.bank_account_name }}</small>{% endif %}
+        </div>
+        <div>
+            <span>PIC Lapangan</span>
+            <strong>{{ mandor_name if mandor_name else '-' }}</strong>
+        </div>
+    </div>
+
+    {% if invoice.bill_to_type == 'CLIENT' and invoice.client_id %}
+    <form method="POST" action="{{ url_for('finance.refresh_invoice_official_identity', invoice_id=invoice.id) }}" class="app-form mt-3" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Kunci / Ganti PIC Penagihan</label>
+                <select name="client_pic_id" class="form-select app-input" required>
+                    {% for pic in client_pics %}
+                    <option value="{{ pic.id }}" {% if invoice.client_pic_id is defined and invoice.client_pic_id == pic.id %}selected{% endif %}>
+                        {{ pic.name }}{% if pic.position %} - {{ pic.position }}{% endif %}{% if pic.phone %} / {{ pic.phone }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not client_pics %}<div class="form-text text-danger">Client belum punya PIC aktif.</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn app-btn-secondary" {% if not client_pics %}disabled{% endif %}>
+                    <i class="bi bi-shield-check"></i>
+                    Kunci Ulang Snapshot Resmi
+                </button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rincian Item Invoice</h5>
+            <p>Komponen tagihan pada invoice. Kolom sumber dipakai untuk mencegah dobel tagih.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>Deskripsi</th>
+                    <th>Qty</th>
+                    <th>Harga</th>
+                    <th>Subtotal</th>
+                    <th>Sumber</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                <tr>
+                    <td><strong>{{ item.item_type }}</strong></td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.qty|qty }}</td>
+                    <td>{{ item.unit_price|rupiah }}</td>
+                    <td>{{ item.subtotal|rupiah }}</td>
+                    <td>
+                        {% if item.source_type %}
+                            <span class="status-badge status-progress">{{ item.source_type }}</span>
+                            <div class="small text-muted mt-1">ID: {{ item.source_id }}</div>
+                            {% set source_ref = manual_billing_source_refs.get(item.id) if manual_billing_source_refs else none %}
+                            {% if source_ref %}
+                            <div class="small mt-1">
+                                <a href="{{ source_ref.href }}">{{ source_ref.label }}</a>
+                            </div>
+                            <div class="small text-muted">{{ source_ref.helper }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-receipt"></i>
+                            <p>Belum ada item invoice.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if invoice.remaining_amount > 0 and invoice.status not in ['CANCELLED', 'CANCELED'] %}
+<div class="app-card mt-4" id="payment-section">
+    <div class="card-header-clean">
+        <div>
+            <h5>Input Pembayaran Invoice</h5>
+            <p>Catat pembayaran masuk untuk mengurangi sisa piutang invoice.</p>
+        </div>
+    </div>
+
+    <form method="POST"
+          enctype="multipart/form-data"
+          action="{{ url_for('finance.create_invoice_payment', invoice_id=invoice.id) }}" data-app-confirm="Terima pembayaran invoice ini? Sistem akan otomatis mencatat pembayaran dan jurnal keuangan." data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tanggal Pembayaran</label>
+                <input type="date" name="payment_date" class="form-control" value="{{ today_date }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Metode Pembayaran</label>
+                <select name="payment_method" id="payment_method" class="form-control" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer</option>
+                </select>
+                <div class="form-text text-muted small">Cash masuk kas. Transfer wajib pilih rekening bank penerima.</div>
+            </div>
+
+            <div class="form-group" id="bank_account_group">
+                <label>Rekening Bank Penerima</label>
+                <select name="bank_account_id" id="bank_account_id" class="form-control">
+                    <option value="">Pilih rekening untuk pembayaran transfer</option>
+                    {% for account in active_bank_accounts %}
+                        <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} ({{ account.account_number }})</option>
+                    {% endfor %}
+                </select>
+                {% if active_bank_accounts %}
+                    <div class="form-text text-muted small">Dipakai untuk mencatat buku kas/bank pembayaran customer.</div>
+                {% else %}
+                    <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Master Data &gt; Rekening Bank jika menerima transfer.</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Nominal Pembayaran</label>
+                <input type="number"
+                       name="amount"
+                       class="form-control"
+                       min="1"
+                       step="0.01"
+                       max="{{ invoice.remaining_amount }}"
+                       placeholder="Sisa: {{ invoice.remaining_amount|rupiah }}"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>No Referensi</label>
+                <input type="text"
+                       name="reference_number"
+                       class="form-control"
+                       placeholder="Opsional, misal no transfer">
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <label>Catatan</label>
+            <textarea name="notes"
+                      class="form-control"
+                      rows="2"
+                      placeholder="Opsional"></textarea>
+        </div>
+
+        <div class="app-card soft-info-card mt-3">
+            <div class="card-header-clean">
+                <div>
+                    <h6 class="mb-1">Bukti Digital Pembayaran</h6>
+                    <p class="mb-0">Opsional. Upload bukti transfer/screenshot pembayaran kalau tersedia.</p>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Jenis Bukti</label>
+                    <select name="proof_type" class="form-control">
+                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer Customer</option>
+                        <option value="SCREENSHOT_PAYMENT">Screenshot Pembayaran</option>
+                        <option value="BUKTI_SETOR">Bukti Setor</option>
+                        <option value="LAINNYA">Lainnya</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>File Bukti</label>
+                    <input type="file" name="proof_file" class="form-control" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                    <div class="form-text text-muted small">Format aman: {{ allowed_extensions|join(', ') }}. Maksimal {{ max_upload_mb }} MB.</div>
+                </div>
+            </div>
+            <div class="form-group mt-2">
+                <label>Catatan Bukti</label>
+                <input type="text" name="proof_notes" class="form-control" placeholder="Opsional, contoh: screenshot transfer dari client">
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-3">
+            <div>
+                <strong>Sisa Invoice: {{ invoice.remaining_amount|rupiah }}</strong>
+                <div class="text-muted small">Pembayaran tidak boleh melebihi sisa invoice.</div>
+            </div>
+
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-credit-card"></i>
+                Terima Pembayaran
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Pembayaran</h5>
+            <p>Pembayaran yang masuk untuk invoice ini.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Pembayaran</th>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th>Rekening / Kas</th>
+                    <th>Jumlah</th>
+                    <th>Referensi</th>
+                    <th>Bukti Digital</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td><strong>{{ payment.payment_number }}
+                                <div class="mt-1">
+                                    {# RECEIPT1B_PAYMENT_RECEIPT_BUTTON #}
+                                    <a href="{{ url_for('finance.payment_receipt', payment_id=payment.id) }}"
+                                       target="_blank"
+                                       class="btn btn-sm app-btn-secondary">
+                                        Kwitansi
+                                    </a>
+                                </div></strong></td>
+                    <td>{{ payment.payment_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ payment.payment_method }}</td>
+                    <td>
+                        {% if payment.payment_method == 'TRANSFER' and payment.bank_account %}
+                            <strong>{{ payment.bank_account.bank_name }}</strong>
+                            <div class="small text-muted">{{ payment.bank_account.account_name }} - {{ payment.bank_account.account_number }}</div>
+                        {% elif payment.payment_method == 'CASH' %}
+                            <span class="text-muted">Kas</span>
+                        {% else %}
+                            <span class="text-danger">Belum tercatat</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ payment.amount|rupiah }}</td>
+                    <td>{{ payment.reference_number or "-" }}</td>
+                    <td class="payment-proof-cell">
+                        {% set attachments = payment_attachments.get(payment.id, []) %}
+                        <div class="payment-proof-stack">
+                            {% if attachments %}
+                                <div class="payment-proof-attachment-list">
+                                    {% for attachment in attachments %}
+                                        <div class="payment-proof-attachment-card">
+                                            <div class="payment-proof-attachment-main">
+                                                <div>
+                                                    <strong>{{ attachment.original_filename }}</strong>
+                                                    <span>{{ attachment.attachment_type }} · {{ format_file_size(attachment.file_size) }}</span>
+                                                </div>
+                                                <div class="payment-proof-attachment-actions">
+                                                    <a href="{{ url_for('finance.view_customer_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
+                                                    <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                                                </div>
+                                            </div>
+                                            <form method="POST" action="{{ url_for('finance.delete_customer_payment_attachment', attachment_id=attachment.id) }}" class="app-form payment-proof-delete-form" data-app-confirm="Hapus lunak bukti payment ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
+                                                {% include "components/csrf_token.html" %}
+                                                <input type="hidden" name="delete_note" value="Bukti pembayaran pelanggan salah upload.">
+                                                <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
+                                            </form>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="payment-proof-empty-badge">Belum ada bukti</span>
+                            {% endif %}
+
+                            <form method="POST" enctype="multipart/form-data" action="{{ url_for('finance.upload_customer_payment_attachment', payment_id=payment.id) }}" class="app-form payment-proof-upload-form" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <div class="payment-proof-upload-label">Upload bukti tambahan</div>
+                                <div class="payment-proof-upload-grid">
+                                    <select name="proof_type" class="form-select form-select-sm">
+                                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer Customer</option>
+                                        <option value="SCREENSHOT_PAYMENT">Screenshot Pembayaran</option>
+                                        <option value="BUKTI_SETOR">Bukti Setor</option>
+                                        <option value="LAINNYA">Lainnya</option>
+                                    </select>
+                                    <input type="file" name="proof_file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+                                    <input type="text" name="proof_notes" class="form-control form-control-sm" placeholder="Catatan bukti, opsional">
+                                    <button type="submit" class="btn btn-sm app-btn-secondary">Upload Bukti</button>
+                                </div>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-credit-card"></i>
+                            <p>Belum ada pembayaran untuk invoice ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const methodSelect = document.getElementById('payment_method');
+    const bankGroup = document.getElementById('bank_account_group');
+    const bankSelect = document.getElementById('bank_account_id');
+
+    function syncBankAccountField() {
+        if (!methodSelect || !bankGroup || !bankSelect) {
+            return;
+        }
+
+        const isTransfer = methodSelect.value === 'TRANSFER';
+        bankGroup.style.display = isTransfer ? '' : 'none';
+        bankSelect.required = isTransfer;
+
+        if (!isTransfer) {
+            bankSelect.value = '';
+        }
+    }
+
+    if (methodSelect) {
+        methodSelect.addEventListener('change', syncBankAccountField);
+        syncBankAccountField();
+    }
+});
+</script>
+
+{% if invoice.notes %}
+<div class="app-card mt-4">
+    <h5>Catatan</h5>
+    <p class="mb-0">{{ invoice.notes }}</p>
+</div>
+{% endif %}
+
+<script>
+function copyInvoiceWhatsAppMessage() {
+    const message = {{ whatsapp.message|tojson if whatsapp and whatsapp.message else '""' }};
+
+    if (!message) {
+        alert("Pesan WhatsApp belum tersedia.");
+        return;
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(message).then(function () {
+            alert("Pesan WhatsApp berhasil disalin.");
+        }).catch(function () {
+            fallbackCopyInvoiceWhatsAppMessage(message);
+        });
+    } else {
+        fallbackCopyInvoiceWhatsAppMessage(message);
+    }
+}
+
+function fallbackCopyInvoiceWhatsAppMessage(message) {
+    const textarea = document.createElement("textarea");
+    textarea.value = message;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand("copy");
+        alert("Pesan WhatsApp berhasil disalin.");
+    } catch (error) {
+        alert("Gagal menyalin pesan. Silakan salin manual dari WhatsApp.");
+    }
+
+    document.body.removeChild(textarea);
+}
+</script>
+<div class="app-card mt-4">
+    <div class="section-title">
+        <div>
+            <h3>Riwayat Penagihan / Collection History</h3>
+            <p>Catat setiap follow up agar owner tahu perkembangan tagihan client.</p>
+        </div>
+    </div>
+
+    {% if invoice.remaining_amount > 0 and invoice.status not in ['CANCELLED', 'CANCELED'] %}
+    <form method="POST" action="{{ url_for('finance.create_invoice_collection_log', invoice_id=invoice.id) }}" class="mb-4 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Tanggal Follow Up</label>
+                <input type="date" name="follow_up_date" class="form-control app-input" value="{{ today_date }}" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Via</label>
+                <select name="channel" class="form-select app-input" required>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="PHONE">Telepon</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="VISIT">Kunjungan</option>
+                    <option value="OTHER">Lainnya</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">PIC yang Dihubungi</label>
+                <input list="client_pic_options" type="text" name="contact_person" class="form-control app-input" placeholder="Contoh: PIC Finance">
+                <datalist id="client_pic_options">
+                    {% for pic in client_pics %}
+                    <option value="{{ pic.name }}">{{ pic.position if pic.position else 'PIC Client' }}</option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Status Penagihan</label>
+                <select name="collection_status" class="form-select app-input" required>
+                    <option value="SENT">Invoice Terkirim</option>
+                    <option value="UNPAID">Belum Dibayar</option>
+                    <option value="DUE_SOON">Reminder Jatuh Tempo</option>
+                    <option value="OVERDUE">Lewat Jatuh Tempo</option>
+                    <option value="FOLLOW_UP" selected>Follow Up</option>
+                    <option value="PROMISE_TO_PAY">Janji Bayar</option>
+                    <option value="STATEMENT_SENT">Rekap Piutang Dikirim</option>
+                    <option value="OFFICIAL_LETTER">Surat Tagihan Resmi</option>
+                    <option value="INSTALLMENT">Cicilan / Negosiasi</option>
+                    <option value="PARTIAL">Sudah Bayar Sebagian</option>
+                    <option value="PAID">Lunas</option>
+                    <option value="OTHER">Lainnya</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Janji Bayar</label>
+                <input type="date" name="promise_date" class="form-control app-input">
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Tindakan Berikutnya</label>
+                <input type="text" name="next_action" class="form-control app-input" placeholder="Contoh: Follow up lagi H-1 jatuh tempo / kirim rekap piutang">
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Catatan Respon Client</label>
+                <textarea name="response_note" class="form-control app-input" rows="3" placeholder="Contoh: PIC sudah menerima invoice dan akan proses pembayaran minggu depan." required></textarea>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                Simpan Follow Up
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-success">
+        {# HYGIENE7A_CANCELLED_COLLECTION_MESSAGE #}
+{% if invoice.status in ['CANCELLED', 'CANCELED'] %}
+Invoice dibatalkan, follow up penagihan tidak diperlukan.
+{% else %}
+Invoice sudah lunas, follow up penagihan tidak diperlukan.
+{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Via</th>
+                    <th>PIC</th>
+                    <th>Status</th>
+                    <th>Janji Bayar</th>
+                    <th>Tindakan Berikutnya</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in collection_logs %}
+                <tr>
+                    <td>{{ log.follow_up_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ log.channel }}</td>
+                    <td>{{ log.contact_person if log.contact_person else '-' }}</td>
+                    <td>
+                        <span class="status-badge status-draft">{{ log.collection_status }}</span>
+                    </td>
+                    <td>
+                        {% if log.promise_date %}
+                            {{ log.promise_date.strftime('%d-%m-%Y') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ log.next_action if log.next_action else '-' }}</td>
+                    <td>{{ log.response_note if log.response_note else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-chat-dots"></i>
+                            <p>Belum ada riwayat follow up untuk invoice ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

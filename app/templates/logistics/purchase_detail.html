@@ -1,0 +1,370 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="purchase_detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Detail Pembelian</span>
+        <h1>{{ procurement.procurement_number }}</h1>
+        <p>{{ procurement.procurement_date.strftime('%d-%m-%Y') }} | {{ procurement.purchase_place or procurement.supplier_name or 'Pembelian sendiri' }}{% if procurement.supplier %} | Supplier tetap: {{ procurement.supplier.supplier_code }}{% endif %}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('logistics.purchases') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Pembelian
+        </a>
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            Dashboard Stok
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-basket"></i>
+        </div>
+        <div>
+            <p>Total Item</p>
+            <h3>{{ procurement.items|length }}</h3>
+            <span class="app-stat-helper">Barang dibeli</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+            <p>Total Belanja</p>
+            <h3>{{ procurement.total_amount|rupiah }}</h3>
+            <span class="app-stat-helper">Nilai pembelian</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-wallet2"></i>
+        </div>
+        <div>
+            <p>Tipe Pembelian</p>
+            {% if procurement.purchase_type == "CREDIT" %}
+                <h3>HUTANG</h3>
+                <span class="app-stat-helper">Belum dibayar tunai</span>
+            {% else %}
+                <h3>TUNAI</h3>
+                <span class="app-stat-helper">Dibayar langsung</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-shop"></i>
+        </div>
+        <div>
+            <p>Supplier</p>
+            <h3>{{ procurement.supplier.supplier_name if procurement.supplier else 'Manual' }}</h3>
+            <span class="app-stat-helper">
+                {% if procurement.supplier %}
+                    {{ procurement.supplier.supplier_code }} | Tempo {{ procurement.supplier.default_payment_terms_days or 0 }} hari
+                {% else %}
+                    {{ procurement.purchase_place or procurement.supplier_name or 'Pembelian sendiri' }}
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if posting_status is defined and posting_status %}
+<div class="posting-inline-card mt-4" data-posting-inline="procurement">
+    <div>
+        <h5>Status Posting Jurnal</h5>
+        <p>{{ posting_status.reason }}</p>
+        {% if posting_status.journal_url %}
+            <a href="{{ posting_status.journal_url }}" class="posting-journal-link">Lihat jurnal {{ posting_status.journal_number }}</a>
+        {% endif %}
+    </div>
+    <div class="posting-row-actions">
+        <span class="posting-badge is-{{ posting_status.class }}"><i class="bi {{ posting_status.icon }}"></i>{{ posting_status.label }}</span>
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Status Center</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Info Pembelian</h5>
+            <p>Supplier tetap hanya sebagai referensi master. Tempat Belanja tetap menjadi snapshot nota pembelian ini.</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="text-muted small">Tempat Belanja</div>
+            <strong>{{ procurement.purchase_place or 'Pembelian sendiri' }}</strong>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Supplier Tetap</div>
+            <strong>{{ procurement.supplier.supplier_name if procurement.supplier else 'Tidak dipakai' }}</strong>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Snapshot Nama Supplier/Tempat</div>
+            <strong>{{ procurement.supplier_name or '-' }}</strong>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Buku Kas/Bank</div>
+            {% if procurement.purchase_type == "CASH" and ledger_transaction %}
+                <strong>OUT Tercatat</strong>
+                <div class="text-muted small">
+                    {% if ledger_transaction.account_type == "BANK" and ledger_transaction.bank_account %}
+                        {{ ledger_transaction.bank_account.bank_name }} - {{ ledger_transaction.bank_account.account_name }}
+                    {% else %}
+                        Kas
+                    {% endif %}
+                </div>
+            {% elif procurement.purchase_type == "CASH" %}
+                <strong>Belum tercatat</strong>
+                <div class="text-muted small">Data lama / perlu cek.</div>
+            {% else %}
+                <strong>Belum keluar</strong>
+                <div class="text-muted small">Nanti saat bayar hutang supplier.</div>
+                {% if supplier_bill %}
+                    <div class="text-muted small">AP: {{ supplier_bill.bill_number }}</div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if procurement.purchase_type == "CREDIT" %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Hutang Supplier / Accounts Payable</h5>
+            <p>Supplier bill dibuat otomatis dari pembelian hutang. Pembayaran hutang supplier dikerjakan pada tahap berikutnya.</p>
+        </div>
+        {% if supplier_bill %}
+            <a href="{{ url_for('finance.supplier_bill_detail', bill_id=supplier_bill.id) }}" class="btn app-btn-secondary">
+                Detail Hutang
+            </a>
+        {% endif %}
+    </div>
+
+    {% if supplier_bill %}
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="text-muted small">No Supplier Bill</div>
+                <strong>{{ supplier_bill.bill_number }}</strong>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small">Supplier / Tempat</div>
+                <strong>{{ supplier_bill.supplier_name }}</strong>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small">Jatuh Tempo</div>
+                <strong>{{ supplier_bill.due_date.strftime('%d-%m-%Y') }}</strong>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small">Sisa Hutang</div>
+                <strong>{{ supplier_bill.remaining_amount|rupiah }}</strong>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small">Status</div>
+                <span class="status-badge status-progress">{{ supplier_bill.status }}</span>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning mb-0">
+            Pembelian CREDIT ini belum punya supplier bill/AP. Ini biasanya data lama sebelum modul hutang supplier otomatis aktif atau perlu dicek ulang.
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Buku Kas/Bank</h5>
+            <p>Pencatatan uang keluar untuk pembelian tunai.</p>
+        </div>
+    </div>
+
+    {% if procurement.purchase_type == "CASH" %}
+        {% if ledger_transaction %}
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-muted small">Tanggal</div>
+                    <strong>{{ ledger_transaction.transaction_date.strftime('%d-%m-%Y') }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Tipe</div>
+                    <strong>{{ ledger_transaction.transaction_type }} {{ ledger_transaction.account_type }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Rekening / Kas</div>
+                    <strong>
+                        {% if ledger_transaction.account_type == "BANK" and ledger_transaction.bank_account %}
+                            {{ ledger_transaction.bank_account.bank_name }} - {{ ledger_transaction.bank_account.account_name }}
+                        {% else %}
+                            Kas
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Nominal</div>
+                    <strong>{{ ledger_transaction.amount|rupiah }}</strong>
+                </div>
+                <div class="col-md-12">
+                    <div class="text-muted small">Deskripsi</div>
+                    <span>{{ ledger_transaction.description }}</span>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning mb-0">
+                Pembelian tunai ini belum punya buku kas/bank OUT. Ini biasanya data lama sebelum modul buku kas/bank otomatis aktif atau perlu dicek ulang.
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info mb-0">
+            Pembelian ini bertipe hutang/credit, jadi tidak membuat buku kas/bank keluar sekarang. Buku Kas/Bank OUT dibuat saat pembayaran hutang supplier pada tahap AP berikutnya.
+        </div>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rincian Item Pembelian</h5>
+            <p>Item di bawah ini sudah otomatis menambah stok.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Satuan</th>
+                    <th>Harga Satuan</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in procurement.items %}
+                <tr>
+                    <td><strong>{{ detail.item.item_name if detail.item else '-' }}</strong></td>
+                    <td>{{ detail.qty|qty }}</td>
+                    <td>{{ detail.item.unit if detail.item else '-' }}</td>
+                    <td>{{ detail.unit_price|rupiah }}</td>
+                    <td><strong>{{ detail.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Bukti Digital Nota / Struk</h5>
+            <p>Lampiran bukti pembelian seperti nota, struk belanja, atau bukti transfer.</p>
+        </div>
+    </div>
+
+    <form method="post" action="{{ url_for('logistics.upload_procurement_attachment', procurement_id=procurement.id) }}" enctype="multipart/form-data" class="row g-3 align-items-end mb-4 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label app-label">Jenis Bukti</label>
+            <select name="proof_type" class="form-select app-input">
+                <option value="NOTA_PEMBELIAN">Nota Pembelian</option>
+                <option value="STRUK_BELANJA">Struk Belanja</option>
+                <option value="BUKTI_TRANSFER">Bukti Transfer</option>
+                <option value="LAINNYA">Lainnya</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label app-label">File Bukti</label>
+            <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+            <div class="form-text">Format: {{ allowed_extensions|join(', ') }}. Maksimal {{ max_upload_mb }} MB.</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label app-label">Catatan</label>
+            <input type="text" name="proof_notes" class="form-control app-input" placeholder="Contoh: nota pasar / transfer bank">
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-upload"></i>
+                Upload Bukti
+            </button>
+        </div>
+    </form>
+
+    {% if procurement_attachments %}
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Jenis</th>
+                        <th>Ukuran</th>
+                        <th>Catatan</th>
+                        <th>Upload</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attachment in procurement_attachments %}
+                    <tr>
+                        <td>
+                            <strong>{{ attachment.original_filename }}</strong>
+                            <div class="text-muted small">{{ attachment.mime_type or '-' }}</div>
+                        </td>
+                        <td><span class="status-badge status-progress">{{ attachment.attachment_type }}</span></td>
+                        <td>{{ format_file_size(attachment.file_size) }}</td>
+                        <td>{{ attachment.notes or '-' }}</td>
+                        <td>
+                            {{ attachment.created_at.strftime('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}
+                            <div class="text-muted small">{{ attachment.uploader.full_name if attachment.uploader else '-' }}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{{ url_for('logistics.view_procurement_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
+                                <a href="{{ url_for('logistics.download_procurement_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                                <form method="post" action="{{ url_for('logistics.delete_procurement_attachment', attachment_id=attachment.id) }}" data-app-confirm="Hapus lunak bukti pembelian ini? File fisik tetap tersimpan untuk audit." data-ui-form="true" class="app-form">
+                                    {% include "components/csrf_token.html" %}
+                                    <input type="hidden" name="delete_note" value="Nota/struk pembelian salah upload.">
+                                    <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-receipt"></i>
+            <p>Belum ada bukti digital untuk pembelian ini.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Catatan</h5>
+            <p>{{ procurement.notes or 'Tidak ada catatan.' }}</p>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="supplier_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">{% if supplier %}Edit Supplier{% else %}Tambah Supplier{% endif %}</span>
+        <h1>{% if supplier %}Edit Supplier Tetap{% else %}Input Supplier Tetap{% endif %}</h1>
+        <p>Supplier bersifat opsional. Pembelian dari toko tidak tetap tetap bisa dicatat tanpa data supplier.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="POST" action="{% if supplier %}{{ url_for('master.edit_supplier', supplier_id=supplier.id) }}{% else %}{{ url_for('master.create_supplier') }}{% endif %}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Nama Supplier</label>
+                <input type="text" name="supplier_name" class="form-control app-input" value="{{ supplier.supplier_name if supplier else '' }}" placeholder="Contoh: Toko Beras Makmur" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Jenis Supplier</label>
+                <select name="supplier_type" class="form-select app-input" required>
+                    {% for type in supplier_types %}
+                        <option value="{{ type }}" {% if supplier and supplier.supplier_type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">PIC / Kontak Person</label>
+                <input type="text" name="contact_person" class="form-control app-input" value="{{ supplier.contact_person if supplier else '' }}" placeholder="Nama orang yang bisa dihubungi">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Nomor HP</label>
+                <input type="text" name="phone" class="form-control app-input" value="{{ supplier.phone if supplier else '' }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">WhatsApp</label>
+                <input type="text" name="whatsapp" class="form-control app-input" value="{{ supplier.whatsapp if supplier else '' }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Tempo Default</label>
+                <input type="number" name="default_payment_terms_days" class="form-control app-input" min="0" step="1" value="{{ supplier.default_payment_terms_days if supplier else 0 }}">
+                <div class="form-text">Isi 0 kalau biasanya tunai.</div>
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+                <label class="checkbox-clean mb-2">
+                    <input type="checkbox" name="is_active" {% if not supplier or supplier.is_active %}checked{% endif %}>
+                    <span>Supplier aktif</span>
+                </label>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Alamat</label>
+                <textarea name="address" class="form-control app-input" rows="2" placeholder="Alamat toko/supplier jika ada">{{ supplier.address if supplier else '' }}</textarea>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Nama Bank</label>
+                <input type="text" name="bank_name" class="form-control app-input" value="{{ supplier.bank_name if supplier else '' }}" placeholder="Opsional">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nomor Rekening</label>
+                <input type="text" name="bank_account_number" class="form-control app-input" value="{{ supplier.bank_account_number if supplier else '' }}" placeholder="Opsional">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nama Pemilik Rekening</label>
+                <input type="text" name="bank_account_holder" class="form-control app-input" value="{{ supplier.bank_account_holder if supplier else '' }}" placeholder="Opsional">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">NPWP</label>
+                <input type="text" name="npwp" class="form-control app-input" value="{{ supplier.npwp if supplier else '' }}" placeholder="Opsional">
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Catatan</label>
+                <input type="text" name="notes" class="form-control app-input" value="{{ supplier.notes if supplier else '' }}" placeholder="Contoh: supplier tetap beras, bisa kirim ke lokasi">
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                {% if supplier %}Simpan Perubahan{% else %}Simpan Supplier{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+<style>
+.print-report-shell {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+.print-doc-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px 0 14px;
+    border-bottom: 2px solid var(--text-primary);
+    margin-bottom: 18px;
+}
+.print-doc-header h2,
+.print-doc-header h4,
+.print-doc-header p {
+    margin: 0;
+}
+.print-doc-title {
+    margin: 18px 0;
+}
+.print-meta-grid,
+.print-app-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.print-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+}
+.print-box span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.print-box strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 15px;
+    margin-top: 2px;
+}
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.print-table th,
+.print-table td {
+    border: 1px solid var(--border);
+    padding: 7px 8px;
+    vertical-align: top;
+}
+.print-table th {
+    background: var(--surface-muted);
+    color: var(--text-primary);
+}
+.print-note {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 12px;
+}
+.print-signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    margin-top: 36px;
+}
+.print-signature-box {
+    text-align: center;
+    min-height: 110px;
+}
+.print-signature-line {
+    border-top: 1px solid var(--text-primary);
+    margin-top: 70px;
+    padding-top: 6px;
+}
+@media print {
+    .sidebar,
+    .topbar,
+    .page-actions,
+    .no-print,
+    .btn,
+    .mobile-overlay {
+        display: none !important;
+    }
+    body {
+        background: var(--surface) !important;
+        color: var(--text-primary) !important;
+    }
+    .main-content,
+    .content-wrapper,
+    .app-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    .app-card {
+        box-shadow: none !important;
+        border: none !important;
+        background: var(--surface) !important;
+    }
+    .print-report-shell,
+    .finance-print-shell {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .print-doc-header,
+    .print-app-stat-grid,
+    .print-meta-grid,
+    .print-box,
+    .print-note,
+    .print-signature-grid,
+    .print-signature-box {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .print-app-stat-grid,
+    .print-meta-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .app-card {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .print-table {
+        font-size: 10.5px;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+    }
+    .print-table thead {
+        display: table-header-group !important;
+    }
+    .print-table tfoot {
+        display: table-footer-group !important;
+    }
+    .print-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .print-table th,
+    .print-table td {
+        padding: 5px 6px;
+        overflow-wrap: anywhere;
+    }
+    .print-page-break {
+        break-before: page;
+        page-break-before: always;
+    }
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+}
+</style>

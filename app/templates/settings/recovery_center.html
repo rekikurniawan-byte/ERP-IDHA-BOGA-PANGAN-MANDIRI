@@ -1,0 +1,232 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="recovery-center">
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Recovery Center</span>
+        <h1>Recovery Center Final</h1>
+        <p>Recovery center final: satu pusat ringkas untuk status safety, backup verified, restore dry-run, atomic guard, critical audit, dan SOP recovery.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
+        {% if current_user.role == "OWNER" %}<a href="{{ url_for('settings.backups') }}" class="btn app-btn-secondary">Backup</a>{% endif %}
+        <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">SOP Recovery</a>
+        <a href="{{ url_for('settings.final_visual_browser_qa') }}" class="btn app-btn-secondary"><i class="bi bi-browser-chrome"></i> Final QA</a>
+    </div>
+</div>
+
+{% set overall = report.get("overall", {}) %}
+<div class="app-card mb-4" data-fix70-g2="recovery-center-decision">
+    <div class="section-title">
+        <div>
+            <h3>Keputusan Safety Owner</h3>
+            <p>{{ overall.get("summary") }}</p>
+        </div>
+        <span class="status-badge {{ overall.get('status_class', 'warning') }}">{{ overall.get("decision", "PERLU CEK") }}</span>
+    </div>
+
+    <div class="row g-3">
+        {% for card in report.get("readiness_cards", []) %}
+            <div class="col-xl-4 col-md-6">
+                <div class="stat-card h-100">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <div class="stat-label">{{ card.get("title") }}</div>
+                            <div class="stat-value">{{ card.get("value") }}</div>
+                        </div>
+                        <i class="bi {{ card.get('icon', 'bi-shield-check') }} text-muted"></i>
+                    </div>
+                    <div class="text-muted small mt-2">{{ card.get("detail") }}</div>
+                    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                        <span class="status-badge {{ card.get('status_class', 'warning') }}">{{ card.get("status") }}</span>
+                        {% if card.get("endpoint") and (not card.get("owner_only") or current_user.role == "OWNER") %}
+                            <a href="{{ url_for(card.get('endpoint')) }}" class="btn app-btn-secondary btn-sm">{{ card.get("action_label", "Buka") }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if overall.get("errors") %}
+        <div class="alert alert-danger mt-3 mb-0">
+            <strong>Blokir dulu:</strong>
+            <ul class="mb-0">
+                {% for message in overall.get("errors", []) %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if overall.get("warnings") %}
+        <div class="alert alert-warning mt-3 mb-0">
+            <strong>Warning:</strong>
+            <ul class="mb-0">
+                {% for message in overall.get("warnings", []) %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <div class="app-card h-100">
+            <div class="section-title">
+                <div>
+                    <h3>Rencana Aksi Berikutnya</h3>
+                    <p>Urutan tindakan aman sebelum patch besar, restore planning, atau perluasan atomic guard.</p>
+                </div>
+                <span class="status-badge info">READ-ONLY</span>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                {% for item in report.get("action_plan", []) %}
+                    <div class="detail-row">
+                        <span>{{ loop.index }}. {{ item.get("title") }}</span>
+                        <strong class="text-break">{{ item.get("description") }}</strong>
+                        <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
+                            <span class="status-badge {{ item.get('level', 'info') }}">{{ item.get("level", "info")|upper }}</span>
+                            {% if item.get("endpoint") and (not item.get("owner_only") or current_user.role == "OWNER") %}
+                                <a href="{{ url_for(item.get('endpoint')) }}" class="btn app-btn-secondary btn-sm">{{ item.get("action_label", "Buka") }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="app-card h-100">
+            <div class="section-title">
+                <div>
+                    <h3>Status Teknis Ringkas</h3>
+                    <p>Gabungan health, backup, atomic, audit, dan SOP.</p>
+                </div>
+                <span class="status-badge info">{{ report.get("schema_version") }}</span>
+            </div>
+
+            {% set health = report.get("system_health", {}) %}
+            {% set rc = health.get("recovery_center", {}) %}
+            {% set atomic = report.get("atomic_map", {}).get("summary", {}) %}
+            {% set audit = report.get("audit_activity", {}) %}
+            <div class="detail-list">
+                <div class="detail-row"><span>System Health</span><strong>{{ health.get("overall", {}).get("label", "-") }}</strong></div>
+                <div class="detail-row"><span>Backup verified terbaru</span><strong>{{ rc.get("latest_verified_backup_name") or "BELUM ADA" }}</strong></div>
+                <div class="detail-row"><span>Restore dry-run</span><strong>{{ rc.get("latest_restore_dry_run_status") or "BELUM ADA" }}</strong></div>
+                <div class="detail-row"><span>Atomic status</span><strong>{{ atomic.get("status", "-") }}</strong></div>
+                <div class="detail-row"><span>Atomic guard marker</span><strong>{{ atomic.get("atomic_guard_total", 0) }}</strong></div>
+                <div class="detail-row"><span>Critical audit policy</span><strong>{{ audit.get("policy_version", "-") }}</strong></div>
+                <div class="detail-row"><span>Log 7 hari terakhir</span><strong>{{ audit.get("last_7_days_total", 0) }}</strong></div>
+                <div class="detail-row"><span>Checked at</span><strong>{{ report.get("checked_at") }}</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <div class="section-title">
+                <div>
+                    <h3>SOP & Drill Lock</h3>
+                    <p>Versi SOP recovery yang menjadi acuan saat error, backup, atau restore planning.</p>
+                </div>
+                <span class="status-badge success">TERSEDIA</span>
+            </div>
+            {% set sop = report.get("sop_versions", {}) %}
+            <div class="detail-list mb-3">
+                <div class="detail-row"><span>Disaster Recovery</span><strong>{{ sop.get("disaster_recovery") }}</strong></div>
+                <div class="detail-row"><span>Backup & Restore</span><strong>{{ sop.get("backup_restore") }}</strong></div>
+                <div class="detail-row"><span>Restore Drill</span><strong>{{ sop.get("restore_drill") }}</strong></div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">SOP Recovery</a>
+                <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">SOP Backup</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <div class="section-title">
+                <div>
+                    <h3>Policy Stack</h3>
+                    <p>Kontrak safety yang aktif pada Recovery Center.</p>
+                </div>
+                <span class="status-badge info">Recovery</span>
+            </div>
+            {% set stack = report.get("policy_stack", {}) %}
+            <div class="detail-list">
+                <div class="detail-row"><span>Backup engine</span><strong>{{ stack.get("backup_engine") }}</strong></div>
+                <div class="detail-row"><span>Atomic smoke schema</span><strong>{{ stack.get("atomic_smoke_schema") }}</strong></div>
+                <div class="detail-row"><span>Failure injection policy</span><strong>{{ stack.get("failure_injection_policy") }}</strong></div>
+                <div class="detail-row"><span>Critical audit policy</span><strong>{{ stack.get("critical_audit_policy") }}</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Critical Audit Terbaru</h3>
+            <p>Audit penting terbaru untuk backup, restore preview, user/security, journal/payment, dan perubahan data kritis.</p>
+        </div>
+        {% if current_user.role == "OWNER" %}<a href="{{ url_for('settings.audit_logs', critical_only='1') }}" class="btn app-btn-secondary btn-sm">Lihat Semua</a>{% endif %}
+    </div>
+
+    {% set logs = report.get("audit_activity", {}).get("recent_critical_logs", []) %}
+    {% if logs %}
+        <div class="table-responsive">
+            <table class="table app-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Module</th>
+                        <th>Event</th>
+                        <th>Severity</th>
+                        <th>User</th>
+                        <th>Alasan</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at.strftime('%d/%m/%Y %H:%M') if log.created_at else '-' }}</td>
+                            <td>{{ log.module }}</td>
+                            <td>{{ log.event_type }}</td>
+                            <td><span class="status-badge {{ 'danger' if log.audit_severity == 'CRITICAL' else 'warning' if log.audit_severity == 'HIGH' else 'info' }}">{{ log.audit_severity }}</span></td>
+                            <td>{{ log.username_snapshot or '-' }}</td>
+                            <td class="text-break">{{ log.audit_reason or '-' }}</td>
+                            <td>{% if current_user.role == "OWNER" %}<a href="{{ url_for('settings.audit_log_detail', log_id=log.id) }}" class="btn app-btn-secondary btn-sm">Detail</a>{% else %}-{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="soft-info-card mb-0">
+            Belum ada critical audit yang tampil pada filter ringkas. Aksi sensitif baru akan tercatat setelah digunakan.
+        </div>
+    {% endif %}
+</div>
+
+<div class="app-card soft-info-card mb-0" data-fix70-g2="readonly-safety-rules">
+    <div class="section-title mb-2">
+        <div>
+            <h3>Aturan Safety Recovery Center</h3>
+            <p>G2 sengaja dibuat sebagai pusat baca status. Tidak ada tombol restore aktif/overwrite database di halaman ini.</p>
+        </div>
+        <span class="status-badge info">{{ report.get("policy_version") }}</span>
+    </div>
+    <ul class="mb-0">
+        {% for rule in report.get("safety_rules", []) %}<li>{{ rule }}</li>{% endfor %}
+    </ul>
+</div>
+
+</div>
+{% endblock %}

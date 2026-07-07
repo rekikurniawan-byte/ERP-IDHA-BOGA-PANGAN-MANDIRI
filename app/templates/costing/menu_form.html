@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="menu_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 2</span>
+        <h1>{% if menu %}Edit Menu{% else %}Tambah Menu{% endif %}</h1>
+        <p>Menu ini dipakai sebagai dasar resep/BOM dan kalkulator HPP read-only.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="POST" action="{% if menu %}{{ url_for('costing.edit_menu', menu_id=menu.id) }}{% else %}{{ url_for('costing.create_menu') }}{% endif %}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Nama Menu</label>
+                <input type="text" name="menu_name" class="form-control app-input" value="{{ menu.menu_name if menu else '' }}" placeholder="Contoh: Nasi Ayam Box" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Jenis Menu</label>
+                <select name="menu_type" class="form-select app-input">
+                    {% for type in menu_types %}
+                    <option value="{{ type }}" {% if menu and menu.menu_type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Harga Jual Default / Porsi</label>
+                <input type="number" name="default_selling_price" class="form-control app-input" value="{{ menu.default_selling_price if menu else 0 }}" min="0" step="0.01">
+                <small class="text-muted">Dipakai sebagai default di kalkulator HPP, masih bisa dioverride.</small>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Catatan internal menu.">{{ menu.notes if menu else '' }}</textarea>
+            </div>
+
+            <div class="col-md-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if not menu or menu.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="isActive">Aktif</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">Simpan Menu</button>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

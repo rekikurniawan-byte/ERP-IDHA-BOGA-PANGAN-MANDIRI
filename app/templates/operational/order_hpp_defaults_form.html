@@ -1,0 +1,104 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_defaults_form" data-logistics-hpp-page="order_hpp_defaults_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Default HPP Order</span>
+        <h1>Atur Default Menu & Profil HPP</h1>
+        <p>{{ daily_order.order_number }} · {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali ke Order
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card soft-warning-card">
+    <strong>Default ini hanya untuk prefill Snapshot HPP.</strong>
+    <p>
+        Menyimpan default menu siang/sore, kemasan, dan overhead tidak membuat snapshot otomatis,
+        tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice. Snapshot tetap harus dibuat manual dari order locked.
+    </p>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Default HPP Order</h5>
+            <p>Pilih data real jika sudah tersedia. Kalau belum ada menu/profil real, biarkan kosong dulu.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Default Menu Siang</label>
+                <select name="default_lunch_menu_id" class="form-select app-input">
+                    <option value="">Belum ditentukan</option>
+                    {% for menu in menus %}
+                        <option value="{{ menu.id }}" {% if daily_order.lunch_menu_id == menu.id %}selected{% endif %}>
+                            {{ menu.menu_code }} - {{ menu.menu_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Dipakai sebagai pilihan awal saat membuat snapshot HPP siang.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Menu Sore</label>
+                <select name="default_dinner_menu_id" class="form-select app-input">
+                    <option value="">Belum ditentukan</option>
+                    {% for menu in menus %}
+                        <option value="{{ menu.id }}" {% if daily_order.dinner_menu_id == menu.id %}selected{% endif %}>
+                            {{ menu.menu_code }} - {{ menu.menu_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Dipakai sebagai pilihan awal saat membuat snapshot HPP sore.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Profil Kemasan</label>
+                <select name="default_packaging_profile_id" class="form-select app-input">
+                    <option value="">Tanpa profil kemasan default</option>
+                    {% for profile in packaging_profiles %}
+                        <option value="{{ profile.id }}" {% if daily_order.packaging_profile_id == profile.id %}selected{% endif %}>
+                            {{ profile.profile_code }} - {{ profile.profile_name }} ({{ profile.cost_per_portion|rupiah }}/porsi)
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Opsional. Bisa dikosongkan kalau kemasan belum dihitung.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Profil Overhead</label>
+                <select name="default_overhead_profile_id" class="form-select app-input">
+                    <option value="">Tanpa profil overhead default</option>
+                    {% for profile in overhead_profiles %}
+                        <option value="{{ profile.id }}" {% if daily_order.overhead_profile_id == profile.id %}selected{% endif %}>
+                            {{ profile.profile_code }} - {{ profile.profile_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Opsional. Gas, listrik, air, tenaga kerja, dan bumbu umum.</div>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">Batal</a>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                Simpan Default HPP
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

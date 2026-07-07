@@ -1,0 +1,275 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="hpp_calculator">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 3</span>
+        <h1>Kalkulator HPP Read-only</h1>
+        <p>Hitung estimasi HPP dari resep/BOM, profil HPP item, kemasan, dan overhead. Belum menyimpan snapshot, belum memotong stok, dan belum membuat jurnal.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Menu & Resep</a>
+        <a href="{{ url_for('costing.packaging_profiles') }}" class="btn app-btn-secondary">Profil Kemasan</a>
+        <a href="{{ url_for('costing.overhead_profiles') }}" class="btn app-btn-secondary">Profil Overhead</a>
+    </div>
+</div>
+
+
+
+<div class="app-card mb-3">
+    <div class="alert alert-info mb-3">
+        <strong>Read-only:</strong> perhitungan ini hanya simulasi. Order lama tidak berubah, stok tidak berkurang, jurnal tidak dibuat.
+    </div>
+
+    <form method="GET" action="{{ url_for('costing.hpp_calculator') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-4">
+            <label class="form-label">Menu</label>
+            <select name="menu_id" class="form-select app-input" required>
+                <option value="">- Pilih menu -</option>
+                {% for menu in menus %}
+                <option value="{{ menu.id }}" {% if selected_menu and selected_menu.id == menu.id %}selected{% endif %}>{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Jumlah Porsi</label>
+            <input type="number" name="portion_qty" class="form-control app-input" value="{{ portion_qty if portion_qty else 100 }}" min="0.0001" step="0.0001" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Profil Kemasan</label>
+            <select name="packaging_profile_id" class="form-select app-input">
+                <option value="">Tanpa profil kemasan</option>
+                {% for profile in packaging_profiles %}
+                <option value="{{ profile.id }}" {% if selected_packaging_profile and selected_packaging_profile.id == profile.id %}selected{% endif %}>{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Profil Overhead</label>
+            <select name="overhead_profile_id" class="form-select app-input">
+                <option value="">Tanpa profil overhead</option>
+                {% for profile in overhead_profiles %}
+                <option value="{{ profile.id }}" {% if selected_overhead_profile and selected_overhead_profile.id == profile.id %}selected{% endif %}>{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Harga Jual / Porsi</label>
+            <input type="number" name="selling_price_per_portion" class="form-control app-input" value="{{ selling_price_raw }}" min="0" step="0.01" placeholder="Default menu">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Target Margin %</label>
+            <input type="number" name="target_margin_percentage" class="form-control app-input" value="{{ target_margin_percentage or 30 }}" min="0" max="95" step="0.01">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn app-btn-primary w-100">Hitung</button>
+        </div>
+    </form>
+</div>
+
+{% if result %}
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>HPP Total</p>
+            <h3>{{ result.hpp_total|rupiah }}</h3>
+            <span class="app-stat-helper">Untuk {{ result.portion_qty|qty }} porsi</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-calculator"></i></div>
+        <div>
+            <p>HPP / Porsi</p>
+            <h3>{{ result.hpp_per_portion|rupiah }}</h3>
+            <span class="app-stat-helper">Bahan + kemasan + overhead</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-tag"></i></div>
+        <div>
+            <p>Rekomendasi Harga</p>
+            <h3>{{ result.recommended_selling_price|rupiah }}</h3>
+            <span class="app-stat-helper">Target margin {{ result.target_margin_percentage|qty }}%</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-purple"><i class="bi bi-graph-up"></i></div>
+        <div>
+            <p>Margin Estimasi</p>
+            <h3>{{ result.gross_margin_percentage|qty }}%</h3>
+            <span class="app-stat-helper">{{ result.gross_margin_amount|rupiah }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-basket"></i></div>
+        <div>
+            <p>Food Cost</p>
+            <h3>{{ result.food_cost_total|rupiah }}</h3>
+            <span class="app-stat-helper">{{ result.food_cost_per_portion|rupiah }} / porsi</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-box2-heart"></i></div>
+        <div>
+            <p>Kemasan</p>
+            <h3>{{ result.packaging_cost_total|rupiah }}</h3>
+            <span class="app-stat-helper">{{ result.packaging_cost_per_portion|rupiah }} / porsi</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-lightning-charge"></i></div>
+        <div>
+            <p>Overhead</p>
+            <h3>{{ result.overhead_cost_total|rupiah }}</h3>
+            <span class="app-stat-helper">{{ result.overhead_cost_per_portion|rupiah }} / porsi</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-receipt-cutoff"></i></div>
+        <div>
+            <p>Revenue Estimasi</p>
+            <h3>{{ result.revenue_total|rupiah }}</h3>
+            <span class="app-stat-helper">Harga jual dipakai</span>
+        </div>
+    </div>
+</div>
+
+{% if result.warnings %}
+<div class="alert alert-warning">
+    <strong>Perhitungan belum lengkap:</strong>
+    <ul class="mb-0">
+        {% for warning in result.warnings %}
+        <li>{{ warning }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="app-card mb-3">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <small class="text-muted">Menu</small>
+            <div><strong>{{ result.menu.menu_name }}</strong></div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Profil Kemasan</small>
+            <div><strong>{{ result.packaging_profile.profile_name if result.packaging_profile else 'Tidak dipakai' }}</strong></div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Profil Overhead</small>
+            <div><strong>{{ result.overhead_profile.profile_name if result.overhead_profile else 'Tidak dipakai' }}</strong></div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Status Data</small>
+            <div>
+                {% if result.is_complete %}
+                    <span class="status-badge status-locked">LENGKAP</span>
+                {% else %}
+                    <span class="status-badge status-draft">PERLU DILENGKAPI</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mb-3">
+    <h5 class="mb-3">Rincian Kemasan & Overhead</h5>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Komponen</th>
+                    <th>Biaya / Porsi</th>
+                    <th>Total</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Kemasan</td>
+                    <td>{{ result.packaging_cost_per_portion|rupiah }}</td>
+                    <td>{{ result.packaging_cost_total|rupiah }}</td>
+                    <td>{{ result.packaging_profile.profile_name if result.packaging_profile else 'Tanpa profil kemasan' }}</td>
+                </tr>
+                <tr>
+                    <td>Overhead Flat</td>
+                    <td>{{ result.overhead_flat_cost_per_portion|rupiah }}</td>
+                    <td>{{ result.overhead_flat_cost_total|rupiah }}</td>
+                    <td>{{ result.overhead_profile.profile_name if result.overhead_profile else 'Tanpa profil overhead' }}</td>
+                </tr>
+                <tr>
+                    <td>Overhead Persentase</td>
+                    <td>{{ result.overhead_percentage_cost_per_portion|rupiah }}</td>
+                    <td>{{ result.overhead_percentage_cost_total|rupiah }}</td>
+                    <td>{{ result.overhead_percentage|qty }}% dari food cost + kemasan</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card">
+    <h5 class="mb-3">Rincian HPP per Bahan</h5>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty / Porsi</th>
+                    <th>Konversi ke Satuan Dasar</th>
+                    <th>Qty Total</th>
+                    <th>Biaya / Satuan Dasar</th>
+                    <th>Biaya Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in result.lines %}
+                <tr>
+                    <td>
+                        <strong>{{ line.item.item_code if line.item else '-' }}</strong><br>
+                        <span>{{ line.item.item_name if line.item else '-' }}</span>
+                    </td>
+                    <td>{{ line.qty_per_portion|qty }} {{ line.recipe_unit }}</td>
+                    <td>
+                        {% if line.conversion_multiplier %}
+                            1 {{ line.recipe_unit }} = {{ line.conversion_multiplier|qty }} {{ line.base_unit }}
+                        {% else %}
+                            <span class="text-muted">Belum bisa dikonversi</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ line.base_qty_total|qty }} {{ line.base_unit }}</td>
+                    <td>{{ line.cost_per_base_unit|rupiah }} / {{ line.base_unit }}</td>
+                    <td>{{ line.cost_total|rupiah }}</td>
+                    <td>
+                        {% if line.status == "OK" %}
+                            <span class="status-badge status-locked">OK</span>
+                        {% else %}
+                            <span class="status-badge status-draft">{{ line.status }}</span><br>
+                            <small class="text-muted">{{ line.message }}</small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-calculator"></i>
+                            <p>Belum ada detail resep untuk dihitung.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

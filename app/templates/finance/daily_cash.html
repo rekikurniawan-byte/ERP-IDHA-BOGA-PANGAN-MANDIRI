@@ -1,0 +1,237 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Tutup Kas Harian Warung</h1>
+        <p>Rekap kas warung per hari: saldo awal, penjualan tunai, pemasukan lain, dan pengeluaran. Cocok untuk mencatat total harian saat transaksi tidak diinput satu per satu.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            <i class="bi bi-wallet2"></i>
+            Buku Kas/Bank
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Input / Perbarui Rekap Kas Harian</h5>
+            <p>Saldo akhir dan selisih kas dihitung otomatis. Jika tanggal sudah punya rekap, data akan diperbarui.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="app-form" data-ui-form="true" id="daily-cash-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+
+        <div class="col-md-3">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="cash_date" class="form-control app-input"
+                   value="{{ today.strftime('%Y-%m-%d') }}" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select app-input">
+                <option value="OPEN">Buka (OPEN)</option>
+                <option value="CLOSED">Tutup (CLOSED)</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Saldo Awal</label>
+            <input type="text" name="opening_balance" class="form-control app-input js-cash-num"
+                   value="{{ '%.0f'|format(suggested_opening) }}" inputmode="numeric">
+            <small class="text-muted">Saran dari saldo akhir hari sebelumnya: {{ suggested_opening|rupiah }}</small>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Penjualan Tunai</label>
+            <input type="text" name="cash_sales" class="form-control app-input js-cash-num"
+                   value="0" inputmode="numeric">
+            <small class="text-muted">Referensi warung hari ini: {{ reference.cash_sales_total|rupiah }}</small>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Pembayaran Hutang</label>
+            <input type="text" name="debt_payments" class="form-control app-input js-cash-num"
+                   value="0" inputmode="numeric">
+            <small class="text-muted">Referensi: {{ reference.debt_payment_total|rupiah }}</small>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Pemasukan Lain</label>
+            <input type="text" name="other_income" class="form-control app-input js-cash-num"
+                   value="0" inputmode="numeric">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Pengeluaran</label>
+            <input type="text" name="expenses" class="form-control app-input js-cash-num"
+                   value="0" inputmode="numeric">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Kas Fisik Aktual</label>
+            <input type="text" name="actual_cash" class="form-control app-input js-cash-num"
+                   value="0" inputmode="numeric">
+            <small class="text-muted">Uang kas yang benar-benar dihitung fisik.</small>
+        </div>
+
+        <div class="col-md-12">
+            <div class="alert-soft d-flex flex-wrap gap-4 p-3 rounded border">
+                <div>
+                    <div class="text-muted small">Saldo Akhir Seharusnya</div>
+                    <div class="fs-5 fw-semibold" id="preview-closing">Rp 0</div>
+                </div>
+                <div>
+                    <div class="text-muted small">Selisih Kas</div>
+                    <div class="fs-5 fw-semibold" id="preview-difference">Rp 0</div>
+                </div>
+                <div class="small text-muted align-self-center" id="preview-note">
+                    Selisih = kas fisik aktual - saldo akhir seharusnya.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <label class="form-label">Catatan</label>
+            <input type="text" name="notes" class="form-control app-input" placeholder="Opsional, mis: kantin lokasi jauh, hanya ada total harian">
+        </div>
+
+        <div class="col-md-12">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                Simpan Rekap Kas
+            </button>
+        </div>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Kas Harian</h5>
+            <p>Semua rekap kas harian warung untuk cabang ini.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                    <th class="text-end">Saldo Awal</th>
+                    <th class="text-end">Penjualan Tunai</th>
+                    <th class="text-end">Bayar Hutang</th>
+                    <th class="text-end">Pemasukan Lain</th>
+                    <th class="text-end">Pengeluaran</th>
+                    <th class="text-end">Saldo Akhir</th>
+                    <th class="text-end">Kas Aktual</th>
+                    <th class="text-end">Selisih</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                    <tr>
+                        <td>{{ record.cash_date.strftime('%d-%m-%Y') if record.cash_date else '-' }}</td>
+                        <td>
+                            {% if record.status == 'CLOSED' %}
+                                <span class="badge bg-success">Tutup</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Buka</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ record.opening_balance|rupiah }}</td>
+                        <td class="text-end">{{ record.cash_sales|rupiah }}</td>
+                        <td class="text-end">{{ record.debt_payments|rupiah }}</td>
+                        <td class="text-end">{{ record.other_income|rupiah }}</td>
+                        <td class="text-end">{{ record.expenses|rupiah }}</td>
+                        <td class="text-end fw-semibold">{{ record.closing_balance|rupiah }}</td>
+                        <td class="text-end">{{ record.actual_cash|rupiah }}</td>
+                        <td class="text-end">
+                            {% if record.cash_difference and (record.cash_difference|abs) > 0.01 %}
+                                <span class="badge bg-danger">{{ record.cash_difference|rupiah }}</span>
+                            {% else %}
+                                <span class="badge bg-success">Sesuai</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('finance.daily_cash_detail', cash_id=record.id) }}"
+                               class="btn btn-sm app-btn-secondary">
+                                <i class="bi bi-eye"></i>
+                                Detail
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <i class="bi bi-cash-stack"></i>
+                                <p>Belum ada rekap kas harian.</p>
+                                <small>Isi form di atas untuk mencatat kas warung harian.</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<script data-daily-cash-calc>
+    (function () {
+        var form = document.getElementById("daily-cash-form");
+        if (!form) { return; }
+
+        function num(name) {
+            var el = form.querySelector('[name="' + name + '"]');
+            if (!el) { return 0; }
+            var value = parseFloat(String(el.value).replace(/,/g, ".").replace(/[^0-9.\-]/g, ""));
+            return isNaN(value) ? 0 : value;
+        }
+
+        function formatRupiah(value) {
+            var rounded = Math.round(value);
+            var sign = rounded < 0 ? "-" : "";
+            var abs = Math.abs(rounded).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return sign + "Rp " + abs;
+        }
+
+        function recalc() {
+            var closing = num("opening_balance") + num("cash_sales") + num("debt_payments")
+                + num("other_income") - num("expenses");
+            var difference = num("actual_cash") - closing;
+
+            var closingEl = document.getElementById("preview-closing");
+            var diffEl = document.getElementById("preview-difference");
+            var noteEl = document.getElementById("preview-note");
+
+            if (closingEl) { closingEl.textContent = formatRupiah(closing); }
+            if (diffEl) { diffEl.textContent = formatRupiah(difference); }
+
+            if (noteEl) {
+                if (Math.abs(difference) > 0.01) {
+                    noteEl.textContent = difference > 0
+                        ? "Kas fisik LEBIH dari seharusnya. Periksa pencatatan."
+                        : "Kas fisik KURANG dari seharusnya. Periksa pencatatan.";
+                    diffEl.classList.add("text-danger");
+                    diffEl.classList.remove("text-success");
+                } else {
+                    noteEl.textContent = "Kas sesuai. Tidak ada selisih.";
+                    diffEl.classList.add("text-success");
+                    diffEl.classList.remove("text-danger");
+                }
+            }
+        }
+
+        form.querySelectorAll(".js-cash-num").forEach(function (input) {
+            input.addEventListener("input", recalc);
+        });
+        recalc();
+    })();
+</script>
+{% endblock %}

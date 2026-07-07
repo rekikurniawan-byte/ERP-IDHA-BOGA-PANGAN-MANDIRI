@@ -1,0 +1,138 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header dashboard-role-header" data-ui-dashboard="pengantar">
+    <div class="dashboard-command-title-block">
+        <span class="eyebrow">Dashboard Pengantar</span>
+        <h1>Pengiriman Hari Ini</h1>
+        <p>Fokus pada pengiriman, penerimaan, dan selisih kurang agar nyaman dipakai dari browser HP.</p>
+    </div>
+
+    <div class="page-actions dashboard-page-actions">
+        <a href="{{ url_for('delivery.index') }}" class="btn app-btn-primary">
+            <i class="bi bi-truck"></i>
+            Buka Pengiriman
+        </a>
+        <a href="{{ url_for('settings.live_reminders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-bell"></i>
+            Reminder
+            {% if global_live_reminder_badge.total > 0 %}
+                <span class="badge {{ global_live_reminder_badge.badge_class }} ms-1">{{ global_live_reminder_badge.total }}</span>
+            {% endif %}
+        </a>
+    </div>
+</div>
+
+<section class="dashboard-section" data-dashboard-section="kpi">
+    <div class="dashboard-section-header">
+        <div>
+            <h2>Status Pengiriman</h2>
+            <p>Angka utama pengantar dipadatkan agar mudah dibaca saat di lapangan.</p>
+        </div>
+    </div>
+
+    <div class="app-stat-grid dashboard-stat-grid">
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-calendar-event"></i></div>
+            <div>
+                <p>Delivery Hari Ini</p>
+                <h3>{{ data.today_deliveries|length }}</h3>
+                <span class="app-stat-helper">Daftar pengiriman</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon {% if data.preparing_count > 0 %}stat-warning{% else %}stat-success{% endif %}"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <p>Preparing</p>
+                <h3>{{ data.preparing_count }}</h3>
+                <span class="app-stat-helper">Belum dikirim</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-truck"></i></div>
+            <div>
+                <p>On The Way</p>
+                <h3>{{ data.on_the_way_count }}</h3>
+                <span class="app-stat-helper">Sedang berjalan</span>
+            </div>
+        </div>
+
+        <div class="app-stat-card dashboard-stat-card">
+            <div class="app-stat-icon {% if data.shortage_total > 0 %}stat-danger{% else %}stat-success{% endif %}"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <p>Total Shortage</p>
+                <h3>{{ data.shortage_total }}</h3>
+                <span class="app-stat-helper">Selisih kurang porsi</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-dashboard-section="priority">
+    <div class="dashboard-mini-grid dashboard-priority-strip">
+        <div class="dashboard-mini-card">
+            <span>Pengiriman Aktif</span>
+            <strong>{{ data.preparing_count + data.on_the_way_count }} perlu dipantau</strong>
+        </div>
+        <div class="dashboard-mini-card">
+            <span>Status Selesai</span>
+            <strong>{{ data.delivered_count }} delivery sudah delivered</strong>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-dashboard-section="recent">
+    <div class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <h3>Delivery Terbaru</h3>
+                <p>Daftar delivery yang perlu dipantau atau dicatat penerimaannya.</p>
+            </div>
+            <a href="{{ url_for('delivery.index') }}" class="btn btn-sm app-btn-secondary">Lihat Semua</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>No Delivery</th>
+                        <th>Tanggal</th>
+                        <th>Status</th>
+                        <th>Driver</th>
+                        <th>Total Detail</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for delivery in data.recent_deliveries %}
+                    <tr>
+                        <td><strong>{{ delivery.delivery_number }}</strong></td>
+                        <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
+                        <td><span class="badge bg-secondary-subtle text-secondary border">{{ delivery.status }}</span></td>
+                        <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
+                        <td>{{ delivery.details|length }}</td>
+                        <td>
+                            <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                                Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="dashboard-empty-state">
+                                <i class="bi bi-truck"></i>
+                                <strong>Belum ada delivery.</strong>
+                                <span>Delivery baru akan muncul di sini setelah dibuat dari order.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

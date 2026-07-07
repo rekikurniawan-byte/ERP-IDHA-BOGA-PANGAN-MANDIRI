@@ -1,0 +1,125 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="items">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Item</span>
+        <h1>Data Item</h1>
+        <p>Item dipisahkan berdasarkan kategori agar barang warung tidak bercampur dengan persediaan dapur.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.create_item') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Item
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.items') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama / satuan">
+
+        <select name="category" class="form-select app-input">
+            <option value="ALL" {% if category == "ALL" %}selected{% endif %}>Semua Kategori</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Item</th>
+                    <th>Kategori</th>
+                    <th>Dipakai Untuk</th>
+                    <th>Satuan</th>
+                    <th>Minimum Stok</th>
+                    <th>Tracking</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><strong>{{ item.item_code }}</strong></td>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>
+                        {% if item.category == "MERCHANDISE" %}
+                            <span class="status-badge status-progress">WARUNG</span>
+                        {% elif item.category in ["RAW_MATERIAL", "PACKAGING", "GAS"] %}
+                            <span class="status-badge status-locked">DAPUR/STOK</span>
+                        {% else %}
+                            <span class="status-badge status-draft">SISTEM</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ item.minimum_stock }}</td>
+                    <td>{{ item.selling_price|rupiah }}</td>
+                    <td>{{ "YA" if item.is_stock_tracked else "TIDAK" }}</td>
+                    <td>
+                        {% if item.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_item', item_id=item.id) }}" class="btn btn-sm app-btn-secondary">
+                                Edit
+                            </a>
+
+                            <form method="POST" action="{{ url_for('master.toggle_item', item_id=item.id) }}" data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if item.is_active %}Nonaktif{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('master.delete_item', item_id=item.id) }}" data-app-confirm="Yakin ingin menghapus item ini? Hanya bisa jika belum pernah dipakai transaksi." data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-danger">
+                                    Hapus
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-box-seam"></i>
+                            <p>Belum ada data item.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

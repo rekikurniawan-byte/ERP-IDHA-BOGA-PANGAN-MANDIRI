@@ -1,0 +1,164 @@
+/* ==================================================
+   Tahap 10.25 — Atomic Print & Export Action UI Polish
+   UI-only polish for print/export feedback and print-safe rendering.
+   ================================================== */
+
+.app-print-export-status-host {
+    position: fixed;
+    top: max(1rem, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 2147483000;
+    pointer-events: none;
+    transform: translate(-50%, -0.75rem);
+    opacity: 0;
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.app-print-export-status-host.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.app-print-export-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    max-width: min(92vw, 34rem);
+    padding: 0.78rem 1rem;
+    border: 1px solid var(--border-subtle, rgba(15, 23, 42, 0.12));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--card-bg, #fff) 94%, transparent);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    color: var(--text-primary, #111827);
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.2;
+    backdrop-filter: blur(14px);
+}
+
+.app-print-export-status-print {
+    border-color: color-mix(in srgb, var(--accent, #2563eb) 35%, transparent);
+}
+
+.app-print-export-status-export {
+    border-color: color-mix(in srgb, var(--success, #16a34a) 35%, transparent);
+}
+
+.app-print-export-spinner {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 999px;
+    animation: app-print-export-spin 720ms linear infinite;
+    opacity: 0.85;
+}
+
+@keyframes app-print-export-spin {
+    to { transform: rotate(360deg); }
+}
+
+.app-print-export-action {
+    position: relative;
+    isolation: isolate;
+}
+
+.app-print-export-action:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent, #2563eb) 40%, transparent);
+    outline-offset: 2px;
+}
+
+.app-print-export-action.is-printing-action,
+.app-print-export-action.is-exporting-action {
+    cursor: progress;
+}
+
+.app-print-export-action.is-printing-action::after,
+.app-print-export-action.is-exporting-action::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid color-mix(in srgb, var(--accent, #2563eb) 42%, transparent);
+    animation: app-print-export-pulse 900ms ease-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.app-export-action.is-exporting-action::after {
+    border-color: color-mix(in srgb, var(--success, #16a34a) 42%, transparent);
+}
+
+@keyframes app-print-export-pulse {
+    0% { opacity: 0.75; transform: scale(0.98); }
+    100% { opacity: 0; transform: scale(1.06); }
+}
+
+body.app-print-page .app-page-header,
+body.app-print-page .print-header,
+body.app-print-page .invoice-header,
+body.app-print-page .receipt-header {
+    scroll-margin-top: 1.5rem;
+}
+
+body.app-print-preparing .print-sheet,
+body.app-print-preparing .invoice-print,
+body.app-print-preparing .receipt-print,
+body.app-print-preparing main {
+    transition: filter 160ms ease;
+}
+
+@media (max-width: 575.98px) {
+    .app-print-export-status-host {
+        width: calc(100vw - 1rem);
+    }
+
+    .app-print-export-status {
+        width: 100%;
+        justify-content: center;
+        border-radius: 1rem;
+        text-align: center;
+    }
+}
+
+@media print {
+    .app-print-export-status-host,
+    .app-print-export-status,
+    .app-print-export-action,
+    .app-atomic-toast-host,
+    .app-flash-center-host,
+    .app-action-loading-pill,
+    .sidebar,
+    .topbar,
+    .page-actions,
+    .no-print,
+    [data-no-print] {
+        display: none !important;
+    }
+
+    body.app-is-printing,
+    body.app-print-page {
+        background: #fff !important;
+    }
+
+    .app-table-scroll-shell,
+    .table-responsive {
+        overflow: visible !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+
+    .app-atomic-table,
+    table {
+        break-inside: auto;
+    }
+
+    tr,
+    img,
+    .card,
+    .app-card,
+    .print-card {
+        break-inside: avoid;
+    }
+}

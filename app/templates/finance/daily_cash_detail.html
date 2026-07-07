@@ -1,0 +1,119 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Detail Kas Harian — {{ record.cash_date.strftime('%d-%m-%Y') if record.cash_date else '-' }}</h1>
+        <p>Rincian rekap kas warung untuk tanggal ini beserta angka referensi dari data warung.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.daily_cash') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Ringkasan Kas</h5>
+            <p>
+                Status:
+                {% if record.status == 'CLOSED' %}
+                    <span class="badge bg-success">Tutup</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">Buka</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <tbody>
+                <tr>
+                    <th>Saldo Awal</th>
+                    <td class="text-end">{{ record.opening_balance|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Penjualan Tunai</th>
+                    <td class="text-end">{{ record.cash_sales|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Pembayaran Hutang</th>
+                    <td class="text-end">{{ record.debt_payments|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Pemasukan Lain</th>
+                    <td class="text-end">{{ record.other_income|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Pengeluaran</th>
+                    <td class="text-end">- {{ record.expenses|rupiah }}</td>
+                </tr>
+                <tr class="fw-semibold">
+                    <th>Saldo Akhir Seharusnya</th>
+                    <td class="text-end">{{ record.closing_balance|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Kas Fisik Aktual</th>
+                    <td class="text-end">{{ record.actual_cash|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Selisih Kas</th>
+                    <td class="text-end">
+                        {% if record.cash_difference and (record.cash_difference|abs) > 0.01 %}
+                            <span class="badge bg-danger">{{ record.cash_difference|rupiah }}</span>
+                        {% else %}
+                            <span class="badge bg-success">Sesuai</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if record.notes %}
+    <div class="mt-3">
+        <div class="text-muted small">Catatan</div>
+        <div>{{ record.notes }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Angka Referensi Warung ({{ record.cash_date.strftime('%d-%m-%Y') if record.cash_date else '-' }})</h5>
+            <p>Diambil dari transaksi warung aktual pada tanggal ini. Hanya sebagai pembanding.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <tbody>
+                <tr>
+                    <th>Total Penjualan Tunai (warung)</th>
+                    <td class="text-end">{{ reference.cash_sales_total|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Total Penjualan Hutang (warung)</th>
+                    <td class="text-end">{{ reference.debt_sales_total|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Total Pembayaran Hutang</th>
+                    <td class="text-end">{{ reference.debt_payment_total|rupiah }}</td>
+                </tr>
+                <tr>
+                    <th>Jumlah Transaksi Warung</th>
+                    <td class="text-end">{{ reference.sales_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

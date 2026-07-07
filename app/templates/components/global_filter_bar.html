@@ -1,0 +1,87 @@
+{% macro global_filter_bar(filter_bar) %}
+<section class="global-filter-bar-v2 app-card" data-filter-bar-v2="PRODUCTION">
+    <form method="GET" action="{{ filter_bar.action_url }}" class="global-filter-bar-v2-form app-form" data-ui-form="true" data-form-kind="filter">
+        <div class="global-filter-bar-v2-head">
+            <div>
+                <span class="eyebrow">Filter Periode</span>
+                <h5>{{ filter_bar.title }}</h5>
+                <p>{{ filter_bar.description }}</p>
+            </div>
+            <span class="global-filter-active-label">{{ filter_bar.active_label }}</span>
+        </div>
+
+        <div class="global-filter-bar-v2-grid">
+            <div class="global-filter-field">
+                <label class="form-label">Preset Periode</label>
+                <select name="{{ filter_bar.preset_name }}" class="form-select app-input">
+                    {% for option in filter_bar.preset_options %}
+                        <option value="{{ option.value }}" {% if option.value == filter_bar.preset_value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="global-filter-field">
+                <label class="form-label">Tanggal Mulai</label>
+                <input type="date" name="{{ filter_bar.start_name }}" class="form-control app-input" value="{{ filter_bar.start_value }}">
+            </div>
+
+            <div class="global-filter-field">
+                <label class="form-label">Tanggal Akhir</label>
+                <input type="date" name="{{ filter_bar.end_name }}" class="form-control app-input" value="{{ filter_bar.end_value }}">
+            </div>
+
+            {% if filter_bar.status_name and filter_bar.status_options %}
+                <div class="global-filter-field">
+                    <label class="form-label">Status</label>
+                    <select name="{{ filter_bar.status_name }}" class="form-select app-input">
+                        {% for option in filter_bar.status_options %}
+                            <option value="{{ option.value }}" {% if option.value == filter_bar.status_value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            {% if filter_bar.source_name and filter_bar.source_options %}
+                <div class="global-filter-field">
+                    <label class="form-label">Sumber</label>
+                    <select name="{{ filter_bar.source_name }}" class="form-select app-input">
+                        {% for option in filter_bar.source_options %}
+                            <option value="{{ option.value }}" {% if option.value == filter_bar.source_value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            {% for extra in filter_bar.extra_selects %}
+                <div class="global-filter-field">
+                    <label class="form-label">{{ extra.label }}</label>
+                    <select name="{{ extra.name }}" class="form-select app-input">
+                        {% for option in extra.options %}
+                            <option value="{{ option.value }}" {% if option.value|string == extra.value|string %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+
+            {% for key, value in filter_bar.hidden_fields.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+
+            <div class="global-filter-actions">
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-funnel"></i>
+                    Terapkan
+                </button>
+                <a href="{{ filter_bar.reset_url }}" class="btn app-btn-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Reset
+                </a>
+            </div>
+        </div>
+
+        {% if filter_bar.warning %}
+            <div class="global-filter-warning"><i class="bi bi-exclamation-triangle"></i>{{ filter_bar.warning }}</div>
+        {% endif %}
+    </form>
+</section>
+{% endmacro %}

@@ -1,0 +1,116 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Buat Invoice Catering Client</h1>
+        <p>Buat invoice resmi ke client/perusahaan dari Order LOCKED + Revisi AFTER_LOCK INCREASE. Mandor tetap dicatat sebagai PIC lapangan.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Invoice
+        </a>
+    </div>
+</div>
+
+<div class="app-card soft-warning-card">
+    <strong>Aturan Invoice Catering</strong>
+    <p>Invoice ditagihkan ke client/perusahaan. Mandor hanya menjadi PIC lapangan. Invoice dibuat dari order yang sudah LOCKED. Revisi yang dihitung hanya revisi setelah lock dengan arah INCREASE. Warung belum digabung pada step ini.</p>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Order Locked Siap Invoice</h5>
+            <p>Setiap order dapat menghasilkan invoice per PIC lapangan, tetapi bill-to tetap client/perusahaan.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Order</th>
+                    <th>Tanggal Order</th>
+                    <th>Pihak Ditagih / Perusahaan</th>
+                    <th>PIC Lapangan</th>
+                    <th>PIC Penagihan</th>
+                    <th>Jumlah Baris</th>
+                    <th>Calon Total</th>
+                    <th>Status Invoice</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in groups %}
+                <tr>
+                    <td><strong>{{ row.order.order_number }}</strong></td>
+                    <td>{{ row.order.order_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <strong>{{ row.client_name }}</strong>
+                        {% if not row.client_ready %}
+                            <div class="small text-danger">{{ row.client_error }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.mandor_name }}</td>
+                    <td>
+                        {% if row.client_pics %}
+                            <select name="client_pic_id" form="generate-invoice-{{ row.order.id }}-{{ row.mandor_id }}" class="form-select form-select-sm app-input" required>
+                                {% for pic in row.client_pics %}
+                                <option value="{{ pic.id }}">{{ pic.name }}{% if pic.position %} - {{ pic.position }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <span class="status-badge status-cancelled">PIC BELUM ADA</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.line_count }}</td>
+                    <td>{{ row.total_amount|rupiah }}</td>
+                    <td>
+                        {% if row.existing_invoice %}
+                            <span class="status-badge status-locked">SUDAH ADA</span>
+                        {% else %}
+                            <span class="status-badge status-progress">BELUM DIBUAT</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.existing_invoice %}
+                            <a href="{{ url_for('finance.invoice_detail', invoice_id=row.existing_invoice.id) }}" class="btn btn-sm app-btn-secondary">
+                                Lihat Invoice
+                            </a>
+                        {% else %}
+                            {% if row.client_ready %}
+                                <form id="generate-invoice-{{ row.order.id }}-{{ row.mandor_id }}" method="POST"
+                                      action="{{ url_for('finance.generate_order_invoice', order_id=row.order.id, mandor_id=row.mandor_id) }}" data-app-confirm="Buat invoice resmi ke client dan kunci PIC resmi + rekening pembayaran saat ini?" data-ui-form="true" class="app-form">
+                                    {% include "components/csrf_token.html" %}
+                                    <button type="submit" class="btn btn-sm app-btn-primary">
+                                        Generate
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button type="button" class="btn btn-sm app-btn-secondary" disabled>Client belum siap</button>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-receipt"></i>
+                            <p>Belum ada order LOCKED yang siap dibuat invoice.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "layouts/base.html" %}
+{% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Production Settings</span>
+        <h1>Pengaturan PT</h1>
+        <p>Identitas resmi perusahaan untuk invoice, kwitansi, laporan, dan informasi pembayaran.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+<div class="app-card soft-info-card mb-4">
+    <strong>Catatan production:</strong>
+    halaman ini hanya mengatur profil perusahaan dan dokumen. Tidak mengubah invoice, payment, jurnal, stok, cash daily, atau data login.
+</div>
+
+<form method="POST" action="{{ url_for('settings.company_settings') }}" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    {% for section in sections %}
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>{{ section.title }}</h3>
+                <p>{{ section.description }}</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {% for field in section.fields %}
+                <div class="col-md-{% if field.type == 'textarea' %}12{% else %}6{% endif %}">
+                    <label class="form-label">
+                        {{ field.label }}
+                        {% if field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+
+                    {% if field.type == 'textarea' %}
+                        <textarea name="{{ field.key }}" class="form-control app-input" rows="3" {% if field.required %}required{% endif %}>{{ settings[field.key] }}</textarea>
+                    {% else %}
+                        <input type="text" name="{{ field.key }}" class="form-control app-input" value="{{ settings[field.key] }}" {% if field.required %}required{% endif %}>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {{ sensitive_guard_fields("Ubah pengaturan/identitas PT", "Contoh: update rekening resmi invoice karena pergantian bank perusahaan") }}
+
+    <div class="app-card">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="text-muted">
+                Perubahan akan disimpan ke tabel <code>branch_settings</code> untuk cabang aktif.
+            </div>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                Simpan Pengaturan PT
+            </button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}

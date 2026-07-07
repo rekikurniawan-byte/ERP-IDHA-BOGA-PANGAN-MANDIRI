@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Cicilan Aset & Kendaraan</h1>
+        <p>Kelola kontrak pembiayaan aset. Pokok cicilan mengurangi hutang, bunga/admin menjadi beban, bukan semua cicilan dianggap beban.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary"><i class="bi bi-archive"></i> Pembelian Aset Tunai</a>
+        <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary"><i class="bi bi-graph-down-arrow"></i> Penyusutan</a>
+        {% if schema_ready %}
+        <a href="{{ url_for('finance.create_fixed_asset_installment_contract') }}" class="btn app-btn-primary"><i class="bi bi-plus-circle"></i> Buat Kontrak Cicilan</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if not schema_ready %}
+<div class="alert alert-warning small">
+    <strong>Migration belum aktif:</strong> tabel <code>asset_financing_contracts</code>, <code>asset_installment_schedules</code>, dan <code>asset_installment_payments</code> belum ada di database aktif. Jalankan migration migration cicilan aset sebelum memakai fitur cicilan aset.
+</div>
+{% else %}
+<div class="alert alert-info small">
+    <strong>Aturan akuntansi:</strong> saat beli kendaraan/alat besar kredit: <code>Dr Aset Tetap</code> dan <code>Cr Hutang Pembiayaan</code>. Saat bayar cicilan: <code>Dr Hutang Pembiayaan</code> + <code>Dr Beban Bunga/Admin</code> dan <code>Cr Kas/Bank</code>.
+</div>
+
+<div class="app-stat-grid asset-installment-summary-grid">
+    <div class="app-stat-card"><span>Total Kontrak</span><h3>{{ summary.total_contract|rupiah }}</h3><p>Nilai pokok + bunga/admin.</p></div>
+    <div class="app-stat-card"><span>Sisa Cicilan</span><h3>{{ summary.remaining|rupiah }}</h3><p>Outstanding schedule.</p></div>
+    <div class="app-stat-card"><span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>Buku Kas/Bank OUT tercatat.</p></div>
+    <div class="app-stat-card"><span>Kontrak Aktif</span><h3>{{ summary.active_count }}</h3><p>Dari {{ summary.count }} kontrak.</p></div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('finance.fixed_asset_installments') }}" class="row g-3 app-form global-filter-bar-v2" data-ui-form="true">
+        <div class="col-md-5">
+            <label class="form-label">Cari</label>
+            <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Nomor kontrak / aset / vendor / leasing">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select app-input">
+                <option value="ALL" {% if status == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="ACTIVE" {% if status == 'ACTIVE' %}selected{% endif %}>Aktif</option>
+                <option value="PAID" {% if status == 'PAID' %}selected{% endif %}>Lunas</option>
+                <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Batal</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end gap-2">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-search"></i> Terapkan</button>
+            <a href="{{ url_for('finance.fixed_asset_installments') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Kontrak</th>
+                    <th>Aset</th>
+                    <th>Leasing/Vendor</th>
+                    <th class="text-end">Pokok</th>
+                    <th class="text-end">Sisa</th>
+                    <th>Status</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                    {% set csum = contract.schedules|sum(attribute='remaining_amount') %}
+                    <tr>
+                        <td>{{ contract.contract_date.strftime('%d-%m-%Y') if contract.contract_date else '-' }}</td>
+                        <td><strong>{{ contract.contract_number }}</strong><div class="text-muted small">{{ contract.installment_count }}x {{ contract.installment_frequency }}</div></td>
+                        <td><strong>{{ contract.fixed_asset.asset_code if contract.fixed_asset else '-' }}</strong><div class="text-muted small">{{ contract.fixed_asset.asset_name if contract.fixed_asset else '-' }}</div></td>
+                        <td>{{ contract.financing_provider or contract.vendor_name or '-' }}</td>
+                        <td class="text-end fw-semibold">{{ contract.principal_amount|rupiah }}</td>
+                        <td class="text-end">{{ csum|rupiah }}</td>
+                        <td><span class="status-badge status-locked">{{ contract.status }}</span></td>
+                        <td class="text-end"><a href="{{ url_for('finance.fixed_asset_installment_detail', contract_id=contract.id) }}" class="btn btn-sm app-btn-secondary">Detail</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="8"><div class="empty-state"><i class="bi bi-truck"></i><p>Belum ada kontrak cicilan aset.</p><small>Gunakan fitur ini untuk kendaraan/alat besar yang dibeli kredit/leasing.</small></div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

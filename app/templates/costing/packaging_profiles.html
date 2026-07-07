@@ -1,0 +1,108 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="packaging_profiles">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 3</span>
+        <h1>Profil Kemasan</h1>
+        <p>Kelola biaya kemasan per porsi untuk kalkulator HPP. Data ini masih read-only dan belum memotong stok.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('costing.hpp_calculator') }}" class="btn app-btn-secondary">Kalkulator HPP</a>
+        <a href="{{ url_for('costing.create_packaging_profile') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Profil Kemasan
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-box2-heart"></i></div>
+        <div>
+            <p>Profil Aktif</p>
+            <h3>{{ active_count }}</h3>
+            <span class="app-stat-helper">Siap dipakai kalkulator</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="alert alert-info mb-3">
+        <strong>Aman:</strong> Profil kemasan hanya master biaya. Belum otomatis mengurangi stok kemasan, belum membuat jurnal, dan belum mengubah order lama.
+    </div>
+
+    <form method="GET" action="{{ url_for('costing.packaging_profiles') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama profil / catatan">
+
+        <select name="status" class="form-select app-input">
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('costing.packaging_profiles') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Profil</th>
+                    <th>Biaya Kemasan / Porsi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>
+                        <strong>{{ profile.profile_code }}</strong><br>
+                        <span>{{ profile.profile_name }}</span>
+                        {% if profile.notes %}<br><small class="text-muted">{{ profile.notes }}</small>{% endif %}
+                    </td>
+                    <td>{{ profile.cost_per_portion|rupiah }}</td>
+                    <td>
+                        {% if profile.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('costing.hpp_calculator', packaging_profile_id=profile.id, portion_qty=100) }}" class="btn btn-sm app-btn-secondary">Pakai Hitung</a>
+                            <a href="{{ url_for('costing.edit_packaging_profile', profile_id=profile.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <form method="POST" action="{{ url_for('costing.toggle_packaging_profile', profile_id=profile.id) }}" class="d-inline app-form" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if profile.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <i class="bi bi-box2-heart"></i>
+                            <p>Belum ada profil kemasan. Kosong itu normal kalau data real belum siap.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

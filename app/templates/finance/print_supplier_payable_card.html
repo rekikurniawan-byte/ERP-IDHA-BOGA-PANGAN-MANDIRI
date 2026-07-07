@@ -1,0 +1,131 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
+{% include "finance/_finance_print_report_styles.html" %}
+
+<div class="print-report-shell" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Keuangan · Print Ready</span>
+            <h1>Kartu Hutang Supplier</h1>
+            <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
+        </div>
+        <div class="page-actions finance-header-actions" data-finance-actions="UI">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('finance.supplier_payable_card', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>KARTU HUTANG SUPPLIER</h4>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Periode: {{ start_date.strftime('%d-%m-%Y') if start_date else 'Awal' }} s.d. {{ end_date.strftime('%d-%m-%Y') if end_date else 'Akhir' }}</p>
+            </div>
+        </div>
+
+        <div class="print-meta-grid">
+            <div class="app-stat-card print-box"><span>Supplier / Tempat</span><strong>{{ report.selected_group.supplier_name if report.selected_group else 'Belum dipilih' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Saldo Awal</span><strong>{{ report.summary.opening_balance|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Bill Periode</span><strong>{{ report.summary.total_bill_in_period|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Pembayaran Periode</span><strong>{{ report.summary.total_payment_in_period|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Saldo Akhir</span><strong>{{ report.summary.ending_balance|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Mutasi</span><strong>{{ report.activities|length }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Supplier/Toko</span><strong>{{ report.groups|length }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+        </div>
+
+        <h5>Mutasi Kartu Hutang</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Dokumen</th>
+                    <th>Bill Terkait</th>
+                    <th>Hutang Bertambah</th>
+                    <th>Hutang Berkurang</th>
+                    <th>Saldo Hutang</th>
+                    <th>Ref Pembayaran</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if report.selected_group and report.summary.opening_balance != 0 %}
+                <tr>
+                    <td>-</td>
+                    <td>Saldo Awal</td>
+                    <td>Saldo sebelum periode</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td class="text-end"><strong>{{ report.summary.opening_balance|rupiah }}</strong></td>
+                    <td>-</td>
+                </tr>
+                {% endif %}
+
+                {% for activity in report.activities %}
+                <tr>
+                    <td>{{ activity.date.strftime('%d-%m-%Y') if activity.date else '-' }}</td>
+                    <td>{{ 'Bill' if activity.kind == 'BILL' else 'Bayar' }}</td>
+                    <td>{{ activity.description }}</td>
+                    <td>{{ activity.bill.bill_number if activity.bill else '-' }}</td>
+                    <td class="text-end">{{ activity.debit|rupiah if activity.debit else '-' }}</td>
+                    <td class="text-end">{{ activity.credit|rupiah if activity.credit else '-' }}</td>
+                    <td class="text-end"><strong>{{ activity.running_balance|rupiah }}</strong></td>
+                    <td>{{ activity.payment.reference_number if activity.payment and activity.payment.reference_number else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted">Belum ada mutasi kartu hutang sesuai filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="mt-4">Ringkasan Semua Supplier/Toko</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Supplier / Tempat</th>
+                    <th>Jumlah Bill</th>
+                    <th>Bill Terbuka</th>
+                    <th>Total Bill</th>
+                    <th>Total Dibayar</th>
+                    <th>Sisa Hutang</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in report.groups %}
+                <tr>
+                    <td>{{ group.supplier_name }}<br><small>{{ 'Supplier tetap' if group.supplier_id else 'Manual / toko tidak tetap' }}</small></td>
+                    <td class="text-center">{{ group.bill_count }}</td>
+                    <td class="text-center">{{ group.open_count }}</td>
+                    <td class="text-end">{{ group.total_billed|rupiah }}</td>
+                    <td class="text-end">{{ group.total_paid|rupiah }}</td>
+                    <td class="text-end"><strong>{{ group.remaining|rupiah }}</strong></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Belum ada supplier bill.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat read-only. Saldo akhir mengikuti filter periode dan supplier aktif.</p>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Pembelian Aset Tetap</h1>
+        <p>Catat pembelian aset tetap yang benar-benar mengurangi kas/bank, membuat buku kas/bank OUT, dan jurnal aset otomatis.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            <i class="bi bi-wallet2"></i>
+            Buku Kas/Bank
+        </a>
+        <a href="{{ url_for('finance.fixed_asset_installments') }}" class="btn app-btn-secondary">
+            <i class="bi bi-truck"></i>
+            Cicilan Aset
+        </a>
+        {% if current_user.role == 'OWNER' %}
+        <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">
+            <i class="bi bi-archive"></i>
+            Master Aset
+        </a>
+        {% endif %}
+        <a href="{{ url_for('finance.create_fixed_asset_purchase') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Beli Aset Tetap
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-warning small">
+    <strong>Catatan:</strong> halaman ini untuk pembelian aset baru yang langsung dibayar kas/bank. Untuk kendaraan/alat besar kredit, gunakan menu <strong>Cicilan Aset</strong> agar pokok cicilan tidak salah dicatat sebagai beban.
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Pembelian</span>
+        <h3>{{ summary.total_amount|rupiah }}</h3>
+        <p>Jumlah nilai pembelian aset sesuai filter.</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Dari Kas</span>
+        <h3>{{ summary.cash_amount|rupiah }}</h3>
+        <p>Buku Kas/Bank OUT kas.</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Dari Bank</span>
+        <h3>{{ summary.bank_amount|rupiah }}</h3>
+        <p>Buku Kas/Bank OUT bank.</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Jumlah Transaksi</span>
+        <h3>{{ summary.count }}</h3>
+        <p>Transaksi pembelian aset.</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('finance.fixed_asset_purchases') }}" class="row g-3 app-form" data-ui-form="true">
+        <div class="col-md-5">
+            <label class="form-label">Cari</label>
+            <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Nomor / vendor / kode aset / nama aset">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Sumber Pembayaran</label>
+            <select name="payment_method" class="form-select app-input">
+                <option value="ALL" {% if payment_method == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="CASH" {% if payment_method == 'CASH' %}selected{% endif %}>Kas</option>
+                <option value="BANK" {% if payment_method == 'BANK' %}selected{% endif %}>Bank</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end gap-2">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-search"></i>
+                Filter
+            </button>
+            <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Nomor</th>
+                    <th>Aset</th>
+                    <th>Sumber</th>
+                    <th class="text-end">Nominal</th>
+                    <th>Buku Kas/Bank</th>
+                    <th>Jurnal</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for purchase in purchases %}
+                    <tr>
+                        <td>{{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}</td>
+                        <td><strong>{{ purchase.purchase_number }}</strong></td>
+                        <td>
+                            <strong>{{ purchase.fixed_asset.asset_code if purchase.fixed_asset else '-' }}</strong>
+                            <div class="text-muted small">{{ purchase.fixed_asset.asset_name if purchase.fixed_asset else '-' }}</div>
+                        </td>
+                        <td>
+                            {% if purchase.account_type == 'BANK' and purchase.bank_account %}
+                                Bank · {{ purchase.bank_account.bank_name }} - {{ purchase.bank_account.account_name }}
+                            {% else %}
+                                Kas Operasional
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">{{ purchase.amount|rupiah }}</td>
+                        <td>
+                            {% if purchase.cash_bank_transaction_id %}
+                                <span class="status-badge status-locked">OUT</span>
+                            {% else %}
+                                <span class="status-badge status-cancelled">Belum</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if purchase.journal %}
+                                <span class="status-badge status-locked">{{ purchase.journal.journal_number }}</span>
+                            {% else %}
+                                <span class="status-badge status-cancelled">Belum</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('finance.fixed_asset_purchase_detail', purchase_id=purchase.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="bi bi-archive"></i>
+                                <p>Belum ada pembelian aset tetap.</p>
+                                <small>Jangan isi dummy di database utama. Catat transaksi ini hanya saat aset benar-benar dibeli.</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

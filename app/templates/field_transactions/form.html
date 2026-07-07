@@ -1,0 +1,157 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell field-transaction-form-page" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan | Draft Transaksi Kas Lapangan</span>
+        <h1>{{ page_title }}</h1>
+        <p>{{ page_subtitle }}</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Transaksi
+        </a>
+    </div>
+</div>
+
+<form method="POST" action="{{ action_url }}" class="app-form app-form-long field-transaction-form-layout" data-form-kind="page" data-ui-form="true">
+    {% include "components/csrf_token.html" %}
+
+    <div class="app-card mt-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Event Inti</h5>
+                    <p>Pilih kejadian bisnis yang paling dekat dengan kejadian lapangan. Hanya event yang sudah siap end-to-end yang ditampilkan agar tidak menimbulkan dead end di UI.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Kejadian</label>
+                    <input type="date" name="transaction_date" class="form-control" value="{{ form_data.get('transaction_date', '') }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Input</label>
+                    <input type="date" name="entry_date" class="form-control" value="{{ form_data.get('entry_date', '') }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nominal</label>
+                    <input type="text" name="amount" class="form-control" placeholder="Contoh: 1500000" value="{{ form_data.get('amount', '') }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Jenis Transaksi</label>
+                    <select name="business_event_type" class="form-select" required>
+                        <option value="">Pilih event</option>
+                        {% for event in event_choices %}
+                            <option value="{{ event.value }}" {% if form_data.get('business_event_type') == event.value %}selected{% endif %}>{{ event.label }} | {{ event.direction }} | {{ event.cash_flow }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Kanal Input</label>
+                    <select name="field_channel" class="form-select">
+                        {% for channel in field_channels %}
+                            <option value="{{ channel }}" {% if form_data.get('field_channel', 'MANUAL') == channel %}selected{% endif %}>{{ channel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Pihak Transaksi</h5>
+                <p>Boleh memilih pihak yang sudah tersimpan, atau isi snapshot pihak lapangan. Opsi simpan sebagai pihak baru tetap tersedia, tetapi sistem akan menahan duplikasi yang jelas agar master tetap bersih.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Pihak Existing</label>
+                <select name="counterparty_id" class="form-select">
+                    <option value="">Tanpa pihak existing</option>
+                    {% for counterparty in counterparties %}
+                        <option value="{{ counterparty.id }}" {% if form_data.get('counterparty_id')|string == counterparty.id|string %}selected{% endif %}>{{ counterparty.name }} | {{ counterparty.counterparty_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tipe Pihak Baru</label>
+                <select name="new_counterparty_type" class="form-select">
+                    <option value="LAINNYA" {% if form_data.get('new_counterparty_type', 'LAINNYA') == 'LAINNYA' %}selected{% endif %}>LAINNYA</option>
+                    <option value="MANDOR_NON_PT" {% if form_data.get('new_counterparty_type') == 'MANDOR_NON_PT' %}selected{% endif %}>MANDOR_NON_PT</option>
+                    <option value="PEMBELI_UMUM" {% if form_data.get('new_counterparty_type') == 'PEMBELI_UMUM' %}selected{% endif %}>PEMBELI_UMUM</option>
+                    <option value="VENDOR_NONFORMAL" {% if form_data.get('new_counterparty_type') == 'VENDOR_NONFORMAL' %}selected{% endif %}>VENDOR_NONFORMAL</option>
+                    <option value="BUYER_EKSTERNAL" {% if form_data.get('new_counterparty_type') == 'BUYER_EKSTERNAL' %}selected{% endif %}>BUYER_EKSTERNAL</option>
+                    <option value="PEKERJA_LAPANGAN" {% if form_data.get('new_counterparty_type') == 'PEKERJA_LAPANGAN' %}selected{% endif %}>PEKERJA_LAPANGAN</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nama Pihak</label>
+                <input type="text" name="party_snapshot_name" class="form-control" placeholder="Nama pihak lapangan" value="{{ form_data.get('party_snapshot_name', '') }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Perusahaan/Instansi</label>
+                <input type="text" name="party_snapshot_company" class="form-control" placeholder="Opsional" value="{{ form_data.get('party_snapshot_company', '') }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">No HP</label>
+                <input type="text" name="party_snapshot_phone" class="form-control" placeholder="Opsional" value="{{ form_data.get('party_snapshot_phone', '') }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Lokasi Site/Camp</label>
+                <input type="text" name="site_location" class="form-control" placeholder="Contoh: Camp A / Site Utara" value="{{ form_data.get('site_location', '') }}">
+            </div>
+            <div class="col-12">
+                <div class="field-transaction-register-row">
+                    <label class="checkbox-clean">
+                        <input type="checkbox" name="register_counterparty" value="1" {% if form_data.get('register_counterparty') in [True, '1', 1, 'on'] %}checked{% endif %}>
+                        <span>Simpan sebagai pihak baru</span>
+                    </label>
+                    <div class="small text-muted">Untuk tipe mandor, nama dan no HP yang cocok akan diarahkan ke entitas existing bila sudah ada.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4 field-transaction-form-side-card">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Pembayaran & Catatan</h5>
+                    <p>Isi metode dan rekening bila transaksi benar-benar sudah bergerak ke kas/bank.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Metode Pembayaran</label>
+                    <select name="payment_method" class="form-select">
+                        <option value="" {% if not form_data.get('payment_method') %}selected{% endif %}>Belum ditentukan</option>
+                        <option value="CASH" {% if form_data.get('payment_method') == 'CASH' %}selected{% endif %}>CASH</option>
+                        <option value="TRANSFER" {% if form_data.get('payment_method') == 'TRANSFER' %}selected{% endif %}>TRANSFER</option>
+                        <option value="QRIS" {% if form_data.get('payment_method') == 'QRIS' %}selected{% endif %}>QRIS</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Rekening Bank</label>
+                    <select name="bank_account_id" class="form-select">
+                        <option value="">Tanpa rekening</option>
+                        {% for bank in bank_accounts %}
+                            <option value="{{ bank.id }}" {% if form_data.get('bank_account_id')|string == bank.id|string %}selected{% endif %}>{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Catatan</label>
+                    <textarea name="notes" class="form-control" rows="4" placeholder="Catatan kejadian lapangan, sumber catatan manual, konteks pembayaran/pengeluaran, dll">{{ form_data.get('notes', '') }}</textarea>
+                </div>
+            </div>
+    </div>
+
+    <div class="form-actions mt-4 field-transaction-form-actions field-transaction-form-actions-end">
+        <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">Batal</a>
+        <button type="submit" class="btn app-btn-primary">{{ submit_label }}</button>
+    </div>
+</form>
+</div>
+{% endblock %}

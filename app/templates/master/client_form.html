@@ -1,0 +1,149 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">{% if client %}Edit Client{% else %}Tambah Client{% endif %}</span>
+        <h1>{% if client %}Edit Client{% else %}Input Client{% endif %}</h1>
+        <p>Client dipakai untuk mengelompokkan mandor dan data proyek.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.clients') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+<div class="app-card">
+    <form method="POST" action="{% if client %}{{ url_for('master.edit_client', client_id=client.id) }}{% else %}{{ url_for('master.create_client') }}{% endif %}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Kode Client</label>
+                <input type="text" name="client_code" class="form-control app-input" value="{{ client.client_code if client and client.client_code is defined and client.client_code else '' }}" placeholder="Otomatis: CL-0001">
+                <div class="form-text">Wajib untuk identitas invoice resmi. Kosongkan untuk kode otomatis.</div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nama Client</label>
+                <input type="text" name="name" class="form-control app-input" value="{{ client.name if client else '' }}" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Telepon</label>
+                <input type="text" name="phone" class="form-control app-input" value="{{ client.phone if client and client.phone is defined else '' }}">
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Alamat</label>
+                <textarea name="address" class="form-control app-input" rows="3">{{ client.address if client and client.address is defined else '' }}</textarea>
+            </div>
+
+            <div class="col-md-12">
+                <label class="checkbox-clean">
+                    <input type="checkbox" name="is_active" {% if not client or client.is_active %}checked{% endif %}>
+                    <span>Client aktif</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                {% if client %}Simpan Perubahan{% else %}Simpan Client{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% if client %}
+<div class="app-card mt-4">
+    <div class="section-title">
+        <div>
+            <h3>PIC Client</h3>
+            <p>Data PIC digunakan untuk pengiriman invoice dan riwayat follow up penagihan.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('master.create_client_pic', client_id=client.id) }}" class="mb-4 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Nama PIC</label>
+                <input type="text" name="pic_name" class="form-control app-input" placeholder="Contoh: Pak Andi / Bu Rina" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">No WhatsApp / Telepon</label>
+                <input type="text" name="pic_phone" class="form-control app-input" placeholder="08xxxxxxxxxx">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Email PIC</label>
+                <input type="email" name="pic_email" class="form-control app-input" placeholder="finance@client.co.id">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Jabatan / Bagian</label>
+                <input type="text" name="pic_position" class="form-control app-input" placeholder="Finance">
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn app-btn-primary w-100">
+                    Tambah PIC
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Nama PIC</th>
+                    <th>Telepon</th>
+                    <th>Jabatan</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pic in client.pics %}
+                <tr>
+                    <td><strong>{{ pic.name }}</strong></td>
+                    <td>{{ pic.phone if pic.phone else '-' }}</td>
+                    <td>{{ pic.position if pic.position else '-' }}</td>
+                    <td>{{ pic.email if pic.email is defined and pic.email else '-' }}</td>
+                    <td>
+                        {% if pic.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('master.toggle_client_pic', client_id=client.id, pic_id=pic.id) }}" data-ui-form="true" class="app-form">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">
+                                {% if pic.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-person-lines-fill"></i>
+                            <p>Belum ada PIC untuk client ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

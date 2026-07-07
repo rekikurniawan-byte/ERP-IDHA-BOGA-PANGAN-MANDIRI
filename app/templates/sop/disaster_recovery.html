@@ -1,0 +1,203 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="sop-page" data-fix70-f1="disaster-recovery-sop" data-fix73b-outlier-page="sop-recovery">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">{{ sop.eyebrow }}</span>
+            <h1 class="page-title">{{ sop.title }}</h1>
+            <p class="page-description">Panduan final saat sistem error, database bermasalah, backup perlu dipakai, atau patch besar akan dilakukan. Halaman ini read-only dan tidak melakukan restore otomatis.</p>
+        </div>
+        <div class="page-actions sop-no-print">
+            <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">
+                <i class="bi bi-database-check"></i>
+                SOP Backup & Restore
+            </a>
+            <button type="button" class="btn app-btn-secondary" data-app-action="print">
+                <i class="bi bi-printer"></i>
+                Print SOP
+            </button>
+        </div>
+    </div>
+
+    <div class="app-stat-grid sop-summary-grid mb-4">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-shield-check"></i></div>
+            <div>
+                <p>Mode</p>
+                <h3>Read-only</h3>
+                <span class="app-stat-helper">Tidak overwrite DB</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-database-down"></i></div>
+            <div>
+                <p>Restore Aman</p>
+                <h3>Verified</h3>
+                <span class="app-stat-helper">Wajib preview dry-run PASS</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-clock-history"></i></div>
+            <div>
+                <p>Versi SOP</p>
+                <h3>F1</h3>
+                <span class="app-stat-helper">{{ sop.schema_version }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8">
+            <div class="app-card h-100">
+                <div class="section-title">
+                    <div>
+                        <h3>Tujuan SOP Darurat</h3>
+                        <p>Urutan anti-panik sebelum owner/admin mengambil keputusan restore.</p>
+                    </div>
+                    <span class="status-badge info">Recovery</span>
+                </div>
+                <ul class="mb-0">
+                    {% for item in sop.summary %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="app-card h-100">
+                <div class="section-title">
+                    <div>
+                        <h3>Path Aktif</h3>
+                        <p>Informasi teknis untuk memastikan file yang dipulihkan benar.</p>
+                    </div>
+                </div>
+                {% set rt = sop.runtime %}
+                {% set db = rt.database %}
+                <div class="detail-row"><span>Database</span><code class="small text-break">{{ db.path }}</code></div>
+                <div class="detail-row"><span>DB SHA256</span><code class="small text-break">{{ db.sha256 }}</code></div>
+                <div class="detail-row"><span>Backup dir</span><code class="small text-break">{{ rt.backup_dir }}</code></div>
+                <div class="detail-row"><span>Upload dir</span><code class="small text-break">{{ rt.upload_dir }}</code></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Level Insiden</h3>
+                <p>Tentukan tingkat masalah sebelum mengambil tindakan.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            {% for item in sop.incident_levels %}
+                <div class="col-lg-4">
+                    <div class="detail-row h-100">
+                        <span>{{ item.level }} · {{ item.name }}</span>
+                        <strong><span class="status-badge {{ item.status_class }}">{{ item.name|upper }}</span></strong>
+                        <ul class="small text-muted mb-2 mt-2">
+                            {% for example in item.examples %}<li>{{ example }}</li>{% endfor %}
+                        </ul>
+                        <small>{{ item.action }}</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-7">
+            <div class="app-card h-100">
+                <div class="section-title">
+                    <div>
+                        <h3>Decision Flow Saat Error</h3>
+                        <p>Ikuti berurutan. Jangan langsung restore sebelum bukti masalah jelas.</p>
+                    </div>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    {% for step in sop.decision_flow %}
+                        <div class="detail-row">
+                            <span>Langkah {{ step.step }}</span>
+                            <strong>{{ step.title }}</strong>
+                            <small class="text-muted d-block mt-1">{{ step.description }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="app-card h-100 soft-danger-card">
+                <h3>Jangan Dilakukan</h3>
+                <ul class="mb-0">
+                    {% for item in sop.do_not_do %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Langkah Emergency Restore Manual-Assisted</h3>
+                <p>Dipakai hanya jika database aktif benar-benar rusak/hilang dan backup VERIFIED tersedia.</p>
+            </div>
+            <span class="status-badge warning">MANUAL ONLY</span>
+        </div>
+        <ol class="mb-0">
+            {% for item in sop.emergency_steps %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Checklist Sebelum Patch Besar</h3><p>Jangan lanjut patch kalau checklist utama belum aman.</p></div></div>
+                <ul class="mb-0">
+                    {% for item in sop.before_big_patch_checklist %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Tanggung Jawab Role</h3><p>Siapa mengecek apa setelah insiden atau restore.</p></div></div>
+                <ul class="mb-0">
+                    {% for item in sop.owner_admin_responsibility %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-0">
+        <div class="section-title">
+            <div>
+                <h3>Halaman Safety Terkait</h3>
+                <p>Gunakan halaman ini untuk membaca kondisi sistem dan jejak aksi.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            {% for page in sop.safety_pages %}
+                <div class="col-md-6 col-xl-4">
+                    <a class="sop-role-card card app-card h-100" href="{{ page.url }}">
+                        <div class="card-body">
+                            <div class="sop-role-card-head">
+                                <span class="sop-role-icon"><i class="bi {{ page.icon }}"></i></span>
+                                <i class="bi bi-arrow-right-short"></i>
+                            </div>
+                            <h2>{{ page.label }}</h2>
+                            <p>{{ page.purpose }}</p>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

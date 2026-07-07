@@ -1,0 +1,410 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+
+<style>
+@media print {
+    .sidebar,
+    .topbar,
+    .page-actions,
+    .no-print,
+    .statement-filter {
+        display: none !important;
+    }
+
+    body {
+        background: var(--surface) !important;
+    }
+
+    html,
+    body,
+    .app-shell,
+    .app-main,
+    .content-area,
+    .container-fluid,
+    .finance-page-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    .app-card {
+        box-shadow: none !important;
+        border: 1px solid var(--border) !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+    }
+
+    .statement-client-block,
+    .card-header-clean,
+    .app-stat-card {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 24px;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+
+    .table {
+        font-size: 12px;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+    }
+
+    .table thead {
+        display: table-header-group !important;
+    }
+
+    .table tfoot {
+        display: table-footer-group !important;
+    }
+
+    .table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+}
+</style>
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Statement of Account</h1>
+        <p>Rekap resmi piutang aktif client berdasarkan invoice yang belum lunas dan tidak berstatus cancelled.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <button type="button" class="btn app-btn-primary" data-app-action="print">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </button>
+
+        <a href="{{ url_for('finance.export_receivables_statement_csv', client_id=selected_client_id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+
+        <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Piutang Client
+        </a>
+    </div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="app-card statement-filter mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Client</h5>
+            <p>Pilih client tertentu jika ingin mencetak rekap piutang per perusahaan.</p>
+        </div>
+    </div>
+    <form method="GET" action="{{ url_for('finance.receivables_statement') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <input type="hidden" name="period_preset" value="{{ request.args.get('period_preset') or 'all' }}">
+        <input type="hidden" name="start_date" value="{{ filter_bar.start_value }}">
+        <input type="hidden" name="end_date" value="{{ filter_bar.end_value }}">
+        <div class="col-md-8">
+            <label class="form-label">Client</label>
+            <select name="client_id" class="form-select app-input">
+                <option value="">Semua Client</option>
+                {% for client in client_options %}
+                <option value="{{ client.value }}" {% if selected_client_id == client.value %}selected{% endif %}>
+                    {{ client.label }} - {{ client.invoice_count }} invoice - {{ client.remaining_total|rupiah }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary">Terapkan Client</button>
+            <a href="{{ url_for('finance.receivables_statement') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Ringkasan Statement</h5>
+            <p>Dibuat tanggal {{ summary.generated_date.strftime('%d-%m-%Y') }}.</p>
+        </div>
+
+        {% if selected_client_name %}
+            <span class="status-badge status-progress">{{ selected_client_name }}</span>
+        {% else %}
+            <span class="status-badge status-progress">Semua Client</span>
+        {% endif %}
+    </div>
+
+    <div class="app-stat-grid">
+        <div class="app-stat-card">
+            <span>Client</span>
+            <h3>{{ summary.client_count }}</h3>
+            <p>Client dengan piutang aktif</p>
+        </div>
+
+        <div class="app-stat-card">
+            <span>Invoice Aktif</span>
+            <h3>{{ summary.invoice_count }}</h3>
+            <p>Invoice belum lunas</p>
+        </div>
+
+        <div class="app-stat-card">
+            <span>Total Tagihan</span>
+            <h3>{{ summary.total_amount|rupiah }}</h3>
+            <p>Nilai invoice aktif</p>
+        </div>
+
+        <div class="app-stat-card">
+            <span>Sudah Dibayar</span>
+            <h3>{{ summary.paid_amount|rupiah }}</h3>
+            <p>Total pembayaran masuk</p>
+        </div>
+
+        <div class="app-stat-card">
+            <span>Sisa Piutang</span>
+            <h3>{{ summary.remaining_total|rupiah }}</h3>
+            <p>Tagihan belum lunas</p>
+        </div>
+    </div>
+</div>
+
+{% for group in client_groups %}
+<div class="app-card statement-client-block mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>{{ group.client_name }}</h5>
+            <p>
+                Alamat: {{ group.client_address }}<br>
+                Telepon: {{ group.client_phone }}
+            </p>
+        </div>
+
+        <div class="text-end">
+            <div><strong>Sisa Piutang</strong></div>
+            <h4>{{ group.remaining_total|rupiah }}</h4>
+        </div>
+    </div>
+
+    <div class="info-grid mb-3">
+        <div>
+            <span>Jumlah Invoice</span>
+            <strong>{{ group.invoice_count }}</strong>
+        </div>
+
+        <div>
+            <span>Total Tagihan</span>
+            <strong>{{ group.total_amount|rupiah }}</strong>
+        </div>
+
+        <div>
+            <span>Sudah Dibayar</span>
+            <strong>{{ group.paid_amount|rupiah }}</strong>
+        </div>
+
+        <div>
+            <span>Sisa Piutang</span>
+            <strong>{{ group.remaining_total|rupiah }}</strong>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <strong>PIC Aktif:</strong>
+        {% if group.pics %}
+            {% for pic in group.pics %}
+                <span class="status-badge status-progress">
+                    {{ pic.name }}{% if pic.position %} - {{ pic.position }}{% endif %}{% if pic.phone %} - {{ pic.phone }}{% endif %}
+                </span>
+            {% endfor %}
+        {% else %}
+            <span class="text-muted">Belum ada PIC aktif.</span>
+        {% endif %}
+    </div>
+
+    {# SOA2B_WHATSAPP_ACTIONS #}
+    <div class="app-card soft-warning-card no-print mb-3">
+        <div class="card-header-clean">
+            <div>
+                <h5>Pesan Rekap Piutang</h5>
+                <p>
+                    Target:
+                    <strong>{{ group.wa_target_name }}</strong>
+                    {% if group.wa_target_phone %}
+                        - {{ group.wa_target_phone }}
+                    {% endif %}
+                    <br>
+                    Sumber nomor: {{ group.wa_target_source }}
+                </p>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                {% if group.soa_whatsapp_url %}
+                {# SOA4B_SEND_ROUTE_LINK #}
+                <a href="{{ url_for('finance.receivables_statement_send', client_id=group.client_key) }}"
+                   target="_blank"
+                   class="btn app-btn-primary">
+                    Kirim WhatsApp
+                </a>
+                {% else %}
+                <button type="button" class="btn app-btn-secondary" disabled>
+                    Nomor WA belum tersedia
+                </button>
+                {% endif %}
+
+                <button type="button"
+                        class="btn app-btn-secondary"
+                        data-app-call="copySoaMessage" data-app-call-args="soa-message-{{ loop.index }}">
+                    Salin Pesan
+                </button>
+            </div>
+        </div>
+
+        <textarea id="soa-message-{{ loop.index }}"
+                  class="form-control app-input"
+                  rows="8"
+                  readonly>{{ group.soa_message }}</textarea>
+
+        <div class="text-muted small mt-2">
+            Pesan ini hanya mengambil invoice aktif yang belum lunas dan tidak berstatus CANCELLED.
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Invoice</th>
+                    <th>Mandor</th>
+                    <th>Tanggal</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Total</th>
+                    <th>Dibayar</th>
+                    <th>Sisa</th>
+                    <th>Status</th>
+                    <th>Peringatan</th>
+                    {# SOA5B_HEADER_PAYMENT_FOLLOWUP_SPLIT #}
+                    <th>Pembayaran Terakhir</th>
+                    <th>Follow Up Terakhir</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in group.rows %}
+                {% set invoice = row.invoice %}
+                {% set ar = row.ar %}
+                {% set latest = row.latest_log %}
+                {# SOA5B_SET_LATEST_PAYMENT #}
+                {% set payment = row.latest_payment %}
+                <tr>
+                    <td>
+                        <strong>{{ invoice.invoice_number }}</strong>
+                        <div class="text-muted small">{{ invoice.source_type or '-' }}</div>
+                    </td>
+                    <td>{{ row.mandor_name }}</td>
+                    <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
+                    <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
+                    <td>{{ invoice.total_amount|rupiah }}</td>
+                    <td>{{ invoice.paid_amount|rupiah }}</td>
+                    <td><strong>{{ invoice.remaining_amount|rupiah }}</strong></td>
+                    <td>{{ invoice.status }}</td>
+                    <td>
+                        <span class="status-badge {{ ar.badge_class }}">{{ ar.stage_label }}</span>
+                        <div class="text-muted small">{{ ar.action }}</div>
+                    </td>
+
+                    {# SOA5B_PAYMENT_CELL #}
+                    <td>
+                        {% if payment %}
+                            <strong>{{ payment.payment_number }}</strong>
+                            <div class="text-muted small">
+                                {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else '-' }}
+                                - {{ payment.payment_method or '-' }}
+                            </div>
+                            <div class="text-muted small">
+                                {{ payment.amount|rupiah }}
+                                {% if payment.reference_number %}
+                                    - Ref: {{ payment.reference_number }}
+                                {% endif %}
+                            </div>
+                            {% if payment.notes %}
+                            <div class="text-muted small">{{ payment.notes }}</div>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if latest %}
+                            {# SOA5D2_CHANNEL_IN_FOLLOWUP_CELL #}
+                            <strong>{{ latest.channel or '-' }} - {{ latest.collection_status }}</strong>
+                            <div class="text-muted small">
+                                {{ latest.follow_up_date.strftime('%d-%m-%Y') if latest.follow_up_date else '-' }}
+                                - {{ latest.contact_person or '-' }}
+                            </div>
+                            <div class="text-muted small">{{ latest.response_note or '-' }}</div>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="app-card">
+    <div class="empty-state">
+        <i class="bi bi-file-earmark-text"></i>
+        <p>Tidak ada piutang aktif untuk ditampilkan.</p>
+    </div>
+</div>
+{% endfor %}
+
+<div class="app-card soft-warning-card mt-4">
+    <strong>Catatan</strong>
+    <p>Statement ini hanya menghitung invoice aktif dengan sisa piutang lebih dari 0 dan tidak berstatus CANCELLED. Invoice arsip/batal tidak masuk ke total piutang aktif.</p>
+</div>
+{# SOA2B_COPY_SCRIPT #}
+<script>
+function copySoaMessage(elementId) {
+    const textarea = document.getElementById(elementId);
+
+    if (!textarea) {
+        alert("Pesan tidak ditemukan.");
+        return;
+    }
+
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, 999999);
+
+    try {
+        document.execCommand("copy");
+        alert("Pesan rekap piutang berhasil disalin.");
+    } catch (error) {
+        alert("Gagal menyalin pesan. Silakan blok dan salin manual.");
+    }
+}
+</script>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Lampiran Digital{% endblock %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <p class="text-muted small mb-1">Sistem</p>
+        <h1 class="h3 mb-1">Lampiran Digital</h1>
+        <p class="text-muted mb-0">Pondasi bukti digital untuk delivery, pembelian, customer payment, dan supplier payment.</p>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
+        <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+</div>
+
+<div class="alert alert-info border-0 shadow-sm">
+    <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Foundation aktif</div>
+    <div class="small">
+        Halaman ini baru monitoring lampiran umum. Upload bukti akan dipasang bertahap ke delivery, pembelian, dan payment pada cleanup berikutnya.
+        Format aman: {{ allowed_extensions|join(', ') }}. Maksimal {{ max_upload_mb }} MB per file.
+    </div>
+</div>
+
+<div class="card app-card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end app-form" data-ui-form="true">
+            <div class="col-md-2">
+                <label class="form-label">Module</label>
+                <select name="module" class="form-select">
+                    <option value="">Semua</option>
+                    {% for module in options.modules %}
+                        <option value="{{ module }}" {{ 'selected' if filters.module == module else '' }}>{{ module }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Referensi</label>
+                <select name="reference_type" class="form-select">
+                    <option value="">Semua</option>
+                    {% for reference_type in options.reference_types %}
+                        <option value="{{ reference_type }}" {{ 'selected' if filters.reference_type == reference_type else '' }}>{{ reference_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Jenis Bukti</label>
+                <select name="attachment_type" class="form-select">
+                    <option value="">Semua</option>
+                    {% for attachment_type in options.attachment_types %}
+                        <option value="{{ attachment_type }}" {{ 'selected' if filters.attachment_type == attachment_type else '' }}>{{ attachment_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cari</label>
+                <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="nama file/catatan/module">
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" name="include_deleted" value="1" id="includeDeleted" {{ 'checked' if filters.include_deleted else '' }}>
+                    <label class="form-check-label" for="includeDeleted">Tampilkan terhapus</label>
+                </div>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+            <div class="col-12">
+                <a class="btn app-btn-secondary btn-sm" href="{{ url_for('settings.digital_attachments') }}">Reset Filter</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Daftar Lampiran</strong>
+            <div class="text-muted small">Maksimal 300 lampiran terbaru sesuai filter.</div>
+        </div>
+        <span class="badge bg-light text-dark border">{{ attachments|length }} file</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table table-hover align-middle mb-0">
+            <thead class="table app-table-light">
+                <tr>
+                    <th>Waktu</th>
+                    <th>File</th>
+                    <th>Module</th>
+                    <th>Referensi</th>
+                    <th>Jenis</th>
+                    <th>Ukuran</th>
+                    <th>Uploader</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attachment in attachments %}
+                    <tr>
+                        <td class="text-nowrap small">{{ attachment.created_at.strftime('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}</td>
+                        <td class="hr-master-settings-minw-240">
+                            <div class="fw-semibold">{{ attachment.original_filename }}</div>
+                            <div class="text-muted small">SHA256: {{ attachment.sha256_hash[:12] }}...</div>
+                        </td>
+                        <td><span class="badge bg-primary-subtle text-primary border">{{ attachment.module }}</span></td>
+                        <td class="small">{{ attachment.reference_type }} #{{ attachment.reference_id }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ attachment.attachment_type }}</span></td>
+                        <td class="small">{{ format_file_size(attachment.file_size) }}</td>
+                        <td class="small">{{ attachment.uploader.username if attachment.uploader else '-' }}</td>
+                        <td>
+                            {% if attachment.is_deleted %}
+                                <span class="badge bg-danger-subtle text-danger border">Terhapus</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border">Aktif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap">
+                            <a href="{{ url_for('settings.digital_attachment_detail', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">
+                                <i class="bi bi-eye"></i> Detail
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            Belum ada lampiran digital. Ini normal karena upload bukti belum dipasang ke modul transaksi.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

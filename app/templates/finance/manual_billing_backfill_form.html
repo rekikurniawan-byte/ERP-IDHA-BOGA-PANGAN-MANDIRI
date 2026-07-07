@@ -1,0 +1,429 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan | Rekap Tagihan Manual</span>
+            <h1>{{ page_title or 'Input Rekap Manual dari Buku' }}</h1>
+            <p>{{ page_subtitle or 'Jalur tambahan untuk memasukkan rekap lama/buku manual. Ini tidak mengubah alur realtime order harian.' }}</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Rekap Tagihan Mandor
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card soft-warning-card mt-4">
+        <strong>Aturan Tahap 10.13</strong>
+        <p>Draft rekap manual boleh diedit sebelum lock/invoice. Baris catering mengikuti rentang tanggal, sarapan hanya masuk jalur manual backfill, dan tanggal catering dobel akan ditolak agar tidak terjadi dobel tagih.</p>
+    </div>
+
+    <form method="POST" action="{{ action_url or url_for('finance.manual_billing_backfill_form') }}" class="app-form" data-ui-form="true" data-manual-backfill-form="true" data-app-confirm="{{ form_confirm or 'Simpan rekap manual dari buku sebagai draft?' }}">
+        {% include "components/csrf_token.html" %}
+
+        <div class="app-card mt-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Identitas Rekap</h5>
+            <p>Pilih pihak ditagih dan periode sesuai buku manual.</p>
+                </div>
+                <span class="status-badge status-warning">{{ mode_badge or 'Input Belakangan' }}</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tipe Pihak Ditagih</label>
+                    <select name="bill_to_type" class="form-select" required>
+                        {% set selected_bill_to_type = form_values.bill_to_type or 'MANDOR_EXISTING' %}
+                        <option value="MANDOR_EXISTING" {% if selected_bill_to_type == 'MANDOR_EXISTING' %}selected{% endif %}>Mandor existing</option>
+                        <option value="CLIENT_EXISTING" {% if selected_bill_to_type == 'CLIENT_EXISTING' %}selected{% endif %}>Client existing</option>
+                        <option value="KELOMPOK" {% if selected_bill_to_type == 'KELOMPOK' %}selected{% endif %}>Kelompok</option>
+                        <option value="PERORANGAN" {% if selected_bill_to_type == 'PERORANGAN' %}selected{% endif %}>Perorangan</option>
+                        <option value="CLIENT_LAIN" {% if selected_bill_to_type == 'CLIENT_LAIN' %}selected{% endif %}>Client lain</option>
+                    </select>
+                    <div class="form-text">Untuk pihak bebas, isi nama snapshot di bawah tanpa master mandor/client.</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mandor Existing</label>
+                    <select name="mandor_id" class="form-select">
+                        <option value="">Pilih mandor</option>
+                        {% for mandor in mandors %}
+                            <option value="{{ mandor.id }}" {% if form_values.mandor_id|string == mandor.id|string %}selected{% endif %}>
+                                {{ mandor.name }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Client Existing</label>
+                    <select name="client_id" class="form-select">
+                        <option value="">Pilih client</option>
+                        {% for client in clients %}
+                            <option value="{{ client.id }}" {% if form_values.client_id|string == client.id|string %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" name="period_start" id="manualBackfillPeriodStart" class="form-control" value="{{ form_values.period_start }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Selesai</label>
+                    <input type="date" name="period_end" id="manualBackfillPeriodEnd" class="form-control" value="{{ form_values.period_end }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nama Pihak Ditagih</label>
+                    <input type="text" name="bill_to_name_snapshot" class="form-control" value="{{ form_values.bill_to_name_snapshot }}" placeholder="Contoh: Kelompok Pak Yatno">
+                    <div class="form-text">Wajib untuk Kelompok, Perorangan, atau Client lain. Untuk master existing boleh kosong.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Telepon Pihak</label>
+                    <input type="text" name="bill_to_phone_snapshot" class="form-control" value="{{ form_values.bill_to_phone_snapshot }}" placeholder="Opsional">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Catatan Pihak</label>
+                    <input type="text" name="bill_to_notes" class="form-control" value="{{ form_values.bill_to_notes }}" placeholder="Opsional">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Alamat Pihak</label>
+                    <textarea name="bill_to_address_snapshot" class="form-control" rows="2" placeholder="Opsional">{{ form_values.bill_to_address_snapshot }}</textarea>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Catatan Rekap</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Contoh: Rekap Pak Yatno dari buku manual periode 19-06-2026 s/d 02-07-2026">{{ form_values.notes }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-4 manual-backfill-table-card">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Data Catering dari Buku</h5>
+                    <p>Baris tanggal dibuat otomatis dari periode. Isi baris pertama sebagai pola; porsi/harga/catatan akan turun ke baris berikutnya tetapi tetap bisa diubah per baris.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn app-btn-secondary btn-sm" id="syncCateringRowsBtn">
+                        <i class="bi bi-calendar-range"></i>
+                        Susun dari Periode
+                    </button>
+                    <button type="button" class="btn app-btn-secondary btn-sm" id="addCateringRowBtn">
+                        <i class="bi bi-plus-circle"></i>
+                        Tambah Baris Catering
+                    </button>
+                </div>
+            </div>
+            <div class="form-text mb-3">Sarapan/pagi hanya berlaku untuk rekap manual backfill. Jalur realtime order harian tidak diubah.</div>
+            <div class="table-responsive">
+                <table class="table app-table align-middle manual-backfill-edit-table" id="cateringBackfillTable">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 145px;">Tanggal</th>
+                            <th class="text-end" style="min-width: 115px;">Sarapan</th>
+                            <th class="text-end" style="min-width: 115px;">Siang</th>
+                            <th class="text-end" style="min-width: 115px;">Sore</th>
+                            <th class="text-end" style="min-width: 150px;">Harga / Porsi</th>
+                            <th style="min-width: 220px;">Catatan</th>
+                            <th class="text-end" style="min-width: 90px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cateringBackfillRows">
+                        {% for row in catering_form_rows %}
+                        <tr data-manual-row="{{ '1' if row.manual else '0' }}">
+                            <td><input type="date" name="catering_date[]" class="form-control catering-date-input" value="{{ row.date or '' }}"></td>
+                            <td><input type="number" step="0.01" min="0" name="catering_breakfast_qty[]" class="form-control text-end js-cascade-input" value="{{ row.breakfast_qty or '' }}" placeholder="0" data-cascade-key="breakfast"></td>
+                            <td><input type="number" step="0.01" min="0" name="catering_lunch_qty[]" class="form-control text-end js-cascade-input" value="{{ row.lunch_qty or '' }}" placeholder="0" data-cascade-key="lunch"></td>
+                            <td><input type="number" step="0.01" min="0" name="catering_dinner_qty[]" class="form-control text-end js-cascade-input" value="{{ row.dinner_qty or '' }}" placeholder="0" data-cascade-key="dinner"></td>
+                            <td><input type="number" step="0.01" min="0" name="catering_unit_price[]" class="form-control text-end js-cascade-input" value="{{ row.unit_price or '' }}" placeholder="15000" data-cascade-key="unit_price"></td>
+                            <td><input type="text" name="catering_note[]" class="form-control js-cascade-input" value="{{ row.note or '' }}" placeholder="Opsional" data-cascade-key="note"></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm app-btn-secondary js-remove-row" aria-label="Hapus baris catering">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="app-card mt-4 manual-backfill-table-card">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Data Warung / Kasbon Pekerja</h5>
+                    <p>Isi hutang/kasbon pekerja dari buku yang ikut ditagihkan ke mandor/kelompok.</p>
+                </div>
+                <button type="button" class="btn app-btn-secondary btn-sm" id="addWarungRowBtn">
+                    <i class="bi bi-plus-circle"></i>
+                    Tambah Baris Warung
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table app-table align-middle manual-backfill-edit-table" id="warungBackfillTable">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 220px;">Nama Pekerja</th>
+                            <th class="text-end" style="min-width: 180px;">Nominal Hutang/Kasbon</th>
+                            <th style="min-width: 260px;">Catatan</th>
+                            <th class="text-end" style="min-width: 90px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warungBackfillRows">
+                        {% for row in warung_form_rows %}
+                        <tr>
+                            <td><input type="text" name="warung_worker_name[]" class="form-control" value="{{ row.worker_name or '' }}" placeholder="Nama pekerja"></td>
+                            <td><input type="number" step="0.01" min="0" name="warung_amount[]" class="form-control text-end js-warung-cascade-input" value="{{ row.amount or '' }}" placeholder="0" data-cascade-key="amount"></td>
+                            <td><input type="text" name="warung_note[]" class="form-control js-warung-cascade-input" value="{{ row.note or '' }}" placeholder="Opsional" data-cascade-key="note"></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm app-btn-secondary js-remove-row" aria-label="Hapus baris warung">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="app-card mt-4">
+            <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center">
+                <div>
+                    <h5 class="mb-1">{{ submit_heading or 'Simpan Draft Rekap Manual' }}</h5>
+                    <p class="mb-0 text-muted">{{ submit_help or 'Draft ini belum menjadi invoice/piutang. Setelah tersimpan, cek detail lalu kunci rekap jika total sudah benar.' }}</p>
+                </div>
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi {{ submit_icon or 'bi-save' }}"></i>
+                    {{ submit_label or 'Simpan Draft' }}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    var form = document.querySelector('[data-manual-backfill-form="true"]');
+    if (!form) { return; }
+
+    var periodStartInput = document.getElementById('manualBackfillPeriodStart');
+    var periodEndInput = document.getElementById('manualBackfillPeriodEnd');
+    var cateringBody = document.getElementById('cateringBackfillRows');
+    var warungBody = document.getElementById('warungBackfillRows');
+
+    function formatDateISO(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+
+    function dateRange(startValue, endValue) {
+        if (!startValue || !endValue) { return []; }
+        var start = new Date(startValue + 'T00:00:00');
+        var end = new Date(endValue + 'T00:00:00');
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) { return []; }
+        var dates = [];
+        var current = new Date(start.getTime());
+        for (var guard = 0; guard < 370 && current <= end; guard += 1) {
+            dates.push(formatDateISO(current));
+            current.setDate(current.getDate() + 1);
+        }
+        return dates;
+    }
+
+    function getValue(row, selector) {
+        var input = row.querySelector(selector);
+        return input ? input.value : '';
+    }
+
+    function setValue(row, selector, value) {
+        var input = row.querySelector(selector);
+        if (input) { input.value = value || ''; }
+    }
+
+    function cateringRowData(row) {
+        return {
+            date: getValue(row, '[name="catering_date[]"]'),
+            breakfast: getValue(row, '[name="catering_breakfast_qty[]"]'),
+            lunch: getValue(row, '[name="catering_lunch_qty[]"]'),
+            dinner: getValue(row, '[name="catering_dinner_qty[]"]'),
+            unitPrice: getValue(row, '[name="catering_unit_price[]"]'),
+            note: getValue(row, '[name="catering_note[]"]')
+        };
+    }
+
+    function isCateringRowEmpty(data) {
+        return !data.date && !data.breakfast && !data.lunch && !data.dinner && !data.unitPrice && !data.note;
+    }
+
+    function createCateringRow(data) {
+        data = data || {};
+        var tr = document.createElement('tr');
+        tr.innerHTML = '' +
+            '<td><input type="date" name="catering_date[]" class="form-control catering-date-input"></td>' +
+            '<td><input type="number" step="0.01" min="0" name="catering_breakfast_qty[]" class="form-control text-end js-cascade-input" placeholder="0" data-cascade-key="breakfast"></td>' +
+            '<td><input type="number" step="0.01" min="0" name="catering_lunch_qty[]" class="form-control text-end js-cascade-input" placeholder="0" data-cascade-key="lunch"></td>' +
+            '<td><input type="number" step="0.01" min="0" name="catering_dinner_qty[]" class="form-control text-end js-cascade-input" placeholder="0" data-cascade-key="dinner"></td>' +
+            '<td><input type="number" step="0.01" min="0" name="catering_unit_price[]" class="form-control text-end js-cascade-input" placeholder="15000" data-cascade-key="unit_price"></td>' +
+            '<td><input type="text" name="catering_note[]" class="form-control js-cascade-input" placeholder="Opsional" data-cascade-key="note"></td>' +
+            '<td class="text-end"><button type="button" class="btn btn-sm app-btn-secondary js-remove-row" aria-label="Hapus baris catering"><i class="bi bi-x-lg"></i></button></td>';
+        setValue(tr, '[name="catering_date[]"]', data.date);
+        setValue(tr, '[name="catering_breakfast_qty[]"]', data.breakfast);
+        setValue(tr, '[name="catering_lunch_qty[]"]', data.lunch);
+        setValue(tr, '[name="catering_dinner_qty[]"]', data.dinner);
+        setValue(tr, '[name="catering_unit_price[]"]', data.unitPrice);
+        setValue(tr, '[name="catering_note[]"]', data.note);
+        return tr;
+    }
+
+    function applyFirstCateringRowPattern(options) {
+        options = options || {};
+        if (!cateringBody) { return; }
+        var rows = Array.from(cateringBody.querySelectorAll('tr'));
+        if (rows.length < 2) { return; }
+        var first = cateringRowData(rows[0]);
+        var selectors = [
+            ['[name="catering_breakfast_qty[]"]', first.breakfast],
+            ['[name="catering_lunch_qty[]"]', first.lunch],
+            ['[name="catering_dinner_qty[]"]', first.dinner],
+            ['[name="catering_unit_price[]"]', first.unitPrice],
+            ['[name="catering_note[]"]', first.note]
+        ];
+        rows.slice(1).forEach(function (row) {
+            selectors.forEach(function (pair) {
+                var input = row.querySelector(pair[0]);
+                if (!input) { return; }
+                if (options.forceBlankOnly && input.value) { return; }
+                if (input.dataset.manualOverride === '1' && !options.forceBlankOnly) { return; }
+                input.value = pair[1] || '';
+                input.dataset.autofilled = pair[1] ? '1' : '';
+            });
+        });
+    }
+
+    function syncCateringRowsFromPeriod() {
+        if (!cateringBody) { return; }
+        var rows = Array.from(cateringBody.querySelectorAll('tr'));
+        var existingByDate = {};
+        var manualRows = [];
+        rows.forEach(function (row) {
+            var data = cateringRowData(row);
+            if (data.date && !existingByDate[data.date]) {
+                existingByDate[data.date] = data;
+            } else if (!isCateringRowEmpty(data)) {
+                manualRows.push(data);
+            }
+        });
+
+        var dates = dateRange(periodStartInput ? periodStartInput.value : '', periodEndInput ? periodEndInput.value : '');
+        if (!dates.length) { return; }
+
+        cateringBody.innerHTML = '';
+        dates.forEach(function (isoDate) {
+            var data = existingByDate[isoDate] || {date: isoDate};
+            data.date = isoDate;
+            cateringBody.appendChild(createCateringRow(data));
+        });
+        manualRows.forEach(function (data) {
+            cateringBody.appendChild(createCateringRow(data));
+        });
+        applyFirstCateringRowPattern({forceBlankOnly: true});
+    }
+
+    function createWarungRow(data) {
+        data = data || {};
+        var tr = document.createElement('tr');
+        tr.innerHTML = '' +
+            '<td><input type="text" name="warung_worker_name[]" class="form-control" placeholder="Nama pekerja"></td>' +
+            '<td><input type="number" step="0.01" min="0" name="warung_amount[]" class="form-control text-end js-warung-cascade-input" placeholder="0" data-cascade-key="amount"></td>' +
+            '<td><input type="text" name="warung_note[]" class="form-control js-warung-cascade-input" placeholder="Opsional" data-cascade-key="note"></td>' +
+            '<td class="text-end"><button type="button" class="btn btn-sm app-btn-secondary js-remove-row" aria-label="Hapus baris warung"><i class="bi bi-x-lg"></i></button></td>';
+        setValue(tr, '[name="warung_worker_name[]"]', data.worker || '');
+        setValue(tr, '[name="warung_amount[]"]', data.amount || '');
+        setValue(tr, '[name="warung_note[]"]', data.note || '');
+        return tr;
+    }
+
+    function applyFirstWarungPattern(options) {
+        options = options || {};
+        if (!warungBody) { return; }
+        var rows = Array.from(warungBody.querySelectorAll('tr'));
+        if (rows.length < 2) { return; }
+        var firstAmount = getValue(rows[0], '[name="warung_amount[]"]');
+        var firstNote = getValue(rows[0], '[name="warung_note[]"]');
+        rows.slice(1).forEach(function (row) {
+            [
+                ['[name="warung_amount[]"]', firstAmount],
+                ['[name="warung_note[]"]', firstNote]
+            ].forEach(function (pair) {
+                var input = row.querySelector(pair[0]);
+                if (!input) { return; }
+                if (options.forceBlankOnly && input.value) { return; }
+                if (input.dataset.manualOverride === '1' && !options.forceBlankOnly) { return; }
+                input.value = pair[1] || '';
+                input.dataset.autofilled = pair[1] ? '1' : '';
+            });
+        });
+    }
+
+    document.getElementById('syncCateringRowsBtn')?.addEventListener('click', syncCateringRowsFromPeriod);
+    periodStartInput?.addEventListener('change', syncCateringRowsFromPeriod);
+    periodEndInput?.addEventListener('change', syncCateringRowsFromPeriod);
+    document.getElementById('addCateringRowBtn')?.addEventListener('click', function () {
+        if (!cateringBody) { return; }
+        var row = createCateringRow({});
+        cateringBody.appendChild(row);
+        applyFirstCateringRowPattern({forceBlankOnly: true});
+        row.querySelector('input')?.focus();
+    });
+    document.getElementById('addWarungRowBtn')?.addEventListener('click', function () {
+        if (!warungBody) { return; }
+        var row = createWarungRow({});
+        warungBody.appendChild(row);
+        applyFirstWarungPattern({forceBlankOnly: true});
+        row.querySelector('input')?.focus();
+    });
+
+    form.addEventListener('input', function (event) {
+        var input = event.target;
+        if (!(input instanceof HTMLInputElement)) { return; }
+        var row = input.closest('tr');
+        if (!row) { return; }
+        if (input.classList.contains('js-cascade-input')) {
+            var first = cateringBody ? cateringBody.querySelector('tr') : null;
+            if (first === row) {
+                applyFirstCateringRowPattern({forceBlankOnly: false});
+            } else {
+                input.dataset.manualOverride = '1';
+            }
+        }
+        if (input.classList.contains('js-warung-cascade-input')) {
+            var firstWarung = warungBody ? warungBody.querySelector('tr') : null;
+            if (firstWarung === row) {
+                applyFirstWarungPattern({forceBlankOnly: false});
+            } else {
+                input.dataset.manualOverride = '1';
+            }
+        }
+    });
+
+    form.addEventListener('click', function (event) {
+        var button = event.target.closest('.js-remove-row');
+        if (!button) { return; }
+        var row = button.closest('tr');
+        var tbody = row ? row.parentElement : null;
+        if (!row || !tbody || tbody.querySelectorAll('tr').length <= 1) { return; }
+        row.remove();
+    });
+
+    // Initial pass: preserve server-rendered/edit data, but fill blank generated rows from row 1.
+    applyFirstCateringRowPattern({forceBlankOnly: true});
+    applyFirstWarungPattern({forceBlankOnly: true});
+})();
+</script>
+{% endblock %}

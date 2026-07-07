@@ -1,0 +1,187 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="canteen-page-shell" data-ui-page="index">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Modul Warung</span>
+        <h1>Warung</h1>
+        <p>Kelola penjualan cash, QRIS, transfer, hutang pekerja internal, dan piutang buyer eksternal.</p>
+    </div>
+
+    <div class="page-actions canteen-header-actions">
+        <a href="{{ url_for('canteen.quick_sale') }}" class="btn app-btn-primary">
+            <i class="bi bi-lightning-charge"></i>
+            Transaksi Cepat
+        </a>
+
+        <div class="dropdown app-action-dropdown">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="canteenActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi Warung
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="canteenActionDropdown">
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('canteen.create_sale') }}">
+                        <i class="bi bi-plus-circle"></i>
+                        Transaksi Manual
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('canteen.debts') }}">
+                        <i class="bi bi-wallet2"></i>
+                        Hutang & Piutang Warung
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('sop.role_sop', slug='admin') }}">
+                        <i class="bi bi-journal-text"></i>
+                        SOP Warung
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="app-stat-grid app-stat-grid-compact app-stat-grid-warung">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>Cash</p>
+            <h3>{{ total_cash_sales|rupiah }}</h3>
+            <span class="app-stat-helper">Tunai langsung lunas</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-qr-code"></i></div>
+        <div>
+            <p>QRIS</p>
+            <h3>{{ total_qris_sales|rupiah }}</h3>
+            <span class="app-stat-helper">Masuk rekening/QRIS</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-primary"><i class="bi bi-bank"></i></div>
+        <div>
+            <p>Transfer</p>
+            <h3>{{ total_transfer_sales|rupiah }}</h3>
+            <span class="app-stat-helper">Transfer bank</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-receipt"></i></div>
+        <div>
+            <p>Hutang Warung</p>
+            <h3>{{ total_debt_sales|rupiah }}</h3>
+            <span class="app-stat-helper">Internal + eksternal</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-person-exclamation"></i></div>
+        <div>
+            <p>Sisa Hutang Pekerja</p>
+            <h3>{{ total_unpaid_debt|rupiah }}</h3>
+            <span class="app-stat-helper">Worker debt belum lunas</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-building-exclamation"></i></div>
+        <div>
+            <p>Piutang Eksternal</p>
+            <h3>{{ total_external_remaining|rupiah }}</h3>
+            <span class="app-stat-helper">Buyer luar/non-master</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4 canteen-rule-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Aturan Pembayaran Warung</h5>
+            <p>Cash/QRIS/transfer langsung lunas. Hutang pekerja masuk piutang karyawan. Hutang buyer luar masuk piutang warung eksternal.</p>
+        </div>
+    </div>
+    <div class="canteen-rule-grid">
+        <div><strong>CASH</strong><span>Dr Kas / Cr Pendapatan Warung</span></div>
+        <div><strong>QRIS/TRANSFER</strong><span>Dr Bank / Cr Pendapatan Warung</span></div>
+        <div><strong>DEBT Pekerja</strong><span>Dr Piutang Karyawan / Cr Pendapatan Warung</span></div>
+        <div><strong>DEBT Eksternal</strong><span>Dr Piutang Usaha / Cr Pendapatan Warung</span></div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Transaksi Warung</h5>
+            <p>Daftar transaksi warung berdasarkan metode pembayaran dan tipe pembeli.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th>Pembeli</th>
+                    <th>Total</th>
+                    <th>Barang</th>
+                    <th>Referensi</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                {% set method = sale_payment_method(sale) %}
+                <tr>
+                    <td>{{ sale.sale_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        {% if method == "CASH" %}
+                            <span class="status-badge status-locked">CASH</span>
+                        {% elif method == "QRIS" %}
+                            <span class="status-badge status-info">QRIS</span>
+                        {% elif method == "TRANSFER" %}
+                            <span class="status-badge status-progress">TRANSFER</span>
+                        {% else %}
+                            <span class="status-badge status-warning">DEBT</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ sale_buyer_label(sale) }}</strong><br>
+                        <small class="text-muted">{{ sale_buyer_type(sale).replace('_', ' ') }}</small>
+                    </td>
+                    <td><strong>{{ sale.total_amount|rupiah }}</strong></td>
+                    <td>{{ sale.items|length }} item</td>
+                    <td>{{ sale.payment_reference or '-' }}</td>
+                    <td>{{ sale.notes or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                            <i class="bi bi-shop"></i>
+                            <h6>Belum ada transaksi warung.</h6>
+                            <p>Catat transaksi pertama dari tombol Transaksi Cepat.</p>
+                            <div class="empty-actions">
+                                <a href="{{ url_for('canteen.quick_sale') }}" class="btn app-btn-primary">Transaksi Cepat</a>
+                                <a href="{{ url_for('sop.role_sop', slug='admin') }}" class="btn app-btn-secondary">Lihat SOP</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

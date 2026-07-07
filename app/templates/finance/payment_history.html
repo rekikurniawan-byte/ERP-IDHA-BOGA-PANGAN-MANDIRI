@@ -1,0 +1,235 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Riwayat Pembayaran Invoice</h1>
+        <p>Pantau pembayaran client, bukti digital, status invoice, buku kas/bank, dan nomor jurnal dalam satu halaman.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.export_payment_history_csv') }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Invoice
+        </a>
+        <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
+            Piutang Client
+        </a>
+        <a href="{{ url_for('finance.receivables_statement') }}" class="btn app-btn-secondary">
+            Statement Tagihan
+        </a>
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            Buku Kas/Bank
+        </a>
+    </div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+<!-- FINANCE3B_PAYMENT_HISTORY_TEMPLATE -->
+
+<style>
+    .payment-history-table {
+        min-width: 1400px;
+    }
+
+    .payment-history-table th,
+    .payment-history-table td {
+        white-space: nowrap;
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+    }
+
+    .payment-history-table th {
+        font-size: 0.85rem;
+    }
+
+    .payment-history-table .money-col {
+        min-width: 135px;
+    }
+
+    .payment-history-table .journal-col {
+        min-width: 165px;
+    }
+
+    .payment-history-table .invoice-col {
+        min-width: 165px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="text-muted small">Jumlah Pembayaran</div>
+                    <h5 class="mb-0">{{ rows|length }} Transaksi</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="text-muted small">Total Pembayaran Masuk</div>
+                    <h5 class="mb-0">Rp {{ "{:,.0f}".format(total_paid or 0).replace(",", ".") }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if rows %}
+        <div class="card shadow-sm border-0">
+            <div class="card-body table-responsive">
+                <table class="table table-sm table-hover align-middle payment-history-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal Bayar</th>
+                            <th>Nomor Pembayaran</th>
+                            <th class="invoice-col">Nomor Invoice</th>
+                            <th>Client</th>
+                            <th>Mandor</th>
+                            <th>Metode</th>
+                            <th>Rekening / Kas</th>
+                            <th>Referensi</th>
+                            <th>Bukti Digital</th>
+                            <th class="text-end money-col">Nominal</th>
+                            <th class="journal-col">Nomor Jurnal</th>
+                            <th>Buku Kas/Bank</th>
+                            <th>Status Invoice</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>{{ row.payment.payment_date or "-" }}</td>
+
+                                <td>
+                                    <span class="font-monospace">{{ row.payment.payment_number }}</span>
+                                </td>
+
+                                <td class="invoice-col">
+                                    {% if row.invoice %}
+                                        <span class="font-monospace">{{ row.invoice.invoice_number }}</span>
+                                    {% else %}
+                                        Invoice ID {{ row.payment.invoice_id }}
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.client %}
+                                        {{ row.client.name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.mandor %}
+                                        {{ row.mandor.name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ row.payment.payment_method or "-" }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {% if row.payment.payment_method == "TRANSFER" and row.payment.bank_account %}
+                                        <strong>{{ row.payment.bank_account.bank_name }}</strong>
+                                        <div class="text-muted small">{{ row.payment.bank_account.account_name }}</div>
+                                    {% elif row.payment.payment_method == "CASH" %}
+                                        <span class="text-muted">Kas</span>
+                                    {% else %}
+                                        <span class="text-danger">Belum tercatat</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ row.payment.reference_number or "-" }}
+                                </td>
+
+                                <td>
+                                    {% if row.attachment_count %}
+                                        <span class="badge bg-success">{{ row.attachment_count }} file</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Belum ada</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-end fw-semibold money-col">
+                                    Rp {{ "{:,.0f}".format(row.amount or 0).replace(",", ".") }}
+                                </td>
+
+                                <td class="journal-col">
+                                    {% if row.journal %}
+                                        <span class="font-monospace">{{ row.journal.journal_number }}</span>
+                                    {% else %}
+                                        <span class="text-danger">Belum ada jurnal</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.ledger_transaction %}
+                                        <span class="badge bg-success">Tercatat</span>
+                                        <div class="text-muted small">{{ row.ledger_transaction.account_type }} {{ row.ledger_transaction.transaction_type }}</div>
+                                    {% else %}
+                                        <span class="badge bg-danger">Belum ada</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.invoice %}
+                                        {% if row.invoice.status == "PAID" %}
+                                            <span class="badge bg-success">PAID</span>
+                                        {% elif row.invoice.status == "PARTIAL" %}
+                                            <span class="badge bg-warning text-dark">PARTIAL</span>
+                                        {% elif row.invoice.status == "CANCELLED" %}
+                                            <span class="badge bg-secondary">CANCELLED</span>
+                                        {% else %}
+                                            <span class="badge bg-info text-dark">{{ row.invoice.status }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-end">
+                                    {% if row.invoice %}
+                                        <a href="/finance/invoices/{{ row.invoice.id }}" class="btn app-btn-secondary btn-sm">
+                                            Detail
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="alert alert-info small mb-0">
+                    Catatan: halaman ini hanya membaca data pembayaran invoice, jurnal pembayaran, dan buku kas/bank yang sudah ada, sehingga tidak membuat data ganda.
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            Belum ada riwayat pembayaran invoice.
+        </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

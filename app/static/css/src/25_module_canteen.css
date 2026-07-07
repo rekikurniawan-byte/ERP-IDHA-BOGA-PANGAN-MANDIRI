@@ -1,0 +1,316 @@
+/* ==================================================
+   PRODUCTION SOURCE: 25_module_canteen.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 6234-6543.
+   Note: Operational, production, and delivery global polish block.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UI Operasional + Produksi + Delivery Global polish
+   Scope: order catering, order detail, lock/revision, production kitchen, delivery, receipt, shortage, field mobile.
+   New rules use 4-theme token system only; no random per-page colors are introduced.
+   ================================================== */
+
+.op-prod-delivery-page-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+.op-prod-delivery-page-shell .page-header,
+.op-prod-delivery-page-shell .app-page-header {
+    margin-bottom: 0;
+}
+
+.op-prod-delivery-flow-panel {
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+
+.op-prod-delivery-flow-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.op-prod-delivery-flow-title strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 15px;
+}
+
+.op-prod-delivery-flow-title small,
+.op-prod-delivery-flow-step small {
+    color: var(--text-muted);
+}
+
+.op-prod-delivery-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.op-prod-delivery-flow-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "num title"
+        "num desc";
+    gap: 2px 10px;
+    align-items: center;
+    min-height: 64px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.op-prod-delivery-flow-step:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.op-prod-delivery-flow-step span {
+    grid-area: num;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-badge);
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid var(--border-soft);
+}
+
+.op-prod-delivery-flow-step strong {
+    grid-area: title;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.op-prod-delivery-flow-step small {
+    grid-area: desc;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.op-prod-delivery-flow-step.is-active {
+    border-color: var(--primary);
+    background: var(--info-soft);
+}
+
+.op-prod-delivery-flow-step.is-active span {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
+}
+
+.op-prod-delivery-header-actions[data-op-prod-delivery-collapsed="true"] {
+    align-items: center;
+}
+
+.op-prod-delivery-header-actions .op-prod-delivery-more-dropdown .dropdown-menu {
+    min-width: 278px;
+    padding: 8px;
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.op-prod-delivery-header-actions .op-prod-delivery-more-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-button-sm);
+    color: var(--text-secondary);
+    font-weight: 650;
+    padding: 8px 10px;
+}
+
+.op-prod-delivery-header-actions .op-prod-delivery-more-dropdown .dropdown-item:hover,
+.op-prod-delivery-header-actions .op-prod-delivery-more-dropdown .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+
+.op-prod-delivery-qty,
+.op-prod-delivery-money,
+.op-prod-delivery-page-shell td[data-op-prod-delivery-qty="true"],
+.op-prod-delivery-page-shell td[data-op-prod-delivery-money="true"],
+.op-prod-delivery-page-shell .app-table td.text-end,
+.op-prod-delivery-page-shell .app-table th.text-end {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.op-prod-delivery-page-shell .table-responsive {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+
+.op-prod-delivery-page-shell .app-table {
+    margin-bottom: 0;
+}
+
+.op-prod-delivery-page-shell .app-table th {
+    white-space: nowrap;
+}
+
+.op-prod-delivery-page-shell .app-table td,
+.op-prod-delivery-page-shell .app-table th {
+    vertical-align: middle;
+}
+
+.op-prod-delivery-page-shell .app-table .btn,
+.op-prod-delivery-page-shell .app-table form .btn,
+.op-prod-delivery-page-shell .btn-sm {
+    min-height: 34px;
+}
+
+.op-prod-delivery-page-shell .status-badge {
+    white-space: nowrap;
+}
+
+.op-prod-delivery-page-shell .soft-info-card,
+.op-prod-delivery-page-shell .alert-info {
+    border-color: var(--info);
+    background: var(--info-soft);
+    color: var(--text-primary);
+}
+
+.op-prod-delivery-page-shell .soft-warning-card,
+.op-prod-delivery-page-shell .alert-warning {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+}
+
+.op-prod-delivery-page-shell .soft-success-card,
+.op-prod-delivery-page-shell .alert-success {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--text-primary);
+}
+
+.op-prod-delivery-page-shell .soft-danger-card,
+.op-prod-delivery-page-shell .alert-danger {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--text-primary);
+}
+
+.op-prod-delivery-page-shell .filter-bar,
+.op-prod-delivery-page-shell form[data-form-kind="filter"],
+.op-prod-delivery-page-shell .app-filter-form {
+    align-items: end;
+}
+
+.op-prod-delivery-page-shell .app-form-actions {
+    justify-content: flex-end;
+}
+
+.op-prod-delivery-mobile-hint {
+    display: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.op-prod-delivery-field-focus {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-soft);
+}
+
+@media (max-width: 1199.98px) {
+    .op-prod-delivery-flow-steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .op-prod-delivery-page-shell {
+        gap: 16px;
+    }
+
+    .op-prod-delivery-flow-panel {
+        padding: 14px;
+    }
+
+    .op-prod-delivery-flow-title {
+        display: block;
+    }
+
+    .op-prod-delivery-flow-title small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .op-prod-delivery-flow-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .op-prod-delivery-flow-step {
+        min-height: 58px;
+    }
+
+    .op-prod-delivery-page-shell .summary-grid,
+    .op-prod-delivery-page-shell .kpi-grid,
+    .op-prod-delivery-page-shell .info-grid,
+    .op-prod-delivery-page-shell .detail-grid,
+    .op-prod-delivery-page-shell .form-grid,
+    .op-prod-delivery-page-shell .row.g-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    .op-prod-delivery-page-shell .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .op-prod-delivery-page-shell .app-table {
+        min-width: 760px;
+    }
+
+    .op-prod-delivery-page-shell .app-card {
+        border-radius: var(--radius-card);
+    }
+
+    .op-prod-delivery-page-shell .btn,
+    .op-prod-delivery-page-shell .app-form-actions .btn,
+    .op-prod-delivery-page-shell .page-actions > .btn,
+    .op-prod-delivery-page-shell .page-actions > a.btn,
+    .op-prod-delivery-page-shell .page-actions .dropdown-toggle,
+    .op-prod-delivery-page-shell .page-actions > form .btn {
+        min-height: 44px;
+    }
+
+    .op-prod-delivery-page-shell .page-actions,
+    .op-prod-delivery-page-shell .page-actions > .btn,
+    .op-prod-delivery-page-shell .page-actions > a.btn,
+    .op-prod-delivery-page-shell .page-actions > form,
+    .op-prod-delivery-page-shell .page-actions > form .btn,
+    .op-prod-delivery-page-shell .page-actions .app-action-dropdown,
+    .op-prod-delivery-page-shell .page-actions .op-prod-delivery-more-dropdown,
+    .op-prod-delivery-page-shell .page-actions .dropdown-toggle {
+        width: 100%;
+    }
+
+    .op-prod-delivery-mobile-hint {
+        display: block;
+    }
+}

@@ -1,0 +1,142 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-ui-accounting-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Daily Closing</span>
+        <h1>Closing Harian Read-only</h1>
+        <p>Ringkasan harian order, produksi, delivery, invoice, payment, warung, stok, dan jurnal.</p>
+    </div>
+
+    <div class="page-actions accounting-header-actions">
+        <a href="{{ url_for('accounting.print_daily_closing', date=report.selected_date_value) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        <a href="{{ url_for('accounting.export_daily_closing_csv', date=report.selected_date_value) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+        <a href="{{ url_for('accounting.data_health') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clipboard-pulse"></i>
+            Data Health
+        </a>
+    </div>
+</div>
+
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('accounting.daily_closing') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-4">
+            <label class="form-label app-label">Tanggal Closing</label>
+            <input type="date" name="date" value="{{ report.selected_date_value }}" class="form-control app-input">
+        </div>
+
+        <div class="col-md-4">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-search"></i>
+                Tampilkan
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card soft-info-card mt-4">
+    <strong>Status {{ report.selected_date_label }}:
+        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status }}</span>
+    </strong>
+    <p>
+        Halaman ini hanya membaca data. Tidak membuat transaksi, tidak generate invoice/payment/journal,
+        dan tidak mengubah data. Terakhir dicek: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}.
+    </p>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar-check"></i></div>
+        <div>
+            <p>Total Section</p>
+            <h3>{{ report.summary.total_sections }}</h3>
+            <span class="app-stat-helper">Area closing harian</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <p>AMAN</p>
+            <h3>{{ report.summary.AMAN }}</h3>
+            <span class="app-stat-helper">Baris aman</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <p>WARNING</p>
+            <h3>{{ report.summary.WARNING }}</h3>
+            <span class="app-stat-helper">Perlu dipantau</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-x-octagon"></i></div>
+        <div>
+            <p>RISIKO</p>
+            <h3>{{ report.summary.RISIKO }}</h3>
+            <span class="app-stat-helper">Perlu investigasi</span>
+        </div>
+    </div>
+</div>
+
+{% for section in report.sections %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>{{ section.title }}</h5>
+            <p>{{ section.description }}</p>
+        </div>
+
+        <span class="status-badge {{ section.status_class }}">{{ section.status }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Check</th>
+                    <th>Data</th>
+                    <th>Expected</th>
+                    <th>Actual</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in section.rows %}
+                <tr>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td>{{ row.check }}</td>
+                    <td><strong>{{ row.item }}</strong></td>
+                    <td>{{ row.expected }}</td>
+                    <td>{{ row.actual }}</td>
+                    <td>{{ row.note }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-check2-circle"></i>
+                            <p>Tidak ada data pada section ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

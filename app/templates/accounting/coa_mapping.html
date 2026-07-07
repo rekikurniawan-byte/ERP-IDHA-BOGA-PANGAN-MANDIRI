@@ -1,0 +1,224 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
+<!-- ACCOUNTINGUX4B_BUSINESS_LANGUAGE_MAINTENANCE -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Accounting</span>
+        <h1>Peta Akun & Mapping Jurnal</h1>
+        <p>Halaman read-only untuk melihat pemakaian COA dan rencana mapping jurnal otomatis bertahap.</p>
+    </div>
+
+</div>
+
+{% set precision_key = 'coa_mapping' %}
+
+<div class="alert alert-info border-0 shadow-sm">
+    <strong>Catatan:</strong>
+    Halaman ini hanya menampilkan peta akun agar COA dipakai bertahap dan tidak asal dipaksakan. Halaman ini tidak membuat catatan transaksi baru.
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-diagram-3"></i></div>
+        <div>
+            <p>Total Akun COA</p>
+            <h3>{{ data.summary.total_accounts }}</h3>
+            <span class="app-stat-helper">Seluruh akun aktif/nonaktif yang tersedia</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <p>Akun Terpakai</p>
+            <h3>{{ data.summary.used_accounts }}</h3>
+            <span class="app-stat-helper">Sudah muncul di journal detail</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <p>Akun Belum Dipakai</p>
+            <h3>{{ data.summary.unused_accounts }}</h3>
+            <span class="app-stat-helper">Menunggu transaksi bisnis yang sesuai</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.summary.missing_account_count == 0 %}stat-success{% else %}stat-danger{% endif %}">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <div>
+            <p>Mapping Aman</p>
+            <h3>{% if data.summary.missing_account_count == 0 %}VALID{% else %}CEK{% endif %}</h3>
+            <span class="app-stat-helper">{{ data.summary.mapping_events }} event mapping</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Mapping Jurnal Bertahap</h5>
+            <p>Rencana penggunaan akun berdasarkan modul dan jenis transaksi.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tahap</th>
+                    <th>Modul</th>
+                    <th>Event Transaksi</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Catatan</th>
+                    <th>Risiko</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.mapping_plan %}
+                <tr>
+                    <td>
+                        {% if item.stage == 'SUDAH BERJALAN' %}
+                            <span class="badge bg-success">{{ item.stage }}</span>
+                        {% elif item.stage == 'TAHAP BERIKUTNYA' %}
+                            <span class="badge bg-warning text-dark">{{ item.stage }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ item.stage }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.module }}</td>
+                    <td><strong>{{ item.event }}</strong></td>
+                    <td>
+                        {% for account in item.debit_accounts %}
+                            <div>
+                                <strong>{{ account.code }}</strong> - {{ account.name }}
+                                <small class="text-muted">({{ account.type }})</small>
+                            </div>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for account in item.credit_accounts %}
+                            <div>
+                                <strong>{{ account.code }}</strong> - {{ account.name }}
+                                <small class="text-muted">({{ account.type }})</small>
+                            </div>
+                        {% endfor %}
+                    </td>
+                    <td>{{ item.note }}</td>
+                    <td><small>{{ item.risk }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Coverage COA</h5>
+            <p>Daftar semua akun, status pemakaian di jurnal, dan calon penggunaannya.</p>
+        </div>
+    </div>
+
+    {% for account_type, rows in data.accounts_by_type.items() %}
+    <div class="mb-4">
+        <h6 class="mb-2">{{ account_type }}</h6>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Status Pakai</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end">Credit</th>
+                        <th>Calon Penggunaan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td><strong>{{ row.account.account_code }}</strong></td>
+                        <td>{{ row.account.account_name }}</td>
+                        <td>
+                            {% if row.usage.is_used %}
+                                <span class="badge bg-success">TERPAKAI</span>
+                                <small class="text-muted d-block">{{ row.usage.detail_count }} detail</small>
+                            {% else %}
+                                <span class="badge bg-light text-dark">BELUM TERPAKAI</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ row.usage.debit_total|rupiah }}</td>
+                        <td class="text-end">{{ row.usage.credit_total|rupiah }}</td>
+                        <td>
+                            {% if row.proposed %}
+                                {% for proposed in row.proposed %}
+                                    <div><small>{{ proposed }}</small></div>
+                                {% endfor %}
+                            {% else %}
+                                <small class="text-muted">Belum dipetakan pada tahap ini</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Account Code yang Sudah Dipakai di Source Code</h5>
+            <p>Referensi kode akun yang sudah dipanggil oleh route/service saat ini.</p>
+        </div>
+    </div>
+
+    {% if data.source_code_accounts %}
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Akun</th>
+                    <th>Jumlah Referensi</th>
+                    <th>Contoh Lokasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.source_code_accounts %}
+                <tr>
+                    <td><strong>{{ item.code }}</strong></td>
+                    <td>{{ item.account.name }} <small class="text-muted">({{ item.account.type }})</small></td>
+                    <td>{{ item.refs|length }}</td>
+                    <td>
+                        {% for ref in item.refs[:3] %}
+                            <div>
+                                <small>{{ ref.file }}:{{ ref.line_number }}</small>
+                            </div>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Belum ada account code yang terdeteksi di source code.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

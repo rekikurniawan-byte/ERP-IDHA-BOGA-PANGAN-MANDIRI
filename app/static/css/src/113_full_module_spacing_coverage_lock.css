@@ -1,0 +1,204 @@
+/* ==================================================
+   PRODUCTION — Full Module Spacing Coverage Lock
+   Scope: authenticated app UI only.
+
+   Purpose:
+   - Close remaining spacing gaps for pages that do not use a dedicated
+     module page shell.
+   - Normalize direct page children, wrapper aliases, dashboard/canteen
+     fallback pages, and mixed Bootstrap/Jinja card structures.
+   - Keep this as a CSS-only safety layer; no template/database/route edits.
+   ================================================== */
+
+:root {
+  --ibp-direct-child-gap: var(--ibp-section-gap, 12px);
+  --ibp-direct-card-gap: var(--ibp-card-gap, 12px);
+}
+
+/* 1) Universal direct-page rhythm for templates that start directly with .page-header.
+   This specifically catches Dashboard, Warung/Canteen, visual QA pages, and placeholders. */
+body.is-authenticated .content-area > .container-fluid,
+body.is-authenticated .content-area > .container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--ibp-direct-child-gap) !important;
+}
+
+body.is-authenticated .content-area > .container-fluid > .page-header,
+body.is-authenticated .content-area > .container-fluid > .app-page-header,
+body.is-authenticated .content-area > .container-fluid > .dashboard-role-header,
+body.is-authenticated .content-area > .container-fluid > .dashboard-owner-header,
+body.is-authenticated .content-area > .container-fluid > .dashboard-command-header,
+body.is-authenticated .content-area > .container-fluid > .app-card,
+body.is-authenticated .content-area > .container-fluid > .content-card,
+body.is-authenticated .content-area > .container-fluid > .section-card,
+body.is-authenticated .content-area > .container-fluid > .table-card,
+body.is-authenticated .content-area > .container-fluid > .form-card,
+body.is-authenticated .content-area > .container-fluid > .dashboard-section,
+body.is-authenticated .content-area > .container-fluid > .row,
+body.is-authenticated .content-area > .container-fluid > form,
+body.is-authenticated .content-area > .container > .page-header,
+body.is-authenticated .content-area > .container > .app-page-header,
+body.is-authenticated .content-area > .container > .app-card,
+body.is-authenticated .content-area > .container > .content-card,
+body.is-authenticated .content-area > .container > .section-card,
+body.is-authenticated .content-area > .container > .table-card,
+body.is-authenticated .content-area > .container > .form-card,
+body.is-authenticated .content-area > .container > .row,
+body.is-authenticated .content-area > .container > form {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 2) Wrapper aliases found in templates. All of them become pure stack containers. */
+body.is-authenticated .placeholder-header,
+body.is-authenticated .auth-card,
+body.is-authenticated .dashboard-command-hero,
+body.is-authenticated .dashboard-command-decision,
+body.is-authenticated .dashboard-priority-strip,
+body.is-authenticated .dashboard-support-section,
+body.is-authenticated .revenue-explorer-section,
+body.is-authenticated .delivery-next-action-grid,
+body.is-authenticated .sla-summary-grid,
+body.is-authenticated .sla-timeline-grid,
+body.is-authenticated .asset-installment-summary-grid,
+body.is-authenticated .expense-rule-grid,
+body.is-authenticated .expense-summary-grid,
+body.is-authenticated .expense-component-grid,
+body.is-authenticated .posting-section-stack,
+body.is-authenticated .posting-section-kpis,
+body.is-authenticated .sop-summary-grid,
+body.is-authenticated .sop-role-grid,
+body.is-authenticated .visual-sweep-policy-grid,
+body.is-authenticated .master-menu-grid,
+body.is-authenticated .hr-enterprise-grid,
+body.is-authenticated .hr-lifecycle-grid,
+body.is-authenticated .hr-kpi-grid,
+body.is-authenticated .quick-item-grid,
+body.is-authenticated .canteen-rule-grid,
+body.is-authenticated .app-stat-grid-warung {
+  gap: var(--ibp-direct-card-gap) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 3) Cards and card-like surfaces missed by the previous lock. */
+body.is-authenticated .soft-info-card,
+body.is-authenticated .soft-danger-card,
+body.is-authenticated .master-menu-card,
+body.is-authenticated .posting-inline-card,
+body.is-authenticated .posting-section-card,
+body.is-authenticated .expense-explain-card,
+body.is-authenticated .expense-component-card,
+body.is-authenticated .expense-component-card-compact,
+body.is-authenticated .expense-unposted-card,
+body.is-authenticated .expense-detail-card,
+body.is-authenticated .sla-summary-card,
+body.is-authenticated .delivery-next-action-card,
+body.is-authenticated .asset-installment-card,
+body.is-authenticated .canteen-rule-card,
+body.is-authenticated .sop-role-card,
+body.is-authenticated .sop-card-link,
+body.is-authenticated .hr-lifecycle-card,
+body.is-authenticated .visual-sweep-policy-card,
+body.is-authenticated .receipt-section {
+  padding: var(--ibp-card-pad-y) var(--ibp-card-pad-x) !important;
+  border-radius: var(--ibp-card-radius) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+body.is-authenticated .soft-info-card > .card-body,
+body.is-authenticated .soft-danger-card > .card-body,
+body.is-authenticated .master-menu-card > .card-body,
+body.is-authenticated .posting-inline-card > .card-body,
+body.is-authenticated .posting-section-card > .card-body,
+body.is-authenticated .expense-explain-card > .card-body,
+body.is-authenticated .expense-component-card > .card-body,
+body.is-authenticated .expense-detail-card > .card-body,
+body.is-authenticated .sla-summary-card > .card-body,
+body.is-authenticated .delivery-next-action-card > .card-body,
+body.is-authenticated .canteen-rule-card > .card-body,
+body.is-authenticated .sop-role-card > .card-body,
+body.is-authenticated .hr-lifecycle-card > .card-body {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 4) Direct sibling card rhythm: when templates use card-after-card without a shell, avoid utility margins deciding the spacing. */
+body.is-authenticated .content-area .page-header + .app-card,
+body.is-authenticated .content-area .page-header + .content-card,
+body.is-authenticated .content-area .page-header + .section-card,
+body.is-authenticated .content-area .page-header + .table-card,
+body.is-authenticated .content-area .page-header + .form-card,
+body.is-authenticated .content-area .page-header + .row,
+body.is-authenticated .content-area .app-card + .app-card,
+body.is-authenticated .content-area .app-card + .row,
+body.is-authenticated .content-area .row + .app-card,
+body.is-authenticated .content-area .row + .row,
+body.is-authenticated .content-area form + .app-card,
+body.is-authenticated .content-area .app-card + form {
+  margin-top: 0 !important;
+}
+
+/* 5) Bootstrap row edge control for direct rows only.
+   Rows inside cards keep Bootstrap behavior, but direct page rows must not create inconsistent side overflow. */
+body.is-authenticated .content-area > .container-fluid > .row,
+body.is-authenticated .content-area > .container > .row,
+body.is-authenticated .accounting-page-shell > .row,
+body.is-authenticated .finance-page-shell > .row,
+body.is-authenticated .op-prod-delivery-page-shell > .row,
+body.is-authenticated .logistics-hpp-page-shell > .row,
+body.is-authenticated .hr-master-settings-page-shell > .row,
+body.is-authenticated .sop-page > .row,
+body.is-authenticated [data-ui-page] > .row {
+  width: auto !important;
+  margin-left: calc(-0.5 * var(--ibp-grid-gutter-x)) !important;
+  margin-right: calc(-0.5 * var(--ibp-grid-gutter-x)) !important;
+}
+
+/* 6) Form/list pages often put app-form directly inside cards. Keep internal fields compact but readable. */
+body.is-authenticated .app-form,
+body.is-authenticated .form-grid,
+body.is-authenticated .hr-form-grid,
+body.is-authenticated .info-grid,
+body.is-authenticated .detail-grid,
+body.is-authenticated .receipt-grid {
+  gap: var(--ibp-inner-gap) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+body.is-authenticated .form-group,
+body.is-authenticated .detail-row,
+body.is-authenticated .receipt-row {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 7) Do not let Bootstrap padding utilities make one-off card sizes different in authenticated pages. */
+body.is-authenticated .content-area .app-card.p-3,
+body.is-authenticated .content-area .content-card.p-3,
+body.is-authenticated .content-area .section-card.p-3,
+body.is-authenticated .content-area .table-card.p-3,
+body.is-authenticated .content-area .form-card.p-3,
+body.is-authenticated .content-area .soft-warning-card.p-3,
+body.is-authenticated .content-area .soft-info-card.p-3,
+body.is-authenticated .content-area .soft-danger-card.p-3 {
+  padding: var(--ibp-card-pad-y) var(--ibp-card-pad-x) !important;
+}
+
+@media (max-width: 767.98px) {
+  body.is-authenticated .content-area > .container-fluid,
+  body.is-authenticated .content-area > .container {
+    gap: var(--ibp-section-gap) !important;
+  }
+
+  body.is-authenticated .content-area > .container-fluid > .row,
+  body.is-authenticated .content-area > .container > .row {
+    margin-left: calc(-0.5 * var(--ibp-grid-gutter-x)) !important;
+    margin-right: calc(-0.5 * var(--ibp-grid-gutter-x)) !important;
+  }
+}

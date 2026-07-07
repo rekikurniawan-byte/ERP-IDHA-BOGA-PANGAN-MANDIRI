@@ -1,0 +1,93 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • Detail Transport & BBM</span>
+        <h1>{{ expense.expense_number }}</h1>
+        <p>{{ rule.get('description', 'Detail biaya transport/BBM dan jejak jurnalnya.') }}</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Biaya
+        </a>
+        {% if expense.cash_bank_transaction_id %}
+            <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=expense.cash_bank_transaction_id) }}" class="btn app-btn-secondary">Lihat Buku Kas/Bank</a>
+        {% endif %}
+        {% if expense.journal_id %}
+            <a href="{{ url_for('accounting.journal_detail', journal_id=expense.journal_id) }}" class="btn app-btn-primary">Lihat Jurnal</a>
+        {% endif %}
+        {% if field_transaction_link %}
+            <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-primary">Kembali Ke Transaksi Kas Lapangan</a>
+        {% endif %}
+    </div>
+</div>
+{% set precision_key = 'transport' %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Akun COA</span>
+        <h3>{{ expense.account_code }}</h3>
+        <p>{{ rule.get('account_label', '-') }}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Nominal</span>
+        <h3>{{ expense.amount|rupiah }}</h3>
+        <p>Kas/bank keluar</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Jejak Proses</span>
+        <h3>{{ 'OK' if expense.cash_bank_transaction_id and expense.journal_id else 'Cek' }}</h3>
+        <p>Buku Kas/Bank dan jurnal wajib tersedia</p>
+    </div>
+</div>
+
+<div class="app-card mt-4 expense-posting-status-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Status Posting Beban</h5>
+            <p>Biaya transport/BBM baru masuk angka beban owner jika jurnalnya tersedia dan buku kas/bank lengkap.</p>
+        </div>
+        {% if expense.journal_id and expense.cash_bank_transaction_id %}
+            <span class="posting-badge is-success"><i class="bi bi-check2-circle"></i>Sudah Posting</span>
+        {% else %}
+            <span class="posting-badge is-warning"><i class="bi bi-exclamation-triangle"></i>Perlu Cek</span>
+        {% endif %}
+    </div>
+    <div class="expense-rule-grid">
+        <div><strong>Jurnal</strong><span>{{ 'Tersedia' if expense.journal_id else 'Belum ada jurnal beban' }}</span></div>
+        <div><strong>Buku Kas/Bank</strong><span>{{ 'Tersedia' if expense.cash_bank_transaction_id else 'Belum ada buku kas/bank' }}</span></div>
+        <div><strong>Drilldown</strong><span><a href="{{ url_for('accounting.expense_drilldown') }}">Buka Expense Drilldown</a></span></div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Informasi Biaya</h5>
+            <p>Detail sumber biaya dan keterkaitan operasional.</p>
+        </div>
+    </div>
+    <div class="detail-grid">
+        <div><span>Tanggal</span><strong>{{ expense.expense_date.strftime('%d-%m-%Y') }}</strong></div>
+        <div><span>Jenis</span><strong>{{ rule.get('label', expense.expense_type) }}</strong></div>
+        <div><span>Sumber Dana</span><strong>{{ 'Kas' if expense.account_type == 'CASH' else 'Bank' }}</strong></div>
+        <div><span>Kendaraan</span><strong>{{ expense.vehicle_label or '-' }}</strong></div>
+        <div><span>Driver</span><strong>{{ get_driver_label(expense) }}</strong></div>
+        <div><span>Delivery</span><strong>{{ get_delivery_label(expense) }}</strong></div>
+        <div><span>Vendor</span><strong>{{ expense.vendor_name or '-' }}</strong></div>
+        <div><span>Referensi</span><strong>{{ expense.reference_number or '-' }}</strong></div>
+        <div><span>ID Buku Kas/Bank</span><strong>{{ expense.cash_bank_transaction_id or '-' }}</strong></div>
+        <div><span>ID Jurnal</span><strong>{{ expense.journal_id or '-' }}</strong></div>
+    </div>
+    {% if expense.notes %}
+        <div class="mt-3">
+            <span class="text-muted small">Catatan</span>
+            <p class="mb-0">{{ expense.notes }}</p>
+        </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

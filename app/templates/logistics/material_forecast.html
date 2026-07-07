@@ -1,0 +1,325 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="material_forecast">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Prediksi Bahan</span>
+        <h1>Prediksi Kebutuhan Bahan</h1>
+        <p>Hitung kebutuhan bahan dari order, default menu siang/sore, dan recipe/BOM. Halaman ini read-only dan tidak membuat pembelian, stok keluar, jurnal, atau transaksi.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-journal-text"></i>
+            Input Order Harian
+        </a>
+        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">
+            <i class="bi bi-card-checklist"></i>
+            Menu & Resep
+        </a>
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-boxes"></i>
+            Dashboard Stok
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card soft-warning-card">
+    <strong>Read-only.</strong>
+    <p>
+        Prediksi ini hanya membaca order dan resep/BOM. Sistem tidak membuat procurement, tidak memotong stok,
+        tidak membuat jurnal, dan tidak mengubah database transaksi.
+    </p>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Periode Prediksi</h5>
+            <p>Pilih rentang tanggal order yang ingin dihitung kebutuhan bahannya.</p>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('logistics.material_forecast') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-3">
+            <label class="form-label">Tanggal Awal</label>
+            <input type="date" name="date_from" value="{{ date_from }}" class="form-control app-input">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Tanggal Akhir</label>
+            <input type="date" name="date_to" value="{{ date_to }}" class="form-control app-input">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Status Order</label>
+            <select name="status" class="form-select app-input">
+                <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="LOCKED" {% if status_filter == 'LOCKED' %}selected{% endif %}>Locked</option>
+                <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>Draft / belum locked</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn app-btn-primary w-100">
+                <i class="bi bi-search"></i>
+                Hitung Prediksi
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar-range"></i></div>
+        <div>
+            <p>Order Dibaca</p>
+            <h3>{{ forecast.summary.order_count }}</h3>
+            <span class="app-stat-helper">{{ forecast.summary.locked_order_count }} locked, {{ forecast.summary.draft_order_count }} draft</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-egg-fried"></i></div>
+        <div>
+            <p>Total Porsi</p>
+            <h3>{{ forecast.summary.planned_portions|qty }}</h3>
+            <span class="app-stat-helper">Siang + sore sesuai order</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-box-seam"></i></div>
+        <div>
+            <p>Item Bahan</p>
+            <h3>{{ forecast.summary.item_count }}</h3>
+            <span class="app-stat-helper">{{ forecast.summary.shortage_count }} item kurang</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if forecast.summary.blocked_count > 0 %}stat-danger{% elif forecast.summary.shortage_count > 0 or forecast.summary.order_warning_count > 0 %}stat-warning{% else %}stat-success{% endif %}">
+            <i class="bi bi-clipboard-pulse"></i>
+        </div>
+        <div>
+            <p>Status Prediksi</p>
+            <h3>{{ forecast.overall_status }}</h3>
+            <span class="app-stat-helper">{{ forecast.summary.blocked_count }} butuh cek, {{ forecast.summary.order_warning_count }} order warning</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rekomendasi Kebutuhan Bahan</h5>
+            <p>Qty kebutuhan dibandingkan dengan stok saat ini. Kekurangan bisa dipakai sebagai dasar rencana belanja manual.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Kebutuhan</th>
+                    <th>Stok Saat Ini</th>
+                    <th>Kekurangan</th>
+                    <th>Estimasi Biaya</th>
+                    <th>Status</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast["items"] %}
+                <tr>
+                    <td>
+                        <strong>{{ row.item_name }}</strong>
+                        <div class="muted-small">{{ row.item_code }} · {{ row.item_unit }}</div>
+                    </td>
+                    <td>
+                        {{ row.required_stock_qty|qty }} {{ row.item_unit }}
+                        {% if row.base_units %}
+                            <div class="muted-small">
+                                Resep:
+                                {% for unit, qty in row.base_units.items() %}
+                                    {{ qty|qty }} {{ unit }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.current_stock_qty|qty }} {{ row.item_unit }}</td>
+                    <td>
+                        {% if row.shortage_qty > 0 %}
+                            <strong class="text-danger">{{ row.shortage_qty|qty }} {{ row.item_unit }}</strong>
+                        {% else %}
+                            <span class="text-success">0 {{ row.item_unit }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.estimated_cost_total|rupiah }}</td>
+                    <td>
+                        <span class="status-badge {{ row.status_badge }}">{{ row.status_label }}</span>
+                        <div class="muted-small mt-1">{{ row.status_message }}</div>
+                    </td>
+                    <td>
+                        {% if row.warnings %}
+                            <ul class="mb-0 ps-3">
+                                {% for warning in row.warnings[:3] %}
+                                    <li>{{ warning }}</li>
+                                {% endfor %}
+                                {% if row.warnings|length > 3 %}
+                                    <li>+{{ row.warnings|length - 3 }} catatan lain</li>
+                                {% endif %}
+                            </ul>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-box-seam"></i>
+                            <p>Belum ada kebutuhan bahan yang bisa dihitung. Pastikan order pada periode ini punya default menu dan menu punya resep/BOM.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Order yang Dibaca</h5>
+            <p>Daftar order dalam periode filter dan status kesiapan menu/resepnya.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Order</th>
+                    <th>Status</th>
+                    <th>Menu Siang</th>
+                    <th>Menu Sore</th>
+                    <th>Porsi</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast.orders %}
+                <tr>
+                    <td>{{ row.order_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('operational.order_detail', order_id=row.order.id) }}">
+                            <strong>{{ row.order_number }}</strong>
+                        </a>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ 'status-locked' if row.status == 'LOCKED' else 'status-draft' }}">{{ row.status }}</span>
+                    </td>
+                    <td>
+                        {% if row.lunch_menu %}
+                            {{ row.lunch_menu.menu_name }}
+                        {% else %}
+                            <span class="text-muted">Belum dipilih</span>
+                        {% endif %}
+                        <div class="muted-small">{{ row.lunch_qty|qty }} porsi</div>
+                    </td>
+                    <td>
+                        {% if row.dinner_menu %}
+                            {{ row.dinner_menu.menu_name }}
+                        {% else %}
+                            <span class="text-muted">Belum dipilih</span>
+                        {% endif %}
+                        <div class="muted-small">{{ row.dinner_qty|qty }} porsi</div>
+                    </td>
+                    <td>{{ (row.lunch_qty + row.dinner_qty)|qty }}</td>
+                    <td>
+                        {% if row.warnings %}
+                            <ul class="mb-0 ps-3">
+                                {% for warning in row.warnings[:3] %}
+                                    <li>{{ warning }}</li>
+                                {% endfor %}
+                                {% if row.warnings|length > 3 %}
+                                    <li>+{{ row.warnings|length - 3 }} catatan lain</li>
+                                {% endif %}
+                            </ul>
+                        {% else %}
+                            <span class="text-success">Siap dihitung</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-calendar-x"></i>
+                            <p>Belum ada order pada periode ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if forecast["items"] %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rincian Per Order/Menu</h5>
+            <p>Trace kebutuhan bahan dari menu dan porsi order.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Order</th>
+                    <th>Menu</th>
+                    <th>Meal</th>
+                    <th>Porsi</th>
+                    <th>Qty Resep</th>
+                    <th>Qty Stok</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast["items"] %}
+                    {% for detail in row.details %}
+                    <tr>
+                        <td>{{ row.item_name }}</td>
+                        <td>
+                            <a href="{{ url_for('operational.order_detail', order_id=detail.order.id) }}">{{ detail.order_number }}</a>
+                            <div class="muted-small">{{ detail.order_date.strftime('%d-%m-%Y') }}</div>
+                        </td>
+                        <td>{{ detail.menu_name }}</td>
+                        <td>{{ detail.meal_label }}</td>
+                        <td>{{ detail.portion_qty|qty }}</td>
+                        <td>{{ detail.required_recipe_qty|qty }} {{ detail.recipe_unit }}</td>
+                        <td>{{ detail.required_stock_qty|qty }} {{ row.item_unit }}</td>
+                        <td>
+                            {% if detail.status == 'OK' %}
+                                <span class="status-badge status-locked">OK</span>
+                            {% else %}
+                                <span class="status-badge status-progress">{{ detail.status }}</span>
+                                <div class="muted-small mt-1">{{ detail.message }}</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

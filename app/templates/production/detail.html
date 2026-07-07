@@ -1,0 +1,272 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="detail">
+{% set first_detail = production.details[0] if production.details else None %}
+{% set can_edit = can_update_production|default(false) %}
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Detail Produksi</span>
+        <h1>Produksi {{ production.production_type }}</h1>
+        <p>Tanggal produksi: {{ production.production_date.strftime('%d-%m-%Y') }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('production.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+
+        <span class="status-badge 
+            {% if production.status == 'COMPLETED' %}
+                status-locked
+            {% elif production.status == 'IN_PROGRESS' %}
+                status-progress
+            {% elif production.status == 'CANCELLED' %}
+                status-danger
+            {% else %}
+                status-draft
+            {% endif %}
+        ">
+            {{ production.status }}
+        </span>
+    </div>
+</div>
+
+
+{% if not can_edit %}
+<div class="app-card soft-info-card">
+    <strong>Mode pantau produksi</strong>
+    <p>Role kamu hanya dapat melihat data produksi. Realisasi produksi hanya dapat diinput oleh petugas DAPUR.</p>
+</div>
+{% endif %}
+
+{% if production_delivery_action and production_delivery_action.needs_attention %}
+<section class="delivery-next-action-panel mt-4" data-delivery-next-action="production-detail">
+    <div class="delivery-next-action-header">
+        <div>
+            <span class="eyebrow">Next Action Delivery</span>
+            <h2>{{ production_delivery_action.title }}</h2>
+            <p>{{ production_delivery_action.description }}</p>
+        </div>
+        <a href="{{ url_for('operational.order_detail', order_id=related_daily_order.id) }}" class="btn btn-sm app-btn-secondary">
+            <i class="bi bi-journal-text"></i>
+            Lihat Order
+        </a>
+    </div>
+    <div class="delivery-next-action-card {% if not production_delivery_action.can_create_delivery %}is-blocked{% endif %}">
+        <div class="delivery-next-action-icon"><i class="bi bi-truck-front"></i></div>
+        <div class="delivery-next-action-body">
+            <strong>Order {{ production_delivery_action.order_number }}</strong>
+            <p>Batch {{ production_delivery_action.label }} masih punya {{ production_delivery_action.remaining_qty }} porsi yang belum masuk delivery aktif.</p>
+            <div class="delivery-next-action-meta">
+                <span>Total order: {{ production_delivery_action.total_order_qty }}</span>
+                <span>Sudah delivery: {{ production_delivery_action.total_planned_delivery_qty }}</span>
+                <span>Driver: {{ production_delivery_action.driver.name if production_delivery_action.driver else 'Belum tersedia' }}</span>
+            </div>
+        </div>
+        <div class="delivery-next-action-controls">
+            {% if production_delivery_action.can_create_delivery %}
+                <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=related_daily_order.id, delivery_type=production_delivery_action.delivery_type) }}" class="app-form" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-primary">
+                        <i class="bi bi-truck"></i>
+                        {{ production_delivery_action.action_label }}
+                    </button>
+                </form>
+            {% else %}
+                <span class="status-badge status-danger">{{ production_delivery_action.blocking_reason }}</span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-calendar-event"></i>
+        </div>
+        <div>
+            <p>Tanggal</p>
+            <h3>{{ production.production_date.strftime('%d-%m-%Y') }}</h3>
+            <span class="app-stat-helper">Tanggal produksi</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-egg-fried"></i>
+        </div>
+        <div>
+            <p>Tipe Produksi</p>
+            <h3>{{ production.production_type }}</h3>
+            <span class="app-stat-helper">Siang / sore</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-clipboard-data"></i>
+        </div>
+        <div>
+            <p>Rencana</p>
+            <h3>{{ first_detail.planned_qty if first_detail else 0 }}</h3>
+            <span class="app-stat-helper">Porsi direncanakan</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success">
+            <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+            <p>Realisasi</p>
+            <h3>{{ first_detail.actual_qty if first_detail else 0 }}</h3>
+            <span class="app-stat-helper">Porsi selesai</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4 sla-summary-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>SLA Produksi</h5>
+            <p>Produksi dinilai dari target siap batch. Status ini membantu membaca risiko delivery sebelum terlambat.</p>
+        </div>
+        <span class="status-badge {{ production_sla.badge_class }}">{{ production_sla.label }}</span>
+    </div>
+    <div class="sla-timeline-grid">
+        <div><span>Target Siap</span><strong>{{ production_sla.target_ready_label }}</strong></div>
+        <div><span>Batas SLA</span><strong>{{ production_sla.late_limit_label }}</strong></div>
+        <div><span>Actual Selesai</span><strong>{{ production_sla.actual_completed_label }}</strong></div>
+        <div><span>Status</span><strong>{{ production_sla.label }}</strong></div>
+    </div>
+    <p class="muted-small mt-2 mb-0">{{ production_sla.reason }}</p>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Rencana Produksi</h5>
+            <p>Rencana produksi dibuat otomatis dari order harian yang sudah locked.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Rencana</th>
+                    <th>Realisasi</th>
+                    <th>Selisih</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in production.details %}
+                <tr>
+                    <td>
+                        <strong>
+                            {% if detail.item %}
+                                {{ detail.item.item_name if detail.item.item_name is defined else detail.item.name }}
+                            {% else %}
+                                Porsi Catering
+                            {% endif %}
+                        </strong>
+                    </td>
+                    <td>{{ detail.planned_qty }} PORSI</td>
+                    <td>{{ detail.actual_qty }} PORSI</td>
+                    <td>
+                        {% set diff = detail.actual_qty - detail.planned_qty %}
+                        {% if diff > 0 %}
+                            <span class="status-badge status-progress">+{{ diff }}</span>
+                        {% elif diff < 0 %}
+                            <span class="status-badge status-danger">{{ diff }}</span>
+                        {% else %}
+                            <span class="status-badge status-locked">0</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ detail.notes or production.notes or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-egg-fried"></i>
+                            <p>Belum ada detail produksi.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Form Realisasi Produksi</h5>
+            <p>Input realisasi hanya boleh dilakukan oleh role DAPUR.</p>
+        </div>
+    </div>
+
+    {% if can_edit %}
+        {% if first_detail %}
+        <form method="POST" action="{{ url_for('production.update_realization', production_id=production.id) }}" data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label app-label">Rencana Produksi</label>
+                    <input type="text" class="form-control app-input" value="{{ first_detail.planned_qty }} PORSI" readonly>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label app-label">Realisasi Produksi</label>
+                    <input type="number" step="1" min="0" name="actual_qty" class="form-control app-input" value="{{ first_detail.actual_qty or 0 }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label app-label">Status</label>
+                    <select name="status" class="form-select app-input">
+                        <option value="DRAFT" {% if production.status == "DRAFT" %}selected{% endif %}>DRAFT</option>
+                        <option value="IN_PROGRESS" {% if production.status == "IN_PROGRESS" %}selected{% endif %}>IN_PROGRESS</option>
+                        <option value="COMPLETED" {% if production.status == "COMPLETED" %}selected{% endif %}>COMPLETED</option>
+                        <option value="CANCELLED" {% if production.status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label app-label">Catatan</label>
+                    <textarea name="notes" class="form-control app-input" rows="3" placeholder="Wajib diisi jika realisasi melebihi rencana produksi.">{{ first_detail.notes or production.notes or '' }}</textarea>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn app-btn-primary">
+                        <i class="bi bi-save"></i>
+                        Simpan Realisasi
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-exclamation-circle"></i>
+                <p>Detail produksi belum tersedia.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="readonly-production-box">
+            <i class="bi bi-shield-lock"></i>
+            <div>
+                <strong>Form realisasi dikunci.</strong>
+                <p>Admin/Owner hanya bisa monitoring. Login sebagai DAPUR untuk mengubah realisasi produksi.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

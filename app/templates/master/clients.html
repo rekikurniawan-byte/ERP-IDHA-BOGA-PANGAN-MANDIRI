@@ -1,0 +1,93 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Client</span>
+        <h1>Data Client</h1>
+        <p>Client digunakan untuk mengelompokkan mandor dan kebutuhan proyek.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.create_client') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Client
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.clients') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari nama / kode / telepon">
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.clients') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Client</th>
+                    <th>Telepon</th>
+                    <th>Alamat</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td><strong>{{ client.client_code if client.client_code is defined else '-' }}</strong></td>
+                    <td>{{ client.name }}</td>
+                    <td>{{ client.phone if client.phone is defined and client.phone else '-' }}</td>
+                    <td>{{ client.address if client.address is defined and client.address else '-' }}</td>
+                    <td>
+                        {% if client.is_active is defined and client.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_client', client_id=client.id) }}" class="btn btn-sm app-btn-secondary">
+                                Edit / PIC
+                            </a>
+
+                            <form method="POST" action="{{ url_for('master.toggle_client', client_id=client.id) }}" data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if client.is_active is defined and client.is_active %}Nonaktif{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-building"></i>
+                            <p>Belum ada data client.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

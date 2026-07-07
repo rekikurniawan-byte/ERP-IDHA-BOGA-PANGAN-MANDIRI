@@ -1,0 +1,134 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan - Transaksi Kas Lapangan</span>
+        <h1>Transaksi Kas Lapangan</h1>
+        <p>Pusat input, review, dokumen turunan, hubungkan, dan jejak integrasi transaksi manual lapangan.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('field_transactions.monitoring') }}" class="btn app-btn-secondary">
+            <i class="bi bi-activity"></i>
+            Monitoring
+        </a>
+        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Buat Draft
+        </a>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Draft/Transaksi</span>
+        <h3>{{ summary.total }}</h3>
+        <p>Semua transaksi lapangan cabang ini</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Total Masuk</span>
+        <h3>{{ summary.total_in|rupiah }}</h3>
+        <p>Nominal transaksi arah IN</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Total Keluar</span>
+        <h3>{{ summary.total_out|rupiah }}</h3>
+        <p>Nominal transaksi arah OUT</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Menunggu Review</span>
+        <h3>{{ summary.pending_review }}</h3>
+        <p>Masih menunggu review/klasifikasi</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="GET" action="{{ url_for('field_transactions.index') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-4">
+            <label class="form-label">Jenis Transaksi</label>
+            <select name="event" class="form-select">
+                <option value="ALL" {% if selected_event == 'ALL' %}selected{% endif %}>Semua event</option>
+                {% for event in event_choices %}
+                    <option value="{{ event.value }}" {% if selected_event == event.value %}selected{% endif %}>{{ event.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Masuk/Keluar</label>
+            <select name="direction" class="form-select">
+                <option value="ALL" {% if selected_direction == 'ALL' %}selected{% endif %}>Semua arah</option>
+                <option value="IN" {% if selected_direction == 'IN' %}selected{% endif %}>IN</option>
+                <option value="OUT" {% if selected_direction == 'OUT' %}selected{% endif %}>OUT</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Status Review</label>
+            <select name="status" class="form-select">
+                <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
+                {% for status in ['DRAFT', 'RECORDED', 'WAITING_EVIDENCE', 'WAITING_CLASSIFICATION', 'IN_REVIEW', 'WAITING_APPROVAL', 'READY_TO_POST', 'POSTED', 'REJECTED', 'VOID', 'RECONCILED'] %}
+                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-12 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary">Filter</button>
+            <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Transaksi Kas Lapangan</h5>
+            <p>Daftar ini sekarang mencakup draft utama, jejak pembayaran manual, hubungkan, dan transaksi turunan sistem yang relevan untuk audit.</p>
+        </div>
+    </div>
+
+    {% if transactions %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Event</th>
+                    <th>Masuk/Keluar</th>
+                    <th>Pihak</th>
+                    <th>Nominal</th>
+                    <th>Review</th>
+                    <th>Bukti</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td><strong>{{ transaction.transaction_number }}</strong></td>
+                    <td>{{ transaction.transaction_date.strftime('%d-%m-%Y') }}</td>
+                    <td><div class="fw-semibold">{{ event_labels.get(transaction.business_event_type, transaction.business_event_type) }}</div><div class="text-muted small">{{ transaction.business_event_type }}</div></td>
+                    <td><span class="status-badge status-{{ 'done' if transaction.transaction_direction == 'IN' else 'warning' }}">{{ transaction.transaction_direction }}</span></td>
+                    <td>{{ transaction.party_snapshot_name or (transaction.counterparty.name if transaction.counterparty else '-') }}</td>
+                    <td>{{ transaction.amount|rupiah }}</td>
+                    <td><span class="status-badge status-progress">{{ transaction.review_status }}</span></td>
+                    <td>{{ transaction.evidence_status }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('field_transactions.detail', transaction_id=transaction.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-journal-text"></i>
+        <h5>Belum ada transaksi lapangan</h5>
+        <p>Mulai dari draft pertama untuk pendapatan/pengeluaran manual lapangan sebelum masuk ke alur formal.</p>
+        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">Buat Draft Pertama</a>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

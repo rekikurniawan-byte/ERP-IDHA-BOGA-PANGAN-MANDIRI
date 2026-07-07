@@ -1,0 +1,226 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% include "accounting/_accounting_print_report_styles.html" %}
+
+<div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <h1>Jejak Order sampai Lunas</h1>
+            <p>Halaman print-ready. Gunakan Cetak / Save PDF dari browser.</p>
+        </div>
+        <div class="page-actions accounting-header-actions">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('accounting.order_to_cash_trace', order_number=report.selected_order_number) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>JEJAK ORDER SAMPAI LUNAS</h4>
+                <p>Order: {{ report.selected_order_number or '-' }}</p>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Generated: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}</p>
+            </div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Status Overall</span><strong>{{ report.overall_status }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Piutang</span><strong>{{ report.receivable_status }}</strong></div>
+            <div class="app-stat-card print-box"><span>Order Dipilih</span><strong>{{ report.selected_order_number or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+        </div>
+
+        {% if not report.has_order %}
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <tbody>
+                <tr>
+                    <td><strong>{{ report.empty_message }}</strong></td>
+                    <td>Input atau pilih nomor order untuk melihat jejak order sampai lunas.</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <h5 class="print-section-title">Alur Utama</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Tahap</th>
+                    <th>Status</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for step in report.steps %}
+                <tr>
+                    <td><strong>{{ step.name }}</strong></td>
+                    <td>{{ step.status }}</td>
+                    <td>{{ step.note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="print-section-title">Detail Order</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>ID Detail</th>
+                    <th>Client</th>
+                    <th>PIC/Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Lunch</th>
+                    <th>Dinner</th>
+                    <th>Total</th>
+                    <th>Harga</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.order_summary.details %}
+                <tr>
+                    <td>#{{ row.id }}</td>
+                    <td>{{ row.client_name }}</td>
+                    <td>{{ row.mandor_name }}</td>
+                    <td>{{ row.location_name }}</td>
+                    <td>{{ row.lunch_qty }}</td>
+                    <td>{{ row.dinner_qty }}</td>
+                    <td>{{ row.total_qty }}</td>
+                    <td class="text-end">{{ row.price_per_portion|rupiah }}</td>
+                    <td class="text-end">{{ row.subtotal|rupiah }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center text-muted">Belum ada detail order.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="print-section-title">Produksi</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>Planned</th>
+                    <th>Actual</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.production.rows %}
+                <tr>
+                    <td>{{ row.production_type }}</td>
+                    <td>{{ row.status }}</td>
+                    <td>{{ row.planned_qty|round(0) }}</td>
+                    <td>{{ row.actual_qty|round(0) }}</td>
+                    <td>{{ row.detail_count }} item</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted">Belum ada data produksi untuk order ini.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="print-section-title">Pengiriman</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Nomor Delivery</th>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>Planned</th>
+                    <th>Terkirim</th>
+                    <th>Selisih</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.delivery.rows %}
+                <tr>
+                    <td>{{ row.delivery_number }}</td>
+                    <td>{{ row.delivery_date.strftime('%d-%m-%Y') if row.delivery_date else '-' }}</td>
+                    <td>{{ row.delivery_type }}</td>
+                    <td>{{ row.status }}</td>
+                    <td>{{ row.planned_qty }}</td>
+                    <td>{{ row.delivered_qty }}</td>
+                    <td>{{ row.shortage_qty }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">Belum ada data pengiriman untuk order ini.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="print-section-title">Invoice dan Piutang</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Status</th>
+                    <th>Bill To</th>
+                    <th>Total</th>
+                    <th>Dibayar</th>
+                    <th>Piutang</th>
+                    <th>Jurnal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.invoice.rows %}
+                <tr>
+                    <td>{{ row.invoice.invoice_number }}</td>
+                    <td>{{ row.invoice.status }}</td>
+                    <td>{{ row.invoice.bill_to_type }}</td>
+                    <td class="text-end">{{ row.total_amount|rupiah }}</td>
+                    <td class="text-end">{{ row.paid_amount|rupiah }}</td>
+                    <td class="text-end">{{ row.remaining_amount|rupiah }}</td>
+                    <td>{{ row.journal.status }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">Belum ada invoice untuk order ini.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="print-section-title">Pembayaran dan Jurnal</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Pembayaran</th>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th>Amount</th>
+                    <th>Jurnal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.payment.rows %}
+                <tr>
+                    <td>{{ row.payment.payment_number }}</td>
+                    <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') if row.payment.payment_date else '-' }}</td>
+                    <td>{{ row.payment.payment_method }}</td>
+                    <td class="text-end">{{ row.amount|rupiah }}</td>
+                    <td>{{ row.journal.status }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted">Belum ada payment untuk invoice aktif order ini.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <p class="print-note">Dokumen ini dibuat otomatis dari order-to-cash trace dan bersifat read-only.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Akuntansi</span>
+        <h1>{{ journal.journal_number }}</h1>
+        <p>{{ journal.description }}</p>
+    </div>
+
+    <div class="page-actions accounting-header-actions">
+        <a href="{{ url_for('accounting.print_journal_detail', journal_id=journal.id) }}" class="btn app-btn-primary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        {% if field_transaction_link %}
+        <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-repeat"></i>
+            Kembali Ke Transaksi Kas Lapangan
+        </a>
+        {% endif %}
+        <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Jurnal
+        </a>
+    </div>
+</div>
+
+{% set precision_key = 'journal_trace' %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Debit</span>
+        <h3>{{ total_debit|rupiah }}</h3>
+        <p>nilai debit</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Total Kredit</span>
+        <h3>{{ total_credit|rupiah }}</h3>
+        <p>nilai kredit</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Status</span>
+        <h3>{% if is_balanced %}Seimbang{% else %}Tidak Seimbang{% endif %}</h3>
+        <p>validasi debit kredit</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Informasi Jurnal</h5>
+            <p>Detail referensi jurnal.</p>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <span>No Jurnal</span>
+            <strong>{{ journal.journal_number }}</strong>
+        </div>
+
+        <div>
+            <span>Tanggal</span>
+            <strong>{{ journal.journal_date.strftime('%d-%m-%Y') }}</strong>
+        </div>
+
+        <div>
+            <span>Referensi</span>
+            <strong>{{ journal.reference_type }} #{{ journal.reference_id }}</strong>
+        </div>
+
+        <div>
+            <span>Status</span>
+            <strong>{% if is_balanced %}SEIMBANG{% else %}TIDAK SEIMBANG{% endif %}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Debit Kredit</h5>
+            <p>Jurnal valid jika total debit sama dengan total kredit.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode Akun</th>
+                    <th>Nama Akun</th>
+                    <th>Tipe</th>
+                    <th>Debit</th>
+                    <th>Kredit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in journal.details %}
+                <tr>
+                    <td><strong>{{ detail.account.account_code }}</strong></td>
+                    <td>{{ detail.account.account_name }}</td>
+                    <td>{{ detail.account.account_type }}</td>
+                    <td>{{ detail.debit|rupiah }}</td>
+                    <td>{{ detail.credit|rupiah }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-calculator"></i>
+                            <p>Belum ada detail jurnal.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3">Total</th>
+                    <th>{{ total_debit|rupiah }}</th>
+                    <th>{{ total_credit|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

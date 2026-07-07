@@ -1,0 +1,167 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="canteen-page-shell" data-ui-page="debts">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Hutang & Piutang Warung</span>
+        <h1>Hutang Warung</h1>
+        <p>Hutang pekerja internal dipisahkan dari piutang buyer eksternal/non-master.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('canteen.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Warung
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Hutang Pekerja Internal</h5>
+            <p>Pembayaran bisa dilakukan sebagian sampai status menjadi lunas.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Pekerja</th>
+                    <th>Mandor</th>
+                    <th>Total Hutang</th>
+                    <th>Terbayar</th>
+                    <th>Sisa</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for debt in debts %}
+                <tr id="worker-debt-{{ debt.id }}">
+                    <td><strong>{{ debt.worker.full_name if debt.worker else '-' }}</strong></td>
+                    <td>{{ debt.worker.mandor.name if debt.worker and debt.worker.mandor else '-' }}</td>
+                    <td>{{ debt.debt_amount|rupiah }}</td>
+                    <td>{{ get_debt_paid_amount(debt)|rupiah }}</td>
+                    <td><strong>{{ get_debt_remaining_amount(debt)|rupiah }}</strong></td>
+                    <td>
+                        {% if debt.status == "PAID" %}
+                            <span class="status-badge status-locked">PAID</span>
+                        {% elif debt.status == "PARTIAL" %}
+                            <span class="status-badge status-progress">PARTIAL</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">UNPAID</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set billed_invoice = billed_invoice_by_debt_id.get(debt.id) %}
+                        {% if billed_invoice %}
+                        <div class="small mb-1">
+                            <a href="{{ url_for('finance.invoice_detail', invoice_id=billed_invoice.id) }}">
+                                {{ billed_invoice.invoice_number }}
+                            </a>
+                        </div>
+                        <span class="text-muted small d-block mb-1">Sudah ditagihkan formal</span>
+                        {% endif %}
+                        {% if billed_invoice %}
+                        <a href="{{ url_for('finance.invoice_detail', invoice_id=billed_invoice.id) }}" class="btn btn-sm app-btn-secondary">
+                            Buka Invoice
+                        </a>
+                        {% elif debt.status != "PAID" %}
+                        <a href="{{ url_for('canteen.debt_payment', debt_id=debt.id) }}" class="btn btn-sm app-btn-secondary">
+                            Bayar
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-wallet2"></i>
+                            <h6>Belum ada hutang pekerja.</h6>
+                            <p>Hutang pekerja internal dibuat dari transaksi warung metode DEBT dengan tipe pekerja internal.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Piutang Warung Eksternal</h5>
+            <p>Untuk pembeli luar/non-master yang berhutang di warung.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Pembeli/PIC</th>
+                    <th>Perusahaan</th>
+                    <th>No HP</th>
+                    <th>Total Piutang</th>
+                    <th>Terbayar</th>
+                    <th>Sisa</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in external_receivables %}
+                <tr>
+                    <td><strong>{{ row.buyer_name }}</strong></td>
+                    <td>{{ row.buyer_company or '-' }}</td>
+                    <td>{{ row.buyer_phone or '-' }}</td>
+                    <td>{{ row.receivable_amount|rupiah }}</td>
+                    <td>{{ get_external_receivable_paid_amount(row)|rupiah }}</td>
+                    <td><strong>{{ get_external_receivable_remaining_amount(row)|rupiah }}</strong></td>
+                    <td>
+                        {% if row.status == "PAID" %}
+                            <span class="status-badge status-locked">PAID</span>
+                        {% elif row.status == "PARTIAL" %}
+                            <span class="status-badge status-progress">PARTIAL</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">UNPAID</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.status != "PAID" %}
+                        <a href="{{ url_for('canteen.external_receivable_payment', receivable_id=row.id) }}" class="btn btn-sm app-btn-secondary">
+                            Bayar
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="bi bi-building-exclamation"></i>
+                            <h6>Belum ada piutang warung eksternal.</h6>
+                            <p>Buat transaksi warung metode DEBT dengan tipe pembeli luar/guest jika ada buyer non-master berhutang.</p>
+                            <div class="empty-actions">
+                                <a href="{{ url_for('canteen.quick_sale') }}" class="btn app-btn-primary">Transaksi Cepat</a>
+                                <a href="{{ url_for('sop.role_sop', slug='admin') }}" class="btn app-btn-secondary">Lihat SOP</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

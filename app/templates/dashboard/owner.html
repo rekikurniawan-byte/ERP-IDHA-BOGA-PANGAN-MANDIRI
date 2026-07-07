@@ -1,0 +1,123 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% set command = data.command_center %}
+<div class="dashboard-owner-page-shell" data-ui-dashboard="owner" data-fix73b-outlier-page="dashboard-owner">
+<div class="page-header dashboard-owner-header dashboard-role-header dashboard-command-header" data-ui-dashboard="owner" data-dashboard-command-center="owner">
+    <div class="dashboard-command-title-block">
+        <span class="eyebrow">Command Center</span>
+        <h1>{{ command.title }}</h1>
+        <p>{{ command.subtitle }}</p>
+    </div>
+
+    <div class="page-actions dashboard-page-actions">
+        <a href="{{ url_for('dashboard.revenue_explorer') }}" class="btn app-btn-primary">
+            <i class="bi bi-graph-up-arrow"></i>
+            Revenue Explorer
+        </a>
+        <div class="dropdown app-action-dropdown dashboard-action-menu">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi Lainnya
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                <a class="dropdown-item" href="{{ url_for('finance.receivables') }}"><i class="bi bi-cash-coin"></i> Piutang Client</a>
+                <a class="dropdown-item" href="{{ url_for('accounting.expense_drilldown') }}"><i class="bi bi-graph-down-arrow"></i> Expense Drilldown</a>
+                <a class="dropdown-item" href="{{ url_for('accounting.posting_status') }}"><i class="bi bi-clipboard-check"></i> Posting Status</a>
+                <a class="dropdown-item" href="{{ url_for('settings.recovery_center') }}"><i class="bi bi-life-preserver"></i> Recovery Center</a>
+                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Reminder Live</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="dashboard-section dashboard-command-decision" data-dashboard-section="command-decision">
+    <div class="dashboard-command-hero dashboard-command-hero-compact dashboard-command-hero-{{ command.decision.status_class }}">
+        <div>
+            <span class="eyebrow">Keputusan Safety Hari Ini</span>
+            <h2>{{ command.decision.label }}</h2>
+            <p>{{ command.decision.summary }}</p>
+        </div>
+        <div class="dashboard-command-backup-chip">
+            <span>Backup</span>
+            <strong>{{ command.backup.label }}</strong>
+            <small>Restore dry-run: {{ command.backup.restore_dry_run_status }}</small>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-dashboard-section="owner-kpi">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>KPI Owner</h2>
+            <p>Enam angka paling penting untuk membaca kondisi bisnis tanpa membuka banyak menu.</p>
+        </div>
+    </div>
+    <div class="dashboard-command-kpi-grid dashboard-command-kpi-grid-compact">
+        {% for kpi in command.kpis %}
+            <article class="dashboard-command-kpi dashboard-command-kpi-{{ kpi.tone }}">
+                <div class="dashboard-command-kpi-icon dashboard-command-kpi-icon-{{ kpi.tone }}"><i class="bi {{ kpi.icon }}"></i></div>
+                <div>
+                    <span>{{ kpi.label }}</span>
+                    <strong>{{ kpi.value }}</strong>
+                    <small>{{ kpi.caption }}</small>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+{% include "dashboard/_analytics_charts.html" %}
+
+<section class="dashboard-section" data-dashboard-section="operational-reminder">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Reminder Operasional</h2>
+            <p>Hanya risiko penting yang perlu aksi owner/admin. Tidak ada card kosong besar.</p>
+        </div>
+        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Reminder Live</a>
+    </div>
+
+    {% if command.reminders %}
+        <div class="dashboard-command-reminder-grid">
+            {% for reminder in command.reminders %}
+                <a href="{{ url_for(reminder.endpoint) }}" class="dashboard-command-reminder dashboard-command-reminder-{{ reminder.status_class }} dashboard-command-reminder-item-{{ loop.index }}">
+                    <i class="bi {{ reminder.icon }}"></i>
+                    <span>
+                        <strong>{{ reminder.title }}</strong>
+                        <small>{{ reminder.detail }}</small>
+                    </span>
+                    <i class="bi bi-chevron-right dashboard-support-chevron"></i>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="dashboard-command-all-clear">
+            <i class="bi bi-check2-circle"></i>
+            <strong>Tidak ada reminder kritis.</strong>
+            <span>Dashboard utama dalam kondisi terkendali. Tetap lakukan backup verified sebelum patch besar.</span>
+        </div>
+    {% endif %}
+</section>
+
+<section class="dashboard-section" data-dashboard-section="detail-links">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Link Detail</h2>
+            <p>Dashboard utama tetap ringkas; detail berat dipindahkan ke explorer, drilldown, health, dan SOP.</p>
+        </div>
+    </div>
+    <div class="dashboard-command-link-grid">
+        {% for item in command.detail_links %}
+            <a href="{{ url_for(item.endpoint) }}" class="dashboard-command-link-card dashboard-command-link-card-{{ loop.index }}">
+                <i class="bi {{ item.icon }}"></i>
+                <span>
+                    <strong>{{ item.title }}</strong>
+                    <small>{{ item.detail }}</small>
+                </span>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+</div>
+{% endblock %}

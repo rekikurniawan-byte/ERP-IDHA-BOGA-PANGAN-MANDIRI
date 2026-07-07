@@ -1,0 +1,197 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>AP Aging Hutang Supplier</h1>
+        <p>Analisis umur hutang supplier berdasarkan tanggal jatuh tempo. Halaman ini hanya membaca data supplier bill, tidak membuat transaksi.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.print_accounts_payable_aging', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or '') }}" class="btn app-btn-primary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="apAgingActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi lainnya
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="apAgingActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_bills') }}"><i class="bi bi-wallet"></i> Hutang Supplier</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_payable_card') }}"><i class="bi bi-journal-text"></i> Kartu Hutang Supplier</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('finance.export_accounts_payable_aging_csv', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or '') }}"><i class="bi bi-download"></i> Download CSV</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Hutang Terbuka</span>
+        <h3>{{ report.summary.total_open|rupiah }}</h3>
+        <p>{{ report.summary.open_count }} bill belum lunas</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Total Overdue</span>
+        <h3>{{ report.summary.overdue_total|rupiah }}</h3>
+        <p>{{ report.summary.overdue_count }} bill lewat jatuh tempo</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Belum Jatuh Tempo</span>
+        <h3>{{ report.buckets.CURRENT.total|rupiah }}</h3>
+        <p>{{ report.buckets.CURRENT.count }} bill</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Bill Lunas</span>
+        <h3>{{ report.summary.paid_count }}</h3>
+        <p>Tidak masuk aging terbuka</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Aging</h5>
+            <p>Gunakan tanggal aging untuk melihat posisi hutang pada tanggal tertentu.</p>
+        </div>
+    </div>
+
+    <form method="GET" class="form-grid app-form" data-ui-form="true">
+        <div class="form-group">
+            <label>Tanggal Aging</label>
+            <input type="date" name="as_of_date" class="form-control" value="{{ as_of_date.isoformat() }}">
+        </div>
+
+        <div class="form-group">
+            <label>Supplier Tetap</label>
+            <select name="supplier_id" class="form-control">
+                <option value="">Semua supplier / toko manual</option>
+                {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if selected_supplier_id == supplier.id %}selected{% endif %}>
+                        {{ supplier.supplier_code }} - {{ supplier.supplier_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <div class="form-text text-muted small">Pembelian dari toko tidak tetap tetap masuk laporan saat filter supplier dikosongkan.</div>
+        </div>
+
+        <div class="form-group d-flex align-items-end gap-2">
+            <button class="btn app-btn-primary" type="submit">
+                <i class="bi bi-search"></i>
+                Terapkan
+            </button>
+            <a href="{{ url_for('finance.accounts_payable_aging') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <span>0-30 Hari</span>
+        <h3>{{ report.buckets.DAYS_0_30.total|rupiah }}</h3>
+        <p>{{ report.buckets.DAYS_0_30.count }} bill overdue</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>31-60 Hari</span>
+        <h3>{{ report.buckets.DAYS_31_60.total|rupiah }}</h3>
+        <p>{{ report.buckets.DAYS_31_60.count }} bill overdue</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>61-90 Hari</span>
+        <h3>{{ report.buckets.DAYS_61_90.total|rupiah }}</h3>
+        <p>{{ report.buckets.DAYS_61_90.count }} bill overdue</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>&gt; 90 Hari</span>
+        <h3>{{ report.buckets.DAYS_OVER_90.total|rupiah }}</h3>
+        <p>{{ report.buckets.DAYS_OVER_90.count }} bill overdue</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Aging Hutang Supplier</h5>
+            <p>Urutan berdasarkan jatuh tempo terdekat/terlama supaya prioritas pembayaran mudah dibaca.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Bucket</th>
+                    <th>No Bill</th>
+                    <th>Supplier / Tempat</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Umur</th>
+                    <th>Total</th>
+                    <th>Dibayar</th>
+                    <th>Sisa</th>
+                    <th>Pembelian</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.rows %}
+                    {% set bill = row.bill %}
+                    <tr>
+                        <td>
+                            <span class="status-badge {{ row.bucket.badge_class }}">{{ row.bucket.label }}</span>
+                        </td>
+                        <td><strong class="font-monospace">{{ bill.bill_number }}</strong></td>
+                        <td>
+                            <strong>{{ row.supplier_name }}</strong>
+                            {% if bill.supplier_id %}
+                                <div class="text-muted small">Supplier tetap</div>
+                            {% else %}
+                                <div class="text-muted small">Manual / toko tidak tetap</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ bill.due_date.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            {% if row.bucket.days_overdue > 0 %}
+                                Lewat {{ row.bucket.days_overdue }} hari
+                            {% else %}
+                                {{ row.bucket.days_to_due }} hari lagi
+                            {% endif %}
+                        </td>
+                        <td>{{ bill.total_amount|rupiah }}</td>
+                        <td>{{ bill.paid_amount|rupiah }}</td>
+                        <td><strong>{{ bill.remaining_amount|rupiah }}</strong></td>
+                        <td>
+                            {% if row.procurement %}
+                                <span class="font-monospace">{{ row.procurement.procurement_number }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('finance.supplier_bill_detail', bill_id=bill.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                <i class="bi bi-check-circle"></i>
+                                <p>Belum ada hutang supplier terbuka untuk filter ini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

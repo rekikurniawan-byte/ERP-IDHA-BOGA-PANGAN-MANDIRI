@@ -1,0 +1,180 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_request_detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Permintaan Barang</span>
+        <h1>{{ item_request.request_number }}</h1>
+        <p>{{ item_request.request_date.strftime('%d-%m-%Y') }} | {{ item_request.purpose }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Permintaan
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-basket"></i>
+        </div>
+        <div>
+            <p>Total Item</p>
+            <h3>{{ item_request.details|length }}</h3>
+            <span class="app-stat-helper">Item diminta</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div>
+            <p>Status</p>
+            <h3>{{ item_request.status }}</h3>
+            {% if item_request.status == "PENDING" %}
+                <span class="app-stat-helper">Belum mengurangi stok</span>
+            {% elif item_request.status == "APPROVED" %}
+                <span class="app-stat-helper">Disetujui, belum dipenuhi</span>
+            {% elif item_request.status == "REJECTED" %}
+                <span class="app-stat-helper">Ditolak</span>
+            {% elif item_request.status == "FULFILLED" %}
+                <span class="app-stat-helper">Sudah dipenuhi</span>
+            {% else %}
+                <span class="app-stat-helper">Status permintaan</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == "OWNER" and item_request.status == "PENDING" %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Keputusan Owner</h5>
+            <p>Approve/reject hanya mengubah status. Stok belum berkurang sampai permintaan dipenuhi.</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <form method="POST" action="{{ url_for('logistics.approve_item_request', request_id=item_request.id) }}" data-app-confirm="Setujui permintaan barang ini? Stok belum akan berkurang sampai proses fulfill." data-ui-form="true" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <label class="form-label app-label">Catatan Owner</label>
+                <textarea name="owner_note" class="form-control app-input" rows="3"
+                          placeholder="Opsional, contoh: disetujui untuk produksi sore"></textarea>
+
+                <button type="submit" class="btn app-btn-primary mt-3">
+                    <i class="bi bi-check-circle"></i>
+                    Approve Permintaan
+                </button>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <form method="POST" action="{{ url_for('logistics.reject_item_request', request_id=item_request.id) }}" data-app-confirm="Tolak permintaan barang ini?" data-ui-form="true" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <label class="form-label app-label">Alasan Penolakan</label>
+                <textarea name="reject_reason" class="form-control app-input" rows="3"
+                          placeholder="Wajib diisi jika permintaan ditolak"></textarea>
+
+                <button type="submit" class="btn app-btn-danger mt-3">
+                    <i class="bi bi-x-circle"></i>
+                    Reject Permintaan
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if item_request.status == "APPROVED" %}
+<div class="app-card mt-4 soft-warning-card">
+    <strong>Permintaan Sudah Disetujui</strong>
+    <p>Status sudah APPROVED, tetapi stok belum berkurang. Klik Penuhi Permintaan jika barang benar-benar dikeluarkan dari stok.</p>
+
+    {% if current_user.role == "OWNER" %}
+    <form method="POST" action="{{ url_for('logistics.fulfill_item_request', request_id=item_request.id) }}"
+          class="mt-3 app-form" data-app-confirm="Penuhi permintaan ini? Setelah dipenuhi, stok akan berkurang." data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <label class="form-label app-label">Catatan Pemenuhan</label>
+        <textarea name="fulfill_note" class="form-control app-input" rows="2"
+                  placeholder="Opsional, contoh: barang sudah diberikan ke dapur sore"></textarea>
+
+        <button type="submit" class="btn app-btn-primary mt-3">
+            <i class="bi bi-box-arrow-up"></i>
+            Penuhi Permintaan
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if item_request.status == "REJECTED" %}
+<div class="app-card mt-4 soft-danger-card">
+    <strong>Permintaan Ditolak</strong>
+    <p>Permintaan ini tidak mengurangi stok dan tidak bisa dipenuhi.</p>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rincian Permintaan</h5>
+            <p>Permintaan ini belum mengurangi stok sampai Owner memenuhi permintaan.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty Diminta</th>
+                    <th>Stok Sistem Saat Ini</th>
+                    <th>Qty Disetujui</th>
+                    <th>Qty Dipenuhi</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in item_request.details %}
+                <tr>
+                    <td><strong>{{ detail.item.item_name if detail.item else '-' }}</strong></td>
+                    <td>{{ detail.requested_qty|qty }} {{ detail.item.unit if detail.item else '' }}</td>
+                    <td>{{ stock_map.get(detail.item_id, 0)|qty }} {{ detail.item.unit if detail.item else '' }}</td>
+                    <td>{{ detail.approved_qty|qty }} {{ detail.item.unit if detail.item else '' }}</td>
+                    <td>{{ detail.fulfilled_qty|qty }} {{ detail.item.unit if detail.item else '' }}</td>
+                    <td>{{ detail.notes or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-basket"></i>
+                            <p>Belum ada item pada permintaan ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Catatan Umum</h5>
+            <p>{{ item_request.notes or 'Tidak ada catatan.' }}</p>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

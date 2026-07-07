@@ -1,0 +1,287 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Detail Delivery</span>
+        <h1>{{ delivery.delivery_number }}</h1>
+        <p>{{ delivery.delivery_date.strftime('%d-%m-%Y') }} | {{ delivery_type }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('delivery.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+
+        {% if delivery.status not in ["CANCELLED", "DELIVERED", "ON_THE_WAY"] %}
+        <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=delivery.id) }}" data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-send-check"></i>
+                Catat Berangkat
+            </button>
+        </form>
+        {% endif %}
+
+        {% if can_cancel_delivery %}
+        <form method="POST" action="{{ url_for('delivery.cancel', delivery_id=delivery.id) }}" data-app-confirm="Yakin ingin membatalkan delivery ini? Delivery yang dibatalkan tidak akan dihitung sebagai pengiriman aktif." data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="cancel_reason" value="Delivery dibatalkan sebelum penerimaan.">
+            <button type="submit" class="btn app-btn-danger">
+                <i class="bi bi-x-circle"></i>
+                Cancel Delivery
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+
+{% if delivery.status == "CANCELLED" %}
+<div class="app-card soft-danger-card">
+    <strong>Delivery Dibatalkan</strong>
+    <p>Delivery ini sudah dibatalkan dan tidak dihitung sebagai pengiriman aktif. Jika perlu, buat ulang delivery dari detail order.</p>
+</div>
+{% endif %}
+
+{% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+<div class="app-card soft-warning-card">
+    <strong>Delivery Pengganti Shortage</strong>
+    <p>Delivery ini dibuat untuk mengganti kekurangan pengiriman sebelumnya. Delivery ini bukan order baru dan bukan dasar invoice.</p>
+</div>
+{% endif %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-truck"></i>
+        </div>
+        <div>
+            <p>Status Delivery</p>
+            <h3>{{ delivery.status }}</h3>
+            <span class="app-stat-helper">{{ delivery_type }}</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+            <p>Planned Qty</p>
+            {% set total = namespace(value=0) %}
+            {% for detail in delivery.details %}
+                {% set total.value = total.value + detail.planned_qty %}
+            {% endfor %}
+            <h3>{{ total.value }}</h3>
+            <span class="app-stat-helper">Porsi direncanakan</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success">
+            <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+            <p>Delivered Qty</p>
+            {% set total = namespace(value=0) %}
+            {% for detail in delivery.details %}
+                {% set total.value = total.value + detail.delivered_qty %}
+            {% endfor %}
+            <h3>{{ total.value }}</h3>
+            <span class="app-stat-helper">Porsi diterima</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div>
+            <p>Shortage Qty</p>
+            {% set total = namespace(value=0) %}
+            {% for detail in delivery.details %}
+                {% set total.value = total.value + detail.shortage_qty %}
+            {% endfor %}
+            <h3>{{ total.value }}</h3>
+            <span class="app-stat-helper">Porsi kurang</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-stopwatch"></i>
+        </div>
+        <div>
+            <p>Status SLA</p>
+            <h3>{{ delivery_sla_summary.label }}</h3>
+            <span class="app-stat-helper">Target tiba {{ delivery_sla_summary.target_arrival_label }} · toleransi {{ delivery_sla_summary.late_tolerance_minutes }} menit</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4 sla-summary-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Kontrol SLA Pengiriman</h5>
+            <p>Late sekarang dihitung dari target jam tiba + toleransi, bukan sekadar tanggal pengiriman.</p>
+        </div>
+        <span class="status-badge {{ delivery_sla_summary.badge_class }}">{{ delivery_sla_summary.label }}</span>
+    </div>
+
+    <div class="sla-timeline-grid">
+        <div><span>Target Berangkat</span><strong>{{ delivery_sla_summary.target_dispatch_label }}</strong></div>
+        <div><span>Actual Berangkat</span><strong>{{ delivery_sla_summary.actual_departure_label }}</strong></div>
+        <div><span>Target Tiba</span><strong>{{ delivery_sla_summary.target_arrival_label }}</strong></div>
+        <div><span>Batas SLA</span><strong>{{ delivery_sla_summary.late_limit_label }}</strong></div>
+    </div>
+
+    {% if current_user.role == 'ADMIN' %}
+    <form method="POST" action="{{ url_for('delivery.update_sla', delivery_id=delivery.id) }}" class="app-form mt-3" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label app-label">Target Berangkat</label>
+                <input type="time" name="target_dispatch_time" class="form-control app-input" value="{{ delivery_sla_summary.target_dispatch_time.strftime('%H:%M') if delivery_sla_summary.target_dispatch_time else '' }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label app-label">Target Tiba</label>
+                <input type="time" name="target_arrival_time" class="form-control app-input" value="{{ delivery_sla_summary.target_arrival_time.strftime('%H:%M') if delivery_sla_summary.target_arrival_time else '' }}" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label app-label">Toleransi</label>
+                <input type="number" name="late_tolerance_minutes" class="form-control app-input" value="{{ delivery_sla_summary.late_tolerance_minutes }}" min="0" max="240">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn app-btn-secondary w-100">Update SLA</button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Pengiriman</h5>
+            <p>Catat penerima dan jumlah terkirim untuk setiap mandor/lokasi.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Planned</th>
+                    <th>Delivered</th>
+                    <th>Shortage</th>
+                    <th>SLA</th>
+                    <th>Penerima</th>
+                    <th>Bukti Digital</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in delivery.details %}
+                <tr>
+                    <td><strong>{{ detail.mandor.name if detail.mandor else '-' }}</strong></td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                    <td>{{ detail.planned_qty }}</td>
+                    <td>{{ detail.delivered_qty }}</td>
+                    <td>
+                        {% if detail.shortage_qty > 0 and detail.receipt %}
+                            <span class="status-badge status-danger">{{ detail.shortage_qty }}</span>
+                        {% elif detail.shortage_qty > 0 %}
+                            <span class="status-badge status-progress">{{ detail.shortage_qty }}</span>
+                        {% else %}
+                            <span class="status-badge status-locked">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set sla = delivery_detail_sla_map.get(detail.id) if delivery_detail_sla_map else none %}
+                        {% if sla %}
+                            <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+                            {% if sla.minutes_late %}<div class="muted-small">+{{ sla.minutes_late }} menit</div>{% endif %}
+                        {% else %}
+                            <span class="status-badge status-warning">SLA belum ada</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if detail.receipt %}
+                            {{ detail.receipt.receiver_name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if detail.receipt %}
+                            {% set proof_list = receipt_attachments_map.get(detail.receipt.id, []) if receipt_attachments_map else [] %}
+                            {% if proof_list %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="status-badge status-success">{{ proof_list|length }} bukti</span>
+                                    {% for attachment in proof_list[:2] %}
+                                        <a href="{{ url_for('delivery.view_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">
+                                            {{ attachment.attachment_type }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="status-badge status-warning">Belum ada bukti</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if delivery.status == "CANCELLED" %}
+                                <span class="status-badge status-danger">DIBATALKAN</span>
+                            {% else %}
+                                <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
+                                    {% if detail.receipt %}
+                                        Edit Terima
+                                    {% else %}
+                                        Catat Terima
+                                    {% endif %}
+                                </a>
+
+                                {% if detail.receipt and detail.shortage_qty > 0 %}
+                                    {% set replacement = shortage_replacement_map.get(detail.id) if shortage_replacement_map else none %}
+
+                                    {% if replacement %}
+                                        <a href="{{ url_for('delivery.detail', delivery_id=replacement.id) }}" class="btn btn-sm app-btn-secondary">
+                                            Lihat Pengganti Shortage
+                                        </a>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('delivery.create_shortage_replacement', detail_id=detail.id) }}" data-ui-form="true" class="app-form">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn btn-sm app-btn-primary">
+                                                Buat Pengganti Shortage
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-truck"></i>
+                            <p>Belum ada detail delivery.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

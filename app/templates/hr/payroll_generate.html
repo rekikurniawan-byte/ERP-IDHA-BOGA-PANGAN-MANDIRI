@@ -1,0 +1,87 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payroll-generate">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / GENERATE PAYROLL</span>
+        <h1>Buat Payroll Bulanan</h1>
+        <p>Buat payroll per periode untuk karyawan internal aktif. Sistem memakai salary history dan aturan prorata.</p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-primary"><i class="bi bi-arrow-left"></i> Kembali ke Payroll</a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollGenerateActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i> Aksi SDM
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollGenerateActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
+                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Karyawan Aktif</p><h3>{{ generate_summary.active_employee_count }}</h3><span class="app-stat-helper">Masuk payroll periode baru</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-cash"></i></div><div><p>Tanpa Gaji Aktif</p><h3>{{ generate_summary.without_salary_count }}</h3><span class="app-stat-helper">Cek sebelum generate</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-calendar2-check"></i></div><div><p>Default Periode</p><h3>{{ generate_summary.period_label }}</h3><span class="app-stat-helper">Bisa diganti manual</span></div></div>
+</div>
+
+<div class="hr-enterprise-grid two-col">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Payroll Setup</span>
+                    <h2>Periode Payroll</h2>
+                </div>
+            </div>
+            <form method="post" data-app-confirm="Buat payroll untuk periode ini? Sistem akan menghitung gaji karyawan aktif sesuai periode dan aturan prorata." data-ui-form="true" class="app-form hr-payroll-generate-form">
+                {% include "components/csrf_token.html" %}
+                <div class="hr-form-grid two-col">
+                    <div>
+                        <label class="form-label">Bulan</label>
+                        <select name="period_month" class="form-select" required>
+                            {% for month in range(1, 13) %}
+                                <option value="{{ month }}" {% if month == today.month %}selected{% endif %}>{{ "%02d"|format(month) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Tahun</label>
+                        <input type="number" name="period_year" class="form-control" required value="{{ today.year }}">
+                    </div>
+                </div>
+                <div class="hr-inline-status is-info">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Payroll hanya mengambil karyawan internal aktif. Mandor tidak ikut payroll.</span>
+                </div>
+                <div class="app-form-actions">
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-calendar-plus"></i> Buat Payroll</button>
+                    <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Batal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card app-card hr-lifecycle-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Alur Setelah Generate</span>
+                    <h2>Kontrol Payroll Aman</h2>
+                </div>
+            </div>
+            <div class="hr-lifecycle-list compact">
+                <div class="hr-lifecycle-step is-active"><strong>1. Draft</strong><span>Edit nominal</span><small>Bonus/potongan/prorata masih bisa dikoreksi.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>2. Final</strong><span>Kunci payroll</span><small>Setelah final, nominal tidak diedit sembarangan.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>3. Sudah Diposting</strong><span>Jurnal hutang gaji</span><small>Dr Beban Gaji / Cr Hutang Gaji.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>4. Paid</strong><span>Bayar gaji</span><small>Dr Hutang Gaji / Cr Kas atau Bank.</small></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

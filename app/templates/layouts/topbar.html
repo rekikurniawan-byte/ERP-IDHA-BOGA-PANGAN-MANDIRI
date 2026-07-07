@@ -1,0 +1,63 @@
+<header class="app-topbar" role="banner">
+    <div class="topbar-left">
+        <button class="app-sidebar-toggle sidebar-toggle" id="sidebarToggle" type="button" aria-controls="appSidebar" aria-expanded="false" aria-label="Buka menu navigasi">
+            <i class="bi bi-list" aria-hidden="true"></i>
+        </button>
+
+        <div class="topbar-heading">
+            <div class="topbar-title">{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</div>
+            <div class="topbar-subtitle">{{ global_company_settings.company_subtitle or "Integrated Catering Management System" }}</div>
+        </div>
+    </div>
+
+    <div class="topbar-right">
+        <div class="topbar-status d-none d-lg-flex" aria-label="Status sistem">
+            <span class="status-dot"></span>
+            <span>Operasional Aktif</span>
+        </div>
+
+        <a href="{{ url_for('settings.notifications') }}" class="topbar-icon-link" aria-label="Buka notifikasi">
+            <i class="bi bi-bell" aria-hidden="true"></i>
+            {% if global_persistent_notification_badge.total > 0 %}
+                <span class="topbar-badge">{{ global_persistent_notification_badge.total }}</span>
+            {% endif %}
+        </a>
+
+        <div class="theme-segmented-toggle" role="group" aria-label="Mode tampilan">
+            <button class="theme-mode-option theme-segment-option" type="button" data-theme-option="dark-mono" aria-label="Aktifkan Dark Mono">
+                <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                <span>Dark</span>
+            </button>
+            <button class="theme-mode-option theme-segment-option" type="button" data-theme-option="light-mono" aria-label="Aktifkan Light Mono">
+                <i class="bi bi-sun" aria-hidden="true"></i>
+                <span>Light</span>
+            </button>
+        </div>
+
+        <div class="dropdown user-menu-dropdown">
+            <button class="user-chip user-chip-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu user">
+                <span class="user-avatar">{{ (current_user.full_name or current_user.username or "U")[0] }}</span>
+                <span class="user-info d-none d-md-block">
+                    <span class="user-name">{{ current_user.full_name or current_user.username }}</span>
+                    <span class="user-role">{{ current_user.role }}</span>
+                </span>
+                <i class="bi bi-chevron-down user-menu-chevron d-none d-md-inline" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end user-menu">
+                <div class="user-menu-header">
+                    <strong>{{ current_user.full_name or current_user.username }}</strong>
+                    <span>{{ current_user.role }}</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{{ url_for('settings.change_password') }}">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                    <span>Ganti Password</span>
+                </a>
+                <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>

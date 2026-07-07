@@ -1,0 +1,120 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="sop-page sop-detail-page" data-fix69b-sop="role">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">{{ sop.eyebrow }}</span>
+            <h1 class="page-title">{{ sop.title }}</h1>
+            <p class="page-description">{{ sop.summary }}</p>
+        </div>
+        <div class="page-actions sop-no-print">
+            <a href="{{ url_for('sop.index') }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                SOP Center
+            </a>
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i>
+                Print SOP
+            </button>
+        </div>
+    </div>
+
+    <div class="sop-detail-layout">
+        <aside class="sop-detail-side">
+            {% include "sop/_sop_nav.html" %}
+        </aside>
+
+        <article class="sop-document card app-card">
+            <div class="card-body">
+                <div class="sop-document-header">
+                    <div class="sop-document-icon"><i class="bi {{ sop.icon }}"></i></div>
+                    <div>
+                        <span class="sop-mini-label">Dokumen SOP</span>
+                        <h2>{{ sop.title }}</h2>
+                        <p>{{ sop.summary }}</p>
+                    </div>
+                </div>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-bullseye"></i> 1. Tujuan Role</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.purpose %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-calendar2-check"></i> 2. Kapan Halaman Digunakan</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.when_used %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-folder-check"></i> 3. Data yang Harus Disiapkan</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.prepared_data %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-signpost-split"></i> 4. Langkah Input dari Awal sampai Akhir</h3>
+                    <ol class="sop-step-list">
+                        {% for item in sop.steps %}<li><span>{{ loop.index }}</span><p>{{ item }}</p></li>{% endfor %}
+                    </ol>
+                </section>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-box-arrow-up-right"></i> 5. Output Sistem</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.outputs %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section sop-journal-section">
+                    <h3><i class="bi bi-journal-check"></i> 6. Jurnal yang Terbentuk Jika Ada</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.journals %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section sop-warning-section">
+                    <h3><i class="bi bi-exclamation-triangle"></i> 7. Transaksi yang Belum Otomatis Posting</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.unposted %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section sop-danger-section">
+                    <h3><i class="bi bi-x-octagon"></i> 8. Kesalahan Umum</h3>
+                    <ul class="sop-check-list">
+                        {% for item in sop.common_mistakes %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                </section>
+
+                <section class="sop-section">
+                    <h3><i class="bi bi-link-45deg"></i> 9. Link ke Halaman Kerja</h3>
+                    <div class="sop-work-link-grid sop-no-print">
+                        {% for link in sop.work_links %}
+                            <a href="{{ link.url }}" class="sop-work-link {{ 'disabled' if link.url == '#' else '' }}">
+                                <i class="bi {{ link.icon }}"></i>
+                                <span>{{ link.label }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    <div class="sop-print-links">
+                        <ul class="sop-check-list">
+                            {% for link in sop.work_links %}<li>{{ link.label }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="sop-section sop-print-help">
+                    <h3><i class="bi bi-printer"></i> 10. Print SOP</h3>
+                    <p>Gunakan tombol <strong>Print SOP</strong> di kanan atas halaman. Saat print, sidebar sistem dan tombol aksi akan disembunyikan agar dokumen lebih bersih.</p>
+                </section>
+            </div>
+        </article>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,326 @@
+/* ==================================================
+   PRODUCTION SOURCE: 24_module_logistics.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 5915-6233.
+   Note: Logistics + costing + HPP global polish block.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UI Logistics + Costing + HPP Global polish
+   Scope: stock, procurement, supplier, material forecast, recipe version, HPP calculator, packaging, overhead, HPP monitoring.
+   New rules use 4-theme token system only; no random per-page colors are introduced.
+   ================================================== */
+
+.logistics-hpp-page-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+.logistics-hpp-page-shell .page-header,
+.logistics-hpp-page-shell .app-page-header {
+    margin-bottom: 0;
+}
+
+.logistics-hpp-flow-panel {
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+
+.logistics-hpp-flow-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.logistics-hpp-flow-title strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 15px;
+}
+
+.logistics-hpp-flow-title small,
+.logistics-hpp-flow-step small {
+    color: var(--text-muted);
+}
+
+.logistics-hpp-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.logistics-hpp-flow-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "num title"
+        "num desc";
+    gap: 2px 10px;
+    align-items: center;
+    min-height: 66px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.logistics-hpp-flow-step:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.logistics-hpp-flow-step span {
+    grid-area: num;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-badge);
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid var(--border-soft);
+}
+
+.logistics-hpp-flow-step strong {
+    grid-area: title;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.logistics-hpp-flow-step small {
+    grid-area: desc;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.logistics-hpp-flow-step.is-active {
+    border-color: var(--primary);
+    background: var(--info-soft);
+}
+
+.logistics-hpp-flow-step.is-active span {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
+}
+
+.logistics-hpp-header-actions[data-logistics-hpp-collapsed="true"] {
+    align-items: center;
+}
+
+.logistics-hpp-header-actions .logistics-hpp-more-dropdown .dropdown-menu {
+    min-width: 278px;
+    padding: 8px;
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.logistics-hpp-header-actions .logistics-hpp-more-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-button-sm);
+    color: var(--text-secondary);
+    font-weight: 650;
+    padding: 8px 10px;
+}
+
+.logistics-hpp-header-actions .logistics-hpp-more-dropdown .dropdown-item:hover,
+.logistics-hpp-header-actions .logistics-hpp-more-dropdown .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+
+.logistics-hpp-money,
+.logistics-hpp-qty,
+.logistics-hpp-page-shell td[data-logistics-hpp-money="true"],
+.logistics-hpp-page-shell td[data-logistics-hpp-qty="true"],
+.logistics-hpp-page-shell .app-table td.text-end,
+.logistics-hpp-page-shell .app-table th.text-end {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.logistics-hpp-page-shell .table-responsive {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+
+.logistics-hpp-page-shell .app-table {
+    margin-bottom: 0;
+}
+
+.logistics-hpp-page-shell .app-table th {
+    white-space: nowrap;
+}
+
+.logistics-hpp-page-shell .app-table td,
+.logistics-hpp-page-shell .app-table th {
+    vertical-align: middle;
+}
+
+.logistics-hpp-page-shell .app-table .btn,
+.logistics-hpp-page-shell .app-table form .btn {
+    min-height: 34px;
+}
+
+.logistics-hpp-page-shell .alert-info,
+.logistics-hpp-page-shell .soft-info-card {
+    border-color: var(--info);
+    background: var(--info-soft);
+    color: var(--text-primary);
+}
+
+.logistics-hpp-page-shell .alert-warning,
+.logistics-hpp-page-shell .soft-warning-card {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+}
+
+.logistics-hpp-page-shell .alert-success,
+.logistics-hpp-page-shell .soft-success-card {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--text-primary);
+}
+
+.logistics-hpp-page-shell .filter-bar,
+.logistics-hpp-page-shell form[data-form-kind="filter"],
+.logistics-hpp-page-shell .app-filter-form {
+    align-items: end;
+}
+
+.logistics-hpp-page-shell .app-form-actions {
+    justify-content: flex-end;
+}
+
+.logistics-hpp-support-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.logistics-hpp-support-item {
+    border: 1px solid var(--border-soft);
+    background: var(--surface-soft);
+    border-radius: var(--radius-card);
+    padding: 12px;
+}
+
+.logistics-hpp-support-item strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.logistics-hpp-support-item small {
+    color: var(--text-muted);
+}
+
+.logistics-hpp-mobile-hint {
+    display: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+@media (max-width: 1199.98px) {
+    .logistics-hpp-flow-steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1023.98px) {
+    .logistics-hpp-support-strip {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .logistics-hpp-page-shell {
+        gap: 16px;
+    }
+
+    .logistics-hpp-flow-panel {
+        padding: 14px;
+    }
+
+    .logistics-hpp-flow-title {
+        display: block;
+    }
+
+    .logistics-hpp-flow-title small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .logistics-hpp-flow-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .logistics-hpp-flow-step {
+        min-height: 58px;
+    }
+
+    .logistics-hpp-page-shell .summary-grid,
+    .logistics-hpp-page-shell .kpi-grid,
+    .logistics-hpp-page-shell .info-grid,
+    .logistics-hpp-page-shell .detail-grid,
+    .logistics-hpp-page-shell .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .logistics-hpp-page-shell .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .logistics-hpp-page-shell .app-table {
+        min-width: 760px;
+    }
+
+    .logistics-hpp-page-shell .app-card {
+        border-radius: var(--radius-card);
+    }
+
+    .logistics-hpp-page-shell .btn,
+    .logistics-hpp-page-shell .app-form-actions .btn,
+    .logistics-hpp-page-shell .page-actions > .btn,
+    .logistics-hpp-page-shell .page-actions > a.btn,
+    .logistics-hpp-page-shell .page-actions .dropdown-toggle {
+        min-height: 44px;
+    }
+
+    .logistics-hpp-page-shell .page-actions,
+    .logistics-hpp-page-shell .page-actions > .btn,
+    .logistics-hpp-page-shell .page-actions > a.btn,
+    .logistics-hpp-page-shell .page-actions > form,
+    .logistics-hpp-page-shell .page-actions > form .btn,
+    .logistics-hpp-page-shell .page-actions .app-action-dropdown,
+    .logistics-hpp-page-shell .page-actions .logistics-hpp-more-dropdown,
+    .logistics-hpp-page-shell .page-actions .dropdown-toggle {
+        width: 100%;
+    }
+
+    .logistics-hpp-mobile-hint {
+        display: block;
+    }
+}

@@ -1,0 +1,266 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell unified-finance-page" data-unified-finance="true" data-accounting-precision-ready="true">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan • Input Cepat</span>
+            <h1>Input Cepat Finance</h1>
+            <p>Satu halaman untuk input DP, transport/BBM, dan biaya operasional. Invoice, rekap tagihan mandor, piutang, hutang supplier, dan buku kas/bank punya alur dokumen masing-masing.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+                <i class="bi bi-wallet2"></i>
+                Buku Kas/Bank
+            </a>
+            <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">
+                <i class="bi bi-journal-check"></i>
+                Jurnal
+            </a>
+        </div>
+    </div>
+
+    {% set precision_key = 'unified_finance_transaction' %}
+
+    <div class="unified-finance-switcher app-card no-print" aria-label="Pilih jenis transaksi">
+        <a href="{{ url_for('finance.finance_transactions', tx='advance') }}" class="unified-finance-chip {{ 'active' if selected_tx == 'advance' else '' }}" data-finance-tx-jump="advance">
+            <i class="bi bi-cash-stack"></i>
+            <span>
+                <strong>DP / Uang Muka</strong>
+                <small>COA 1008, optional</small>
+            </span>
+        </a>
+        <a href="{{ url_for('finance.finance_transactions', tx='transport') }}" class="unified-finance-chip {{ 'active' if selected_tx == 'transport' else '' }}" data-finance-tx-jump="transport">
+            <i class="bi bi-fuel-pump"></i>
+            <span>
+                <strong>Transport & BBM</strong>
+                <small>5003 / 5011</small>
+            </span>
+        </a>
+        <a href="{{ url_for('finance.finance_transactions', tx='operational_expense') }}" class="unified-finance-chip {{ 'active' if selected_tx == 'operational_expense' else '' }}" data-finance-tx-jump="operational_expense">
+            <i class="bi bi-receipt-cutoff"></i>
+            <span>
+                <strong>Biaya Operasional</strong>
+                <small>5005–5010</small>
+            </span>
+        </a>
+    </div>
+
+    {% if not schema_ready.advance or not schema_ready.transport or not schema_ready.operational %}
+        <div class="alert app-alert app-alert-warning mt-4" role="alert">
+            <strong>Migration belum lengkap.</strong>
+            Jalankan <code>flask db upgrade</code> jika ada section yang belum aktif.
+            Status: DP {{ 'OK' if schema_ready.advance else 'Belum' }}, Transport {{ 'OK' if schema_ready.transport else 'Belum' }}, Operasional {{ 'OK' if schema_ready.operational else 'Belum' }}.
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('finance.finance_transactions') }}" class="app-form unified-finance-form" data-ui-form="true" data-unified-finance-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="app-card mt-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5>1. Pilih Jenis Transaksi</h5>
+                    <p>Ini menentukan rule posting. Sistem tidak membuat jurnal kalau jenis transaksi dan akun COA belum jelas.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Jenis Transaksi</label>
+                    <select name="transaction_kind" id="unifiedTransactionKind" class="form-select" required>
+                        <option value="ADVANCE" {{ 'selected' if selected_tx == 'advance' else '' }}>DP / Uang Muka / Panjar</option>
+                        <option value="TRANSPORT" {{ 'selected' if selected_tx == 'transport' else '' }}>Transport & BBM</option>
+                        <option value="OPERATIONAL_EXPENSE" {{ 'selected' if selected_tx == 'operational_expense' else '' }}>Biaya Operasional Catering</option>
+                    </select>
+                    <div class="form-text">Invoice, payment supplier, aset, dan closing tetap punya workflow khusus karena dokumennya berbeda.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal</label>
+                    <input type="date" name="transaction_date" class="form-control" value="{{ today_date }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nominal</label>
+                    <input type="text" name="amount" class="form-control" placeholder="Contoh: 250000" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-4" data-unified-section="ADVANCE">
+            <div class="card-header-clean">
+                <div>
+                    <h5>2A. Detail DP / Uang Muka</h5>
+                    <p>DP bersifat optional. Jika tidak ada DP, jangan buat transaksi ini. Akun kontrol: <strong>1008 Uang Muka / DP</strong>.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tipe Advance</label>
+                    <select name="advance_type" class="form-select" id="unifiedAdvanceType" data-required-when="ADVANCE">
+                        <option value="">Pilih tipe</option>
+                        {% for item in advance_type_choices %}
+                            <option value="{{ item.value }}" data-party="{{ item.party_type }}">{{ item.label }} — {{ item.description }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Client, supplier, dan mandor diperlakukan berbeda.</div>
+                </div>
+                <div class="col-md-4 unified-advance-party" data-party-field="CLIENT">
+                    <label class="form-label">Client</label>
+                    <select name="advance_client_id" class="form-select">
+                        <option value="">Pilih client</option>
+                        {% for client in clients %}<option value="{{ client.id }}">{{ client.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 unified-advance-party" data-party-field="SUPPLIER">
+                    <label class="form-label">Supplier</label>
+                    <select name="advance_supplier_id" class="form-select">
+                        <option value="">Pilih supplier</option>
+                        {% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 unified-advance-party" data-party-field="MANDOR">
+                    <label class="form-label">Mandor / PIC Lapangan</label>
+                    <select name="advance_mandor_id" class="form-select">
+                        <option value="">Pilih mandor</option>
+                        {% for mandor in mandors %}<option value="{{ mandor.id }}">{{ mandor.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-4" data-unified-section="TRANSPORT">
+            <div class="card-header-clean">
+                <div>
+                    <h5>2B. Detail Transport & BBM</h5>
+                    <p>BBM kendaraan otomatis ke <strong>5011</strong>. Transport umum/logistik otomatis ke <strong>5003</strong>.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Jenis Biaya</label>
+                    <select name="transport_expense_type" class="form-select" data-required-when="TRANSPORT" data-coa-resolver="true">
+                        <option value="">Pilih jenis</option>
+                        {% for item in transport_expense_type_choices %}
+                            <option value="{{ item.value }}" data-account="{{ item.account_code }}">{{ item.label }} — {{ item.account_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="coa-auto-preview" data-coa-preview="true">Pilih jenis biaya untuk melihat akun COA otomatis.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Kendaraan / Armada</label>
+                    <input type="text" name="vehicle_label" class="form-control" placeholder="Opsional: mobil box / plat / motor driver">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Vendor / SPBU / Transport</label>
+                    <input type="text" name="transport_vendor_name" class="form-control" placeholder="Opsional">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Driver</label>
+                    <select name="driver_id" class="form-select">
+                        <option value="">Opsional</option>
+                        {% for driver in drivers %}<option value="{{ driver.id }}">{{ driver.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Delivery Terkait</label>
+                    <select name="delivery_id" class="form-select">
+                        <option value="">Opsional</option>
+                        {% for delivery in deliveries %}
+                            <option value="{{ delivery.id }}">{{ delivery.delivery_number }} — {{ delivery.delivery_date.strftime('%d-%m-%Y') }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-4" data-unified-section="OPERATIONAL_EXPENSE">
+            <div class="card-header-clean">
+                <div>
+                    <h5>2C. Detail Biaya Operasional</h5>
+                    <p>Kategori wajib tepat supaya laba rugi tidak masuk biaya umum asal-asalan.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Kategori Biaya</label>
+                    <select name="operational_expense_category" class="form-select" data-required-when="OPERATIONAL_EXPENSE" data-coa-resolver="true">
+                        <option value="">Pilih kategori</option>
+                        {% for item in operational_expense_category_choices %}
+                            <option value="{{ item.value }}" data-account="{{ item.account_code }}">{{ item.label }} — {{ item.account_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="coa-auto-preview" data-coa-preview="true">Pilih kategori biaya untuk melihat akun COA otomatis.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Supplier Master</label>
+                    <select name="operational_supplier_id" class="form-select">
+                        <option value="">Opsional</option>
+                        {% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Vendor / Toko Manual</label>
+                    <input type="text" name="operational_vendor_name" class="form-control" placeholder="Opsional">
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5>3. Kas / Bank & Referensi</h5>
+                    <p>Semua transaksi di halaman ini akan membentuk buku kas/bank dan jurnal otomatis sesuai rule.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Metode</label>
+                    <select name="payment_method" class="form-select" id="unifiedPembayaranMethod" required>
+                        <option value="CASH">Cash</option>
+                        <option value="TRANSFER">Transfer Bank</option>
+                    </select>
+                </div>
+                <div class="col-md-4" id="unifiedBankWrap">
+                    <label class="form-label">Rekening Bank</label>
+                    <select name="bank_account_id" class="form-select">
+                        <option value="">Pilih rekening</option>
+                        {% for bank in bank_accounts %}
+                            <option value="{{ bank.id }}">{{ bank.bank_name }} — {{ bank.account_name }} ({{ bank.account_number }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">No. Referensi</label>
+                    <input type="text" name="reference_number" class="form-control" placeholder="Opsional: no nota / bukti / transfer">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Catatan</label>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="Opsional, isi keterangan singkat agar audit mudah ditelusuri"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-ghost">Batal</a>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-check2-circle"></i>
+                Posting Transaksi
+            </button>
+        </div>
+    </form>
+
+    <div class="unified-finance-related app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Workflow yang Tetap Dipisah</h5>
+                <p>Bagian ini sengaja tidak digabung ke input harian karena dokumen dan kontrol akuntansinya berbeda.</p>
+            </div>
+        </div>
+        <div class="unified-finance-related-grid">
+            <a href="{{ url_for('finance.invoices') }}" class="unified-finance-related-link"><i class="bi bi-receipt"></i><span>Invoice dan Pembayaran</span></a>
+            <a href="{{ url_for('finance.supplier_bills') }}" class="unified-finance-related-link"><i class="bi bi-wallet"></i><span>Hutang Supplier</span></a>
+            <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="unified-finance-related-link"><i class="bi bi-archive"></i><span>Pembelian Aset</span></a>
+            <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="unified-finance-related-link"><i class="bi bi-graph-down-arrow"></i><span>Penyusutan Aset</span></a>
+            <a href="{{ url_for('accounting.period_closing') }}" class="unified-finance-related-link"><i class="bi bi-calendar2-check"></i><span>Closing Periode</span></a>
+        </div>
+    </div>
+</div>
+{% endblock %}

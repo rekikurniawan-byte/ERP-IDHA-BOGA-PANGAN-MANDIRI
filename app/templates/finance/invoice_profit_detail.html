@@ -1,0 +1,202 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+{% set summary = report.summary %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Profit Invoice {{ invoice.invoice_number }}</h1>
+        <p>Read-only report dari HPP allocation snapshot untuk {{ bill_to }}.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.invoice_detail', invoice_id=invoice.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Detail Invoice
+        </a>
+        <a href="{{ url_for('finance.invoice_profit_report') }}" class="btn app-btn-primary">
+            <i class="bi bi-bar-chart-line"></i>
+            Semua Profit Invoice
+        </a>
+    </div>
+</div>
+
+{% if report.warnings %}
+<div class="app-card soft-warning-card mt-4">
+    <strong>Warning Presisi</strong>
+    <ul class="mb-0 mt-2">
+        {% for warning in report.warnings %}
+            <li>{{ warning }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <span>Total Invoice</span>
+        <h3>{{ summary.invoice_total|rupiah }}</h3>
+        <p>Nilai tagihan invoice</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Revenue Terhitung HPP</span>
+        <h3>{{ summary.costed_revenue_total|rupiah }}</h3>
+        <p>Coverage {{ summary.coverage_percentage|round(2) }}%</p>
+    </div>
+    <div class="app-stat-card">
+        <span>HPP Allocation</span>
+        <h3>{{ summary.hpp_total|rupiah }}</h3>
+        <p>{{ summary.allocation_count }} baris alokasi</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Laba Kotor Terhitung</span>
+        <h3>{{ summary.gross_profit_total|rupiah }}</h3>
+        <p>Margin {{ summary.gross_margin_percentage|round(2) }}%</p>
+    </div>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <span>Food Cost</span>
+        <h3>{{ summary.food_cost_total|rupiah }}</h3>
+        <p>Dari bahan baku snapshot</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Kemasan</span>
+        <h3>{{ summary.packaging_cost_total|rupiah }}</h3>
+        <p>Dari profil kemasan snapshot</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Overhead</span>
+        <h3>{{ summary.overhead_cost_total|rupiah }}</h3>
+        <p>Dari profil overhead snapshot</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Belum Terhitung HPP</span>
+        <h3>{{ summary.no_hpp_revenue_total|rupiah }}</h3>
+        <p>Item invoice belum matched</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Analisis per Item Invoice</h5>
+            <p>Setiap item invoice dicocokkan ke allocation HPP jika sumber datanya tersedia.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>Deskripsi</th>
+                    <th>Revenue</th>
+                    <th>HPP</th>
+                    <th>Laba Kotor</th>
+                    <th>Margin</th>
+                    <th>Status</th>
+                    <th>Snapshot</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.item_rows %}
+                    <tr>
+                        <td><strong>{{ row.item.item_type }}</strong></td>
+                        <td>
+                            {{ row.item.description }}
+                            <div class="text-muted small mt-1">{{ row.note }}</div>
+                        </td>
+                        <td>{{ row.revenue|rupiah }}</td>
+                        <td>{{ row.hpp|rupiah }}</td>
+                        <td>{{ row.gross_profit|rupiah }}</td>
+                        <td>
+                            {% if row.status == 'COSTED' %}
+                                {{ row.margin_percentage|round(2) }}%
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="status-badge {{ row.status_class }}">{{ row.status_label }}</span></td>
+                        <td>
+                            {% if row.snapshot_numbers %}
+                                {{ row.snapshot_numbers|join(', ') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="bi bi-receipt"></i>
+                                <p>Belum ada item invoice.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail Alokasi HPP Snapshot</h5>
+            <p>Baris ini berasal dari order_hpp_snapshot_allocations dan tidak mengubah invoice.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Snapshot</th>
+                    <th>Waktu</th>
+                    <th>PIC / Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Porsi</th>
+                    <th>Revenue</th>
+                    <th>HPP</th>
+                    <th>Laba Kotor</th>
+                    <th>Margin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for allocation in report.allocation_rows %}
+                    <tr>
+                        <td>
+                            {% if allocation.snapshot %}
+                                <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=allocation.snapshot.daily_order_id, snapshot_id=allocation.snapshot.id) }}">
+                                    {{ allocation.snapshot.snapshot_number }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ allocation.meal_type }}</td>
+                        <td>{{ allocation.mandor_name_snapshot or '-' }}</td>
+                        <td>{{ allocation.delivery_location_name_snapshot or '-' }}</td>
+                        <td>{{ allocation.portion_qty|qty }}</td>
+                        <td>{{ allocation.revenue_total|rupiah }}</td>
+                        <td>{{ allocation.hpp_allocated_total|rupiah }}</td>
+                        <td>{{ allocation.gross_margin_amount|rupiah }}</td>
+                        <td>{{ allocation.gross_margin_percentage|round(2) }}%</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="bi bi-diagram-3"></i>
+                                <p>Belum ada alokasi HPP yang cocok dengan invoice ini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

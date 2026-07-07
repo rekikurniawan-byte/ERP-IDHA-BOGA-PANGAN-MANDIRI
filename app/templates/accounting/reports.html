@@ -1,0 +1,250 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="accounting-page-shell" data-ui-accounting-page="UI">
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Laporan Akuntansi</span>
+        <h1>Laporan Akuntansi Owner</h1>
+        <p>Buku besar, neraca saldo, dan laba rugi ringkas berdasarkan jurnal yang sudah tercatat.</p>
+    </div>
+
+    <div class="page-actions accounting-header-actions">
+        <a href="{{ url_for('accounting.print_trial_balance', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary">
+            <i class="bi bi-printer"></i>
+            Neraca Saldo PDF
+        </a>
+        <a href="{{ url_for('accounting.print_general_ledger', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Buku Besar PDF
+        </a>
+        <a href="{{ url_for('accounting.print_income_summary', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Laba/Rugi PDF
+        </a>
+        <a href="{{ url_for('accounting.export_trial_balance_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Neraca Saldo CSV
+        </a>
+        <a href="{{ url_for('accounting.export_general_ledger_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+            <i class="bi bi-table"></i>
+            Buku Besar CSV
+        </a>
+        <a href="{{ url_for('accounting.export_income_summary_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+            <i class="bi bi-graph-up"></i>
+            Laba/Rugi CSV
+        </a>
+    </div>
+</div>
+
+
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('accounting.export_journal_details_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
+        <i class="bi bi-download"></i>
+        Detail Jurnal CSV
+    </a>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+        <div>
+            <p>Jumlah Jurnal</p>
+            <h3>{{ data.journal_count }}</h3>
+            <span class="app-stat-helper">{{ data.detail_count }} baris jurnal detail</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-arrow-down-circle"></i></div>
+        <div>
+            <p>Total Debit</p>
+            <h3>{{ data.total_period_debit|rupiah }}</h3>
+            <span class="app-stat-helper">Periode laporan</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-arrow-up-circle"></i></div>
+        <div>
+            <p>Total Credit</p>
+            <h3>{{ data.total_period_credit|rupiah }}</h3>
+            <span class="app-stat-helper">Periode laporan</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.is_period_balanced %}stat-success{% else %}stat-danger{% endif %}">
+            <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+            <p>Status Jurnal</p>
+            <h3>{% if data.is_period_balanced %}BALANCE{% else %}TIDAK BALANCE{% endif %}</h3>
+            <span class="app-stat-helper">Debit dan credit harus sama</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-purple"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+            <p>Pendapatan</p>
+            <h3>{{ data.revenue_total|rupiah }}</h3>
+            <span class="app-stat-helper">Akun tipe REVENUE</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-graph-down-arrow"></i></div>
+        <div>
+            <p>Beban</p>
+            <h3>{{ data.expense_total|rupiah }}</h3>
+            <span class="app-stat-helper">Akun tipe EXPENSE/COGS • <a href="{{ url_for('accounting.expense_drilldown', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}">lihat drilldown</a></span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.net_income >= 0 %}stat-success{% else %}stat-danger{% endif %}">
+            <i class="bi bi-cash-coin"></i>
+        </div>
+        <div>
+            <p>Laba/Rugi Ringkas</p>
+            <h3>{{ data.net_income|rupiah }}</h3>
+            <span class="app-stat-helper">Pendapatan dikurangi beban</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.is_trial_balanced %}stat-success{% else %}stat-danger{% endif %}">
+            <i class="bi bi-scale"></i>
+        </div>
+        <div>
+            <p>Neraca Saldo</p>
+            <h3>{% if data.is_trial_balanced %}BALANCE{% else %}CEK ULANG{% endif %}</h3>
+            <span class="app-stat-helper">Saldo debit dan credit</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Neraca Saldo</h5>
+            <p>Ringkasan saldo per akun berdasarkan jurnal pada periode yang dipilih.</p>
+        </div>
+    </div>
+
+    {% if data.trial_rows %}
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Akun</th>
+                    <th>Tipe</th>
+                    <th class="text-end">Debit Periode</th>
+                    <th class="text-end">Credit Periode</th>
+                    <th class="text-end">Saldo Debit</th>
+                    <th class="text-end">Saldo Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data.trial_rows %}
+                <tr>
+                    <td><strong>{{ row.account.account_code }}</strong></td>
+                    <td>{{ row.account.account_name }}</td>
+                    <td>{{ row.account.account_type }}</td>
+                    <td class="text-end">{{ row.period_debit|rupiah }}</td>
+                    <td class="text-end">{{ row.period_credit|rupiah }}</td>
+                    <td class="text-end">{{ row.trial_debit|rupiah }}</td>
+                    <td class="text-end">{{ row.trial_credit|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3">TOTAL</th>
+                    <th class="text-end">{{ data.total_period_debit|rupiah }}</th>
+                    <th class="text-end">{{ data.total_period_credit|rupiah }}</th>
+                    <th class="text-end">{{ data.total_trial_debit|rupiah }}</th>
+                    <th class="text-end">{{ data.total_trial_credit|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Belum ada jurnal pada periode ini.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Buku Besar Ringkas</h5>
+            <p>Rincian transaksi jurnal dikelompokkan berdasarkan akun.</p>
+        </div>
+    </div>
+
+    {% if data.ledger_rows %}
+        {% for row in data.ledger_rows %}
+        <div class="mb-4">
+            <h6 class="mb-2">
+                {{ row.account.account_code }} - {{ row.account.account_name }}
+                <span class="text-muted">({{ row.account.account_type }})</span>
+            </h6>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>No Jurnal</th>
+                            <th>Keterangan</th>
+                            <th class="text-end">Debit</th>
+                            <th class="text-end">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in row.details %}
+                        <tr>
+                            <td>{{ detail.journal.journal_date.strftime('%d-%m-%Y') if detail.journal and detail.journal.journal_date else '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('accounting.journal_detail', journal_id=detail.journal.id) }}">
+                                    {{ detail.journal.journal_number }}
+                                </a>
+                            </td>
+                            <td>{{ detail.journal.description }}</td>
+                            <td class="text-end">{{ detail.debit|rupiah }}</td>
+                            <td class="text-end">{{ detail.credit|rupiah }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3">Total {{ row.account.account_name }}</th>
+                            <th class="text-end">{{ row.period_debit|rupiah }}</th>
+                            <th class="text-end">{{ row.period_credit|rupiah }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Belum ada transaksi buku besar pada periode ini.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

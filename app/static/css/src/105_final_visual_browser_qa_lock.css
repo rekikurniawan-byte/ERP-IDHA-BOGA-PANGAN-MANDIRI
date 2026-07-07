@@ -1,0 +1,165 @@
+/* ==================================================
+   PRODUCTION Final Visual Browser QA Lock
+   ================================================== */
+
+.final-browser-qa-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1.1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl, 1.25rem);
+    background: var(--surface);
+}
+
+.final-browser-qa-hero h2 {
+    margin: .2rem 0 .35rem;
+}
+
+.final-browser-qa-chip {
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .25rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 1rem);
+    background: var(--surface-2);
+}
+
+.final-browser-qa-chip span,
+.final-browser-qa-chip small {
+    color: var(--muted);
+}
+
+.final-browser-qa-chip strong {
+    color: var(--text);
+    font-size: 1.35rem;
+    line-height: 1.15;
+}
+
+.final-browser-qa-alert {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 1rem);
+    padding: 1rem;
+}
+
+.final-browser-qa-alert h2 {
+    margin-bottom: .5rem;
+}
+
+.final-browser-qa-alert ul {
+    margin-bottom: 0;
+}
+
+.final-browser-qa-alert-danger {
+    border-color: rgba(220, 53, 69, .35);
+}
+
+.final-browser-qa-alert-warning {
+    border-color: rgba(255, 193, 7, .35);
+}
+
+.final-browser-qa-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: .85rem;
+}
+
+.final-browser-qa-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+.final-browser-qa-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: .95rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 1rem);
+    background: var(--surface);
+}
+
+.final-browser-qa-list-item strong {
+    display: block;
+    color: var(--text);
+}
+
+.final-browser-qa-list-item small,
+.final-browser-qa-list-item p {
+    color: var(--muted);
+}
+
+.final-browser-qa-list-item p {
+    margin: .25rem 0 0;
+}
+
+.final-browser-qa-mini-panel {
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 1rem);
+    padding: 1rem;
+    background: var(--surface);
+}
+
+.final-browser-qa-mini-panel h3 {
+    margin-bottom: .75rem;
+}
+
+.final-browser-qa-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.final-browser-qa-compact-list > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    padding: .55rem .65rem;
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    background: var(--surface-2);
+}
+
+.final-browser-qa-compact-list span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1200px) {
+    .final-browser-qa-metric-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .final-browser-qa-hero,
+    .final-browser-qa-list-item {
+        flex-direction: column;
+    }
+    .final-browser-qa-chip {
+        min-width: 0;
+        width: 100%;
+    }
+    .final-browser-qa-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .final-browser-qa-metric-grid {
+        grid-template-columns: 1fr;
+    }
+    .final-browser-qa-compact-list > div {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,16 @@
+<div class="sop-nav-card card app-card sop-no-print">
+    <div class="card-body">
+        <div class="sop-nav-title">
+            <i class="bi bi-list-check"></i>
+            <span>Daftar SOP</span>
+        </div>
+        <div class="sop-nav-list">
+            {% for item in role_nav %}
+                <a href="{{ item.url }}" class="sop-nav-link {{ 'active' if item.is_active else '' }}">
+                    <i class="bi {{ item.icon }}"></i>
+                    <span>{{ item.title }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>

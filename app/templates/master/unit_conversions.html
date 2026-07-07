@@ -1,0 +1,124 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="unit_conversions">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 1</span>
+        <h1>Master Konversi Satuan</h1>
+        <p>Konversi ini membantu profil HPP item, misalnya 1 KG = 1000 GRAM atau 1 LITER = 1000 ML.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.item_cost_profiles') }}" class="btn app-btn-secondary">Profil HPP Item</a>
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+
+
+<div class="app-card mb-3">
+    <div class="alert alert-info mb-3">
+        <strong>Catatan:</strong> konversi satuan ini tidak mengubah stok lama. Ini hanya master bantu untuk menghitung biaya bahan secara lebih akurat.
+    </div>
+
+    <form method="POST" action="{{ url_for('master.unit_conversions') }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Satuan Asal</label>
+                <input list="costUnitList" type="text" name="unit_from" class="form-control app-input" placeholder="KG / LITER / DUS" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Satuan Tujuan</label>
+                <input list="costUnitList" type="text" name="unit_to" class="form-control app-input" placeholder="GRAM / ML / PCS" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Multiplier</label>
+                <input type="number" name="multiplier" class="form-control app-input" placeholder="1000" min="0.0001" step="0.0001" required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn app-btn-primary w-100">
+                    <i class="bi bi-plus-circle"></i>
+                    Simpan Konversi
+                </button>
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <input type="text" name="notes" class="form-control app-input" placeholder="Contoh: standar umum bahan baku">
+            </div>
+        </div>
+
+        <datalist id="costUnitList">
+            {% for unit in cost_units %}
+            <option value="{{ unit }}">
+            {% endfor %}
+        </datalist>
+    </form>
+</div>
+
+<div class="app-card mb-3">
+    <form method="GET" action="{{ url_for('master.unit_conversions') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari satuan / catatan">
+        <select name="status" class="form-select app-input">
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua</option>
+        </select>
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.unit_conversions') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Konversi</th>
+                    <th>Multiplier</th>
+                    <th>Catatan</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conversion in conversions %}
+                <tr>
+                    <td><strong>1 {{ conversion.unit_from }}</strong> = {{ conversion.multiplier|qty }} {{ conversion.unit_to }}</td>
+                    <td>{{ conversion.multiplier|qty }}</td>
+                    <td>{{ conversion.notes or '-' }}</td>
+                    <td>
+                        {% if conversion.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('master.toggle_unit_conversion', conversion_id=conversion.id) }}" data-ui-form="true" class="app-form">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">
+                                {% if conversion.is_active %}Nonaktif{% else %}Aktifkan{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <p>Belum ada konversi satuan.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

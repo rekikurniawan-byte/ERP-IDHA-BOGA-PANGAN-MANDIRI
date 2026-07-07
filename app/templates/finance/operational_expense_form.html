@@ -1,0 +1,118 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • Biaya Operasional</span>
+        <h1>Catat Biaya Operasional Catering</h1>
+        <p>Pilih kategori biaya yang benar agar jurnal otomatis masuk ke akun COA beban yang tepat.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('finance.operational_expenses') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Biaya
+        </a>
+    </div>
+</div>
+{% set precision_key = 'operational_expense' %}
+
+<form method="POST" action="{{ url_for('finance.operational_expense_create') }}" class="app-form" data-ui-form="true">
+    {% include "components/csrf_token.html" %}
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kategori & Nominal</h5>
+                <p>Kategori menentukan akun COA: listrik/air 5005, gas 5006, perawatan 5007, administrasi 5008, kemasan 5010.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tanggal</label>
+                <input type="date" name="expense_date" class="form-control" value="{{ today_date }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Kategori Biaya</label>
+                <select name="expense_category" class="form-select" required>
+                    <option value="">Pilih kategori</option>
+                    {% for item in expense_category_choices %}
+                        <option value="{{ item.value }}" data-account="{{ item.account_code }}">{{ item.label }} — {{ item.account_label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Jangan pakai biaya umum kalau kategori sudah jelas.</div>
+                <div class="coa-auto-preview" data-coa-preview="true">Pilih kategori untuk melihat akun COA otomatis.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nominal</label>
+                <input type="text" name="amount" class="form-control" placeholder="Contoh: 250000" required>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Supplier / Vendor</h5>
+                <p>Opsional untuk trace sumber biaya. Ini bukan hutang supplier; fitur ini khusus kas/bank keluar langsung.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Supplier Master</label>
+                <select name="supplier_id" class="form-select">
+                    <option value="">Opsional</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Vendor / Toko Manual</label>
+                <input type="text" name="vendor_name" class="form-control" placeholder="Opsional jika tidak ada supplier master">
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kas / Bank</h5>
+                <p>Semua biaya operasional di fitur ini adalah kas/bank keluar dan akan membuat buku kas/bank + jurnal otomatis.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Metode</label>
+                <select name="payment_method" class="form-select" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer Bank</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Rekening Bank</label>
+                <select name="bank_account_id" class="form-select">
+                    <option value="">Pilih rekening</option>
+                    {% for bank in bank_accounts %}
+                        <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Wajib untuk transfer.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">No Referensi</label>
+                <input type="text" name="reference_number" class="form-control" placeholder="Opsional">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Opsional"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions mt-4">
+        <button type="submit" class="btn app-btn-primary">Simpan & Posting Jurnal</button>
+        <a href="{{ url_for('finance.operational_expenses') }}" class="btn app-btn-secondary">Batal</a>
+    </div>
+</form>
+</div>
+{% endblock %}

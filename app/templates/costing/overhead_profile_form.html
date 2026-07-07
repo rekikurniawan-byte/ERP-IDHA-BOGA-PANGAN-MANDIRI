@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="overhead_profile_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 3</span>
+        <h1>{% if profile %}Edit Profil Overhead{% else %}Tambah Profil Overhead{% endif %}</h1>
+        <p>Profil overhead dipakai kalkulator HPP read-only, belum membuat jurnal biaya dan belum mengubah order lama.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('costing.overhead_profiles') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="POST" action="{% if profile %}{{ url_for('costing.edit_overhead_profile', profile_id=profile.id) }}{% else %}{{ url_for('costing.create_overhead_profile') }}{% endif %}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Nama Profil Overhead</label>
+                <input type="text" name="profile_name" class="form-control app-input" value="{{ profile.profile_name if profile else '' }}" placeholder="Contoh: Overhead Nasi Box Standar" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Gas / Porsi</label>
+                <input type="number" name="gas_cost_per_portion" class="form-control app-input" value="{{ profile.gas_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Listrik / Porsi</label>
+                <input type="number" name="electricity_cost_per_portion" class="form-control app-input" value="{{ profile.electricity_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Air / Porsi</label>
+                <input type="number" name="water_cost_per_portion" class="form-control app-input" value="{{ profile.water_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Tenaga Kerja / Porsi</label>
+                <input type="number" name="labor_cost_per_portion" class="form-control app-input" value="{{ profile.labor_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Bumbu Umum / Porsi</label>
+                <input type="number" name="spices_cost_per_portion" class="form-control app-input" value="{{ profile.spices_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Lainnya / Porsi</label>
+                <input type="number" name="other_cost_per_portion" class="form-control app-input" value="{{ profile.other_cost_per_portion if profile else 0 }}" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Overhead Persentase %</label>
+                <input type="number" name="overhead_percentage" class="form-control app-input" value="{{ profile.overhead_percentage if profile else 0 }}" min="0" max="99.99" step="0.01">
+                <small class="text-muted">Dihitung dari food cost + kemasan.</small>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Catatan asumsi overhead.">{{ profile.notes if profile else '' }}</textarea>
+            </div>
+
+            <div class="col-md-12">
+                <div class="alert alert-info mb-0">
+                    Profil ini boleh berisi flat per porsi, persentase overhead, atau kombinasi keduanya. Semua masih simulasi HPP read-only.
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if not profile or profile.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="isActive">Aktif</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">Simpan Profil Overhead</button>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

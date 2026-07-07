@@ -1,0 +1,247 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Kartu Hutang Supplier</h1>
+        <p>Kartu hutang menampilkan mutasi bill dan pembayaran per supplier/toko. Halaman ini read-only.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.print_supplier_payable_card', supplier_key=selected_supplier_key or '', start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else '') }}" class="btn app-btn-primary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="supplierPayableCardActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi lainnya
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="supplierPayableCardActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_bills') }}"><i class="bi bi-wallet"></i> Hutang Supplier</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('finance.accounts_payable_aging') }}"><i class="bi bi-hourglass-split"></i> AP Aging</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('finance.export_supplier_payable_card_csv', supplier_key=selected_supplier_key or '', start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else '') }}"><i class="bi bi-download"></i> Download CSV</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Saldo Awal Periode</span>
+        <h3>{{ report.summary.opening_balance|rupiah }}</h3>
+        <p>Saldo sebelum tanggal awal filter</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Bill Periode Ini</span>
+        <h3>{{ report.summary.total_bill_in_period|rupiah }}</h3>
+        <p>Hutang bertambah</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Pembayaran Periode Ini</span>
+        <h3>{{ report.summary.total_payment_in_period|rupiah }}</h3>
+        <p>Hutang berkurang</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Saldo Akhir</span>
+        <h3>{{ report.summary.ending_balance|rupiah }}</h3>
+        <p>Saldo hutang supplier terpilih</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Kartu Hutang</h5>
+            <p>Pilih supplier tetap atau toko manual yang pernah punya supplier bill.</p>
+        </div>
+    </div>
+
+    <form method="GET" class="form-grid app-form" data-ui-form="true">
+        <div class="form-group">
+            <label>Supplier / Tempat</label>
+            <select name="supplier_key" class="form-control">
+                {% for group in report.groups %}
+                    <option value="{{ group.key }}" {% if report.selected_group and report.selected_group.key == group.key %}selected{% endif %}>
+                        {{ group.supplier_name }} — Sisa {{ group.remaining|rupiah }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% if not report.groups %}
+                <div class="form-text text-muted small">Belum ada supplier bill. Kartu hutang akan tampil setelah ada pembelian CREDIT.</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Tanggal Awal</label>
+            <input type="date" name="start_date" class="form-control" value="{{ start_date.isoformat() if start_date else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Tanggal Akhir</label>
+            <input type="date" name="end_date" class="form-control" value="{{ end_date.isoformat() if end_date else '' }}">
+        </div>
+
+        <div class="form-group d-flex align-items-end gap-2">
+            <button class="btn app-btn-primary" type="submit">
+                <i class="bi bi-search"></i>
+                Terapkan
+            </button>
+            <a href="{{ url_for('finance.supplier_payable_card') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Ringkasan Supplier</h5>
+            <p>Daftar supplier/toko yang memiliki riwayat bill hutang.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Supplier / Tempat</th>
+                    <th>Jumlah Bill</th>
+                    <th>Bill Belum Lunas</th>
+                    <th>Total Bill</th>
+                    <th>Total Dibayar</th>
+                    <th>Sisa Hutang</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in report.groups %}
+                    <tr>
+                        <td>
+                            <strong>{{ group.supplier_name }}</strong>
+                            {% if group.supplier_id %}
+                                <div class="text-muted small">Supplier tetap</div>
+                            {% else %}
+                                <div class="text-muted small">Manual / toko tidak tetap</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ group.bill_count }}</td>
+                        <td>{{ group.open_count }}</td>
+                        <td>{{ group.total_billed|rupiah }}</td>
+                        <td>{{ group.total_paid|rupiah }}</td>
+                        <td><strong>{{ group.remaining|rupiah }}</strong></td>
+                        <td>
+                            <a href="{{ url_for('finance.supplier_payable_card', supplier_key=group.key, start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else '') }}" class="btn btn-sm app-btn-secondary">
+                                Lihat Kartu
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-journal-text"></i>
+                                <p>Belum ada kartu hutang supplier karena belum ada supplier bill.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Mutasi Kartu Hutang</h5>
+            {% if report.selected_group %}
+                <p>Supplier/tempat: <strong>{{ report.selected_group.supplier_name }}</strong></p>
+            {% else %}
+                <p>Belum ada supplier yang dipilih.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Dokumen</th>
+                    <th>Bill Terkait</th>
+                    <th>Hutang Bertambah</th>
+                    <th>Hutang Berkurang</th>
+                    <th>Saldo Hutang</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if report.selected_group and report.summary.opening_balance != 0 %}
+                    <tr>
+                        <td>-</td>
+                        <td><span class="status-badge status-draft">Saldo Awal</span></td>
+                        <td>Saldo sebelum periode</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td><strong>{{ report.summary.opening_balance|rupiah }}</strong></td>
+                        <td>-</td>
+                    </tr>
+                {% endif %}
+
+                {% for activity in report.activities %}
+                    <tr>
+                        <td>{{ activity.date.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            {% if activity.kind == 'BILL' %}
+                                <span class="status-badge status-progress">Bill</span>
+                            {% else %}
+                                <span class="status-badge status-locked">Bayar</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ activity.description }}</strong>
+                            {% if activity.payment and activity.payment.reference_number %}
+                                <div class="text-muted small">Ref: {{ activity.payment.reference_number }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if activity.bill %}
+                                <span class="font-monospace">{{ activity.bill.bill_number }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ activity.debit|rupiah if activity.debit else '-' }}</td>
+                        <td>{{ activity.credit|rupiah if activity.credit else '-' }}</td>
+                        <td><strong>{{ activity.running_balance|rupiah }}</strong></td>
+                        <td>
+                            {% if activity.bill %}
+                                <a href="{{ url_for('finance.supplier_bill_detail', bill_id=activity.bill.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="bi bi-journal-text"></i>
+                                <p>Belum ada mutasi kartu hutang sesuai filter.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

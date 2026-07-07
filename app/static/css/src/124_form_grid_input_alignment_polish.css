@@ -1,0 +1,162 @@
+/* ==================================================
+   TAHAP 10.12 — Form Grid & Input Alignment Polish
+   Scope: authenticated UI only.
+
+   Purpose:
+   - Fix form pages whose Bootstrap grid can visually collapse into narrow,
+     left-stacked fields when external Bootstrap CSS is slow/unavailable.
+   - Keep form controls full-width inside their columns across Finance,
+     Accounting, Logistics, Settings, and other existing modules.
+   - Pure UI/CSS patch: no DB, route, service, model, or payment-flow changes.
+   ================================================== */
+
+/* Local Bootstrap grid safety net for app pages. The app still loads Bootstrap,
+   but these rules prevent row/column layouts from breaking when the CDN fails
+   or loads after the app CSS. */
+body.is-authenticated .content-area .row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+body.is-authenticated .content-area .row > * {
+  flex-shrink: 0 !important;
+  width: 100%;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+body.is-authenticated .content-area .col {
+  flex: 1 0 0% !important;
+}
+
+body.is-authenticated .content-area .col-auto {
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
+body.is-authenticated .content-area .col-1 { flex: 0 0 auto !important; width: 8.33333333% !important; }
+body.is-authenticated .content-area .col-2 { flex: 0 0 auto !important; width: 16.66666667% !important; }
+body.is-authenticated .content-area .col-3 { flex: 0 0 auto !important; width: 25% !important; }
+body.is-authenticated .content-area .col-4 { flex: 0 0 auto !important; width: 33.33333333% !important; }
+body.is-authenticated .content-area .col-5 { flex: 0 0 auto !important; width: 41.66666667% !important; }
+body.is-authenticated .content-area .col-6 { flex: 0 0 auto !important; width: 50% !important; }
+body.is-authenticated .content-area .col-7 { flex: 0 0 auto !important; width: 58.33333333% !important; }
+body.is-authenticated .content-area .col-8 { flex: 0 0 auto !important; width: 66.66666667% !important; }
+body.is-authenticated .content-area .col-9 { flex: 0 0 auto !important; width: 75% !important; }
+body.is-authenticated .content-area .col-10 { flex: 0 0 auto !important; width: 83.33333333% !important; }
+body.is-authenticated .content-area .col-11 { flex: 0 0 auto !important; width: 91.66666667% !important; }
+body.is-authenticated .content-area .col-12 { flex: 0 0 auto !important; width: 100% !important; }
+
+@media (min-width: 576px) {
+  body.is-authenticated .content-area .col-sm-1 { flex: 0 0 auto !important; width: 8.33333333% !important; }
+  body.is-authenticated .content-area .col-sm-2 { flex: 0 0 auto !important; width: 16.66666667% !important; }
+  body.is-authenticated .content-area .col-sm-3 { flex: 0 0 auto !important; width: 25% !important; }
+  body.is-authenticated .content-area .col-sm-4 { flex: 0 0 auto !important; width: 33.33333333% !important; }
+  body.is-authenticated .content-area .col-sm-5 { flex: 0 0 auto !important; width: 41.66666667% !important; }
+  body.is-authenticated .content-area .col-sm-6 { flex: 0 0 auto !important; width: 50% !important; }
+  body.is-authenticated .content-area .col-sm-7 { flex: 0 0 auto !important; width: 58.33333333% !important; }
+  body.is-authenticated .content-area .col-sm-8 { flex: 0 0 auto !important; width: 66.66666667% !important; }
+  body.is-authenticated .content-area .col-sm-9 { flex: 0 0 auto !important; width: 75% !important; }
+  body.is-authenticated .content-area .col-sm-10 { flex: 0 0 auto !important; width: 83.33333333% !important; }
+  body.is-authenticated .content-area .col-sm-11 { flex: 0 0 auto !important; width: 91.66666667% !important; }
+  body.is-authenticated .content-area .col-sm-12 { flex: 0 0 auto !important; width: 100% !important; }
+}
+
+@media (min-width: 768px) {
+  body.is-authenticated .content-area .col-md-1 { flex: 0 0 auto !important; width: 8.33333333% !important; }
+  body.is-authenticated .content-area .col-md-2 { flex: 0 0 auto !important; width: 16.66666667% !important; }
+  body.is-authenticated .content-area .col-md-3 { flex: 0 0 auto !important; width: 25% !important; }
+  body.is-authenticated .content-area .col-md-4 { flex: 0 0 auto !important; width: 33.33333333% !important; }
+  body.is-authenticated .content-area .col-md-5 { flex: 0 0 auto !important; width: 41.66666667% !important; }
+  body.is-authenticated .content-area .col-md-6 { flex: 0 0 auto !important; width: 50% !important; }
+  body.is-authenticated .content-area .col-md-7 { flex: 0 0 auto !important; width: 58.33333333% !important; }
+  body.is-authenticated .content-area .col-md-8 { flex: 0 0 auto !important; width: 66.66666667% !important; }
+  body.is-authenticated .content-area .col-md-9 { flex: 0 0 auto !important; width: 75% !important; }
+  body.is-authenticated .content-area .col-md-10 { flex: 0 0 auto !important; width: 83.33333333% !important; }
+  body.is-authenticated .content-area .col-md-11 { flex: 0 0 auto !important; width: 91.66666667% !important; }
+  body.is-authenticated .content-area .col-md-12 { flex: 0 0 auto !important; width: 100% !important; }
+}
+
+@media (min-width: 992px) {
+  body.is-authenticated .content-area .col-lg-1 { flex: 0 0 auto !important; width: 8.33333333% !important; }
+  body.is-authenticated .content-area .col-lg-2 { flex: 0 0 auto !important; width: 16.66666667% !important; }
+  body.is-authenticated .content-area .col-lg-3 { flex: 0 0 auto !important; width: 25% !important; }
+  body.is-authenticated .content-area .col-lg-4 { flex: 0 0 auto !important; width: 33.33333333% !important; }
+  body.is-authenticated .content-area .col-lg-5 { flex: 0 0 auto !important; width: 41.66666667% !important; }
+  body.is-authenticated .content-area .col-lg-6 { flex: 0 0 auto !important; width: 50% !important; }
+  body.is-authenticated .content-area .col-lg-7 { flex: 0 0 auto !important; width: 58.33333333% !important; }
+  body.is-authenticated .content-area .col-lg-8 { flex: 0 0 auto !important; width: 66.66666667% !important; }
+  body.is-authenticated .content-area .col-lg-9 { flex: 0 0 auto !important; width: 75% !important; }
+  body.is-authenticated .content-area .col-lg-10 { flex: 0 0 auto !important; width: 83.33333333% !important; }
+  body.is-authenticated .content-area .col-lg-11 { flex: 0 0 auto !important; width: 91.66666667% !important; }
+  body.is-authenticated .content-area .col-lg-12 { flex: 0 0 auto !important; width: 100% !important; }
+}
+
+@media (min-width: 1200px) {
+  body.is-authenticated .content-area .col-xl-1 { flex: 0 0 auto !important; width: 8.33333333% !important; }
+  body.is-authenticated .content-area .col-xl-2 { flex: 0 0 auto !important; width: 16.66666667% !important; }
+  body.is-authenticated .content-area .col-xl-3 { flex: 0 0 auto !important; width: 25% !important; }
+  body.is-authenticated .content-area .col-xl-4 { flex: 0 0 auto !important; width: 33.33333333% !important; }
+  body.is-authenticated .content-area .col-xl-5 { flex: 0 0 auto !important; width: 41.66666667% !important; }
+  body.is-authenticated .content-area .col-xl-6 { flex: 0 0 auto !important; width: 50% !important; }
+  body.is-authenticated .content-area .col-xl-7 { flex: 0 0 auto !important; width: 58.33333333% !important; }
+  body.is-authenticated .content-area .col-xl-8 { flex: 0 0 auto !important; width: 66.66666667% !important; }
+  body.is-authenticated .content-area .col-xl-9 { flex: 0 0 auto !important; width: 75% !important; }
+  body.is-authenticated .content-area .col-xl-10 { flex: 0 0 auto !important; width: 83.33333333% !important; }
+  body.is-authenticated .content-area .col-xl-11 { flex: 0 0 auto !important; width: 91.66666667% !important; }
+  body.is-authenticated .content-area .col-xl-12 { flex: 0 0 auto !important; width: 100% !important; }
+}
+
+/* App form control hardening: inputs/selects must fill their grid column, not
+   render at browser intrinsic width. This directly fixes the fixed asset
+   purchase page and similar row-based forms across Finance. */
+body.is-authenticated .content-area form.app-form :where(
+  .form-control,
+  .form-select,
+  .app-input,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea
+) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.is-authenticated .content-area form.app-form :where(.form-text, .text-muted, small) {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+body.is-authenticated .content-area form.app-form.row {
+  align-items: start;
+}
+
+body.is-authenticated .content-area form.app-form.row.align-items-end {
+  align-items: end;
+}
+
+body.is-authenticated .content-area form.app-form.row > :where(input[type="hidden"], .csrf-token) {
+  display: none !important;
+}
+
+body.is-authenticated .content-area form.app-form.row > :where(.col-md-12, .col-lg-12, .col-xl-12) .btn,
+body.is-authenticated .content-area form.app-form.row > .col-12 .btn {
+  min-width: min(100%, 220px);
+}
+
+@media (max-width: 767.98px) {
+  body.is-authenticated .content-area form.app-form.row > * {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+  }
+
+  body.is-authenticated .content-area form.app-form.row {
+    align-items: stretch !important;
+  }
+}

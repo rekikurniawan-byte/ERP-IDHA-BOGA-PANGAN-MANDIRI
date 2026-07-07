@@ -1,0 +1,111 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="index">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Modul Produksi</span>
+        <h1>Produksi Dapur</h1>
+        <p>Daftar produksi siang dan sore yang dibuat dari order harian yang sudah locked.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali ke Order
+        </a>
+    </div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Produksi</h5>
+            <p>Produksi dibuat berdasarkan total porsi order locked.</p>
+        </div>
+
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>SLA</th>
+                    <th>Rencana Produksi</th>
+                    <th>Realisasi</th>
+                    <th>Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for production in productions %}
+                    {% set detail = production.details[0] if production.details else none %}
+                    <tr>
+                        <td>{{ production.production_date.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            {% if production.production_type == "LUNCH" %}
+                                <span class="status-badge status-locked">LUNCH</span>
+                            {% else %}
+                                <span class="status-badge status-draft">DINNER</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if production.status == "COMPLETED" %}
+                                <span class="status-badge status-locked">COMPLETED</span>
+                            {% elif production.status == "CANCELLED" %}
+                                <span class="status-badge status-cancelled">CANCELLED</span>
+                            {% elif production.status == "IN_PROGRESS" %}
+                                <span class="status-badge status-progress">IN_PROGRESS</span>
+                            {% else %}
+                                <span class="status-badge status-draft">DRAFT</span>
+                            {% endif %}
+                        </td>
+                        {% set sla = calculate_production_sla(production) %}
+                        <td>
+                            <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+                            <div class="muted-small">Target {{ sla.target_ready_label }}</div>
+                        </td>
+                        <td>
+                            {% if detail %}
+                                <strong>{{ detail.planned_qty | int }}</strong> {{ detail.unit }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if detail %}
+                                <strong>{{ detail.actual_qty | int }}</strong> {{ detail.unit }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ production.notes or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('production.detail', production_id=production.id) }}" class="btn btn-sm app-btn-secondary">
+                                Detail
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                <i class="bi bi-egg-fried"></i>
+                                <h6>Belum ada produksi.</h6>
+                                <p>Buat dari order harian yang sudah locked.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

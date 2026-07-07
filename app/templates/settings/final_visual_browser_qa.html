@@ -1,0 +1,166 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header" data-ui-page-header="PRODUCTION">
+    <div>
+        <span class="eyebrow">Final Browser QA</span>
+        <h1>Final Visual Browser QA</h1>
+        <p>Lock akhir visual: route/template/CSS/print readiness + matriks uji manual desktop, tablet, mobile, dan print preview.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('settings.visual_sweep') }}" class="btn app-btn-secondary"><i class="bi bi-eye"></i> Visual Sweep</a>
+        <a href="{{ url_for('settings.recovery_center') }}" class="btn app-btn-secondary"><i class="bi bi-life-preserver"></i> Recovery Center</a>
+        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary"><i class="bi bi-heart-pulse"></i> System Health</a>
+    </div>
+</div>
+
+{% set overall = report.get('overall', {}) %}
+<section class="final-browser-qa-hero final-browser-qa-hero-{{ overall.get('status_class', 'warning') }}">
+    <div>
+        <span class="eyebrow">Keputusan Final QA</span>
+        <h2>{{ overall.get('decision', 'PERLU CEK') }}</h2>
+        <p>{{ overall.get('summary') }} · Version: {{ report.get('qa_version') }} · Generated: {{ report.get('generated_at') }}</p>
+    </div>
+    <div class="final-browser-qa-chip">
+        <span>Status</span>
+        <strong>{{ overall.get('status', 'PERLU CEK') }}</strong>
+        <small>Read-only, tidak mengubah DB</small>
+    </div>
+</section>
+
+{% if overall.get('blockers') %}
+<section class="dashboard-section final-browser-qa-alert final-browser-qa-alert-danger">
+    <h2>Blocker</h2>
+    <ul>{% for item in overall.get('blockers', []) %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if overall.get('warnings') %}
+<section class="dashboard-section final-browser-qa-alert final-browser-qa-alert-warning">
+    <h2>Catatan QA</h2>
+    <ul>{% for item in overall.get('warnings', []) %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="dashboard-section" data-final-qa-section="summary">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Ringkasan Readiness</h2>
+            <p>Semua check ini static/read-only. Browser manual tetap wajib untuk sign-off visual produksi.</p>
+        </div>
+        <span class="status-badge {{ overall.get('status_class', 'warning') }}">{{ overall.get('decision') }}</span>
+    </div>
+
+    <div class="final-browser-qa-metric-grid">
+        <article class="dashboard-command-kpi"><span>Critical Route</span><strong>{{ report.critical_routes.missing_count|default(0) }}</strong><small>missing dari {{ report.critical_routes.critical_count|default(0) }}</small></article>
+        <article class="dashboard-command-kpi"><span>Critical Template</span><strong>{{ report.critical_templates.missing_count|default(0) }}</strong><small>missing dari {{ report.critical_templates.template_count|default(0) }}</small></article>
+        <article class="dashboard-command-kpi"><span>CSS Build</span><strong>{{ report.css.build_version|default('UNKNOWN') }}</strong><small>{{ report.css.source_file_count|default(0) }} source file</small></article>
+        <article class="dashboard-command-kpi"><span>Print Template</span><strong>{{ report.print_preview.missing_count|default(0) }}</strong><small>missing dari {{ report.print_preview.template_count|default(0) }}</small></article>
+        <article class="dashboard-command-kpi"><span>Manual Browser</span><strong>{{ report.browser_matrix.manual_required_count|default(0) }}</strong><small>viewport wajib</small></article>
+        <article class="dashboard-command-kpi"><span>Theme</span><strong>{{ 'PASS' if report.css.theme_lock_ok else 'CHECK' }}</strong><small>Dark Mono / Light Mono</small></article>
+    </div>
+</section>
+
+<section class="dashboard-section" data-final-qa-section="browser-matrix">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Manual Browser Matrix</h2>
+            <p>Checklist wajib setelah app berjalan di browser real. Tidak bisa diganti oleh static scan.</p>
+        </div>
+    </div>
+    <div class="final-browser-qa-list">
+        {% for item in report.browser_matrix.get('items', []) %}
+            <article class="final-browser-qa-list-item">
+                <div>
+                    <strong>{{ item.name }}</strong>
+                    <small>{{ item.viewport }} · {{ item.target }}</small>
+                    <p>{{ item.expected }}</p>
+                </div>
+                <span class="status-badge {{ item.status_class }}">{{ item.status }}</span>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="dashboard-section" data-final-qa-section="policy-stack">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Policy Stack Lock</h2>
+            <p>Kontrak visual/safety yang harus tetap aktif setelah Final Visual QA.</p>
+        </div>
+    </div>
+    <div class="visual-sweep-policy-grid">
+        {% for key, value in report.policy_stack.items() %}
+            <article class="dashboard-command-link-card">
+                <i class="bi bi-shield-check"></i>
+                <span><strong>{{ key|replace('_', ' ')|title }}</strong><small>{{ value }}</small></span>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="dashboard-section" data-final-qa-section="critical-routes">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Critical Route & Page Coverage</h2>
+            <p>Endpoint penting dashboard, recovery, finance, accounting, SOP, dan QA harus ada.</p>
+        </div>
+        <span class="status-badge {{ 'success' if report.critical_routes.missing_count|default(0) == 0 else 'danger' }}">Missing {{ report.critical_routes.missing_count|default(0) }}</span>
+    </div>
+    <div class="table-responsive app-table-wrapper">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Area</th><th>Halaman</th><th>Endpoint</th><th>Role</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for item in report.critical_routes.get('items', []) %}
+                <tr><td>{{ item.area }}</td><td>{{ item.label }}</td><td><code>{{ item.endpoint }}</code></td><td>{{ item.role }}</td><td><span class="status-badge {{ item.status_class }}">{{ item.status }}</span></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="dashboard-section" data-final-qa-section="templates-print">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Template & Print Foundation</h2>
+            <p>Critical template dan template print/export harus tersedia sebelum visual browser sign-off.</p>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="final-browser-qa-mini-panel">
+                <h3>Critical Templates</h3>
+                <div class="final-browser-qa-compact-list">
+                    {% for item in report.critical_templates.get('items', []) %}
+                        <div><span>{{ item.template }}</span><strong class="status-badge {{ item.status_class }}">{{ item.status }}</strong></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="final-browser-qa-mini-panel">
+                <h3>Print / Export Templates</h3>
+                <div class="final-browser-qa-compact-list">
+                    {% for item in report.print_preview.get('items', []) %}
+                        <div><span>{{ item.template }}</span><strong class="status-badge {{ item.status_class }}">{{ item.status }}</strong></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section" data-final-qa-section="next-actions">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Langkah Sign-off</h2>
+            <p>Urutan setelah Final Visual QA sebelum dipakai sebagai lock produksi.</p>
+        </div>
+    </div>
+    <div class="final-browser-qa-list">
+        {% for item in report.get('next_actions', []) %}
+            <article class="final-browser-qa-list-item"><div><strong>{{ loop.index }}. {{ item }}</strong></div><span class="status-badge info">TODO</span></article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

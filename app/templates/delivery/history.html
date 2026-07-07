@@ -1,0 +1,100 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="history">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Pengantar</span>
+        <h1>Riwayat Pengiriman</h1>
+        <p>Arsip delivery selesai, dibatalkan, atau delivery tanggal sebelumnya.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-secondary">
+            <i class="bi bi-truck"></i>
+            Pengiriman Hari Ini
+        </a>
+        <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clipboard-check"></i>
+            Penerimaan
+        </a>
+    </div>
+</div>
+
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Data Riwayat</h5>
+            <p>Delivery pengganti shortage tetap ditampilkan, tapi bukan dasar invoice.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>No Delivery</th>
+                    <th>Tipe</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                    <th>SLA</th>
+                    <th>Planned</th>
+                    <th>Delivered</th>
+                    <th>Shortage</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in deliveries %}
+                {% set total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% for detail in delivery.details %}
+                    {% set total.planned = total.planned + detail.planned_qty %}
+                    {% set total.delivered = total.delivered + detail.delivered_qty %}
+                    {% set total.shortage = total.shortage + detail.shortage_qty %}
+                {% endfor %}
+                <tr>
+                    <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <strong>{{ delivery.delivery_number }}</strong>
+                        {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+                            <div class="muted-small">Pengganti shortage</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
+                    <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
+                    <td>{{ delivery.status }}</td>
+                    {% set sla = calculate_delivery_sla_summary(delivery) %}
+                    <td>
+                        <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+                        {% if sla.max_minutes_late %}<div class="muted-small">+{{ sla.max_minutes_late }} menit</div>{% endif %}
+                    </td>
+                    <td>{{ total.planned }}</td>
+                    <td>{{ total.delivered }}</td>
+                    <td>{{ total.shortage }}</td>
+                    <td>
+                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <p>Belum ada riwayat pengiriman sesuai filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

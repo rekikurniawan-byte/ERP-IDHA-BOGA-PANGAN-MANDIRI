@@ -1,0 +1,199 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="dashboard">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / HR ENTERPRISE</span>
+        <h1>SDM</h1>
+        <p>Manajemen karyawan internal, payroll, posting jurnal gaji, dan pembayaran gaji perusahaan.</p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">
+            <i class="bi bi-calendar-plus"></i>
+            Buat Payroll Bulanan
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="hrDashboardActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi SDM
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="hrDashboardActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-cash-coin"></i> Daftar Payroll</a></li>
+                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('sop.role_sop', slug='hr') }}"><i class="bi bi-journal-text"></i> SOP SDM</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div>
+        <div>
+            <p>Total Karyawan</p>
+            <h3>{{ employee_summary.total }}</h3>
+            <span class="app-stat-helper">Karyawan internal terdaftar</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div>
+        <div>
+            <p>Karyawan Aktif</p>
+            <h3>{{ employee_summary.active }}</h3>
+            <span class="app-stat-helper">Siap masuk payroll</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar2-check"></i></div>
+        <div>
+            <p>Payroll Periode Ini</p>
+            <h3>{{ payroll_dashboard.current_period_count }}</h3>
+            <span class="app-stat-helper">Periode {{ payroll_dashboard.current_period_label }}</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>Total Gaji Bulan Ini</p>
+            <h3>{{ payroll_dashboard.current_period_total|rupiah }}</h3>
+            <span class="app-stat-helper">Dari payroll periode berjalan</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-journal-x"></i></div>
+        <div>
+            <p>Payroll Belum Diposting</p>
+            <h3>{{ payroll_dashboard.unposted_count }}</h3>
+            <span class="app-stat-helper">FINAL, belum jadi jurnal</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <p>Payroll Belum Dibayar</p>
+            <h3>{{ payroll_dashboard.unpaid_count }}</h3>
+            <span class="app-stat-helper">POSTED, menunggu pembayaran</span>
+        </div>
+    </div>
+</div>
+
+<div class="hr-enterprise-grid two-col">
+    <div class="card app-card hr-lifecycle-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Lifecycle Payroll</span>
+                    <h2>Draft → Final → Sudah Diposting → Paid</h2>
+                </div>
+                <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary btn-sm">Lihat Payroll</a>
+            </div>
+            <div class="hr-lifecycle-list compact">
+                <div class="hr-lifecycle-step is-active">
+                    <strong>DRAFT</strong>
+                    <span>{{ payroll_dashboard.lifecycle.DRAFT }} payroll</span>
+                    <small>Nominal masih bisa disesuaikan.</small>
+                </div>
+                <div class="hr-lifecycle-step {% if payroll_dashboard.lifecycle.FINAL > 0 %}is-warning{% else %}is-pending{% endif %}">
+                    <strong>FINAL</strong>
+                    <span>{{ payroll_dashboard.lifecycle.FINAL }} payroll</span>
+                    <small>Terkunci, perlu posting jurnal.</small>
+                </div>
+                <div class="hr-lifecycle-step {% if payroll_dashboard.lifecycle.POSTED > 0 %}is-warning{% else %}is-pending{% endif %}">
+                    <strong>POSTED</strong>
+                    <span>{{ payroll_dashboard.lifecycle.POSTED }} payroll</span>
+                    <small>Hutang gaji tercatat, belum dibayar.</small>
+                </div>
+                <div class="hr-lifecycle-step is-complete">
+                    <strong>PAID</strong>
+                    <span>{{ payroll_dashboard.lifecycle.PAID }} payroll</span>
+                    <small>Gaji sudah dibayar.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card app-card hr-health-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Employee Health</span>
+                    <h2>Kelengkapan Data Karyawan</h2>
+                </div>
+                <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary btn-sm">Cek Data</a>
+            </div>
+            <div class="hr-health-list">
+                <div class="hr-health-item {% if employee_summary.without_phone > 0 %}is-warning{% else %}is-ok{% endif %}">
+                    <i class="bi bi-telephone"></i>
+                    <div><strong>{{ employee_summary.without_phone }}</strong><span>karyawan tanpa no HP</span></div>
+                </div>
+                <div class="hr-health-item {% if employee_summary.without_salary > 0 %}is-warning{% else %}is-ok{% endif %}">
+                    <i class="bi bi-cash"></i>
+                    <div><strong>{{ employee_summary.without_salary }}</strong><span>karyawan aktif tanpa gaji aktif</span></div>
+                </div>
+                <div class="hr-health-item {% if employee_summary.inactive > 0 %}is-muted{% else %}is-ok{% endif %}">
+                    <i class="bi bi-person-dash"></i>
+                    <div><strong>{{ employee_summary.inactive }}</strong><span>karyawan inactive</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <div class="hr-section-title">
+            <div>
+                <span>Recent Payroll</span>
+                <h2>Payroll Terbaru</h2>
+            </div>
+            <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary btn-sm">Lihat Semua</a>
+        </div>
+
+        {% if latest_payroll_rows %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Periode</th>
+                            <th>Status</th>
+                            <th class="text-end">Total</th>
+                            <th>Status Jurnal</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in latest_payroll_rows %}
+                            <tr>
+                                <td><span class="fw-semibold">{{ row.period }}</span></td>
+                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status }}</span></td>
+                                <td class="text-end">{{ row.total|rupiah }}</td>
+                                <td>
+                                    <span class="hr-posting-badge is-{{ row.journal_state.class }}">
+                                        <i class="bi {{ row.journal_state.icon }}"></i> {{ row.journal_state.label }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-cash-coin"></i></div>
+                <h3>Belum ada payroll.</h3>
+                <p>Buat payroll bulanan untuk menghitung gaji karyawan internal. Mandor tetap tidak masuk payroll.</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
+                    <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary">Cek Karyawan</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

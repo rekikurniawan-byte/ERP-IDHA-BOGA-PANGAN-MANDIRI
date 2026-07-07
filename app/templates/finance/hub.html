@@ -1,0 +1,272 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell finance-hub-page">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Finance</span>
+            <h1>Pusat Transaksi Keuangan</h1>
+            <p>Hub lintas invoice, piutang, rekap manual, buku kas/bank, dan input harian.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-primary">
+                <i class="bi bi-receipt-cutoff"></i>
+                Rekap Tagihan Mandor
+            </a>
+            <a href="{{ url_for('finance.finance_transactions') }}" class="btn app-btn-secondary">
+                <i class="bi bi-ui-checks-grid"></i>
+                Input Cepat
+            </a>
+        </div>
+    </div>
+
+    <div class="app-stat-grid">
+        <div class="app-stat-card">
+            <span>Piutang Invoice</span>
+            <h3>{{ summary.invoice_remaining|rupiah }}</h3>
+            <p>{{ summary.invoice_count }} invoice aktif</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Piutang Manual Terbuka</span>
+            <h3>{{ summary.manual_receivable_remaining|rupiah }}</h3>
+            <p>{{ summary.manual_receivable_count }} dokumen manual</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Rekap Tagihan Mandor</span>
+            <h3>{{ summary.manual_batch_count }}</h3>
+            <p>batch rekap tercatat</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Sumber Belum Ditagih</span>
+            <h3>{{ summary.manual_source_unbilled_total|rupiah }}</h3>
+            <p>{{ summary.manual_source_unbilled_count }} sumber manual belum naik invoice</p>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Status Sumber Manual</h5>
+                <p>Ringkasan ini membantu finance melihat mana sumber yang masih menunggu invoice resmi.</p>
+            </div>
+        </div>
+        <div class="finance-hub-status-grid">
+            <div class="finance-hub-status-card">
+                <span>Belum Naik Invoice</span>
+                <strong>{{ summary.manual_source_unbilled_count }} sumber</strong>
+                <small>Masih menunggu rekap formal</small>
+            </div>
+            <div class="finance-hub-status-card">
+                <span>Sudah Naik Invoice</span>
+                <strong>{{ summary.manual_source_billed_count }} sumber</strong>
+                <small>Sudah masuk invoice resmi</small>
+            </div>
+            <div class="finance-hub-status-card">
+                <span>Piutang Manual Terbuka</span>
+                <strong>{{ summary.manual_receivable_count }} dokumen</strong>
+                <small>Masih aktif di level manual</small>
+            </div>
+            <div class="finance-hub-status-card finance-hub-status-action">
+                <span>Tindak Lanjut</span>
+                <strong>Rekap Tagihan Mandor</strong>
+                <a href="{{ url_for('finance.manual_billing') }}" class="btn btn-sm app-btn-secondary">Buka Rekap</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Pintu Masuk Finance</h5>
+                <p>Pilih alur sesuai dokumen bisnis yang sedang dikerjakan.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.manual_billing') }}" class="unified-finance-related-link">
+                    <i class="bi bi-receipt-cutoff"></i><span>Rekap Tagihan Mandor</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.invoices') }}" class="unified-finance-related-link">
+                    <i class="bi bi-receipt"></i><span>Invoice dan Pembayaran</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('field_transactions.monitoring') }}" class="unified-finance-related-link">
+                    <i class="bi bi-activity"></i><span>Transaksi Kas Lapangan</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.receivables') }}" class="unified-finance-related-link">
+                    <i class="bi bi-cash-coin"></i><span>Piutang Client</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.cash_bank_ledger') }}" class="unified-finance-related-link">
+                    <i class="bi bi-wallet2"></i><span>Buku Kas/Bank</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.supplier_bills') }}" class="unified-finance-related-link">
+                    <i class="bi bi-wallet"></i><span>Hutang Supplier</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Rekap Tagihan Mandor Terbaru</h5>
+                <p>Batch rekap yang menjadi jembatan dari sumber manual ke invoice resmi.</p>
+            </div>
+        </div>
+        <div class="table-responsive finance-table-wrap">
+            <table class="table app-table align-middle finance-table-wide">
+                <thead>
+                    <tr>
+                        <th>No Rekap</th>
+                        <th>Periode</th>
+                        <th>Mandor</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in manual_batches %}
+                    <tr>
+                        <td><strong>{{ batch.batch_number }}</strong></td>
+                        <td>{{ batch.period_start.strftime('%d-%m-%Y') }} s/d {{ batch.period_end.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ batch.mandor.name if batch.mandor else '-' }}</td>
+                        <td>{{ batch.total_amount|rupiah }}</td>
+                        <td><span class="status-badge status-progress">{{ batch.status }}</span></td>
+                        <td>
+                            {% if batch.invoice %}
+                                <a href="{{ url_for('finance.invoice_detail', invoice_id=batch.invoice.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-receipt-cutoff"></i>
+                                <p>Belum ada rekap tagihan mandor.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-6">
+            <div class="app-card finance-hub-surface">
+                <div class="card-header-clean">
+                    <div>
+                        <h5>Sumber Manual Menunggu Invoice</h5>
+                        <p>Daftar cepat sumber yang masih terbuka dan belum naik ke invoice resmi.</p>
+                    </div>
+                </div>
+                <div class="table-responsive finance-table-wrap">
+                    <table class="table app-table align-middle finance-table-wide">
+                        <thead>
+                            <tr>
+                                <th>Jenis</th>
+                                <th>Sumber</th>
+                                <th>Pihak</th>
+                                <th>Nominal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in pending_manual_sources %}
+                            <tr>
+                                <td><span class="status-badge status-progress">{{ row.kind }}</span></td>
+                                <td>
+                                    <strong>{{ row.label }}</strong>
+                                    <div class="small text-muted">{{ row.date.strftime('%d-%m-%Y') if row.date else '-' }}</div>
+                                </td>
+                                <td>{{ row.party }}</td>
+                                <td>{{ row.amount|rupiah }}</td>
+                                <td><a href="{{ row.href }}" class="btn btn-sm app-btn-secondary">{{ row.action_label }}</a></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <i class="bi bi-check2-circle"></i>
+                                        <p>Tidak ada sumber manual yang menunggu invoice.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6">
+            <div class="app-card finance-hub-surface">
+                <div class="card-header-clean">
+                    <div>
+                        <h5>Buku Kas/Bank Terbaru</h5>
+                        <p>Aktivitas kas dan bank terbaru untuk bantu orientasi cepat dari pusat finance.</p>
+                    </div>
+                </div>
+                <div class="table-responsive finance-table-wrap">
+                    <table class="table app-table align-middle finance-table-wide finance-ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Tipe</th>
+                                <th>Keterangan</th>
+                                <th>Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in recent_ledger %}
+                            <tr>
+                                <td>{{ row.transaction_date.strftime('%d-%m-%Y') }}</td>
+                                <td>
+                                    <strong>{{ row.transaction_type }}</strong>
+                                    <div class="small text-muted">{{ row.account_type }}</div>
+                                </td>
+                                <td class="buku kas/bank-description-cell">
+                                    {{ row.description }}
+                                    {% if row.reference_type and row.reference_id %}
+                                    <div class="small text-muted">{{ row.reference_type }} #{{ row.reference_id }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ row.amount|rupiah }}
+                                    <div class="small mt-1">
+                                        <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">Detail Buku Kas/Bank</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4">
+                                    <div class="empty-state">
+                                        <i class="bi bi-wallet2"></i>
+                                        <p>Belum ada aktivitas buku kas/bank terbaru.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

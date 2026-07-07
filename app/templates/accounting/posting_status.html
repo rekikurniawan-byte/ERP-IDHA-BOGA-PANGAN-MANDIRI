@@ -1,0 +1,146 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="accounting-page-shell posting-status-page" data-posting-status-center="PRODUCTION">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">Akuntansi</span>
+            <h1 class="page-title">Posting Status Center</h1>
+            <p class="page-description">
+                Pantau transaksi yang sudah jadi jurnal, belum posting, tidak perlu jurnal, atau tertahan karena data belum final/mapping belum aman.
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-primary">
+                <i class="bi bi-journal-check"></i>
+                Jurnal Akuntansi
+            </a>
+            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+                <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots"></i>
+                    Aksi lainnya
+                </button>
+                <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                    <a href="{{ url_for('accounting.expense_drilldown') }}" class="dropdown-item"><i class="bi bi-graph-down-arrow"></i><span>Drilldown Beban</span></a>
+                    <a href="{{ url_for('accounting.coa_mapping') }}" class="dropdown-item"><i class="bi bi-diagram-2"></i><span>Peta Akun & Mapping</span></a>
+                    <a href="{{ url_for('accounting.data_health') }}" class="dropdown-item"><i class="bi bi-clipboard-pulse"></i><span>Data Health Check</span></a>
+                    <a href="{{ url_for('sop.role_sop', slug='accounting') }}" class="dropdown-item"><i class="bi bi-book"></i><span>SOP Accounting</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ global_filter_bar(filter_bar) }}
+
+    <div class="app-stat-grid posting-status-summary-grid">
+        <div class="app-stat-card">
+            <span>Total Sumber Dicek</span>
+            <h3>{{ report.summary.total }}</h3>
+            <p>transaksi/sumber</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Sudah Posting</span>
+            <h3>{{ report.summary.posted }}</h3>
+            <p>sudah punya jurnal</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Belum Posting</span>
+            <h3>{{ report.summary.unposted }}</h3>
+            <p>perlu sinkron/generate</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Diblokir</span>
+            <h3>{{ report.summary.blocked }}</h3>
+            <p>perlu koreksi data</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Tidak Perlu</span>
+            <h3>{{ report.summary.not_required }}</h3>
+            <p>buku kas/bank/draft/cancelled</p>
+        </div>
+    </div>
+
+    <div class="posting-section-stack mt-4">
+        {% for section in report.sections %}
+            <section class="app-card posting-section-card" data-posting-section="{{ section.key }}">
+                <div class="card-header-clean posting-section-header">
+                    <div>
+                        <h5>{{ section.title }}</h5>
+                        <p>{{ section.description }}</p>
+                    </div>
+                    <div class="posting-section-kpis">
+                        <span class="posting-mini-kpi"><strong>{{ section.counts.total }}</strong><small>Total</small></span>
+                        <span class="posting-mini-kpi"><strong>{{ section.counts.posted }}</strong><small>Posting</small></span>
+                        <span class="posting-mini-kpi is-warning"><strong>{{ section.counts.attention }}</strong><small>Perlu cek</small></span>
+                    </div>
+                </div>
+
+                {% if section.rows %}
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle posting-status-table">
+                            <thead>
+                                <tr>
+                                    <th>Sumber</th>
+                                    <th>Tanggal</th>
+                                    <th class="text-end">Nominal</th>
+                                    <th>Status</th>
+                                    <th>Alasan</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in section.rows %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ row.source_number }}</strong>
+                                            <small class="d-block text-muted">{{ row.source_label }}</small>
+                                            {% if row.helper %}<small class="d-block text-muted">{{ row.helper }}</small>{% endif %}
+                                        </td>
+                                        <td>{{ row.source_date.strftime('%d-%m-%Y') if row.source_date else '-' }}</td>
+                                        <td class="text-end">{% if row.amount > 0 %}{{ row.amount|rupiah }}{% else %}-{% endif %}</td>
+                                        <td>
+                                            <span class="posting-badge is-{{ row.status.class }}">
+                                                <i class="bi {{ row.status.icon }}"></i>
+                                                {{ row.status.label }}
+                                            </span>
+                                            {% if row.status.journal_url %}
+                                                <a href="{{ row.status.journal_url }}" class="posting-journal-link">{{ row.status.journal_number }}</a>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ row.status.reason }}</td>
+                                        <td class="text-end">
+                                            <div class="posting-row-actions">
+                                                {% if row.detail_url %}
+                                                    <a href="{{ row.detail_url }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                                {% endif %}
+                                                {% if row.action_url and row.action_label %}
+                                                    {% if row.action_method == 'POST' %}
+                                                        <form method="POST" action="{{ row.action_url }}" class="d-inline app-form" data-ui-form="true" data-app-confirm="Jalankan sinkronisasi/generate jurnal untuk sumber ini? Sistem akan melewati data yang sudah punya jurnal.">
+                                                            {% include "components/csrf_token.html" %}
+                                                            <input type="hidden" name="next" value="{{ url_for('accounting.posting_status') }}">
+                                                            <button type="submit" class="btn btn-sm app-btn-primary">{{ row.action_label }}</button>
+                                                        </form>
+                                                    {% else %}
+                                                        <a href="{{ row.action_url }}" class="btn btn-sm app-btn-primary">{{ row.action_label }}</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state app-empty-state posting-empty-state" data-ui-empty-state="PRODUCTION">
+                        <div class="empty-state-icon"><i class="bi bi-check2-circle"></i></div>
+                        <h3>Tidak ada masalah pada bagian ini.</h3>
+                        <p>Semua sumber di kategori ini sudah posting, tidak perlu jurnal, atau belum memiliki data yang perlu ditindaklanjuti.</p>
+                    </div>
+                {% endif %}
+            </section>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

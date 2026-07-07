@@ -1,0 +1,385 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Kwitansi Pembayaran{% endblock %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+
+<div class="page-header no-print">
+    <div>
+        <span class="eyebrow">Keuangan · Bukti Pembayaran</span>
+        <h1>Kwitansi Pembayaran</h1>
+        <p>Bukti penerimaan pembayaran invoice. Cetak atau simpan PDF dari halaman ini.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <button type="button" class="btn app-btn-primary" data-app-action="print">
+            <i class="bi bi-printer"></i>
+            Cetak Kwitansi
+        </button>
+        <a href="{{ url_for('finance.invoice_detail', invoice_id=invoice.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali ke Invoice
+        </a>
+        <a href="{{ url_for('finance.payment_history') }}" class="btn app-btn-secondary">
+            Riwayat Pembayaran
+        </a>
+    </div>
+</div>
+<style>
+    .receipt-page {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .receipt-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: var(--shadow-card);
+    }
+
+    .receipt-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        border-bottom: 2px solid var(--text-primary);
+        padding-bottom: 18px;
+        margin-bottom: 24px;
+    }
+
+    .receipt-company h2 {
+        margin: 0;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .receipt-company p {
+        margin: 4px 0 0;
+        color: var(--text-muted);
+    }
+
+    .receipt-title {
+        text-align: right;
+    }
+
+    .receipt-title h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .receipt-title p {
+        margin: 6px 0 0;
+        color: var(--text-muted);
+    }
+
+    .receipt-section {
+        margin-bottom: 20px;
+    }
+
+    .receipt-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px 28px;
+    }
+
+    .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px dashed var(--border-soft);
+        padding: 9px 0;
+    }
+
+    .receipt-label {
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .receipt-value {
+        color: var(--text-primary);
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .amount-box {
+        border: 2px solid var(--text-primary);
+        border-radius: 14px;
+        padding: 18px;
+        text-align: center;
+        margin: 22px 0;
+        background: var(--surface-muted);
+    }
+
+    .amount-box .label {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .amount-box .amount {
+        color: var(--text-primary);
+        font-size: 34px;
+        font-weight: 900;
+    }
+
+    .receipt-note {
+        background: var(--surface-muted);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 14px;
+        color: var(--text-secondary);
+    }
+
+    .signature-area {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-top: 42px;
+    }
+
+    .signature-box {
+        text-align: center;
+        min-height: 120px;
+    }
+
+    .signature-line {
+        border-top: 1px solid var(--text-primary);
+        margin-top: 76px;
+        padding-top: 8px;
+        font-weight: 700;
+    }
+
+    .receipt-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    @media print {
+        .sidebar,
+        .topbar,
+        .navbar,
+        .app-sidebar,
+        .app-topbar,
+        .receipt-actions,
+        .btn,
+        .no-print {
+            display: none !important;
+        }
+
+        body {
+            background: var(--surface) !important;
+        }
+
+        html,
+        body,
+        .app-shell,
+        .app-main,
+        .content-area,
+        .container-fluid,
+        .finance-page-shell,
+        .receipt-page {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #fff !important;
+        }
+
+        .receipt-card {
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+        .receipt-header,
+        .amount-box,
+        .receipt-note,
+        .signature-area,
+        .signature-box {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        .receipt-grid {
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+    }
+</style>
+
+<div class="receipt-page">
+    <div class="receipt-card">
+        <div class="receipt-header">
+            <div class="receipt-company">
+                <h2>{{ receipt.company_name or "PT Idha Boga Pangan Mandiri" }}</h2>
+                <p>{{ receipt.company_subtitle or "Sistem Manajemen Catering" }}</p>
+                {% if receipt.company_address %}<p>{{ receipt.company_address }}</p>{% endif %}
+                {% if receipt.company_phone or receipt.company_email %}
+                    <p>{% if receipt.company_phone %}Telp: {{ receipt.company_phone }}{% endif %}{% if receipt.company_email %} | Email: {{ receipt.company_email }}{% endif %}</p>
+                {% endif %}
+                {% if receipt.company_npwp %}<p>NPWP: {{ receipt.company_npwp }}</p>{% endif %}
+                <p>Bukti penerimaan pembayaran invoice catering.</p>
+            </div>
+            <div class="receipt-title">
+                <h1>KWITANSI</h1>
+                <p>No: {{ payment.payment_number }}</p>
+                <p>Tanggal: {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else '-' }}</p>
+            </div>
+        </div>
+
+        <div class="amount-box">
+            <div class="label">Telah diterima pembayaran sebesar</div>
+            <div class="amount">{{ payment.amount|rupiah }}</div>
+        </div>
+
+        <div class="receipt-section">
+            <div class="receipt-grid">
+                <div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Diterima dari</div>
+                        <div class="receipt-value">{{ receipt.received_from }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Client</div>
+                        <div class="receipt-value">{{ client.name if client else '-' }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Mandor</div>
+                        <div class="receipt-value">{{ mandor.name if mandor else '-' }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">No Invoice</div>
+                        <div class="receipt-value">{{ invoice.invoice_number }}</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Metode Pembayaran</div>
+                        <div class="receipt-value">{{ payment.payment_method or '-' }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Rekening / Kas</div>
+                        <div class="receipt-value">
+                            {% if payment.payment_method == 'TRANSFER' and payment.bank_account %}
+                                {{ payment.bank_account.bank_name }} - {{ payment.bank_account.account_name }}
+                            {% elif payment.payment_method == 'CASH' %}
+                                Kas
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Referensi</div>
+                        <div class="receipt-value">{{ payment.reference_number or '-' }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">Status Invoice</div>
+                        <div class="receipt-value">{{ invoice.status }}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div class="receipt-label">No Jurnal</div>
+                        <div class="receipt-value">{{ journal.journal_number if journal else '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="receipt-section">
+            <h5>Ringkasan Invoice</h5>
+            <div class="receipt-grid">
+                <div class="receipt-row">
+                    <div class="receipt-label">Total Invoice</div>
+                    <div class="receipt-value">{{ invoice.total_amount|rupiah }}</div>
+                </div>
+                <div class="receipt-row">
+                    <div class="receipt-label">Total Sudah Dibayar</div>
+                    <div class="receipt-value">{{ invoice.paid_amount|rupiah }}</div>
+                </div>
+                <div class="receipt-row">
+                    <div class="receipt-label">Sisa Piutang Saat Ini</div>
+                    <div class="receipt-value">{{ invoice.remaining_amount|rupiah }}</div>
+                </div>
+                <div class="receipt-row">
+                    <div class="receipt-label">Tanggal Jatuh Tempo</div>
+                    <div class="receipt-value">{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="receipt-section">
+            <h5>Catatan Pembayaran</h5>
+            <div class="receipt-note">
+                {{ payment.notes or 'Pembayaran diterima dan dicatat pada sistem.' }}
+            </div>
+        </div>
+
+        {% if client_pics %}
+        <div class="receipt-section">
+            <h5>PIC Client</h5>
+            {% for pic in client_pics %}
+            <div class="receipt-row">
+                <div class="receipt-label">{{ pic.position or 'PIC' }}</div>
+                <div class="receipt-value">{{ pic.name }} - {{ pic.phone or '-' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        <div class="receipt-section no-print">
+            <h5>Bukti Digital Pembayaran</h5>
+            {% if payment_attachments %}
+                <div class="receipt-note">
+                    {% for attachment in payment_attachments %}
+                        <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                            <div>
+                                <strong>{{ attachment.original_filename }}</strong>
+                                <div class="text-muted small">{{ attachment.attachment_type }} · {{ format_file_size(attachment.file_size) }}</div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('finance.view_customer_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn app-btn-secondary">Lihat</a>
+                                <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn app-btn-secondary">Download</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="receipt-note text-muted">Belum ada bukti digital pembayaran yang diunggah.</div>
+            {% endif %}
+        </div>
+
+        <div class="signature-area">
+            <div class="signature-box">
+                <div>Penerima Pembayaran</div>
+                <div class="signature-line">{{ receipt.invoice_authorized_name or receipt.company_name or "PT Idha Boga Pangan Mandiri" }}</div>
+                {% if receipt.invoice_authorized_position %}<div class="text-muted small">{{ receipt.invoice_authorized_position }}</div>{% endif %}
+            </div>
+            <div class="signature-box">
+                <div>Pembayar / Client</div>
+                <div class="signature-line">{{ receipt.received_from }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

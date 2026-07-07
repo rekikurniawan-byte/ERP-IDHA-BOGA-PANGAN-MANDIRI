@@ -1,0 +1,79 @@
+/* ==================================================
+   Tahap 10.30 — UI Regression Sweep & Legacy Inline JS Cleanup
+   - visual guard for centralized app actions after removing inline JS handlers
+   - UI-only; no business route/service/database changes
+   ================================================== */
+
+.app-ui-regression-action {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-ui-regression-action:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--app-accent, #111827) 34%, transparent);
+    outline-offset: 3px;
+}
+
+.app-ui-confirm-action {
+    position: relative;
+}
+
+.app-ui-confirm-action:is(.app-btn-danger, .btn-danger, .btn-outline-danger)::after,
+.app-ui-confirm-action[data-action-tier="danger"]::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border: 1px solid color-mix(in srgb, var(--app-danger, #dc2626) 30%, transparent);
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+
+.app-ui-confirm-action:is(:hover, :focus-visible)::after {
+    opacity: 1;
+}
+
+.app-ui-simple-action[data-app-action="print"],
+.app-ui-simple-action[data-app-action="back"],
+.app-ui-simple-action[data-app-action="close"] {
+    white-space: nowrap;
+}
+
+.app-ui-call-action[data-app-call],
+.app-ui-call-action[data-app-change-call],
+.app-ui-call-action[data-app-input-call] {
+    touch-action: manipulation;
+}
+
+[data-app-temp-label].app-ui-regression-action {
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+[data-app-temp-label].app-ui-regression-action:active {
+    transform: translateY(1px);
+}
+
+form[data-app-confirm] :is(button[type="submit"], input[type="submit"], button:not([type])) {
+    scroll-margin-top: 96px;
+}
+
+[data-app-select-navigate].app-ui-regression-action {
+    cursor: pointer;
+}
+
+@media (max-width: 575.98px) {
+    .app-ui-simple-action[data-app-action="print"],
+    .app-ui-simple-action[data-app-action="back"],
+    .app-ui-simple-action[data-app-action="close"] {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media print {
+    .app-ui-regression-action[data-app-action="print"],
+    .app-ui-regression-action[data-app-action="back"],
+    .app-ui-regression-action[data-app-action="close"] {
+        display: none !important;
+    }
+}

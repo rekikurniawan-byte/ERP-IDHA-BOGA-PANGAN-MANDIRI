@@ -1,0 +1,162 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Profit Invoice dari HPP Allocation</h1>
+        <p>Report read-only yang membandingkan nilai invoice dengan HPP allocation dari snapshot order.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Invoice
+        </a>
+        <a href="{{ url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value) }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+        <a href="{{ url_for('finance.print_invoice_profit_report', start_date=start_value, end_date=end_value) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+    </div>
+</div>
+
+<div class="app-card soft-warning-card mt-4">
+    <strong>Catatan Presisi</strong>
+    <p class="mb-0">
+        Report ini tidak mengubah invoice lama. Margin hanya dihitung dari item invoice yang berhasil dicocokkan ke
+        alokasi HPP snapshot. Item revisi tambah dan hutang warung yang belum punya alokasi HPP ditampilkan terpisah.
+    </p>
+</div>
+
+{{ global_filter_bar({
+    "title": "Filter Profit Invoice",
+    "description": "Custom tanggal invoice untuk membaca profit dan HPP allocation.",
+    "action_url": url_for('finance.invoice_profit_report'),
+    "reset_url": url_for('finance.invoice_profit_report'),
+    "preset_name": "period_preset",
+    "preset_value": request.args.get('period_preset') or 'custom',
+    "preset_options": [
+        {"value": "today", "label": "Hari ini"},
+        {"value": "this_week", "label": "Minggu ini"},
+        {"value": "this_month", "label": "Bulan ini"},
+        {"value": "this_year", "label": "Tahun ini"},
+        {"value": "all", "label": "Semua"},
+        {"value": "custom", "label": "Custom"}
+    ],
+    "start_name": "start_date",
+    "end_name": "end_date",
+    "start_value": start_value,
+    "end_value": end_value,
+    "status_name": "",
+    "status_value": "",
+    "status_options": [],
+    "source_name": "",
+    "source_value": "",
+    "source_options": [],
+    "hidden_fields": {},
+    "active_label": (start_value or 'Awal') ~ ' s/d ' ~ (end_value or 'Akhir'),
+    "warning": ""
+}) }}
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <span>Total Invoice</span>
+        <h3>{{ totals.invoice_total|rupiah }}</h3>
+        <p>{{ totals.invoice_count }} invoice</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Revenue Terhitung HPP</span>
+        <h3>{{ totals.costed_revenue_total|rupiah }}</h3>
+        <p>Coverage {{ totals.coverage_percentage|round(2) }}%</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Total HPP Allocation</span>
+        <h3>{{ totals.hpp_total|rupiah }}</h3>
+        <p>Dari snapshot HPP order</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Laba Kotor Terhitung</span>
+        <h3>{{ totals.gross_profit_total|rupiah }}</h3>
+        <p>Margin {{ totals.gross_margin_percentage|round(2) }}%</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Profit per Invoice</h5>
+            <p>Angka HPP berasal dari alokasi HPP snapshot, bukan dari perubahan data master terbaru.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Invoice</th>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Ditagihkan Ke</th>
+                    <th>Total Invoice</th>
+                    <th>Revenue Terhitung</th>
+                    <th>HPP Allocation</th>
+                    <th>Laba Kotor</th>
+                    <th>Margin</th>
+                    <th>Coverage</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    {% set invoice = row.invoice %}
+                    {% set summary = row.summary %}
+                    <tr>
+                        <td><strong>{{ invoice.invoice_number }}</strong></td>
+                        <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ invoice.source_type or '-' }}</td>
+                        <td>{{ row.bill_to }}</td>
+                        <td>{{ summary.invoice_total|rupiah }}</td>
+                        <td>{{ summary.costed_revenue_total|rupiah }}</td>
+                        <td>{{ summary.hpp_total|rupiah }}</td>
+                        <td>{{ summary.gross_profit_total|rupiah }}</td>
+                        <td>
+                            {% if summary.costed_revenue_total > 0 %}
+                                {% if summary.gross_margin_percentage < 0 %}
+                                    <span class="status-badge status-danger">{{ summary.gross_margin_percentage|round(2) }}%</span>
+                                {% elif summary.gross_margin_percentage < 20 %}
+                                    <span class="status-badge status-progress">{{ summary.gross_margin_percentage|round(2) }}%</span>
+                                {% else %}
+                                    <span class="status-badge status-locked">{{ summary.gross_margin_percentage|round(2) }}%</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ summary.coverage_percentage|round(2) }}%</td>
+                        <td>
+                            <a href="{{ url_for('finance.invoice_profit_detail', invoice_id=invoice.id) }}" class="btn btn-sm app-btn-secondary">
+                                Detail Profit
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <i class="bi bi-graph-up-arrow"></i>
+                                <p>Belum ada invoice untuk ditampilkan.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

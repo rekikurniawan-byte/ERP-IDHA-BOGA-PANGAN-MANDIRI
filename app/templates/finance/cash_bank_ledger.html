@@ -1,0 +1,331 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Buku Kas/Bank</h1>
+        <p>Saldo buku kas/bank dari saldo awal, pembayaran pelanggan, pembelian, pembayaran supplier, transfer, dan penyesuaian.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.cash_bank_opening_balances') }}" class="btn app-btn-secondary">
+            <i class="bi bi-wallet2"></i>
+            Saldo Awal
+        </a>
+        <a href="{{ url_for('finance.cash_bank_transfers') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left-right"></i>
+            Transfer
+        </a>
+        <a href="{{ url_for('finance.cash_bank_adjustments') }}" class="btn app-btn-secondary">
+            <i class="bi bi-sliders"></i>
+            Penyesuaian
+        </a>
+        <a href="{{ export_cash_bank_ledger_url }}" class="btn app-btn-secondary">
+            <i class="bi bi-download"></i>
+            Download CSV
+        </a>
+        <a href="{{ url_for('finance.print_cash_bank_ledger', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+            <i class="bi bi-printer"></i>
+            Cetak / Save PDF
+        </a>
+        <a href="{{ url_for('master.bank_accounts') }}" class="btn app-btn-secondary">
+            <i class="bi bi-bank"></i>
+            Rekening Bank
+        </a>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Uang Masuk</span>
+        <h3>{{ summary.total_in|rupiah }}</h3>
+        <p>Termasuk saldo awal, pembayaran pelanggan, transfer masuk, dan adjustment tambah.</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Total Uang Keluar</span>
+        <h3>{{ summary.total_out|rupiah }}</h3>
+        <p>Pembelian tunai, pembayaran supplier, transfer keluar, dan adjustment kurang.</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Saldo Buku Kas/Bank</span>
+        <h3>{{ summary.net|rupiah }}</h3>
+        <p>Saldo awal + IN - OUT sesuai filter aktif.</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Jumlah Transaksi</span>
+        <h3>{{ summary.count }}</h3>
+        <p>{{ summary.reconciled_count }} rekonsiliasi · {{ summary.unreconciled_count }} belum.</p>
+    </div>
+</div>
+
+<div class="app-stat-grid mt-3">
+    <div class="app-stat-card">
+        <span>Saldo Kas</span>
+        <h3>{{ summary.cash_net|rupiah }}</h3>
+        <p>Masuk {{ summary.cash_in|rupiah }} · Keluar {{ summary.cash_out|rupiah }}</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Saldo Bank</span>
+        <h3>{{ summary.bank_net|rupiah }}</h3>
+        <p>Masuk {{ summary.bank_in|rupiah }} · Keluar {{ summary.bank_out|rupiah }}</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Rekonsiliasi</span>
+        <h3>{{ summary.reconciled_count }}</h3>
+        <p>Transaksi sudah ditandai cocok dengan bukti/kas fisik.</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Buku Kas/Bank</h5>
+            <p>Gunakan filter untuk melihat saldo, sumber transaksi, rekening bank, periode, dan status rekonsiliasi.</p>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('finance.cash_bank_ledger') }}" class="row g-3 app-form" data-ui-form="true">
+        <div class="col-md-2">
+            <label class="form-label">Tipe</label>
+            <select name="transaction_type" class="form-select app-input">
+                {% for option in transaction_type_options %}
+                    <option value="{{ option.value }}" {% if selected_transaction_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Kas / Bank</label>
+            <select name="account_type" class="form-select app-input">
+                {% for option in account_type_options %}
+                    <option value="{{ option.value }}" {% if selected_account_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Sumber</label>
+            <select name="reference_type" class="form-select app-input">
+                {% for option in reference_type_options %}
+                    <option value="{{ option.value }}" {% if selected_reference_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Rekening Bank</label>
+            <select name="bank_account_id" class="form-select app-input">
+                <option value="ALL" {% if selected_bank_account_id == 'ALL' %}selected{% endif %}>Semua rekening</option>
+                {% for account in active_bank_accounts %}
+                    <option value="{{ account.id }}" {% if selected_bank_account_id|string == account.id|string %}selected{% endif %}>
+                        {{ account.bank_name }} - {{ account.account_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Rekonsiliasi</label>
+            <select name="reconciliation_status" class="form-select app-input">
+                {% for option in reconciliation_status_options %}
+                    <option value="{{ option.value }}" {% if selected_reconciliation_status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Tanggal Awal</label>
+            <input type="date" name="start_date" class="form-control app-input" value="{{ start_date }}">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Tanggal Akhir</label>
+            <input type="date" name="end_date" class="form-control app-input" value="{{ end_date }}">
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end gap-2">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-search"></i>
+                Terapkan Filter
+            </button>
+            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+{% if bank_summary %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Ringkasan Per Rekening Bank</h5>
+            <p>Saldo bank dihitung dari saldo awal dan seluruh IN/OUT sesuai filter aktif.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Rekening</th>
+                    <th class="text-end">Masuk</th>
+                    <th class="text-end">Keluar</th>
+                    <th class="text-end">Saldo</th>
+                    <th class="text-center">Rekonsiliasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in bank_summary %}
+                    <tr>
+                        <td>
+                            {% if row.bank_account %}
+                                <strong>{{ row.bank_account.bank_name }}</strong>
+                                <div class="text-muted small">{{ row.bank_account.account_name }} - {{ row.bank_account.account_number }}</div>
+                            {% else %}
+                                <strong>Rekening tidak ditemukan</strong>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-success fw-semibold">{{ row.total_in|rupiah }}</td>
+                        <td class="text-end text-danger fw-semibold">{{ row.total_out|rupiah }}</td>
+                        <td class="text-end fw-semibold">{{ row.net|rupiah }}</td>
+                        <td class="text-center small">{{ row.reconciled_count }} sudah · {{ row.unreconciled_count }} belum</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Transaksi Kas/Bank</h5>
+            <p>Buku Kas/Bank ini menjadi dasar saldo kas/bank dan rekonsiliasi sederhana.</p>
+        </div>
+    </div>
+
+    {% if is_limited %}
+        <div class="alert alert-info small">
+            Data yang ditampilkan dibatasi 300 transaksi terbaru sesuai filter. Persempit periode/filter untuk melihat data lebih spesifik.
+        </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Kas/Bank</th>
+                    <th>Tipe</th>
+                    <th>Sumber</th>
+                    <th>Deskripsi</th>
+                    <th class="text-end">Masuk</th>
+                    <th class="text-end">Keluar</th>
+                    <th>Rekonsiliasi</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    {% set transaction = row.transaction %}
+                    <tr>
+                        <td>{{ transaction.transaction_date.strftime('%d-%m-%Y') if transaction.transaction_date else '-' }}</td>
+                        <td>
+                            {% if transaction.account_type == 'BANK' and transaction.bank_account %}
+                                <strong>{{ transaction.bank_account.bank_name }}</strong>
+                                <div class="text-muted small">{{ transaction.bank_account.account_name }}</div>
+                            {% elif transaction.account_type == 'CASH' %}
+                                <strong>Kas</strong>
+                                <div class="text-muted small">Kas operasional</div>
+                            {% else %}
+                                {{ transaction.account_type or '-' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.transaction_type == 'IN' %}
+                                <span class="badge bg-success">IN</span>
+                            {% elif transaction.transaction_type == 'OUT' %}
+                                <span class="badge bg-danger">OUT</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ transaction.transaction_type or '-' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ row.source_label }}</strong>
+                            <div class="text-muted small">{{ row.source_detail }}</div>
+                        </td>
+                        <td>{{ transaction.description }}</td>
+                        <td class="text-end text-success fw-semibold">
+                            {% if transaction.transaction_type == 'IN' %}
+                                {{ transaction.amount|rupiah }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-danger fw-semibold">
+                            {% if transaction.transaction_type == 'OUT' %}
+                                {{ transaction.amount|rupiah }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.is_reconciled %}
+                                <span class="badge bg-success">Sudah</span>
+                                <div class="text-muted small">{{ transaction.reconciled_at.strftime('%d-%m-%Y %H:%M') if transaction.reconciled_at else '-' }}</div>
+                                {% if transaction.reconciliation_note %}
+                                    <div class="small">{{ transaction.reconciliation_note }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Belum</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                {% if row.source_url %}
+                                    <a href="{{ row.source_url }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                {% endif %}
+
+                                {% if transaction.is_reconciled %}
+                                    <form method="POST" action="{{ url_for('finance.unreconcile_cash_bank_ledger_transaction', transaction_id=transaction.id) }}" data-ui-form="true" class="app-form">
+                                        {% include "components/csrf_token.html" %}
+                                        <button type="submit" class="btn btn-sm app-btn-secondary">Buka</button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{{ url_for('finance.reconcile_cash_bank_ledger_transaction', transaction_id=transaction.id) }}" class="d-flex gap-1 app-form" data-ui-form="true">
+                                        {% include "components/csrf_token.html" %}
+                                        <input type="text" name="reconciliation_note" class="form-control form-control-sm col-min-120" placeholder="Catatan">
+                                        <button type="submit" class="btn btn-sm app-btn-secondary">Cocok</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="bi bi-wallet2"></i>
+                                <p>Belum ada transaksi kas/bank sesuai filter.</p>
+                                <small>Buku Kas/Bank akan terisi dari saldo awal, pembayaran pelanggan, pembelian tunai, pembayaran hutang supplier, transfer, dan penyesuaian.</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info small mb-0">
+        Catatan: rekonsiliasi di sini adalah penanda sederhana bahwa transaksi sudah cocok dengan bukti/kas fisik. Rekonsiliasi ini tidak mengubah nominal transaksi.
+    </div>
+</div>
+</div>
+{% endblock %}

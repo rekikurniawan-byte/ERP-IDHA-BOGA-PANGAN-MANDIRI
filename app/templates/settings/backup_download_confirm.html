@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+{% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Backup Security</span>
+        <h1>Konfirmasi Download Backup</h1>
+        <p>Critical audit: file backup/checksum hanya bisa diunduh setelah alasan dan password akun aktif dikonfirmasi ulang.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('settings.backups') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>File yang akan diunduh</h3>
+            <p>Pastikan file ini disimpan di lokasi aman, bukan folder publik.</p>
+        </div>
+        <span class="status-badge warning">SENSITIVE</span>
+    </div>
+    <div class="detail-list">
+        <div class="detail-row"><span>Nama file</span><code class="small text-break">{{ file_name }}</code></div>
+        <div class="detail-row"><span>MIME type</span><strong>{{ mimetype }}</strong></div>
+        <div class="detail-row"><span>Ukuran</span><strong>{{ (file_size_bytes / 1024)|round(2) }} KB</strong></div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('settings.download_backup', filename=filename) }}" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    {{ sensitive_guard_fields("Download file backup/checksum", "Contoh: simpan backup verified ke flashdisk/cloud owner") }}
+    <div class="app-card">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="text-muted">Download akan dicatat ke audit log sebagai aksi sensitif.</div>
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-download"></i>
+                Download Sekarang
+            </button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}

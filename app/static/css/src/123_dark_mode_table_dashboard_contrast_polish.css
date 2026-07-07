@@ -1,0 +1,644 @@
+/* ==================================================
+   PRODUCTION — Dark Mode Table & Dashboard Contrast Polish
+   Basis: PRODUCTION kosong, bukan database demo.
+   Fokus: warna dark mode dashboard, table, form, dropdown, modal
+   supaya tidak ada panel putih/abu terang yang terlalu kontras.
+   ================================================== */
+
+/* Token lokal khusus dark mode agar dashboard tetap nyaman dibaca. */
+[data-theme="dark-mono"] {
+  --fix73u-bg: #0b0f14;
+  --fix73u-bg-soft: #0f141b;
+  --fix73u-surface: #111820;
+  --fix73u-surface-soft: #151d27;
+  --fix73u-surface-muted: #1a2430;
+  --fix73u-border: rgba(203, 213, 225, .18);
+  --fix73u-border-soft: rgba(203, 213, 225, .12);
+  --fix73u-border-strong: rgba(203, 213, 225, .26);
+  --fix73u-text: #f8fafc;
+  --fix73u-text-soft: #dbe4ee;
+  --fix73u-muted: #b7c2d0;
+  --fix73u-muted-2: #94a3b8;
+  --fix73u-hover: #1d2937;
+}
+
+/* Latar utama tidak hitam pekat, tapi tetap gelap. */
+[data-theme="dark-mono"] .app-main,
+[data-theme="dark-mono"] body.is-authenticated,
+[data-theme="dark-mono"] body.is-authenticated .content-area,
+[data-theme="dark-mono"] body.is-authenticated .content-area > .container-fluid {
+  background: var(--fix73u-bg) !important;
+  color: var(--fix73u-text) !important;
+}
+
+[data-theme="dark-mono"] .app-topbar,
+[data-theme="dark-mono"] .app-sidebar {
+  background: #080b10 !important;
+  border-color: var(--fix73u-border-soft) !important;
+}
+
+/* Card umum di dark mode jangan putih/abu terang. */
+[data-theme="dark-mono"] .app-card,
+[data-theme="dark-mono"] .card,
+[data-theme="dark-mono"] .content-card,
+[data-theme="dark-mono"] .section-card,
+[data-theme="dark-mono"] .page-header,
+[data-theme="dark-mono"] .dashboard-section,
+[data-theme="dark-mono"] .dashboard-panel,
+[data-theme="dark-mono"] .dashboard-analytics-card,
+[data-theme="dark-mono"] .dashboard-chart-card,
+[data-theme="dark-mono"] .dashboard-command-kpi,
+[data-theme="dark-mono"] .dashboard-command-reminder,
+[data-theme="dark-mono"] .dashboard-command-link-card,
+[data-theme="dark-mono"] .app-stat-card,
+[data-theme="dark-mono"] .dashboard-chart-insight,
+[data-theme="dark-mono"] .dashboard-donut-metric,
+[data-theme="dark-mono"] .dashboard-donut-summary-strip > div {
+  background: var(--fix73u-surface) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .app-card p,
+[data-theme="dark-mono"] .card p,
+[data-theme="dark-mono"] .dashboard-section p,
+[data-theme="dark-mono"] .dashboard-panel p,
+[data-theme="dark-mono"] .dashboard-analytics-card p,
+[data-theme="dark-mono"] .dashboard-chart-card p,
+[data-theme="dark-mono"] .app-stat-helper,
+[data-theme="dark-mono"] .text-muted,
+[data-theme="dark-mono"] small {
+  color: var(--fix73u-muted) !important;
+}
+
+[data-theme="dark-mono"] h1,
+[data-theme="dark-mono"] h2,
+[data-theme="dark-mono"] h3,
+[data-theme="dark-mono"] h4,
+[data-theme="dark-mono"] h5,
+[data-theme="dark-mono"] h6,
+[data-theme="dark-mono"] .page-title,
+[data-theme="dark-mono"] .section-title,
+[data-theme="dark-mono"] .card-title,
+[data-theme="dark-mono"] .app-stat-card h3,
+[data-theme="dark-mono"] .dashboard-command-kpi strong {
+  color: var(--fix73u-text) !important;
+}
+
+/* Form/filter/select/input di dark mode jangan jadi blok abu-putih terang. */
+[data-theme="dark-mono"] .global-filter-bar-v2,
+[data-theme="dark-mono"] .filter-card,
+[data-theme="dark-mono"] .app-form,
+[data-theme="dark-mono"] .revenue-explorer-filter,
+[data-theme="dark-mono"] .dashboard-filter-bar,
+[data-theme="dark-mono"] .dashboard-filter-panel {
+  background: var(--fix73u-surface-soft) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] label,
+[data-theme="dark-mono"] .form-label,
+[data-theme="dark-mono"] .dashboard-filter-field label,
+[data-theme="dark-mono"] .filter-label {
+  color: var(--fix73u-text-soft) !important;
+}
+
+[data-theme="dark-mono"] .form-control,
+[data-theme="dark-mono"] .form-select,
+[data-theme="dark-mono"] .app-input,
+[data-theme="dark-mono"] .input-group-text,
+[data-theme="dark-mono"] input,
+[data-theme="dark-mono"] select,
+[data-theme="dark-mono"] textarea {
+  background-color: #0c1219 !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark-mono"] .form-control:focus,
+[data-theme="dark-mono"] .form-select:focus,
+[data-theme="dark-mono"] .app-input:focus,
+[data-theme="dark-mono"] input:focus,
+[data-theme="dark-mono"] select:focus,
+[data-theme="dark-mono"] textarea:focus {
+  background-color: #101923 !important;
+  color: var(--fix73u-text) !important;
+  border-color: rgba(96, 165, 250, .72) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, .16) !important;
+}
+
+[data-theme="dark-mono"] .form-control::placeholder,
+[data-theme="dark-mono"] textarea::placeholder {
+  color: var(--fix73u-muted-2) !important;
+}
+
+[data-theme="dark-mono"] select option {
+  background: #0c1219 !important;
+  color: var(--fix73u-text) !important;
+}
+
+/* Table sweep: mencegah isi kolom/table tiba-tiba putih di dark mode. */
+[data-theme="dark-mono"] .table-responsive,
+[data-theme="dark-mono"] .table-wrapper,
+[data-theme="dark-mono"] .app-table-wrapper,
+[data-theme="dark-mono"] .app-table-wrap,
+[data-theme="dark-mono"] .data-table-wrapper {
+  background: var(--fix73u-surface) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .table,
+[data-theme="dark-mono"] table,
+[data-theme="dark-mono"] table.table {
+  --bs-table-bg: transparent !important;
+  --bs-table-color: var(--fix73u-text) !important;
+  --bs-table-border-color: var(--fix73u-border-soft) !important;
+  --bs-table-striped-bg: rgba(148, 163, 184, .055) !important;
+  --bs-table-striped-color: var(--fix73u-text) !important;
+  --bs-table-hover-bg: rgba(96, 165, 250, .10) !important;
+  --bs-table-hover-color: var(--fix73u-text) !important;
+  background: var(--fix73u-surface) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border-soft) !important;
+}
+
+[data-theme="dark-mono"] .table > :not(caption) > * > *,
+[data-theme="dark-mono"] table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border-soft) !important;
+}
+
+[data-theme="dark-mono"] .table thead,
+[data-theme="dark-mono"] .table thead th,
+[data-theme="dark-mono"] table thead,
+[data-theme="dark-mono"] table thead th,
+[data-theme="dark-mono"] .table-light,
+[data-theme="dark-mono"] .table-secondary {
+  background: var(--fix73u-surface-muted) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .table tbody tr:nth-child(even) > *,
+[data-theme="dark-mono"] table tbody tr:nth-child(even) > * {
+  background: rgba(148, 163, 184, .045) !important;
+}
+
+[data-theme="dark-mono"] .table tbody tr:hover > *,
+[data-theme="dark-mono"] table tbody tr:hover > * {
+  background: rgba(96, 165, 250, .10) !important;
+}
+
+/* Bootstrap putih bawaan yang sering bocor di dark mode. */
+[data-theme="dark-mono"] .bg-white,
+[data-theme="dark-mono"] .bg-light,
+[data-theme="dark-mono"] .list-group-item,
+[data-theme="dark-mono"] .dropdown-menu,
+[data-theme="dark-mono"] .dropdown-item,
+[data-theme="dark-mono"] .modal-content,
+[data-theme="dark-mono"] .modal-header,
+[data-theme="dark-mono"] .modal-footer,
+[data-theme="dark-mono"] .offcanvas,
+[data-theme="dark-mono"] .toast,
+[data-theme="dark-mono"] .popover,
+[data-theme="dark-mono"] .accordion-item,
+[data-theme="dark-mono"] .accordion-button,
+[data-theme="dark-mono"] .nav-tabs .nav-link,
+[data-theme="dark-mono"] .pagination .page-link {
+  background-color: var(--fix73u-surface) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .dropdown-item:hover,
+[data-theme="dark-mono"] .dropdown-item:focus,
+[data-theme="dark-mono"] .list-group-item:hover,
+[data-theme="dark-mono"] .accordion-button:not(.collapsed),
+[data-theme="dark-mono"] .nav-tabs .nav-link.active,
+[data-theme="dark-mono"] .pagination .page-link:hover {
+  background-color: var(--fix73u-hover) !important;
+  color: var(--fix73u-text) !important;
+}
+
+/* Dashboard owner / revenue explorer dark mode: panel tidak abu putih. */
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-explorer-section,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-explorer-section,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] {
+  background: var(--fix73u-surface) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-trend-card,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-mix-card,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-trend-card,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-mix-card,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-analytics-card,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-chart-card {
+  background: #10161d !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-trend-chart,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-trend-chart,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-bar-plot {
+  background: linear-gradient(180deg, #17202a 0%, #10161d 58%, #0d131a 100%) !important;
+  border: 1px solid var(--fix73u-border-soft) !important;
+  color: var(--fix73u-text) !important;
+  scrollbar-color: rgba(148, 163, 184, .42) transparent !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-trend-chart::-webkit-scrollbar-thumb,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-trend-chart::-webkit-scrollbar-thumb,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-bar-plot::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, .44) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-trend-label,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-trend-group small,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-trend-label,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-trend-group small,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-bar-label,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-bar-group small {
+  color: var(--fix73u-muted) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-mix-item,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-mix-item,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-explorer-note,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-explorer-note,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-donut-metric,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-donut-summary-strip > div {
+  background: var(--fix73u-surface-soft) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-mix-item small,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-mix-item small,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-explorer-note,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-explorer-note {
+  color: var(--fix73u-muted) !important;
+}
+
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="owner"] .revenue-mix-donut span,
+[data-theme="dark-mono"] .content-area [data-ui-dashboard="revenue-explorer"] .revenue-mix-donut span,
+[data-theme="dark-mono"] .content-area [data-dashboard-section="analytics"] .dashboard-donut-center {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Alert/warning tetap jelas tapi tidak menyilaukan. */
+[data-theme="dark-mono"] .alert,
+[data-theme="dark-mono"] .warning-box,
+[data-theme="dark-mono"] .status-card,
+[data-theme="dark-mono"] .soft-warning,
+[data-theme="dark-mono"] .soft-info,
+[data-theme="dark-mono"] .soft-danger,
+[data-theme="dark-mono"] .soft-success {
+  background: var(--fix73u-surface-soft) !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+/* Tombol sekunder di dark mode tetap terbaca. */
+[data-theme="dark-mono"] .btn.app-btn-secondary,
+[data-theme="dark-mono"] .app-btn-secondary,
+[data-theme="dark-mono"] .btn-outline-secondary,
+[data-theme="dark-mono"] .btn-light {
+  background: #111820 !important;
+  color: var(--fix73u-text) !important;
+  border-color: var(--fix73u-border) !important;
+}
+
+[data-theme="dark-mono"] .btn.app-btn-secondary:hover,
+[data-theme="dark-mono"] .app-btn-secondary:hover,
+[data-theme="dark-mono"] .btn-outline-secondary:hover,
+[data-theme="dark-mono"] .btn-light:hover {
+  background: #1d2937 !important;
+  color: var(--fix73u-text) !important;
+}
+
+/* ==================================================
+   Tahap 10.11 — Receivables finance existing UI polish.
+   Scope: /finance/receivables only. No flow or data mutation.
+   ================================================== */
+.receivables-finance-polish-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.receivables-quick-nav {
+  margin-bottom: -2px !important;
+}
+
+.receivables-header-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.receivables-header-actions .btn,
+.receivables-quick-nav .btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.receivables-filter-card {
+  overflow: hidden;
+}
+
+.receivables-stage-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.receivables-stage-chip {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-badge, 999px) !important;
+  padding-inline: 12px !important;
+}
+
+.receivables-stage-chip strong {
+  min-width: 24px;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-badge, 999px);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.receivables-filter-form {
+  padding-top: 2px;
+}
+
+.receivables-filter-form .form-label {
+  min-height: 18px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+.receivables-filter-form .app-input,
+.receivables-filter-form .form-select,
+.receivables-filter-form .form-control {
+  min-height: 42px;
+}
+
+.receivables-filter-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.receivables-filter-actions .btn {
+  min-height: 42px;
+}
+
+.receivables-active-filter-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  border-color: var(--border-soft) !important;
+  background: var(--surface-soft) !important;
+  color: var(--text-secondary) !important;
+}
+
+.receivables-active-filter-summary strong {
+  color: var(--text-primary);
+}
+
+.receivables-active-filter-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: var(--radius-badge, 999px);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.receivables-kpi-grid {
+  margin-top: 2px;
+}
+
+.receivables-kpi-card {
+  position: relative;
+  min-width: 0;
+  padding-right: 54px !important;
+  overflow: hidden;
+}
+
+.receivables-kpi-card > i {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.receivables-kpi-card h3 {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.receivables-kpi-card-primary::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.receivables-summary-table th,
+.receivables-stage-table th,
+.receivables-priority-table th {
+  white-space: nowrap;
+}
+
+.receivables-summary-table td,
+.receivables-stage-table td,
+.receivables-priority-table td {
+  vertical-align: middle !important;
+}
+
+.receivables-summary-table tbody tr:hover,
+.receivables-stage-table tbody tr:hover,
+.receivables-priority-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.receivables-money-cell {
+  color: var(--text-primary);
+  font-weight: 850;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.receivables-count-pill,
+.receivables-priority-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: var(--radius-badge, 999px);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.receivables-priority-rank {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-soft));
+  color: var(--text-primary);
+}
+
+.receivables-party-type-badge,
+.receivables-stage-badge,
+.receivables-source-badge,
+.receivables-invoice-status-badge {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 26px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.receivables-source-badge {
+  background: color-mix(in srgb, var(--info, var(--accent)) 10%, var(--surface-soft));
+  color: var(--text-primary);
+}
+
+.receivables-invoice-number {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.receivables-party-meta {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.receivables-detail-action {
+  min-width: 78px;
+}
+
+.receivables-priority-table {
+  min-width: 1120px;
+}
+
+.receivables-priority-table td:nth-child(3) {
+  min-width: 220px;
+}
+
+.receivables-priority-table td:nth-child(8) {
+  text-align: right;
+}
+
+[data-theme="dark-mono"] .receivables-active-filter-summary,
+[data-theme="dark-enterprise"] .receivables-active-filter-summary,
+[data-theme="dark-mono"] .receivables-count-pill,
+[data-theme="dark-enterprise"] .receivables-count-pill,
+[data-theme="dark-mono"] .receivables-priority-rank,
+[data-theme="dark-enterprise"] .receivables-priority-rank,
+[data-theme="dark-mono"] .receivables-party-type-badge,
+[data-theme="dark-enterprise"] .receivables-party-type-badge,
+[data-theme="dark-mono"] .receivables-stage-badge,
+[data-theme="dark-enterprise"] .receivables-stage-badge,
+[data-theme="dark-mono"] .receivables-source-badge,
+[data-theme="dark-enterprise"] .receivables-source-badge,
+[data-theme="dark-mono"] .receivables-invoice-status-badge,
+[data-theme="dark-enterprise"] .receivables-invoice-status-badge {
+  background: var(--surface-soft) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+@media (max-width: 992px) {
+  .receivables-header-actions,
+  .receivables-filter-actions {
+    width: 100%;
+  }
+
+  .receivables-header-actions .btn,
+  .receivables-filter-actions .btn {
+    flex: 1 1 170px;
+  }
+
+  .receivables-stage-filter-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .receivables-stage-chip {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .receivables-finance-polish-shell {
+    gap: 14px;
+  }
+
+  .receivables-quick-nav .btn,
+  .receivables-header-actions .btn,
+  .receivables-filter-actions .btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .receivables-kpi-card {
+    padding-right: var(--card-padding, 16px) !important;
+  }
+
+  .receivables-kpi-card > i {
+    position: static;
+    margin-bottom: 8px;
+  }
+
+  .receivables-active-filter-summary {
+    align-items: flex-start;
+  }
+
+  .receivables-active-filter-summary span {
+    max-width: 100%;
+  }
+}

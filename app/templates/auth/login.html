@@ -1,0 +1,91 @@
+{% extends "layouts/base.html" %}
+
+{% block auth_content %}
+<div class="auth-wrapper" data-ui-auth="UI">
+    <div class="auth-panel">
+        <div class="auth-public-toolbar" aria-label="Mode tampilan login">
+            <button class="theme-mode-option auth-theme-pill" type="button" data-theme-option="dark-mono">Dark Mono</button>
+            <button class="theme-mode-option auth-theme-pill" type="button" data-theme-option="light-mono">Light Mono</button>
+        </div>
+
+        <div class="auth-brand">
+            <div class="auth-logo">IB</div>
+            <div>
+                <h4>PT IDHA BOGA PANGAN MANDIRI</h4>
+                <p>Integrated Catering Management System</p>
+            </div>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <h5>Masuk ke Dashboard Idha Boga</h5>
+                <p>Gunakan akun resmi perusahaan untuk mengakses dashboard operasional.</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.login') }}" data-ui-form="true" data-form-kind="auth" data-ui-auth-form="UI" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input 
+                        type="text" 
+                        name="username" 
+                        class="form-control app-input"
+                        autocomplete="username"
+                        aria-describedby="loginUsernameHelp" 
+                        placeholder="Username akun resmi"
+                        required
+                    >
+                    <div class="form-text" id="loginUsernameHelp">Masukkan username akun internal yang terdaftar.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        class="form-control app-input"
+                        autocomplete="current-password" 
+                        placeholder="Password akun resmi"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn app-btn-primary w-100" data-submit-loading="Masuk...">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Masuk Dashboard
+                </button>
+            </form>
+
+            <div class="auth-note">
+                Akses hanya untuk user internal yang sudah terdaftar. Hubungi admin jika akun bermasalah.
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-side">
+        <div class="auth-side-card">
+            <span class="eyebrow">Operational Control</span>
+            <h2>Satu sistem untuk catering, warung, stok, keuangan, dan akuntansi.</h2>
+            <p>
+                Dibangun untuk mengontrol operasional harian PT Idha Boga Pangan Mandiri
+                secara rapi, terukur, dan siap diaudit.
+            </p>
+
+            <div class="auth-metrics">
+                <div>
+                    <strong>Multi</strong>
+                    <span>Cabang</span>
+                </div>
+                <div>
+                    <strong>Real-time</strong>
+                    <span>Dashboard</span>
+                </div>
+                <div>
+                    <strong>Auto</strong>
+                    <span>Jurnal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

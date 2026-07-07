@@ -1,0 +1,299 @@
+/* ==================================================
+   PRODUCTION SOURCE: 22_module_operational.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 5303-5595.
+   Note: Finance global polish block.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* ==================================================
+   UI Finance Global polish
+   Scope: invoice, payment, receivables, ledger, AP supplier, asset purchase, print/export.
+   New rules use 4-theme token system only; legacy print B/W is isolated in print templates.
+   ================================================== */
+
+.finance-page-shell,
+.finance-print-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+.finance-page-shell .page-header,
+.finance-page-shell .app-page-header {
+    margin-bottom: 0;
+}
+
+.finance-flow-panel {
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+
+.finance-flow-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.finance-flow-title strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 15px;
+}
+
+.finance-flow-title small,
+.finance-flow-step small {
+    color: var(--text-muted);
+}
+
+.finance-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.finance-flow-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "num title"
+        "num desc";
+    gap: 2px 10px;
+    align-items: center;
+    min-height: 66px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.finance-flow-step:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.finance-flow-step span {
+    grid-area: num;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-badge);
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid var(--border-soft);
+}
+
+.finance-flow-step strong {
+    grid-area: title;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.finance-flow-step small {
+    grid-area: desc;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.finance-flow-step.is-active {
+    border-color: var(--primary);
+    background: var(--info-soft);
+}
+
+.finance-flow-step.is-active span {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
+}
+
+.finance-header-actions[data-finance-collapsed="true"] {
+    align-items: center;
+}
+
+.finance-header-actions .finance-more-dropdown .dropdown-menu {
+    min-width: 260px;
+    padding: 8px;
+    border-radius: var(--radius-card);
+    border-color: var(--border-soft);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.finance-header-actions .finance-more-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-button-sm);
+    color: var(--text-secondary);
+    font-weight: 650;
+    padding: 8px 10px;
+}
+
+.finance-header-actions .finance-more-dropdown .dropdown-item:hover,
+.finance-header-actions .finance-more-dropdown .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+
+.finance-money,
+.finance-page-shell td[data-money="true"],
+.finance-page-shell .app-table td.text-end,
+.finance-page-shell .app-table th.text-end,
+.finance-page-shell .app-table td:last-child[data-finance-money="true"] {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.finance-page-shell .table-responsive,
+.finance-print-shell .table-responsive {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+
+.finance-page-shell .app-table {
+    margin-bottom: 0;
+}
+
+.finance-page-shell .app-table th {
+    white-space: nowrap;
+}
+
+.finance-page-shell .app-table td,
+.finance-page-shell .app-table th {
+    vertical-align: middle;
+}
+
+.finance-page-shell .app-table .btn,
+.finance-page-shell .app-table form .btn {
+    min-height: 34px;
+}
+
+.finance-page-shell .soft-warning-card,
+.finance-page-shell .alert-warning {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+}
+
+.finance-page-shell .soft-success-card,
+.finance-page-shell .alert-success {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--text-primary);
+}
+
+.finance-page-shell .soft-info-card,
+.finance-page-shell .alert-info {
+    border-color: var(--info);
+    background: var(--info-soft);
+    color: var(--text-primary);
+}
+
+.finance-page-shell form[data-form-kind="filter"],
+.finance-page-shell .app-filter-form {
+    align-items: end;
+}
+
+.finance-page-shell .app-form-actions {
+    justify-content: flex-end;
+}
+
+.finance-mobile-hint {
+    display: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+@media (max-width: 1023.98px) {
+    .finance-flow-steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .finance-page-shell,
+    .finance-print-shell {
+        gap: 16px;
+    }
+
+    .finance-flow-panel {
+        padding: 14px;
+    }
+
+    .finance-flow-title {
+        display: block;
+    }
+
+    .finance-flow-title small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .finance-flow-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .finance-flow-step {
+        min-height: 58px;
+    }
+
+    .finance-page-shell .summary-grid,
+    .finance-page-shell .kpi-grid,
+    .finance-page-shell .info-grid,
+    .finance-page-shell .detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .finance-page-shell .table-responsive,
+    .finance-print-shell .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .finance-page-shell .app-table {
+        min-width: 760px;
+    }
+
+    .finance-page-shell .app-card,
+    .finance-print-shell .app-card {
+        border-radius: var(--radius-card);
+    }
+
+    .finance-page-shell .btn,
+    .finance-page-shell .app-form-actions .btn,
+    .finance-page-shell .finance-header-actions > .btn,
+    .finance-page-shell .finance-header-actions > a.btn,
+    .finance-page-shell .finance-header-actions .dropdown-toggle {
+        min-height: 44px;
+    }
+
+    .finance-page-shell .finance-header-actions,
+    .finance-page-shell .finance-header-actions > .btn,
+    .finance-page-shell .finance-header-actions > a.btn,
+    .finance-page-shell .finance-header-actions > form,
+    .finance-page-shell .finance-header-actions > form .btn,
+    .finance-page-shell .finance-header-actions .app-action-dropdown,
+    .finance-page-shell .finance-header-actions .finance-more-dropdown,
+    .finance-page-shell .finance-header-actions .dropdown-toggle {
+        width: 100%;
+    }
+
+    .finance-mobile-hint {
+        display: block;
+    }
+}

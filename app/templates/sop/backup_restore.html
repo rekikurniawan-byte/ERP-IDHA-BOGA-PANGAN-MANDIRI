@@ -1,0 +1,197 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="sop-page" data-fix70-f1="backup-restore-sop">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">{{ sop.eyebrow }}</span>
+            <h1 class="page-title">{{ sop.title }}</h1>
+            <p class="page-description">Panduan final membuat full backup verified, validasi restore preview, restore manual-assisted, dan restore drill mingguan.</p>
+        </div>
+        <div class="page-actions sop-no-print">
+            <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">
+                <i class="bi bi-life-preserver"></i>
+                SOP Disaster Recovery
+            </a>
+            <button type="button" class="btn app-btn-secondary" data-app-action="print">
+                <i class="bi bi-printer"></i>
+                Print SOP
+            </button>
+        </div>
+    </div>
+
+    <div class="app-stat-grid sop-summary-grid mb-4">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-database-check"></i></div>
+            <div>
+                <p>Backup Aman</p>
+                <h3>Full</h3>
+                <span class="app-stat-helper">DB + uploads + metadata</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-shield-lock"></i></div>
+            <div>
+                <p>Status Minimal</p>
+                <h3>Verified</h3>
+                <span class="app-stat-helper">Pre + post + dry-run</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-calendar-check"></i></div>
+            <div>
+                <p>Restore Drill</p>
+                <h3>Mingguan</h3>
+                <span class="app-stat-helper">Atau sebelum patch besar</span>
+            </div>
+        </div>
+    </div>
+
+    {% set rt = sop.runtime %}
+    {% set db = rt.database %}
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Folder Policy Aktif</h3>
+                <p>Backup dan uploads sensitif harus tetap private.</p>
+            </div>
+            <span class="status-badge info">{{ sop.schema_version }}</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-lg-4"><div class="detail-row h-100"><span>Database aktif</span><code class="small text-break">{{ db.path }}</code></div></div>
+            <div class="col-lg-4"><div class="detail-row h-100"><span>Backup aktif</span><code class="small text-break">{{ rt.backup_dir }}</code></div></div>
+            <div class="col-lg-4"><div class="detail-row h-100"><span>Uploads aktif</span><code class="small text-break">{{ rt.upload_dir }}</code></div></div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Aturan Backup Final</h3><p>Definisi backup aman untuk Idha Boga.</p></div></div>
+                <ul class="mb-0">
+                    {% for item in sop.backup_policy %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Verification Contract</h3><p>Yang wajib PASS sebelum backup dipercaya.</p></div></div>
+                <ul class="mb-0">
+                    {% for item in sop.verification_contract %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="section-title">
+            <div>
+                <h3>Cara Membuat Full Backup VERIFIED</h3>
+                <p>Ikuti step ini sebelum patch besar, closing, restore planning, atau pemakaian harian penting.</p>
+            </div>
+        </div>
+        <div class="d-flex flex-column gap-3">
+            {% for step in sop.create_full_backup_steps %}
+                <div class="detail-row">
+                    <span>{{ step.title }}</span>
+                    <strong>{{ step.description }}</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-5">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Restore Lihat Data</h3><p>Validasi dulu, jangan langsung timpa database aktif.</p></div></div>
+                <ol class="mb-0">
+                    {% for item in sop.restore_preview_steps %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+        <div class="col-xl-7">
+            <div class="app-card h-100">
+                <div class="section-title"><div><h3>Restore Aktif Manual-Assisted</h3><p>Hanya jika backup verified dan server sudah dihentikan.</p></div><span class="status-badge warning">MANUAL ONLY</span></div>
+                <div class="d-flex flex-column gap-3">
+                    {% for step in sop.active_restore_steps %}
+                        <div class="detail-row">
+                            <span>{{ step.title }}</span>
+                            <strong>{{ step.description }}</strong>
+                            {% if step.commands %}
+                                <div class="command-box mt-2">
+                                    {% for cmd in step.commands %}<code>{{ cmd }}</code>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="app-card h-100 soft-info-card">
+                <h3>Checklist Setelah Restore</h3>
+                <ul class="mb-0">
+                    {% for item in sop.post_restore_checks %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="app-card h-100 soft-info-card">
+                <h3>Restore Drill</h3>
+                <p><strong>Frekuensi:</strong> {{ sop.restore_drill.frequency }}</p>
+                <ul>
+                    {% for item in sop.restore_drill.steps %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                <p class="mb-0"><strong>Status hasil:</strong> {{ sop.restore_drill.result_status|join(', ') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="section-title"><div><h3>Aturan Simpan & Download Backup</h3><p>Backup berisi data bisnis dan bukti digital, jadi harus diperlakukan sebagai file sensitif.</p></div></div>
+        <ul class="mb-0">
+            {% for item in sop.download_storage_rules %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="app-card mb-0">
+        <div class="section-title">
+            <div>
+                <h3>Halaman Safety Terkait</h3>
+                <p>Buka halaman ini untuk membuat backup, validasi, smoke test, dan audit.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            {% for page in sop.safety_pages %}
+                <div class="col-md-6 col-xl-4">
+                    <a class="sop-role-card card app-card h-100" href="{{ page.url }}">
+                        <div class="card-body">
+                            <div class="sop-role-card-head">
+                                <span class="sop-role-icon"><i class="bi {{ page.icon }}"></i></span>
+                                <i class="bi bi-arrow-right-short"></i>
+                            </div>
+                            <h2>{{ page.label }}</h2>
+                            <p>{{ page.purpose }}</p>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Transfer Kas/Bank</h1>
+        <p>Catat perpindahan dana antar kas dan rekening bank. Sistem membuat buku kas/bank OUT dan IN berpasangan.</p>
+    </div>
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Buku Kas/Bank
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Tambah Transfer</h5>
+            <p>Contoh: tarik kas dari bank, setor kas ke bank, atau pindah antar rekening.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="row g-3 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-2">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="transfer_date" class="form-control app-input" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Dari</label>
+            <select name="from_account_type" class="form-select app-input" required>
+                <option value="CASH">Kas</option>
+                <option value="BANK">Bank</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Rekening Asal</label>
+            <select name="from_bank_account_id" class="form-select app-input">
+                <option value="">Kas / tidak pakai rekening</option>
+                {% for account in active_bank_accounts %}
+                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} - {{ account.account_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Ke</label>
+            <select name="to_account_type" class="form-select app-input" required>
+                <option value="BANK">Bank</option>
+                <option value="CASH">Kas</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Rekening Tujuan</label>
+            <select name="to_bank_account_id" class="form-select app-input">
+                <option value="">Kas / tidak pakai rekening</option>
+                {% for account in active_bank_accounts %}
+                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} - {{ account.account_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Nominal</label>
+            <input type="text" name="amount" class="form-control app-input" placeholder="Contoh: 500000" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Nomor Referensi</label>
+            <input type="text" name="reference_number" class="form-control app-input" placeholder="Opsional">
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Catatan</label>
+            <textarea name="notes" class="form-control app-input" rows="2"></textarea>
+        </div>
+        <div class="col-md-12">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-arrow-left-right"></i>
+                Simpan Transfer
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Transfer</h5>
+            <p>Setiap transfer membentuk dua row buku kas/bank dengan nomor transfer yang sama.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Nomor</th>
+                    <th>Dari</th>
+                    <th>Ke</th>
+                    <th class="text-end">Nominal</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transfer in transfers %}
+                    <tr>
+                        <td>{{ transfer.transfer_date.strftime('%d-%m-%Y') if transfer.transfer_date else '-' }}</td>
+                        <td><strong>{{ transfer.transfer_number }}</strong></td>
+                        <td>
+                            {% if transfer.from_account_type == 'BANK' and transfer.from_bank_account %}
+                                {{ transfer.from_bank_account.bank_name }} - {{ transfer.from_bank_account.account_name }}
+                            {% else %}
+                                Kas Operasional
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transfer.to_account_type == 'BANK' and transfer.to_bank_account %}
+                                {{ transfer.to_bank_account.bank_name }} - {{ transfer.to_bank_account.account_name }}
+                            {% else %}
+                                Kas Operasional
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">{{ transfer.amount|rupiah }}</td>
+                        <td>{{ transfer.notes or transfer.reference_number or '-' }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-arrow-left-right"></i>
+                                <p>Belum ada transfer kas/bank.</p>
+                                <small>Jangan isi dummy di database utama.</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

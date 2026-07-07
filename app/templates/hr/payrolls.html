@@ -1,0 +1,136 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payrolls">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / PAYROLL</span>
+        <h1>Payroll</h1>
+        <p>Daftar payroll karyawan internal dengan status lifecycle, total gaji, dan status posting jurnal.</p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">
+            <i class="bi bi-calendar-plus"></i>
+            Buat Payroll Bulanan
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi Payroll
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
+                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div><div><p>Total Payroll</p><h3>{{ payroll_summary.total_rows }}</h3><span class="app-stat-helper">Semua periode</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-pencil-square"></i></div><div><p>Draft</p><h3>{{ payroll_summary.draft }}</h3><span class="app-stat-helper">Belum final</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-journal-x"></i></div><div><p>Belum Posting</p><h3>{{ payroll_summary.final }}</h3><span class="app-stat-helper">FINAL menunggu jurnal</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div><div><p>Belum Dibayar</p><h3>{{ payroll_summary.posted }}</h3><span class="app-stat-helper">POSTED menunggu pembayaran</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Gaji</p><h3>{{ payroll_summary.total_salary|rupiah }}</h3><span class="app-stat-helper">Akumulasi semua payroll</span></div></div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter-form hr-filter-form" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="" {% if not status_filter %}selected{% endif %}>Semua Status</option>
+                    {% for status in ['DRAFT', 'FINAL', 'POSTED', 'PAID'] %}
+                        <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Tahun</label>
+                <select name="period_year" class="form-select">
+                    <option value="" {% if not period_year_filter %}selected{% endif %}>Semua Tahun</option>
+                    {% for year in year_options %}
+                        <option value="{{ year }}" {% if period_year_filter == year|string %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Bulan</label>
+                <select name="period_month" class="form-select">
+                    <option value="" {% if not period_month_filter %}selected{% endif %}>Semua Bulan</option>
+                    {% for month in range(1, 13) %}
+                        <option value="{{ month }}" {% if period_month_filter == month|string %}selected{% endif %}>{{ "%02d"|format(month) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="hr-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <div class="hr-section-title">
+            <div>
+                <span>Payroll Register</span>
+                <h2>Daftar Payroll</h2>
+            </div>
+            <span class="hr-table-count">{{ payroll_rows|length }} baris tampil · {{ payroll_summary.filtered_salary|rupiah }}</span>
+        </div>
+        {% if payroll_rows %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Periode</th>
+                            <th>Status</th>
+                            <th>Status Jurnal</th>
+                            <th>Status Bayar</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in payroll_rows %}
+                            <tr>
+                                <td><span class="fw-semibold">{{ row.period }}</span></td>
+                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status }}</span></td>
+                                <td>
+                                    <span class="hr-posting-badge is-{{ row.journal_state.class }}" title="{{ row.journal_state.helper }}">
+                                        <i class="bi {{ row.journal_state.icon }}"></i> {{ row.journal_state.label }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="hr-posting-badge is-{{ row.payment_state.class }}" title="{{ row.payment_state.helper }}">
+                                        <i class="bi {{ row.payment_state.icon }}"></i> {{ row.payment_state.label }}
+                                    </span>
+                                </td>
+                                <td class="text-end">{{ row.total|rupiah }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-cash-coin"></i></div>
+                <h3>Belum ada payroll sesuai filter.</h3>
+                <p>Buat payroll bulanan atau reset filter untuk melihat semua periode yang sudah dibuat.</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
+                    <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Reset Filter</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

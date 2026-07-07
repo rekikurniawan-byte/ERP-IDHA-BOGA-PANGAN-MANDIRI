@@ -1,0 +1,254 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="atomic-map">
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Recovery Center</span>
+        <h1>Atomic Transaction Audit Map</h1>
+        <p>Atomic transaction map untuk memantau atomic guard, sisa risiko transaksi, dan akses ke failure injection smoke simulation.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('settings.atomic_smoke_simulation') }}" class="btn app-btn-primary">Atomic Smoke</a>
+        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
+        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">Audit Log</a>
+        <a href="{{ url_for('settings.backups') }}" class="btn app-btn-secondary">Backup & Restore</a>
+    </div>
+</div>
+
+{% set summary = report.get("summary", {}) %}
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Status Atomic Map</h3>
+            <p>{{ summary.get("summary") }}</p>
+        </div>
+        <span class="status-badge {{ summary.get('status_class', 'warning') }}">{{ summary.get("status", "PERLU REVIEW") }}</span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">Commit ditemukan</div>
+                <div class="stat-value">{{ summary.get("commit_total", 0) }}</div>
+                <div class="text-muted small">Route: {{ summary.get("route_commit_total", 0) }} · Service: {{ summary.get("service_commit_total", 0) }}</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">Rollback ditemukan</div>
+                <div class="stat-value">{{ summary.get("rollback_total", 0) }}</div>
+                <div class="text-muted small">Rollback eksplisit yang terdeteksi di source.</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">Atomic guard</div>
+                <div class="stat-value">{{ summary.get("atomic_guard_total", 0) }}</div>
+                <div class="text-muted small">Begin: {{ summary.get("begin_total", 0) }} · file tanpa begin: {{ summary.get("file_without_begin_count", 0) }}</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">High/Critical scope</div>
+                <div class="stat-value">{{ summary.get("critical_record_count", 0) + summary.get("high_record_count", 0) }}</div>
+                <div class="text-muted small">Critical: {{ summary.get("critical_record_count", 0) }} · High: {{ summary.get("high_record_count", 0) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="soft-info-card mt-3">
+        <strong>Rule C2:</strong> {{ report.get("rules", {}).get("atomic_rule") }}<br>
+        <span class="text-muted">{{ report.get("rules", {}).get("c2_boundary") }}</span>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Prioritas Patch Atomic Guard</h3>
+            <p>Urutan ini dibuat dari area yang punya commit tinggi, dampak lintas modul, dan belum terlihat boundary atomic eksplisit.</p>
+        </div>
+        <span class="status-badge info">{{ report.get("policy_version") }}</span>
+    </div>
+
+    {% if report.get("priority_patches") %}
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Risk</th>
+                        <th>Commit</th>
+                        <th>Begin</th>
+                        <th>Patch berikutnya</th>
+                        <th>Alasan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report.get("priority_patches", []) %}
+                        <tr>
+                            <td><strong>{{ item.get("area") }}</strong></td>
+                            <td><span class="status-badge {{ item.get('status_class', 'warning') }}">{{ item.get("risk_level") }}</span></td>
+                            <td>{{ item.get("commit_count", 0) }}</td>
+                            <td>{{ item.get("begin_count", 0) }}</td>
+                            <td><strong>{{ item.get("next_patch") }}</strong></td>
+                            <td class="text-muted small">{{ item.get("why") }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state compact-empty-state">
+            <h3>Belum ada prioritas C2</h3>
+            <p>Static scan tidak menemukan commit yang perlu masuk daftar prioritas.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row g-4 mb-4">
+    {% for area in report.get("area_rollups", []) %}
+        <div class="col-xl-6">
+            <div class="app-card h-100">
+                <div class="section-title">
+                    <div>
+                        <h3>{{ area.get("area") }}</h3>
+                        <p>{{ area.get("recommendation") }}</p>
+                    </div>
+                    <span class="status-badge {{ area.get('status_class', 'warning') }}">{{ area.get("risk_level") }}</span>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><div class="detail-row"><span>Commit</span><strong>{{ area.get("commit_count", 0) }}</strong></div></div>
+                    <div class="col-6"><div class="detail-row"><span>Rollback</span><strong>{{ area.get("rollback_count", 0) }}</strong></div></div>
+                    <div class="col-6"><div class="detail-row"><span>Begin</span><strong>{{ area.get("begin_count", 0) }}</strong></div></div>
+                    <div class="col-6"><div class="detail-row"><span>Scope</span><strong>{{ area.get("function_count", 0) }}</strong></div></div>
+                </div>
+                {% if area.get("top_files") %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for file in area.get("top_files", []) %}
+                            <div class="detail-row">
+                                <span class="text-break">{{ file.get("file") }}</span>
+                                <strong>{{ file.get("commit_count", 0) }} commit</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Top Risk Scope</h3>
+            <p>Scope tertinggi dari hasil static scan. Ini bukan bukti bug, tapi daftar area yang harus dipatch hati-hati di C2.</p>
+        </div>
+        <span class="status-badge warning">READ ONLY</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>File / Scope</th>
+                    <th>Area</th>
+                    <th>Risk</th>
+                    <th>Commit</th>
+                    <th>Rollback</th>
+                    <th>Begin</th>
+                    <th>Rekomendasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in report.get("top_risk_records", []) %}
+                    <tr>
+                        <td>
+                            <strong class="d-block text-break">{{ record.get("scope") }}</strong>
+                            <code class="small text-break">{{ record.get("file") }}:{{ record.get("line_start") }}</code>
+                        </td>
+                        <td>{{ record.get("area") }}</td>
+                        <td><span class="status-badge {{ 'danger' if record.get('risk_level') in ['CRITICAL', 'HIGH'] else 'warning' if record.get('risk_level') == 'MEDIUM' else 'info' }}">{{ record.get("risk_level") }}</span></td>
+                        <td>{{ record.get("counts", {}).get("commit", 0) }}</td>
+                        <td>{{ record.get("counts", {}).get("rollback", 0) }}</td>
+                        <td>{{ record.get("counts", {}).get("begin", 0) }}</td>
+                        <td class="small text-muted">{{ record.get("recommendation") }}</td>
+                    </tr>
+                    {% if record.get("risk_reasons") %}
+                        <tr>
+                            <td colspan="7" class="small text-muted">
+                                <strong>Alasan:</strong>
+                                {{ record.get("risk_reasons")|join(" · ") }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>File Commit Map</h3>
+            <p>Ringkasan file yang punya commit/rollback/begin terdeteksi.</p>
+        </div>
+        <span class="status-badge info">{{ report.get("schema_version") }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Area</th>
+                    <th>Commit</th>
+                    <th>Rollback</th>
+                    <th>Begin</th>
+                    <th>Atomic Guard</th>
+                    <th>Flush</th>
+                    <th>Audit Call</th>
+                    <th>Status Boundary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in report.get("file_reports", []) %}
+                    {% set counts = file.get("counts", {}) %}
+                    <tr>
+                        <td><code class="small text-break">{{ file.get("file") }}</code></td>
+                        <td>{{ file.get("area") }}</td>
+                        <td>{{ counts.get("commit", 0) }}</td>
+                        <td>{{ counts.get("rollback", 0) }}</td>
+                        <td>{{ counts.get("begin", 0) }}</td>
+                        <td>{{ counts.get("atomic_guard", 0) }}</td>
+                        <td>{{ counts.get("flush", 0) }}</td>
+                        <td>{{ counts.get("audit", 0) }}</td>
+                        <td>
+                            {% if file.get("has_commit_without_begin") %}
+                                <span class="status-badge warning">COMMIT TANPA BEGIN</span>
+                            {% elif counts.get("atomic_guard", 0) > 0 %}
+                                <span class="status-badge success">ATOMIC GUARD</span>
+                            {% elif counts.get("begin", 0) > 0 %}
+                                <span class="status-badge success">BEGIN ADA</span>
+                            {% else %}
+                                <span class="status-badge info">NO COMMIT</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card soft-info-card mb-0">
+    <strong>Catatan atomic guard:</strong>
+    atomic guard sudah mulai dipasang pada modul prioritas tanpa migration dan tanpa mengubah database aktif. Static scan tetap dipakai untuk melihat sisa commit yang belum masuk boundary atomic.
+</div>
+
+</div>
+{% endblock %}

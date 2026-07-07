@@ -1,0 +1,365 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan | Rekap Tagihan Mandor</span>
+            <h1>Detail Rekap Tagihan</h1>
+            <p>Audit data sumber sebelum dikunci dan dipromosikan ke invoice/piutang.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.manual_billing_batches_list') }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Daftar Rekap Buku
+            </a>
+            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
+                <i class="bi bi-journal-text"></i>
+                Rekap Tagihan Mandor
+            </a>
+            <a href="{{ url_for('finance.print_manual_billing_batch', batch_id=batch.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-printer"></i>
+                Cetak Rekap
+            </a>
+            {% if can_edit %}
+            <a href="{{ url_for('finance.edit_manual_billing_backfill_batch', batch_id=batch.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-pencil-square"></i>
+                Edit Draft
+            </a>
+            {% endif %}
+            {% if can_lock %}
+            <form method="POST"
+                  action="{{ url_for('finance.lock_manual_billing_batch_route', batch_id=batch.id) }}" data-app-confirm="Kunci rekap ini? Setelah dikunci, data menjadi dasar tagihan dan tidak boleh diubah sembarangan.">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-lock"></i>
+                    Kunci Rekap
+                </button>
+            </form>
+            {% endif %}
+            {% if can_create_invoice %}
+            <form method="POST"
+                  action="{{ url_for('finance.create_manual_backfill_invoice_route', batch_id=batch.id) }}" data-app-confirm="Buat invoice dan piutang dari rekap terkunci ini? Data tidak akan dianggap sebagai pembayaran tunai.">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    Buat Invoice / Piutang
+                </button>
+            </form>
+            {% endif %}
+            {% if can_void %}
+            <form method="POST"
+                  action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}" data-app-confirm="Batalkan rekap manual ini sebelum invoice/piutang dibuat? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="btn app-btn-danger">
+                    <i class="bi bi-x-octagon"></i>
+                    Void Rekap
+                </button>
+            </form>
+            {% endif %}
+            {% if batch.invoice_id %}
+            <a href="{{ url_for('finance.invoice_detail', invoice_id=batch.invoice_id) }}" class="btn app-btn-primary">
+                <i class="bi bi-receipt"></i>
+                Buka Invoice
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-stat-grid mt-4">
+        <div class="app-stat-card">
+            <span>Total Rekap</span>
+            <h3>{{ batch.total_amount|rupiah }}</h3>
+            <p>{{ batch.items|length }} item</p>
+        </div>
+        {% if batch.invoice %}
+        <div class="app-stat-card">
+            <span>Sudah Dibayar</span>
+            <h3>{{ batch.invoice.paid_amount|rupiah }}</h3>
+            <p>Status invoice: {{ batch.invoice.status }}</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Sisa Piutang</span>
+            <h3>{{ batch.invoice.remaining_amount|rupiah }}</h3>
+            <p>Status rekap: {{ status_context.label }}</p>
+        </div>
+        {% endif %}
+        <div class="app-stat-card">
+            <span>Total Catering</span>
+            <h3>{{ catering_total|rupiah }}</h3>
+            <p>Data porsi dari buku/manual</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Total Warung/Kasbon</span>
+            <h3>{{ warung_total|rupiah }}</h3>
+            <p>Data pekerja dari buku/manual</p>
+        </div>
+        {% if other_total %}
+        <div class="app-stat-card">
+            <span>Total Lainnya</span>
+            <h3>{{ other_total|rupiah }}</h3>
+            <p>Item non catering/warung</p>
+        </div>
+        {% endif %}
+    </div>
+
+        {% if duplicate_guard and duplicate_guard.has_conflicts %}
+    <div class="alert alert-warning mt-4">
+        <div class="d-flex gap-2 align-items-start">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+                <strong>Proteksi data dobel aktif.</strong>
+                <p class="mb-2">{{ duplicate_guard.message }}</p>
+                <p class="mb-2">
+                    Jika rekap ini salah input, ubah periode/pihak/kategori melalui Edit Draft atau batalkan rekap ini agar tidak menagih dobel.
+                </p>
+                <ul class="mb-0">
+                    {% for conflict in duplicate_guard.conflicts %}
+                    <li>
+                        {% if conflict.kind == 'INVOICE' and conflict.invoice_id %}
+                            <a href="{{ url_for('finance.invoice_detail', invoice_id=conflict.invoice_id) }}">{{ conflict.number }}</a>
+                        {% elif conflict.kind == 'REKAP' and conflict.batch_id %}
+                            <a href="{{ url_for('finance.manual_billing_batch_detail', batch_id=conflict.batch_id) }}">{{ conflict.number }}</a>
+                        {% else %}
+                            {{ conflict.number }}
+                        {% endif %}
+                        - {{ conflict.period }} - kategori {{ conflict.category_label }} -
+                        <span class="status-badge {% if conflict.status_label == 'PAID' %}status-success{% elif conflict.status_label == 'DRAFT' %}status-warning{% elif conflict.status_label == 'LOCKED' %}status-success{% else %}status-info{% endif %}">
+                            {{ conflict.status_label }}
+                        </span>
+                        - sumber {{ conflict.input_source }}
+                        {% if conflict.kind == 'REKAP' and conflict.invoice_id %}
+                            <div class="small mt-1">
+                                Terkait invoice:
+                                <a href="{{ url_for('finance.invoice_detail', invoice_id=conflict.invoice_id) }}">{{ conflict.linked_invoice_number or ('Invoice #' ~ conflict.invoice_id) }}</a>
+                            </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="small mt-2">
+                    Rekap ini tidak bisa dikunci atau dibuat invoice sebelum bentroknya diselesaikan.
+                    Ini mencegah tagihan realtime dan input belakangan menagih periode yang sama dua kali.
+                </div>
+                <div class="mt-3">
+                    {% if batch.status == 'DRAFT' %}
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if can_edit %}
+                        <a href="{{ url_for('finance.edit_manual_billing_backfill_batch', batch_id=batch.id) }}" class="btn app-btn-primary">
+                            <i class="bi bi-pencil-square"></i>
+                            Edit Draft
+                        </a>
+                        {% endif %}
+                        {% if can_void %}
+                        <form method="POST"
+                              action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}"
+                              data-app-confirm="Batalkan rekap manual ini? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn app-btn-danger">
+                                <i class="bi bi-x-octagon"></i>
+                                Batalkan Rekap Ini
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% elif batch.status == 'LOCKED' and not batch.invoice_id %}
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if can_void %}
+                        <form method="POST"
+                              action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}"
+                              data-app-confirm="Batalkan rekap manual ini? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn app-btn-danger">
+                                <i class="bi bi-x-octagon"></i>
+                                Batalkan Rekap Ini
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% elif batch.invoice_id or batch.status in ['INVOICED', 'PARTIALLY_PAID', 'PAID'] %}
+                    <div class="alert alert-info mb-0">
+                        Rekap ini sudah terhubung ke invoice/piutang. Pembatalan harus melalui prosedur koreksi invoice atau pembayaran sesuai aturan existing.
+                        {% if batch.invoice_id %}
+                        <div class="mt-2">
+                            <a href="{{ url_for('finance.invoice_detail', invoice_id=batch.invoice_id) }}" class="btn app-btn-secondary">
+                                <i class="bi bi-receipt"></i>
+                                Buka Invoice
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Identitas Rekap</h5>
+                <p>{{ batch.batch_number }}</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="status-badge {{ input_source_context.badge_class }}">{{ input_source_context.label }}</span>
+                <span class="status-badge {{ status_context.badge_class }}">{{ status_context.label }}</span>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Periode</span>
+                    <strong>{{ batch.period_start.strftime('%d-%m-%Y') }} s/d {{ batch.period_end.strftime('%d-%m-%Y') }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Tipe Pihak Ditagih</span>
+                    <strong>{{ bill_to_context.type_label }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Nama Pihak Ditagih</span>
+                    <strong>{{ bill_to_context.name }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Master Terkait</span>
+                    <strong>{{ bill_to_context.master_context }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Invoice</span>
+                    <strong>{{ batch.invoice.invoice_number if batch.invoice else 'Belum dibuat' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Telepon Pihak</span>
+                    <strong>{{ bill_to_context.phone or '-' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="detail-field">
+                    <span>Waktu Lock</span>
+                    <strong>{{ batch.locked_at.strftime('%d-%m-%Y %H:%M') if batch.locked_at else 'Belum dikunci' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-field">
+                    <span>Alamat Pihak</span>
+                    <strong>{{ bill_to_context.address or '-' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-field">
+                    <span>Catatan Pihak</span>
+                    <strong>{{ bill_to_context.notes or '-' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-field">
+                    <span>Catatan Rekap</span>
+                    <strong>{{ batch.notes or '-' }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Status Proses</h5>
+                <p>Alur terkunci: Draft → Lock Rekap → Buat Invoice/Piutang → Pembayaran.</p>
+            </div>
+            <span class="status-badge {{ status_context.badge_class }}">{{ status_context.label }}</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="detail-field">
+                    <span>Draft</span>
+                    <strong>{% if batch.status == 'VOID' %}Dibatalkan{% else %}{{ 'Selesai' if batch.status in ['DRAFT', 'LOCKED', 'INVOICED', 'PARTIALLY_PAID', 'PAID'] else '-' }}{% endif %}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="detail-field">
+                    <span>Lock Rekap</span>
+                    <strong>{{ 'Sudah dikunci' if batch.locked_at else 'Belum dikunci' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="detail-field">
+                    <span>Invoice / Piutang</span>
+                    <strong>{{ batch.invoice.invoice_number if batch.invoice else 'Belum dibuat' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="detail-field">
+                    <span>Pembayaran</span>
+                    {% if batch.invoice %}
+                        <strong>{{ batch.invoice.paid_amount|rupiah }} dibayar, sisa {{ batch.invoice.remaining_amount|rupiah }}</strong>
+                    {% else %}
+                        <strong>Belum ada invoice</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "finance/_billing_trace_panel.html" %}
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Rincian Item Rekap</h5>
+                <p>{{ status_context.helper }}</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Jenis</th>
+                        <th>Deskripsi</th>
+                        <th>Sumber</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Harga</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in batch.items %}
+                    <tr>
+                        <td>{{ item.source_date.strftime('%d-%m-%Y') if item.source_date else '-' }}</td>
+                        <td><strong>{{ item.item_type }}</strong></td>
+                        <td>{{ item.description }}</td>
+                        <td>
+                            <span class="status-badge status-warning">{{ item.input_source }}</span>
+                            <div class="small text-muted">{{ item.source_type }} #{{ item.source_id }}</div>
+                            {% if item.source_label %}<div class="small text-muted">{{ item.source_label }}</div>{% endif %}
+                        </td>
+                        <td class="text-end">{{ item.qty|qty }}</td>
+                        <td class="text-end">{{ item.unit_price|rupiah }}</td>
+                        <td class="text-end">{{ item.subtotal|rupiah }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <p>Belum ada item rekap.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,733 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan - Detail Transaksi Kas Lapangan</span>
+        <h1>{{ transaction.transaction_number }}</h1>
+        <p>{% if detail_state.is_completed %}Transaksi sudah selesai diposting. Halaman ini dipakai untuk audit jurnal, buku kas/bank, lampiran, dan relasi dokumen.{% else %}Detail transaksi lapangan untuk review, posting, dokumen turunan, hubungkan, dan jejak audit yang sudah terhubung.{% endif %}</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('field_transactions.monitoring') }}" class="btn app-btn-secondary">
+            <i class="bi bi-activity"></i>
+            Monitoring
+        </a>
+        {% if detail_state.can_edit %}
+        <a href="{{ url_for('field_transactions.edit', transaction_id=transaction.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-pencil-square"></i>
+            Edit Draft
+        </a>
+        {% endif %}
+        {% if detail_state.can_mark_ready %}
+        <form method="POST" action="{{ url_for('field_transactions.update_review_status', transaction_id=transaction.id) }}" class="d-inline">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="to_review_status" value="READY_TO_POST">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-check2-square"></i>
+                Tandai Siap Diposting
+            </button>
+        </form>
+        {% endif %}
+        {% if detail_state.can_post %}
+        <form method="POST" action="{{ url_for('field_transactions.post', transaction_id=transaction.id) }}" class="d-inline">
+            {% include "components/csrf_token.html" %}
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-journal-check"></i>
+                Posting Sekarang
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+{% if detail_state.show_partial_warning %}
+<div class="app-card mt-4">
+    <div class="empty-state text-start align-items-start">
+        <i class="bi bi-exclamation-triangle"></i>
+        <h5>Event Ini Masih Parsial Di UI</h5>
+        <p>{{ detail_state.event_label }} tetap bisa dilihat karena sudah pernah tercatat. Input baru untuk event ini belum dibuka sampai alur end-to-end-nya punya proses dan output yang jelas.</p>
+    </div>
+</div>
+{% endif %}
+
+{% if detail_state.show_review_panel %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Aksi Review</h5>
+            <p>Pilih status review berikutnya sesuai kondisi transaksi. Status sensitif seperti reject, void, dan sudah rekonsiliasi wajib memakai catatan.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('field_transactions.update_review_status', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Status Tujuan</label>
+                <select name="to_review_status" class="form-select" required>
+                    <option value="">Pilih status</option>
+                    {% for item in detail_state.available_review_targets %}
+                    <option value="{{ item.value }}">{{ item.label }} - {{ item.value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Catatan Review</label>
+                <input type="text" name="note" class="form-control" placeholder="Wajib untuk reject, void, dan sudah rekonsiliasi. Opsional untuk status lain.">
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn app-btn-primary">Simpan Aksi Review</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="section-title">
+        <div>
+            <h3>Ringkasan Status</h3>
+            <p>Panel ini membantu finance melihat konteks, trace integrasi, dan langkah berikutnya tanpa harus membaca seluruh detail transaksi.</p>
+        </div>
+    </div>
+    <div class="field-detail-grid">
+        <section class="field-detail-panel">
+                <h6 class="mb-3">Status Inti</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="status-badge status-progress">{{ transaction.review_status }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.posting_status == 'POSTED' else 'warning' }}">{{ transaction.posting_status }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.evidence_status in ['ATTACHED', 'VERIFIED'] else 'warning' }}">{{ transaction.evidence_status }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.payment_status == 'PAID' else 'info' }}">{{ transaction.payment_status }}</span>
+                </div>
+                <div class="detail-grid">
+                    <div class="detail-row"><span>Event</span><strong>{{ detail_state.event_label }}</strong><small class="text-muted d-block">{{ transaction.business_event_type }}</small></div>
+                    <div class="detail-row"><span>Masuk/Keluar</span><strong>{{ transaction.transaction_direction }}</strong></div>
+                    <div class="detail-row"><span>Nominal</span><strong>{{ transaction.amount|rupiah }}</strong></div>
+                    <div class="detail-row"><span>Jejak Keuangan</span><strong>{{ 'Sudah ada' if detail_state.has_financial_trace else 'Belum ada' }}</strong></div>
+                </div>
+        </section>
+        <section class="field-detail-panel">
+                <h6 class="mb-3">Langkah Berikutnya</h6>
+                <ul class="mb-0 ps-3">
+                    {% for item in detail_state.next_actions %}
+                    <li class="mb-2">{{ item }}</li>
+                    {% endfor %}
+                </ul>
+        </section>
+        <section class="field-detail-panel">
+                <h6 class="mb-3">Jejak Integrasi</h6>
+                {% if detail_state.link_roles %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for role in detail_state.link_roles %}
+                        <span class="status-badge status-info">{{ role }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Belum ada link dokumen, buku kas/bank, jurnal, atau bridge legacy.</p>
+                {% endif %}
+        </section>
+    </div>
+</div>
+
+{% if detail_state.can_reconcile %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rekonsiliasi</h5>
+            <p>Transaksi sudah diposting. Gunakan aksi ini hanya setelah buku kas/bank, jurnal, dan bukti sudah cocok.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('field_transactions.update_review_status', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <input type="hidden" name="to_review_status" value="RECONCILED">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-9">
+                <label class="form-label">Catatan Rekonsiliasi</label>
+                <input type="text" name="note" class="form-control" placeholder="Wajib diisi saat menandai sudah rekonsiliasi." required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn app-btn-primary w-100">Tandai Sudah Rekonsiliasi</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Informasi Inti</h5>
+            <p>Snapshot pihak dan konteks transaksi lapangan.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <tbody>
+                <tr>
+                    <th style="width: 240px;">Tanggal Kejadian</th>
+                    <td>{{ transaction.transaction_date.strftime('%d-%m-%Y') }}</td>
+                </tr>
+                <tr>
+                    <th>Tanggal Input</th>
+                    <td>{{ transaction.entry_date.strftime('%d-%m-%Y') }}</td>
+                </tr>
+                <tr>
+                    <th>Pihak Snapshot</th>
+                    <td>{{ transaction.party_snapshot_name or '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Perusahaan Snapshot</th>
+                    <td>{{ transaction.party_snapshot_company or '-' }}</td>
+                </tr>
+                <tr>
+                    <th>No HP Snapshot</th>
+                    <td>{{ transaction.party_snapshot_phone or '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Counterparty Existing</th>
+                    <td>{% if transaction.counterparty %}{{ transaction.counterparty.name }} - {{ transaction.counterparty.counterparty_type }}{% else %}-{% endif %}</td>
+                </tr>
+                <tr>
+                    <th>Lokasi Site</th>
+                    <td>{{ transaction.site_location or '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Metode Bayar</th>
+                    <td>{{ transaction.payment_method or '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Rekening Bank</th>
+                    <td>{% if transaction.bank_account %}{{ transaction.bank_account.bank_name }} - {{ transaction.bank_account.account_name }}{% else %}-{% endif %}</td>
+                </tr>
+                <tr>
+                    <th>Catatan</th>
+                    <td>{{ transaction.notes or '-' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if detail_state.manual_document_event %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>{{ 'Piutang Manual' if transaction.business_event_type == 'MANUAL_RECEIVABLE_CREATED' else 'Hutang Manual' }}</h5>
+            <p>Dokumen manual ini dipakai untuk transaksi lapangan yang belum langsung lunas, lalu bisa dipantau atau dinaikkan ke dokumen formal sesuai kebutuhan.</p>
+        </div>
+    </div>
+
+    {% if transaction.business_event_type == 'MANUAL_RECEIVABLE_CREATED' %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100" id="manual-receivable">
+                <h6 class="mb-3">Piutang Manual</h6>
+                {% if manual_receivable %}
+                    <p class="mb-1"><strong>No:</strong> {{ manual_receivable.receivable_number }}</p>
+                    <p class="mb-1"><strong>Jatuh Tempo:</strong> {{ manual_receivable.due_date.strftime('%d-%m-%Y') }}</p>
+                    <p class="mb-1"><strong>Status:</strong> {{ manual_receivable.status }}</p>
+                    <p class="mb-1"><strong>Total:</strong> {{ manual_receivable.total_amount|rupiah }}</p>
+                    <p class="mb-3"><strong>Sisa:</strong> {{ manual_receivable.remaining_amount|rupiah }}</p>
+                    {% if manual_receivable_billing_invoice %}
+                    <div class="alert alert-info py-2">
+                        Sudah masuk invoice resmi
+                        <a href="{{ url_for('finance.invoice_detail', invoice_id=manual_receivable_billing_invoice.id) }}">
+                            {{ manual_receivable_billing_invoice.invoice_number }}
+                        </a>.
+                    </div>
+                    {% endif %}
+
+                    {% if not manual_receivable_billing_invoice and manual_receivable.remaining_amount > 0 %}
+                    <form method="POST" action="{{ url_for('field_transactions.create_manual_receivable_payment', receivable_id=manual_receivable.id) }}" class="app-form" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Bayar</label>
+                                <input type="date" name="payment_date" class="form-control" value="{{ transaction.transaction_date.isoformat() }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal</label>
+                                <input type="text" name="amount" class="form-control" value="{{ manual_receivable.remaining_amount }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Metode</label>
+                                <select name="payment_method" class="form-select" required>
+                                    <option value="CASH">CASH</option>
+                                    <option value="TRANSFER">TRANSFER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Rekening Bank</label>
+                                <select name="bank_account_id" class="form-select">
+                                    <option value="">Tanpa rekening</option>
+                                    {% for bank in bank_accounts %}
+                                        <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Referensi</label>
+                                <input type="text" name="reference_number" class="form-control">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn app-btn-primary">Catat Pembayaran Piutang</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% elif manual_receivable_billing_invoice %}
+                    <a href="{{ url_for('finance.invoice_detail', invoice_id=manual_receivable_billing_invoice.id) }}" class="btn app-btn-primary">
+                        Buka Invoice Resmi
+                    </a>
+                    {% else %}
+                    <p class="text-muted mb-0">Piutang manual sudah lunas. Pembayaran baru tidak diperlukan.</p>
+                    {% endif %}
+                {% else %}
+                    <form method="POST" action="{{ url_for('field_transactions.create_manual_receivable_doc', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jatuh Tempo</label>
+                                <input type="date" name="due_date" class="form-control" value="{{ transaction.transaction_date.isoformat() }}" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn app-btn-primary">Buat Dokumen Piutang Manual</button>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </section>
+        </div>
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100" id="manual-receivable-payments">
+                <h6 class="mb-3">Riwayat Pembayaran</h6>
+                {% if manual_receivable and manual_receivable.payments %}
+                    <ul class="mb-0">
+                        {% for payment in manual_receivable.payments|sort(attribute='payment_date', reverse=True) %}
+                            <li>
+                                {{ payment.payment_number }} - {{ payment.payment_date.strftime('%d-%m-%Y') }} - {{ payment.amount|rupiah }} - {{ payment.payment_method }}
+                                {% if payment.cash_bank_transaction_id %}
+                                    - <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=payment.cash_bank_transaction_id) }}">Buku Kas/Bank</a>
+                                {% endif %}
+                                {% if payment.journal_id %}
+                                    - <a href="{{ url_for('accounting.journal_detail', journal_id=payment.journal_id) }}">Jurnal</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">Belum ada pembayaran piutang manual.</p>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+    {% elif transaction.business_event_type == 'UNFORMAL_VENDOR_PAYABLE' %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100" id="manual-payable">
+                <h6 class="mb-3">Hutang Manual</h6>
+                {% if manual_payable %}
+                    <p class="mb-1"><strong>No:</strong> {{ manual_payable.payable_number }}</p>
+                    <p class="mb-1"><strong>Jatuh Tempo:</strong> {{ manual_payable.due_date.strftime('%d-%m-%Y') }}</p>
+                    <p class="mb-1"><strong>Status:</strong> {{ manual_payable.status }}</p>
+                    <p class="mb-1"><strong>Total:</strong> {{ manual_payable.total_amount|rupiah }}</p>
+                    <p class="mb-3"><strong>Sisa:</strong> {{ manual_payable.remaining_amount|rupiah }}</p>
+
+                    {% if manual_payable.remaining_amount > 0 %}
+                    <form method="POST" action="{{ url_for('field_transactions.create_manual_payable_payment', payable_id=manual_payable.id) }}" class="app-form" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Bayar</label>
+                                <input type="date" name="payment_date" class="form-control" value="{{ transaction.transaction_date.isoformat() }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal</label>
+                                <input type="text" name="amount" class="form-control" value="{{ manual_payable.remaining_amount }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Metode</label>
+                                <select name="payment_method" class="form-select" required>
+                                    <option value="CASH">CASH</option>
+                                    <option value="TRANSFER">TRANSFER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Rekening Bank</label>
+                                <select name="bank_account_id" class="form-select">
+                                    <option value="">Tanpa rekening</option>
+                                    {% for bank in bank_accounts %}
+                                        <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Referensi</label>
+                                <input type="text" name="reference_number" class="form-control">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn app-btn-primary">Catat Pembayaran Hutang</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="text-muted mb-0">Hutang manual sudah lunas. Pembayaran baru tidak diperlukan.</p>
+                    {% endif %}
+                {% else %}
+                    <form method="POST" action="{{ url_for('field_transactions.create_manual_payable_doc', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jatuh Tempo</label>
+                                <input type="date" name="due_date" class="form-control" value="{{ transaction.transaction_date.isoformat() }}" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn app-btn-primary">Buat Dokumen Hutang Manual</button>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </section>
+        </div>
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100" id="manual-payable-payments">
+                <h6 class="mb-3">Riwayat Pembayaran</h6>
+                {% if manual_payable and manual_payable.payments %}
+                    <ul class="mb-0">
+                        {% for payment in manual_payable.payments|sort(attribute='payment_date', reverse=True) %}
+                            <li>
+                                {{ payment.payment_number }} - {{ payment.payment_date.strftime('%d-%m-%Y') }} - {{ payment.amount|rupiah }} - {{ payment.payment_method }}
+                                {% if payment.cash_bank_transaction_id %}
+                                    - <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=payment.cash_bank_transaction_id) }}">Buku Kas/Bank</a>
+                                {% endif %}
+                                {% if payment.journal_id %}
+                                    - <a href="{{ url_for('accounting.journal_detail', journal_id=payment.journal_id) }}">Jurnal</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">Belum ada pembayaran hutang manual.</p>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat Review</h5>
+            <p>Jejak perubahan status dan aksi dasar pada transaksi lapangan.</p>
+        </div>
+    </div>
+    {% if transaction.review_logs %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Aksi</th>
+                    <th>Dari</th>
+                    <th>Ke</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in transaction.review_logs|sort(attribute='created_at', reverse=True) %}
+                <tr>
+                    <td>{{ log.created_at.strftime('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
+                    <td>{{ log.action_type }}</td>
+                    <td>{{ log.from_review_status or '-' }}</td>
+                    <td>{{ log.to_review_status }}</td>
+                    <td>{{ log.note or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-clock-history"></i>
+        <h5>Belum ada riwayat review</h5>
+        <p>Log review akan tampil setelah transaksi mulai diproses lebih lanjut.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Relasi & Lampiran</h5>
+            <p>Lampiran bukti sekarang bisa ditautkan dan diverifikasi langsung dari halaman ini. Aksi lihat membuka tab baru, sedangkan unduh menyimpan file asli ke browser.</p>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100">
+                <h6 class="mb-3">Lampiran Tertaut</h6>
+                {% if available_attachments %}
+                <form method="POST" action="{{ url_for('field_transactions.link_attachment', transaction_id=transaction.id) }}" class="app-form mb-4" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Lampiran Digital Existing</label>
+                            <select name="digital_attachment_id" class="form-select" required>
+                                <option value="">Pilih lampiran</option>
+                                {% for item in available_attachments %}
+                                    <option value="{{ item.id }}">{{ item.original_filename }} - {{ item.attachment_type }} - {{ item.module }}/{{ item.reference_type }} #{{ item.reference_id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Peran Lampiran</label>
+                            <select name="attachment_role" class="form-select">
+                                <option value="EVIDENCE">EVIDENCE</option>
+                                <option value="RECEIPT">RECEIPT</option>
+                                <option value="SUPPORTING_DOC">SUPPORTING_DOC</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Catatan</label>
+                            <input type="text" name="notes" class="form-control" placeholder="Opsional">
+                        </div>
+                        <div class="col-md-12">
+                            <button type="submit" class="btn app-btn-primary">Tautkan Lampiran</button>
+                        </div>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-muted mb-4">Belum ada lampiran digital yang bisa ditautkan dari cabang ini.</p>
+                {% endif %}
+                {% if transaction.attachments %}
+                    <div class="table-responsive" data-mobile-table="scroll">
+                        <table class="table app-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Peran</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in transaction.attachments|sort(attribute='created_at', reverse=True) %}
+                                <tr>
+                                    {% set attachment_state = attachment_ui_state.get(item.id, {}) %}
+                                    <td>
+                                        <div class="fw-semibold">{{ item.digital_attachment.original_filename if item.digital_attachment else '-' }}</div>
+                                        <div class="text-muted small">{{ item.digital_attachment.attachment_type if item.digital_attachment else '-' }}</div>
+                                        {% if attachment_state.helper %}
+                                        <div class="text-muted small mt-1">{{ attachment_state.helper }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.attachment_role }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ 'done' if item.status == 'VERIFIED' else 'warning' }}">{{ item.status }}</span>
+                                        <div class="small mt-1">
+                                            {% if attachment_state.availability == 'READY' %}
+                                            <span class="text-success">FILE SIAP</span>
+                                            {% else %}
+                                            <span class="text-danger">FILE HILANG</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="d-flex flex-wrap gap-2">
+                                        {% if item.digital_attachment %}
+                                            {% if attachment_state.can_view %}
+                                            <a href="{{ url_for('field_transactions.view_attachment', attachment_id=item.id) }}" class="btn app-btn-secondary btn-sm" target="_blank" rel="noopener" data-app-temp-label="Membuka...">Lihat</a>
+                                            {% endif %}
+                                            {% if attachment_state.can_download %}
+                                            <a href="{{ url_for('field_transactions.download_attachment', attachment_id=item.id) }}" class="btn app-btn-secondary btn-sm" data-app-temp-label="Menyiapkan...">Unduh</a>
+                                            {% else %}
+                                            <button type="button" class="btn app-btn-secondary btn-sm" disabled>Unduh</button>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if item.status != 'VERIFIED' %}
+                                        <form method="POST" action="{{ url_for('field_transactions.verify_attachment', attachment_id=item.id) }}" class="d-inline">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn app-btn-primary btn-sm">Verifikasi</button>
+                                        </form>
+                                        {% else %}
+                                        <span class="text-muted small">Diverifikasi {{ item.verified_at.strftime('%d-%m-%Y %H:%M') if item.verified_at else '-' }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Belum ada lampiran tertaut.</p>
+                {% endif %}
+            </section>
+        </div>
+        <div class="col-md-6">
+            <section class="field-detail-panel h-100">
+                <h6 class="mb-3">Link Dokumen</h6>
+                {% if document_links %}
+                    <div class="list-group list-group-flush">
+                        {% for item in document_links %}
+                        <div class="list-group-item px-0">
+                            <div class="fw-semibold">{{ item.label }}</div>
+                            {% if item.href %}
+                                <a href="{{ item.href }}" class="small">{{ item.helper_text or 'Buka dokumen terkait' }}</a>
+                            {% else %}
+                                <div class="text-muted small">Belum ada deep-link otomatis untuk tipe dokumen ini.</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Belum ada relasi dokumen formal.</p>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</div>
+
+{% if detail_state.can_bridge %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Hubungkan ke Modul Lama</h5>
+            <p>Fitur hubungkan ini hanya dipakai bila transaksi lapangan perlu dipromosikan menjadi dokumen modul lama tanpa input ulang dari nol.</p>
+        </div>
+    </div>
+
+    {% if transaction.business_event_type in ['SITE_OPERATION_EXPENSE', 'KITCHEN_OPERATION_EXPENSE'] %}
+    <form method="POST" action="{{ url_for('field_transactions.bridge_operational_expense', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Kategori Modul Lama</label>
+                <select name="expense_category" class="form-select" required>
+                    <option value="">Pilih kategori</option>
+                    <option value="ELECTRIC_WATER">Listrik & Air</option>
+                    <option value="GAS_LPG">Gas / LPG</option>
+                    <option value="MAINTENANCE">Perawatan</option>
+                    <option value="ADMINISTRATION">Administrasi</option>
+                    <option value="PACKAGING">Kemasan</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Supplier</label>
+                <select name="supplier_id" class="form-select">
+                    <option value="">Tanpa supplier master</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Vendor Snapshot</label>
+                <input type="text" name="vendor_name" class="form-control" value="{{ transaction.party_snapshot_name or '' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Referensi</label>
+                <input type="text" name="reference_number" class="form-control">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="2">{{ transaction.notes or '' }}</textarea>
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn app-btn-primary">Hubungkan ke Biaya Operasional</button>
+            </div>
+        </div>
+    </form>
+    {% elif transaction.business_event_type in ['TRANSPORT_TRIP_EXPENSE', 'FUEL_EXPENSE'] %}
+    <form method="POST" action="{{ url_for('field_transactions.bridge_transport_expense', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Kendaraan</label>
+                <input type="text" name="vehicle_label" class="form-control" placeholder="Contoh: Pickup A / Motor Delivery">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Driver</label>
+                <select name="driver_id" class="form-select">
+                    <option value="">Tanpa driver</option>
+                    {% for driver in drivers %}
+                        <option value="{{ driver.id }}">{{ driver.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Delivery</label>
+                <select name="delivery_id" class="form-select">
+                    <option value="">Tanpa delivery</option>
+                    {% for delivery in deliveries %}
+                        <option value="{{ delivery.id }}">{{ delivery.delivery_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Vendor</label>
+                <input type="text" name="vendor_name" class="form-control" value="{{ transaction.party_snapshot_name or '' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Referensi</label>
+                <input type="text" name="reference_number" class="form-control">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="2">{{ transaction.notes or '' }}</textarea>
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn app-btn-primary">Hubungkan ke Biaya Transport</button>
+            </div>
+        </div>
+    </form>
+    {% elif transaction.business_event_type == 'MANDOR_OPERATIONAL_ADVANCE' %}
+    <form method="POST" action="{{ url_for('field_transactions.bridge_advance', transaction_id=transaction.id) }}" class="app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Mandor</label>
+                <select name="mandor_id" class="form-select" required>
+                    <option value="">Pilih mandor</option>
+                    {% for mandor in mandors %}
+                        <option value="{{ mandor.id }}" {% if transaction.counterparty and transaction.counterparty.linked_mandor_id == mandor.id %}selected{% endif %}>{{ mandor.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Referensi</label>
+                <input type="text" name="reference_number" class="form-control">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="2">{{ transaction.notes or '' }}</textarea>
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn app-btn-primary">Hubungkan ke Panjar Mandor</button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

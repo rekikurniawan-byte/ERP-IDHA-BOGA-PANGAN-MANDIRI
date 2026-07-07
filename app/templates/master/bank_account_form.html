@@ -1,0 +1,52 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">{% if account %}Edit Rekening{% else %}Tambah Rekening{% endif %}</span>
+        <h1>{% if account %}Edit Rekening Bank{% else %}Input Rekening Bank{% endif %}</h1>
+        <p>Data ini dipakai sebagai master rekening pembayaran perusahaan/cabang.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.bank_accounts') }}" class="btn app-btn-secondary">Kembali</a>
+    </div>
+</div>
+
+<div class="app-card">
+    <form method="POST" action="{% if account %}{{ url_for('master.edit_bank_account', account_id=account.id) }}{% else %}{{ url_for('master.create_bank_account') }}{% endif %}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Nama Bank</label>
+                <input type="text" name="bank_name" class="form-control app-input" value="{{ account.bank_name if account else '' }}" placeholder="Contoh: BCA / BRI / Mandiri" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nomor Rekening</label>
+                <input type="text" name="account_number" class="form-control app-input" value="{{ account.account_number if account else '' }}" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nama Pemilik Rekening</label>
+                <input type="text" name="account_name" class="form-control app-input" value="{{ account.account_name if account else '' }}" placeholder="Nama sesuai buku rekening" required>
+            </div>
+
+            <div class="col-md-12 d-flex align-items-end gap-4">
+                <label class="checkbox-clean">
+                    <input type="checkbox" name="is_active" {% if not account or account.is_active %}checked{% endif %}>
+                    <span>Rekening aktif</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                {% if account %}Simpan Perubahan{% else %}Simpan Rekening{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

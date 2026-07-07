@@ -1,0 +1,216 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block title %}Audit Log Sistem{% endblock %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <p class="text-muted small mb-1">Sistem</p>
+        <h1 class="h3 mb-1">Audit Log Sistem</h1>
+        <p class="text-muted mb-0">Jejak aktivitas penting, sensitive action guard, backup, restore preview, user security, transaksi, jurnal, dan perubahan data kritis.</p>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
+        <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+</div>
+
+<div class="alert alert-info border-0 shadow-sm mb-4">
+    <div class="fw-semibold mb-1"><i class="bi bi-shield-check"></i> Critical Audit Expansion</div>
+    <div class="small mb-0">
+        Severity, reason, reference type/id, critical flag, dan policy version disimpan di metadata audit tanpa migration.
+        Policy aktif: <strong>{{ options.critical_audit_policy_version }}</strong>.
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card app-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Log Terfilter</div>
+                <div class="h4 mb-0">{{ summary.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card app-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Critical Flag</div>
+                <div class="h4 mb-0">{{ summary.critical }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card app-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Severity HIGH</div>
+                <div class="h4 mb-0">{{ summary.high }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card app-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Severity MEDIUM/LOW/INFO</div>
+                <div class="h4 mb-0">{{ summary.medium + summary.info_low }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card app-card shadow-sm border-0 mb-4 global-filter-bar-v2 audit-log-filter-v2">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end app-form" data-ui-form="true" data-filter-bar-v2="PRODUCTION">
+            <input type="hidden" name="period_preset" value="custom">
+            <div class="col-md-2">
+                <label class="form-label">Tanggal Mulai</label>
+                <input type="date" name="date_from" value="{{ filters.date_from }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tanggal Akhir</label>
+                <input type="date" name="date_to" value="{{ filters.date_to }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Module</label>
+                <select name="module" class="form-select">
+                    <option value="">Semua</option>
+                    {% for module in options.modules %}
+                        <option value="{{ module }}" {{ 'selected' if filters.module == module else '' }}>{{ module }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Event</label>
+                <select name="event_type" class="form-select">
+                    <option value="">Semua</option>
+                    {% for event_type in options.event_types %}
+                        <option value="{{ event_type }}" {{ 'selected' if filters.event_type == event_type else '' }}>{{ event_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Aksi</label>
+                <select name="action" class="form-select">
+                    <option value="">Semua</option>
+                    {% for action in options.actions %}
+                        <option value="{{ action }}" {{ 'selected' if filters.action == action else '' }}>{{ action }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Severity</label>
+                <select name="severity" class="form-select">
+                    <option value="">Semua</option>
+                    {% for severity in options.severity_levels %}
+                        <option value="{{ severity }}" {{ 'selected' if filters.severity == severity else '' }}>{{ severity }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cari</label>
+                <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="user/event/deskripsi">
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="critical_only" name="critical_only" value="1" {{ 'checked' if filters.critical_only else '' }}>
+                    <label class="form-check-label" for="critical_only">Tampilkan critical audit saja</label>
+                </div>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('settings.audit_logs') }}">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Aktivitas Terakhir</strong>
+            <div class="text-muted small">Maksimal 300 log terbaru sesuai filter. Severity dibaca dari metadata Critical Audit.</div>
+        </div>
+        <span class="badge bg-light text-dark border">{{ logs|length }} log</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table table-hover align-middle mb-0">
+            <thead class="table app-table-light">
+                <tr>
+                    <th>Waktu</th>
+                    <th>User</th>
+                    <th>Module</th>
+                    <th>Event</th>
+                    <th>Action</th>
+                    <th>Severity</th>
+                    <th>Target</th>
+                    <th>Reason</th>
+                    <th>Deskripsi</th>
+                    <th>Payload</th>
+                    <th>IP</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr>
+                        <td class="text-nowrap">{{ log.created_at.strftime('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ log.username_snapshot or '-' }}</div>
+                            <div class="text-muted small">{{ log.user_role_snapshot or '-' }}</div>
+                        </td>
+                        <td><span class="badge bg-primary-subtle text-primary border">{{ log.module }}</span></td>
+                        <td class="small">{{ log.event_type }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ log.action }}</span></td>
+                        <td>
+                            {% if log.audit_severity == 'CRITICAL' %}
+                                <span class="badge bg-danger">CRITICAL</span>
+                            {% elif log.audit_severity == 'HIGH' %}
+                                <span class="badge bg-warning text-dark">HIGH</span>
+                            {% elif log.audit_severity == 'MEDIUM' %}
+                                <span class="badge bg-info text-dark">MEDIUM</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
+                            {% endif %}
+                            {% if log.audit_is_critical %}
+                                <div class="small text-danger mt-1">critical</div>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if log.audit_reference_type %}
+                                {{ log.audit_reference_type }}{% if log.audit_reference_id %} #{{ log.audit_reference_id }}{% endif %}
+                            {% elif log.table_name %}
+                                {{ log.table_name }}{% if log.record_id %} #{{ log.record_id }}{% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="small hr-master-settings-minw-160">{{ log.audit_reason or '-' }}</td>
+                        <td class="small hr-master-settings-minw-260">{{ log.description or '-' }}</td>
+                        <td class="small">
+                            {% if log.old_value or log.new_value or log.metadata_json %}
+                                <span class="badge bg-info-subtle text-info border">Ada detail</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ log.ip_address or '-' }}</td>
+                        <td class="text-nowrap">
+                            <a href="{{ url_for('settings.audit_log_detail', log_id=log.id) }}" class="btn btn-sm app-btn-secondary">
+                                <i class="bi bi-eye"></i> Detail
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="12" class="text-center py-5 text-muted">
+                            Belum ada audit log sesuai filter. Ini normal kalau data real belum mulai diinput.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Recovery Center</span>
+        <h1>Atomic Smoke Simulation</h1>
+        <p>Atomic smoke failure injection dry-run pada copy database. DB aktif tidak disentuh.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('settings.atomic_transaction_map') }}" class="btn app-btn-secondary">Atomic Map</a>
+        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
+        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">Audit Log</a>
+    </div>
+</div>
+
+{% set summary = report.get("scenario_summary", {}) %}
+{% set active_db = report.get("active_database", {}) %}
+{% set preview = report.get("preview_policy", {}) %}
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Status Atomic Smoke</h3>
+            <p>{{ report.get("summary") }}</p>
+        </div>
+        <span class="status-badge {{ report.get('status_class', 'warning') }}">{{ report.get("status", "UNKNOWN") }}</span>
+    </div>
+
+    {% if report.get("error_message") %}
+        <div class="alert alert-danger mb-3">
+            {{ report.get("error_message") }}
+        </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">Scenario</div>
+                <div class="stat-value">{{ summary.get("total", 0) }}</div>
+                <div class="text-muted small">Failure injection dry-run.</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">PASS</div>
+                <div class="stat-value">{{ summary.get("pass", 0) }}</div>
+                <div class="text-muted small">Scenario lolos rollback/cleanup.</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">FAIL</div>
+                <div class="stat-value">{{ summary.get("fail", 0) }}</div>
+                <div class="text-muted small">Harus 0 sebelum lanjut patch besar.</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card h-100">
+                <div class="stat-label">DB Aktif</div>
+                <div class="stat-value">{{ "AMAN" if active_db.get("unchanged") else "CEK" }}</div>
+                <div class="text-muted small">Hash sebelum/sesudah harus sama.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="soft-info-card mt-3">
+        <strong>Rule C3:</strong> {{ report.get("rules", {}).get("dry_run_rule") }}<br>
+        <span class="text-muted">{{ report.get("rules", {}).get("atomic_rule") }}</span>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Lihat Data Safety Policy</h3>
+            <p>Simulasi hanya memakai salinan database di folder preview sementara dan dibersihkan setelah selesai.</p>
+        </div>
+        <span class="status-badge info">{{ report.get("policy_version") }}</span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="detail-row"><span>Mode</span><strong>{{ preview.get("mode", "COPY_DB_ONLY") }}</strong></div>
+            <div class="detail-row"><span>Active DB mutation</span><strong>{{ "YA" if preview.get("active_db_mutation") else "TIDAK" }}</strong></div>
+            <div class="detail-row"><span>Migration required</span><strong>{{ "YA" if preview.get("migration_required") else "TIDAK" }}</strong></div>
+            <div class="detail-row"><span>Temp folder cleaned</span><strong>{{ "YA" if preview.get("temp_folder_cleaned") else "CEK" }}</strong></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="detail-row"><span>Cleanup status</span><strong>{{ preview.get("cleanup_status", "UNKNOWN") }}</strong></div>
+            <div class="detail-row"><span>Checked at</span><strong>{{ report.get("checked_at") }}</strong></div>
+            <div class="detail-row"><span>App version</span><strong>{{ report.get("app_version") }}</strong></div>
+            <div class="detail-row"><span>Schema</span><strong>{{ report.get("schema_version") }}</strong></div>
+        </div>
+    </div>
+
+    {% if preview.get("cleanup_error") %}
+        <div class="alert alert-warning mt-3 mb-0">
+            Cleanup warning: {{ preview.get("cleanup_error") }}
+        </div>
+    {% endif %}
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Active Database Hash Guard</h3>
+            <p>Hash aktif harus sama sebelum dan sesudah failure injection.</p>
+        </div>
+        <span class="status-badge {{ 'success' if active_db.get('unchanged') else 'danger' }}">{{ "UNCHANGED" if active_db.get("unchanged") else "CHANGED" }}</span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="detail-row">
+                <span>SHA256 sebelum</span>
+                <code class="small text-break">{{ active_db.get("sha256_before", "-") }}</code>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="detail-row">
+                <span>SHA256 sesudah</span>
+                <code class="small text-break">{{ active_db.get("sha256_after", "-") }}</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Failure Injection Scenario</h3>
+            <p>Semua skenario harus PASS sebelum atomic guard diperluas ke flow bisnis berikutnya.</p>
+        </div>
+        <span class="status-badge warning">DRY RUN</span>
+    </div>
+
+    {% if report.get("scenarios") %}
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Status</th>
+                        <th>Hasil</th>
+                        <th>Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report.get("scenarios", []) %}
+                        <tr>
+                            <td>
+                                <strong class="d-block">{{ item.get("title") }}</strong>
+                                <code class="small text-break">{{ item.get("name") }}</code>
+                            </td>
+                            <td><span class="status-badge {{ item.get('status_class', 'warning') }}">{{ item.get("status") }}</span></td>
+                            <td class="text-muted small">{{ item.get("message") }}</td>
+                            <td class="small text-muted">
+                                {% if item.get("injected_error") %}<div>Injected: {{ item.get("injected_error") }}</div>{% endif %}
+                                {% if item.get("before_header") is not none %}<div>Header: {{ item.get("before_header") }} → {{ item.get("after_header") }}</div>{% endif %}
+                                {% if item.get("before_detail") is not none %}<div>Detail: {{ item.get("before_detail") }} → {{ item.get("after_detail") }}</div>{% endif %}
+                                {% if item.get("before_child") is not none %}<div>FK child: {{ item.get("before_child") }} → {{ item.get("after_child") }}</div>{% endif %}
+                                {% if item.get("before_rows") is not none %}<div>File rows: {{ item.get("before_rows") }} → {{ item.get("after_rows") }}</div>{% endif %}
+                                {% if item.get("file_exists_after") is not none %}<div>File exists after: {{ item.get("file_exists_after") }}</div>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state compact-empty-state">
+            <h3>Belum ada scenario</h3>
+            <p>Simulation gagal sebelum scenario dijalankan.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="app-card soft-info-card mb-0">
+    <strong>Catatan atomic smoke:</strong>
+    halaman ini bukan restore aktif dan bukan migration. C3 hanya membuktikan rollback, cleanup file, FK failure handling, dan hash guard pada copy database. {{ report.get("rules", {}).get("next_step") }}
+</div>
+
+</div>
+{% endblock %}

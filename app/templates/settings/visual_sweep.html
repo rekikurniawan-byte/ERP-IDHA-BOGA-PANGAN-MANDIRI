@@ -1,0 +1,167 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header" data-ui-page-header="PRODUCTION">
+    <div>
+        <span class="eyebrow">Visual QA</span>
+        <h1>Visual Sweep</h1>
+        <p>Zero Empty Panel & Broken Route Visual Sweep. Halaman ini read-only dan tidak mengubah database.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('settings.recovery_center') }}" class="btn app-btn-secondary"><i class="bi bi-life-preserver"></i> Recovery Center</a>
+        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary"><i class="bi bi-heart-pulse"></i> System Health</a>
+        <a href="{{ url_for('settings.final_visual_browser_qa') }}" class="btn app-btn-secondary"><i class="bi bi-browser-chrome"></i> Final QA</a>
+    </div>
+</div>
+
+<section class="visual-sweep-hero visual-sweep-hero-{{ report.overall_status|lower|replace(' ', '-') }}">
+    <div>
+        <span class="eyebrow">Keputusan Visual QA</span>
+        <h2>{{ report.decision }}</h2>
+        <p>Status: <strong>{{ report.overall_status }}</strong> · Version: {{ report.visual_sweep_version }} · Generated: {{ report.generated_at }}</p>
+    </div>
+    <div class="visual-sweep-status-chip">
+        <span>Broken Route</span>
+        <strong>{{ report.route_sweep.literal_missing_count|default(0) + report.route_sweep.dynamic_missing_count|default(0) }}</strong>
+        <small>Target wajib 0</small>
+    </div>
+</section>
+
+{% if report.blockers %}
+<section class="dashboard-section visual-sweep-alert visual-sweep-alert-danger">
+    <h2>Blocker</h2>
+    <ul>
+        {% for item in report.blockers %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+{% if report.warnings %}
+<section class="dashboard-section visual-sweep-alert visual-sweep-alert-warning">
+    <h2>Catatan</h2>
+    <ul>
+        {% for item in report.warnings %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<section class="dashboard-section" data-visual-sweep-section="summary">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Ringkasan Sweep</h2>
+            <p>Audit link route, empty state, chart guard, dan CSS build lock.</p>
+        </div>
+    </div>
+    <div class="visual-sweep-metric-grid">
+        <article class="dashboard-command-kpi">
+            <span>Route endpoint</span>
+            <strong>{{ report.route_sweep.route_endpoint_count|default(0) }}</strong>
+            <small>{{ report.route_sweep.route_file_count|default(0) }} route file</small>
+        </article>
+        <article class="dashboard-command-kpi">
+            <span>Literal url_for</span>
+            <strong>{{ report.route_sweep.literal_url_for_count|default(0) }}</strong>
+            <small>{{ report.route_sweep.literal_unique_count|default(0) }} unique</small>
+        </article>
+        <article class="dashboard-command-kpi">
+            <span>Dynamic endpoint</span>
+            <strong>{{ report.route_sweep.dynamic_unique_count|default(0) }}</strong>
+            <small>{{ report.route_sweep.dynamic_constant_count|default(0) }} constants</small>
+        </article>
+        <article class="dashboard-command-kpi">
+            <span>Empty states</span>
+            <strong>{{ report.empty_panel_scan.empty_state_count|default(0) }}</strong>
+            <small>{{ report.empty_panel_scan.oversized_candidate_count|default(0) }} legacy candidate</small>
+        </article>
+        <article class="dashboard-command-kpi">
+            <span>Chart guard</span>
+            <strong>{{ report.empty_panel_scan.chart_empty_guard_count|default(0) }}</strong>
+            <small>{{ report.empty_panel_scan.chart_like_template_count|default(0) }} chart-like template</small>
+        </article>
+        <article class="dashboard-command-kpi">
+            <span>CSS build</span>
+            <strong>{{ report.css_sweep.build_version|default('UNKNOWN') }}</strong>
+            <small>{{ report.css_sweep.source_file_count|default(0) }} source file</small>
+        </article>
+    </div>
+</section>
+
+<section class="dashboard-section" data-visual-sweep-section="route">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Broken Route Sweep</h2>
+            <p>Target final: broken link route/menu/action = 0.</p>
+        </div>
+    </div>
+
+    {% set missing_total = report.route_sweep.literal_missing_count|default(0) + report.route_sweep.dynamic_missing_count|default(0) %}
+    {% if missing_total == 0 %}
+        <div class="zero-empty-state zero-empty-state-success">
+            <i class="bi bi-check2-circle"></i>
+            <div>
+                <strong>Broken route literal/dynamic = 0.</strong>
+                <p>Template literal url_for dan endpoint constant service yang terdeteksi cocok dengan route map.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="table-responsive app-table-wrapper">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Jenis</th><th>Endpoint</th><th>File</th><th>Line</th></tr></thead>
+                <tbody>
+                    {% for item in report.route_sweep.literal_missing %}
+                    <tr><td>Literal</td><td><code>{{ item.endpoint }}</code></td><td>{{ item.file }}</td><td>{{ item.line }}</td></tr>
+                    {% endfor %}
+                    {% for item in report.route_sweep.dynamic_missing %}
+                    <tr><td>Dynamic</td><td><code>{{ item.endpoint }}</code></td><td>{{ item.file }}</td><td>{{ item.line }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
+
+<section class="dashboard-section" data-visual-sweep-section="empty-panel">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Zero Empty Panel Sweep</h2>
+            <p>Panel kosong besar dikompakkan secara global; kandidat legacy tetap ditampilkan untuk audit bertahap.</p>
+        </div>
+    </div>
+
+    {% if report.empty_panel_scan.oversized_candidate_count|default(0) == 0 %}
+        <div class="zero-empty-state zero-empty-state-success">
+            <i class="bi bi-check2-circle"></i>
+            <div>
+                <strong>Tidak ada kandidat empty panel legacy.</strong>
+                <p>Semua empty state yang terdeteksi sudah memakai guard/compact class.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="visual-sweep-compact-list">
+            {% for item in report.empty_panel_scan.oversized_candidates[:20] %}
+                <div class="visual-sweep-list-item">
+                    <span><strong>{{ item.file }}</strong><small>Line {{ item.line }}</small></span>
+                    <code>{{ item.class_snippet }}</code>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+
+<section class="dashboard-section" data-visual-sweep-section="policy">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Policy Lock</h2>
+            <p>Aturan yang harus dipegang setelah Visual Sweep.</p>
+        </div>
+    </div>
+    <div class="visual-sweep-policy-grid">
+        {% for key, value in report.policy.items() %}
+            <article class="dashboard-command-link-card">
+                <i class="bi bi-shield-check"></i>
+                <span><strong>{{ key|replace('_', ' ')|title }}</strong><small>{{ value }}</small></span>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

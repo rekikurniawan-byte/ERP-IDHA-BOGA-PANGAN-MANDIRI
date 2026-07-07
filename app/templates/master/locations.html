@@ -1,0 +1,91 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Lokasi</span>
+        <h1>Lokasi Mandor</h1>
+        <p>Satu mandor bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.create_location') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Lokasi
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.locations') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari lokasi / mandor / deskripsi">
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.locations') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Mandor</th>
+                    <th>Lokasi</th>
+                    <th>Deskripsi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for location in locations %}
+                <tr>
+                    <td><strong>{{ location.mandor.name if location.mandor else '-' }}</strong></td>
+                    <td>{{ location.location_name }}</td>
+                    <td>{{ location.description or '-' }}</td>
+                    <td>
+                        {% if location.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_location', location_id=location.id) }}" class="btn btn-sm app-btn-secondary">
+                                Edit
+                            </a>
+
+                            <form method="POST" action="{{ url_for('master.toggle_location', location_id=location.id) }}" data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if location.is_active %}Nonaktif{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-geo-alt"></i>
+                            <p>Belum ada lokasi mandor.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

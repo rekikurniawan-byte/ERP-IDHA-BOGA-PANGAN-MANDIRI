@@ -1,0 +1,189 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payroll-detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / PAYROLL DETAIL</span>
+        <h1>Detail Payroll</h1>
+        <p>Periode {{ "%02d"|format(payroll.period_month) }}-{{ payroll.period_year }} · Status <strong>{{ payroll.status }}</strong></p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        {% if payroll.status == "DRAFT" %}
+            <form action="{{ url_for('hr.finalize_payroll', payroll_id=payroll.id) }}" method="post" data-app-confirm="Kunci payroll periode ini? Setelah dikunci, nominal gaji tidak boleh diubah sembarangan." data-ui-form="true" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-lock-fill"></i> Kunci Payroll</button>
+            </form>
+        {% elif payroll.status == "FINAL" %}
+            <form action="{{ url_for('hr.post_payroll_journal', payroll_id=payroll.id) }}" method="post" data-app-confirm="Catat hutang gaji periode ini ke keuangan? Sistem akan otomatis mencatat biaya gaji dan hutang gaji. Aksi ini tidak boleh dobel." data-ui-form="true" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-journal-check"></i> Catat Hutang Gaji</button>
+            </form>
+        {% elif payroll.status == "POSTED" %}
+            <a href="#payroll-payment-card" class="btn app-btn-primary"><i class="bi bi-cash-coin"></i> Bayar Gaji</a>
+        {% endif %}
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollDetailActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi Payroll
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollDetailActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-arrow-left"></i> Kembali ke Payroll</a></li>
+                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card hr-total-payroll-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>Total Payroll</p>
+            <h3>{{ payroll_total|rupiah }}</h3>
+            <span class="app-stat-helper">Total final salary periode ini</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div>
+        <div><p>Jumlah Karyawan</p><h3>{{ detail_count }}</h3><span class="app-stat-helper">Baris detail payroll</span></div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi {{ journal_state.icon }}"></i></div>
+        <div><p>Status Jurnal</p><h3>{{ journal_state.label }}</h3><span class="app-stat-helper">{{ journal_state.helper }}</span></div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi {{ payment_state.icon }}"></i></div>
+        <div><p>Status Bayar</p><h3>{{ payment_state.label }}</h3><span class="app-stat-helper">{{ payment_state.helper }}</span></div>
+    </div>
+</div>
+
+<div class="card app-card hr-lifecycle-card">
+    <div class="card-body">
+        <div class="hr-section-title">
+            <div>
+                <span>Payroll Lifecycle</span>
+                <h2>DRAFT → FINAL → POSTED → PAID</h2>
+            </div>
+            <span class="hr-status-badge is-{{ payroll.status|lower }}">{{ payroll.status }}</span>
+        </div>
+        <div class="hr-lifecycle-list detail">
+            {% for step in lifecycle_steps %}
+                <div class="hr-lifecycle-step {{ step.class }}">
+                    <strong>{{ step.label }}</strong>
+                    <span>{{ step.key }}</span>
+                    <small>{{ step.description }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="hr-enterprise-grid two-col">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Catatan Perhitungan</span>
+                    <h2>Prorata & Editing Payroll</h2>
+                </div>
+            </div>
+            <p class="text-muted mb-0">Gaji bulanan bisa otomatis diprorata jika karyawan masuk di tengah bulan. Bonus, potongan, dan prorata hanya bisa diubah saat payroll masih <strong>DRAFT</strong>. Setelah FINAL, perubahan harus lewat alur koreksi yang aman.</p>
+        </div>
+    </div>
+
+    <div class="card app-card" id="payroll-payment-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Pembayaran Gaji</span>
+                    <h2>Metode Pembayaran Payroll</h2>
+                </div>
+            </div>
+            {% if payroll.status == "POSTED" %}
+                <form action="{{ url_for('hr.pay_payroll', payroll_id=payroll.id) }}" method="post" class="app-form hr-payroll-payment-form" data-app-confirm="Bayar gaji periode ini? Sistem akan mengecek saldo kas/bank terlebih dahulu, lalu otomatis mencatat jurnal pembayaran gaji jika saldo cukup." data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div>
+                        <label class="form-label">Metode Pembayaran</label>
+                        <select name="payment_method" class="form-select" aria-label="Metode pembayaran gaji">
+                            <option value="CASH">CASH</option>
+                            <option value="TRANSFER">TRANSFER</option>
+                        </select>
+                        <small class="text-muted">CASH memakai akun kas, TRANSFER memakai akun bank.</small>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn app-btn-primary" type="submit"><i class="bi bi-cash-coin"></i> Bayar Gaji</button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="hr-inline-status is-muted">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Pembayaran aktif setelah payroll berstatus <strong>POSTED</strong>. Status sekarang: {{ payroll.status }}.</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <div class="hr-section-title">
+            <div>
+                <span>Payroll Lines</span>
+                <h2>Detail Karyawan</h2>
+            </div>
+            <span class="hr-table-count">{{ detail_count }} baris</span>
+        </div>
+        {% if payroll.details %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle hr-payroll-detail-table">
+                    <thead>
+                        <tr>
+                            <th>Karyawan</th>
+                            <th class="text-end">Gaji Bulanan</th>
+                            <th class="text-end">Bonus</th>
+                            <th class="text-end">Potongan/Prorata</th>
+                            <th class="text-end">Final</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in payroll.details %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ detail.employee.full_name if detail.employee else "-" }}</div>
+                                    <small class="text-muted">Employee #{{ detail.employee_id }}</small>
+                                </td>
+                                <form action="{{ url_for('hr.update_payroll_detail', payroll_id=payroll.id, detail_id=detail.id) }}" method="post" data-ui-form="true" class="app-form">
+                                    {% include "components/csrf_token.html" %}
+                                    <td class="text-end"><input type="number" name="base_salary" class="form-control form-control-sm text-end" value="{{ detail.base_salary }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
+                                    <td class="text-end"><input type="number" name="bonus" class="form-control form-control-sm text-end" value="{{ detail.bonus }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
+                                    <td class="text-end"><input type="number" name="deduction" class="form-control form-control-sm text-end" value="{{ detail.deduction }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
+                                    <td class="text-end fw-semibold">{{ detail.final_salary|rupiah }}</td>
+                                    <td class="text-end">
+                                        {% if payroll.status == "DRAFT" %}
+                                            <button class="btn btn-sm app-btn-secondary" type="submit">Update</button>
+                                        {% else %}
+                                            <span class="text-muted">Terkunci</span>
+                                        {% endif %}
+                                    </td>
+                                </form>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-list-check"></i></div>
+                <h3>Belum ada detail payroll.</h3>
+                <p>Detail akan terisi otomatis saat payroll bulanan berhasil dibuat dari karyawan aktif.</p>
+                <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

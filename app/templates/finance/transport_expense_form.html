@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • Transport & BBM</span>
+        <h1>Catat Biaya Transport / BBM</h1>
+        <p>Pilih jenis biaya yang benar agar jurnal otomatis masuk ke COA 5003 atau 5011.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Biaya
+        </a>
+    </div>
+</div>
+{% set precision_key = 'transport' %}
+
+<form method="POST" action="{{ url_for('finance.transport_expense_create') }}" class="app-form" data-ui-form="true">
+    {% include "components/csrf_token.html" %}
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Jenis & Nominal</h5>
+                <p>BBM kendaraan otomatis ke 5011. Transport umum/logistik otomatis ke 5003.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tanggal</label>
+                <input type="date" name="expense_date" class="form-control" value="{{ today_date }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Jenis Biaya</label>
+                <select name="expense_type" class="form-select" id="transportExpenseType" required>
+                    <option value="">Pilih jenis</option>
+                    {% for item in expense_type_choices %}
+                        <option value="{{ item.value }}" data-account="{{ item.account_code }}">{{ item.label }} — {{ item.account_label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Jangan pakai biaya umum kalau biaya sudah jelas transport/BBM.</div>
+                <div class="coa-auto-preview" data-coa-preview="true">Pilih jenis biaya untuk melihat akun COA otomatis.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nominal</label>
+                <input type="text" name="amount" class="form-control" placeholder="Contoh: 250000" required>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Jejak Operasional</h5>
+                <p>Untuk BBM, isi minimal kendaraan, driver, atau delivery supaya biaya bisa ditelusuri.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Kendaraan / Armada</label>
+                <input type="text" name="vehicle_label" class="form-control" placeholder="Contoh: Mobil box / motor driver / plat nomor">
+                <div class="form-text">Master kendaraan belum ada di schema aktif, jadi sementara disimpan sebagai label.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Driver</label>
+                <select name="driver_id" class="form-select">
+                    <option value="">Opsional</option>
+                    {% for driver in drivers %}
+                        <option value="{{ driver.id }}">{{ driver.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Delivery Terkait</label>
+                <select name="delivery_id" class="form-select">
+                    <option value="">Opsional</option>
+                    {% for delivery in deliveries %}
+                        <option value="{{ delivery.id }}">{{ delivery.delivery_number }} — {{ delivery.delivery_date.strftime('%d-%m-%Y') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kas / Bank</h5>
+                <p>Semua biaya transport/BBM adalah kas/bank keluar dan akan membuat jurnal otomatis.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Metode</label>
+                <select name="payment_method" class="form-select" id="transportExpensePembayaranMethod" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer Bank</option>
+                </select>
+            </div>
+            <div class="col-md-4" id="transportExpenseBankWrap">
+                <label class="form-label">Rekening Bank</label>
+                <select name="bank_account_id" class="form-select">
+                    <option value="">Pilih rekening</option>
+                    {% for bank in bank_accounts %}
+                        <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Wajib untuk transfer.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Vendor / SPBU / Transport</label>
+                <input type="text" name="vendor_name" class="form-control" placeholder="Opsional">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">No Referensi</label>
+                <input type="text" name="reference_number" class="form-control" placeholder="Opsional">
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Opsional"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions mt-4">
+        <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">Batal</a>
+        <button type="submit" class="btn app-btn-primary">Simpan & Posting Jurnal</button>
+    </div>
+</form>
+</div>
+{% endblock %}

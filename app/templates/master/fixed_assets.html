@@ -1,0 +1,105 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Aset</span>
+        <h1>Aset Tetap</h1>
+        <p>Kelola data aset perusahaan seperti kendaraan, peralatan dapur, dan perlengkapan kantor.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.create_fixed_asset') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Aset
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.fixed_assets') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama / kategori aset">
+
+        <select name="category" class="form-select app-input">
+            <option value="ALL" {% if category == "ALL" %}selected{% endif %}>Semua Kategori</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            {% for item_status in statuses %}
+            <option value="{{ item_status }}" {% if status == item_status %}selected{% endif %}>{{ item_status }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Aset</th>
+                    <th>Kategori</th>
+                    <th>Tanggal Beli</th>
+                    <th>Nilai Beli</th>
+                    <th>Nilai Buku</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in assets %}
+                <tr>
+                    <td><strong>{{ asset.asset_code }}</strong></td>
+                    <td>{{ asset.asset_name }}</td>
+                    <td>{{ asset.asset_category }}</td>
+                    <td>{{ asset.purchase_date.strftime('%d-%m-%Y') if asset.purchase_date else '-' }}</td>
+                    <td>{{ asset.purchase_value|rupiah }}</td>
+                    <td>{{ asset.book_value|rupiah }}</td>
+                    <td>
+                        {% if asset.status == "ACTIVE" %}
+                            <span class="status-badge status-locked">ACTIVE</span>
+                        {% elif asset.status == "INACTIVE" %}
+                            <span class="status-badge status-cancelled">INACTIVE</span>
+                        {% else %}
+                            <span class="status-badge status-draft">{{ asset.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_fixed_asset', asset_id=asset.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+
+                            <form method="POST" action="{{ url_for('master.toggle_fixed_asset', asset_id=asset.id) }}" data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if asset.status == "ACTIVE" %}Nonaktif{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="bi bi-archive"></i>
+                            <p>Belum ada aset tetap.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

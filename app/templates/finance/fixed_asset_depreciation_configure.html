@@ -1,0 +1,146 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan • Optional Depreciation</span>
+            <h1>Konfigurasi Penyusutan Aset</h1>
+            <p>{{ asset.asset_code }} — {{ asset.asset_name }}. Penyusutan hanya aktif jika data konfigurasi lengkap.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary">Kembali</a>
+        </div>
+    </div>
+
+{% set precision_key = 'depreciation' %}
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+            <div class="app-card">
+                <h5>Ringkasan Aset</h5>
+                <dl class="detail-list mt-3">
+                    <div><dt>Kode</dt><dd>{{ asset.asset_code }}</dd></div>
+                    <div><dt>Nama</dt><dd>{{ asset.asset_name }}</dd></div>
+                    <div><dt>Kategori</dt><dd>{{ asset.asset_category }}</dd></div>
+                    <div><dt>Nilai Perolehan</dt><dd>{{ asset.purchase_value|rupiah }}</dd></div>
+                    <div><dt>Akumulasi Saat Ini</dt><dd>{{ asset.accumulated_depreciation|rupiah }}</dd></div>
+                    <div><dt>Nilai Buku Saat Ini</dt><dd>{{ asset.book_value|rupiah }}</dd></div>
+                </dl>
+                <div class="soft-info-card mt-3">
+                    <strong>Rule aman</strong>
+                    <p>Penyusutan tidak wajib. Kalau belum yakin masa manfaat atau tanggal mulai, aset boleh dibiarkan tanpa konfigurasi.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="app-card">
+                <form method="POST" action="{{ url_for('finance.fixed_asset_depreciation_configure', asset_id=asset.id) }}" class="app-form" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="form-section" data-depreciation-optional="true">
+                        <h5>Parameter Penyusutan</h5>
+                        <div class="precision-inline-note mb-3">Isi parameter ini hanya jika penyusutan memang sudah diputuskan. Jika belum pasti, kembali tanpa konfigurasi tetap aman.</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Mulai Penyusutan</label>
+                                <input type="date" name="depreciation_start_date" class="form-control" value="{{ config.depreciation_start_date.isoformat() if config else asset.purchase_date.isoformat() }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Masa Manfaat (bulan)</label>
+                                <input type="number" min="1" name="useful_life_months" class="form-control" value="{{ config.useful_life_months if config else (asset.useful_life_years * 12 if asset.useful_life_years else '') }}" placeholder="Contoh: 60" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nilai Residu</label>
+                                <input type="number" min="0" step="0.01" name="residual_value" class="form-control" value="{{ config.residual_value if config else asset.residual_value }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    {% for item in status_options %}
+                                    <option value="{{ item }}" {% if (config and config.status == item) or (not config and item == 'CONFIGURED') %}selected{% endif %}>{{ item }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Akun Akumulasi</label>
+                                <select name="accumulated_account_code" class="form-select" required>
+                                    {% for item in accumulated_account_options %}
+                                    <option value="{{ item.code }}" {% if (config and config.accumulated_account_code == item.code) or (not config and default_account_code == item.code) %}selected{% endif %}>{{ item.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Akun Beban</label>
+                                <input class="form-control" value="5012 - Beban Penyusutan" readonly>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="3">{{ config.notes if config else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions mt-3">
+                        <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary">Batal</a>
+                        <button type="submit" class="btn app-btn-primary">Simpan Konfigurasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if config %}
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Posting Penyusutan Bulanan</h5>
+                <p>Posting membuat jurnal Dr 5012 Beban Penyusutan dan Cr akun akumulasi sesuai kategori aset.</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('finance.fixed_asset_depreciation_post', asset_id=asset.id) }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+            {% include "components/csrf_token.html" %}
+            <div class="col-md-3">
+                <label class="form-label">Tahun</label>
+                <input type="number" name="period_year" class="form-control" value="{{ config.depreciation_start_date.year }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bulan</label>
+                <input type="number" min="1" max="12" name="period_month" class="form-control" value="{{ config.depreciation_start_date.month }}" required>
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn app-btn-primary">Posting Penyusutan Periode</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="app-card mt-4">
+        <h5>Lihat Data 12 Periode</h5>
+        {% if preview_rows %}
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Periode</th>
+                        <th class="text-end">Nominal</th>
+                        <th class="text-end">Nilai Buku Setelah</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview_rows %}
+                    <tr>
+                        <td>{{ row.period_label }}</td>
+                        <td class="text-end">{{ row.amount|rupiah }}</td>
+                        <td class="text-end">{{ row.book_value_after|rupiah }}</td>
+                        <td><span class="status-badge {{ 'status-locked' if row.is_posted else 'status-info' }}">{{ 'POSTED' if row.is_posted else 'PREVIEW' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><p>Lihat Data belum tersedia.</p></div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

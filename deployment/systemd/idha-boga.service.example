@@ -1,0 +1,19 @@
+[Unit]
+Description=Idha Boga Flask Production Service
+After=network.target postgresql.service
+
+[Service]
+User=idhaboga
+Group=www-data
+WorkingDirectory=/opt/idha-boga/app
+EnvironmentFile=/opt/idha-boga/app/.env.production
+ExecStart=/opt/idha-boga/venv/bin/gunicorn -c /opt/idha-boga/app/deployment/gunicorn.conf.py run:app
+Restart=always
+RestartSec=5
+RuntimeDirectory=idha-boga
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

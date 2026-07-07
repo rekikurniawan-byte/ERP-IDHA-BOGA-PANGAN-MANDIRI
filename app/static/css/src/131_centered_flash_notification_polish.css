@@ -1,0 +1,202 @@
+/* ==================================================
+   PRODUCTION SOURCE: 131_centered_flash_notification_polish.css
+   Tahap 10.20 — Centered Flash Notification Polish
+   Purpose: server-side Flask flash messages must be visible in the middle
+   of the app viewport, not buried at the top of the page.
+   ================================================== */
+
+.app-flash-center-host {
+    position: fixed;
+    inset: 0;
+    z-index: 2140;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    pointer-events: none;
+}
+
+.app-flash-center-stack {
+    display: grid;
+    gap: 12px;
+    width: min(640px, calc(100vw - 32px));
+    max-height: min(72vh, 520px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+}
+
+.app-alert.app-flash-centered {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+    width: 100%;
+    margin: 0 !important;
+    padding: 16px 16px 16px 14px;
+    border: 1px solid var(--border, rgba(15, 23, 42, 0.12));
+    border-radius: 22px;
+    background: var(--surface, #ffffff);
+    color: var(--text-primary, #111111);
+    box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+    animation: appFlashCenterIn 180ms ease-out;
+    overflow: hidden;
+}
+
+.app-alert.app-flash-centered::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--text-muted, #6b7280);
+}
+
+.app-alert.app-flash-centered::after {
+    content: "i";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--text-muted, #6b7280) 12%, transparent);
+    color: var(--text-muted, #6b7280);
+    font-size: 14px;
+    font-weight: 950;
+    line-height: 1;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.app-alert.app-flash-centered .app-flash-message-text {
+    grid-column: 2;
+    min-width: 0;
+    padding-top: 5px;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 760;
+    overflow-wrap: anywhere;
+}
+
+.app-alert.app-flash-centered .btn-close {
+    grid-column: 3;
+    position: static;
+    width: 34px;
+    height: 34px;
+    margin: -2px -4px 0 0;
+    padding: 0;
+    border-radius: 13px;
+    background-size: 12px;
+    opacity: 0.72;
+    box-shadow: none;
+}
+
+.app-alert.app-flash-centered .btn-close:hover,
+.app-alert.app-flash-centered .btn-close:focus-visible {
+    background-color: color-mix(in srgb, var(--text-primary, #111111) 7%, transparent);
+    opacity: 1;
+    outline: none;
+}
+
+.app-alert.app-flash-centered.is-hiding {
+    animation: appFlashCenterOut 180ms ease-in forwards;
+}
+
+.app-alert.app-flash-centered.alert-success::before {
+    background: var(--green, #198754);
+}
+
+.app-alert.app-flash-centered.alert-success::after {
+    content: "✓";
+    background: color-mix(in srgb, var(--green, #198754) 15%, transparent);
+    color: var(--green, #198754);
+}
+
+.app-alert.app-flash-centered.alert-danger::before,
+.app-alert.app-flash-centered.alert-error::before {
+    background: var(--red, #dc2626);
+}
+
+.app-alert.app-flash-centered.alert-danger::after,
+.app-alert.app-flash-centered.alert-error::after {
+    content: "!";
+    background: color-mix(in srgb, var(--red, #dc2626) 14%, transparent);
+    color: var(--red, #dc2626);
+}
+
+.app-alert.app-flash-centered.alert-warning::before {
+    background: var(--amber, #b45309);
+}
+
+.app-alert.app-flash-centered.alert-warning::after {
+    content: "!";
+    background: color-mix(in srgb, var(--amber, #b45309) 14%, transparent);
+    color: var(--amber, #b45309);
+}
+
+.app-alert.app-flash-centered.alert-info::before,
+.app-alert.app-flash-centered.alert-primary::before,
+.app-alert.app-flash-centered.alert-secondary::before {
+    background: var(--blue, #2563eb);
+}
+
+.app-alert.app-flash-centered.alert-info::after,
+.app-alert.app-flash-centered.alert-primary::after,
+.app-alert.app-flash-centered.alert-secondary::after {
+    content: "i";
+    background: color-mix(in srgb, var(--blue, #2563eb) 13%, transparent);
+    color: var(--blue, #2563eb);
+}
+
+[data-theme="dark-mono"] .app-alert.app-flash-centered {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: color-mix(in srgb, var(--surface, #111111) 92%, #ffffff 8%);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+}
+
+@keyframes appFlashCenterIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes appFlashCenterOut {
+    to {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-flash-center-host {
+        align-items: flex-start;
+        padding: 92px 12px 16px;
+    }
+
+    .app-flash-center-stack {
+        width: 100%;
+        max-height: calc(100vh - 116px);
+    }
+
+    .app-alert.app-flash-centered {
+        border-radius: 20px;
+        padding: 14px 13px 14px 12px;
+    }
+
+    .app-alert.app-flash-centered .app-flash-message-text {
+        font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-alert.app-flash-centered,
+    .app-alert.app-flash-centered.is-hiding {
+        animation: none;
+    }
+}

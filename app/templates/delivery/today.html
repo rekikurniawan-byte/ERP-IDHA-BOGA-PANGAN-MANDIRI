@@ -1,0 +1,161 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="today">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Pengantar</span>
+        <h1>Pengiriman Hari Ini</h1>
+        <p>Daftar delivery berdasarkan tanggal yang dipilih.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('delivery.receiving', date=selected_date_text) }}" class="btn app-btn-secondary">
+            <i class="bi bi-clipboard-check"></i>
+            Penerimaan
+        </a>
+        <a href="{{ url_for('delivery.history') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clock-history"></i>
+            Riwayat
+        </a>
+    </div>
+</div>
+
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('delivery.today') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="date" name="date" class="form-control app-input" value="{{ selected_date_text }}">
+        <button type="submit" class="btn app-btn-primary">Tampilkan</button>
+        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-secondary">Hari Ini</a>
+    </form>
+</div>
+
+{% if delivery_next_actions %}
+<section class="delivery-next-action-panel mt-4" data-delivery-next-action="delivery-today">
+    <div class="delivery-next-action-header">
+        <div>
+            <span class="eyebrow">Delivery belum dibuat</span>
+            <h2>Ada produksi selesai yang belum muncul sebagai delivery</h2>
+            <p>Pengantar hanya melihat data setelah admin membuat delivery. Buat delivery dari daftar prioritas di bawah ini.</p>
+        </div>
+        <a href="{{ url_for('sop.role_sop', slug='delivery') }}" class="btn btn-sm app-btn-secondary">
+            <i class="bi bi-journal-check"></i>
+            SOP Delivery
+        </a>
+    </div>
+
+    <div class="delivery-next-action-grid">
+        {% for action in delivery_next_actions %}
+            <div class="delivery-next-action-card {% if not action.can_create_delivery %}is-blocked{% endif %}">
+                <div class="delivery-next-action-icon"><i class="bi bi-truck"></i></div>
+                <div class="delivery-next-action-body">
+                    <strong>{{ action.title }}</strong>
+                    <p>{{ action.order_number }} · {{ action.label }} · sisa {{ action.remaining_qty }} porsi.</p>
+                    <div class="delivery-next-action-meta">
+                        <span>Order: {{ action.order_date.strftime('%d-%m-%Y') }}</span>
+                        <span>Driver: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                    </div>
+                </div>
+                <div class="delivery-next-action-controls">
+                    {% if action.can_create_delivery %}
+                        <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=action.daily_order_id, delivery_type=action.delivery_type) }}" class="app-form" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-truck-front"></i>
+                                {{ action.action_label }}
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="status-badge status-danger">{{ action.blocking_reason }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('operational.order_detail', order_id=action.daily_order_id) }}" class="btn app-btn-secondary">Detail Order</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Pengiriman</h5>
+            <p>Fokus halaman ini adalah delivery yang harus dibawa pada tanggal {{ selected_date.strftime('%d-%m-%Y') }}.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Delivery</th>
+                    <th>Tipe</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                    <th>SLA</th>
+                    <th>Lokasi</th>
+                    <th>Planned</th>
+                    <th>Delivered</th>
+                    <th>Shortage</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in deliveries %}
+                {% set total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% for detail in delivery.details %}
+                    {% set total.planned = total.planned + detail.planned_qty %}
+                    {% set total.delivered = total.delivered + detail.delivered_qty %}
+                    {% set total.shortage = total.shortage + detail.shortage_qty %}
+                {% endfor %}
+                <tr>
+                    <td>
+                        <strong>{{ delivery.delivery_number }}</strong>
+                        {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+                            <div class="muted-small">Pengganti shortage</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
+                    <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
+                    <td>
+                        {% if delivery.status == "DELIVERED" %}
+                            <span class="status-badge status-locked">DELIVERED</span>
+                        {% elif delivery.status == "ON_THE_WAY" %}
+                            <span class="status-badge status-progress">ON THE WAY</span>
+                        {% elif delivery.status == "CANCELLED" %}
+                            <span class="status-badge status-danger">CANCELLED</span>
+                        {% else %}
+                            <span class="status-badge status-draft">{{ delivery.status }}</span>
+                        {% endif %}
+                    </td>
+                    {% set sla = calculate_delivery_sla_summary(delivery) %}
+                    <td>
+                        <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+                        <div class="muted-small">Tiba {{ sla.target_arrival_label }} · batas {{ sla.late_limit_label }}</div>
+                    </td>
+                    <td>{{ delivery.details|length }}</td>
+                    <td>{{ total.planned }}</td>
+                    <td>{{ total.delivered }}</td>
+                    <td>{{ total.shortage }}</td>
+                    <td>
+                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <i class="bi bi-truck"></i>
+                            <p>Belum ada delivery pada tanggal ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

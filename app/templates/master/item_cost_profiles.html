@@ -1,0 +1,174 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_cost_profiles">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">HPP Tahap 1</span>
+        <h1>Profil HPP Item</h1>
+        <p>Atur harga standar, konversi satuan, yield, dan waste per item. Tahap ini belum mengubah stok, jurnal, invoice, atau order lama.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.unit_conversions') }}" class="btn app-btn-primary">
+            <i class="bi bi-arrow-left-right"></i>
+            Konversi Satuan
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-box-seam"></i></div>
+        <div>
+            <p>Item HPP Aktif</p>
+            <h3>{{ hpp_item_count }}</h3>
+            <span class="app-stat-helper">RAW/PACKAGING/GAS/OTHER</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <p>Sudah Ada Profil</p>
+            <h3>{{ profiled_count }}</h3>
+            <span class="app-stat-helper">Siap dipakai kalkulator HPP nanti</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <p>Belum Diprofilkan</p>
+            <h3>{{ missing_count }}</h3>
+            <span class="app-stat-helper">Perlu dilengkapi bertahap</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-arrow-left-right"></i></div>
+        <div>
+            <p>Konversi Aktif</p>
+            <h3>{{ conversion_count }}</h3>
+            <span class="app-stat-helper">Master bantu konversi satuan</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="alert alert-info mb-3">
+        <strong>Aman:</strong> halaman ini hanya master biaya. Data HPP belum memotong stok, belum membuat jurnal, dan belum mengubah transaksi lama.
+    </div>
+
+    <form method="GET" action="{{ url_for('master.item_cost_profiles') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama item / satuan">
+
+        <select name="category" class="form-select app-input">
+            <option value="HPP_RELEVANT" {% if category == "HPP_RELEVANT" %}selected{% endif %}>Item HPP Relevan</option>
+            <option value="ALL" {% if category == "ALL" %}selected{% endif %}>Semua Kategori</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Profil</option>
+            <option value="MISSING_PROFILE" {% if status == "MISSING_PROFILE" %}selected{% endif %}>Belum Ada Profil</option>
+            <option value="HAS_PROFILE" {% if status == "HAS_PROFILE" %}selected{% endif %}>Sudah Ada Profil</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Item Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Item Nonaktif</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.item_cost_profiles') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Kategori</th>
+                    <th>Satuan Stok</th>
+                    <th>Harga Standar</th>
+                    <th>Konversi</th>
+                    <th>Yield / Waste</th>
+                    <th>Biaya Efektif</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                {% set profile = item.cost_profile %}
+                <tr>
+                    <td>
+                        <strong>{{ item.item_code }}</strong><br>
+                        <span>{{ item.item_name }}</span>
+                    </td>
+                    <td>{{ item.category }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>
+                        {% if profile %}
+                            {{ profile.standard_purchase_price|rupiah }} / {{ profile.purchase_qty|qty }} {{ profile.purchase_unit }}
+                        {% else %}
+                            <span class="text-muted">Belum diisi</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if profile %}
+                            1 {{ profile.purchase_unit }} = {{ profile.conversion_factor|qty }} {{ profile.base_unit }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if profile %}
+                            Yield {{ profile.yield_percentage|qty }}%<br>
+                            <span class="text-muted">Waste {{ profile.waste_percentage|qty }}%</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if profile %}
+                            {{ profile.effective_cost_per_base_unit|rupiah }} / {{ profile.base_unit }}
+                        {% else %}
+                            <span class="status-badge status-draft">BELUM ADA</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_item_cost_profile', item_id=item.id) }}" class="btn btn-sm app-btn-secondary">
+                                {% if profile %}Edit Profil{% else %}Buat Profil{% endif %}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-calculator"></i>
+                            <p>Belum ada item yang cocok dengan filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

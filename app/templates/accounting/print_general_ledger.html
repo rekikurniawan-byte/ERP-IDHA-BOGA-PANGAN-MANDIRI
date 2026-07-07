@@ -1,0 +1,97 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% include "accounting/_accounting_print_report_styles.html" %}
+
+<div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <h1>Buku Besar</h1>
+            <p>Halaman print-ready buku besar berdasarkan periode aktif.</p>
+        </div>
+        <div class="page-actions accounting-header-actions">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('accounting.reports', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>BUKU BESAR</h4>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Periode: {{ data.start_date.strftime('%d-%m-%Y') }} s/d {{ data.end_date.strftime('%d-%m-%Y') }}</p>
+            </div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Jumlah Akun Aktif</span><strong>{{ data.ledger_rows|length }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Jurnal</span><strong>{{ data.journal_count }}</strong></div>
+            <div class="app-stat-card print-box"><span>Total Debit Periode</span><strong>{{ data.total_period_debit|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Total Credit Periode</span><strong>{{ data.total_period_credit|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Periode</span><strong>{{ 'BALANCE' if data.is_period_balanced else 'TIDAK BALANCE' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tanggal Awal</span><strong>{{ data.start_date.strftime('%d-%m-%Y') }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tanggal Akhir</span><strong>{{ data.end_date.strftime('%d-%m-%Y') }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+        </div>
+
+        {% for row in data.ledger_rows %}
+        <h5 class="print-section-title">{{ row.account.account_code }} - {{ row.account.account_name }} <small>({{ row.account.account_type }})</small></h5>
+        <table class="print-table{% if not loop.first %} mt-2{% endif %} app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>No Jurnal</th>
+                    <th>Keterangan</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in row.details %}
+                <tr>
+                    <td>{{ detail.journal.journal_date.strftime('%d-%m-%Y') if detail.journal and detail.journal.journal_date else '-' }}</td>
+                    <td>{{ detail.journal.journal_number if detail.journal else '-' }}</td>
+                    <td>{{ detail.journal.description if detail.journal else '-' }}</td>
+                    <td class="text-end">{{ detail.debit|rupiah }}</td>
+                    <td class="text-end">{{ detail.credit|rupiah }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Tidak ada detail transaksi.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3">Total {{ row.account.account_name }}</th>
+                    <th class="text-end">{{ row.period_debit|rupiah }}</th>
+                    <th class="text-end">{{ row.period_credit|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <tbody>
+                <tr>
+                    <td class="text-center text-muted">Belum ada transaksi buku besar pada periode ini.</td>
+                </tr>
+            </tbody>
+        </table>
+        {% endfor %}
+
+        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat read-only.</p>
+    </div>
+</div>
+{% endblock %}

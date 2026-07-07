@@ -1,0 +1,202 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
+{% include "finance/_finance_print_report_styles.html" %}
+
+<div class="print-report-shell" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Keuangan · Manual Backfill · Print Ready</span>
+            <h1>Cetak Rekap Manual dari Buku</h1>
+            <p>Dokumen pembanding buku manual. Gunakan tombol Cetak / Save PDF dari browser.</p>
+        </div>
+        <div class="page-actions finance-header-actions" data-finance-actions="UI">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('finance.manual_billing_batch_detail', batch_id=batch.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali Detail
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+                {% if company_settings.company_npwp %}<p>NPWP: {{ company_settings.company_npwp }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>REKAP MANUAL DARI BUKU</h4>
+                <p><strong>{{ batch.batch_number }}</strong></p>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Status: {{ status_context.label }}</p>
+            </div>
+        </div>
+
+        <div class="print-meta-grid">
+            <div class="app-stat-card print-box"><span>Periode</span><strong>{{ batch.period_start.strftime('%d-%m-%Y') }} s/d {{ batch.period_end.strftime('%d-%m-%Y') }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tipe Pihak</span><strong>{{ bill_to_context.type_label }}</strong></div>
+            <div class="app-stat-card print-box"><span>Pihak Ditagih</span><strong>{{ bill_to_context.name }}</strong></div>
+            <div class="app-stat-card print-box"><span>Master Terkait</span><strong>{{ bill_to_context.master_context }}</strong></div>
+            <div class="app-stat-card print-box"><span>Telepon</span><strong>{{ bill_to_context.phone or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Invoice</span><strong>{{ payment_summary.invoice_number or 'Belum dibuat' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Invoice</span><strong>{{ payment_summary.invoice_status or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Item</span><strong>{{ summary.item_count }}</strong></div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Total Catering</span><strong>{{ summary.catering_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Total Warung/Kasbon</span><strong>{{ summary.warung_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Total Lainnya</span><strong>{{ summary.other_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Grand Total Rekap</span><strong>{{ summary.grand_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Sudah Dibayar</span><strong>{{ payment_summary.paid_amount|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Sisa Piutang</span><strong>{{ payment_summary.remaining_amount|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Lock Rekap</span><strong>{{ batch.locked_at.strftime('%d-%m-%Y %H:%M') if batch.locked_at else 'Belum dikunci' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Sumber Input</span><strong>{{ batch.input_source }}</strong></div>
+        </div>
+
+        <div class="print-meta-grid">
+            <div class="app-stat-card print-box"><span>Alamat Pihak</span><strong>{{ bill_to_context.address or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Catatan Pihak</span><strong>{{ bill_to_context.notes or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Catatan Rekap</span><strong>{{ batch.notes or '-' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Catatan Dokumen</span><strong>Read-only, tidak mengubah data sistem</strong></div>
+        </div>
+
+        {% if catering_rows %}
+        <h5 class="mt-4">Rincian Catering</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Keterangan</th>
+                    <th>Sumber</th>
+                    <th class="text-end">Qty</th>
+                    <th class="text-end">Harga</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in catering_rows %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row.source_date.strftime('%d-%m-%Y') if row.source_date else '-' }}</td>
+                    <td>{{ row.description }}</td>
+                    <td>{{ row.source_label }}</td>
+                    <td class="text-end">{{ row.qty|qty }}</td>
+                    <td class="text-end">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-end">{{ row.subtotal|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4" class="text-end">Total Catering</th>
+                    <th class="text-end">{{ summary.catering_qty|qty }}</th>
+                    <th></th>
+                    <th class="text-end">{{ summary.catering_total|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+
+        {% if warung_rows %}
+        <h5 class="mt-4">Rincian Warung / Kasbon</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Nama / Keterangan</th>
+                    <th>Sumber</th>
+                    <th class="text-end">Qty</th>
+                    <th class="text-end">Nilai</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in warung_rows %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row.source_date.strftime('%d-%m-%Y') if row.source_date else '-' }}</td>
+                    <td>{{ row.description }}</td>
+                    <td>{{ row.source_label }}</td>
+                    <td class="text-end">{{ row.qty|qty }}</td>
+                    <td class="text-end">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-end">{{ row.subtotal|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4" class="text-end">Total Warung/Kasbon</th>
+                    <th class="text-end">{{ summary.warung_qty|qty }}</th>
+                    <th></th>
+                    <th class="text-end">{{ summary.warung_total|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+
+        {% if other_rows %}
+        <h5 class="mt-4">Rincian Lainnya</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Keterangan</th>
+                    <th class="text-end">Qty</th>
+                    <th class="text-end">Harga</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in other_rows %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row.source_date.strftime('%d-%m-%Y') if row.source_date else '-' }}</td>
+                    <td>{{ row.item_type }}</td>
+                    <td>{{ row.description }}</td>
+                    <td class="text-end">{{ row.qty|qty }}</td>
+                    <td class="text-end">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-end">{{ row.subtotal|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4" class="text-end">Total Lainnya</th>
+                    <th class="text-end">{{ summary.other_qty|qty }}</th>
+                    <th></th>
+                    <th class="text-end">{{ summary.other_total|rupiah }}</th>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+
+        <div class="print-signature-grid">
+            <div class="print-signature-box">
+                <p>Diperiksa Oleh,</p>
+                <div class="print-signature-line">Finance / Admin</div>
+            </div>
+            <div class="print-signature-box">
+                <p>Disetujui Oleh,</p>
+                <div class="print-signature-line">Owner / Penanggung Jawab</div>
+            </div>
+        </div>
+
+        <p class="print-note">
+            Dokumen ini dibuat otomatis dari data MANUAL_BACKFILL. Status VOID berarti rekap dibatalkan sebelum menjadi invoice/piutang.
+            Halaman cetak ini hanya membaca data dan tidak membuat file laporan di folder project.
+        </p>
+    </div>
+</div>
+</div>
+{% endblock %}

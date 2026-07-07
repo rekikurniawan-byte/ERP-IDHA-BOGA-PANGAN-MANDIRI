@@ -1,0 +1,177 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-operational-page="monthly-catering-recap">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Operasional Catering</span>
+            <h1>Rekap Catering Bulanan</h1>
+            <p>Rekap porsi, nilai catering, revisi tambah, delivery, dan status tagihan untuk dasar invoice periode.</p>
+        </div>
+
+        <div class="page-actions">
+            <a href="{{ url_for('operational.daily_catering_log') }}" class="btn app-btn-primary">
+                <i class="bi bi-journal-text"></i>
+                Log Harian
+            </a>
+            <a href="{{ url_for('finance.generate_period_invoice_preview') }}" class="btn app-btn-secondary">
+                <i class="bi bi-receipt-cutoff"></i>
+                Invoice Periode
+            </a>
+        </div>
+    </div>
+
+
+    {{ global_filter_bar(filter_bar) }}
+
+    <div class="app-stat-grid app-stat-grid-compact app-stat-grid-4">
+        <div class="app-stat-card">
+            <p>Periode</p>
+            <h3>{{ report.start_date.strftime('%d/%m') }} - {{ report.end_date.strftime('%d/%m') }}</h3>
+            <span class="app-stat-helper">{{ report.summary.locked_order_count }} order locked dari {{ report.summary.order_count }} order</span>
+        </div>
+        <div class="app-stat-card">
+            <p>Total Porsi</p>
+            <h3>{{ report.summary.total_qty|qty }}</h3>
+            <span class="app-stat-helper">{{ report.summary.mandor_count }} mandor · {{ report.summary.location_count }} lokasi</span>
+        </div>
+        <div class="app-stat-card">
+            <p>Nilai Catering</p>
+            <h3>{{ report.summary.base_amount|rupiah }}</h3>
+            <span class="app-stat-helper">Revisi tambah {{ report.summary.revision_amount|rupiah }}</span>
+        </div>
+        <div class="app-stat-card">
+            <p>Kandidat Invoice</p>
+            <h3>{{ report.summary.invoice_candidate_amount|rupiah }}</h3>
+            <span class="app-stat-helper">{{ report.summary.ready_to_bill_count }} siap · {{ report.summary.invoiced_count }} sudah invoice</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Ringkasan per Mandor</h5>
+                <p>Gunakan tombol preview untuk lanjut ke halaman invoice periode tanpa membuat data invoice otomatis dari halaman ini.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Mandor / PIC</th>
+                        <th class="text-end">Total Porsi</th>
+                        <th class="text-end">Kandidat Invoice</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mandor in report.mandor_totals %}
+                        <tr>
+                            <td><strong>{{ mandor.mandor_name }}</strong></td>
+                            <td class="text-end">{{ mandor.total_qty|qty }}</td>
+                            <td class="text-end"><strong>{{ mandor.invoice_candidate_amount|rupiah }}</strong></td>
+                            <td>
+                                {% if mandor.ready_to_bill_count > 0 %}
+                                    <span class="status-badge status-progress">Ada Siap Tagih</span>
+                                {% elif mandor.invoiced_count > 0 %}
+                                    <span class="status-badge status-completed">Sudah Invoice</span>
+                                {% else %}
+                                    <span class="status-badge status-draft">Belum Siap</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('finance.generate_period_invoice_preview') }}" class="app-form" data-ui-form="true">
+                                    {% include "components/csrf_token.html" %}
+                                    <input type="hidden" name="mandor_id" value="{{ mandor.mandor_id }}">
+                                    <input type="hidden" name="period_start" value="{{ report.start_date.strftime('%Y-%m-%d') }}">
+                                    <input type="hidden" name="period_end" value="{{ report.end_date.strftime('%Y-%m-%d') }}">
+                                    <button type="submit" class="btn btn-sm app-btn-secondary">Lihat Data Invoice</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                    <i class="bi bi-calendar-x"></i>
+                                    <p>Belum ada data catering pada periode ini.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Detail Rekap per Lokasi</h5>
+                <p>Baris ini membantu cek detail porsi dan nilai sebelum masuk invoice periode.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Mandor / PIC</th>
+                        <th>Lokasi</th>
+                        <th class="text-end">Order</th>
+                        <th class="text-end">Siang</th>
+                        <th class="text-end">Sore</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Terkirim</th>
+                        <th class="text-end">Shortage</th>
+                        <th class="text-end">Nilai Catering</th>
+                        <th class="text-end">Revisi Tambah</th>
+                        <th class="text-end">Kandidat Invoice</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report.rows %}
+                        <tr>
+                            <td><strong>{{ row.mandor_name }}</strong></td>
+                            <td>{{ row.location_name }}</td>
+                            <td class="text-end">{{ row.order_count }}</td>
+                            <td class="text-end">{{ row.lunch_qty|qty }}</td>
+                            <td class="text-end">{{ row.dinner_qty|qty }}</td>
+                            <td class="text-end"><strong>{{ row.total_qty|qty }}</strong></td>
+                            <td class="text-end">{{ row.delivered_qty|qty }}</td>
+                            <td class="text-end">{{ row.shortage_qty|qty }}</td>
+                            <td class="text-end">{{ row.base_amount|rupiah }}</td>
+                            <td class="text-end">{{ row.revision_amount|rupiah }}</td>
+                            <td class="text-end"><strong>{{ row.invoice_candidate_amount|rupiah }}</strong></td>
+                            <td>
+                                {% if row.billing_state == "SUDAH_INVOICE" %}
+                                    <span class="status-badge status-completed">Sudah Invoice</span>
+                                {% elif row.billing_state == "SEBAGIAN" %}
+                                    <span class="status-badge status-progress">Sebagian</span>
+                                {% elif row.billing_state == "SIAP_TAGIH" %}
+                                    <span class="status-badge status-progress">Siap Tagih</span>
+                                {% else %}
+                                    <span class="status-badge status-draft">Belum Lock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="13">
+                                <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                    <i class="bi bi-inboxes"></i>
+                                    <p>Detail rekap belum tersedia untuk filter ini.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

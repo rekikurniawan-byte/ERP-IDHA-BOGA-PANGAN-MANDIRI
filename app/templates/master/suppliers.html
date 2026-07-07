@@ -1,0 +1,129 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="suppliers">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Supplier</span>
+        <h1>Supplier Opsional</h1>
+        <p>Kelola supplier tetap jika memang ada. Pembelian dari toko tidak tetap tetap bisa input manual tanpa memilih supplier.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
+        <a href="{{ url_for('master.create_supplier') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Supplier
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.suppliers') }}" class="filter-bar app-form" data-ui-form="true">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama supplier / PIC / nomor HP">
+
+        <select name="supplier_type" class="form-select app-input">
+            <option value="ALL" {% if supplier_type == "ALL" %}selected{% endif %}>Semua Jenis</option>
+            {% for type in supplier_types %}
+                <option value="{{ type }}" {% if supplier_type == type %}selected{% endif %}>{{ type }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="form-select app-input">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+        </select>
+
+        <button class="btn app-btn-primary" type="submit">Filter</button>
+        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Supplier</th>
+                    <th>Jenis</th>
+                    <th>Kontak</th>
+                    <th>Tempo</th>
+                    <th>Bank</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td><strong>{{ supplier.supplier_code }}</strong></td>
+                    <td>
+                        <strong>{{ supplier.supplier_name }}</strong>
+                        {% if supplier.address %}
+                            <div class="text-muted small">{{ supplier.address }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ supplier.supplier_type }}</td>
+                    <td>
+                        {{ supplier.contact_person or '-' }}
+                        {% if supplier.phone or supplier.whatsapp %}
+                            <div class="text-muted small">
+                                {{ supplier.whatsapp or supplier.phone }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ supplier.default_payment_terms_days }} hari</td>
+                    <td>
+                        {% if supplier.bank_name or supplier.bank_account_number %}
+                            {{ supplier.bank_name or '-' }}
+                            <div class="text-muted small">{{ supplier.bank_account_number or '-' }}</div>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if supplier.is_active %}
+                            <span class="status-badge status-locked">AKTIF</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            {% if supplier.is_active %}
+                                <a href="{{ url_for('logistics.create_purchase', supplier_id=supplier.id) }}" class="btn btn-sm app-btn-primary">Buat Pembelian</a>
+                            {% endif %}
+
+                            <a href="{{ url_for('master.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+
+                            <form method="POST" action="{{ url_for('master.toggle_supplier', supplier_id=supplier.id) }}" data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">
+                                    {% if supplier.is_active %}Nonaktif{% else %}Aktifkan{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="bi bi-shop"></i>
+                            <p>Belum ada supplier tetap. Ini tidak menghambat stok masuk, pembelian manual tetap bisa dipakai.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
+{% include "finance/_finance_print_report_styles.html" %}
+
+<div class="print-report-shell" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Keuangan · Print Ready</span>
+            <h1>Profit Invoice dari HPP Allocation</h1>
+            <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
+        </div>
+        <div class="page-actions finance-header-actions" data-finance-actions="UI">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('finance.invoice_profit_report', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>PROFIT INVOICE</h4>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Periode invoice: {{ start_date.strftime('%d-%m-%Y') if start_date else 'Awal' }} s.d. {{ end_date.strftime('%d-%m-%Y') if end_date else 'Akhir' }}</p>
+            </div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Total Invoice</span><strong>{{ totals.invoice_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Invoice</span><strong>{{ totals.invoice_count }}</strong></div>
+            <div class="app-stat-card print-box"><span>Revenue Terhitung HPP</span><strong>{{ totals.costed_revenue_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Coverage</span><strong>{{ totals.coverage_percentage|round(2) }}%</strong></div>
+            <div class="app-stat-card print-box"><span>Total HPP Allocation</span><strong>{{ totals.hpp_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Food Cost</span><strong>{{ totals.food_cost_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Packaging + Overhead</span><strong>{{ ((totals.packaging_cost_total or 0) + (totals.overhead_cost_total or 0))|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Laba Kotor</span><strong>{{ totals.gross_profit_total|rupiah }} · {{ totals.gross_margin_percentage|round(2) }}%</strong></div>
+        </div>
+
+        <div class="print-meta-grid">
+            <div class="app-stat-card print-box"><span>Revenue Belum Ada HPP</span><strong>{{ totals.no_hpp_revenue_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Revenue Dikecualikan</span><strong>{{ totals.excluded_revenue_total|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Jumlah Allocation</span><strong>{{ totals.allocation_count }}</strong></div>
+            <div class="app-stat-card print-box"><span>Warning</span><strong>{{ totals.warning_count }}</strong></div>
+        </div>
+
+        <h5>Daftar Profit per Invoice</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>No Invoice</th>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Ditagihkan Ke</th>
+                    <th>Total Invoice</th>
+                    <th>Revenue Terhitung</th>
+                    <th>HPP</th>
+                    <th>Laba Kotor</th>
+                    <th>Margin</th>
+                    <th>Coverage</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                {% set invoice = row.invoice %}
+                {% set summary = row.summary %}
+                <tr>
+                    <td><strong>{{ invoice.invoice_number }}</strong></td>
+                    <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
+                    <td>{{ invoice.source_type or '-' }}</td>
+                    <td>{{ row.bill_to }}</td>
+                    <td class="text-end">{{ summary.invoice_total|rupiah }}</td>
+                    <td class="text-end">{{ summary.costed_revenue_total|rupiah }}</td>
+                    <td class="text-end">{{ summary.hpp_total|rupiah }}</td>
+                    <td class="text-end"><strong>{{ summary.gross_profit_total|rupiah }}</strong></td>
+                    <td class="text-end">{% if summary.costed_revenue_total > 0 %}{{ summary.gross_margin_percentage|round(2) }}%{% else %}-{% endif %}</td>
+                    <td class="text-end">{{ summary.coverage_percentage|round(2) }}%</td>
+                    <td>{{ invoice.status or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" class="text-center text-muted">Belum ada invoice untuk ditampilkan.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="print-note">Dokumen ini membaca HPP allocation dari snapshot order. Angka tidak mengubah invoice, payment, jurnal, atau stok.</p>
+    </div>
+</div>
+</div>
+{% endblock %}

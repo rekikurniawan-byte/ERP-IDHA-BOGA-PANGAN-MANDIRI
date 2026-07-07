@@ -1,0 +1,463 @@
+/* ==================================================
+   PRODUCTION SOURCE: 09_tables.css
+   CSS architecture split is cascade-preserving.
+   Original legacy line range: 2749-3204.
+   Note: Global button system legacy block; preserved before enterprise shell.
+   Edit this source file, then run: python tools/build_css.py
+   ================================================== */
+
+/* Global button system: one visual language across Bootstrap and custom buttons. */
+.btn,
+.app-btn,
+.app-btn-primary,
+.app-btn-outline,
+.app-btn-danger,
+.app-btn-success-soft,
+.theme-mode-toggle,
+.topbar-logout {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-button);
+    font-size: 14px;
+    font-weight: 750;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition), transform var(--transition);
+    white-space: nowrap;
+}
+
+.btn-sm,
+.btn-group-sm > .btn {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: var(--radius-button-sm);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.app-btn-primary,
+.btn-primary,
+.btn-success,
+.btn-info {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary-text) !important;
+    box-shadow: 0 10px 18px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.app-btn-primary:hover,
+.btn-primary:hover,
+.btn-success:hover,
+.btn-info:hover {
+    background: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    color: var(--primary-text) !important;
+}
+
+.app-btn-outline,
+.btn-secondary,
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-info,
+.btn-light {
+    background: var(--secondary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--secondary-text) !important;
+    box-shadow: none;
+}
+
+.app-btn-outline:hover,
+.btn-secondary:hover,
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-light:hover {
+    background: var(--secondary-hover) !important;
+    border-color: var(--border) !important;
+    color: var(--secondary-text) !important;
+}
+
+.btn-warning {
+    background: var(--warning-soft) !important;
+    border-color: color-mix(in srgb, var(--warning) 36%, transparent) !important;
+    color: var(--warning) !important;
+}
+
+.app-btn-danger,
+.btn-danger,
+.btn-outline-danger {
+    background: var(--danger-soft) !important;
+    border-color: color-mix(in srgb, var(--danger) 32%, transparent) !important;
+    color: var(--danger) !important;
+    box-shadow: none;
+}
+
+.app-btn-danger:hover,
+.btn-danger:hover,
+.btn-outline-danger:hover {
+    background: color-mix(in srgb, var(--danger-soft) 78%, var(--danger) 22%) !important;
+    border-color: color-mix(in srgb, var(--danger) 42%, transparent) !important;
+    color: var(--danger) !important;
+}
+
+.btn-link {
+    color: var(--info);
+    font-weight: 700;
+}
+
+.btn-icon,
+.dropdown-toggle.btn-icon {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+}
+
+.page-header,
+.card-header-clean,
+.section-header,
+.content-header {
+    gap: var(--section-gap);
+}
+
+.page-header h1,
+.page-title,
+.content-title {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.section-title {
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 700;
+}
+
+.card-title,
+.card-header-clean h5 {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+}
+
+.app-card,
+.content-card,
+.card {
+    border-radius: var(--radius-card);
+    padding: var(--card-padding);
+}
+
+.form-control,
+.form-select,
+.app-input,
+textarea.form-control {
+    border-radius: var(--radius-input);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    min-height: 42px;
+}
+
+.form-control:focus,
+.form-select:focus,
+.app-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder,
+.app-input::placeholder {
+    color: var(--text-muted);
+}
+
+.table,
+.app-table {
+    color: var(--text-primary);
+    border-color: var(--border-soft);
+    vertical-align: middle;
+}
+
+.table thead th,
+.app-table thead th {
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    border-color: var(--border-soft);
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.table tbody td,
+.app-table tbody td {
+    color: var(--text-primary);
+    border-color: var(--border-soft);
+    font-size: 13px;
+    line-height: 20px;
+}
+
+.table tbody tr:hover,
+.app-table tbody tr:hover {
+    background: var(--surface-soft);
+}
+
+.table-money,
+.money-cell,
+td.text-end,
+th.text-end {
+    text-align: right !important;
+}
+
+.badge,
+.status-badge,
+.badge-soft {
+    border-radius: var(--radius-badge);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 7px 10px;
+}
+
+.status-draft,
+.badge.bg-secondary {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+}
+
+.status-locked,
+.status-completed,
+.badge-soft.success,
+.badge.bg-success {
+    background: var(--success-soft) !important;
+    color: var(--success) !important;
+}
+
+.status-progress,
+.badge-soft.warning,
+.badge.bg-warning {
+    background: var(--warning-soft) !important;
+    color: var(--warning) !important;
+}
+
+.status-cancelled,
+.badge.bg-danger {
+    background: var(--danger-soft) !important;
+    color: var(--danger) !important;
+}
+
+.badge.bg-info,
+.kpi-blue {
+    background: var(--info-soft) !important;
+    color: var(--info) !important;
+}
+
+.kpi-green {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.kpi-orange {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.kpi-red {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.empty-state,
+.empty-chart,
+.ui-empty-state,
+.ui-loading-state,
+.ui-error-state {
+    background: var(--surface-soft);
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: var(--radius-card);
+}
+
+.ui-empty-state,
+.ui-loading-state,
+.ui-error-state {
+    min-height: 160px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 22px;
+}
+
+.ui-error-state {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 32%, transparent);
+}
+
+.theme-mode-dropdown {
+    position: relative;
+}
+
+.theme-mode-toggle {
+    height: 44px;
+    background: var(--secondary);
+    border: 1px solid var(--border-soft);
+    color: var(--text-primary);
+    border-radius: var(--radius-badge);
+    box-shadow: var(--shadow-card);
+}
+
+.theme-mode-toggle:hover {
+    background: var(--secondary-hover);
+    color: var(--text-primary);
+}
+
+.theme-mode-chevron {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.theme-mode-menu {
+    min-width: 220px;
+    padding: 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: var(--shadow-hover);
+}
+
+.theme-mode-option {
+    border-radius: 11px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-weight: 750;
+}
+
+.theme-mode-option:hover,
+.theme-mode-option.is-active {
+    background: var(--surface-muted);
+    color: var(--text-primary);
+}
+
+.theme-mode-option.is-active::after {
+    content: "✓";
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.theme-mode-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    display: inline-block;
+}
+
+.theme-dark {
+    background: #0b1220;
+}
+
+.theme-light {
+    background: #f3f6fb;
+}
+
+.theme-clear {
+    background: #ffffff;
+}
+
+.auth-page {
+    background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+        linear-gradient(135deg, var(--sidebar) 0%, color-mix(in srgb, var(--sidebar) 82%, #1e293b) 44%, var(--bg) 44%, var(--bg) 100%);
+}
+
+.auth-brand h4,
+.auth-side-card h2 {
+    color: #ffffff;
+}
+
+.auth-card-header h5 {
+    color: var(--text-primary);
+}
+
+.auth-side-card {
+    background: color-mix(in srgb, var(--sidebar) 78%, transparent);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 1023.98px) {
+    .content-area {
+        padding: var(--page-padding-tablet);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .content-area {
+        padding: var(--page-padding-mobile);
+    }
+
+    .page-header h1,
+    .page-title,
+    .content-title,
+    h1 {
+        font-size: 23px;
+        line-height: 30px;
+    }
+
+    .btn,
+    .app-btn,
+    .app-btn-primary,
+    .app-btn-outline,
+    .app-btn-danger,
+    .theme-mode-toggle,
+    .topbar-logout {
+        min-height: 44px;
+    }
+
+    .btn-mobile-full,
+    .page-actions .btn,
+    .form-actions .btn,
+    .action-bar .btn {
+        width: 100%;
+    }
+
+    .app-topbar {
+        min-height: 60px;
+    }
+
+    .theme-mode-menu {
+        min-width: 210px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .topbar-right {
+        gap: 6px;
+    }
+
+    .theme-mode-toggle,
+    .topbar-logout,
+    .sidebar-toggle {
+        width: 44px;
+        min-width: 44px;
+        padding: 0;
+    }
+
+    .auth-card {
+        padding: 22px;
+    }
+}

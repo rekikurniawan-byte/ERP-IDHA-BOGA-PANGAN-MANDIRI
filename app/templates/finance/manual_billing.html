@@ -1,0 +1,282 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Keuangan | Rekap Tagihan Mandor</span>
+            <h1>Rekap Tagihan Mandor</h1>
+            <p>Ubah sumber yang sudah tercatat di sistem menjadi invoice piutang formal. Ini bukan input buku/manual belakangan.</p>
+        </div>
+        <div class="page-actions finance-header-actions">
+            <a href="{{ url_for('finance.manual_billing_backfill_form') }}" class="btn app-btn-primary">
+                <i class="bi bi-journal-plus"></i>
+                Input Rekap dari Buku
+            </a>
+            <a href="{{ url_for('finance.manual_billing_batches_list') }}" class="btn app-btn-secondary">
+                <i class="bi bi-list-check"></i>
+                Daftar Rekap Buku
+            </a>
+            <a href="{{ url_for('finance.index') }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Pusat Keuangan
+            </a>
+            <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+                <i class="bi bi-receipt"></i>
+                Invoice
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Filter Sumber Realtime yang Sudah Ada</h5>
+                <p>Pilih PIC lapangan/mandor dan periode sumber Realtime yang sudah ada di sistem.</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('finance.manual_billing') }}" class="app-form" data-ui-form="true">
+            {% include "components/csrf_token.html" %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Mandor / PIC Lapangan</label>
+                    <select name="mandor_id" class="form-select" required>
+                        <option value="">Pilih mandor</option>
+                        {% for mandor in mandors %}
+                            <option value="{{ mandor.id }}" {% if selected_mandor_id|string == mandor.id|string %}selected{% endif %}>
+                                {{ mandor.name }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" name="period_start" class="form-control" value="{{ period_start_value }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Selesai</label>
+                    <input type="date" name="period_end" class="form-control" value="{{ period_end_value }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn app-btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                        Lihat Data
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Input Belakangan dari Buku</h5>
+                <p>Daftar rekap manual dari buku/laporan lama. Draft dikunci dulu, lalu bisa dipromosikan menjadi invoice/piutang.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('finance.manual_billing_batches_list') }}" class="btn app-btn-secondary btn-sm">
+                    <i class="bi bi-list-check"></i>
+                    Lihat Semua
+                </a>
+                <a href="{{ url_for('finance.manual_billing_backfill_form') }}" class="btn app-btn-secondary btn-sm">
+                    <i class="bi bi-plus-circle"></i>
+                    Tambah Draft Buku
+                </a>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>No Rekap</th>
+                        <th>Pihak Ditagih</th>
+                        <th>Periode</th>
+                        <th>Status</th>
+                        <th class="text-end">Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in manual_backfill_batches %}
+                    <tr>
+                        <td><strong>{{ batch.batch_number }}</strong></td>
+                        <td>
+                            {% set bill_to_ctx = get_manual_backfill_bill_to_context(batch) %}
+                            <strong>{{ bill_to_ctx.name }}</strong>
+                            <div class="small text-muted">{{ bill_to_ctx.type_label }}{% if bill_to_ctx.master_context and bill_to_ctx.master_context != '-' %} — {{ bill_to_ctx.master_context }}{% endif %}</div>
+                        </td>
+                        <td>{{ batch.period_start.strftime('%d-%m-%Y') }} s/d {{ batch.period_end.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            {% set status_ctx = get_manual_backfill_status_context(batch.status) %}
+                            <span class="status-badge status-warning">Input Belakangan</span>
+                            <span class="status-badge {{ status_ctx.badge_class }}">{{ status_ctx.label }}</span>
+                            {% if batch.locked_at %}<div class="small text-muted">Dikunci {{ batch.locked_at.strftime('%d-%m-%Y %H:%M') }}</div>{% endif %}
+                        </td>
+                        <td class="text-end">{{ batch.total_amount|rupiah }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('finance.manual_billing_batch_detail', batch_id=batch.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-journal-text"></i>
+                                <p>Belum ada input belakangan dari buku.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if preview_ready %}
+    <div class="app-card soft-warning-card mt-4">
+        <strong>Sumber Input: Realtime</strong>
+        <p>Data pada halaman ini diambil dari piutang manual lapangan dan hutang warung pekerja yang sudah ada di sistem. Fitur input belakangan dari buku manual disiapkan sebagai jalur tambahan terpisah pada tahap berikutnya.</p>
+    </div>
+
+    <div class="app-stat-grid mt-4">
+        <div class="app-stat-card">
+            <span>Total Siap Invoice</span>
+            <h3>{{ preview.total_amount|rupiah }}</h3>
+            <p>{{ preview.rows|length }} item valid</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Piutang Manual</span>
+            <h3>{{ preview.manual_receivable_total|rupiah }}</h3>
+            <p>Sumber transaksi lapangan</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Hutang Warung</span>
+            <h3>{{ preview.warung_total|rupiah }}</h3>
+            <p>Sumber hutang warung pekerja</p>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Sumber Siap Ditagihkan</h5>
+                <p>Item di bawah akan dikunci ke rekap tagihan mandor dan tidak bisa masuk invoice lain.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Jenis</th>
+                        <th>Deskripsi</th>
+                        <th>Sumber</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview.rows %}
+                    <tr>
+                        <td>{{ row.date.strftime('%d-%m-%Y') }}</td>
+                        <td><strong>{{ row.item_type }}</strong></td>
+                        <td>{{ row.description }}</td>
+                        <td>
+                            <span class="status-badge status-progress">{{ row.source_type }}</span>
+                            <div class="small text-muted">ID: {{ row.source_id }}</div>
+                            <div class="small text-muted">Input: Realtime</div>
+                        </td>
+                        <td class="text-end">{{ row.subtotal|rupiah }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <p>Tidak ada sumber manual valid untuk periode ini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if preview.blocked_rows %}
+    <div class="app-card soft-warning-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Sumber Dilewati</h5>
+                <p>Item ini tidak dipakai agar tidak terjadi dobel rekap atau dobel invoice.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Sumber</th>
+                        <th>Deskripsi</th>
+                        <th>Alasan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview.blocked_rows %}
+                    <tr>
+                        <td>{{ row.date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ row.source_type }} #{{ row.source_id }}</td>
+                        <td>{{ row.description }}</td>
+                        <td>{{ row.blocked_reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Buat Invoice Resmi</h5>
+                <p>Invoice akan ditagihkan ke pihak/perusahaan mandor, dengan PIC resmi client sebagai snapshot.</p>
+            </div>
+        </div>
+        <form method="POST"
+              action="{{ url_for('finance.create_manual_billing_invoice_route') }}"
+              class="app-form"
+              data-ui-form="true" data-app-confirm="Buat rekap tagihan mandor dan invoice resmi dari sumber yang valid?">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="mandor_id" value="{{ selected_mandor_id }}">
+            <input type="hidden" name="period_start" value="{{ period_start_value }}">
+            <input type="hidden" name="period_end" value="{{ period_end_value }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label">Pihak Ditagih / Perusahaan</label>
+                    <input type="text" class="form-control" value="{{ selected_mandor.client.name if selected_mandor and selected_mandor.client else '-' }}" disabled>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">PIC Penagihan</label>
+                    <select name="client_pic_id" class="form-select" required {% if not client_pics %}disabled{% endif %}>
+                        <option value="">Pilih PIC penagihan</option>
+                        {% for pic in client_pics %}
+                            <option value="{{ pic.id }}">{{ pic.name }}{% if pic.position %} - {{ pic.position }}{% endif %}{% if pic.phone %} / {{ pic.phone }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn app-btn-primary w-100" {% if not preview.rows or not client_pics %}disabled{% endif %}>
+                        <i class="bi bi-receipt"></i>
+                        Buat Invoice
+                    </button>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Catatan Rekap</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Opsional"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

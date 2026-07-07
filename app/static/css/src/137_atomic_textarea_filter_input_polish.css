@@ -1,0 +1,122 @@
+/* ==================================================
+   Tahap 10.26 - Atomic Textarea, Text Input & Filter UI Polish
+   UI layer only: no database, route, service, or business-flow changes.
+   ================================================== */
+
+.app-text-field,
+.app-textarea-field {
+    width: 100%;
+    min-width: 0;
+    color: var(--color-text-primary, #111827);
+    background: var(--color-surface, #ffffff);
+    border-color: var(--color-border, rgba(148, 163, 184, 0.45));
+    border-radius: var(--radius-md, 0.75rem);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+}
+
+.app-text-field:focus,
+.app-textarea-field:focus {
+    border-color: var(--color-primary, #111827);
+    box-shadow: 0 0 0 0.18rem rgba(17, 24, 39, 0.12);
+    outline: 0;
+}
+
+.app-text-field[readonly],
+.app-textarea-field[readonly],
+.app-text-field:disabled,
+.app-textarea-field:disabled {
+    background: var(--color-surface-muted, #f8fafc);
+    color: var(--color-text-muted, #64748b);
+    cursor: not-allowed;
+}
+
+.app-text-field.is-app-invalid,
+.app-textarea-field.is-app-invalid,
+.app-text-field:invalid:not(:placeholder-shown),
+.app-textarea-field:invalid:not(:placeholder-shown) {
+    border-color: var(--color-danger, #dc2626);
+    box-shadow: 0 0 0 0.16rem rgba(220, 38, 38, 0.10);
+}
+
+.app-filter-text-field {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.app-filter-text-field::placeholder,
+.app-text-field::placeholder,
+.app-textarea-field::placeholder {
+    color: var(--color-text-muted, #94a3b8);
+    font-weight: 500;
+}
+
+.app-textarea-field {
+    min-height: 6.75rem;
+    line-height: 1.55;
+    resize: vertical;
+}
+
+.app-textarea-field.app-textarea-autosize {
+    overflow: hidden;
+    resize: none;
+}
+
+.app-textarea-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.15rem;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-muted, #64748b);
+}
+
+.app-textarea-footer.is-warning {
+    color: var(--color-warning, #b45309);
+}
+
+.app-textarea-footer.is-danger {
+    color: var(--color-danger, #dc2626);
+}
+
+.app-textarea-count {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.app-text-field[data-has-value="true"],
+.app-textarea-field[data-has-value="true"] {
+    border-color: rgba(15, 23, 42, 0.28);
+}
+
+.input-group .app-text-field {
+    border-radius: inherit;
+}
+
+.form-floating > .app-textarea-field {
+    min-height: 7.5rem;
+}
+
+@media (max-width: 575.98px) {
+    .app-textarea-field {
+        min-height: 6.25rem;
+    }
+
+    .app-textarea-footer {
+        justify-content: flex-start;
+        font-size: 0.72rem;
+    }
+}
+
+@media print {
+    .app-textarea-footer {
+        display: none !important;
+    }
+
+    .app-text-field,
+    .app-textarea-field {
+        box-shadow: none !important;
+    }
+}

@@ -1,0 +1,166 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-ui-accounting-page="UI">
+<!-- ACCOUNTINGUX4B_BUSINESS_LANGUAGE_MAINTENANCE -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Accounting</span>
+        <h1>Saldo Awal & Modal Pemilik</h1>
+        <p>Input saldo awal usaha agar laporan kas, bank, persediaan, hutang, dan modal lebih masuk akal.</p>
+    </div>
+
+</div>
+
+
+<div class="alert alert-warning border-0 shadow-sm">
+    <strong>Hati-hati:</strong>
+    Saldo awal adalah keputusan owner. Sistem membantu mencatat saldo awal secara seimbang.
+    Jangan isi angka asal hanya supaya kas terlihat besar.
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.cash_balance < 0 %}stat-danger{% else %}stat-success{% endif %}">
+            <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+            <p>Saldo Kas Saat Ini</p>
+            <h3>{{ data.cash_balance|rupiah }}</h3>
+            <span class="app-stat-helper">Berdasarkan jurnal yang sudah tercatat</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning">
+            <i class="bi bi-lightbulb"></i>
+        </div>
+        <div>
+            <p>Saran Minimal Kas</p>
+            <h3>{{ data.suggested_cash|rupiah }}</h3>
+            <span class="app-stat-helper">Agar saldo kas tidak minus</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if data.existing_opening_journal %}stat-success{% else %}stat-info{% endif %}">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <div>
+            <p>Status Saldo Awal</p>
+            <h3>{% if data.existing_opening_journal %}SUDAH ADA{% else %}BELUM ADA{% endif %}</h3>
+            <span class="app-stat-helper">Anti double aktif</span>
+        </div>
+    </div>
+</div>
+
+{% if data.existing_opening_journal %}
+<div class="app-card mt-4">
+    <h5>Saldo Awal Sudah Dicatat</h5>
+    <p class="text-muted">
+        Sistem hanya mengizinkan satu catatan saldo awal agar tidak terjadi input dobel.
+    </p>
+    <a href="{{ url_for('accounting.journal_detail', journal_id=data.existing_opening_journal.id) }}" class="btn app-btn-primary">
+        Lihat Jurnal {{ data.existing_opening_journal.journal_number }}
+    </a>
+</div>
+{% else %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Form Saldo Awal</h5>
+            <p>Isi nominal yang benar-benar dimiliki/dimiliki sebagai kewajiban pada awal pencatatan.</p>
+        </div>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('accounting.opening_balance') }}" data-app-confirm="Catat saldo awal owner? Setelah dibuat, sistem akan mengunci agar tidak dobel." data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tanggal Saldo Awal</label>
+                <input type="date" name="journal_date" class="form-control app-input" required>
+            </div>
+        </div>
+
+        <hr>
+
+        <h6>Aset Awal</h6>
+        <div class="row g-3">
+            {% for field in data.asset_fields %}
+            <div class="col-md-4">
+                <label class="form-label">{{ field.code }} - {{ field.label }}</label>
+                <input type="number"
+                       step="0.01"
+                       min="0"
+                       name="{{ field.name }}"
+                       class="form-control app-input"
+                       value="{% if field.name == 'cash' and data.suggested_cash > 0 %}{{ '%.0f'|format(data.suggested_cash) }}{% else %}0{% endif %}">
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+
+        <h6>Hutang Awal</h6>
+        <div class="row g-3">
+            {% for field in data.liability_fields %}
+            <div class="col-md-4">
+                <label class="form-label">{{ field.code }} - {{ field.label }}</label>
+                <input type="number"
+                       step="0.01"
+                       min="0"
+                       name="{{ field.name }}"
+                       class="form-control app-input"
+                       value="0">
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="alert alert-info mt-4">
+            Modal Pemilik akan dihitung otomatis sebagai penyeimbang:
+            <strong>Total Aset Awal - Total Hutang Awal</strong>.
+        </div>
+
+        <button type="submit" class="btn app-btn-primary">
+            <i class="bi bi-save"></i>
+            Catat Saldo Awal
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Saldo Akun Saat Ini</h5>
+            <p>Saldo berdasarkan catatan akuntansi yang sudah ada sebelum/sesudah saldo awal.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Akun</th>
+                    <th>Tipe</th>
+                    <th class="text-end">Saldo Normal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data.current_balances %}
+                <tr>
+                    <td><strong>{{ row.account.account_code }}</strong></td>
+                    <td>{{ row.account.account_name }}</td>
+                    <td>{{ row.account.account_type }}</td>
+                    <td class="text-end">{{ row.balance|rupiah }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

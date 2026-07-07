@@ -1,0 +1,156 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="order_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Modul Operasional</span>
+
+        {% if is_after_lock is defined and is_after_lock %}
+            <h1>Tambah Revisi Setelah Lock</h1>
+            <p>Order tanggal ini sudah locked. Input ini akan dicatat sebagai revisi tambah, bukan order baru.</p>
+        {% elif daily_order %}
+            <h1>Tambah Lokasi/Mandor</h1>
+            <p>Tambahkan mandor atau lokasi baru sebelum order dikunci.</p>
+        {% else %}
+            <h1>Input Order Harian</h1>
+            <p>Buat order baru atau tambah detail pada order tanggal yang masih draft.</p>
+        {% endif %}
+            </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+
+<div class="app-card">
+    {% if not mandors or not locations %}
+        <div class="alert alert-warning">
+            Data mandor atau lokasi pengiriman belum tersedia. Jalankan seed master operasional dulu sebelum input order.
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{{ form_action }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tanggal Order</label>
+
+                {% if daily_order %}
+                    <input type="date" name="order_date" class="form-control app-input" value="{{ daily_order.order_date }}" readonly>
+                {% else %}
+                    <input type="date" name="order_date" class="form-control app-input" required>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Mandor</label>
+                <select name="mandor_id" class="form-select app-input" required>
+                    <option value="">Pilih Mandor</option>
+                    {% for mandor in mandors %}
+                        <option value="{{ mandor.id }}">{{ mandor.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Lokasi Antar</label>
+                <select name="delivery_location_id" class="form-select app-input" required>
+                    <option value="">Pilih Lokasi</option>
+                    {% for location in locations %}
+                        <option value="{{ location.id }}">
+                            {{ location.mandor.name }} - {{ location.location_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Pastikan lokasi sesuai mandor.</small>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Harga per Porsi</label>
+                <input type="number" name="price_per_portion" class="form-control app-input" value="0" min="0" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Porsi Siang</label>
+                <input type="number" name="lunch_qty" class="form-control app-input" value="0" min="0" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Porsi Sore</label>
+                <input type="number" name="dinner_qty" class="form-control app-input" value="0" min="0" required>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Catatan tambahan jika ada"></textarea>
+            </div>
+
+            {% if show_hpp_defaults is defined and show_hpp_defaults %}
+            <div class="col-12">
+                <div class="alert alert-info mb-0">
+                    <strong>Default HPP opsional.</strong>
+                    Pilihan ini hanya untuk prefill Snapshot HPP nanti. Tidak membuat snapshot otomatis, tidak memotong stok, dan tidak membuat jurnal.
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Menu Siang</label>
+                <select name="default_lunch_menu_id" class="form-select app-input">
+                    <option value="">Belum ditentukan</option>
+                    {% for menu in menus %}
+                        <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Menu Sore</label>
+                <select name="default_dinner_menu_id" class="form-select app-input">
+                    <option value="">Belum ditentukan</option>
+                    {% for menu in menus %}
+                        <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Profil Kemasan</label>
+                <select name="default_packaging_profile_id" class="form-select app-input">
+                    <option value="">Tanpa profil kemasan default</option>
+                    {% for profile in packaging_profiles %}
+                        <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Default Profil Overhead</label>
+                <select name="default_overhead_profile_id" class="form-select app-input">
+                    <option value="">Tanpa profil overhead default</option>
+                    {% for profile in overhead_profiles %}
+                        <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                {% if daily_order %}
+                    Simpan Mandor
+                {% else %}
+                    Simpan Order
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

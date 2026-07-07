@@ -1,0 +1,220 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="order_hpp_snapshots">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Monitoring HPP</span>
+        <h1>Snapshot HPP Order</h1>
+        <p>Daftar snapshot HPP order yang sudah dibekukan. Halaman ini read-only, tidak mengubah stok, jurnal, invoice, atau order.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
+            <i class="bi bi-journal-text"></i>
+            Input Order Harian
+        </a>
+        <a href="{{ url_for('costing.hpp_calculator') }}" class="btn app-btn-secondary">
+            <i class="bi bi-calculator"></i>
+            Kalkulator HPP
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card soft-warning-card">
+    <strong>Read-only.</strong>
+    <p>
+        Monitoring ini hanya membaca data dari snapshot HPP yang sudah dibuat manual dari order locked.
+        Angka snapshot tidak ikut berubah saat master harga, resep, kemasan, atau overhead diperbarui.
+    </p>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-clipboard-data"></i></div>
+        <div>
+            <p>Snapshot</p>
+            <h3>{{ summary.snapshot_count }}</h3>
+            <span class="app-stat-helper">Dari {{ summary.order_count }} order</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-calculator"></i></div>
+        <div>
+            <p>Total HPP</p>
+            <h3>{{ summary.total_hpp|rupiah }}</h3>
+            <span class="app-stat-helper">Bahan + kemasan + overhead</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>Estimasi Margin</p>
+            <h3>{{ summary.total_margin|rupiah }}</h3>
+            <span class="app-stat-helper">{{ summary.margin_percentage|round(2) }}% dari revenue</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <p>Margin Rendah</p>
+            <h3>{{ summary.low_margin_count }}</h3>
+            <span class="app-stat-helper">Di bawah target snapshot</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Snapshot</h5>
+            <p>Cari berdasarkan nomor snapshot, nomor order, catatan, tanggal, status, atau kondisi margin.</p>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('costing.order_hpp_snapshots') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-3">
+            <label class="form-label">Cari</label>
+            <input type="text" name="q" value="{{ q }}" class="form-control app-input" placeholder="Snapshot / order / catatan">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Tanggal Awal</label>
+            <input type="date" name="date_from" value="{{ date_from }}" class="form-control app-input">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Tanggal Akhir</label>
+            <input type="date" name="date_to" value="{{ date_to }}" class="form-control app-input">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status Snapshot</label>
+            <select name="status" class="form-select app-input">
+                <option value="ALL" {% if status == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="LOCKED" {% if status == 'LOCKED' %}selected{% endif %}>LOCKED</option>
+                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>DRAFT</option>
+                <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Margin</label>
+            <select name="margin_status" class="form-select app-input">
+                <option value="ALL" {% if margin_status == 'ALL' %}selected{% endif %}>Semua</option>
+                <option value="HEALTHY" {% if margin_status == 'HEALTHY' %}selected{% endif %}>Sehat</option>
+                <option value="LOW" {% if margin_status == 'LOW' %}selected{% endif %}>Rendah</option>
+                <option value="NEGATIVE" {% if margin_status == 'NEGATIVE' %}selected{% endif %}>Minus</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn app-btn-primary w-100">Filter</button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Snapshot HPP</h5>
+            <p>Gunakan detail untuk melihat rincian bahan, kemasan, dan overhead yang tersimpan saat snapshot dibuat.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Snapshot</th>
+                    <th>Order</th>
+                    <th>Porsi</th>
+                    <th>Revenue</th>
+                    <th>HPP</th>
+                    <th>HPP/Porsi</th>
+                    <th>Margin</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for snapshot in snapshots %}
+                    {% set margin_label = snapshot_margin_status(snapshot) %}
+                    <tr>
+                        <td>
+                            {{ snapshot.snapshot_date.strftime('%d-%m-%Y') }}
+                            <div class="muted-small">{{ snapshot.snapshot_date.strftime('%H:%M') }}</div>
+                        </td>
+                        <td>
+                            <strong>{{ snapshot.snapshot_number }}</strong>
+                            <div class="muted-small">Target margin {{ snapshot.target_margin_percentage|qty }}%</div>
+                        </td>
+                        <td>
+                            {% if snapshot.daily_order %}
+                                <a href="{{ url_for('operational.order_detail', order_id=snapshot.daily_order.id) }}">
+                                    {{ snapshot.daily_order.order_number }}
+                                </a>
+                                <div class="muted-small">{{ snapshot.daily_order.order_date.strftime('%d-%m-%Y') }}</div>
+                            {% else %}
+                                <span class="text-muted">Order tidak ditemukan</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ snapshot.total_portion|qty }}
+                            <div class="muted-small">Alokasi: {{ snapshot.allocations|length }} baris</div>
+                        </td>
+                        <td>{{ snapshot.revenue_total|rupiah }}</td>
+                        <td><strong>{{ snapshot.hpp_total|rupiah }}</strong></td>
+                        <td>{{ snapshot.hpp_per_portion|rupiah }}</td>
+                        <td>
+                            <strong>{{ snapshot.gross_margin_amount|rupiah }}</strong>
+                            <div class="muted-small">{{ snapshot.gross_margin_percentage|round(2) }}%</div>
+                            {% if margin_label == 'HEALTHY' %}
+                                <span class="status-badge status-locked">SEHAT</span>
+                            {% elif margin_label == 'LOW' %}
+                                <span class="status-badge status-progress">RENDAH</span>
+                            {% else %}
+                                <span class="status-badge status-cancelled">MINUS</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-locked">{{ snapshot.status }}</span>
+                        </td>
+                        <td>
+                            {% if snapshot.daily_order %}
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=snapshot.daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
+                                        Detail
+                                    </a>
+                                    {% if snapshot.stock_consumption %}
+                                        <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=snapshot.daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-sm app-btn-secondary">
+                                            Pemakaian Stok
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=snapshot.daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
+                                            Dry-run / Commit
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <i class="bi bi-clipboard-data"></i>
+                            <h5>Belum ada snapshot HPP order</h5>
+                            <p>
+                                Ini normal kalau data real belum diisi. Snapshot HPP baru muncul setelah order locked dibuatkan snapshot HPP manual.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

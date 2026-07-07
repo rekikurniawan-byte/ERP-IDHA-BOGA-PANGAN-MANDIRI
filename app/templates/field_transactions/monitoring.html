@@ -1,0 +1,338 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell field-transaction-monitoring-page" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan - Monitoring Transaksi Kas Lapangan</span>
+        <h1>Monitoring Transaksi Kas Lapangan</h1>
+        <p>Panel read-only untuk memantau antrean review, pending posting, open items, dan mismatch integrasi transaksi lapangan.</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-journal-text"></i>
+            Daftar Transaksi
+        </a>
+        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Buat Draft
+        </a>
+    </div>
+</div>
+
+{% set summary = monitoring.summary %}
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Menunggu Review</span>
+        <h3>{{ summary.pending_review_count }}</h3>
+        <p>{{ summary.pending_review_amount|rupiah }} menunggu review</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Siap Diposting</span>
+        <h3>{{ summary.ready_to_post_count }}</h3>
+        <p>{{ summary.ready_to_post_amount|rupiah }} siap diposting</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Piutang Terbuka</span>
+        <h3>{{ summary.open_receivable_count }}</h3>
+        <p>{{ summary.open_receivable_total|rupiah }} belum tertagih</p>
+        <small class="text-muted">{{ summary.open_receivable_unbilled_count }} belum invoice | {{ summary.open_receivable_billed_count }} sudah invoice</small>
+    </div>
+    <div class="app-stat-card">
+        <span>Hutang Terbuka</span>
+        <h3>{{ summary.open_payable_count }}</h3>
+        <p>{{ summary.open_payable_total|rupiah }} belum dibayar</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Selisih Integrasi</span>
+        <h3>{{ summary.mismatch_count }}</h3>
+        <p>Butuh investigasi trace posting</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Dokumen Manual Kurang</span>
+        <h3>{{ summary.manual_doc_gap_count }}</h3>
+        <p>Event manual belum dibentuk dokumen</p>
+    </div>
+</div>
+
+<div class="row g-4 mt-1 field-transaction-monitoring-grid">
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Menunggu Review</h3>
+                    <p>Draft dan transaksi yang masih menunggu kelengkapan, klasifikasi, atau approval.</p>
+                </div>
+                <span class="status-badge warning">{{ summary.pending_review_count }}</span>
+            </div>
+            {% if monitoring.pending_review %}
+            <div class="table-responsive monitoring-table-wrap" data-mobile-table="scroll">
+                <table class="table app-table align-middle monitoring-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Event</th>
+                            <th>Nominal</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in monitoring.pending_review %}
+                        <tr>
+                            <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
+                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
+                            <td>{{ row.amount|rupiah }}</td>
+                            <td>{{ row.review_status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-check2-circle"></i>
+                <h5>Tidak ada antrean review</h5>
+                <p>Semua transaksi lapangan sudah lanjut ke tahap berikutnya.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Siap Diposting</h3>
+                    <p>Transaksi yang sudah siap diposting namun belum membentuk jurnal/ledger.</p>
+                </div>
+                <span class="status-badge info">{{ summary.ready_to_post_count }}</span>
+            </div>
+            {% if monitoring.ready_to_post %}
+            <div class="table-responsive monitoring-table-wrap" data-mobile-table="scroll">
+                <table class="table app-table align-middle monitoring-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Event</th>
+                            <th>Masuk/Keluar</th>
+                            <th>Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in monitoring.ready_to_post %}
+                        <tr>
+                            <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
+                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
+                            <td>{{ row.transaction_direction }}</td>
+                            <td>{{ row.amount|rupiah }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-journal-check"></i>
+                <h5>Tidak ada antrean posting</h5>
+                <p>Belum ada transaksi ready-to-post yang tertahan.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Piutang Terbuka</h3>
+                    <p>Piutang manual yang belum lunas dan masih butuh follow up.</p>
+                </div>
+                <span class="status-badge progress">{{ summary.open_receivable_count }}</span>
+            </div>
+            {% if monitoring.open_receivables %}
+            <div class="table-responsive monitoring-table-wrap" data-mobile-table="scroll">
+                <table class="table app-table align-middle monitoring-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Pihak</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Sisa</th>
+                            <th>Billing</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in monitoring.open_receivables %}
+                        <tr>
+                            <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.field_transaction_id) }}" class="btn btn-sm app-btn-secondary">{{ row.receivable_number }}</a></td>
+                            <td>{{ row.party_name }}</td>
+                            <td>{{ row.due_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ row.remaining_amount|rupiah }}</td>
+                            <td>
+                                {% if row.billing_invoice %}
+                                <a href="{{ url_for('finance.invoice_detail', invoice_id=row.billing_invoice.id) }}" class="btn btn-sm app-btn-secondary">Invoice {{ row.billing_invoice.invoice_number }}</a>
+                                {% else %}
+                                <span class="text-muted">Belum invoice</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-cash-coin"></i>
+                <h5>Tidak ada open receivable</h5>
+                <p>Semua piutang manual sudah lunas atau belum dibentuk.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Hutang Terbuka</h3>
+                    <p>Hutang manual yang belum lunas dan masih butuh tindak lanjut.</p>
+                </div>
+                <span class="status-badge progress">{{ summary.open_payable_count }}</span>
+            </div>
+            {% if monitoring.open_payables %}
+            <div class="table-responsive monitoring-table-wrap" data-mobile-table="scroll">
+                <table class="table app-table align-middle monitoring-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Pihak</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Sisa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in monitoring.open_payables %}
+                        <tr>
+                            <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.field_transaction_id) }}" class="btn btn-sm app-btn-secondary">{{ row.payable_number }}</a></td>
+                            <td>{{ row.party_name }}</td>
+                            <td>{{ row.due_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ row.remaining_amount|rupiah }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-wallet2"></i>
+                <h5>Tidak ada open payable</h5>
+                <p>Semua hutang manual sudah lunas atau belum dibentuk.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1 field-transaction-monitoring-grid">
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Selisih Integrasi</h3>
+                    <p>Transaksi berstatus sudah diposting tetapi belum punya jejak ke dokumen finansial atau bridge legacy.</p>
+                </div>
+                <span class="status-badge danger">{{ summary.mismatch_count }}</span>
+            </div>
+            {% if monitoring.mismatches %}
+            <div class="d-flex flex-column gap-3">
+                {% for item in monitoring.mismatches %}
+                <div class="detail-row">
+                    <span><a href="{{ url_for('field_transactions.detail', transaction_id=item.transaction.id) }}" class="btn btn-sm app-btn-secondary">{{ item.transaction.transaction_number }}</a></span>
+                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type }}</div></div>
+                    <small class="text-muted d-block mt-1">{{ item.reason }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-shield-check"></i>
+                <h5>Tidak ada mismatch</h5>
+                <p>Jejak posting inti untuk transaksi sudah diposting terlihat sehat.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="app-card monitoring-surface">
+            <div class="section-title">
+                <div>
+                    <h3>Dokumen Manual Kurang</h3>
+                    <p>Event manual yang belum dibentuk menjadi dokumen piutang/hutang sesuai desain.</p>
+                </div>
+                <span class="status-badge warning">{{ summary.manual_doc_gap_count }}</span>
+            </div>
+            {% if monitoring.manual_doc_gaps %}
+            <div class="d-flex flex-column gap-3">
+                {% for item in monitoring.manual_doc_gaps %}
+                <div class="detail-row">
+                    <span><a href="{{ url_for('field_transactions.detail', transaction_id=item.transaction.id) }}" class="btn btn-sm app-btn-secondary">{{ item.transaction.transaction_number }}</a></span>
+                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type }}</div></div>
+                    <small class="text-muted d-block mt-1">{{ item.reason }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-journal-plus"></i>
+                <h5>Tidak ada gap dokumen</h5>
+                <p>Event manual yang relevan sudah dibentuk ke dokumen turunannya.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="section-title">
+        <div>
+            <h3>Butuh Dihubungkan</h3>
+            <p>Transaksi yang masih bisa dipromosikan ke modul modul lama bila dibutuhkan operasional atau laporan lama.</p>
+        </div>
+        <span class="status-badge info">{{ summary.bridge_candidate_count }}</span>
+    </div>
+    {% if monitoring.bridge_candidates %}
+    <div class="table-responsive monitoring-table-wrap" data-mobile-table="scroll">
+        <table class="table app-table align-middle monitoring-table monitoring-table-wide">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Event</th>
+                    <th>Pihak</th>
+                    <th>Nominal</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in monitoring.bridge_candidates %}
+                <tr>
+                    <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
+                    <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
+                    <td>{{ row.party_snapshot_name or (row.counterparty.name if row.counterparty else '-') }}</td>
+                    <td>{{ row.amount|rupiah }}</td>
+                    <td>{{ row.review_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-diagram-3"></i>
+        <h5>Tidak ada bridge candidate</h5>
+        <p>Belum ada transaksi yang menunggu promosi ke modul legacy.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

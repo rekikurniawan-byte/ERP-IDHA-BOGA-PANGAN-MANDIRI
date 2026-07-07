@@ -1,0 +1,178 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Reminder Live</span>
+        <h1>Live Reminder Center</h1>
+        <p>Ringkasan hal penting yang perlu dicek dari invoice, hutang supplier, stok, HPP, delivery, bukti digital, dan kas/bank. Halaman ini read-only dan tidak menyimpan notifikasi baru.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-grid-1x2"></i>
+            Dashboard
+        </a>
+        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">
+            <i class="bi bi-activity"></i>
+            Audit Log
+        </a>
+    </div>
+</div>
+
+<div class="app-card soft-warning-card">
+    <strong>Read-only.</strong>
+    <p>
+        Reminder di halaman ini dihitung langsung dari data aktif saat halaman dibuka. Sistem tidak membuat row notification,
+        tidak mengubah transaksi, tidak membuat jurnal, tidak memotong stok, dan tidak mengubah database.
+    </p>
+</div>
+
+{% if reminder_center.runtime_warning %}
+<div class="alert alert-warning border-0 shadow-sm">
+    <strong>Reminder sementara ditampilkan aman.</strong>
+    <div>{{ reminder_center.runtime_warning }}</div>
+</div>
+{% endif %}
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Reminder</h5>
+            <p>Atur jendela hari untuk invoice dan hutang yang akan jatuh tempo.</p>
+        </div>
+    </div>
+    <form method="get" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <div class="col-md-3">
+            <label class="form-label">Reminder jatuh tempo dalam</label>
+            <select name="due_days" class="form-select app-input">
+                {% for value, label in [(3, '3 hari'), (7, '7 hari'), (14, '14 hari'), (30, '30 hari'), (60, '60 hari')] %}
+                    <option value="{{ value }}" {% if due_days == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn app-btn-primary w-100">
+                <i class="bi bi-arrow-clockwise"></i>
+                Refresh Reminder
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-bell"></i></div>
+        <div>
+            <p>Total Reminder</p>
+            <h3>{{ reminder_center.summary.total }}</h3>
+            <span class="app-stat-helper">Dihitung live dari data aktif</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if reminder_center.summary.critical > 0 %}stat-danger{% else %}stat-success{% endif %}"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <p>Prioritas Tinggi</p>
+            <h3>{{ reminder_center.summary.critical }}</h3>
+            <span class="app-stat-helper">Overdue / risiko tinggi</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon {% if reminder_center.summary.warning > 0 %}stat-warning{% else %}stat-success{% endif %}"><i class="bi bi-exclamation-circle"></i></div>
+        <div>
+            <p>Perlu Dicek</p>
+            <h3>{{ reminder_center.summary.warning }}</h3>
+            <span class="app-stat-helper">Due soon / data belum lengkap</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-shield-check"></i></div>
+        <div>
+            <p>Status Umum</p>
+            <h3>{{ reminder_center.overall_status }}</h3>
+            <span class="badge {{ reminder_center.overall_badge }}">{{ reminder_center.today.strftime('%d-%m-%Y') }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    {% for section in reminder_center.sections %}
+        <div class="col-12">
+            <div class="app-card">
+                <div class="card-header-clean">
+                    <div>
+                        <h5><i class="bi {{ section.icon }} me-2"></i>{{ section.title }}</h5>
+                        <p>{{ section.description }}</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-light text-dark border">{{ section.count }} reminder</span>
+                        {% if section.critical_count > 0 %}<span class="badge bg-danger-subtle text-danger border">{{ section.critical_count }} tinggi</span>{% endif %}
+                        {% if section.warning_count > 0 %}<span class="badge bg-warning-subtle text-warning border">{{ section.warning_count }} cek</span>{% endif %}
+                        {% if section.info_count > 0 %}<span class="badge bg-info-subtle text-info border">{{ section.info_count }} info</span>{% endif %}
+                    </div>
+                </div>
+
+                {% if section["items"] %}
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Reminder</th>
+                                    <th>Referensi</th>
+                                    <th>Tanggal</th>
+                                    <th>Nominal/Qty</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in section["items"] %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge {{ item.severity_meta.badge_class }}">
+                                                <i class="bi {{ item.severity_meta.icon }}"></i>
+                                                {{ item.severity_meta.label }}
+                                            </span>
+                                        </td>
+                                        <td class="hr-master-settings-minw-360">
+                                            <strong>{{ item.title }}</strong>
+                                            <div class="muted-small">{{ item.message }}</div>
+                                        </td>
+                                        <td>{{ item.reference_label }}</td>
+                                        <td>
+                                            {% if item.due_date %}
+                                                {{ item.due_date.strftime('%d-%m-%Y') }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.amount is not none %}
+                                                {{ item.amount|rupiah }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-nowrap">
+                                            <a href="{{ item.action_url }}" class="btn btn-sm app-btn-secondary">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                {{ item.action_label }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-check-circle"></i>
+                        <p>Tidak ada reminder pada bagian ini. Kalau database masih kosong, kondisi ini normal.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+</div>
+{% endblock %}

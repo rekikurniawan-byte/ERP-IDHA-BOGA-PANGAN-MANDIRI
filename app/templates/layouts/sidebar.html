@@ -1,0 +1,723 @@
+{% set endpoint = request.endpoint or "" %}
+{% set role = current_user.role if current_user.is_authenticated else "" %}
+
+{% set is_dashboard = endpoint.startswith("dashboard.") and endpoint != "dashboard.module_placeholder" %}
+{% set is_master = endpoint.startswith("master.") %}
+{% set is_costing = endpoint.startswith("costing.") %}
+{% set is_operational = endpoint.startswith("operational.") or endpoint.startswith("production.") or endpoint.startswith("delivery.") or endpoint.startswith("canteen.") %}
+{% set is_operational_order = endpoint in ["operational.orders", "operational.create_order", "operational.add_order_detail", "operational.add_increase_after_lock_route", "operational.order_detail", "operational.update_order_hpp_defaults_route", "operational.lock_order", "operational.generate_production", "operational.create_revision", "operational.create_order_hpp_snapshot_route", "operational.order_hpp_snapshot_detail", "operational.order_hpp_snapshot_stock_dry_run", "operational.order_hpp_snapshot_stock_commit", "operational.order_hpp_stock_consumption_detail"] %}
+{% set is_daily_catering_log = endpoint == "operational.daily_catering_log" %}
+{% set is_monthly_catering_recap = endpoint == "operational.monthly_catering_recap" %}
+{% set is_finance_invoice = endpoint in ["finance.invoices", "finance.create_period_invoice", "finance.invoice_detail", "finance.create_payment"] %}
+{% set is_finance_profit = endpoint in ["finance.invoice_profit_report", "finance.invoice_profit_detail"] %}
+{% set is_finance_payment = endpoint == "finance.payment_history" %}
+{% set is_finance_hub = endpoint == "finance.index" %}
+{% set is_finance_advance = endpoint in ["finance.advances", "finance.advance_create", "finance.advance_detail", "finance.advance_settle"] %}
+{% set is_finance_transaction = endpoint in ["finance.finance_transactions", "finance.advances", "finance.advance_create", "finance.advance_detail", "finance.advance_settle", "finance.transport_expenses", "finance.transport_expense_create", "finance.transport_expense_detail", "finance.operational_expenses", "finance.operational_expense_create", "finance.operational_expense_detail"] %}
+{% set is_finance_manual_billing = endpoint in ["finance.manual_billing", "finance.create_manual_billing_invoice_route", "finance.manual_billing_backfill_form", "finance.manual_billing_batch_detail"] %}
+{% set is_finance_transport_expense = endpoint in ["finance.transport_expenses", "finance.transport_expense_create", "finance.transport_expense_detail"] %}
+{% set is_finance_operational_expense = endpoint in ["finance.operational_expenses", "finance.operational_expense_create", "finance.operational_expense_detail"] %}
+{% set is_finance_ledger = endpoint in ["finance.cash_bank_ledger", "finance.cash_bank_opening_balances", "finance.cash_bank_transfers", "finance.cash_bank_adjustments", "finance.reconcile_cash_bank_ledger_transaction", "finance.unreconcile_cash_bank_ledger_transaction"] %}
+{% set is_finance_asset_purchase = endpoint in ["finance.fixed_asset_purchases", "finance.create_fixed_asset_purchase", "finance.fixed_asset_purchase_detail"] %}
+{% set is_finance_asset_installment = endpoint in ["finance.fixed_asset_installments", "finance.create_fixed_asset_installment_contract", "finance.fixed_asset_installment_detail", "finance.pay_fixed_asset_installment"] %}
+{% set is_finance_depreciation = endpoint in ["finance.fixed_asset_depreciation", "finance.fixed_asset_depreciation_configure", "finance.fixed_asset_depreciation_post"] %}
+{% set is_finance_receivable = endpoint == "finance.receivables" %}
+{% set is_finance_payable = endpoint in ["finance.supplier_bills", "finance.supplier_bill_detail", "finance.create_supplier_bill_payment", "finance.accounts_payable_aging", "finance.supplier_payable_card"] %}
+{% set is_field_transactions = endpoint.startswith("field_transactions.") %}
+{% set is_finance = endpoint.startswith("finance.") %}
+{% set is_accounting = endpoint.startswith("accounting.") %}
+{% set is_accounting_period_closing = endpoint in ["accounting.period_closing", "accounting.post_period_closing_route", "accounting.period_closing_detail"] %}
+{% set is_logistics = endpoint.startswith("logistics.") %}
+{% set is_material_forecast = endpoint == "logistics.material_forecast" %}
+{% set is_hr = endpoint.startswith("hr.") %}
+{% set is_settings = endpoint.startswith("settings.") %}
+{% set is_sop = endpoint.startswith("sop.") %}
+{% set is_disaster_recovery_sop = endpoint == "sop.disaster_recovery" %}
+{% set is_backup_restore_sop = endpoint == "sop.backup_restore" %}
+{% set is_company_settings = endpoint == "settings.company_settings" %}
+{% set is_user_management = endpoint in ["settings.users", "settings.create_user_page", "settings.edit_user_page", "settings.reset_user_password_page"] %}
+{% set is_change_password = endpoint == "settings.change_password" %}
+{% set is_recovery_center = endpoint == "settings.recovery_center" %}
+{% set is_system_health = endpoint == "settings.system_health" %}
+{% set is_visual_sweep = endpoint == "settings.visual_sweep" %}
+{% set is_final_visual_browser_qa = endpoint == "settings.final_visual_browser_qa" %}
+{% set is_atomic_transaction_map = endpoint == "settings.atomic_transaction_map" %}
+{% set is_atomic_smoke_simulation = endpoint == "settings.atomic_smoke_simulation" %}
+{% set is_backup_management = endpoint in ["settings.backups", "settings.create_backup", "settings.create_full_backup", "settings.validate_backup_preview", "settings.download_backup", "settings.download_backup_confirm"] %}
+{% set is_audit_logs = endpoint in ["settings.audit_logs", "settings.audit_log_detail"] %}
+{% set is_digital_attachments = endpoint in ["settings.digital_attachments", "settings.digital_attachment_detail", "settings.download_digital_attachment", "settings.view_digital_attachment", "settings.delete_digital_attachment"] %}
+{% set is_live_reminders = endpoint == "settings.live_reminders" %}
+{% set is_notifications = endpoint in ["settings.notifications", "settings.generate_notifications_route", "settings.mark_notification_read_route", "settings.mark_notification_unread_route", "settings.dismiss_notification_route"] %}
+{% set is_bank_accounts = endpoint in ["master.bank_accounts", "master.create_bank_account", "master.edit_bank_account", "master.toggle_bank_account"] %}
+{% set is_suppliers = endpoint in ["master.suppliers", "master.create_supplier", "master.edit_supplier", "master.toggle_supplier"] %}
+{% set is_item_costing = endpoint in ["master.item_cost_profiles", "master.edit_item_cost_profile", "master.unit_conversions", "master.toggle_unit_conversion"] %}
+{% set is_menu_recipe = endpoint in ["costing.menus", "costing.create_menu", "costing.edit_menu", "costing.toggle_menu", "costing.menu_recipe", "costing.delete_recipe_item"] %}
+{% set is_hpp_calculator = endpoint == "costing.hpp_calculator" %}
+{% set is_order_hpp_snapshots = endpoint == "costing.order_hpp_snapshots" %}
+{% set is_packaging_profiles = endpoint in ["costing.packaging_profiles", "costing.create_packaging_profile", "costing.edit_packaging_profile", "costing.toggle_packaging_profile"] %}
+{% set is_overhead_profiles = endpoint in ["costing.overhead_profiles", "costing.create_overhead_profile", "costing.edit_overhead_profile", "costing.toggle_overhead_profile"] %}
+{% set is_fixed_assets = endpoint in ["master.fixed_assets", "master.create_fixed_asset", "master.edit_fixed_asset", "master.toggle_fixed_asset"] %}
+{% set is_clients = endpoint in ["master.clients", "master.create_client", "master.edit_client", "master.toggle_client", "master.create_client_pic", "master.toggle_client_pic"] %}
+{% set is_mandors = endpoint in ["master.mandors", "master.create_mandor", "master.edit_mandor", "master.toggle_mandor"] %}
+{% set is_locations = endpoint in ["master.locations", "master.create_location", "master.edit_location", "master.toggle_location"] %}
+{% set is_workers = endpoint in ["master.workers", "master.create_worker", "master.edit_worker", "master.toggle_worker", "master.delete_worker"] %}
+{% set is_drivers = endpoint in ["master.drivers", "master.create_driver", "master.edit_driver", "master.toggle_driver"] %}
+{% set is_items = endpoint in ["master.items", "master.create_item", "master.edit_item", "master.toggle_item", "master.delete_item"] %}
+
+{% set all_roles = ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"] %}
+{% set can_view_reminders = role in all_roles %}
+{% set can_view_notifications = role in all_roles %}
+{% set can_view_finance = role in ["OWNER", "ADMIN", "FINANCE"] %}
+{% set can_view_accounting = role in ["OWNER", "ACCOUNTING"] %}
+{% set can_view_logistics = role in ["OWNER", "LOGISTICS", "DAPUR"] %}
+{% set can_view_hr = role in ["OWNER", "ADMIN", "HR"] %}
+{% set can_view_master = role in ["OWNER", "ADMIN", "FINANCE", "LOGISTICS"] %}
+{% set can_view_costing = role in ["OWNER", "ADMIN"] %}
+
+<aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
+    <div class="sidebar-brand">
+        <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand-link" aria-label="Kembali ke dashboard">
+            <div class="brand-mark">IB</div>
+            <div>
+                <div class="brand-title">IDHA BOGA</div>
+                <div class="brand-subtitle">Pangan Mandiri</div>
+            </div>
+        </a>
+        <button class="sidebar-close" type="button" data-sidebar-close aria-label="Tutup menu navigasi">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navigasi utama">
+        <div class="sidebar-section">
+            <div class="sidebar-label">Menu Utama</div>
+
+            <a href="{{ url_for('dashboard.index') }}"
+               class="sidebar-link {{ 'active' if is_dashboard else '' }}"
+               aria-current="{{ 'page' if is_dashboard else 'false' }}">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+                {% if can_view_reminders and global_live_reminder_badge.total > 0 %}
+                    <span class="badge {{ global_live_reminder_badge.badge_class }} ms-auto">{{ global_live_reminder_badge.total }}</span>
+                {% endif %}
+            </a>
+
+            {% if role in ["OWNER", "ADMIN", "DAPUR", "PENGANTAR"] %}
+                <details class="sidebar-group" {% if is_operational %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_operational else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-diagram-3"></i>
+                            <span>Operasional</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+
+
+                        {% if role in ["OWNER", "ADMIN"] %}
+                            <a href="{{ url_for('operational.orders') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_operational_order else '' }}"
+                               aria-current="{{ 'page' if is_operational_order else 'false' }}">
+                                <i class="bi bi-journal-text"></i>
+                                <span>Input Order Harian</span>
+                            </a>
+
+                            <a href="{{ url_for('operational.daily_catering_log') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_daily_catering_log else '' }}"
+                               aria-current="{{ 'page' if is_daily_catering_log else 'false' }}">
+                                <i class="bi bi-calendar2-check"></i>
+                                <span>Log Catering Harian</span>
+                            </a>
+
+                            <a href="{{ url_for('operational.monthly_catering_recap') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_monthly_catering_recap else '' }}"
+                               aria-current="{{ 'page' if is_monthly_catering_recap else 'false' }}">
+                                <i class="bi bi-calendar3"></i>
+                                <span>Rekap Catering Bulanan</span>
+                            </a>
+
+                            <a href="{{ url_for('delivery.index') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'delivery.index' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'delivery.index' else 'false' }}">
+                                <i class="bi bi-truck"></i>
+                                <span>Pengiriman</span>
+                            </a>
+
+                            <a href="{{ url_for('canteen.index') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint.startswith('canteen.') else '' }}"
+                               aria-current="{{ 'page' if endpoint.startswith('canteen.') else 'false' }}">
+                                <i class="bi bi-shop"></i>
+                                <span>Warung Pekerja</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "DAPUR"] %}
+                            <a href="{{ url_for('production.index') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint.startswith('production.') else '' }}"
+                               aria-current="{{ 'page' if endpoint.startswith('production.') else 'false' }}">
+                                <i class="bi bi-egg-fried"></i>
+                                <span>Produksi Dapur</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role == "PENGANTAR" %}
+                            <a href="{{ url_for('delivery.today') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'delivery.today' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'delivery.today' else 'false' }}">
+                                <i class="bi bi-truck"></i>
+                                <span>Pengiriman Hari Ini</span>
+                            </a>
+
+                            <a href="{{ url_for('delivery.receiving') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'delivery.receiving' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'delivery.receiving' else 'false' }}">
+                                <i class="bi bi-clipboard-check"></i>
+                                <span>Penerimaan</span>
+                            </a>
+
+                            <a href="{{ url_for('delivery.history') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'delivery.history' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'delivery.history' else 'false' }}">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Riwayat Pengiriman</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_finance %}
+                <details class="sidebar-group" {% if is_finance or is_field_transactions %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_finance or is_field_transactions else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-wallet2"></i>
+                            <span>Finance</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        <a href="{{ url_for('finance.index') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_hub else '' }}"
+                           aria-current="{{ 'page' if is_finance_hub else 'false' }}">
+                            <i class="bi bi-grid-1x2"></i>
+                            <span>Pusat Keuangan</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.finance_transactions') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_transaction else '' }}"
+                           aria-current="{{ 'page' if is_finance_transaction else 'false' }}">
+                            <i class="bi bi-ui-checks-grid"></i>
+                            <span>Input Cepat</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.manual_billing') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_manual_billing else '' }}"
+                           aria-current="{{ 'page' if is_finance_manual_billing else 'false' }}">
+                            <i class="bi bi-receipt-cutoff"></i>
+                            <span>Rekap Tagihan Mandor</span>
+                        </a>
+
+                        <a href="{{ url_for('field_transactions.monitoring') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_field_transactions else '' }}"
+                           aria-current="{{ 'page' if is_field_transactions else 'false' }}">
+                            <i class="bi bi-activity"></i>
+                            <span>Transaksi Kas Lapangan</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.invoices') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_invoice or is_finance_payment else '' }}"
+                           aria-current="{{ 'page' if is_finance_invoice or is_finance_payment else 'false' }}">
+                            <i class="bi bi-receipt"></i>
+                            <span>Invoice dan Pembayaran</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.receivables') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_receivable else '' }}"
+                           aria-current="{{ 'page' if is_finance_receivable else 'false' }}">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Piutang Client</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.supplier_bills') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_payable else '' }}"
+                           aria-current="{{ 'page' if is_finance_payable else 'false' }}">
+                            <i class="bi bi-wallet"></i>
+                            <span>Hutang Supplier</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.fixed_asset_purchases') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_asset_purchase or is_finance_asset_installment or is_finance_depreciation else '' }}"
+                           aria-current="{{ 'page' if is_finance_asset_purchase or is_finance_asset_installment or is_finance_depreciation else 'false' }}">
+                            <i class="bi bi-archive"></i>
+                            <span>Aset, Cicilan & Penyusutan</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.fixed_asset_installments') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_asset_installment else '' }}"
+                           aria-current="{{ 'page' if is_finance_asset_installment else 'false' }}">
+                            <i class="bi bi-truck"></i>
+                            <span>Cicilan Aset/Kendaraan</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.cash_bank_ledger') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_ledger else '' }}"
+                           aria-current="{{ 'page' if is_finance_ledger else 'false' }}">
+                            <i class="bi bi-wallet2"></i>
+                            <span>Buku Kas/Bank</span>
+                        </a>
+
+                        <a href="{{ url_for('finance.invoice_profit_report') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_finance_profit else '' }}"
+                           aria-current="{{ 'page' if is_finance_profit else 'false' }}">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span>Profit Invoice</span>
+                        </a>
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_accounting %}
+                <details class="sidebar-group" {% if is_accounting %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_accounting else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-calculator"></i>
+                            <span>Akuntansi</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        <a href="{{ url_for('accounting.journals') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.journals' or endpoint == 'accounting.journal_detail' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.journals' or endpoint == 'accounting.journal_detail' else 'false' }}">
+                            <i class="bi bi-journal-check"></i>
+                            <span>Jurnal Akuntansi</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.posting_status') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.posting_status' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.posting_status' else 'false' }}">
+                            <i class="bi bi-clipboard2-check"></i>
+                            <span>Status Posting</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.expense_drilldown') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.expense_drilldown' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.expense_drilldown' else 'false' }}">
+                            <i class="bi bi-graph-down-arrow"></i>
+                            <span>Drilldown Beban</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.opening_balance') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.opening_balance' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.opening_balance' else 'false' }}">
+                            <i class="bi bi-bank"></i>
+                            <span>Saldo Awal & Modal</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.coa_mapping') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.coa_mapping' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.coa_mapping' else 'false' }}">
+                            <i class="bi bi-diagram-2"></i>
+                            <span>Peta Akun & Mapping</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.reports') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.reports' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.reports' else 'false' }}">
+                            <i class="bi bi-bar-chart-line"></i>
+                            <span>Laporan Akuntansi</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.order_to_cash_trace') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.order_to_cash_trace' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.order_to_cash_trace' else 'false' }}">
+                            <i class="bi bi-signpost-split"></i>
+                            <span>Jejak Order sampai Lunas</span>
+                        </a>
+
+                        <a href="{{ url_for('accounting.data_health') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.data_health' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.data_health' else 'false' }}">
+                            <i class="bi bi-clipboard-pulse"></i>
+                            <span>Data Health Check</span>
+                        </a>
+
+
+                        <a href="{{ url_for('accounting.daily_closing') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'accounting.daily_closing' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'accounting.daily_closing' else 'false' }}">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Closing Harian</span>
+                        </a>
+
+
+
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_logistics %}
+                <details class="sidebar-group" {% if is_logistics %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_logistics else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-box-seam"></i>
+                            <span>Logistik</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        {% if role in ["OWNER", "LOGISTICS"] %}
+                            <a href="{{ url_for('logistics.index') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.index' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'logistics.index' else 'false' }}">
+                                <i class="bi bi-boxes"></i>
+                                <span>Stok Barang</span>
+                            </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('logistics.material_forecast') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_material_forecast else '' }}"
+                           aria-current="{{ 'page' if is_material_forecast else 'false' }}">
+                            <i class="bi bi-clipboard-data"></i>
+                            <span>Prediksi Bahan</span>
+                        </a>
+
+                        <a href="{{ url_for('logistics.item_requests') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.item_requests' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'logistics.item_requests' else 'false' }}">
+                            <i class="bi bi-basket"></i>
+                            <span>Permintaan Barang</span>
+                        </a>
+
+                        {% if role in ["OWNER", "LOGISTICS", "DAPUR"] %}
+                            <a href="{{ url_for('logistics.kitchen_usage') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.kitchen_usage' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'logistics.kitchen_usage' else 'false' }}">
+                                <i class="bi bi-box"></i>
+                                <span>Pemakaian Barang</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_hr %}
+                <details class="sidebar-group" {% if is_hr %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_hr else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-people"></i>
+                            <span>SDM</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        <a href="{{ url_for('hr.index') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'hr.index' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'hr.index' else 'false' }}">
+                            <i class="bi bi-person-lines-fill"></i>
+                            <span>Karyawan</span>
+                        </a>
+
+                        <a href="{{ url_for('hr.payrolls') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'hr.payrolls' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'hr.payrolls' else 'false' }}">
+                            <i class="bi bi-cash-stack"></i>
+                            <span>Payroll</span>
+                        </a>
+
+                        <a href="{{ url_for('hr.payroll_payment_history') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'hr.payroll_payment_history' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'hr.payroll_payment_history' else 'false' }}">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Riwayat Gaji</span>
+                        </a>
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_master or can_view_costing %}
+                <details class="sidebar-group" {% if is_master or is_costing %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_master or is_costing else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-building"></i>
+                            <span>Master Data</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                            <a href="{{ url_for('master.index') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'master.index' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'master.index' else 'false' }}">
+                                <i class="bi bi-database"></i>
+                                <span>Kelola Master</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "FINANCE"] %}
+                            <a href="{{ url_for('master.clients') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_clients else '' }}"
+                               aria-current="{{ 'page' if is_clients else 'false' }}">
+                                <i class="bi bi-building-check"></i>
+                                <span>Client</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "ADMIN"] %}
+                            <a href="{{ url_for('master.mandors') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_mandors else '' }}"
+                               aria-current="{{ 'page' if is_mandors else 'false' }}">
+                                <i class="bi bi-person-badge"></i>
+                                <span>Mandor</span>
+                            </a>
+
+                            <a href="{{ url_for('master.locations') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_locations else '' }}"
+                               aria-current="{{ 'page' if is_locations else 'false' }}">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>Lokasi Antar</span>
+                            </a>
+
+                            <a href="{{ url_for('master.workers') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_workers else '' }}"
+                               aria-current="{{ 'page' if is_workers else 'false' }}">
+                                <i class="bi bi-people"></i>
+                                <span>Pekerja</span>
+                            </a>
+
+                            <a href="{{ url_for('master.drivers') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_drivers else '' }}"
+                               aria-current="{{ 'page' if is_drivers else 'false' }}">
+                                <i class="bi bi-truck-front"></i>
+                                <span>Driver</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                            <a href="{{ url_for('master.items') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if is_items else '' }}"
+                               aria-current="{{ 'page' if is_items else 'false' }}">
+                                <i class="bi bi-box-seam"></i>
+                                <span>Barang</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "FINANCE"] %}
+                            <a href="{{ url_for('master.bank_accounts') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_bank_accounts else '' }}"
+                           aria-current="{{ 'page' if is_bank_accounts else 'false' }}">
+                                <i class="bi bi-bank"></i>
+                                <span>Rekening Bank</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "LOGISTICS"] %}
+                            <a href="{{ url_for('master.suppliers') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_suppliers else '' }}"
+                           aria-current="{{ 'page' if is_suppliers else 'false' }}">
+                                <i class="bi bi-shop"></i>
+                                <span>Supplier Opsional</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                            <a href="{{ url_for('master.item_cost_profiles') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_item_costing else '' }}"
+                           aria-current="{{ 'page' if is_item_costing else 'false' }}">
+                                <i class="bi bi-calculator"></i>
+                                <span>Profil HPP Item</span>
+                            </a>
+                        {% endif %}
+
+                        {% if can_view_costing %}
+                            <a href="{{ url_for('costing.menus') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_menu_recipe else '' }}"
+                           aria-current="{{ 'page' if is_menu_recipe else 'false' }}">
+                            <i class="bi bi-card-checklist"></i>
+                            <span>Menu & Resep</span>
+                        </a>
+
+                        <a href="{{ url_for('costing.hpp_calculator') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_hpp_calculator else '' }}"
+                           aria-current="{{ 'page' if is_hpp_calculator else 'false' }}">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span>Kalkulator HPP</span>
+                        </a>
+
+                        <a href="{{ url_for('costing.order_hpp_snapshots') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_order_hpp_snapshots else '' }}"
+                           aria-current="{{ 'page' if is_order_hpp_snapshots else 'false' }}">
+                                <i class="bi bi-clipboard-data"></i>
+                                <span>Snapshot HPP Order</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role == "OWNER" %}
+                            <a href="{{ url_for('master.fixed_assets') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_fixed_assets else '' }}"
+                           aria-current="{{ 'page' if is_fixed_assets else 'false' }}">
+                                <i class="bi bi-archive"></i>
+                                <span>Aset Tetap</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-section sidebar-system-section mt-auto">
+            <div class="sidebar-label">Sistem</div>
+
+
+            {% if role in all_roles %}
+                <a href="{{ url_for('sop.index') }}"
+                   class="sidebar-link {{ 'active' if is_sop and not (is_disaster_recovery_sop or is_backup_restore_sop) else '' }}"
+                   aria-current="{{ 'page' if is_sop and not (is_disaster_recovery_sop or is_backup_restore_sop) else 'false' }}">
+                    <i class="bi bi-journal-text" aria-hidden="true"></i>
+                    <span>SOP Center</span>
+                </a>
+                {% if role in ["OWNER", "ADMIN"] %}
+                    <a href="{{ url_for('sop.disaster_recovery') }}"
+                       class="sidebar-link sidebar-sublink {{ 'active' if is_disaster_recovery_sop else '' }}"
+                       aria-current="{{ 'page' if is_disaster_recovery_sop else 'false' }}">
+                        <i class="bi bi-life-preserver" aria-hidden="true"></i>
+                        <span>SOP Recovery</span>
+                    </a>
+                    <a href="{{ url_for('sop.backup_restore') }}"
+                       class="sidebar-link sidebar-sublink {{ 'active' if is_backup_restore_sop else '' }}"
+                       aria-current="{{ 'page' if is_backup_restore_sop else 'false' }}">
+                        <i class="bi bi-database-check" aria-hidden="true"></i>
+                        <span>SOP Backup</span>
+                    </a>
+                {% endif %}
+            {% endif %}
+
+            <details class="sidebar-group" {% if is_settings %}open{% endif %}>
+                <summary class="sidebar-group-toggle {{ 'active' if is_settings else '' }}">
+                    <span class="sidebar-group-title">
+                        <i class="bi bi-gear" aria-hidden="true"></i>
+                        <span>Pengaturan</span>
+                    </span>
+                    <i class="bi bi-chevron-down sidebar-chevron" aria-hidden="true"></i>
+                </summary>
+
+                <div class="sidebar-submenu">
+
+                    {% if role in ["OWNER", "ADMIN"] %}
+                        <a href="{{ url_for('settings.recovery_center') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_recovery_center else '' }}"
+                           aria-current="{{ 'page' if is_recovery_center else 'false' }}">
+                            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                            <span>Recovery Center</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.system_health') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_system_health else '' }}"
+                           aria-current="{{ 'page' if is_system_health else 'false' }}">
+                            <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+                            <span>System Health</span>
+                        </a>
+                    {% endif %}
+
+                    {% if role == "OWNER" %}
+                        <a href="{{ url_for('settings.company_settings') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_company_settings else '' }}"
+                           aria-current="{{ 'page' if is_company_settings else 'false' }}">
+                            <i class="bi bi-building-gear" aria-hidden="true"></i>
+                            <span>Profil Perusahaan</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.users') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_user_management else '' }}"
+                           aria-current="{{ 'page' if is_user_management else 'false' }}">
+                            <i class="bi bi-person-gear" aria-hidden="true"></i>
+                            <span>User Management</span>
+                        </a>
+
+
+                        <a href="{{ url_for('settings.backups') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_backup_management else '' }}"
+                           aria-current="{{ 'page' if is_backup_management else 'false' }}">
+                            <i class="bi bi-database-down" aria-hidden="true"></i>
+                            <span>Backup & Restore</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.audit_logs') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_audit_logs else '' }}"
+                           aria-current="{{ 'page' if is_audit_logs else 'false' }}">
+                            <i class="bi bi-activity" aria-hidden="true"></i>
+                            <span>Audit Log</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.atomic_transaction_map') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_atomic_transaction_map else '' }}"
+                           aria-current="{{ 'page' if is_atomic_transaction_map else 'false' }}">
+                            <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                            <span>Atomic Map</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.atomic_smoke_simulation') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_atomic_smoke_simulation else '' }}"
+                           aria-current="{{ 'page' if is_atomic_smoke_simulation else 'false' }}">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
+                            <span>Atomic Smoke</span>
+                        </a>
+
+                        <a href="{{ url_for('settings.digital_attachments') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_digital_attachments else '' }}"
+                           aria-current="{{ 'page' if is_digital_attachments else 'false' }}">
+                            <i class="bi bi-paperclip" aria-hidden="true"></i>
+                            <span>Lampiran Digital</span>
+                        </a>
+                    {% endif %}
+
+                    {% if can_view_notifications %}
+                        <a href="{{ url_for('settings.notifications') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_notifications else '' }}"
+                           aria-current="{{ 'page' if is_notifications else 'false' }}">
+                            <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                            <span>Notifikasi</span>
+                            {% if global_persistent_notification_badge.total > 0 %}
+                                <span class="badge {{ global_persistent_notification_badge.badge_class }} ms-auto">{{ global_persistent_notification_badge.total }}</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border ms-auto">0</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
+
+                    {% if can_view_reminders %}
+                        <a href="{{ url_for('settings.live_reminders') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if is_live_reminders else '' }}"
+                           aria-current="{{ 'page' if is_live_reminders else 'false' }}">
+                            <i class="bi bi-alarm" aria-hidden="true"></i>
+                            <span>Reminder Live</span>
+                            {% if global_live_reminder_badge.total > 0 %}
+                                <span class="badge {{ global_live_reminder_badge.badge_class }} ms-auto">{{ global_live_reminder_badge.total }}</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border ms-auto">0</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
+
+                    <a href="{{ url_for('settings.change_password') }}"
+                       class="sidebar-link sidebar-sublink {{ 'active' if is_change_password else '' }}"
+                       aria-current="{{ 'page' if is_change_password else 'false' }}">
+                        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                        <span>Ganti Password</span>
+                    </a>
+                </div>
+            </details>
+
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link-danger sidebar-logout-link">
+                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+</aside>

@@ -1,0 +1,494 @@
+/* ==================================================
+   PRODUCTION UI Contrast, Table, Login, Toggle, Spacing Final Lock
+   Purpose: strengthen Light Mono borders, fix Dark Mono tables, polish login,
+   make theme toggle feel like a segmented switch, prevent text overflow, and
+   normalize card/table/filter spacing without touching database or routes.
+   ================================================== */
+
+:root,
+[data-theme="light-mono"] {
+    --bg: #f7f7f7;
+    --bg-soft: #f1f1f1;
+    --surface: #ffffff;
+    --surface-soft: #f8f8f8;
+    --surface-muted: #eeeeee;
+    --border: rgba(0, 0, 0, .18);
+    --border-soft: rgba(0, 0, 0, .13);
+    --border-strong: rgba(0, 0, 0, .24);
+    --text-primary: #0f0f0f;
+    --text-secondary: #343434;
+    --text-muted: #666666;
+    --shadow-card: 0 8px 24px rgba(0, 0, 0, .055);
+    --shadow-soft: 0 14px 34px rgba(0, 0, 0, .075);
+    --table-bg: #ffffff;
+    --table-bg-alt: #f7f7f7;
+    --table-head-bg: #eeeeee;
+    --table-border: rgba(0, 0, 0, .16);
+    --table-text: #121212;
+    --table-muted: #555555;
+}
+
+[data-theme="dark-mono"] {
+    --bg: #050505;
+    --bg-soft: #080808;
+    --surface: #101010;
+    --surface-soft: #151515;
+    --surface-muted: #1d1d1d;
+    --border: rgba(255, 255, 255, .18);
+    --border-soft: rgba(255, 255, 255, .12);
+    --border-strong: rgba(255, 255, 255, .26);
+    --text-primary: #f7f7f7;
+    --text-secondary: #dedede;
+    --text-muted: #b0b0b0;
+    --shadow-card: 0 12px 28px rgba(0, 0, 0, .38);
+    --shadow-soft: 0 18px 42px rgba(0, 0, 0, .45);
+    --table-bg: #101010;
+    --table-bg-alt: #151515;
+    --table-head-bg: #1c1c1c;
+    --table-border: rgba(255, 255, 255, .16);
+    --table-text: #f7f7f7;
+    --table-muted: #c9c9c9;
+}
+
+/* Readability and overflow safety. */
+body,
+.app-main,
+.content-area,
+.auth-page {
+    background: var(--bg) !important;
+    color: var(--text-primary) !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+.page-title,
+.content-title,
+.section-title,
+.card-title,
+.topbar-title,
+.sidebar-brand strong,
+.sidebar-link,
+.sidebar-group-title,
+.btn,
+.app-btn,
+.badge,
+.status-badge,
+.form-label,
+.table th,
+.table td,
+.app-table th,
+.app-table td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.badge,
+.status-badge,
+.viz-badge,
+.btn,
+.app-btn,
+.dropdown-item,
+.sidebar-link,
+.sidebar-group-title span,
+.theme-mode-option,
+.auth-theme-pill,
+.table td,
+.app-table td {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.table td,
+.app-table td,
+.table th,
+.app-table th {
+    white-space: normal;
+    vertical-align: middle;
+}
+
+.text-truncate,
+.sidebar-link span,
+.sidebar-group-title span,
+.topbar-title,
+.topbar-subtitle,
+.user-name,
+.user-role {
+    min-width: 0;
+}
+
+/* Stronger Light Mono structure for cards, panels, filters and inputs. */
+[data-theme="light-mono"] .app-card,
+[data-theme="light-mono"] .content-card,
+[data-theme="light-mono"] .card,
+[data-theme="light-mono"] .dashboard-section,
+[data-theme="light-mono"] .dashboard-panel,
+[data-theme="light-mono"] .dashboard-analytics-card,
+[data-theme="light-mono"] .dashboard-chart-card,
+[data-theme="light-mono"] .table-responsive,
+[data-theme="light-mono"] .table-wrapper,
+[data-theme="light-mono"] .app-table-wrapper,
+[data-theme="light-mono"] .app-table-wrap,
+[data-theme="light-mono"] .filter-card,
+[data-theme="light-mono"] .global-filter-bar-v2,
+[data-theme="light-mono"] .page-header,
+[data-theme="light-mono"] .auth-card,
+[data-theme="light-mono"] .form-control,
+[data-theme="light-mono"] .form-select,
+[data-theme="light-mono"] .app-input,
+[data-theme="light-mono"] .dropdown-menu,
+[data-theme="light-mono"] .modal-content {
+    border-color: var(--border-soft) !important;
+    box-shadow: var(--shadow-card) !important;
+}
+
+[data-theme="light-mono"] .form-control,
+[data-theme="light-mono"] .form-select,
+[data-theme="light-mono"] .app-input {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border-color: rgba(0, 0, 0, .16) !important;
+}
+
+[data-theme="light-mono"] .form-control:focus,
+[data-theme="light-mono"] .form-select:focus,
+[data-theme="light-mono"] .app-input:focus {
+    border-color: rgba(0, 0, 0, .42) !important;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, .08) !important;
+}
+
+/* Final table contrast lock, including Bootstrap table CSS variables. */
+.table,
+.app-table,
+table.table,
+table.app-table {
+    --bs-table-color: var(--table-text) !important;
+    --bs-table-bg: var(--table-bg) !important;
+    --bs-table-border-color: var(--table-border) !important;
+    --bs-table-striped-color: var(--table-text) !important;
+    --bs-table-striped-bg: var(--table-bg-alt) !important;
+    --bs-table-hover-color: var(--table-text) !important;
+    --bs-table-hover-bg: var(--surface-muted) !important;
+    color: var(--table-text) !important;
+    background-color: var(--table-bg) !important;
+    border-color: var(--table-border) !important;
+}
+
+.table-responsive,
+.table-wrapper,
+.app-table-wrapper,
+.app-table-wrap,
+.data-table-wrapper {
+    background: var(--table-bg) !important;
+    border: 1px solid var(--table-border) !important;
+    overflow-x: auto;
+}
+
+.table > :not(caption) > * > *,
+.app-table > :not(caption) > * > *,
+table > :not(caption) > * > * {
+    background-color: var(--table-bg) !important;
+    color: var(--table-text) !important;
+    border-color: var(--table-border) !important;
+    box-shadow: none !important;
+}
+
+.table thead,
+.app-table thead,
+table thead {
+    background: var(--table-head-bg) !important;
+}
+
+.table thead th,
+.app-table thead th,
+table thead th {
+    background-color: var(--table-head-bg) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-strong) !important;
+    border-color: var(--table-border) !important;
+}
+
+.table tbody tr,
+.app-table tbody tr,
+table tbody tr {
+    border-color: var(--table-border) !important;
+}
+
+.table tbody tr:nth-child(even) > *,
+.app-table tbody tr:nth-child(even) > *,
+table tbody tr:nth-child(even) > * {
+    background-color: var(--table-bg-alt) !important;
+}
+
+.table tbody tr:hover > *,
+.app-table tbody tr:hover > *,
+table tbody tr:hover > * {
+    background-color: var(--surface-muted) !important;
+    color: var(--table-text) !important;
+}
+
+.table small,
+.app-table small,
+.table .text-muted,
+.app-table .text-muted,
+table .text-muted {
+    color: var(--table-muted) !important;
+}
+
+[data-theme="dark-mono"] .table-responsive,
+[data-theme="dark-mono"] .table-wrapper,
+[data-theme="dark-mono"] .app-table-wrapper,
+[data-theme="dark-mono"] .app-table-wrap,
+[data-theme="dark-mono"] .data-table-wrapper {
+    box-shadow: 0 14px 32px rgba(0, 0, 0, .42) !important;
+}
+
+/* Login page final polish: remove awkward diagonal dominance and make layout stable. */
+.auth-page {
+    min-height: 100dvh !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: hidden !important;
+    background:
+        radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 30%),
+        linear-gradient(135deg, var(--bg) 0%, var(--bg-soft) 100%) !important;
+}
+
+.auth-page > .container {
+    max-width: 1280px !important;
+    width: 100% !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+}
+
+.auth-wrapper {
+    min-height: auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(340px, 430px) minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: clamp(24px, 5vw, 64px) !important;
+    padding: 42px 0 !important;
+}
+
+.auth-panel,
+.auth-side {
+    min-width: 0;
+}
+
+.auth-brand {
+    color: var(--text-primary) !important;
+    margin-bottom: 18px !important;
+}
+
+.auth-brand h4 {
+    color: var(--text-primary) !important;
+    line-height: 1.2 !important;
+}
+
+.auth-brand p {
+    color: var(--text-muted) !important;
+}
+
+.auth-card {
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 22px !important;
+    padding: 26px !important;
+    background: var(--surface) !important;
+    max-width: 430px !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+.auth-card-header h5 {
+    line-height: 1.18 !important;
+    letter-spacing: -.04em !important;
+}
+
+.auth-card-header p {
+    margin-bottom: 20px !important;
+}
+
+.auth-side-card {
+    width: 100% !important;
+    max-width: 620px !important;
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 26px !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+.auth-side-card h2,
+.auth-side-card p,
+.auth-metrics strong,
+.auth-metrics span {
+    color: var(--text-primary) !important;
+}
+
+.auth-side-card p,
+.auth-metrics span {
+    color: var(--text-muted) !important;
+}
+
+.auth-metrics div {
+    background: var(--surface-muted) !important;
+    border: 1px solid var(--border-soft) !important;
+}
+
+[data-theme="dark-mono"] .auth-side-card,
+[data-theme="dark-mono"] .auth-card {
+    background: #101010 !important;
+    border-color: rgba(255, 255, 255, .14) !important;
+}
+
+/* Theme switch / segmented control lock. */
+.auth-public-toolbar {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    padding: 4px !important;
+    margin: 0 0 20px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 999px !important;
+    background: var(--surface-muted) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+.auth-theme-pill,
+.theme-mode-option.auth-theme-pill {
+    min-height: 34px !important;
+    padding: 0 16px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    box-shadow: none !important;
+}
+
+.auth-theme-pill.is-active,
+.theme-mode-option.auth-theme-pill.is-active {
+    background: var(--primary) !important;
+    color: var(--primary-text) !important;
+}
+
+.auth-theme-pill.is-active::after {
+    content: "✓";
+    margin-left: 8px;
+    font-weight: 900;
+}
+
+.theme-mode-toggle {
+    border: 1px solid var(--border-soft) !important;
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+}
+
+.theme-mode-menu .theme-mode-option.is-active {
+    background: var(--surface-muted) !important;
+    color: var(--text-primary) !important;
+}
+
+.theme-mode-menu .theme-mode-option.is-active::after {
+    content: "✓";
+    margin-left: auto;
+    font-weight: 900;
+}
+
+/* Final spacing: compact, consistent card rhythm. */
+.content-area {
+    padding-top: 10px !important;
+}
+
+.content-area > .container-fluid,
+.app-main .container-fluid {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+.page-header,
+.global-filter-bar-v2,
+.dashboard-section,
+.app-card,
+.content-card,
+.card,
+.dashboard-panel,
+.dashboard-analytics-card,
+.dashboard-chart-card,
+.table-responsive,
+.table-wrapper,
+.app-table-wrapper,
+.filter-card {
+    margin-bottom: 12px !important;
+    border: 1px solid var(--border-soft) !important;
+}
+
+.dashboard-section,
+.app-card,
+.content-card,
+.card,
+.dashboard-panel,
+.dashboard-analytics-card,
+.dashboard-chart-card,
+.filter-card,
+.global-filter-bar-v2 {
+    padding: 14px !important;
+}
+
+.page-header {
+    padding: 14px !important;
+}
+
+.row,
+.g-3,
+.g-4,
+.dashboard-command-kpi-grid,
+.dashboard-command-reminder-grid,
+.dashboard-command-link-grid,
+.app-stat-grid,
+.revenue-explorer-grid,
+.revenue-explorer-stat-grid,
+.form-grid,
+.global-filter-bar-v2-grid {
+    --bs-gutter-x: 12px !important;
+    --bs-gutter-y: 12px !important;
+    gap: 12px !important;
+}
+
+@media (max-width: 991.98px) {
+    .auth-wrapper {
+        grid-template-columns: 1fr !important;
+        gap: 18px !important;
+        padding: 24px 0 !important;
+    }
+
+    .auth-card,
+    .auth-side-card {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 20px !important;
+    }
+
+    .auth-side-card h2 {
+        font-size: clamp(26px, 7vw, 36px) !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-page > .container {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .auth-public-toolbar {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .auth-theme-pill {
+        width: 100% !important;
+    }
+
+    .auth-metrics {
+        grid-template-columns: 1fr !important;
+    }
+}

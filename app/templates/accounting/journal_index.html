@@ -1,0 +1,199 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="accounting-page-shell" data-ui-accounting-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Akuntansi</span>
+        <h1>Jurnal Akuntansi</h1>
+        <p>Daftar jurnal otomatis dan manual yang tercatat di sistem.</p>
+    </div>
+
+    <div class="page-actions accounting-header-actions">
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn app-btn-primary">
+            <i class="bi bi-clipboard2-check"></i>
+            Status Posting
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi lainnya
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                <a href="{{ url_for('accounting.expense_drilldown') }}" class="dropdown-item"><i class="bi bi-graph-down-arrow"></i><span>Drilldown Beban</span></a>
+                <a href="{{ url_for('accounting.print_journals') }}" class="dropdown-item"><i class="bi bi-printer"></i><span>Cetak / Save PDF</span></a>
+                <a href="{{ url_for('accounting.export_journals_csv') }}" class="dropdown-item"><i class="bi bi-download"></i><span>Download CSV Jurnal</span></a>
+                <a href="{{ url_for('accounting.export_journal_details_csv') }}" class="dropdown-item"><i class="bi bi-table"></i><span>Download Detail CSV</span></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Total Jurnal</span>
+        <h3>{{ total_journal }}</h3>
+        <p>jurnal tercatat</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Seimbang</span>
+        <h3>{{ balanced_count }}</h3>
+        <p>debit sama dengan kredit</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Tidak Seimbang</span>
+        <h3>{{ unbalanced_count }}</h3>
+        <p>perlu dicek ulang</p>
+    </div>
+</div>
+
+<details class="app-card soft-warning-card accounting-maintenance-collapse mt-4 mb-4">
+    <summary class="accounting-maintenance-summary">
+        <div>
+            <span class="eyebrow">Maintenance</span>
+            <h5 class="mb-1">Alat Maintenance Data Lama</h5>
+            <p class="text-muted mb-0">
+                Default tertutup. Dibuka hanya jika perlu pemulihan data lama yang belum tercatat ke jurnal.
+            </p>
+        </div>
+        <i class="bi bi-chevron-down accounting-maintenance-chevron"></i>
+    </summary>
+
+    <div class="accounting-maintenance-body">
+        <div class="accounting-maintenance-actions">
+            <div class="accounting-maintenance-action">
+                <form method="POST"
+                      action="{{ url_for('accounting.generate_period_invoice_journals') }}" data-app-confirm="Sinkronkan invoice lama yang belum punya jurnal? Sistem akan melewati invoice yang sudah tercatat." data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
+                        <i class="bi bi-journal-plus"></i>
+                        Sinkronkan Invoice Lama 4001/4002
+                    </button>
+                </form>
+            </div>
+
+            <div class="accounting-maintenance-action">
+                <form method="POST"
+                      action="{{ url_for('accounting.generate_payment_journals') }}" data-app-confirm="Sinkronkan pembayaran invoice lama yang belum punya jurnal? Sistem akan melewati pembayaran yang sudah tercatat." data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
+                        <i class="bi bi-credit-card"></i>
+                        Sinkronkan Pembayaran Lama
+                    </button>
+                </form>
+            </div>
+
+            <div class="accounting-maintenance-action">
+                <form method="POST"
+                      action="{{ url_for('accounting.generate_warung_payment_correction_journals') }}" data-app-confirm="Sinkronkan koreksi pembayaran warung lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
+                        <i class="bi bi-cash-coin"></i>
+                        Sinkronkan Koreksi Pembayaran Warung Lama
+                    </button>
+                </form>
+            </div>
+
+            <div class="accounting-maintenance-action">
+                <form method="POST"
+                      action="{{ url_for('accounting.generate_hpp_production_journals') }}" data-app-confirm="Sinkronkan HPP produksi lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal HPP." data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
+                        <i class="bi bi-calculator"></i>
+                        Sinkronkan HPP Produksi Lama
+                    </button>
+                </form>
+            </div>
+
+            <div class="accounting-maintenance-action">
+                <form method="POST"
+                      action="{{ url_for('accounting.generate_procurement_journals') }}" data-app-confirm="Sinkronkan pembelian barang lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
+                        <i class="bi bi-box-seam"></i>
+                        Sinkronkan Pembelian Lama
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</details>
+
+<div class="app-card soft-warning-card mt-4">
+    <strong>Jurnal Otomatis Aktif</strong>
+    <p class="mb-0">
+        Invoice periode (4001), invoice harian (4002), pembayaran invoice, pembelian, HPP produksi, dan koreksi pembayaran warung
+        sudah dicatat otomatis oleh sistem untuk transaksi baru. Tombol sinkronisasi hanya dipakai
+        untuk pemulihan data lama yang belum memiliki jurnal.
+    </p>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Daftar Jurnal</h5>
+            <p>Jurnal harus selalu seimbang antara debit dan kredit.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Jurnal</th>
+                    <th>Tanggal</th>
+                    <th>Referensi</th>
+                    <th>Deskripsi</th>
+                    <th>Total Debit</th>
+                    <th>Total Kredit</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in journals %}
+                    {% set journal = row.journal %}
+                    <tr>
+                        <td><strong>{{ journal.journal_number }}</strong></td>
+                        <td>{{ journal.journal_date.strftime('%d-%m-%Y') if journal.journal_date else '-' }}</td>
+                        <td>
+                            {% if journal.reference_type and journal.reference_id %}
+                                {{ journal.reference_type }} #{{ journal.reference_id }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ journal.description or '-' }}</td>
+                        <td>{{ row.total_debit|rupiah }}</td>
+                        <td>{{ row.total_credit|rupiah }}</td>
+                        <td>
+                            {% if row.is_balanced %}
+                                <span class="status-badge status-progress">SEIMBANG</span>
+                            {% else %}
+                                <span class="status-badge status-cancelled">TIDAK SEIMBANG</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('accounting.journal_detail', journal_id=journal.id) }}"
+                               class="btn btn-sm app-btn-secondary">
+                                Detail
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="bi bi-calculator"></i>
+                                <p>Belum ada jurnal akuntansi.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payment-history">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">SDM / PAYMENT HISTORY</span>
+        <h1>Riwayat Pembayaran Gaji</h1>
+        <p>Jejak pembayaran gaji dari payroll PAID dan jurnal pembayaran gaji. Tidak membuat data ganda.</p>
+    </div>
+    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+        <a href="/hr/payrolls" class="btn app-btn-primary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali ke Payroll
+        </a>
+        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollHistoryActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+                Aksi SDM
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollHistoryActionDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
+                <li><span class="dropdown-item disabled"><i class="bi bi-printer"></i> Print/Export disiapkan batch print safety</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="app-stat-grid hr-kpi-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div><div><p>Total Baris</p><h3>{{ history_summary.row_count }}</h3><span class="app-stat-helper">Baris pembayaran tampil</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Gaji Dibayar</p><h3>{{ history_summary.total_paid|rupiah }}</h3><span class="app-stat-helper">Sesuai filter aktif</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-calendar2-check"></i></div><div><p>Periode Terakhir</p><h3>{{ history_summary.latest_period }}</h3><span class="app-stat-helper">Dari riwayat pembayaran</span></div></div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+{% if rows %}
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="hr-section-title">
+                <div>
+                    <span>Pembayaran Register</span>
+                    <h2>Riwayat Pembayaran</h2>
+                </div>
+                <span class="hr-table-count">{{ rows|length }} baris</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table app-table table-hover align-middle payroll-history-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal Bayar</th>
+                            <th>Periode</th>
+                            <th>Karyawan</th>
+                            <th class="text-end history-money-col">Gaji Bulanan</th>
+                            <th class="text-end history-money-col">Bonus</th>
+                            <th class="text-end history-money-col">Potongan/Prorata</th>
+                            <th class="text-end history-money-col">Dibayar</th>
+                            <th class="history-method-col">Metode</th>
+                            <th class="history-journal-col">Nomor Jurnal</th>
+                            <th class="history-status-col">Status</th>
+                            <th class="history-action-col text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>{{ row.payment_date or "-" }}</td>
+                                <td>{{ "%02d"|format(row.payroll.period_month) }}-{{ row.payroll.period_year }}</td>
+                                <td>
+                                    {% if row.employee %}
+                                        <div class="fw-semibold">{{ row.employee.full_name }}</div>
+                                    {% else %}
+                                        Karyawan ID {{ row.detail.employee_id }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ row.detail.base_salary|rupiah }}</td>
+                                <td class="text-end">{{ row.detail.bonus|rupiah }}</td>
+                                <td class="text-end">{{ row.detail.deduction|rupiah }}</td>
+                                <td class="text-end fw-semibold">{{ row.final_salary|rupiah }}</td>
+                                <td class="history-method-col"><span class="hr-soft-badge">{{ row.payment_method }}</span></td>
+                                <td class="history-journal-col"><span class="font-monospace">{{ row.journal_number }}</span></td>
+                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status }}</span></td>
+                                <td class="text-end"><a href="/hr/payrolls/{{ row.payroll.id }}" class="btn app-btn-secondary btn-sm">Detail</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="hr-inline-status is-info mt-3">
+                <i class="bi bi-info-circle"></i>
+                <span>Riwayat ini dibaca dari payroll berstatus PAID dan jurnal pembayaran gaji.</span>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
+        <div class="empty-state-icon"><i class="bi bi-clock-history"></i></div>
+        <h3>Belum ada riwayat pembayaran gaji.</h3>
+        <p>Riwayat akan muncul setelah payroll berstatus PAID dan pembayaran gaji berhasil dicatat.</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a href="/hr/payrolls" class="btn app-btn-primary">Kembali ke Payroll</a>
+            <a href="/hr/payroll-payment-history" class="btn app-btn-secondary">Reset Filter</a>
+        </div>
+    </div>
+{% endif %}
+</div>
+{% endblock %}

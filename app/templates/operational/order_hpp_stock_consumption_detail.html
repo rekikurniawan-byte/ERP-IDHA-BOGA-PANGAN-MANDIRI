@@ -1,0 +1,144 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_stock_consumption_detail" data-logistics-hpp-page="order_hpp_stock_consumption_detail">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Pemakaian Stok HPP</span>
+        <h1>{{ consumption.consumption_number }}</h1>
+        <p>{{ daily_order.order_number }} · dari snapshot {{ snapshot.snapshot_number }}</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali ke Snapshot
+        </a>
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-journal-text"></i>
+            Detail Order
+        </a>
+    </div>
+</div>
+
+
+
+<div class="app-card soft-warning-card">
+    <strong>Sudah committed.</strong>
+    <p>
+        Pemakaian stok ini dibuat dari snapshot HPP dan sudah menghasilkan StockMovement OUT.
+        Proses ini tidak membuat jurnal, tidak mengubah invoice, dan tidak mengubah order.
+        Snapshot yang sama tidak bisa di-commit ulang agar stok tidak terpotong dua kali.
+    </p>
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-box-seam"></i></div>
+        <div>
+            <p>Item Dipakai</p>
+            <h3>{{ consumption.total_item_count }}</h3>
+            <span class="app-stat-helper">Bahan dari komponen FOOD</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-arrow-down-circle"></i></div>
+        <div>
+            <p>Total Qty Keluar</p>
+            <h3>{{ consumption.total_required_qty|qty }}</h3>
+            <span class="app-stat-helper">Akumulasi lintas satuan stok</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <p>Estimasi Biaya FOOD</p>
+            <h3>{{ consumption.total_cost|rupiah }}</h3>
+            <span class="app-stat-helper">Dari snapshot HPP</span>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <p>Status</p>
+            <h3>{{ consumption.status }}</h3>
+            <span class="app-stat-helper">{{ consumption.consumption_date.strftime('%d-%m-%Y') }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Detail StockMovement OUT</h5>
+            <p>Setiap baris mewakili satu item bahan yang dipotong dari stok.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty Keluar</th>
+                    <th>Stok Sebelum</th>
+                    <th>Stok Sesudah</th>
+                    <th>Estimasi Biaya</th>
+                    <th>Komponen</th>
+                    <th>Stock Movement</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in consumption.lines %}
+                    <tr>
+                        <td>
+                            <strong>{{ line.item_name_snapshot or line.item.item_name if line.item else '-' }}</strong>
+                            <div class="muted-small">{{ line.item_code_snapshot or line.item.item_code if line.item else '-' }}</div>
+                        </td>
+                        <td>{{ line.required_stock_qty|qty }} {{ line.stock_unit_snapshot or '-' }}</td>
+                        <td>{{ line.stock_before_qty|qty }} {{ line.stock_unit_snapshot or '-' }}</td>
+                        <td>{{ line.stock_after_qty|qty }} {{ line.stock_unit_snapshot or '-' }}</td>
+                        <td>{{ line.estimated_cost_total|rupiah }}</td>
+                        <td>{{ line.component_count }} komponen</td>
+                        <td>
+                            {% if line.stock_movement %}
+                                <span class="status-badge status-locked">OUT</span>
+                                <div class="muted-small">ID {{ line.stock_movement.id }}</div>
+                            {% else %}
+                                <span class="status-badge status-progress">Belum terkait</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-info-circle"></i>
+                                <p>Belum ada line pemakaian stok.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Catatan</h5>
+            <p>Informasi commit pemakaian stok.</p>
+        </div>
+    </div>
+    <dl class="row mb-0">
+        <dt class="col-md-3">Tanggal Commit</dt>
+        <dd class="col-md-9">{{ consumption.committed_at.strftime('%d-%m-%Y %H:%M') }}</dd>
+        <dt class="col-md-3">Tanggal Pemakaian</dt>
+        <dd class="col-md-9">{{ consumption.consumption_date.strftime('%d-%m-%Y') }}</dd>
+        <dt class="col-md-3">Catatan</dt>
+        <dd class="col-md-9">{{ consumption.notes or '-' }}</dd>
+    </dl>
+</div>
+</div>
+{% endblock %}

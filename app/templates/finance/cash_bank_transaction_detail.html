@@ -1,0 +1,66 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Keuangan • Detail Buku Kas/Bank</span>
+        <h1>Buku Kas/Bank #{{ transaction.id }}</h1>
+        <p>{{ transaction.description }}</p>
+    </div>
+    <div class="page-actions finance-header-actions">
+        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Buku Kas/Bank
+        </a>
+        {% if field_transaction_link %}
+        <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-primary">
+            <i class="bi bi-arrow-repeat"></i>
+            Kembali Ke Transaksi Kas Lapangan
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <span>Nominal</span>
+        <h3>{{ transaction.amount|rupiah }}</h3>
+        <p>{{ transaction.transaction_type }} • {{ transaction.account_type }}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Status Rekonsiliasi</span>
+        <h3>{{ 'Sudah' if transaction.is_reconciled else 'Belum' }}</h3>
+        <p>{{ transaction.reference_type or '-' }}</p>
+    </div>
+    <div class="app-stat-card">
+        <span>Referensi Sumber</span>
+        <h3>{{ transaction.reference_id or '-' }}</h3>
+        <p>{{ transaction.reference_type or '-' }}</p>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Informasi Buku Kas/Bank</h5>
+            <p>Detail transaksi kas/bank yang menjadi jejak finansial dokumen sumber.</p>
+        </div>
+    </div>
+    <div class="detail-grid">
+        <div><span>Tanggal</span><strong>{{ transaction.transaction_date.strftime('%d-%m-%Y') }}</strong></div>
+        <div><span>Tipe Transaksi</span><strong>{{ transaction.transaction_type }}</strong></div>
+        <div><span>Sumber Dana</span><strong>{{ transaction.account_type }}</strong></div>
+        <div><span>Bank Account</span><strong>{% if transaction.bank_account %}{{ transaction.bank_account.bank_name }} - {{ transaction.bank_account.account_name }}{% else %}-{% endif %}</strong></div>
+        <div><span>Referensi</span><strong>{{ transaction.reference_type or '-' }} #{{ transaction.reference_id or '-' }}</strong></div>
+        <div><span>Rekonsiliasi</span><strong>{{ 'SUDAH' if transaction.is_reconciled else 'BELUM' }}</strong></div>
+        <div><span>Catatan Rekonsiliasi</span><strong>{{ transaction.reconciliation_note or '-' }}</strong></div>
+        <div><span>Dibuat Oleh</span><strong>{{ transaction.created_by }}</strong></div>
+    </div>
+    <div class="mt-3">
+        <span class="text-muted small">Deskripsi</span>
+        <p class="mb-0">{{ transaction.description }}</p>
+    </div>
+</div>
+</div>
+{% endblock %}

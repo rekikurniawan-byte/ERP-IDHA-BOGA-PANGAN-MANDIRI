@@ -1,0 +1,209 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Master Data</span>
+        <h1>Master Data Operasional</h1>
+        <p>Kelola data utama yang dipakai oleh order, produksi, pengiriman, finance, aset, dan warung.</p>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-person-badge"></i></div>
+        <div>
+            <p>Mandor</p>
+            <h3>{{ mandor_count }}</h3>
+            <span class="app-stat-helper">Data mandor</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-geo-alt"></i></div>
+        <div>
+            <p>Lokasi</p>
+            <h3>{{ location_count }}</h3>
+            <span class="app-stat-helper">Lokasi kerja</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-people"></i></div>
+        <div>
+            <p>Pekerja</p>
+            <h3>{{ worker_count }}</h3>
+            <span class="app-stat-helper">Pekerja proyek</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-box-seam"></i></div>
+        <div>
+            <p>Item</p>
+            <h3>{{ item_count }}</h3>
+            <span class="app-stat-helper">Barang sistem</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-bank"></i></div>
+        <div>
+            <p>Rekening</p>
+            <h3>{{ bank_account_count }}</h3>
+            <span class="app-stat-helper">Bank pembayaran</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-shop"></i></div>
+        <div>
+            <p>Supplier</p>
+            <h3>{{ supplier_count }}</h3>
+            <span class="app-stat-helper">Supplier opsional</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-archive"></i></div>
+        <div>
+            <p>Aset</p>
+            <h3>{{ fixed_asset_count }}</h3>
+            <span class="app-stat-helper">Aset tetap</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-calculator"></i></div>
+        <div>
+            <p>Profil HPP</p>
+            <h3>{{ item_cost_profile_count }}</h3>
+            <span class="app-stat-helper">Cost profile item</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-card-checklist"></i></div>
+        <div>
+            <p>Menu HPP</p>
+            <h3>{{ menu_count }}</h3>
+            <span class="app-stat-helper">Menu & resep/BOM</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-box2-heart"></i></div>
+        <div>
+            <p>Kemasan HPP</p>
+            <h3>{{ packaging_profile_count }}</h3>
+            <span class="app-stat-helper">Profil kemasan</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-lightning-charge"></i></div>
+        <div>
+            <p>Overhead HPP</p>
+            <h3>{{ overhead_profile_count }}</h3>
+            <span class="app-stat-helper">Profil overhead</span>
+        </div>
+    </div>
+</div>
+
+<div class="master-menu-grid">
+    {% if current_user.role == "OWNER" %}
+        <a href="{{ url_for('master.clients') }}" class="master-menu-card">
+            <i class="bi bi-building"></i>
+            <strong>Client</strong>
+            <span>Kelola data client perusahaan/proyek</span>
+        </a>
+    {% endif %}
+    <a href="{{ url_for('master.mandors') }}" class="master-menu-card">
+        <i class="bi bi-person-badge"></i>
+        <strong>Mandor</strong>
+        <span>Kelola data mandor proyek</span>
+    </a>
+
+    <a href="{{ url_for('master.locations') }}" class="master-menu-card">
+        <i class="bi bi-geo-alt"></i>
+        <strong>Lokasi Mandor</strong>
+        <span>Mess, Workshop, Forestry, dan lokasi kerja</span>
+    </a>
+
+    <a href="{{ url_for('master.workers') }}" class="master-menu-card">
+        <i class="bi bi-people"></i>
+        <strong>Pekerja</strong>
+        <span>Data pekerja di bawah mandor</span>
+    </a>
+
+    <a href="{{ url_for('master.drivers') }}" class="master-menu-card">
+        <i class="bi bi-truck"></i>
+        <strong>Driver</strong>
+        <span>Data pengantar makanan</span>
+    </a>
+
+    <a href="{{ url_for('master.items') }}" class="master-menu-card">
+        <i class="bi bi-box-seam"></i>
+        <strong>Item</strong>
+        <span>Barang warung, bahan baku, gas, packaging</span>
+    </a>
+
+    <a href="{{ url_for('master.item_cost_profiles') }}" class="master-menu-card">
+        <i class="bi bi-calculator"></i>
+        <strong>Profil HPP Item</strong>
+        <span>Harga standar, konversi satuan, yield, dan waste</span>
+    </a>
+
+    <a href="{{ url_for('costing.menus') }}" class="master-menu-card">
+        <i class="bi bi-card-checklist"></i>
+        <strong>Menu & Resep</strong>
+        <span>Resep/BOM per porsi untuk kalkulator HPP</span>
+    </a>
+
+    <a href="{{ url_for('costing.packaging_profiles') }}" class="master-menu-card">
+        <i class="bi bi-box2-heart"></i>
+        <strong>Profil Kemasan</strong>
+        <span>Biaya kemasan per porsi untuk HPP read-only</span>
+    </a>
+
+    <a href="{{ url_for('costing.overhead_profiles') }}" class="master-menu-card">
+        <i class="bi bi-lightning-charge"></i>
+        <strong>Profil Overhead</strong>
+        <span>Gas, listrik, air, tenaga kerja, bumbu, dan overhead</span>
+    </a>
+
+    <a href="{{ url_for('costing.hpp_calculator') }}" class="master-menu-card">
+        <i class="bi bi-graph-up-arrow"></i>
+        <strong>Kalkulator HPP</strong>
+        <span>Simulasi HPP read-only tanpa mengubah stok/jurnal</span>
+    </a>
+
+    <a href="{{ url_for('costing.order_hpp_snapshots') }}" class="master-menu-card">
+        <i class="bi bi-clipboard-data"></i>
+        <strong>Snapshot HPP Order</strong>
+        <span>Monitoring margin order dari snapshot HPP yang sudah dibekukan</span>
+    </a>
+
+    {% if current_user.role == "OWNER" %}
+        <a href="{{ url_for('master.bank_accounts') }}" class="master-menu-card">
+            <i class="bi bi-bank"></i>
+            <strong>Rekening Bank</strong>
+            <span>Data rekening pembayaran resmi PT/cabang</span>
+        </a>
+
+        <a href="{{ url_for('master.suppliers') }}" class="master-menu-card">
+            <i class="bi bi-shop"></i>
+            <strong>Supplier Opsional</strong>
+            <span>Supplier tetap, tanpa memaksa pembelian manual</span>
+        </a>
+
+        <a href="{{ url_for('master.fixed_assets') }}" class="master-menu-card">
+            <i class="bi bi-archive"></i>
+            <strong>Aset Tetap</strong>
+            <span>Kendaraan, peralatan, dan aset perusahaan</span>
+        </a>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

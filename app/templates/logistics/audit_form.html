@@ -1,0 +1,141 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="audit_form">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Audit Stok Baru</h1>
+        <p>Cek stok fisik di gudang lalu cocokkan dengan stok sistem.</p>
+    </div>
+</div>
+
+
+
+<div class="app-card">
+    <form method="POST" action="{{ url_for('logistics.create_audit') }}" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label app-label">Tanggal Audit</label>
+                <input type="date" name="audit_date" class="form-control app-input" value="{{ today }}" required>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label app-label">Item</label>
+                <select name="item_id" class="form-select app-input" required data-app-change-call="selectItem" data-app-call-arg="this">
+                    <option value="">Pilih item stok</option>
+                    {% for row in item_rows %}
+                        <option value="{{ row.item.id }}"
+                                data-stock="{{ row.stock_qty }}"
+                                data-unit="{{ row.item.unit }}">
+                            {{ row.item.item_code }} - {{ row.item.item_name }} | Stok sistem: {{ row.stock_qty|qty }} {{ row.item.unit }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Stok Sistem</label>
+                <input type="text" id="systemStockDisplay" class="form-control app-input" value="Pilih item dulu" readonly>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Stok Fisik</label>
+                <input type="number" name="physical_stock" id="physicalStockInput" class="form-control app-input" min="0" step="1" required data-app-input-call="calculateDifference">
+                <div class="form-text" id="qtyHelp">Isi jumlah stok nyata hasil hitung fisik.</div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label app-label">Selisih</label>
+                <input type="text" id="differenceDisplay" class="form-control app-input" value="-" readonly>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Alasan Audit / Selisih</label>
+                <select name="reason" class="form-select app-input" required>
+                    <option value="">Pilih alasan</option>
+                    <option value="Audit stok rutin">Audit stok rutin</option>
+                    <option value="Stok fisik berbeda dengan sistem">Stok fisik berbeda dengan sistem</option>
+                    <option value="Salah input sebelumnya">Salah input sebelumnya</option>
+                    <option value="Lupa catat pemakaian">Lupa catat pemakaian</option>
+                    <option value="Koreksi stok gudang">Koreksi stok gudang</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label app-label">Catatan Tambahan</label>
+                <textarea name="notes" class="form-control app-input" rows="3"
+                          placeholder="Contoh: setelah hitung fisik, gas kurang 2 tabung dari stok sistem"></textarea>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <a href="{{ url_for('logistics.audit') }}" class="btn app-btn-secondary">Batal</a>
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-save"></i>
+                    Simpan Audit Stok
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let selectedSystemStock = 0;
+let selectedUnit = '';
+
+function formatQty(number) {
+    number = Number(number || 0);
+    if (Number.isInteger(number)) return String(number);
+    return number.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function isIntegerUnit(unit) {
+    unit = (unit || '').toLowerCase();
+    const integerUnits = ['pcs', 'pc', 'tabung', 'pak', 'pack', 'dus', 'box', 'unit', 'karung', 'sak'];
+    return integerUnits.some(word => unit.includes(word));
+}
+
+function selectItem(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    selectedSystemStock = parseFloat(selectedOption.getAttribute('data-stock') || 0);
+    selectedUnit = selectedOption.getAttribute('data-unit') || '';
+
+    document.getElementById('systemStockDisplay').value = formatQty(selectedSystemStock) + ' ' + selectedUnit;
+
+    const physicalInput = document.getElementById('physicalStockInput');
+    const qtyHelp = document.getElementById('qtyHelp');
+
+    if (isIntegerUnit(selectedUnit)) {
+        physicalInput.step = '1';
+        physicalInput.placeholder = 'Contoh: 1, 2, 3';
+        qtyHelp.innerText = 'Satuan ini wajib angka bulat. Jangan pakai desimal.';
+    } else {
+        physicalInput.step = '0.01';
+        physicalInput.placeholder = 'Contoh: 1.5 atau 2.25';
+        qtyHelp.innerText = 'Satuan ini boleh menggunakan desimal.';
+    }
+
+    calculateDifference();
+}
+
+function calculateDifference() {
+    const physicalValue = parseFloat(document.getElementById('physicalStockInput').value || 0);
+    const difference = physicalValue - selectedSystemStock;
+
+    let label = formatQty(difference) + ' ' + selectedUnit;
+
+    if (difference > 0) {
+        label += ' (stok fisik lebih banyak)';
+    } else if (difference < 0) {
+        label += ' (stok fisik lebih sedikit)';
+    } else {
+        label += ' (sama)';
+    }
+
+    document.getElementById('differenceDisplay').value = label;
+}
+</script>
+</div>
+{% endblock %}

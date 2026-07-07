@@ -1,0 +1,226 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="accounting-page-shell expense-drilldown-page" data-expense-drilldown="PRODUCTION">
+    <div class="page-header app-page-header">
+        <div class="page-header-main">
+            <span class="eyebrow">Akuntansi • Expense Drilldown</span>
+            <h1 class="page-title">Beban / Expense Drilldown</h1>
+            <p class="page-description">
+                Jelaskan angka beban owner: berasal dari akun apa, jurnal apa, komponen apa, dan sumber mana yang masih belum posting.
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('accounting.reports', start_date=report.start_date.strftime('%Y-%m-%d'), end_date=report.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary">
+                <i class="bi bi-bar-chart-line"></i>
+                Laporan Akuntansi
+            </a>
+            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+                <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots"></i>
+                    Aksi lainnya
+                </button>
+                <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                    <a href="{{ url_for('accounting.posting_status') }}" class="dropdown-item"><i class="bi bi-clipboard2-check"></i><span>Status Posting</span></a>
+                    <a href="{{ url_for('accounting.data_health') }}" class="dropdown-item"><i class="bi bi-clipboard-pulse"></i><span>Data Health Check</span></a>
+                    <a href="{{ url_for('sop.role_sop', slug='accounting') }}" class="dropdown-item"><i class="bi bi-book"></i><span>SOP Accounting</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ global_filter_bar(filter_bar) }}
+
+    <div class="app-stat-grid app-stat-grid-compact expense-summary-grid">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-danger"><i class="bi bi-graph-down-arrow"></i></div>
+            <div>
+                <p>Total Beban Sudah Diposting</p>
+                <h3>{{ report.total_expense|rupiah }}</h3>
+                <span class="app-stat-helper">Dari jurnal EXPENSE/COGS/COST/HPP</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon {% if report.unposted_count > 0 %}stat-warning{% else %}stat-success{% endif %}"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <p>Sumber Perlu Cek</p>
+                <h3>{{ report.unposted_count }}</h3>
+                <span class="app-stat-helper">Belum posting / trace belum lengkap</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-pie-chart"></i></div>
+            <div>
+                <p>Komponen Terbesar</p>
+                <h3>{{ report.top_component.short_label if report.top_component else '-' }}</h3>
+                <span class="app-stat-helper">{{ report.top_component.amount|rupiah if report.top_component else 'Belum ada beban' }}</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon {% if report.precision_status == 'AMAN' %}stat-success{% else %}stat-warning{% endif %}"><i class="bi bi-shield-check"></i></div>
+            <div>
+                <p>Status Presisi Beban</p>
+                <h3>{{ report.precision_status }}</h3>
+                <span class="app-stat-helper">{{ 'Tidak ada sumber bermasalah' if report.precision_status == 'AMAN' else 'Ada sumber yang perlu diposting/dicek' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card soft-warning-card mt-4 expense-explain-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Cara Sistem Membaca Beban</h5>
+                <p>{{ report.explain.definition }}</p>
+            </div>
+            <span class="posting-badge is-{{ 'success' if report.precision_status == 'AMAN' else 'warning' }}">
+                <i class="bi {{ 'bi-check2-circle' if report.precision_status == 'AMAN' else 'bi-exclamation-triangle' }}"></i>
+                {{ report.precision_status }}
+            </span>
+        </div>
+        <div class="expense-rule-grid">
+            <div><strong>Definisi</strong><span>{{ report.explain.definition }}</span></div>
+            <div><strong>Risiko</strong><span>{{ report.explain.risk }}</span></div>
+            <div><strong>Catatan Pembelian</strong><span>{{ report.explain.procurement_note }}</span></div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4 expense-component-card expense-component-card-compact">
+        <div class="card-header-clean">
+            <div>
+                <h5>Breakdown Komponen Beban</h5>
+                <p>Komponen dihitung dari jurnal posted pada periode terpilih.</p>
+            </div>
+        </div>
+        <div class="expense-component-grid">
+            {% for component in report.component_rows %}
+                <article class="expense-component-item {{ 'is-empty' if component.amount <= 0 else '' }}">
+                    <div class="expense-component-top">
+                        <span class="expense-component-icon stat-{{ component.tone }}"><i class="bi {{ component.icon }}"></i></span>
+                        <div>
+                            <h6>{{ component.label }}</h6>
+                            <p>{{ component.description }}</p>
+                        </div>
+                    </div>
+                    <div class="expense-component-amount">{{ component.amount|rupiah }}</div>
+                    <div class="expense-progress" aria-label="Persentase {{ component.short_label }}">
+                        <span style="width: {{ '%.2f'|format(component.percent) }}%"></span>
+                    </div>
+                    <div class="expense-component-meta">
+                        <small>{{ '%.1f'|format(component.percent) }}% dari total</small>
+                        <small>{{ component.journal_count }} jurnal • {{ component.detail_count }} detail</small>
+                    </div>
+                    {% if component.accounts %}
+                        <div class="expense-account-chips">
+                            {% for account in component.accounts[:3] %}
+                                <span>{{ account.code }} • {{ account.amount|rupiah }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="app-card mt-4 expense-unposted-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Sumber Beban yang Perlu Dicek</h5>
+                <p>Daftar ini menjelaskan mengapa angka beban mungkin belum presisi.</p>
+            </div>
+            <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Buka Status Posting</a>
+        </div>
+        {% if report.unposted_rows %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle expense-source-table">
+                    <thead>
+                        <tr>
+                            <th>Sumber</th>
+                            <th>Tanggal</th>
+                            <th class="text-end">Nominal</th>
+                            <th>Status</th>
+                            <th>Alasan</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.unposted_rows %}
+                            <tr>
+                                <td>
+                                    <strong>{{ row.number }}</strong>
+                                    <small class="d-block text-muted">{{ row.label }}</small>
+                                    {% if row.helper %}<small class="d-block text-muted">{{ row.helper }}</small>{% endif %}
+                                </td>
+                                <td>{{ row.source_date.strftime('%d-%m-%Y') if row.source_date else '-' }}</td>
+                                <td class="text-end">{% if row.amount > 0 %}{{ row.amount|rupiah }}{% else %}-{% endif %}</td>
+                                <td><span class="posting-badge is-{{ row.status_class }}">{{ row.status_key|replace('_', ' ') }}</span></td>
+                                <td>{{ row.reason }}</td>
+                                <td class="text-end">
+                                    {% if row.detail_url %}
+                                        <a href="{{ row.detail_url }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table" data-ui-empty-state="PRODUCTION">
+                <div class="empty-state-icon"><i class="bi bi-check2-circle"></i></div>
+                <h3>Tidak ada sumber beban bermasalah.</h3>
+                <p>Semua sumber yang dicek sudah posting, tidak wajib posting, atau belum memiliki transaksi pada periode ini.</p>
+                <a href="{{ url_for('sop.role_sop', slug='accounting') }}" class="btn app-btn-secondary">Lihat SOP Accounting</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="app-card mt-4 expense-detail-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Detail Beban dari Jurnal</h5>
+                <p>50 baris terbaru akun beban/HPP yang membentuk angka beban periode ini.</p>
+            </div>
+        </div>
+        {% if report.detail_rows %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle expense-detail-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Jurnal</th>
+                            <th>Komponen</th>
+                            <th>Akun</th>
+                            <th>Keterangan</th>
+                            <th class="text-end">Beban</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.detail_rows %}
+                            <tr>
+                                <td>{{ row.journal_date.strftime('%d-%m-%Y') if row.journal_date else '-' }}</td>
+                                <td>
+                                    {% if row.journal_url %}<a href="{{ row.journal_url }}">{{ row.journal_number }}</a>{% else %}{{ row.journal_number }}{% endif %}
+                                    <small class="d-block text-muted">{{ row.reference_type }}</small>
+                                </td>
+                                <td><span class="expense-mini-badge">{{ row.component_label }}</span></td>
+                                <td><strong>{{ row.account_code }}</strong><small class="d-block text-muted">{{ row.account_name }}</small></td>
+                                <td>{{ row.description }}</td>
+                                <td class="text-end">{{ row.amount|rupiah }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table" data-ui-empty-state="PRODUCTION">
+                <div class="empty-state-icon"><i class="bi bi-inbox"></i></div>
+                <h3>Belum ada jurnal beban pada periode ini.</h3>
+                <p>Pastikan transaksi HPP, payroll, penyusutan, transport, dan biaya operasional sudah diposting.</p>
+                <a href="{{ url_for('accounting.posting_status') }}" class="btn app-btn-primary">Cek Status Posting</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

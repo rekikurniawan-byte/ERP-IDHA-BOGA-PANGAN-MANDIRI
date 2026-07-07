@@ -1,0 +1,138 @@
+{% extends "layouts/base.html" %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% block content %}
+<div class="logistics-hpp-page-shell" data-logistics-hpp-page="purchase_index">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Logistik & Stok</span>
+        <h1>Pembelian Barang</h1>
+        <p>Riwayat belanja bahan/barang. Supplier tetap hanya opsional; pembelian manual dari toko/pasar tetap dicatat dari Tempat Belanja.</p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Dashboard Stok
+        </a>
+        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">
+            <i class="bi bi-shop"></i>
+            Supplier Opsional
+        </a>
+        <a href="{{ url_for('logistics.create_purchase') }}" class="btn app-btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Pembelian
+        </a>
+    </div>
+</div>
+
+{{ global_filter_bar(filter_bar) }}
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>No Pembelian</th>
+                    <th>Tanggal</th>
+                    <th>Tipe</th>
+                    <th>Tempat / Supplier</th>
+                    <th>Total Item</th>
+                    <th>Total Belanja</th>
+                    <th>Buku Kas/Bank</th>
+                    <th>Hutang/AP</th>
+                    <th>Bukti Digital</th>
+                    <th>Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for purchase in purchases %}
+                <tr>
+                    <td><strong>{{ purchase.procurement_number }}</strong></td>
+                    <td>{{ purchase.procurement_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        {% if purchase.purchase_type == "CREDIT" %}
+                            <span class="status-badge status-progress">HUTANG</span>
+                        {% else %}
+                            <span class="status-badge status-locked">TUNAI</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ purchase.purchase_place or purchase.supplier_name or '-' }}</strong>
+                        {% if purchase.supplier %}
+                            <div class="text-muted small">Supplier tetap: {{ purchase.supplier.supplier_code }} - {{ purchase.supplier.supplier_name }}</div>
+                        {% else %}
+                            <div class="text-muted small">Manual / toko tidak tetap</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ purchase.items|length }}</td>
+                    <td><strong>{{ purchase.total_amount|rupiah }}</strong></td>
+                    <td>
+                        {% set ledger = ledger_by_procurement.get(purchase.id) if ledger_by_procurement else None %}
+                        {% if purchase.purchase_type == "CASH" %}
+                            {% if ledger %}
+                                <span class="status-badge status-locked">OUT Tercatat</span>
+                                <div class="text-muted small">
+                                    {% if ledger.account_type == "BANK" and ledger.bank_account %}
+                                        Bank: {{ ledger.bank_account.bank_name }} - {{ ledger.bank_account.account_name }}
+                                    {% else %}
+                                        Kas
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="status-badge status-progress">Belum tercatat</span>
+                                <div class="text-muted small">Data lama / perlu cek.</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="status-badge status-progress">Belum keluar</span>
+                            <div class="text-muted small">Keluar saat pembayaran hutang supplier.</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set supplier_bill = supplier_bill_by_procurement.get(purchase.id) if supplier_bill_by_procurement else None %}
+                        {% if purchase.purchase_type == "CREDIT" %}
+                            {% if supplier_bill %}
+                                <span class="status-badge status-progress">{{ supplier_bill.status }}</span>
+                                <div class="text-muted small">
+                                    {{ supplier_bill.bill_number }} | Sisa {{ supplier_bill.remaining_amount|rupiah }}
+                                </div>
+                            {% else %}
+                                <span class="status-badge status-danger">Belum ada AP</span>
+                                <div class="text-muted small">Data lama / perlu cek.</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">Tidak ada hutang</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set attachment_count = attachment_count_by_procurement.get(purchase.id, 0) if attachment_count_by_procurement else 0 %}
+                        {% if attachment_count %}
+                            <span class="status-badge status-locked">{{ attachment_count }} file</span>
+                        {% else %}
+                            <span class="text-muted small">Belum ada</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ purchase.notes or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('logistics.purchase_detail', procurement_id=purchase.id) }}" class="btn btn-sm app-btn-secondary">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11">
+                        <div class="empty-state">
+                            <i class="bi bi-basket"></i>
+                            <p>Belum ada data pembelian barang.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

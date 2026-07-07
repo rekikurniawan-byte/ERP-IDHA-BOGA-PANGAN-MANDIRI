@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
+{% include "finance/_finance_print_report_styles.html" %}
+
+<div class="print-report-shell" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Keuangan · Print Ready</span>
+            <h1>Buku Kas/Bank</h1>
+            <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
+        </div>
+        <div class="page-actions finance-header-actions" data-finance-actions="UI">
+            <button type="button" class="btn app-btn-primary" data-app-action="print">
+                <i class="bi bi-printer"></i> Cetak / Save PDF
+            </button>
+            <a href="{{ url_for('finance.cash_bank_ledger', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company_settings.company_name }}</h2>
+                <p>{{ company_settings.company_subtitle }}</p>
+                {% if company_settings.company_address %}<p>{{ company_settings.company_address }}</p>{% endif %}
+                {% if company_settings.company_phone %}<p>Telp: {{ company_settings.company_phone }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h4>LEDGER KAS/BANK</h4>
+                <p>Tanggal cetak: {{ generated_date.strftime('%d-%m-%Y') }}</p>
+                <p>Jumlah transaksi: {{ summary.count }}</p>
+            </div>
+        </div>
+
+        <div class="print-meta-grid">
+            <div class="app-stat-card print-box"><span>Tipe Transaksi</span><strong>{{ filters.transaction_type }}</strong></div>
+            <div class="app-stat-card print-box"><span>Akun</span><strong>{{ filters.account_type }}</strong></div>
+            <div class="app-stat-card print-box"><span>Sumber</span><strong>{{ filters.reference_type }}</strong></div>
+            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ filters.reconciliation_status }}</strong></div>
+            <div class="app-stat-card print-box"><span>Rekening</span><strong>{{ filters.bank_account }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tanggal Awal</span><strong>{{ filters.start_date.strftime('%d-%m-%Y') if filters.start_date else 'Semua' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tanggal Akhir</span><strong>{{ filters.end_date.strftime('%d-%m-%Y') if filters.end_date else 'Semua' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+        </div>
+
+        <div class="print-app-stat-grid">
+            <div class="app-stat-card print-box"><span>Total Uang Masuk</span><strong>{{ summary.total_in|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Total Uang Keluar</span><strong>{{ summary.total_out|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Saldo Buku Kas/Bank</span><strong>{{ summary.net|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ summary.reconciled_count }} sudah · {{ summary.unreconciled_count }} belum</strong></div>
+            <div class="app-stat-card print-box"><span>Saldo Kas</span><strong>{{ summary.cash_net|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Saldo Bank</span><strong>{{ summary.bank_net|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Kas Masuk/Keluar</span><strong>{{ summary.cash_in|rupiah }} / {{ summary.cash_out|rupiah }}</strong></div>
+            <div class="app-stat-card print-box"><span>Bank Masuk/Keluar</span><strong>{{ summary.bank_in|rupiah }} / {{ summary.bank_out|rupiah }}</strong></div>
+        </div>
+
+        {% if bank_summary %}
+        <h5 class="mt-4">Ringkasan per Rekening Bank</h5>
+        <table class="print-table mb-4 app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Rekening</th>
+                    <th>Masuk</th>
+                    <th>Keluar</th>
+                    <th>Saldo</th>
+                    <th>Transaksi</th>
+                    <th>Rekonsiliasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bank in bank_summary %}
+                <tr>
+                    <td>{{ bank.bank_account.bank_name }} - {{ bank.bank_account.account_name }}</td>
+                    <td class="text-end">{{ bank.total_in|rupiah }}</td>
+                    <td class="text-end">{{ bank.total_out|rupiah }}</td>
+                    <td class="text-end"><strong>{{ bank.net|rupiah }}</strong></td>
+                    <td class="text-center">{{ bank.count }}</td>
+                    <td class="text-center">{{ bank.reconciled_count }} / {{ bank.unreconciled_count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <h5>Detail Transaksi Buku Kas/Bank</h5>
+        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Akun</th>
+                    <th>Rekening</th>
+                    <th>Sumber</th>
+                    <th>Detail</th>
+                    <th>Deskripsi</th>
+                    <th>Masuk</th>
+                    <th>Keluar</th>
+                    <th>Rekon</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                {% set trx = row.transaction %}
+                <tr>
+                    <td>{{ trx.transaction_date.strftime('%d-%m-%Y') if trx.transaction_date else '-' }}</td>
+                    <td>{{ trx.account_type or '-' }} / {{ trx.transaction_type or '-' }}</td>
+                    <td>{{ row.account_display }}</td>
+                    <td>{{ trx.reference_type or '-' }}<br><strong>{{ row.source_label }}</strong></td>
+                    <td>{{ row.source_detail }}</td>
+                    <td>{{ trx.description or '-' }}</td>
+                    <td class="text-end">{{ row.money_in|rupiah if row.money_in else '-' }}</td>
+                    <td class="text-end">{{ row.money_out|rupiah if row.money_out else '-' }}</td>
+                    <td>{{ 'Ya' if trx.is_reconciled else 'Belum' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">Belum ada transaksi buku kas/bank untuk filter ini.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat read-only. Angka mengikuti filter aktif saat halaman print dibuka.</p>
+    </div>
+</div>
+</div>
+{% endblock %}

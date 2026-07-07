@@ -1,0 +1,451 @@
+/* ==================================================
+   TAHAP 10.15 — Atomic Select & Date Input UI Foundation
+   Scope: authenticated application UI.
+
+   Purpose:
+   - Replace ugly native select/date chrome with consistent app-level controls.
+   - Keep original <select> and <input type="date"> as the source of truth so
+     form names, routes, CSRF, server validation, and normal submissions remain
+     unchanged.
+   - Progressive enhancement only: if JS fails, native controls remain usable.
+   ================================================== */
+
+body.is-authenticated .app-atomic-field-shell {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+body.is-authenticated .app-atomic-field-shell.is-disabled {
+  opacity: 0.72;
+}
+
+body.is-authenticated .app-atomic-field-shell .app-atomic-native {
+  position: absolute !important;
+  inset: auto auto 0 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 1px !important;
+  min-height: 1px !important;
+  max-width: 1px !important;
+  max-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0.01 !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: transparent !important;
+  z-index: -1 !important;
+}
+
+body.is-authenticated .app-atomic-select,
+body.is-authenticated .app-atomic-date {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+body.is-authenticated .app-atomic-select-trigger,
+body.is-authenticated .app-atomic-date-trigger {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--border, rgba(15, 23, 42, 0.14));
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface, #ffffff) 98%, #ffffff) 0%, var(--surface, #ffffff) 100%);
+  color: var(--text-primary, #111827);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, background 0.16s ease;
+}
+
+body.is-authenticated .app-atomic-select-trigger:hover,
+body.is-authenticated .app-atomic-date-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent, #111111) 28%, var(--border, rgba(15, 23, 42, 0.14)));
+  background: var(--surface, #ffffff);
+}
+
+body.is-authenticated .app-atomic-select.is-open .app-atomic-select-trigger,
+body.is-authenticated .app-atomic-date.is-open .app-atomic-date-trigger,
+body.is-authenticated .app-atomic-select-trigger:focus-visible,
+body.is-authenticated .app-atomic-date-trigger:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent, #111111) 54%, var(--border, rgba(15, 23, 42, 0.14)));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent, #111111) 12%, transparent),
+    0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+body.is-authenticated .app-atomic-select.is-invalid .app-atomic-select-trigger,
+body.is-authenticated .app-atomic-date.is-invalid .app-atomic-date-trigger {
+  border-color: var(--red, #dc2626);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--red, #dc2626) 12%, transparent);
+}
+
+body.is-authenticated .app-atomic-select-trigger[aria-disabled="true"],
+body.is-authenticated .app-atomic-date-trigger[aria-disabled="true"] {
+  cursor: not-allowed;
+  background: var(--surface-muted, #f5f5f5);
+  color: var(--text-muted, #6b7280);
+  box-shadow: none;
+}
+
+body.is-authenticated .app-atomic-field-value {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+body.is-authenticated .app-atomic-field-placeholder {
+  color: var(--text-muted, #6b7280);
+  font-weight: 650;
+}
+
+body.is-authenticated .app-atomic-field-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-muted, #f5f5f5);
+  color: var(--text-secondary, #3f3f46);
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+body.is-authenticated .app-atomic-select.is-open .app-atomic-field-icon {
+  transform: rotate(180deg);
+  background: var(--primary, #111111);
+  color: var(--primary-text, #ffffff);
+}
+
+body.is-authenticated .app-atomic-menu,
+body.is-authenticated .app-date-picker-popover {
+  position: fixed;
+  top: auto;
+  left: auto;
+  width: min(420px, calc(100vw - 24px));
+  min-width: min(280px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  z-index: 2140;
+  border: 1px solid var(--border, rgba(15, 23, 42, 0.14));
+  border-radius: 16px;
+  background: var(--surface, #ffffff);
+  color: var(--text-primary, #111827);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 8px;
+  transform-origin: top left;
+  animation: appAtomicPopoverIn 0.14s ease-out;
+}
+
+body.is-authenticated .app-atomic-menu[hidden],
+body.is-authenticated .app-date-picker-popover[hidden] {
+  display: none !important;
+}
+
+body.is-authenticated .app-atomic-menu[data-align="right"],
+body.is-authenticated .app-date-picker-popover[data-align="right"] {
+  transform-origin: top right;
+}
+
+body.is-authenticated .app-atomic-overlay-portal {
+  isolation: isolate;
+}
+
+body.is-authenticated .app-atomic-overlay-portal[data-placement="top"] {
+  transform-origin: bottom left;
+}
+
+@keyframes appAtomicPopoverIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+body.is-authenticated .app-atomic-search-wrap {
+  padding: 4px 4px 8px;
+}
+
+body.is-authenticated .app-atomic-search {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.10));
+  border-radius: 12px;
+  background: var(--surface-soft, #fafafa);
+  color: var(--text-primary, #111827);
+  padding: 0 12px;
+  font-weight: 650;
+}
+
+body.is-authenticated .app-atomic-options {
+  max-height: min(320px, 48vh);
+  overflow: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent, #111111) 28%, transparent) transparent;
+}
+
+body.is-authenticated .app-atomic-option,
+body.is-authenticated .app-atomic-optgroup-label {
+  min-height: 40px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary, #111827);
+  padding: 9px 10px;
+  text-align: left;
+  font: inherit;
+  font-weight: 720;
+}
+
+body.is-authenticated .app-atomic-optgroup-label {
+  min-height: 32px;
+  color: var(--text-muted, #6b7280);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+body.is-authenticated .app-atomic-option:not(:disabled) {
+  cursor: pointer;
+}
+
+body.is-authenticated .app-atomic-option:hover,
+body.is-authenticated .app-atomic-option.is-active {
+  background: var(--surface-muted, #f5f5f5);
+}
+
+body.is-authenticated .app-atomic-option.is-selected {
+  background: color-mix(in srgb, var(--accent, #111111) 10%, var(--surface, #ffffff));
+  color: var(--text-primary, #111827);
+}
+
+body.is-authenticated .app-atomic-option.is-selected::after {
+  content: "✓";
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary, #111111);
+  color: var(--primary-text, #ffffff);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+body.is-authenticated .app-atomic-option:disabled,
+body.is-authenticated .app-atomic-option[aria-disabled="true"] {
+  color: var(--text-muted, #6b7280);
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+body.is-authenticated .app-atomic-no-result {
+  padding: 12px;
+  color: var(--text-muted, #6b7280);
+  font-weight: 650;
+  text-align: center;
+}
+
+body.is-authenticated .app-date-picker-popover {
+  width: 320px;
+  max-width: min(92vw, 360px);
+}
+
+body.is-authenticated .app-date-picker-head,
+body.is-authenticated .app-date-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+body.is-authenticated .app-date-picker-head {
+  padding: 4px 4px 10px;
+}
+
+body.is-authenticated .app-date-picker-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: 850;
+  color: var(--text-primary, #111827);
+}
+
+body.is-authenticated .app-date-picker-nav,
+body.is-authenticated .app-date-picker-footer button {
+  min-width: 38px;
+  min-height: 38px;
+  border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.10));
+  border-radius: 12px;
+  background: var(--surface-soft, #fafafa);
+  color: var(--text-primary, #111827);
+  font-weight: 820;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+body.is-authenticated .app-date-picker-nav:hover,
+body.is-authenticated .app-date-picker-footer button:hover {
+  background: var(--surface-muted, #f5f5f5);
+}
+
+body.is-authenticated .app-date-picker-weekdays,
+body.is-authenticated .app-date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.is-authenticated .app-date-picker-weekdays {
+  color: var(--text-muted, #6b7280);
+  font-size: 11px;
+  font-weight: 850;
+  text-align: center;
+  padding: 0 2px 6px;
+  letter-spacing: 0.04em;
+}
+
+body.is-authenticated .app-date-picker-day {
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary, #111827);
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+body.is-authenticated .app-date-picker-day:hover {
+  background: var(--surface-muted, #f5f5f5);
+}
+
+body.is-authenticated .app-date-picker-day.is-outside {
+  color: var(--text-muted, #6b7280);
+  opacity: 0.58;
+}
+
+body.is-authenticated .app-date-picker-day.is-today {
+  border-color: color-mix(in srgb, var(--accent, #111111) 35%, var(--border, rgba(15, 23, 42, 0.14)));
+}
+
+body.is-authenticated .app-date-picker-day.is-selected {
+  background: var(--primary, #111111);
+  color: var(--primary-text, #ffffff);
+  border-color: var(--primary, #111111);
+}
+
+body.is-authenticated .app-date-picker-day:disabled {
+  color: var(--text-muted, #6b7280);
+  opacity: 0.36;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+body.is-authenticated .app-date-picker-footer {
+  border-top: 1px solid var(--border-soft, rgba(15, 23, 42, 0.10));
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+body.is-authenticated .app-date-picker-footer button {
+  padding-inline: 12px;
+  font-size: 12px;
+}
+
+body.is-authenticated .app-date-picker-footer .app-date-clear {
+  color: var(--red, #dc2626);
+}
+
+body.is-authenticated .table .app-atomic-menu,
+body.is-authenticated .table .app-date-picker-popover,
+body.is-authenticated .app-table-wrap .app-atomic-menu,
+body.is-authenticated .app-table-wrap .app-date-picker-popover {
+  z-index: 2140;
+}
+
+body.is-authenticated .app-filter-form .app-atomic-select-trigger,
+body.is-authenticated .app-filter-form .app-atomic-date-trigger,
+body.is-authenticated .filter-bar .app-atomic-select-trigger,
+body.is-authenticated .filter-bar .app-atomic-date-trigger,
+body.is-authenticated .toolbar .app-atomic-select-trigger,
+body.is-authenticated .toolbar .app-atomic-date-trigger {
+  min-height: 42px;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 13px;
+}
+
+body.is-authenticated .input-group .app-atomic-field-shell {
+  flex: 1 1 auto;
+  width: 1%;
+}
+
+body.is-authenticated .input-group .app-atomic-select-trigger,
+body.is-authenticated .input-group .app-atomic-date-trigger {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+@media (max-width: 767.98px) {
+  body.is-authenticated .app-atomic-menu,
+  body.is-authenticated .app-date-picker-popover {
+    position: fixed;
+    width: min(420px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: 76vh;
+    border-radius: 18px;
+  }
+
+  body.is-authenticated .app-atomic-options {
+    max-height: 56vh;
+  }
+
+  body.is-authenticated .app-atomic-select-trigger,
+  body.is-authenticated .app-atomic-date-trigger {
+    min-height: 46px;
+  }
+}
+
+@media print {
+  body.is-authenticated .app-atomic-field-shell .app-atomic-native {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    opacity: 1 !important;
+    color: inherit !important;
+    background: transparent !important;
+    z-index: auto !important;
+  }
+
+  body.is-authenticated .app-atomic-select,
+  body.is-authenticated .app-atomic-date {
+    display: none !important;
+  }
+}

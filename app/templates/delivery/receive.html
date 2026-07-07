@@ -1,0 +1,231 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="receive">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Penerimaan Pengiriman</span>
+        <h1>{{ delivery_detail.delivery.delivery_number }}</h1>
+        <p>
+            Mandor: <strong>{{ delivery_detail.mandor.name }}</strong> |
+            Lokasi: <strong>{{ delivery_detail.delivery_location.location_name }}</strong>
+        </p>
+    </div>
+
+    <div class="page-actions">
+        <a href="{{ url_for('delivery.detail', delivery_id=delivery_detail.delivery.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-box"></i></div>
+        <div>
+            <p>Planned Qty</p>
+            <h3>{{ delivery_detail.planned_qty }}</h3>
+            <span class="app-stat-helper">Porsi rencana</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <p>Delivered Qty</p>
+            <h3>{{ delivery_detail.delivered_qty }}</h3>
+            <span class="app-stat-helper">Porsi terkirim</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <p>Shortage Qty</p>
+            <h3>{{ delivery_detail.shortage_qty }}</h3>
+            <span class="app-stat-helper">Selisih kurang</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-person-check"></i></div>
+        <div>
+            <p>Penerima</p>
+            <h3>{{ delivery_detail.receipt.receiver_name if delivery_detail.receipt else '-' }}</h3>
+            <span class="app-stat-helper">Nama penerima</span>
+        </div>
+    </div>
+
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-stopwatch"></i></div>
+        <div>
+            <p>SLA</p>
+            <h3>{{ delivery_detail_sla.label }}</h3>
+            <span class="app-stat-helper">Target {{ delivery_detail_sla.target_arrival_label }} · batas {{ delivery_detail_sla.late_limit_label }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card soft-info-card mt-3">
+    <strong>Status SLA Penerimaan</strong>
+    <p>{{ delivery_detail_sla.reason }}</p>
+    <span class="status-badge {{ delivery_detail_sla.badge_class }}">{{ delivery_detail_sla.label }}</span>
+</div>
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Form Penerimaan</h5>
+            <p>Jam terima otomatis dicatat saat form disimpan dan dipakai untuk hitung ON_TIME/LATE/SHORTAGE.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('delivery.receive', detail_id=delivery_detail.id) }}" enctype="multipart/form-data" data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Jumlah Rencana</label>
+                <input type="text" class="form-control app-input" value="{{ delivery_detail.planned_qty }} Porsi" readonly>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Jumlah Terkirim</label>
+                <input type="number" name="delivered_qty" class="form-control app-input" value="{{ delivery_detail.delivered_qty }}" min="0" max="{{ delivery_detail.planned_qty }}" required>
+                <small class="text-muted">Tidak boleh melebihi planned qty.</small>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nama Penerima</label>
+                <input type="text" name="receiver_name" class="form-control app-input" value="{{ delivery_detail.receipt.receiver_name if delivery_detail.receipt else '' }}" required>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Contoh: diterima lengkap / kurang 2 porsi">{{ delivery_detail.receipt.notes if delivery_detail.receipt else '' }}</textarea>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Bukti Digital Terima</label>
+                <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                <small class="text-muted">Opsional. Format: {{ allowed_extensions|join(', ') }}. Maks {{ max_upload_mb }} MB.</small>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Jenis Bukti</label>
+                <select name="proof_type" class="form-select app-input">
+                    <option value="FOTO_TERIMA">Foto Bukti Terima</option>
+                    <option value="TANDA_TANGAN">Tanda Tangan</option>
+                    <option value="SURAT_JALAN">Surat Jalan</option>
+                    <option value="LAINNYA">Lainnya</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Catatan Bukti</label>
+                <input type="text" name="proof_notes" class="form-control app-input" placeholder="Contoh: foto serah terima lengkap">
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-save"></i>
+                Simpan Penerimaan
+            </button>
+        </div>
+    </form>
+</div>
+
+
+{% if delivery_detail.receipt %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Bukti Digital Penerimaan</h5>
+            <p>Lampiran bukti terima untuk mandor/lokasi ini. File disimpan sebagai lampiran digital dan tercatat di audit log.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('delivery.upload_receipt_attachment', receipt_id=delivery_detail.receipt.id) }}" enctype="multipart/form-data" class="mb-4 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Tambah Bukti</label>
+                <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+                <small class="text-muted">Format: {{ allowed_extensions|join(', ') }}. Maks {{ max_upload_mb }} MB.</small>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Jenis Bukti</label>
+                <select name="proof_type" class="form-select app-input">
+                    <option value="FOTO_TERIMA">Foto Bukti Terima</option>
+                    <option value="TANDA_TANGAN">Tanda Tangan</option>
+                    <option value="SURAT_JALAN">Surat Jalan</option>
+                    <option value="LAINNYA">Lainnya</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Catatan</label>
+                <input type="text" name="proof_notes" class="form-control app-input" placeholder="Catatan bukti">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn app-btn-primary w-100">
+                    <i class="bi bi-upload"></i>
+                    Upload
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>File</th>
+                    <th>Ukuran</th>
+                    <th>Catatan</th>
+                    <th>Upload</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attachment in receipt_attachments %}
+                <tr>
+                    <td><span class="status-badge status-info">{{ attachment.attachment_type }}</span></td>
+                    <td><strong>{{ attachment.original_filename }}</strong></td>
+                    <td>{{ format_file_size(attachment.file_size) }}</td>
+                    <td>{{ attachment.notes or '-' }}</td>
+                    <td>{{ attachment.created_at.strftime('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('delivery.view_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
+                            <a href="{{ url_for('delivery.download_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                            {% if current_user.role in ['OWNER', 'ADMIN'] %}
+                            <form method="POST" action="{{ url_for('delivery.delete_attachment', attachment_id=attachment.id) }}" data-app-confirm="Hapus lunak bukti digital ini? File fisik tetap tersimpan untuk audit." data-ui-form="true" class="app-form">
+                                {% include "components/csrf_token.html" %}
+                                <input type="hidden" name="delete_note" value="Dihapus dari halaman penerimaan delivery.">
+                                <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-image"></i>
+                            <p>Belum ada bukti digital untuk penerimaan ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

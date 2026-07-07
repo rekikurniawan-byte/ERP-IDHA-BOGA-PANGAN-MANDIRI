@@ -1,0 +1,372 @@
+/* ==================================================
+   PRODUCTION Targeted UI Regression Cleanup
+   Purpose: finish the remaining owner-reported regressions only:
+   login/brand visibility, owner dashboard right balance, non-dashboard stat cards,
+   remove posting explanation card via template, and dark filter contrast.
+   ================================================== */
+
+/* 1) Brand visibility lock: IB logo must be readable in login/sidebar/topbar. */
+.auth-logo,
+.brand-mark,
+.sidebar .brand-mark,
+.app-sidebar .brand-mark,
+.sidebar-brand .brand-mark {
+    background: linear-gradient(135deg, #050505 0%, #2b2b2b 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, .22) !important;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .18) !important;
+    text-shadow: none !important;
+    font-weight: 950 !important;
+    letter-spacing: -.04em !important;
+}
+
+[data-theme="dark-mono"] .auth-logo,
+[data-theme="dark-mono"] .brand-mark,
+[data-theme="dark-mono"] .app-sidebar .brand-mark,
+[data-theme="dark-mono"] .sidebar-brand .brand-mark {
+    background: linear-gradient(135deg, #ffffff 0%, #d8d8d8 100%) !important;
+    color: #000000 !important;
+    border-color: rgba(255, 255, 255, .24) !important;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .38) !important;
+}
+
+.auth-brand h4,
+.auth-brand p,
+.sidebar-brand .brand-title,
+.sidebar-brand .brand-subtitle {
+    opacity: 1 !important;
+    visibility: visible !important;
+    color: var(--ui-text-final, var(--text-primary, #111111)) !important;
+}
+
+[data-theme="dark-mono"] .auth-brand h4,
+[data-theme="dark-mono"] .sidebar-brand .brand-title {
+    color: #f5f5f5 !important;
+}
+
+[data-theme="dark-mono"] .auth-brand p,
+[data-theme="dark-mono"] .sidebar-brand .brand-subtitle {
+    color: #bdbdbd !important;
+}
+
+/* 2) Login page final neatness: compact, centered, no awkward oversized white space. */
+.auth-page {
+    min-height: 100vh !important;
+    padding: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.auth-wrapper {
+    width: min(100%, 1320px) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(360px, 440px) minmax(520px, 1fr) !important;
+    align-items: center !important;
+    gap: clamp(36px, 5vw, 84px) !important;
+    padding: 0 !important;
+}
+
+.auth-panel {
+    width: 100% !important;
+    max-width: 440px !important;
+    display: grid !important;
+    gap: 18px !important;
+}
+
+.auth-public-toolbar {
+    justify-self: start !important;
+    margin: 0 0 6px 0 !important;
+    padding: 4px !important;
+    border: 1px solid var(--ui-border-soft-final, rgba(0,0,0,.14)) !important;
+    background: var(--ui-surface-soft-final, #f7f7f7) !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+}
+
+.auth-theme-pill {
+    min-height: 36px !important;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+    line-height: 1 !important;
+    font-weight: 850 !important;
+}
+
+.auth-brand {
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 14px !important;
+    align-items: center !important;
+}
+
+.auth-logo {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 16px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.auth-brand h4 {
+    margin: 0 !important;
+    font-size: 1.05rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -.02em !important;
+}
+
+.auth-brand p {
+    margin: 4px 0 0 !important;
+    font-size: .9rem !important;
+    line-height: 1.25 !important;
+}
+
+.auth-card {
+    padding: clamp(24px, 3vw, 32px) !important;
+    border-radius: 22px !important;
+}
+
+.auth-card-header h5 {
+    font-size: 1.45rem !important;
+    line-height: 1.15 !important;
+    margin-bottom: 8px !important;
+}
+
+.auth-side-card {
+    width: 100% !important;
+    min-height: 430px !important;
+    padding: clamp(36px, 5vw, 56px) !important;
+    border-radius: 28px !important;
+    background: var(--ui-surface-final, #ffffff) !important;
+}
+
+.auth-side-card .eyebrow {
+    width: 100% !important;
+    max-width: 560px !important;
+    justify-content: flex-start !important;
+}
+
+.auth-side-card h2 {
+    max-width: 660px !important;
+    font-size: clamp(2.2rem, 3.6vw, 3.65rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.06em !important;
+    margin: 24px 0 18px !important;
+}
+
+.auth-side-card p {
+    max-width: 660px !important;
+    line-height: 1.6 !important;
+}
+
+.auth-metrics {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    margin-top: 40px !important;
+}
+
+.auth-metrics > div {
+    min-width: 0 !important;
+    padding: 18px !important;
+    border: 1px solid var(--ui-border-soft-final, rgba(0,0,0,.12)) !important;
+    background: var(--ui-surface-soft-final, #f6f6f6) !important;
+    border-radius: 16px !important;
+}
+
+@media (max-width: 1024px) {
+    .auth-wrapper {
+        grid-template-columns: 1fr !important;
+        max-width: 560px !important;
+    }
+    .auth-side {
+        display: none !important;
+    }
+}
+
+/* 3) Owner dashboard right-side balance. Six KPI cards should fill the row on wide screens. */
+@media (min-width: 1360px) {
+    .dashboard-owner-header,
+    .dashboard-command-decision,
+    [data-dashboard-section="owner-kpi"],
+    [data-dashboard-section="operational-reminder"],
+    [data-dashboard-section="detail-links"] {
+        width: 100% !important;
+    }
+
+    [data-dashboard-section="owner-kpi"] .dashboard-command-kpi-grid,
+    .dashboard-owner-header ~ [data-dashboard-section="owner-kpi"] .dashboard-command-kpi-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    [data-dashboard-section="owner-kpi"] .dashboard-command-kpi {
+        min-width: 0 !important;
+        min-height: 104px !important;
+        padding: 12px !important;
+    }
+
+    [data-dashboard-section="owner-kpi"] .dashboard-command-kpi strong {
+        font-size: clamp(1.25rem, 1.2vw, 1.65rem) !important;
+    }
+}
+
+/* 4) Non-dashboard stat cards: keep labels/values readable; no broken PER/IOD/E text. */
+.app-stat-grid {
+    width: 100% !important;
+    align-items: stretch !important;
+}
+
+.app-stat-card {
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+}
+
+.app-stat-card p,
+.app-stat-card > span:first-child,
+.app-stat-card .stat-label {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    line-height: 1.25 !important;
+    letter-spacing: .08em !important;
+    max-width: 100% !important;
+}
+
+.app-stat-card h3,
+.app-stat-card strong,
+.app-stat-card .stat-value {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    line-height: 1.08 !important;
+    max-width: 100% !important;
+}
+
+.op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-card {
+    min-height: 120px !important;
+    padding: 14px 16px !important;
+}
+
+.op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-card p {
+    font-size: .76rem !important;
+}
+
+.op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-card h3 {
+    font-size: clamp(1.35rem, 2vw, 1.8rem) !important;
+    letter-spacing: -.03em !important;
+}
+
+@media (max-width: 1200px) {
+    .op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .op-prod-delivery-page-shell[data-operational-page="monthly-catering-recap"] .app-stat-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* 5) Posting Status: the explanatory legend card is removed in template; keep sections closer. */
+.posting-status-explain-card {
+    display: none !important;
+}
+
+.posting-section-stack {
+    margin-top: 12px !important;
+}
+
+/* 6) Dark filter contrast: no gray light panels inside Dark Mono. */
+[data-theme="dark-mono"] .global-filter-bar-v2,
+[data-theme="dark-mono"] .global-filter-bar-v2.app-card,
+[data-theme="dark-mono"] .global-filter-bar-v2-form,
+[data-theme="dark-mono"] .global-filter-bar-v2-grid {
+    background: #101010 !important;
+    color: #f5f5f5 !important;
+    border-color: rgba(255, 255, 255, .16) !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .42) !important;
+}
+
+[data-theme="dark-mono"] .global-filter-field,
+[data-theme="dark-mono"] .global-filter-field label,
+[data-theme="dark-mono"] .global-filter-field .form-label {
+    color: #f1f1f1 !important;
+}
+
+[data-theme="dark-mono"] .global-filter-field .form-control,
+[data-theme="dark-mono"] .global-filter-field .form-select,
+[data-theme="dark-mono"] .global-filter-control,
+[data-theme="dark-mono"] .global-filter-bar-v2 input,
+[data-theme="dark-mono"] .global-filter-bar-v2 select {
+    background: #060606 !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, .20) !important;
+    box-shadow: none !important;
+}
+
+[data-theme="dark-mono"] .global-filter-active-label,
+[data-theme="dark-mono"] .global-filter-current,
+[data-theme="dark-mono"] .period-chip {
+    background: #181818 !important;
+    color: #f5f5f5 !important;
+    border-color: rgba(255, 255, 255, .18) !important;
+}
+
+[data-theme="dark-mono"] .global-filter-actions .app-btn-primary,
+[data-theme="dark-mono"] .global-filter-actions .btn-primary {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+}
+
+[data-theme="dark-mono"] .global-filter-actions .app-btn-secondary,
+[data-theme="dark-mono"] .global-filter-actions .btn-secondary {
+    background: #151515 !important;
+    color: #f5f5f5 !important;
+    border-color: rgba(255, 255, 255, .18) !important;
+}
+
+/* 7) Compact non-dashboard page rhythm after dashboard polish. */
+.accounting-page-shell .page-header,
+.finance-page-shell .page-header,
+.op-prod-delivery-page-shell .page-header,
+.logistics-page-shell .page-header,
+.hr-page-shell .page-header,
+.settings-page-shell .page-header {
+    margin-bottom: 14px !important;
+}
+
+.accounting-page-shell .app-card,
+.finance-page-shell .app-card,
+.op-prod-delivery-page-shell .app-card,
+.logistics-page-shell .app-card,
+.hr-page-shell .app-card,
+.settings-page-shell .app-card {
+    margin-bottom: 14px !important;
+}
+
+/* 8) Keep empty state buttons from being cropped in tables. */
+.empty-state,
+.app-empty-state,
+.table td[colspan] .empty-state,
+.app-table td[colspan] .empty-state {
+    overflow: visible !important;
+}
+
+.empty-state .btn,
+.app-empty-state .btn {
+    white-space: nowrap !important;
+}

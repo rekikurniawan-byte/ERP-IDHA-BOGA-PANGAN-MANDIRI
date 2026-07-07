@@ -1,0 +1,225 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+<!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Finance</span>
+        <h1>Lihat Data Buat Invoice Periode Client</h1>
+        <p>Lihat Data tagihan resmi ke client/perusahaan yang berisi catering, revisi tambah, dan hutang warung dalam satu periode.</p>
+    </div>
+
+    <div class="page-actions finance-header-actions" data-finance-actions="UI">
+        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Daftar Invoice
+        </a>
+    </div>
+</div>
+
+<div class="app-card soft-warning-card">
+    <strong>Step Aman</strong>
+    <p>Halaman ini baru preview. Data invoice belum disimpan. Invoice periode akan ditagihkan ke client/perusahaan, sedangkan mandor tetap dicatat sebagai PIC lapangan.</p>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Filter Periode Invoice</h5>
+            <p>Pilih PIC lapangan/mandor dan rentang tanggal tagihan. Sistem akan mengambil client dari data mandor.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="form-grid app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="form-group">
+            <label>PIC Lapangan / Mandor</label>
+            <select name="mandor_id" class="form-control" required>
+                <option value="">-- Pilih Mandor --</option>
+                {% for mandor in mandors %}
+                    <option value="{{ mandor.id }}" {% if selected_mandor_id|string == mandor.id|string %}selected{% endif %}>
+                        {{ mandor.name if mandor.name is defined else mandor.mandor_name if mandor.mandor_name is defined else 'Mandor ID ' ~ mandor.id }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Tanggal Mulai</label>
+            <input type="date" name="period_start" class="form-control" value="{{ period_start_value }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Tanggal Selesai</label>
+            <input type="date" name="period_end" class="form-control" value="{{ period_end_value }}" required>
+        </div>
+
+        <div class="form-group d-flex align-items-end">
+            <button type="submit" class="btn app-btn-primary w-100">
+                <i class="bi bi-search"></i>
+                Lihat Data Invoice
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if preview_ready and selected_client %}
+<div class="app-card mt-4">
+    <div class="info-grid">
+        <div>
+            <span>Ditagihkan Ke</span>
+            <strong>{{ selected_client.name }}</strong>
+        </div>
+        <div>
+            <span>Kode Client</span>
+            <strong>{{ selected_client.client_code if selected_client and selected_client.client_code is defined and selected_client.client_code else '-' }}</strong>
+        </div>
+        <div>
+            <span>PIC Lapangan</span>
+            <strong>{{ selected_mandor.name if selected_mandor else '-' }}</strong>
+        </div>
+        <div>
+            <span>PIC Resmi Aktif</span>
+            <strong>{{ selected_client_pics|length if selected_client_pics is defined else 0 }} PIC</strong>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if preview_ready %}
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card">
+        <span>Catering Locked</span>
+        <h3>{{ total_catering|rupiah }}</h3>
+        <p>Order locked dalam periode</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Revisi Tambah</span>
+        <h3>{{ total_revision|rupiah }}</h3>
+        <p>AFTER_LOCK INCREASE</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Warung Belum Lunas</span>
+        <h3>{{ total_warung|rupiah }}</h3>
+        <p>Hutang pekerja dalam periode</p>
+    </div>
+
+    <div class="app-stat-card">
+        <span>Grand Total</span>
+        <h3>{{ grand_total|rupiah }}</h3>
+        <p>Calon nilai invoice periode</p>
+    </div>
+</div>
+
+{% if grand_total > 0 %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Simpan Invoice Periode</h5>
+            <p>Pastikan rincian preview sudah benar sebelum menyimpan invoice.</p>
+        </div>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('finance.generate_period_invoice_save') }}" data-app-confirm="Buat invoice periode ini? Setelah dikonfirmasi, item sumber tidak boleh ditagih ulang dan jurnal invoice akan dicatat otomatis oleh sistem." data-ui-form="true" class="app-form">
+        {% include "components/csrf_token.html" %}
+
+        <input type="hidden" name="mandor_id" value="{{ selected_mandor_id }}">
+        <input type="hidden" name="period_start" value="{{ period_start_value }}">
+        <input type="hidden" name="period_end" value="{{ period_end_value }}">
+
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-6">
+                <label class="form-label">PIC Penagihan untuk Invoice</label>
+                <select name="client_pic_id" class="form-select app-input" required>
+                    {% for pic in selected_client_pics %}
+                    <option value="{{ pic.id }}">{{ pic.name }}{% if pic.position %} - {{ pic.position }}{% endif %}{% if pic.phone %} / {{ pic.phone }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+                {% if not selected_client_pics %}
+                    <div class="form-text text-danger">Client belum punya PIC resmi aktif. Tambahkan PIC di Master Client dulu.</div>
+                {% else %}
+                    <div class="form-text">PIC ini akan dikunci sebagai snapshot invoice resmi.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <strong>Grand Total: {{ grand_total|rupiah }}</strong>
+                <div class="text-muted small">
+                    Client {{ selected_client.name if selected_client else '-' }} | PIC {{ selected_mandor.name if selected_mandor else '-' }} | Periode {{ period_start_value }} s/d {{ period_end_value }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn app-btn-primary" {% if not selected_client_pics %}disabled{% endif %}>
+                <i class="bi bi-save"></i>
+                Simpan Invoice Periode
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Rincian Lihat Data Invoice Periode</h5>
+            <p>
+                Periode {{ period_start_value }} s/d {{ period_end_value }}.
+                Item dengan status SKIP tidak dihitung ke grand total.
+            </p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Deskripsi</th>
+                    <th>Qty</th>
+                    <th>Harga</th>
+                    <th>Subtotal</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                <tr>
+                    <td>{{ line.date.strftime('%d-%m-%Y') }}</td>
+                    <td><strong>{{ line.item_type }}</strong></td>
+                    <td>{{ line.description }}</td>
+                    <td>{{ line.qty|qty }}</td>
+                    <td>{{ line.unit_price|rupiah }}</td>
+                    <td>{{ line.subtotal|rupiah }}</td>
+                    <td>
+                        {% if line.included %}
+                            <span class="status-badge status-progress">MASUK</span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">SKIP</span>
+                            <div class="small text-muted mt-1">{{ line.blocked_reason }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-receipt"></i>
+                            <p>Tidak ada data catering/revisi/warung untuk filter ini.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
