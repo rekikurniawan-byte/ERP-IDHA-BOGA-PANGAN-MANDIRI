@@ -2,6 +2,16 @@
 
 Project Flask ERP ini memakai PostgreSQL saja. Tidak ada fallback ke SQLite.
 
+## Panduan Untuk Teman
+
+Kalau mau menjalankan project ini di laptop baru, buka panduan lengkap ini:
+
+```text
+PANDUAN_TEMAN_JALANKAN_PROJECT.md
+```
+
+File itu berisi langkah detail dari install Git, Python, PostgreSQL, clone repo, restore database, sampai menjalankan aplikasi.
+
 ## Isi Repository
 
 - Source code aplikasi Flask ada di `app/`.
