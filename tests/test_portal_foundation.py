@@ -50,10 +50,37 @@ def _create_test_user(role="OWNER"):
     return user
 
 
+def _create_user_for_branch(role, branch):
+    suffix = uuid4().hex[:10]
+    user = User(
+        branch=branch,
+        full_name=f"Test Portal {role}",
+        username=f"portal-{role.lower()}-{suffix}",
+        password_hash=generate_password_hash("portal-test-password"),
+        role=role,
+        is_active=True,
+    )
+    db.session.add(user)
+    db.session.flush()
+    return user
+
+
 def _login(client, user):
+    _login_user_id(client, user.id)
+
+
+def _login_user_id(client, user_id):
     with client.session_transaction() as session:
-        session["_user_id"] = str(user.id)
+        session["_user_id"] = str(user_id)
         session["_fresh"] = True
+
+
+def _login_with_password(client, username, password="portal-test-password"):
+    return client.post(
+        "/auth/login",
+        data={"username": username, "password": password},
+        follow_redirects=False,
+    )
 
 
 def _create_scope_master_data(user):
@@ -778,6 +805,186 @@ def test_portal_draft_order_rejects_location_outside_scope(app):
             PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user.id).count()
             == 0
         )
+
+
+def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        admin = _create_user_for_branch("ADMIN", portal_user.branch)
+        portal_username = portal_user.username
+        admin_username = admin.username
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(portal_user)
+        location_id = location.id
+        _create_portal_mapping(
+            portal_user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+        operational_count_before = DailyOrder.query.count()
+
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    submit_response = client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-01-02",
+            "meal_type": "DINNER",
+            "portion_qty": "12",
+            "delivery_location_id": str(location_id),
+            "notes": "QA bridge portal",
+            "idempotency_key": f"bridge-{uuid4().hex}",
+        },
+    )
+
+    with app.app_context():
+        draft = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user.has(username=portal_username))
+            .order_by(PortalOrderDraft.id.desc())
+            .first()
+        )
+        draft_id = draft.id
+
+    client = app.test_client()
+    _login_with_password(client, admin_username)
+    list_response = client.get("/portal/admin/order-drafts")
+    first_confirm = client.post(f"/portal/admin/order-drafts/{draft_id}/confirm")
+    second_confirm = client.post(f"/portal/admin/order-drafts/{draft_id}/confirm")
+
+    with app.app_context():
+        draft = PortalOrderDraft.query.get(draft_id)
+        db.session.refresh(draft)
+        daily_order = DailyOrder.query.get(draft.converted_daily_order_id)
+        details = daily_order.details
+
+        assert submit_response.status_code == 302
+        assert list_response.status_code == 200
+        assert "QA bridge portal" in list_response.get_data(as_text=True)
+        assert first_confirm.status_code == 302
+        assert second_confirm.status_code == 302
+        assert DailyOrder.query.count() == operational_count_before + 1
+        assert daily_order.status == "DRAFT"
+        assert daily_order.is_locked is False
+        assert len(details) == 1
+        assert details[0].dinner_qty == 12
+        assert details[0].lunch_qty == 0
+        assert details[0].total_qty == 12
+        assert draft.status == "CONFIRMED"
+
+
+def test_admin_confirmation_bridge_rejects_other_branch_admin(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        other_admin = _create_test_user("ADMIN")
+        portal_username = portal_user.username
+        other_admin_username = other_admin.username
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(portal_user)
+        location_id = location.id
+        _create_portal_mapping(
+            portal_user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-01-03",
+            "meal_type": "LUNCH",
+            "portion_qty": "8",
+            "delivery_location_id": str(location_id),
+            "idempotency_key": f"other-branch-{uuid4().hex}",
+        },
+    )
+
+    with app.app_context():
+        draft = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user.has(username=portal_username))
+            .order_by(PortalOrderDraft.id.desc())
+            .first()
+        )
+        draft_id = draft.id
+
+    client = app.test_client()
+    _login_with_password(client, other_admin_username)
+    list_response = client.get("/portal/admin/order-drafts")
+    confirm_response = client.post(f"/portal/admin/order-drafts/{draft_id}/confirm")
+
+    with app.app_context():
+        draft = PortalOrderDraft.query.get(draft_id)
+        db.session.refresh(draft)
+
+        assert list_response.status_code == 200
+        assert "2099" not in list_response.get_data(as_text=True)
+        assert confirm_response.status_code == 302
+        assert draft.status == "PENDING_ADMIN_CONFIRMATION"
+        assert draft.converted_daily_order_id is None
+
+
+def test_admin_confirmation_bridge_reject_action_does_not_create_daily_order(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        admin = _create_user_for_branch("ADMIN", portal_user.branch)
+        portal_username = portal_user.username
+        admin_username = admin.username
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(portal_user)
+        location_id = location.id
+        _create_portal_mapping(
+            portal_user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+        operational_count_before = DailyOrder.query.count()
+
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-01-04",
+            "meal_type": "LUNCH",
+            "portion_qty": "6",
+            "delivery_location_id": str(location_id),
+            "idempotency_key": f"reject-{uuid4().hex}",
+        },
+    )
+
+    with app.app_context():
+        draft = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user.has(username=portal_username))
+            .order_by(PortalOrderDraft.id.desc())
+            .first()
+        )
+        draft_id = draft.id
+
+    client = app.test_client()
+    _login_with_password(client, admin_username)
+    reject_response = client.post(f"/portal/admin/order-drafts/{draft_id}/reject")
+
+    with app.app_context():
+        draft = PortalOrderDraft.query.get(draft_id)
+        db.session.refresh(draft)
+
+        assert reject_response.status_code == 302
+        assert draft.status == "REJECTED"
+        assert draft.converted_daily_order_id is None
+        assert DailyOrder.query.count() == operational_count_before
 
 
 def test_portal_mapping_service_has_no_session_commit_or_rollback():

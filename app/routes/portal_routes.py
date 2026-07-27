@@ -12,7 +12,13 @@ from app.services.portal_access_service import (
     build_portal_profile,
     build_portal_status_shell,
 )
-from app.services.portal_order_draft_service import build_portal_draft_order_context, create_portal_order_draft
+from app.services.portal_order_draft_service import (
+    build_portal_draft_order_context,
+    confirm_portal_order_draft,
+    create_portal_order_draft,
+    list_pending_portal_order_drafts,
+    reject_portal_order_draft,
+)
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
@@ -157,6 +163,50 @@ def draft_order():
         "idempotency_key": uuid4().hex,
     }
     return render_template("portal/draft_order.html", data=data)
+
+
+@portal_bp.route("/admin/order-drafts")
+@role_required("ADMIN")
+def admin_order_drafts():
+    data = {
+        "status_label": "Admin confirmation",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "drafts": list_pending_portal_order_drafts(current_user),
+    }
+    return render_template("portal/admin_order_drafts.html", data=data)
+
+
+@portal_bp.route("/admin/order-drafts/<int:draft_id>/confirm", methods=["POST"])
+@role_required("ADMIN")
+def confirm_order_draft(draft_id):
+    draft, converted, error = confirm_portal_order_draft(
+        draft_id,
+        current_user,
+        review_note=request.form.get("review_note"),
+    )
+    if error:
+        flash(error, "warning")
+    elif converted:
+        flash("Draft order portal berhasil dikonfirmasi ke order harian.", "success")
+    else:
+        flash("Draft order sudah pernah dikonfirmasi. Tidak dibuat duplikat.", "info")
+    return redirect(url_for("portal.admin_order_drafts"))
+
+
+@portal_bp.route("/admin/order-drafts/<int:draft_id>/reject", methods=["POST"])
+@role_required("ADMIN")
+def reject_order_draft(draft_id):
+    _draft, rejected, error = reject_portal_order_draft(
+        draft_id,
+        current_user,
+        review_note=request.form.get("review_note"),
+    )
+    if error:
+        flash(error, "warning")
+    elif rejected:
+        flash("Draft order portal ditolak.", "success")
+    return redirect(url_for("portal.admin_order_drafts"))
 
 
 @portal_bp.route("/status")

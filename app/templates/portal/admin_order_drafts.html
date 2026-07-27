@@ -1,0 +1,68 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal Admin</p>
+            <h1>Konfirmasi Draft Order Portal</h1>
+            <p class="page-description">Draft yang dikonfirmasi menjadi order harian DRAFT dan tetap belum masuk produksi/invoice/jurnal/stok.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Client/PT</th>
+                            <th>Mandor</th>
+                            <th>Lokasi</th>
+                            <th>Tipe</th>
+                            <th>Porsi</th>
+                            <th>Catatan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for draft in data.drafts %}
+                            <tr>
+                                <td>{{ draft.order_date.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ draft.client.name if draft.client else '-' }}</td>
+                                <td>{{ draft.mandor.name if draft.mandor else '-' }}</td>
+                                <td>{{ draft.delivery_location.location_name if draft.delivery_location else '-' }}</td>
+                                <td>{{ draft.meal_type }}</td>
+                                <td>{{ draft.portion_qty }}</td>
+                                <td>{{ draft.notes or '-' }}</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <form method="post" action="{{ url_for('portal.confirm_order_draft', draft_id=draft.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button class="btn app-btn-primary btn-sm" type="submit">Konfirmasi</button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('portal.reject_order_draft', draft_id=draft.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="review_note" value="Ditolak dari admin portal.">
+                                            <button class="btn app-btn-danger btn-sm" type="submit">Tolak</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-muted">Belum ada draft order yang menunggu konfirmasi.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

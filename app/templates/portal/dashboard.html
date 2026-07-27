@@ -63,6 +63,9 @@
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.locations') }}">Lokasi</a>
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.profile') }}">Profil Scope</a>
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.draft_order') }}">Draft Order</a>
+                    {% if data.active_role in ["OWNER", "ADMIN"] %}
+                        <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.admin_order_drafts') }}">Konfirmasi Draft</a>
+                    {% endif %}
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.status') }}">Status Portal</a>
                     {% if data.active_role in ["OWNER", "ADMIN"] %}
                         <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.ownership') }}">Ownership</a>

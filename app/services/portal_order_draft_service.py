@@ -1,15 +1,19 @@
 from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import lazyload
 
 from app.extensions import db
 from app.models.master import DeliveryLocation
-from app.models.operational import DailyOrder
+from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.system import PortalOrderDraft
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
+from app.services.operational_service import generate_order_number
 
 
 DRAFT_STATUS_PENDING = "PENDING_ADMIN_CONFIRMATION"
+DRAFT_STATUS_CONFIRMED = "CONFIRMED"
+DRAFT_STATUS_REJECTED = "REJECTED"
 MEAL_TYPES = {"LUNCH", "DINNER"}
 
 
@@ -30,6 +34,14 @@ def _parse_positive_int(value):
     except (TypeError, ValueError):
         return None
     return parsed if parsed > 0 else None
+
+
+def _commit_or_rollback():
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def _allowed_location_options(scope):
@@ -136,9 +148,8 @@ def create_portal_order_draft(user, form):
     db.session.add(draft)
 
     try:
-        db.session.commit()
+        _commit_or_rollback()
     except IntegrityError:
-        db.session.rollback()
         existing = PortalOrderDraft.query.filter(
             PortalOrderDraft.user_id == payload["user_id"],
             PortalOrderDraft.idempotency_key == payload["idempotency_key"],
@@ -146,12 +157,127 @@ def create_portal_order_draft(user, form):
         if existing:
             return existing, False, None
         return None, False, "Draft order gagal disimpan karena konflik data."
-    except SQLAlchemyError:
-        db.session.rollback()
-        raise
 
     return draft, True, None
 
 
 def count_existing_operational_orders():
     return DailyOrder.query.count()
+
+
+def _admin_can_review_draft(admin_user, draft):
+    if getattr(admin_user, "role", None) == "OWNER":
+        return True
+    return draft.branch_id == getattr(admin_user, "branch_id", None)
+
+
+def list_pending_portal_order_drafts(admin_user, limit=100):
+    query = PortalOrderDraft.query.filter(PortalOrderDraft.status == DRAFT_STATUS_PENDING)
+    if getattr(admin_user, "role", None) != "OWNER":
+        query = query.filter(PortalOrderDraft.branch_id == getattr(admin_user, "branch_id", None))
+    return query.order_by(
+        PortalOrderDraft.order_date.asc(),
+        PortalOrderDraft.submitted_at.asc(),
+        PortalOrderDraft.id.asc(),
+    ).limit(limit).all()
+
+
+def get_portal_order_draft_or_404(draft_id):
+    return PortalOrderDraft.query.get_or_404(draft_id)
+
+
+def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
+    draft = (
+        PortalOrderDraft.query.filter(PortalOrderDraft.id == draft_id)
+        .options(lazyload("*"))
+        .with_for_update(of=PortalOrderDraft)
+        .first()
+    )
+    if not draft:
+        return None, False, "Draft order tidak ditemukan."
+
+    if draft.status == DRAFT_STATUS_CONFIRMED and draft.converted_daily_order_id:
+        return draft, False, None
+
+    if draft.status != DRAFT_STATUS_PENDING:
+        return draft, False, "Draft order sudah tidak dalam status pending."
+
+    if not _admin_can_review_draft(admin_user, draft):
+        return draft, False, "Draft order tidak sesuai cabang admin."
+
+    daily_order = DailyOrder.query.filter_by(
+        branch_id=draft.branch_id,
+        order_date=draft.order_date,
+    ).first()
+
+    if daily_order and daily_order.is_locked:
+        return draft, False, "Order harian sudah LOCKED. Draft tidak bisa dikonfirmasi otomatis."
+
+    if not daily_order:
+        daily_order = DailyOrder(
+            order_number=generate_order_number(draft.order_date),
+            branch_id=draft.branch_id,
+            order_date=draft.order_date,
+            status="DRAFT",
+            is_locked=False,
+            notes=f"Dibuat dari portal draft #{draft.id}",
+            created_by=admin_user.id,
+        )
+        db.session.add(daily_order)
+        db.session.flush()
+
+    existing_detail = DailyOrderDetail.query.filter_by(
+        daily_order_id=daily_order.id,
+        mandor_id=draft.mandor_id,
+        delivery_location_id=draft.delivery_location_id,
+    ).first()
+    if existing_detail:
+        return draft, False, "Detail mandor/lokasi sudah ada di order harian. Review manual diperlukan."
+
+    lunch_qty = draft.portion_qty if draft.meal_type == "LUNCH" else 0
+    dinner_qty = draft.portion_qty if draft.meal_type == "DINNER" else 0
+    detail = DailyOrderDetail(
+        daily_order_id=daily_order.id,
+        mandor_id=draft.mandor_id,
+        delivery_location_id=draft.delivery_location_id,
+        price_per_portion=0,
+        lunch_qty=lunch_qty,
+        dinner_qty=dinner_qty,
+        total_qty=draft.portion_qty,
+        notes=f"Konfirmasi portal draft #{draft.id}. {draft.notes or ''}".strip(),
+    )
+    db.session.add(detail)
+
+    draft.status = DRAFT_STATUS_CONFIRMED
+    draft.converted_daily_order_id = daily_order.id
+    draft.reviewed_by = admin_user.id
+    draft.reviewed_at = datetime.utcnow()
+    draft.review_note = _clean_text(review_note) or "Dikonfirmasi ke order harian existing."
+
+    _commit_or_rollback()
+    return draft, True, None
+
+
+def reject_portal_order_draft(draft_id, admin_user, review_note):
+    draft = (
+        PortalOrderDraft.query.filter(PortalOrderDraft.id == draft_id)
+        .options(lazyload("*"))
+        .with_for_update(of=PortalOrderDraft)
+        .first()
+    )
+    if not draft:
+        return None, False, "Draft order tidak ditemukan."
+
+    if draft.status != DRAFT_STATUS_PENDING:
+        return draft, False, "Draft order sudah tidak dalam status pending."
+
+    if not _admin_can_review_draft(admin_user, draft):
+        return draft, False, "Draft order tidak sesuai cabang admin."
+
+    draft.status = DRAFT_STATUS_REJECTED
+    draft.reviewed_by = admin_user.id
+    draft.reviewed_at = datetime.utcnow()
+    draft.review_note = _clean_text(review_note) or "Ditolak admin."
+
+    _commit_or_rollback()
+    return draft, True, None

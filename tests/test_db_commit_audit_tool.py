@@ -10,7 +10,7 @@ def test_db_commit_audit_counts_real_commit_calls_only():
     rollback_calls = [call for call in calls if call.method == "rollback"]
 
     assert len(commit_calls) == 102
-    assert len(rollback_calls) == 49
+    assert len(rollback_calls) == 48
     assert all("atomic_transaction_audit_map_service.py:222" not in f"{call.relative_path}:{call.line}" for call in calls)
 
 
