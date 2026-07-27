@@ -7,6 +7,7 @@ from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mando
 from app.models.system import PortalUserMapping
 from app.services.portal_access_service import (
     build_portal_access_scope,
+    build_portal_location_directory,
     build_portal_ownership_analysis,
     build_portal_status_shell,
 )
@@ -251,6 +252,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/dashboard"' in html
             assert 'href="/portal/customers"' in html
             assert 'href="/portal/mandors"' in html
+            assert 'href="/portal/locations"' in html
             assert 'href="/portal/status"' in html
             assert 'href="/portal/ownership"' in html
         finally:
@@ -339,20 +341,27 @@ def test_portal_readonly_directories_are_branch_scoped_for_admin(app):
                 _login(client, user)
                 customers_response = client.get("/portal/customers")
                 mandors_response = client.get("/portal/mandors")
+                locations_response = client.get("/portal/locations")
 
             customers_html = customers_response.get_data(as_text=True)
             mandors_html = mandors_response.get_data(as_text=True)
+            locations_html = locations_response.get_data(as_text=True)
 
             assert customers_response.status_code == 200
             assert mandors_response.status_code == 200
+            assert locations_response.status_code == 200
             assert "Client/PT Read-only" in customers_html
             assert "Mandor Read-only" in mandors_html
+            assert "Lokasi Read-only" in locations_html
             assert "AAA Test Portal Client" in customers_html
             assert "AAA Test Portal Mandor" in mandors_html
+            assert "AAA Test Portal Location" in locations_html
             assert "ZZZ Other Branch Client" not in customers_html
             assert "ZZZ Other Branch Mandor" not in mandors_html
+            assert "ZZZ Other Branch Location" not in locations_html
             assert 'action="/portal' not in customers_html.lower()
             assert 'action="/portal' not in mandors_html.lower()
+            assert 'action="/portal' not in locations_html.lower()
         finally:
             transaction.rollback()
 
@@ -475,6 +484,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
                 dashboard_response = client.get("/portal/dashboard")
                 customers_response = client.get("/portal/customers")
                 mandors_response = client.get("/portal/mandors")
+                locations_response = client.get("/portal/locations")
                 ownership_response = client.get("/portal/ownership")
 
             assert index_response.status_code == 302
@@ -483,10 +493,12 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             dashboard_html = dashboard_response.get_data(as_text=True)
             customers_html = customers_response.get_data(as_text=True)
             mandors_html = mandors_response.get_data(as_text=True)
+            locations_html = locations_response.get_data(as_text=True)
 
             assert dashboard_response.status_code == 200
             assert customers_response.status_code == 200
             assert mandors_response.status_code == 200
+            assert locations_response.status_code == 200
             assert "PORTAL_MANDOR_SCOPE" in dashboard_html
             assert "AAA Test Portal Client" in dashboard_html
             assert "AAA Test Portal Mandor" in dashboard_html
@@ -499,6 +511,9 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             assert "AAA Test Portal Mandor" in mandors_html
             assert "BBB Same Client Mandor" not in mandors_html
             assert "ZZZ Other Branch Mandor" not in mandors_html
+            assert "AAA Test Portal Location" in locations_html
+            assert "BBB Same Client Location" not in locations_html
+            assert "ZZZ Other Branch Location" not in locations_html
             assert ownership_response.status_code == 302
         finally:
             transaction.rollback()
@@ -562,6 +577,7 @@ def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
             _create_portal_mapping(user, principal_type=PRINCIPAL_DELEGATE, location=location)
 
             scope = build_portal_external_scope(user)
+            directory = build_portal_location_directory(user)
 
             assert scope.allowed is True
             assert scope.scope_mode == "PORTAL_DELEGATE_SCOPE"
@@ -569,21 +585,30 @@ def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
             assert scope.mandor_ids == {mandor.id}
             assert scope.delivery_location_ids == {location.id}
             assert sibling_location.id not in scope.delivery_location_ids
+            assert directory["allowed"] is True
+            assert len(directory["rows"]) == 1
+            assert directory["rows"][0]["name"] == "AAA Test Portal Location"
 
             with app.test_client() as client:
                 _login(client, user)
                 profile_response = client.get("/portal/profile")
                 mandors_response = client.get("/portal/mandors")
+                locations_response = client.get("/portal/locations")
 
             profile_html = profile_response.get_data(as_text=True)
             mandors_html = mandors_response.get_data(as_text=True)
+            locations_html = locations_response.get_data(as_text=True)
 
             assert profile_response.status_code == 200
+            assert locations_response.status_code == 200
             assert "PORTAL_DELEGATE_SCOPE" in profile_html
             assert "AAA Test Portal Location" in profile_html
             assert "BBB Same Mandor Other Location" not in profile_html
             assert "AAA Test Portal Mandor" in mandors_html
             assert "CCC Same Client Other Mandor" not in mandors_html
+            assert "AAA Test Portal Location" in locations_html
+            assert "BBB Same Mandor Other Location" not in locations_html
+            assert "CCC Same Client Other Location" not in locations_html
         finally:
             transaction.rollback()
 

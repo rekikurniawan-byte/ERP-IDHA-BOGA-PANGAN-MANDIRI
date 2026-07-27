@@ -410,6 +410,57 @@ def build_portal_mandor_directory(user, limit=50):
     }
 
 
+def build_portal_location_directory(user, limit=50):
+    role = getattr(user, "role", None)
+    if is_portal_external_role(role):
+        external_scope, queries = _external_queries(user)
+        if not external_scope.allowed:
+            return {
+                "allowed": False,
+                "reason": external_scope.reason,
+                "scope_mode": external_scope.scope_mode,
+                "rows": [],
+            }
+        location_query = queries["location_query"]
+        scope_mode = external_scope.scope_mode
+    else:
+        allowed, role, branch_id, reason = _scope_allowed(user)
+        if not allowed:
+            return {
+                "allowed": False,
+                "reason": reason,
+                "scope_mode": "NO_PORTAL_SCOPE",
+                "rows": [],
+            }
+        queries = _scope_queries(role, branch_id)
+        location_query = queries["location_query"]
+        scope_mode = queries["scope_mode"]
+
+    rows = []
+    for location in location_query.order_by(DeliveryLocation.location_name.asc()).limit(limit).all():
+        mandor = location.mandor
+        rows.append(
+            {
+                "id": location.id,
+                "name": location.location_name,
+                "description": location.description,
+                "is_active": location.is_active,
+                "mandor_id": location.mandor_id,
+                "mandor_name": mandor.name if mandor else "-",
+                "client_id": mandor.client_id if mandor else None,
+                "client_name": mandor.client.name if mandor and mandor.client else "-",
+                "branch_id": mandor.branch_id if mandor else None,
+            }
+        )
+
+    return {
+        "allowed": True,
+        "scope_mode": scope_mode,
+        "rows": rows,
+        "limit": limit,
+    }
+
+
 def _portal_mapping_row(mapping):
     return {
         "id": mapping.id,

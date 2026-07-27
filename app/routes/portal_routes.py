@@ -4,6 +4,7 @@ from flask_login import current_user
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_customer_directory,
+    build_portal_location_directory,
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
     build_portal_profile,
@@ -105,6 +106,18 @@ def mandors():
         "directory": build_portal_mandor_directory(current_user),
     }
     return render_template("portal/mandors.html", data=data)
+
+
+@portal_bp.route("/locations")
+@role_required(*PORTAL_READONLY_ROLES)
+def locations():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "directory": build_portal_location_directory(current_user),
+    }
+    return render_template("portal/locations.html", data=data)
 
 
 @portal_bp.route("/status")
