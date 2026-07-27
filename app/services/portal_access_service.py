@@ -3,11 +3,9 @@ from sqlalchemy import func, select
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment, SupplierBill
-from app.models.logistics import StockMovement, StockOpeningBalance
 from app.models.master import Client, ClientPic, DeliveryLocation, Item, Mandor
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production, ProductionDetail
-from app.services.stock_service import get_item_stock
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -690,107 +688,5 @@ def build_portal_production_visibility(user, limit=10):
             "active_item_count": active_item_count,
         },
         "recent_productions": recent_productions,
-        "limit": limit,
-    }
-
-
-def _portal_inventory_item_ids(branch_id):
-    movement_query = select(StockMovement.item_id)
-    opening_query = select(StockOpeningBalance.item_id)
-    if branch_id:
-        movement_query = movement_query.where(StockMovement.branch_id == branch_id)
-        opening_query = opening_query.where(StockOpeningBalance.branch_id == branch_id)
-
-    movement_item_ids = set(db.session.execute(movement_query).scalars().all())
-    opening_item_ids = set(db.session.execute(opening_query).scalars().all())
-    return movement_item_ids | opening_item_ids
-
-
-def build_portal_inventory_visibility(user, limit=10):
-    allowed, role, branch_id, reason = _scope_allowed(user)
-    if not allowed:
-        return {
-            "allowed": False,
-            "reason": reason,
-            "role": role,
-            "branch_id": branch_id,
-            "scope_mode": "NO_PORTAL_SCOPE",
-            "summary": {},
-            "stock_rows": [],
-            "recent_movements": [],
-        }
-
-    item_ids = _portal_inventory_item_ids(branch_id)
-    items = []
-    if item_ids:
-        items = (
-            Item.query
-            .filter(Item.id.in_(item_ids))
-            .filter(Item.is_active.is_(True), Item.is_stock_tracked.is_(True))
-            .order_by(Item.item_name.asc())
-            .all()
-        )
-
-    stock_rows = []
-    safe_count = low_count = out_count = 0
-    total_stock_qty = 0
-    for item in items:
-        stock_qty = get_item_stock(branch_id, item.id)
-        minimum_stock = item.minimum_stock or 0
-        if stock_qty <= 0:
-            stock_status = "OUT"
-            out_count += 1
-        elif stock_qty <= minimum_stock:
-            stock_status = "LOW"
-            low_count += 1
-        else:
-            stock_status = "SAFE"
-            safe_count += 1
-        total_stock_qty += stock_qty
-        stock_rows.append(
-            {
-                "item_code": item.item_code,
-                "item_name": item.item_name,
-                "unit": item.unit,
-                "minimum_stock": minimum_stock,
-                "stock_qty": stock_qty,
-                "stock_status": stock_status,
-            }
-        )
-
-    movement_query = StockMovement.query
-    if branch_id:
-        movement_query = movement_query.filter(StockMovement.branch_id == branch_id)
-
-    recent_movements = []
-    for movement in movement_query.order_by(StockMovement.movement_date.desc(), StockMovement.id.desc()).limit(limit).all():
-        recent_movements.append(
-            {
-                "movement_date": movement.movement_date,
-                "movement_type": movement.movement_type,
-                "reference_type": movement.reference_type,
-                "reference_id": movement.reference_id,
-                "qty": movement.qty,
-                "item_name": movement.item.item_name if movement.item else "-",
-                "unit": movement.item.unit if movement.item else "-",
-            }
-        )
-
-    return {
-        "allowed": True,
-        "reason": None,
-        "role": role,
-        "branch_id": branch_id,
-        "scope_mode": "OWNER_BRANCH_INVENTORY_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_INVENTORY_PREVIEW",
-        "summary": {
-            "item_count": len(stock_rows),
-            "safe_count": safe_count,
-            "low_count": low_count,
-            "out_count": out_count,
-            "movement_count": movement_query.count(),
-            "total_stock_qty": total_stock_qty,
-        },
-        "stock_rows": stock_rows[:limit],
-        "recent_movements": recent_movements,
         "limit": limit,
     }

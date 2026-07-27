@@ -1,6 +1,6 @@
 # Baseline Safety Audit ERP PT Idha Boga Pangan Mandiri
 
-Timestamp: 20260727_175303
+Timestamp: 20260727_174819
 Status: READY_FOR_STAGE_1
 
 ## Scope
@@ -23,17 +23,17 @@ Status: READY_FOR_STAGE_1
 - QA marker hits: 0
 
 ## Route Map
-- Total route: 351
+- Total route: 350
 - Duplicate rule/method: 0
-- Safe GET candidates: 156
-- Safe GET executed: 156
+- Safe GET candidates: 155
+- Safe GET executed: 155
 - Smoke failures: 0
 
 ## Template And url_for
-- Total template: 222
-- Parsed: 222
+- Total template: 221
+- Parsed: 221
 - Template parse errors: 0
-- Literal endpoint references: 338
+- Literal endpoint references: 337
 - Missing endpoint references: 0
 - Missing template file references: 0
 
@@ -50,6 +50,6 @@ Status: READY_FOR_STAGE_1
 - Tidak ada literal endpoint hilang yang terdeteksi.
 
 ## Files
-- Route map JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_route_map_20260727_175303.json`
-- Template audit JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_template_audit_20260727_175303.json`
-- Runtime smoke JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_runtime_smoke_20260727_175303.json`
+- Route map JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_route_map_20260727_174819.json`
+- Template audit JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_template_audit_20260727_174819.json`
+- Runtime smoke JSON: `C:\Users\Acer\Downloads\ERP_PT_IDHA_BOGA_PANGAN_MANDIRI\storage\final_reports\baseline_runtime_smoke_20260727_174819.json`

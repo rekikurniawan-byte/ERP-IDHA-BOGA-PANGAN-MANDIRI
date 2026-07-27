@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment
-from app.models.logistics import StockMovement, StockOpeningBalance
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Item, Mandor, User
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production, ProductionDetail
@@ -14,7 +13,6 @@ from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_delivery_visibility,
     build_portal_financial_visibility,
-    build_portal_inventory_visibility,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
     build_portal_production_visibility,
@@ -415,94 +413,6 @@ def _create_other_branch_production_visibility_data(user):
     return production, item
 
 
-def _create_inventory_visibility_data(user):
-    item = Item(
-        item_code=f"T-PORTAL-STOCK-ITEM-{uuid4().hex[:8]}",
-        item_name="AAA Test Portal Stock Item",
-        category="RAW_MATERIAL",
-        unit="KG",
-        minimum_stock=5,
-        selling_price=0,
-        is_stock_tracked=True,
-        is_active=True,
-    )
-    db.session.add(item)
-    db.session.flush()
-    opening = StockOpeningBalance(
-        branch_id=user.branch_id,
-        item_id=item.id,
-        opening_date=date.today(),
-        qty=5,
-        notes="Portal inventory test opening",
-        created_by=user.id,
-    )
-    in_movement = StockMovement(
-        branch_id=user.branch_id,
-        item_id=item.id,
-        movement_date=date.today(),
-        movement_type="IN",
-        reference_type="PORTAL_TEST",
-        reference_id=1,
-        qty=10,
-        notes="Portal inventory test in",
-        created_by=user.id,
-    )
-    out_movement = StockMovement(
-        branch_id=user.branch_id,
-        item_id=item.id,
-        movement_date=date.today(),
-        movement_type="OUT",
-        reference_type="PORTAL_TEST",
-        reference_id=2,
-        qty=3,
-        notes="Portal inventory test out",
-        created_by=user.id,
-    )
-    db.session.add(opening)
-    db.session.add(in_movement)
-    db.session.add(out_movement)
-    db.session.flush()
-    return item
-
-
-def _create_other_branch_inventory_visibility_data(user):
-    branch = Branch(
-        code=f"T-PORTAL-OTHER-STOCK-{uuid4().hex[:8]}",
-        name="Other Stock Branch",
-        address="Other",
-        phone="0800000077",
-        is_active=True,
-    )
-    item = Item(
-        item_code=f"T-PORTAL-OTHER-STOCK-ITEM-{uuid4().hex[:8]}",
-        item_name="ZZZ Other Portal Stock Item",
-        category="RAW_MATERIAL",
-        unit="KG",
-        minimum_stock=1,
-        selling_price=0,
-        is_stock_tracked=True,
-        is_active=True,
-    )
-    db.session.add(branch)
-    db.session.add(item)
-    db.session.flush()
-    db.session.add(
-        StockMovement(
-            branch_id=branch.id,
-            item_id=item.id,
-            movement_date=date.today(),
-            movement_type="IN",
-            reference_type="PORTAL_TEST_OTHER",
-            reference_id=9,
-            qty=99,
-            notes="Other branch inventory test",
-            created_by=user.id,
-        )
-    )
-    db.session.flush()
-    return item
-
-
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -591,7 +501,6 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/orders"' in html
             assert 'href="/portal/deliveries"' in html
             assert 'href="/portal/productions"' in html
-            assert 'href="/portal/inventory"' in html
         finally:
             transaction.rollback()
 
@@ -873,40 +782,6 @@ def test_portal_production_visibility_is_read_only_and_branch_scoped(app):
             assert item.item_name in html
             assert other_production.production_type not in html
             assert other_item.item_name not in html
-            assert 'action="/portal' not in html.lower()
-        finally:
-            transaction.rollback()
-
-
-def test_portal_inventory_visibility_is_read_only_and_branch_scoped(app):
-    app.config["PORTAL_ENABLED"] = True
-
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_test_user("ADMIN")
-            item = _create_inventory_visibility_data(user)
-            other_item = _create_other_branch_inventory_visibility_data(user)
-            inventory = build_portal_inventory_visibility(user)
-
-            with app.test_client() as client:
-                _login(client, user)
-                response = client.get("/portal/inventory")
-
-            html = response.get_data(as_text=True)
-            assert inventory["scope_mode"] == "ADMIN_BRANCH_INVENTORY_PREVIEW"
-            assert inventory["summary"]["item_count"] == 1
-            assert inventory["summary"]["safe_count"] == 1
-            assert inventory["summary"]["low_count"] == 0
-            assert inventory["summary"]["out_count"] == 0
-            assert inventory["summary"]["movement_count"] == 2
-            assert int(inventory["stock_rows"][0]["stock_qty"]) == 12
-            assert response.status_code == 200
-            assert "Inventory Visibility" in html
-            assert item.item_name in html
-            assert "PORTAL_TEST #2" in html
-            assert other_item.item_name not in html
-            assert "PORTAL_TEST_OTHER" not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()
