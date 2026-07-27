@@ -6,16 +6,15 @@ from werkzeug.security import generate_password_hash
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment
-from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Item, Mandor, User
+from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Mandor, User
 from app.models.operational import DailyOrder, DailyOrderDetail
-from app.models.production import Production, ProductionDetail
+from app.models.production import Production
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_delivery_visibility,
     build_portal_financial_visibility,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
-    build_portal_production_visibility,
     build_portal_status_shell,
 )
 
@@ -336,83 +335,6 @@ def _create_other_branch_delivery_visibility_data(user):
     return delivery
 
 
-def _create_production_visibility_data(user):
-    item = Item(
-        item_code=f"T-PORTAL-PROD-ITEM-{uuid4().hex[:8]}",
-        item_name="AAA Test Portal Production Item",
-        category="RAW_MATERIAL",
-        unit="KG",
-        minimum_stock=0,
-        selling_price=0,
-        is_stock_tracked=True,
-        is_active=True,
-    )
-    production = Production(
-        branch_id=user.branch_id,
-        production_date=date.today(),
-        production_type="LUNCH",
-        status="COMPLETED",
-        created_by=user.id,
-    )
-    db.session.add(item)
-    db.session.add(production)
-    db.session.flush()
-    db.session.add(
-        ProductionDetail(
-            production_id=production.id,
-            item_id=item.id,
-            planned_qty=12,
-            actual_qty=10,
-            unit="KG",
-        )
-    )
-    db.session.flush()
-    return production, item
-
-
-def _create_other_branch_production_visibility_data(user):
-    branch = Branch(
-        code=f"T-PORTAL-OTHER-PROD-{uuid4().hex[:8]}",
-        name="Other Production Branch",
-        address="Other",
-        phone="0800000088",
-        is_active=True,
-    )
-    item = Item(
-        item_code=f"T-PORTAL-OTHER-PROD-ITEM-{uuid4().hex[:8]}",
-        item_name="ZZZ Other Portal Production Item",
-        category="RAW_MATERIAL",
-        unit="KG",
-        minimum_stock=0,
-        selling_price=0,
-        is_stock_tracked=True,
-        is_active=True,
-    )
-    db.session.add(branch)
-    db.session.add(item)
-    db.session.flush()
-    production = Production(
-        branch_id=branch.id,
-        production_date=date.today(),
-        production_type="DINNER",
-        status="COMPLETED",
-        created_by=user.id,
-    )
-    db.session.add(production)
-    db.session.flush()
-    db.session.add(
-        ProductionDetail(
-            production_id=production.id,
-            item_id=item.id,
-            planned_qty=99,
-            actual_qty=99,
-            unit="KG",
-        )
-    )
-    db.session.flush()
-    return production, item
-
-
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -500,7 +422,6 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/financial"' in html
             assert 'href="/portal/orders"' in html
             assert 'href="/portal/deliveries"' in html
-            assert 'href="/portal/productions"' in html
         finally:
             transaction.rollback()
 
@@ -749,39 +670,6 @@ def test_portal_delivery_visibility_is_read_only_and_branch_scoped(app):
             assert "AAA Test Portal Driver" in html
             assert other_delivery.delivery_number not in html
             assert "ZZZ Other Portal Driver" not in html
-            assert 'action="/portal' not in html.lower()
-        finally:
-            transaction.rollback()
-
-
-def test_portal_production_visibility_is_read_only_and_branch_scoped(app):
-    app.config["PORTAL_ENABLED"] = True
-
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_test_user("ADMIN")
-            production, item = _create_production_visibility_data(user)
-            other_production, other_item = _create_other_branch_production_visibility_data(user)
-            productions = build_portal_production_visibility(user)
-
-            with app.test_client() as client:
-                _login(client, user)
-                response = client.get("/portal/productions")
-
-            html = response.get_data(as_text=True)
-            assert productions["scope_mode"] == "ADMIN_BRANCH_PRODUCTION_PREVIEW"
-            assert productions["summary"]["production_count"] == 1
-            assert productions["summary"]["completed_count"] == 1
-            assert int(productions["summary"]["planned_qty"]) == 12
-            assert int(productions["summary"]["actual_qty"]) == 10
-            assert int(productions["summary"]["variance_qty"]) == -2
-            assert response.status_code == 200
-            assert "Production Visibility" in html
-            assert production.production_type in html
-            assert item.item_name in html
-            assert other_production.production_type not in html
-            assert other_item.item_name not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()

@@ -3,9 +3,9 @@ from sqlalchemy import func, select
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment, SupplierBill
-from app.models.master import Client, ClientPic, DeliveryLocation, Item, Mandor
+from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
 from app.models.operational import DailyOrder, DailyOrderDetail
-from app.models.production import Production, ProductionDetail
+from app.models.production import Production
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -580,17 +580,16 @@ def build_portal_delivery_visibility(user, limit=10):
 
     recent_deliveries = []
     for delivery in delivery_query.order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(limit).all():
-        details = DeliveryDetail.query.filter(DeliveryDetail.delivery_id == delivery.id).all()
-        planned_qty = sum(int(detail.planned_qty or 0) for detail in details)
-        delivered_qty = sum(int(detail.delivered_qty or 0) for detail in details)
-        shortage_qty = sum(int(detail.shortage_qty or 0) for detail in details)
+        planned_qty = sum(int(detail.planned_qty or 0) for detail in delivery.details)
+        delivered_qty = sum(int(detail.delivered_qty or 0) for detail in delivery.details)
+        shortage_qty = sum(int(detail.shortage_qty or 0) for detail in delivery.details)
         recent_deliveries.append(
             {
                 "delivery_number": delivery.delivery_number,
                 "delivery_date": delivery.delivery_date,
                 "status": delivery.status,
                 "driver_name": delivery.driver.name if delivery.driver else "-",
-                "detail_count": len(details),
+                "detail_count": len(delivery.details),
                 "planned_qty": planned_qty,
                 "delivered_qty": delivered_qty,
                 "shortage_qty": shortage_qty,
@@ -612,81 +611,5 @@ def build_portal_delivery_visibility(user, limit=10):
             "shortage_qty": _delivery_detail_sum(detail_query, DeliveryDetail.shortage_qty),
         },
         "recent_deliveries": recent_deliveries,
-        "limit": limit,
-    }
-
-
-def _production_status_count(query, status):
-    return query.filter(Production.status == status).count()
-
-
-def _production_detail_sum(query, column):
-    return query.with_entities(func.coalesce(func.sum(column), 0)).scalar() or 0
-
-
-def build_portal_production_visibility(user, limit=10):
-    allowed, role, branch_id, reason = _scope_allowed(user)
-    if not allowed:
-        return {
-            "allowed": False,
-            "reason": reason,
-            "role": role,
-            "branch_id": branch_id,
-            "scope_mode": "NO_PORTAL_SCOPE",
-            "summary": {},
-            "recent_productions": [],
-        }
-
-    production_query = Production.query
-    detail_query = ProductionDetail.query.join(Production)
-    if role == "ADMIN":
-        production_query = production_query.filter(Production.branch_id == branch_id)
-        detail_query = detail_query.filter(Production.branch_id == branch_id)
-
-    recent_productions = []
-    for production in production_query.order_by(Production.production_date.desc(), Production.id.desc()).limit(limit).all():
-        detail_rows = (
-            db.session.query(ProductionDetail, Item.item_name)
-            .outerjoin(Item, Item.id == ProductionDetail.item_id)
-            .filter(ProductionDetail.production_id == production.id)
-            .all()
-        )
-        details = [detail for detail, _ in detail_rows]
-        planned_qty = sum(detail.planned_qty or 0 for detail in details)
-        actual_qty = sum(detail.actual_qty or 0 for detail in details)
-        item_names = [item_name for _, item_name in detail_rows if item_name][:3]
-        recent_productions.append(
-            {
-                "production_date": production.production_date,
-                "production_type": production.production_type,
-                "status": production.status,
-                "detail_count": len(details),
-                "planned_qty": planned_qty,
-                "actual_qty": actual_qty,
-                "variance_qty": actual_qty - planned_qty,
-                "items": ", ".join(item_names) if item_names else "-",
-            }
-        )
-
-    planned_qty = _production_detail_sum(detail_query, ProductionDetail.planned_qty)
-    actual_qty = _production_detail_sum(detail_query, ProductionDetail.actual_qty)
-    active_item_count = Item.query.filter(Item.is_active.is_(True)).count()
-
-    return {
-        "allowed": True,
-        "reason": None,
-        "role": role,
-        "branch_id": branch_id,
-        "scope_mode": "OWNER_ALL_BRANCH_PRODUCTION_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_PRODUCTION_PREVIEW",
-        "summary": {
-            "production_count": production_query.count(),
-            "draft_count": _production_status_count(production_query, "DRAFT"),
-            "completed_count": _production_status_count(production_query, "COMPLETED"),
-            "planned_qty": planned_qty,
-            "actual_qty": actual_qty,
-            "variance_qty": actual_qty - planned_qty,
-            "active_item_count": active_item_count,
-        },
-        "recent_productions": recent_productions,
         "limit": limit,
     }
