@@ -6,6 +6,7 @@ from app.services.portal_access_service import (
     build_portal_customer_directory,
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
+    build_portal_profile,
     build_portal_status_shell,
 )
 from app.services.user_management_service import (
@@ -68,6 +69,18 @@ def dashboard():
         ],
     }
     return render_template("portal/dashboard.html", data=data)
+
+
+@portal_bp.route("/profile")
+@role_required(*PORTAL_READONLY_ROLES)
+def profile():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "profile": build_portal_profile(current_user),
+    }
+    return render_template("portal/profile.html", data=data)
 
 
 @portal_bp.route("/customers")

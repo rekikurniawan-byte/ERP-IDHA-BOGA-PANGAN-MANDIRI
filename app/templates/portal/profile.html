@@ -1,0 +1,114 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Profil Scope Portal</h1>
+            <p class="page-description">Mapping akun portal terhadap data master existing.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Role</div>
+                    <div class="fw-semibold">{{ data.profile.role }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Branch</div>
+                    <div class="fw-semibold">{{ data.profile.branch_id or '-' }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.profile.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Access</div>
+                    <div class="fw-semibold">{{ data.profile.access_levels|join(', ') if data.profile.access_levels else '-' }}</div>
+                </div>
+            </div>
+            {% if data.profile.reason %}
+                <p class="text-muted mb-0 mt-3">{{ data.profile.reason }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Area</th>
+                            <th>Total Scope</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Client/PT</td>
+                            <td>{{ data.profile.summary.clients }}</td>
+                        </tr>
+                        <tr>
+                            <td>PIC</td>
+                            <td>{{ data.profile.summary.client_pics }}</td>
+                        </tr>
+                        <tr>
+                            <td>Mandor</td>
+                            <td>{{ data.profile.summary.mandors }}</td>
+                        </tr>
+                        <tr>
+                            <td>Lokasi</td>
+                            <td>{{ data.profile.summary.locations }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Mapping Aktif</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Principal</th>
+                            <th>Access</th>
+                            <th>Client/PT</th>
+                            <th>Mandor</th>
+                            <th>PIC</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.profile.mapping_rows %}
+                            <tr>
+                                <td>{{ row.principal_type }}</td>
+                                <td>{{ row.access_level }}</td>
+                                <td>{{ row.client }}</td>
+                                <td>{{ row.mandor }}</td>
+                                <td>{{ row.client_pic }}</td>
+                                <td>{{ row.delivery_location }}</td>
+                                <td>{{ 'Aktif' if row.is_active else 'Nonaktif' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-muted">Belum ada mapping aktif untuk user ini.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

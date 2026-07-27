@@ -2,7 +2,11 @@ from sqlalchemy import func, select
 
 from app.extensions import db
 from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
-from app.services.portal_mapping_service import build_portal_external_scope, is_portal_external_role
+from app.services.portal_mapping_service import (
+    build_portal_external_scope,
+    is_portal_external_role,
+    list_active_portal_mappings,
+)
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -403,6 +407,60 @@ def build_portal_mandor_directory(user, limit=50):
         "scope_mode": queries["scope_mode"],
         "rows": rows,
         "limit": limit,
+    }
+
+
+def _portal_mapping_row(mapping):
+    return {
+        "id": mapping.id,
+        "principal_type": mapping.principal_type,
+        "access_level": mapping.access_level,
+        "client": mapping.client.name if mapping.client else "-",
+        "mandor": mapping.mandor.name if mapping.mandor else "-",
+        "client_pic": mapping.client_pic.name if mapping.client_pic else "-",
+        "delivery_location": mapping.delivery_location.location_name if mapping.delivery_location else "-",
+        "is_active": mapping.is_active,
+    }
+
+
+def build_portal_profile(user):
+    role = getattr(user, "role", None)
+    branch_id = getattr(user, "branch_id", None)
+
+    if is_portal_external_role(role):
+        external_scope = build_portal_external_scope(user)
+        mappings = list_active_portal_mappings(user)
+        return {
+            "allowed": external_scope.allowed,
+            "role": role,
+            "branch_id": branch_id,
+            "scope_mode": external_scope.scope_mode,
+            "reason": external_scope.reason,
+            "access_levels": sorted(external_scope.access_levels),
+            "mapping_rows": [_portal_mapping_row(mapping) for mapping in mappings],
+            "summary": {
+                "clients": len(external_scope.client_ids),
+                "client_pics": len(external_scope.client_pic_ids),
+                "mandors": len(external_scope.mandor_ids),
+                "locations": len(external_scope.delivery_location_ids),
+            },
+        }
+
+    scope = build_portal_access_scope(user)
+    return {
+        "allowed": scope["allowed"],
+        "role": role,
+        "branch_id": branch_id,
+        "scope_mode": scope["scope_mode"],
+        "reason": scope["reason"],
+        "access_levels": ["INTERNAL_PREVIEW"] if scope["allowed"] else [],
+        "mapping_rows": [],
+        "summary": {
+            "clients": scope["counts"]["clients"],
+            "client_pics": scope["counts"]["client_pics"],
+            "mandors": scope["counts"]["mandors"],
+            "locations": scope["counts"]["locations"],
+        },
     }
 
 

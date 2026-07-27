@@ -66,11 +66,16 @@ def _add_client_scope(scope, client_id):
     scope.client_pic_ids.update(pic.id for pic in ClientPic.query.filter(ClientPic.client_id == client_id).all())
 
 
+def _add_client_identity(scope, client_id):
+    if client_id:
+        scope.client_ids.add(client_id)
+
+
 def _add_mandor_scope(scope, mandor):
     if not mandor:
         return
     scope.mandor_ids.add(mandor.id)
-    _add_client_scope(scope, mandor.client_id)
+    _add_client_identity(scope, mandor.client_id)
     scope.delivery_location_ids.update(
         location.id for location in DeliveryLocation.query.filter(DeliveryLocation.mandor_id == mandor.id).all()
     )
@@ -80,7 +85,9 @@ def _add_location_scope(scope, location):
     if not location:
         return
     scope.delivery_location_ids.add(location.id)
-    _add_mandor_scope(scope, location.mandor)
+    if location.mandor:
+        scope.mandor_ids.add(location.mandor.id)
+        _add_client_identity(scope, location.mandor.client_id)
 
 
 def _apply_mapping(scope, mapping):
@@ -95,12 +102,13 @@ def _apply_mapping(scope, mapping):
         return
 
     if mapping.principal_type == PRINCIPAL_CLIENT_PIC:
-        scope.client_pic_ids.add(mapping.client_pic_id)
-        _add_client_scope(scope, mapping.client_pic.client_id if mapping.client_pic else mapping.client_id)
+        if mapping.client_pic_id:
+            scope.client_pic_ids.add(mapping.client_pic_id)
+        _add_client_identity(scope, mapping.client_pic.client_id if mapping.client_pic else mapping.client_id)
         return
 
     if mapping.principal_type == PRINCIPAL_DELEGATE:
-        _add_client_scope(scope, mapping.client_id)
+        _add_client_identity(scope, mapping.client_id)
         _add_mandor_scope(scope, mapping.mandor)
         _add_location_scope(scope, mapping.delivery_location)
         if mapping.client_pic_id:

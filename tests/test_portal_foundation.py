@@ -11,10 +11,17 @@ from app.services.portal_access_service import (
     build_portal_status_shell,
 )
 from app.services.portal_mapping_service import (
+    PRINCIPAL_CLIENT,
+    PRINCIPAL_DELEGATE,
     PRINCIPAL_MANDOR,
     build_portal_external_scope,
 )
-from app.services.user_management_service import ROLE_PORTAL_MANDOR, validate_user_payload
+from app.services.user_management_service import (
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_MANDOR,
+    validate_user_payload,
+)
 
 
 def _create_test_user(role="OWNER"):
@@ -139,6 +146,27 @@ def _create_other_branch_scope_data():
     db.session.add(location)
     db.session.flush()
     return branch, client, mandor, location
+
+
+def _create_extra_mandor_location(user, client_obj, name_prefix):
+    mandor = Mandor(
+        branch_id=user.branch_id,
+        client_id=client_obj.id,
+        name=f"{name_prefix} Mandor",
+        phone="0800000044",
+        is_active=True,
+    )
+    db.session.add(mandor)
+    db.session.flush()
+    location = DeliveryLocation(
+        mandor_id=mandor.id,
+        location_name=f"{name_prefix} Location",
+        description="Sibling scope test",
+        is_active=True,
+    )
+    db.session.add(location)
+    db.session.flush()
+    return mandor, location
 
 
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
@@ -421,6 +449,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
         try:
             user = _create_test_user(ROLE_PORTAL_MANDOR)
             client_obj, client_pic, mandor, location = _create_scope_master_data(user)
+            sibling_mandor, sibling_location = _create_extra_mandor_location(user, client_obj, "BBB Same Client")
             _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
             _create_other_branch_scope_data()
 
@@ -432,7 +461,9 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             assert scope.client_ids == {client_obj.id}
             assert scope.mandor_ids == {mandor.id}
             assert scope.delivery_location_ids == {location.id}
-            assert client_pic.id in scope.client_pic_ids
+            assert sibling_mandor.id not in scope.mandor_ids
+            assert sibling_location.id not in scope.delivery_location_ids
+            assert client_pic.id not in scope.client_pic_ids
             assert access_scope["allowed"] is True
             assert access_scope["counts"]["clients"] == 1
             assert access_scope["counts"]["mandors"] == 1
@@ -459,14 +490,100 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             assert "PORTAL_MANDOR_SCOPE" in dashboard_html
             assert "AAA Test Portal Client" in dashboard_html
             assert "AAA Test Portal Mandor" in dashboard_html
+            assert "BBB Same Client Mandor" not in dashboard_html
             assert "ZZZ Other Branch Client" not in dashboard_html
             assert "ZZZ Other Branch Mandor" not in dashboard_html
             assert "Ownership" not in dashboard_html
             assert "AAA Test Portal Client" in customers_html
             assert "ZZZ Other Branch Client" not in customers_html
             assert "AAA Test Portal Mandor" in mandors_html
+            assert "BBB Same Client Mandor" not in mandors_html
             assert "ZZZ Other Branch Mandor" not in mandors_html
             assert ownership_response.status_code == 302
+        finally:
+            transaction.rollback()
+
+
+def test_portal_client_scope_covers_client_family_without_other_client(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user(ROLE_PORTAL_CLIENT)
+            client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+            sibling_mandor, sibling_location = _create_extra_mandor_location(user, client_obj, "BBB Same Client")
+            _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
+            _create_other_branch_scope_data()
+
+            scope = build_portal_external_scope(user)
+
+            assert scope.allowed is True
+            assert scope.scope_mode == "PORTAL_CLIENT_SCOPE"
+            assert scope.client_ids == {client_obj.id}
+            assert {mandor.id, sibling_mandor.id}.issubset(scope.mandor_ids)
+            assert {location.id, sibling_location.id}.issubset(scope.delivery_location_ids)
+
+            with app.test_client() as client:
+                _login(client, user)
+                profile_response = client.get("/portal/profile")
+                mandors_response = client.get("/portal/mandors")
+
+            profile_html = profile_response.get_data(as_text=True)
+            mandors_html = mandors_response.get_data(as_text=True)
+
+            assert profile_response.status_code == 200
+            assert mandors_response.status_code == 200
+            assert "PORTAL_CLIENT_SCOPE" in profile_html
+            assert "AAA Test Portal Mandor" in mandors_html
+            assert "BBB Same Client Mandor" in mandors_html
+            assert "ZZZ Other Branch Mandor" not in mandors_html
+        finally:
+            transaction.rollback()
+
+
+def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user(ROLE_PORTAL_DELEGATE)
+            client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+            sibling_location = DeliveryLocation(
+                mandor_id=mandor.id,
+                location_name="BBB Same Mandor Other Location",
+                description="Should stay hidden",
+                is_active=True,
+            )
+            db.session.add(sibling_location)
+            _create_extra_mandor_location(user, client_obj, "CCC Same Client Other")
+            db.session.flush()
+            _create_portal_mapping(user, principal_type=PRINCIPAL_DELEGATE, location=location)
+
+            scope = build_portal_external_scope(user)
+
+            assert scope.allowed is True
+            assert scope.scope_mode == "PORTAL_DELEGATE_SCOPE"
+            assert scope.client_ids == {client_obj.id}
+            assert scope.mandor_ids == {mandor.id}
+            assert scope.delivery_location_ids == {location.id}
+            assert sibling_location.id not in scope.delivery_location_ids
+
+            with app.test_client() as client:
+                _login(client, user)
+                profile_response = client.get("/portal/profile")
+                mandors_response = client.get("/portal/mandors")
+
+            profile_html = profile_response.get_data(as_text=True)
+            mandors_html = mandors_response.get_data(as_text=True)
+
+            assert profile_response.status_code == 200
+            assert "PORTAL_DELEGATE_SCOPE" in profile_html
+            assert "AAA Test Portal Location" in profile_html
+            assert "BBB Same Mandor Other Location" not in profile_html
+            assert "AAA Test Portal Mandor" in mandors_html
+            assert "CCC Same Client Other Mandor" not in mandors_html
         finally:
             transaction.rollback()
 
