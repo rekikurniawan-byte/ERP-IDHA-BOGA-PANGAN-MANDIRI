@@ -1,0 +1,69 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Client/PT Read-only</h1>
+            <p class="page-description">Preview master client yang masuk scope portal internal.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.directory.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id }}</div>
+                </div>
+            </div>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Client/PT</th>
+                            <th>Kode</th>
+                            <th>Telepon</th>
+                            <th>PIC</th>
+                            <th>Mandor</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.directory.rows %}
+                            <tr>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.code or '-' }}</td>
+                                <td>{{ row.phone or '-' }}</td>
+                                <td>{{ row.pic_count }}</td>
+                                <td>{{ row.mandor_count }}</td>
+                                <td>{{ row.location_count }}</td>
+                                <td>{{ 'Aktif' if row.is_active else 'Nonaktif' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-muted">Belum ada client dalam scope portal.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

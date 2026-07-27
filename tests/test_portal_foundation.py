@@ -77,6 +77,44 @@ def _create_scope_master_data(user):
     return client, client_pic, mandor, location
 
 
+def _create_other_branch_scope_data():
+    branch = Branch(
+        code=f"T-PORTAL-OTHER-{uuid4().hex[:8]}",
+        name="Other Portal Branch",
+        address="Other",
+        phone="0800000099",
+        is_active=True,
+    )
+    client = Client(
+        client_code=f"T-PORTAL-OTHER-CLIENT-{uuid4().hex[:8]}",
+        name="ZZZ Other Branch Client",
+        address="Other",
+        phone="0800000098",
+        is_active=True,
+    )
+    db.session.add(branch)
+    db.session.add(client)
+    db.session.flush()
+    mandor = Mandor(
+        branch_id=branch.id,
+        client_id=client.id,
+        name="ZZZ Other Branch Mandor",
+        phone="0800000097",
+        is_active=True,
+    )
+    db.session.add(mandor)
+    db.session.flush()
+    location = DeliveryLocation(
+        mandor_id=mandor.id,
+        location_name="ZZZ Other Branch Location",
+        description="Other",
+        is_active=True,
+    )
+    db.session.add(location)
+    db.session.flush()
+    return branch, client, mandor, location
+
+
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -169,6 +207,38 @@ def test_portal_access_scope_is_branch_scoped_for_admin(app):
             assert scope["client_preview"][0]["name"] == "AAA Test Portal Client"
             assert scope["mandor_preview"][0]["name"] == "AAA Test Portal Mandor"
             assert scope["location_preview"][0]["name"] == "AAA Test Portal Location"
+        finally:
+            transaction.rollback()
+
+
+def test_portal_readonly_directories_are_branch_scoped_for_admin(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            _create_scope_master_data(user)
+            _create_other_branch_scope_data()
+
+            with app.test_client() as client:
+                _login(client, user)
+                customers_response = client.get("/portal/customers")
+                mandors_response = client.get("/portal/mandors")
+
+            customers_html = customers_response.get_data(as_text=True)
+            mandors_html = mandors_response.get_data(as_text=True)
+
+            assert customers_response.status_code == 200
+            assert mandors_response.status_code == 200
+            assert "Client/PT Read-only" in customers_html
+            assert "Mandor Read-only" in mandors_html
+            assert "AAA Test Portal Client" in customers_html
+            assert "AAA Test Portal Mandor" in mandors_html
+            assert "ZZZ Other Branch Client" not in customers_html
+            assert "ZZZ Other Branch Mandor" not in mandors_html
+            assert 'action="/portal' not in customers_html.lower()
+            assert 'action="/portal' not in mandors_html.lower()
         finally:
             transaction.rollback()
 

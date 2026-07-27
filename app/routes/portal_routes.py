@@ -1,7 +1,11 @@
 from flask import Blueprint, abort, current_app, redirect, render_template, url_for
 from flask_login import current_user
 
-from app.services.portal_access_service import build_portal_access_scope
+from app.services.portal_access_service import (
+    build_portal_access_scope,
+    build_portal_customer_directory,
+    build_portal_mandor_directory,
+)
 from app.utils.decorators import role_required
 
 
@@ -49,3 +53,27 @@ def dashboard():
         ],
     }
     return render_template("portal/dashboard.html", data=data)
+
+
+@portal_bp.route("/customers")
+@role_required("ADMIN")
+def customers():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "directory": build_portal_customer_directory(current_user),
+    }
+    return render_template("portal/customers.html", data=data)
+
+
+@portal_bp.route("/mandors")
+@role_required("ADMIN")
+def mandors():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "directory": build_portal_mandor_directory(current_user),
+    }
+    return render_template("portal/mandors.html", data=data)

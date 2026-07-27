@@ -65,6 +65,44 @@ def _location_preview(query):
     ]
 
 
+def _scope_queries(role, branch_id):
+    if role == "OWNER":
+        return {
+            "scope_mode": "OWNER_ALL_BRANCH_PREVIEW",
+            "client_query": Client.query,
+            "mandor_query": Mandor.query,
+            "location_query": DeliveryLocation.query,
+            "client_pic_query": ClientPic.query,
+        }
+
+    branch_client_ids = (
+        select(Mandor.client_id)
+        .filter(Mandor.branch_id == branch_id)
+        .filter(Mandor.client_id.isnot(None))
+        .distinct()
+    )
+    return {
+        "scope_mode": "ADMIN_BRANCH_PREVIEW",
+        "client_query": Client.query.filter(Client.id.in_(branch_client_ids)),
+        "mandor_query": Mandor.query.filter(Mandor.branch_id == branch_id),
+        "location_query": DeliveryLocation.query.join(Mandor).filter(Mandor.branch_id == branch_id),
+        "client_pic_query": ClientPic.query.filter(ClientPic.client_id.in_(branch_client_ids)),
+    }
+
+
+def _scope_allowed(user):
+    role = getattr(user, "role", None)
+    branch_id = getattr(user, "branch_id", None)
+
+    if role not in PORTAL_PREVIEW_ROLES:
+        return False, role, branch_id, "Role belum termasuk preview portal internal."
+
+    if role == "ADMIN" and not branch_id:
+        return False, role, branch_id, "ADMIN tidak memiliki branch_id yang valid."
+
+    return True, role, branch_id, None
+
+
 def build_portal_access_scope(user):
     """Build a read-only portal scope preview from existing master data.
 
@@ -72,33 +110,16 @@ def build_portal_access_scope(user):
     transactional access. OWNER receives a global preview; ADMIN receives a
     branch-scoped preview based on mandors in the user's branch.
     """
-    role = getattr(user, "role", None)
-    branch_id = getattr(user, "branch_id", None)
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return _empty_scope(role, branch_id, reason)
 
-    if role not in PORTAL_PREVIEW_ROLES:
-        return _empty_scope(role, branch_id, "Role belum termasuk preview portal internal.")
-
-    if role == "ADMIN" and not branch_id:
-        return _empty_scope(role, branch_id, "ADMIN tidak memiliki branch_id yang valid.")
-
-    if role == "OWNER":
-        scope_mode = "OWNER_ALL_BRANCH_PREVIEW"
-        client_query = Client.query
-        mandor_query = Mandor.query
-        location_query = DeliveryLocation.query
-        client_pic_query = ClientPic.query
-    else:
-        scope_mode = "ADMIN_BRANCH_PREVIEW"
-        branch_client_ids = (
-            select(Mandor.client_id)
-            .filter(Mandor.branch_id == branch_id)
-            .filter(Mandor.client_id.isnot(None))
-            .distinct()
-        )
-        client_query = Client.query.filter(Client.id.in_(branch_client_ids))
-        mandor_query = Mandor.query.filter(Mandor.branch_id == branch_id)
-        location_query = DeliveryLocation.query.join(Mandor).filter(Mandor.branch_id == branch_id)
-        client_pic_query = ClientPic.query.filter(ClientPic.client_id.in_(branch_client_ids))
+    queries = _scope_queries(role, branch_id)
+    scope_mode = queries["scope_mode"]
+    client_query = queries["client_query"]
+    mandor_query = queries["mandor_query"]
+    location_query = queries["location_query"]
+    client_pic_query = queries["client_pic_query"]
 
     return {
         "allowed": True,
@@ -131,3 +152,78 @@ def _distinct_client_from_mandor_count(role, branch_id):
     if role == "ADMIN":
         query = query.filter(Mandor.branch_id == branch_id)
     return query.scalar()
+
+
+def build_portal_customer_directory(user, limit=50):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "rows": [],
+        }
+
+    queries = _scope_queries(role, branch_id)
+    rows = []
+    for client in queries["client_query"].order_by(Client.name.asc()).limit(limit).all():
+        mandor_query = Mandor.query.filter(Mandor.client_id == client.id)
+        location_query = DeliveryLocation.query.join(Mandor).filter(Mandor.client_id == client.id)
+        if role == "ADMIN":
+            mandor_query = mandor_query.filter(Mandor.branch_id == branch_id)
+            location_query = location_query.filter(Mandor.branch_id == branch_id)
+
+        rows.append(
+            {
+                "id": client.id,
+                "name": client.name,
+                "code": client.client_code,
+                "phone": client.phone,
+                "is_active": client.is_active,
+                "pic_count": ClientPic.query.filter(ClientPic.client_id == client.id).count(),
+                "mandor_count": mandor_query.count(),
+                "location_count": location_query.count(),
+            }
+        )
+
+    return {
+        "allowed": True,
+        "scope_mode": queries["scope_mode"],
+        "rows": rows,
+        "limit": limit,
+    }
+
+
+def build_portal_mandor_directory(user, limit=50):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "rows": [],
+        }
+
+    queries = _scope_queries(role, branch_id)
+    rows = []
+    for mandor in queries["mandor_query"].order_by(Mandor.name.asc()).limit(limit).all():
+        location_query = DeliveryLocation.query.filter(DeliveryLocation.mandor_id == mandor.id)
+        rows.append(
+            {
+                "id": mandor.id,
+                "name": mandor.name,
+                "phone": mandor.phone,
+                "client_id": mandor.client_id,
+                "client_name": mandor.client.name if mandor.client else "-",
+                "branch_id": mandor.branch_id,
+                "is_active": mandor.is_active,
+                "location_count": location_query.count(),
+            }
+        )
+
+    return {
+        "allowed": True,
+        "scope_mode": queries["scope_mode"],
+        "rows": rows,
+        "limit": limit,
+    }
