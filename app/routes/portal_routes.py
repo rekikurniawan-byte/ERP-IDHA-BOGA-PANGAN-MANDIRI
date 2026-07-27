@@ -5,6 +5,7 @@ from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_customer_directory,
     build_portal_mandor_directory,
+    build_portal_status_shell,
 )
 from app.utils.decorators import role_required
 
@@ -77,3 +78,15 @@ def mandors():
         "directory": build_portal_mandor_directory(current_user),
     }
     return render_template("portal/mandors.html", data=data)
+
+
+@portal_bp.route("/status")
+@role_required("ADMIN")
+def status():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "status": build_portal_status_shell(current_user),
+    }
+    return render_template("portal/status.html", data=data)

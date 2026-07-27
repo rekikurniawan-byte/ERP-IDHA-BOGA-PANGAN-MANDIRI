@@ -6,6 +6,51 @@ from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
 
+PORTAL_STATUS_ROWS = [
+    {
+        "area": "Portal foundation",
+        "availability": "READY",
+        "label": "Aktif terbatas",
+        "source": "Route /portal dan feature flag PORTAL_ENABLED",
+        "note": "Shell portal internal tersedia untuk OWNER/ADMIN saat feature flag aktif.",
+    },
+    {
+        "area": "Scope Client/PT dan Mandor",
+        "availability": "READY",
+        "label": "Read-only",
+        "source": "Master Client, Mandor, Client PIC, Delivery Location",
+        "note": "Data hanya dibaca dari master existing. Tidak ada create/edit/delete portal.",
+    },
+    {
+        "area": "Akun eksternal Client/PT/Mandor",
+        "availability": "APPROVAL_REQUIRED",
+        "label": "Belum aktif",
+        "source": "Belum ada mapping user eksternal yang disetujui",
+        "note": "Butuh approval karena menyentuh role, permission, dan ownership data.",
+    },
+    {
+        "area": "Draft order portal",
+        "availability": "APPROVAL_REQUIRED",
+        "label": "Belum aktif",
+        "source": "Order existing belum dibuka ke portal",
+        "note": "Butuh approval karena menyentuh workflow order dan confirmation bridge.",
+    },
+    {
+        "area": "Status order portal",
+        "availability": "APPROVAL_REQUIRED",
+        "label": "Belum aktif",
+        "source": "Order, production, delivery existing",
+        "note": "Belum menampilkan data transaksi agar tidak mengubah ekspektasi user eksternal.",
+    },
+    {
+        "area": "Invoice/payment portal",
+        "availability": "APPROVAL_REQUIRED",
+        "label": "Ditunda",
+        "source": "Invoice, payment, receivable existing",
+        "note": "Tetap ditunda karena menyentuh data keuangan sensitif.",
+    },
+]
+
 
 def _empty_scope(role, branch_id, reason):
     return {
@@ -226,4 +271,29 @@ def build_portal_mandor_directory(user, limit=50):
         "scope_mode": queries["scope_mode"],
         "rows": rows,
         "limit": limit,
+    }
+
+
+def build_portal_status_shell(user):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "rows": [],
+            "ready_count": 0,
+            "approval_required_count": 0,
+        }
+
+    rows = [dict(row) for row in PORTAL_STATUS_ROWS]
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "rows": rows,
+        "ready_count": sum(1 for row in rows if row["availability"] == "READY"),
+        "approval_required_count": sum(1 for row in rows if row["availability"] == "APPROVAL_REQUIRED"),
     }

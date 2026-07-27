@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
-from app.services.portal_access_service import build_portal_access_scope
+from app.services.portal_access_service import build_portal_access_scope, build_portal_status_shell
 
 
 def _create_test_user(role="OWNER"):
@@ -197,6 +197,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/dashboard"' in html
             assert 'href="/portal/customers"' in html
             assert 'href="/portal/mandors"' in html
+            assert 'href="/portal/status"' in html
         finally:
             transaction.rollback()
 
@@ -297,6 +298,32 @@ def test_portal_readonly_directories_are_branch_scoped_for_admin(app):
             assert "ZZZ Other Branch Mandor" not in mandors_html
             assert 'action="/portal' not in customers_html.lower()
             assert 'action="/portal' not in mandors_html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_status_shell_is_read_only_and_shows_approval_gates(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("OWNER")
+            status = build_portal_status_shell(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/status")
+
+            html = response.get_data(as_text=True)
+            assert status["ready_count"] >= 1
+            assert status["approval_required_count"] >= 1
+            assert response.status_code == 200
+            assert "Status Portal Read-only" in html
+            assert "Akun eksternal Client/PT/Mandor" in html
+            assert "Draft order portal" in html
+            assert "Invoice/payment portal" in html
+            assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()
 
