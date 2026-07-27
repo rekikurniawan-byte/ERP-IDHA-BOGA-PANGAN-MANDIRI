@@ -1,6 +1,7 @@
 from sqlalchemy import func, select
 
 from app.extensions import db
+from app.models.finance import Invoice, Payment, SupplierBill
 from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
 
 
@@ -411,4 +412,74 @@ def build_portal_ownership_analysis(user):
         "summary": summary,
         "relationship_rows": relationship_rows,
         "decision_rows": decision_rows,
+    }
+
+
+def _financial_queries(role, branch_id):
+    invoice_query = Invoice.query
+    payment_query = Payment.query
+    supplier_bill_query = SupplierBill.query
+    if role == "ADMIN":
+        invoice_query = invoice_query.filter(Invoice.branch_id == branch_id)
+        payment_query = payment_query.filter(Payment.branch_id == branch_id)
+        supplier_bill_query = supplier_bill_query.filter(SupplierBill.branch_id == branch_id)
+    return invoice_query, payment_query, supplier_bill_query
+
+
+def _sum_or_zero(query, column):
+    return query.with_entities(func.coalesce(func.sum(column), 0)).scalar() or 0
+
+
+def build_portal_financial_visibility(user, limit=10):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "summary": {},
+            "recent_invoices": [],
+        }
+
+    invoice_query, payment_query, supplier_bill_query = _financial_queries(role, branch_id)
+    active_invoice_query = invoice_query.filter(~Invoice.status.in_(["CANCELLED", "VOID"]))
+    open_supplier_bill_query = supplier_bill_query.filter(~SupplierBill.status.in_(["PAID", "CANCELLED", "VOID"]))
+
+    recent_invoices = []
+    for invoice in active_invoice_query.order_by(Invoice.invoice_date.desc(), Invoice.id.desc()).limit(limit).all():
+        recent_invoices.append(
+            {
+                "invoice_number": invoice.invoice_number,
+                "invoice_date": invoice.invoice_date,
+                "bill_to": invoice.client_name_snapshot
+                or (invoice.client.name if invoice.client else None)
+                or (invoice.mandor.name if invoice.mandor else None)
+                or "-",
+                "status": invoice.status,
+                "total_amount": invoice.total_amount,
+                "paid_amount": invoice.paid_amount,
+                "remaining_amount": invoice.remaining_amount,
+            }
+        )
+
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "scope_mode": "OWNER_ALL_BRANCH_FINANCIAL_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_FINANCIAL_PREVIEW",
+        "summary": {
+            "invoice_count": active_invoice_query.count(),
+            "invoice_total": _sum_or_zero(active_invoice_query, Invoice.total_amount),
+            "invoice_paid": _sum_or_zero(active_invoice_query, Invoice.paid_amount),
+            "invoice_remaining": _sum_or_zero(active_invoice_query, Invoice.remaining_amount),
+            "payment_count": payment_query.count(),
+            "payment_total": _sum_or_zero(payment_query, Payment.amount),
+            "open_supplier_bill_count": open_supplier_bill_query.count(),
+            "open_supplier_bill_remaining": _sum_or_zero(open_supplier_bill_query, SupplierBill.remaining_amount),
+        },
+        "recent_invoices": recent_invoices,
+        "limit": limit,
     }

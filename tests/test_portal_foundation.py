@@ -1,11 +1,14 @@
 from uuid import uuid4
+from datetime import date, timedelta
 
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
+from app.models.finance import Invoice, Payment
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
 from app.services.portal_access_service import (
     build_portal_access_scope,
+    build_portal_financial_visibility,
     build_portal_ownership_analysis,
     build_portal_status_shell,
 )
@@ -119,6 +122,62 @@ def _create_other_branch_scope_data():
     return branch, client, mandor, location
 
 
+def _create_financial_visibility_data(user):
+    client, _, mandor, _ = _create_scope_master_data(user)
+    invoice = Invoice(
+        branch_id=user.branch_id,
+        invoice_number=f"T-PORTAL-INV-{uuid4().hex[:8]}",
+        invoice_date=date.today(),
+        due_date=date.today() + timedelta(days=7),
+        bill_to_type="CLIENT",
+        client_id=client.id,
+        mandor_id=mandor.id,
+        client_name_snapshot="AAA Test Portal Client",
+        total_amount=150000,
+        paid_amount=50000,
+        remaining_amount=100000,
+        status="PARTIAL",
+        created_by=user.id,
+    )
+    db.session.add(invoice)
+    db.session.flush()
+    payment = Payment(
+        branch_id=user.branch_id,
+        payment_number=f"T-PORTAL-PAY-{uuid4().hex[:8]}",
+        payment_date=date.today(),
+        invoice_id=invoice.id,
+        payment_method="TRANSFER",
+        amount=50000,
+        reference_number="T-PORTAL-REF",
+        received_by=user.id,
+    )
+    db.session.add(payment)
+    db.session.flush()
+    return invoice, payment
+
+
+def _create_other_branch_financial_data(user):
+    branch, client, mandor, _ = _create_other_branch_scope_data()
+    invoice = Invoice(
+        branch_id=branch.id,
+        invoice_number=f"T-PORTAL-OTHER-INV-{uuid4().hex[:8]}",
+        invoice_date=date.today(),
+        due_date=date.today() + timedelta(days=7),
+        bill_to_type="CLIENT",
+        client_id=client.id,
+        mandor_id=mandor.id,
+        client_name_snapshot="ZZZ Other Branch Client",
+        total_amount=990000,
+        paid_amount=0,
+        remaining_amount=990000,
+        status="OPEN",
+        created_by=user.id,
+    )
+    db.session.add(invoice)
+    db.session.flush()
+    return invoice
+
+
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -203,6 +262,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/mandors"' in html
             assert 'href="/portal/status"' in html
             assert 'href="/portal/ownership"' in html
+            assert 'href="/portal/financial"' in html
         finally:
             transaction.rollback()
 
@@ -357,6 +417,37 @@ def test_portal_ownership_analysis_is_read_only_and_branch_scoped(app):
             assert "Ownership Portal" in html
             assert "User.branch_id, User.role" in html
             assert "APPROVAL_REQUIRED" in html
+            assert 'action="/portal' not in html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_financial_visibility_is_read_only_and_branch_scoped(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            _create_financial_visibility_data(user)
+            _create_other_branch_financial_data(user)
+            financial = build_portal_financial_visibility(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/financial")
+
+            html = response.get_data(as_text=True)
+            assert financial["scope_mode"] == "ADMIN_BRANCH_FINANCIAL_PREVIEW"
+            assert financial["summary"]["invoice_count"] == 1
+            assert int(financial["summary"]["invoice_total"]) == 150000
+            assert int(financial["summary"]["invoice_paid"]) == 50000
+            assert int(financial["summary"]["invoice_remaining"]) == 100000
+            assert financial["summary"]["payment_count"] == 1
+            assert response.status_code == 200
+            assert "Financial Visibility" in html
+            assert "AAA Test Portal Client" in html
+            assert "ZZZ Other Branch Client" not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()

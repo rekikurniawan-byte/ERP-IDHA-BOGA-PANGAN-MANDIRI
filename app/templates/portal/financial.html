@@ -1,0 +1,107 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Financial Visibility</h1>
+            <p class="page-description">Ringkasan keuangan read-only dari invoice, payment, piutang, dan hutang supplier existing.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.financial.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id or '-' }}</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Invoice Aktif</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.financial.summary.invoice_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.financial.summary.invoice_total|rupiah }}</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Terbayar</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.financial.summary.invoice_paid|rupiah }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.financial.summary.payment_count }} payment</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Outstanding</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.financial.summary.invoice_remaining|rupiah }}</div>
+                        <p class="text-muted mb-0 mt-2">Piutang aktif read-only.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Hutang Supplier</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.financial.summary.open_supplier_bill_remaining|rupiah }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.financial.summary.open_supplier_bill_count }} bill terbuka.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Invoice Terbaru</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>No Invoice</th>
+                            <th>Tanggal</th>
+                            <th>Pihak</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Terbayar</th>
+                            <th>Sisa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.financial.recent_invoices %}
+                            <tr>
+                                <td>{{ row.invoice_number }}</td>
+                                <td>{{ row.invoice_date.strftime('%d-%m-%Y') if row.invoice_date else '-' }}</td>
+                                <td>{{ row.bill_to }}</td>
+                                <td><span class="status-badge neutral">{{ row.status }}</span></td>
+                                <td>{{ row.total_amount|rupiah }}</td>
+                                <td>{{ row.paid_amount|rupiah }}</td>
+                                <td>{{ row.remaining_amount|rupiah }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada invoice aktif dalam scope financial portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
