@@ -10,7 +10,6 @@ from app.services.portal_access_service import (
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
-    build_portal_procurement_visibility,
     build_portal_production_visibility,
     build_portal_status_shell,
 )
@@ -169,15 +168,3 @@ def inventory():
         "inventory": build_portal_inventory_visibility(current_user),
     }
     return render_template("portal/inventory.html", data=data)
-
-
-@portal_bp.route("/procurement")
-@role_required("ADMIN")
-def procurement():
-    data = {
-        "status_label": "Read-only",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "procurement": build_portal_procurement_visibility(current_user),
-    }
-    return render_template("portal/procurement.html", data=data)
