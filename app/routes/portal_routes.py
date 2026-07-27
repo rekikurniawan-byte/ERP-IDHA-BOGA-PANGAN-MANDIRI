@@ -5,6 +5,7 @@ from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_customer_directory,
     build_portal_mandor_directory,
+    build_portal_ownership_analysis,
     build_portal_status_shell,
 )
 from app.utils.decorators import role_required
@@ -90,3 +91,15 @@ def status():
         "status": build_portal_status_shell(current_user),
     }
     return render_template("portal/status.html", data=data)
+
+
+@portal_bp.route("/ownership")
+@role_required("ADMIN")
+def ownership():
+    data = {
+        "status_label": "Analysis only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "ownership": build_portal_ownership_analysis(current_user),
+    }
+    return render_template("portal/ownership.html", data=data)

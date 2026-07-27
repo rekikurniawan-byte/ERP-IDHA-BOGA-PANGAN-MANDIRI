@@ -1,0 +1,129 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Ownership Portal</h1>
+            <p class="page-description">Analisis read-only untuk memetakan akun eksternal ke data existing tanpa mengubah role atau schema.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.ownership.summary.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Client/PT</div>
+                    <div class="fw-semibold">{{ data.ownership.summary.clients }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Mandor</div>
+                    <div class="fw-semibold">{{ data.ownership.summary.mandors }}</div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Lokasi</div>
+                    <div class="fw-semibold">{{ data.ownership.summary.locations }}</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Client tanpa mandor</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.ownership.summary.clients_without_mandor }}</div>
+                        <p class="text-muted mb-0 mt-2">Perlu dicek sebelum memberi akses PT/client ke data mandor.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Mandor tanpa lokasi</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.ownership.summary.mandors_without_location }}</div>
+                        <p class="text-muted mb-0 mt-2">Order portal butuh lokasi valid sebelum boleh dibuat.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Relationship Existing</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Principal</th>
+                            <th>Sumber Existing</th>
+                            <th>Link Saat Ini</th>
+                            <th>Kesiapan</th>
+                            <th>Risiko</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.ownership.relationship_rows %}
+                            <tr>
+                                <td>{{ row.principal }}</td>
+                                <td>{{ row.existing_source }}</td>
+                                <td>{{ row.current_link }}</td>
+                                <td>{{ row.portal_readiness }}</td>
+                                <td>{{ row.risk }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada relationship yang dapat dianalisis.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Decision Gate</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Keputusan</th>
+                            <th>Default Aman</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.ownership.decision_rows %}
+                            <tr>
+                                <td>{{ row.decision }}</td>
+                                <td>{{ row.safe_default }}</td>
+                                <td>
+                                    {% if row.status == "APPROVAL_REQUIRED" %}
+                                        <span class="status-badge warning">{{ row.status }}</span>
+                                    {% else %}
+                                        <span class="status-badge success">{{ row.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-muted">Belum ada decision gate.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

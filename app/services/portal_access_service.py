@@ -297,3 +297,118 @@ def build_portal_status_shell(user):
         "ready_count": sum(1 for row in rows if row["availability"] == "READY"),
         "approval_required_count": sum(1 for row in rows if row["availability"] == "APPROVAL_REQUIRED"),
     }
+
+
+def build_portal_ownership_analysis(user):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "summary": {},
+            "relationship_rows": [],
+            "decision_rows": [],
+        }
+
+    queries = _scope_queries(role, branch_id)
+    client_query = queries["client_query"]
+    mandor_query = queries["mandor_query"]
+    location_query = queries["location_query"]
+    client_pic_query = queries["client_pic_query"]
+
+    scoped_mandor_client_ids = (
+        mandor_query.with_entities(Mandor.client_id)
+        .filter(Mandor.client_id.isnot(None))
+        .distinct()
+        .subquery()
+    )
+    scoped_location_mandor_ids = (
+        location_query.with_entities(DeliveryLocation.mandor_id)
+        .filter(DeliveryLocation.mandor_id.isnot(None))
+        .distinct()
+        .subquery()
+    )
+    client_count = client_query.count()
+    mandor_count = mandor_query.count()
+    client_with_mandor_count = db.session.query(func.count()).select_from(scoped_mandor_client_ids).scalar() or 0
+    mandor_with_location_count = db.session.query(func.count()).select_from(scoped_location_mandor_ids).scalar() or 0
+
+    summary = {
+        "scope_mode": queries["scope_mode"],
+        "clients": client_count,
+        "client_pics": client_pic_query.count(),
+        "mandors": mandor_count,
+        "locations": location_query.count(),
+        "clients_without_mandor": max(client_count - client_with_mandor_count, 0),
+        "mandors_without_location": max(mandor_count - mandor_with_location_count, 0),
+    }
+    relationship_rows = [
+        {
+            "principal": "Client/PT",
+            "existing_source": "clients",
+            "current_link": "Client.id -> Mandor.client_id",
+            "portal_readiness": "READ_ONLY_SOURCE",
+            "risk": "Belum ada user eksternal yang mengikat satu akun ke satu Client/PT.",
+        },
+        {
+            "principal": "Mandor",
+            "existing_source": "mandors",
+            "current_link": "Mandor.branch_id, Mandor.client_id",
+            "portal_readiness": "READ_ONLY_SOURCE",
+            "risk": "Mandor bisa menjadi pemilik portal, tetapi butuh mapping user dan aturan delegasi.",
+        },
+        {
+            "principal": "Client PIC",
+            "existing_source": "client_pics",
+            "current_link": "ClientPic.client_id",
+            "portal_readiness": "CONTACT_ONLY",
+            "risk": "PIC saat ini kontak bisnis, belum identitas login/authorization.",
+        },
+        {
+            "principal": "Delivery Location",
+            "existing_source": "delivery_locations",
+            "current_link": "DeliveryLocation.mandor_id",
+            "portal_readiness": "CHILD_SCOPE",
+            "risk": "Lokasi boleh terlihat jika mandor/client pemiliknya sudah jelas.",
+        },
+        {
+            "principal": "User internal",
+            "existing_source": "users",
+            "current_link": "User.branch_id, User.role",
+            "portal_readiness": "INTERNAL_ONLY",
+            "risk": "Model User belum punya client_id, mandor_id, atau portal principal type.",
+        },
+    ]
+    decision_rows = [
+        {
+            "decision": "Principal type eksternal",
+            "safe_default": "PT, Mandor, Pelanggan Umum, Delegate harus dipilih eksplisit.",
+            "status": "APPROVAL_REQUIRED",
+        },
+        {
+            "decision": "Mapping user ke owner data",
+            "safe_default": "Tambahkan mapping additive setelah desain disetujui; jangan memakai branch_id saja.",
+            "status": "APPROVAL_REQUIRED",
+        },
+        {
+            "decision": "Data yang boleh dibaca",
+            "safe_default": "Mulai dari master read-only, bukan order/invoice/payment.",
+            "status": "READY_FOR_READ_ONLY",
+        },
+        {
+            "decision": "Mutasi portal",
+            "safe_default": "Tetap OFF sampai order/payment ownership test tersedia.",
+            "status": "APPROVAL_REQUIRED",
+        },
+    ]
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "summary": summary,
+        "relationship_rows": relationship_rows,
+        "decision_rows": decision_rows,
+    }

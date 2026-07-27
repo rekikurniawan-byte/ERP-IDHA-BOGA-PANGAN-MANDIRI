@@ -4,7 +4,11 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
-from app.services.portal_access_service import build_portal_access_scope, build_portal_status_shell
+from app.services.portal_access_service import (
+    build_portal_access_scope,
+    build_portal_ownership_analysis,
+    build_portal_status_shell,
+)
 
 
 def _create_test_user(role="OWNER"):
@@ -198,6 +202,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/customers"' in html
             assert 'href="/portal/mandors"' in html
             assert 'href="/portal/status"' in html
+            assert 'href="/portal/ownership"' in html
         finally:
             transaction.rollback()
 
@@ -323,6 +328,35 @@ def test_portal_status_shell_is_read_only_and_shows_approval_gates(app):
             assert "Akun eksternal Client/PT/Mandor" in html
             assert "Draft order portal" in html
             assert "Invoice/payment portal" in html
+            assert 'action="/portal' not in html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_ownership_analysis_is_read_only_and_branch_scoped(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            _create_scope_master_data(user)
+            _create_other_branch_scope_data()
+            analysis = build_portal_ownership_analysis(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/ownership")
+
+            html = response.get_data(as_text=True)
+            assert analysis["summary"]["scope_mode"] == "ADMIN_BRANCH_PREVIEW"
+            assert analysis["summary"]["clients"] == 1
+            assert analysis["summary"]["mandors"] == 1
+            assert analysis["summary"]["locations"] == 1
+            assert response.status_code == 200
+            assert "Ownership Portal" in html
+            assert "User.branch_id, User.role" in html
+            assert "APPROVAL_REQUIRED" in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()
