@@ -6,8 +6,11 @@ recovery/backup signal, dan link detail. Service ini read-only dan tidak
 melakukan commit/flush/mutation database.
 """
 from __future__ import annotations
+import logging
 
 from typing import Any, Dict, Iterable, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 APP_VERSION = "PRODUCTION"
@@ -18,6 +21,7 @@ def _num(value: Any) -> float:
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_command_center_service.py:20")
         return 0.0
 
 
@@ -25,6 +29,7 @@ def _int(value: Any) -> int:
     try:
         return int(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_command_center_service.py:27")
         return 0
 
 
@@ -96,6 +101,7 @@ def _backup_signal() -> Dict[str, Any]:
             "message": "Backup verified tersedia." if latest_verified else "Buat full backup verified sebelum patch besar.",
         }
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_command_center_service.py:98")
         return {
             "status": "WARNING",
             "label": "PERLU CEK",

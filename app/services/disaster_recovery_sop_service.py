@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +15,8 @@ from app.services.backup_service import (
     get_digital_attachment_upload_dir,
 )
 
+logger = logging.getLogger(__name__)
+
 
 APP_VERSION = "PRODUCTION"
 DISASTER_RECOVERY_SOP_VERSION = "PRODUCTION_DISASTER_RECOVERY_SOP_V1"
@@ -25,6 +28,7 @@ def _safe_path(fn, fallback: str = "-") -> str:
     try:
         return str(fn())
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/disaster_recovery_sop_service.py:27")
         return fallback
 
 
@@ -38,6 +42,7 @@ def _db_snapshot() -> Dict[str, object]:
             "sha256": calculate_sha256(db_path) if db_path.exists() else "-",
         }
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/disaster_recovery_sop_service.py:40")
         return {"path": "-", "exists": False, "size_bytes": 0, "sha256": "-", "error": str(exc)}
 
 

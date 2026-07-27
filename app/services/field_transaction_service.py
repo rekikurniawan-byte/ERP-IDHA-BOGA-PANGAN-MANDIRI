@@ -26,6 +26,7 @@ from app.services.business_logic_guard_service import BusinessRuleError, assert_
 from app.services.field_transaction_policy_service import (
     FieldTransactionPolicyError,
     ensure_field_transaction_event_ui_ready,
+    get_field_transaction_event_policy,
     resolve_policy_defaults,
     validate_field_transaction_event_payload,
 )

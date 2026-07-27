@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import csv
 from datetime import date, datetime
@@ -24,6 +25,8 @@ from app.models.finance import (
 from app.models.logistics import Procurement
 from app.models.master import Client, Mandor, Supplier
 from app.services.digital_attachment_service import count_reference_attachments
+
+logger = logging.getLogger(__name__)
 
 CUSTOMER_PAYMENT_ATTACHMENT_MODULE = "CUSTOMER_PAYMENT"
 CUSTOMER_PAYMENT_ATTACHMENT_REFERENCE = "PAYMENT"
@@ -241,6 +244,7 @@ def _parse_date(value: Optional[str]) -> Optional[date]:
     try:
         return datetime.strptime(str(value).strip(), "%Y-%m-%d").date()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/finance_export_service.py:243")
         return None
 
 
@@ -460,6 +464,7 @@ def _receivable_stage(invoice: Invoice) -> Dict[str, Any]:
         from app.routes.finance_routes import build_invoice_ar_warning
         return build_invoice_ar_warning(invoice) or {}
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/finance_export_service.py:462")
         today = date.today()
         remaining = _money_float(getattr(invoice, "remaining_amount", 0))
         due_date = getattr(invoice, "due_date", None)
@@ -752,6 +757,207 @@ def build_receivables_statement_export_response(branch_id: int, args: Mapping[st
             "Status Follow Up Terakhir",
             "Contact Person",
             "Next Action",
+        ],
+        rows=rows,
+    )
+
+
+def build_supplier_bills_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
+    from app.services.accounts_payable_service import supplier_bill_aging_stage
+
+    selected_filter = str(args.get("filter") or "OPEN").strip().upper()
+    if selected_filter not in {"OPEN", "OVERDUE", "DUE_SOON", "ALL", "PAID"}:
+        selected_filter = "OPEN"
+    start_date = _parse_date(args.get("start_date"))
+    end_date = _parse_date(args.get("end_date"))
+
+    query = SupplierBill.query.filter(SupplierBill.branch_id == branch_id)
+    if start_date:
+        query = query.filter(SupplierBill.due_date >= start_date)
+    if end_date:
+        query = query.filter(SupplierBill.due_date <= end_date)
+
+    rows: List[List[Any]] = []
+    today = date.today()
+    for bill in query.order_by(SupplierBill.due_date.asc(), SupplierBill.id.desc()).all():
+        aging = supplier_bill_aging_stage(bill, today)
+        stage = aging.get("stage") or "-"
+        if selected_filter == "OPEN" and stage == "PAID":
+            continue
+        if selected_filter not in {"ALL", "OPEN"} and selected_filter != stage:
+            continue
+
+        procurement = getattr(bill, "procurement", None)
+        rows.append([
+            bill.bill_number,
+            bill.supplier_name,
+            bill.bill_date,
+            bill.due_date,
+            bill.total_amount or 0,
+            bill.paid_amount or 0,
+            bill.remaining_amount or 0,
+            bill.status or "-",
+            stage,
+            aging.get("label") or "-",
+            getattr(procurement, "procurement_number", "") if procurement else "",
+            getattr(procurement, "purchase_place", "") if procurement else "",
+            bill.notes or "",
+            bill.created_at,
+        ])
+
+    return make_csv_response(
+        filename=f"finance_supplier_bills_{_today_suffix()}.csv",
+        headers=[
+            "Nomor Bill",
+            "Supplier",
+            "Tanggal Bill",
+            "Jatuh Tempo",
+            "Total",
+            "Dibayar",
+            "Sisa Hutang",
+            "Status",
+            "Stage",
+            "Label Aging",
+            "Nomor Procurement",
+            "Tempat Beli",
+            "Catatan",
+            "Dibuat Pada",
+        ],
+        rows=rows,
+    )
+
+
+def build_ap_aging_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
+    from app.services.accounts_payable_report_service import build_ap_aging_report
+
+    as_of_date = _parse_date(args.get("as_of_date")) or date.today()
+    supplier_id = None
+    supplier_id_raw = str(args.get("supplier_id") or "").strip()
+    if supplier_id_raw:
+        try:
+            supplier_id = int(supplier_id_raw)
+        except (TypeError, ValueError):
+            supplier_id = None
+
+    report = build_ap_aging_report(branch_id=branch_id, as_of_date=as_of_date, supplier_id=supplier_id)
+    rows = []
+    for row in report.get("rows", []):
+        bill = row.get("bill")
+        procurement = row.get("procurement")
+        bucket = row.get("bucket") or {}
+        rows.append([
+            row.get("supplier_name") or "-",
+            getattr(bill, "bill_number", "-"),
+            getattr(bill, "bill_date", ""),
+            getattr(bill, "due_date", ""),
+            row.get("remaining") or 0,
+            bucket.get("key") or "-",
+            bucket.get("label") or "-",
+            bucket.get("days_overdue") or 0,
+            getattr(procurement, "procurement_number", "") if procurement else "",
+        ])
+
+    return make_csv_response(
+        filename=f"finance_accounts_payable_aging_{_today_suffix()}.csv",
+        headers=[
+            "Supplier",
+            "Nomor Bill",
+            "Tanggal Bill",
+            "Jatuh Tempo",
+            "Sisa Hutang",
+            "Bucket",
+            "Label Bucket",
+            "Hari Overdue",
+            "Nomor Procurement",
+        ],
+        rows=rows,
+    )
+
+
+def build_supplier_payable_card_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
+    from app.services.accounts_payable_report_service import build_supplier_payable_card
+
+    report = build_supplier_payable_card(
+        branch_id=branch_id,
+        supplier_key=(str(args.get("supplier_key") or "").strip() or None),
+        start_date=_parse_date(args.get("start_date")),
+        end_date=_parse_date(args.get("end_date")),
+    )
+    selected_group = report.get("selected_group") or {}
+    rows = []
+    for activity in report.get("activities", []):
+        bill = activity.get("bill")
+        payment = activity.get("payment")
+        rows.append([
+            selected_group.get("supplier_name") or "-",
+            activity.get("date"),
+            activity.get("kind") or "-",
+            activity.get("description") or "",
+            getattr(bill, "bill_number", "") if bill else "",
+            getattr(payment, "payment_number", "") if payment else "",
+            activity.get("debit") or 0,
+            activity.get("credit") or 0,
+            activity.get("running_balance") or 0,
+        ])
+
+    return make_csv_response(
+        filename=f"finance_supplier_payable_card_{_today_suffix()}.csv",
+        headers=[
+            "Supplier",
+            "Tanggal",
+            "Jenis",
+            "Deskripsi",
+            "Nomor Bill",
+            "Nomor Payment",
+            "Debit / Bill",
+            "Credit / Payment",
+            "Saldo Berjalan",
+        ],
+        rows=rows,
+    )
+
+
+def build_invoice_profit_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
+    from app.services.invoice_profit_service import build_invoice_profit_report_index
+
+    report_index = build_invoice_profit_report_index(
+        branch_id=branch_id,
+        start_date=_parse_date(args.get("start_date")),
+        end_date=_parse_date(args.get("end_date")),
+    )
+
+    rows = []
+    for row in report_index.get("rows", []):
+        invoice = row.get("invoice")
+        summary = row.get("summary") or {}
+        rows.append([
+            getattr(invoice, "invoice_number", "-"),
+            getattr(invoice, "invoice_date", ""),
+            getattr(invoice, "total_amount", 0),
+            summary.get("costed_revenue_total") or 0,
+            summary.get("hpp_total") or 0,
+            summary.get("gross_profit_total") or 0,
+            summary.get("gross_margin_percentage") or 0,
+            summary.get("coverage_percentage") or 0,
+            summary.get("no_hpp_revenue_total") or 0,
+            summary.get("excluded_revenue_total") or 0,
+            getattr(invoice, "status", "-"),
+        ])
+
+    return make_csv_response(
+        filename=f"finance_invoice_profit_report_{_today_suffix()}.csv",
+        headers=[
+            "Nomor Invoice",
+            "Tanggal Invoice",
+            "Total Invoice",
+            "Revenue Dengan HPP",
+            "Total HPP",
+            "Gross Profit",
+            "Gross Margin %",
+            "Coverage HPP %",
+            "Revenue Tanpa HPP",
+            "Revenue Dikecualikan",
+            "Status",
         ],
         rows=rows,
     )

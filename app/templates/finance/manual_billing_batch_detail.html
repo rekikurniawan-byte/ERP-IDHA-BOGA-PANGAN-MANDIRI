@@ -31,6 +31,7 @@
             <form method="POST"
                   action="{{ url_for('finance.lock_manual_billing_batch_route', batch_id=batch.id) }}" data-app-confirm="Kunci rekap ini? Setelah dikunci, data menjadi dasar tagihan dan tidak boleh diubah sembarangan.">
                 {% include "components/csrf_token.html" %}
+                <input type="hidden" name="idempotency_key" value="{{ lock_idempotency_key }}">
                 <button type="submit" class="btn app-btn-primary">
                     <i class="bi bi-lock"></i>
                     Kunci Rekap
@@ -41,6 +42,7 @@
             <form method="POST"
                   action="{{ url_for('finance.create_manual_backfill_invoice_route', batch_id=batch.id) }}" data-app-confirm="Buat invoice dan piutang dari rekap terkunci ini? Data tidak akan dianggap sebagai pembayaran tunai.">
                 {% include "components/csrf_token.html" %}
+                <input type="hidden" name="idempotency_key" value="{{ create_invoice_idempotency_key }}">
                 <button type="submit" class="btn app-btn-primary">
                     <i class="bi bi-receipt-cutoff"></i>
                     Buat Invoice / Piutang
@@ -51,6 +53,7 @@
             <form method="POST"
                   action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}" data-app-confirm="Batalkan rekap manual ini sebelum invoice/piutang dibuat? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
                 {% include "components/csrf_token.html" %}
+                <input type="text" name="void_reason" class="form-control app-input mb-2" placeholder="Alasan void" required>
                 <button type="submit" class="btn app-btn-danger">
                     <i class="bi bi-x-octagon"></i>
                     Void Rekap
@@ -155,6 +158,7 @@
                               action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}"
                               data-app-confirm="Batalkan rekap manual ini? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
                             {% include "components/csrf_token.html" %}
+                            <input type="text" name="void_reason" class="form-control app-input mb-2" placeholder="Alasan void" required>
                             <button type="submit" class="btn app-btn-danger">
                                 <i class="bi bi-x-octagon"></i>
                                 Batalkan Rekap Ini
@@ -169,6 +173,7 @@
                               action="{{ url_for('finance.void_manual_billing_batch_route', batch_id=batch.id) }}"
                               data-app-confirm="Batalkan rekap manual ini? Data tidak dihapus, hanya diberi status VOID agar jejak audit tetap ada.">
                             {% include "components/csrf_token.html" %}
+                            <input type="text" name="void_reason" class="form-control app-input mb-2" placeholder="Alasan void" required>
                             <button type="submit" class="btn app-btn-danger">
                                 <i class="bi bi-x-octagon"></i>
                                 Batalkan Rekap Ini

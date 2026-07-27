@@ -103,6 +103,7 @@
     <form method="POST" action="{{ url_for('logistics.fulfill_item_request', request_id=item_request.id) }}"
           class="mt-3 app-form" data-app-confirm="Penuhi permintaan ini? Setelah dipenuhi, stok akan berkurang." data-ui-form="true">
         {% include "components/csrf_token.html" %}
+        <input type="hidden" name="idempotency_key" value="{{ fulfill_idempotency_key }}">
         <label class="form-label app-label">Catatan Pemenuhan</label>
         <textarea name="fulfill_note" class="form-control app-input" rows="2"
                   placeholder="Opsional, contoh: barang sudah diberikan ke dapur sore"></textarea>

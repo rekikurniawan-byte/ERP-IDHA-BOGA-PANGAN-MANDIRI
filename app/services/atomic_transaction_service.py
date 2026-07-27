@@ -4,6 +4,7 @@ Satu aksi bisnis kritis harus punya satu boundary commit/rollback. Service ini
 sengaja reusable dan ringan agar bisa dipasang bertahap per modul tanpa migration.
 """
 from __future__ import annotations
+import logging
 
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -13,6 +14,8 @@ from sqlalchemy.exc import InvalidRequestError
 
 from app.extensions import db
 from app.services.audit_log_service import record_critical_audit_log
+
+logger = logging.getLogger(__name__)
 
 
 APP_VERSION = "PRODUCTION"
@@ -79,6 +82,7 @@ class AtomicBusinessAction(AbstractContextManager):
         try:
             return db.session()
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:81")
             return db.session
 
     def _session_in_transaction(self) -> bool:
@@ -86,9 +90,11 @@ class AtomicBusinessAction(AbstractContextManager):
         try:
             return bool(session.in_transaction())
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:88")
             try:
                 return session.get_transaction() is not None
             except Exception:
+                logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:91")
                 return False
 
     def __enter__(self):
@@ -121,6 +127,7 @@ class AtomicBusinessAction(AbstractContextManager):
         try:
             path = Path(file_path).resolve()
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:123")
             return
         if path not in self._rollback_files:
             self._rollback_files.append(path)
@@ -139,6 +146,7 @@ class AtomicBusinessAction(AbstractContextManager):
                 if upload_root in candidate.parents or candidate == upload_root:
                     self.register_rollback_file(candidate)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:141")
             return
 
     def _cleanup_rollback_files(self) -> list[str]:
@@ -151,6 +159,7 @@ class AtomicBusinessAction(AbstractContextManager):
             except Exception:
                 # Cleanup failure is reported in audit metadata but should not
                 # hide the original business exception.
+                logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:151")
                 continue
         return cleaned
 

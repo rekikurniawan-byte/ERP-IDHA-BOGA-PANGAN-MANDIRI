@@ -148,6 +148,7 @@
         </div>
         <form method="POST" action="{{ url_for('accounting.post_period_closing_route') }}" class="app-form" data-ui-form="true">
             {% include "components/csrf_token.html" %}
+            <input type="hidden" name="idempotency_key" value="{{ post_idempotency_key }}">
             <input type="hidden" name="year" value="{{ preview.year }}">
             <input type="hidden" name="month" value="{{ preview.month }}">
             <div class="row g-3">

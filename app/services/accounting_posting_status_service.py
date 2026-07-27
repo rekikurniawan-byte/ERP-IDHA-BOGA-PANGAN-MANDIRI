@@ -5,6 +5,7 @@ have accounting journals, which ones still need posting, and which ones are
 intentionally ledger-only/non-journal events.
 """
 from __future__ import annotations
+import logging
 
 from collections import Counter
 from datetime import date
@@ -17,6 +18,8 @@ from app.models.accounting import FixedAssetDepreciation, Journal
 from app.models.finance import CashBankTransaction, Invoice, Payment
 from app.models.hr import Payroll
 from app.models.logistics import Procurement, StockMovement
+
+logger = logging.getLogger(__name__)
 
 
 POSTED = "POSTED"
@@ -63,6 +66,7 @@ def _money(value: Any) -> float:
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:65")
         return 0.0
 
 
@@ -91,6 +95,7 @@ def _status(status_key: str, reason: str = "", journal: Journal | None = None) -
         try:
             journal_url = url_for("accounting.journal_detail", journal_id=journal.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:93")
             journal_url = None
     return {
         "key": status_key,
@@ -237,6 +242,7 @@ def _invoice_rows(branch_id: int) -> list[dict[str, Any]]:
         try:
             detail_url = url_for("finance.invoice_detail", invoice_id=invoice.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:239")
             detail_url = None
         rows.append(_row(
             source_type="INVOICE",
@@ -267,6 +273,7 @@ def _payment_rows(branch_id: int) -> list[dict[str, Any]]:
         try:
             detail_url = url_for("finance.invoice_detail", invoice_id=payment.invoice_id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:269")
             detail_url = None
         rows.append(_row(
             source_type="PAYMENT",
@@ -297,6 +304,7 @@ def _procurement_rows(branch_id: int) -> list[dict[str, Any]]:
         try:
             detail_url = url_for("logistics.purchase_detail", procurement_id=procurement.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:299")
             detail_url = None
         rows.append(_row(
             source_type="PROCUREMENT",
@@ -364,6 +372,7 @@ def _payroll_rows(branch_id: int) -> tuple[list[dict[str, Any]], list[dict[str, 
         try:
             detail_url = url_for("hr.payroll_detail", payroll_id=payroll.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_posting_status_service.py:366")
             detail_url = None
 
         accrual_rows.append(_row(

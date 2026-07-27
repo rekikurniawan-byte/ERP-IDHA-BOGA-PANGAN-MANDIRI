@@ -379,6 +379,15 @@
                             </a>
                         {% endif %}
 
+                        {% if role in ["OWNER", "LOGISTICS"] %}
+                            <a href="{{ url_for('logistics.stock_opening_balances') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.stock_opening_balances' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'logistics.stock_opening_balances' else 'false' }}">
+                                <i class="bi bi-clipboard-data"></i>
+                                <span>Saldo Awal Stok</span>
+                            </a>
+                        {% endif %}
+
                         <a href="{{ url_for('logistics.material_forecast') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_material_forecast else '' }}"
                            aria-current="{{ 'page' if is_material_forecast else 'false' }}">
@@ -714,10 +723,13 @@
                 </div>
             </details>
 
-            <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link-danger sidebar-logout-link">
+            <form method="POST" action="{{ url_for('auth.logout') }}" class="m-0">
+                {% include "components/csrf_token.html" %}
+                <button type="submit" class="sidebar-link sidebar-link-danger sidebar-logout-link w-100">
                 <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
                 <span>Logout</span>
-            </a>
+                </button>
+            </form>
         </div>
     </nav>
 </aside>

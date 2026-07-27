@@ -1,14 +1,26 @@
+import logging
 from app.extensions import db
 from app.models.finance import BankAccount, CashBankTransaction, Invoice, SupplierBill
 
+logger = logging.getLogger(__name__)
+
 
 CUSTOMER_PAYMENT_REFERENCE_TYPE = "PAYMENT"
+
+
+def _commit_or_rollback():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
 
 
 def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/cash_bank_service.py:19")
         return "Rp 0"
 
 
@@ -86,7 +98,7 @@ def create_customer_payment_cash_bank_transaction(payment, created_by, commit=Fa
     db.session.add(transaction)
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
     return True, "Ledger kas/bank payment berhasil dibuat.", transaction
 
@@ -167,7 +179,7 @@ def create_procurement_cash_bank_transaction(procurement, created_by, account_ty
     db.session.add(transaction)
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
     return True, "Ledger kas/bank pembelian tunai berhasil dibuat.", transaction
 
@@ -248,7 +260,7 @@ def create_supplier_payment_cash_bank_transaction(supplier_payment, created_by, 
     db.session.add(transaction)
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
     return True, "Ledger kas/bank pembayaran supplier berhasil dibuat.", transaction
 
@@ -398,8 +410,32 @@ def create_opening_balance(account_type, bank_account_id, opening_date, amount, 
     opening.ledger_transaction_id = transaction.id
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
+    return opening, transaction
+
+
+def create_opening_balance_record(
+    *,
+    account_type,
+    bank_account_id,
+    opening_date,
+    amount,
+    created_by,
+    branch_id,
+    notes=None,
+):
+    opening, transaction = create_opening_balance(
+        account_type=account_type,
+        bank_account_id=bank_account_id,
+        opening_date=opening_date,
+        amount=amount,
+        created_by=created_by,
+        branch_id=branch_id,
+        notes=notes,
+        commit=False,
+    )
+    _commit_or_rollback()
     return opening, transaction
 
 
@@ -481,8 +517,38 @@ def create_cash_bank_transfer(transfer_date, from_account_type, from_bank_accoun
     db.session.add(in_transaction)
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
+    return transfer, out_transaction, in_transaction
+
+
+def create_cash_bank_transfer_record(
+    *,
+    transfer_date,
+    from_account_type,
+    from_bank_account_id,
+    to_account_type,
+    to_bank_account_id,
+    amount,
+    created_by,
+    branch_id,
+    reference_number=None,
+    notes=None,
+):
+    transfer, out_transaction, in_transaction = create_cash_bank_transfer(
+        transfer_date=transfer_date,
+        from_account_type=from_account_type,
+        from_bank_account_id=from_bank_account_id,
+        to_account_type=to_account_type,
+        to_bank_account_id=to_bank_account_id,
+        amount=amount,
+        created_by=created_by,
+        branch_id=branch_id,
+        reference_number=reference_number,
+        notes=notes,
+        commit=False,
+    )
+    _commit_or_rollback()
     return transfer, out_transaction, in_transaction
 
 
@@ -551,8 +617,36 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
     adjustment.ledger_transaction_id = transaction.id
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
+    return adjustment, transaction
+
+
+def create_cash_bank_adjustment_record(
+    *,
+    adjustment_date,
+    account_type,
+    bank_account_id,
+    adjustment_type,
+    amount,
+    reason,
+    created_by,
+    branch_id,
+    notes=None,
+):
+    adjustment, transaction = create_cash_bank_adjustment(
+        adjustment_date=adjustment_date,
+        account_type=account_type,
+        bank_account_id=bank_account_id,
+        adjustment_type=adjustment_type,
+        amount=amount,
+        reason=reason,
+        created_by=created_by,
+        branch_id=branch_id,
+        notes=notes,
+        commit=False,
+    )
+    _commit_or_rollback()
     return adjustment, transaction
 
 
@@ -568,8 +662,19 @@ def reconcile_cash_bank_transaction(transaction, reconciled_by, note=None, commi
     transaction.reconciliation_note = note
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
+    return transaction
+
+
+def reconcile_cash_bank_transaction_record(transaction, *, reconciled_by, note=None):
+    transaction = reconcile_cash_bank_transaction(
+        transaction,
+        reconciled_by=reconciled_by,
+        note=note,
+        commit=False,
+    )
+    _commit_or_rollback()
     return transaction
 
 
@@ -583,6 +688,12 @@ def unreconcile_cash_bank_transaction(transaction, commit=False):
     transaction.reconciliation_note = None
 
     if commit:
-        db.session.commit()
+        _commit_or_rollback()
 
+    return transaction
+
+
+def unreconcile_cash_bank_transaction_record(transaction):
+    transaction = unreconcile_cash_bank_transaction(transaction, commit=False)
+    _commit_or_rollback()
     return transaction

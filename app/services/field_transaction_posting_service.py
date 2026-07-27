@@ -1,3 +1,4 @@
+import logging
 import json
 from datetime import datetime
 
@@ -14,6 +15,8 @@ from app.services.field_transaction_policy_service import (
     resolve_event_account_map,
 )
 
+logger = logging.getLogger(__name__)
+
 
 FIELD_TRANSACTION_REFERENCE_TYPE = "FIELD_TRANSACTION"
 
@@ -26,6 +29,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/field_transaction_posting_service.py:28")
         return "Rp 0"
 
 

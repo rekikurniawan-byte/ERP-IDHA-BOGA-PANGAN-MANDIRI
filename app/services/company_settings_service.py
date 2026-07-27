@@ -1,5 +1,6 @@
 from app.extensions import db
 from app.models.master import Branch, BranchSetting
+from app.services.ttl_cache_service import clear_cache
 
 
 COMPANY_SETTINGS_SECTIONS = [
@@ -142,4 +143,5 @@ def save_company_settings(branch_id, form_data):
         saved_keys.append(key)
 
     db.session.commit()
+    clear_cache("company_settings")
     return saved_keys

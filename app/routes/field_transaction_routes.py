@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime
 from types import SimpleNamespace
 
@@ -60,6 +61,8 @@ from app.services.manual_billing_service import (
 )
 from app.utils.decorators import role_required
 
+logger = logging.getLogger(__name__)
+
 
 field_transaction_bp = Blueprint(
     "field_transactions",
@@ -111,6 +114,7 @@ def _to_int(value):
     try:
         return int(value) if value not in (None, "") else None
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:113")
         return None
 
 
@@ -323,6 +327,7 @@ def _build_attachment_ui_state(attachment_link):
         availability = "READY"
         helper = "Lihat membuka tab baru. Unduh menyimpan file asli ke browser."
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:325")
         availability = "MISSING"
         can_view = False
         helper = f"File fisik tidak ditemukan: {exc}"
@@ -399,6 +404,7 @@ def create():
         try:
             defaults = resolve_policy_defaults(event_type)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:401")
             pass
         form_data = dict(request.form)
 
@@ -458,6 +464,7 @@ def create():
         except FieldTransactionValidationError as exc:
             flash(str(exc), "warning")
         except Exception as exc:
+            logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:460")
             flash(f"Gagal membuat transaksi lapangan: {exc}", "danger")
 
     return render_template(
@@ -496,6 +503,7 @@ def edit(transaction_id):
         try:
             defaults = resolve_policy_defaults(event_type)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:498")
             pass
         form_data = dict(request.form)
 
@@ -553,6 +561,7 @@ def edit(transaction_id):
         except FieldTransactionValidationError as exc:
             flash(str(exc), "warning")
         except Exception as exc:
+            logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:555")
             flash(f"Gagal memperbarui draft transaksi lapangan: {exc}", "danger")
 
     return render_template(
@@ -672,6 +681,7 @@ def link_attachment(transaction_id):
     except FieldTransactionValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:674")
         flash(f"Gagal menautkan lampiran transaksi lapangan: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -691,6 +701,7 @@ def verify_attachment(attachment_id):
     except FieldTransactionValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:693")
         flash(f"Gagal memverifikasi lampiran transaksi lapangan: {exc}", "danger")
     return redirect(
         url_for(
@@ -710,7 +721,17 @@ def download_attachment(attachment_id):
 
     try:
         file_path = get_attachment_file_path(digital_attachment)
+    except FileNotFoundError as exc:
+        logger.warning("File lampiran transaksi lapangan hilang: attachment_id=%s", attachment_id)
+        flash(f"File lampiran transaksi lapangan tidak ditemukan: {exc}", "warning")
+        return redirect(
+            url_for(
+                "field_transactions.detail",
+                transaction_id=attachment_link.field_transaction_id,
+            )
+        )
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:713")
         flash(f"File lampiran transaksi lapangan tidak bisa diunduh: {exc}", "danger")
         return redirect(
             url_for(
@@ -742,7 +763,17 @@ def view_attachment(attachment_id):
 
     try:
         file_path = get_attachment_file_path(digital_attachment)
+    except FileNotFoundError as exc:
+        logger.warning("File lampiran transaksi lapangan hilang: attachment_id=%s", attachment_id)
+        flash(f"File lampiran transaksi lapangan tidak ditemukan: {exc}", "warning")
+        return redirect(
+            url_for(
+                "field_transactions.detail",
+                transaction_id=attachment_link.field_transaction_id,
+            )
+        )
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:745")
         flash(f"File lampiran transaksi lapangan tidak bisa dibuka: {exc}", "danger")
         return redirect(
             url_for(
@@ -783,6 +814,7 @@ def update_review_status(transaction_id):
     except FieldTransactionValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:785")
         flash(f"Gagal memperbarui status review: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -804,6 +836,7 @@ def post(transaction_id):
     except FieldTransactionPostingError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:806")
         flash(f"Gagal melakukan posting transaksi lapangan: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -831,6 +864,7 @@ def create_manual_receivable_doc(transaction_id):
     except FieldTransactionSettlementError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:833")
         flash(f"Gagal membuat piutang manual: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -858,6 +892,7 @@ def create_manual_payable_doc(transaction_id):
     except FieldTransactionSettlementError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:860")
         flash(f"Gagal membuat hutang manual: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -906,6 +941,7 @@ def create_manual_receivable_payment(receivable_id):
     except FieldTransactionSettlementError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:908")
         flash(f"Gagal mencatat pembayaran piutang manual: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=receivable.field_transaction_id))
 
@@ -942,6 +978,7 @@ def create_manual_payable_payment(payable_id):
     except FieldTransactionSettlementError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:944")
         flash(f"Gagal mencatat pembayaran hutang manual: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=payable.field_transaction_id))
 
@@ -974,6 +1011,7 @@ def bridge_operational_expense(transaction_id):
     except FieldTransactionBridgeError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:976")
         flash(f"Gagal bridge ke biaya operasional: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -1008,6 +1046,7 @@ def bridge_transport_expense(transaction_id):
     except FieldTransactionBridgeError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:1010")
         flash(f"Gagal bridge ke biaya transport/BBM: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))
 
@@ -1036,5 +1075,6 @@ def bridge_advance(transaction_id):
     except FieldTransactionBridgeError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:1038")
         flash(f"Gagal bridge ke advance mandor: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))

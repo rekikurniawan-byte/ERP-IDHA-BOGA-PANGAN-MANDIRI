@@ -360,7 +360,7 @@ def _stock_rows(branch_id):
             item=f"{item.item_code} - {item.item_name}",
             expected=f"> {_qty(minimum_stock)} {item.unit}",
             actual=f"{_qty(stock_qty)} {item.unit}",
-            difference=f"{_qty(stock_qty - minimum_stock)} {item.unit}",
+            difference=f"{_qty(_float(stock_qty) - minimum_stock)} {item.unit}",
             note=note,
         ))
 

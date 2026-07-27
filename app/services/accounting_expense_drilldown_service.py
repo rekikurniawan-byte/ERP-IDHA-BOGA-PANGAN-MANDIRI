@@ -5,6 +5,7 @@ The report intentionally uses posted JournalDetail rows as the source of truth,
 then compares them with operational sources that can still affect precision.
 """
 from __future__ import annotations
+import logging
 
 from collections import defaultdict
 from datetime import date
@@ -16,6 +17,8 @@ from app.extensions import db
 from app.models.accounting import Account, FixedAssetDepreciation, Journal, JournalDetail
 from app.models.finance import OperationalExpense, TransportVehicleExpense
 from app.services.accounting_posting_status_service import build_accounting_posting_status_report
+
+logger = logging.getLogger(__name__)
 
 EXPENSE_ACCOUNT_TYPES = ["EXPENSE", "COGS", "COST", "HPP"]
 
@@ -83,6 +86,7 @@ def _money(value: Any) -> float:
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounting_expense_drilldown_service.py:85")
         return 0.0
 
 
@@ -146,6 +150,7 @@ def _journal_url(journal: Journal | None) -> str | None:
     try:
         return url_for("accounting.journal_detail", journal_id=journal.id)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounting_expense_drilldown_service.py:148")
         return None
 
 
@@ -267,6 +272,7 @@ def _direct_expense_precision_rows(branch_id: int, start_date: date, end_date: d
         try:
             detail_url = url_for("finance.operational_expense_detail", expense_id=expense.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_expense_drilldown_service.py:269")
             detail_url = None
         rows.append(_source_row(
             label="Biaya Operasional",
@@ -299,6 +305,7 @@ def _direct_expense_precision_rows(branch_id: int, start_date: date, end_date: d
         try:
             detail_url = url_for("finance.transport_expense_detail", expense_id=expense.id)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/accounting_expense_drilldown_service.py:301")
             detail_url = None
         rows.append(_source_row(
             label="Transport / BBM",

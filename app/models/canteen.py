@@ -8,7 +8,7 @@ class CanteenSale(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     sale_date = db.Column(db.Date, nullable=False, index=True)
     sale_type = db.Column(db.String(20), nullable=False)
-    total_amount = db.Column(db.Float, nullable=False, default=0)
+    total_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
 
     # PRODUCTION — payment method + buyer foundation.
     # sale_type tetap dipertahankan untuk kompatibilitas laporan lama:
@@ -38,8 +38,8 @@ class CanteenSaleItem(BaseModel):
     sale_id = db.Column(db.Integer, db.ForeignKey("canteen_sales.id"), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
     qty = db.Column(db.Integer, nullable=False, default=0)
-    price = db.Column(db.Float, nullable=False, default=0)
-    subtotal = db.Column(db.Float, nullable=False, default=0)
+    price = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    subtotal = db.Column(db.Numeric(18, 2), nullable=False, default=0)
 
     item = db.relationship("Item", lazy=True)
 
@@ -50,7 +50,7 @@ class WorkerDebt(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
     sale_id = db.Column(db.Integer, db.ForeignKey("canteen_sales.id"), nullable=False)
-    debt_amount = db.Column(db.Float, nullable=False, default=0)
+    debt_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     status = db.Column(db.String(20), nullable=False, default="UNPAID")
 
     worker = db.relationship("Worker", lazy=True)
@@ -62,7 +62,7 @@ class DebtPayment(BaseModel):
 
     worker_debt_id = db.Column(db.Integer, db.ForeignKey("worker_debts.id"), nullable=False)
     payment_date = db.Column(db.Date, nullable=False, index=True)
-    amount = db.Column(db.Float, nullable=False, default=0)
+    amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     payment_method = db.Column(db.String(30), nullable=False, default="CASH", index=True)
     cash_bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_accounts.id"), nullable=True)
     payment_reference = db.Column(db.String(120), nullable=True)
@@ -83,9 +83,9 @@ class CanteenExternalReceivable(BaseModel):
     buyer_name = db.Column(db.String(150), nullable=False)
     buyer_company = db.Column(db.String(150), nullable=True)
     buyer_phone = db.Column(db.String(50), nullable=True)
-    receivable_amount = db.Column(db.Float, nullable=False, default=0)
-    paid_amount = db.Column(db.Float, nullable=False, default=0)
-    remaining_amount = db.Column(db.Float, nullable=False, default=0)
+    receivable_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    paid_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    remaining_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     status = db.Column(db.String(20), nullable=False, default="UNPAID", index=True)
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
@@ -98,7 +98,7 @@ class CanteenExternalReceivablePayment(BaseModel):
 
     receivable_id = db.Column(db.Integer, db.ForeignKey("canteen_external_receivables.id"), nullable=False)
     payment_date = db.Column(db.Date, nullable=False, index=True)
-    amount = db.Column(db.Float, nullable=False, default=0)
+    amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     payment_method = db.Column(db.String(30), nullable=False, default="CASH", index=True)
     cash_bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_accounts.id"), nullable=True)
     payment_reference = db.Column(db.String(120), nullable=True)
@@ -114,14 +114,14 @@ class CashDaily(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     cash_date = db.Column(db.Date, nullable=False, index=True)
     status = db.Column(db.String(20), nullable=False, default="OPEN")
-    opening_balance = db.Column(db.Float, nullable=False, default=0)
-    cash_sales = db.Column(db.Float, nullable=False, default=0)
-    debt_payments = db.Column(db.Float, nullable=False, default=0)
-    other_income = db.Column(db.Float, nullable=False, default=0)
-    expenses = db.Column(db.Float, nullable=False, default=0)
-    closing_balance = db.Column(db.Float, nullable=False, default=0)
-    actual_cash = db.Column(db.Float, nullable=False, default=0)
-    cash_difference = db.Column(db.Float, nullable=False, default=0)
+    opening_balance = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    cash_sales = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    debt_payments = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    other_income = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    expenses = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    closing_balance = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    actual_cash = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    cash_difference = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
 
@@ -136,7 +136,7 @@ class CashExpense(BaseModel):
     cash_daily_id = db.Column(db.Integer, db.ForeignKey("cash_daily.id"), nullable=False)
     expense_date = db.Column(db.Date, nullable=False, index=True)
     expense_category = db.Column(db.String(50), nullable=False)
-    amount = db.Column(db.Float, nullable=False, default=0)
+    amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     notes = db.Column(db.Text, nullable=True)
 
     cash_daily = db.relationship("CashDaily", lazy=True)

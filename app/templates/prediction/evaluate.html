@@ -1,0 +1,44 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Prediction</span>
+        <h1>Evaluasi Model Prediksi</h1>
+        <p>Ringkasan evaluasi model untuk kebutuhan analisis dan validasi.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('prediction.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Hari Test</label>
+            <input type="number" min="7" max="60" name="test_days" value="{{ test_days }}" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn app-btn-secondary">
+                <i class="bi bi-funnel"></i>
+                Terapkan
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <h3>Status Model</h3>
+    <p class="mb-0">{{ "Model sudah training." if model_status.trained else "Model belum training." }}</p>
+</div>
+
+{% if evaluation %}
+<div class="app-card mt-4">
+    <h3>Hasil Evaluasi</h3>
+    <pre class="mb-0">{{ evaluation|tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+{% endblock %}

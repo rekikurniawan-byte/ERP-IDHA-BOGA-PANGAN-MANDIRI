@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from calendar import monthrange
 from datetime import date
@@ -10,6 +11,8 @@ from app.extensions import db
 from app.models.accounting import Account, Journal, JournalDetail, PeriodClosing
 from app.services.accounting_service import generate_journal_number
 from app.services.audit_log_service import record_audit_log
+
+logger = logging.getLogger(__name__)
 
 PERIOD_CLOSING_REFERENCE_TYPE = "PERIOD_CLOSING"
 RETAINED_EARNINGS_CODE = "3002"
@@ -39,6 +42,7 @@ def is_period_closing_schema_ready() -> bool:
         inspector = inspect(db.engine)
         return inspector.has_table("period_closings")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/period_closing_service.py:41")
         return False
 
 

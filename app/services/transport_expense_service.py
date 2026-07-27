@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from sqlalchemy import inspect
@@ -10,8 +11,21 @@ from app.models.master import Driver
 from app.services.accounting_service import generate_journal_number
 from app.services.audit_log_service import record_audit_log
 
+logger = logging.getLogger(__name__)
+
 
 TRANSPORT_EXPENSE_REFERENCE_TYPE = "TRANSPORT_VEHICLE_EXPENSE"
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
 
 VEHICLE_FUEL = "VEHICLE_FUEL"
 TRANSPORT = "TRANSPORT"
@@ -40,6 +54,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/transport_expense_service.py:53")
         return "Rp 0"
 
 
@@ -49,6 +64,7 @@ def is_transport_expense_schema_ready():
         inspector = inspect(db.engine)
         return inspector.has_table("transport_vehicle_expenses")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/transport_expense_service.py:62")
         return False
 
 
@@ -286,3 +302,8 @@ def create_transport_vehicle_expense(
         db.session.commit()
 
     return True, f"{rule['label']} berhasil diposting ke {rule['account_label']}.", expense
+
+
+def create_transport_vehicle_expense_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_transport_vehicle_expense(**kwargs))

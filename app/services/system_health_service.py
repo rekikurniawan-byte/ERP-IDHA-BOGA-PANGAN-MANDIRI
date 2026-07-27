@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import re
 import shutil
@@ -13,6 +14,8 @@ from app.services.backup_service import (
     get_backup_status,
 )
 from app.services.sensitive_action_guard_service import GUARD_POLICY_VERSION
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_HEALTH_VERSION = "PRODUCTION"
@@ -32,6 +35,7 @@ def _safe_int(value: object, default: int = 0) -> int:
     try:
         return int(value or default)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/system_health_service.py:34")
         return default
 
 
@@ -39,6 +43,7 @@ def _safe_float(value: object, default: float = 0.0) -> float:
     try:
         return float(value or default)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/system_health_service.py:41")
         return default
 
 
@@ -97,6 +102,7 @@ def _parse_migration_metadata(migrations_dir: Path) -> Dict[str, object]:
         try:
             content = file_path.read_text(encoding="utf-8")
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/system_health_service.py:99")
             continue
 
         revision_match = re.search(r"revision\s*=\s*['\"]([^'\"]+)['\"]", content)
@@ -225,6 +231,7 @@ def _build_disk_health(precheck: Dict[str, object], backup_status: Dict[str, obj
                 "message": "Disk usage dibaca dari folder backup aktif.",
             }
         except Exception as exc:
+            logger.exception("Suppressed unexpected exception in app/services/system_health_service.py:227")
             return {
                 "status": "WARNING",
                 "status_class": "warning",

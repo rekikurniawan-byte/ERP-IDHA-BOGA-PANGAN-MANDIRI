@@ -229,7 +229,7 @@
                     <th class="text-end">Masuk</th>
                     <th class="text-end">Keluar</th>
                     <th>Rekonsiliasi</th>
-                    <th>Aksi</th>
+                    <th class="text-end app-table-action-cell cash-bank-ledger-action-cell">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -287,8 +287,8 @@
                                 <span class="badge bg-warning text-dark">Belum</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <div class="d-flex flex-column gap-1">
+                        <td class="app-table-action-cell cash-bank-ledger-action-cell">
+                            <div class="cash-bank-ledger-actions">
                                 {% if row.source_url %}
                                     <a href="{{ row.source_url }}" class="btn btn-sm app-btn-secondary">Detail</a>
                                 {% endif %}
@@ -299,7 +299,7 @@
                                         <button type="submit" class="btn btn-sm app-btn-secondary">Buka</button>
                                     </form>
                                 {% else %}
-                                    <form method="POST" action="{{ url_for('finance.reconcile_cash_bank_ledger_transaction', transaction_id=transaction.id) }}" class="d-flex gap-1 app-form" data-ui-form="true">
+                                    <form method="POST" action="{{ url_for('finance.reconcile_cash_bank_ledger_transaction', transaction_id=transaction.id) }}" class="app-form cash-bank-ledger-reconcile-form" data-ui-form="true">
                                         {% include "components/csrf_token.html" %}
                                         <input type="text" name="reconciliation_note" class="form-control form-control-sm col-min-120" placeholder="Catatan">
                                         <button type="submit" class="btn btn-sm app-btn-secondary">Cocok</button>

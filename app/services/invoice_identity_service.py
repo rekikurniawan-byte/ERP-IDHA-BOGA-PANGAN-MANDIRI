@@ -1,9 +1,20 @@
 from app.models.master import Client, ClientPic, Mandor
+from app.extensions import db
 from app.services.company_settings_service import get_company_settings
 
 
 def clean_text(value):
     return str(value or "").strip()
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
 
 
 def get_active_client_pics(client_id):
@@ -83,6 +94,15 @@ def apply_invoice_identity_snapshot(invoice, client=None, client_pic=None, branc
         if hasattr(invoice, key):
             setattr(invoice, key, value)
     return invoice
+
+
+def refresh_invoice_identity_snapshot_record(invoice, *, client=None, client_pic=None, branch_id=None):
+    return _run_in_transaction(lambda: apply_invoice_identity_snapshot(
+        invoice,
+        client=client,
+        client_pic=client_pic,
+        branch_id=branch_id,
+    ))
 
 
 def get_invoice_official_identity(invoice):

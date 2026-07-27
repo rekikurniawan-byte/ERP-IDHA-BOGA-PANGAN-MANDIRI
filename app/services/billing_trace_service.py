@@ -6,12 +6,15 @@ human-readable trace so finance users can audit:
 - REALTIME order/rekap -> invoice -> piutang -> pembayaran -> jurnal -> buku kas/bank
 - MANUAL_BACKFILL buku manual -> rekap -> invoice -> piutang -> pembayaran -> jurnal -> buku kas/bank
 """
+import logging
 
 from app.models.accounting import Account, Journal, JournalDetail
 from app.models.finance import CashBankTransaction, Invoice, ManualBillingBatch, Payment
 from app.services.billing_input_source_service import INPUT_SOURCE_MANUAL_BACKFILL, INPUT_SOURCE_REALTIME
 from app.services.cash_bank_service import CUSTOMER_PAYMENT_REFERENCE_TYPE
 from app.services.manual_billing_service import MANUAL_BILLING_INVOICE_SOURCE
+
+logger = logging.getLogger(__name__)
 
 
 SUCCESS_STATUSES = {"PAID", "LUNAS", "LOCKED", "INVOICED", "POSTED", "DONE", "BALANCED", "ADA", "LENGKAP"}
@@ -31,6 +34,7 @@ def _money_value(value):
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/billing_trace_service.py:33")
         return 0.0
 
 

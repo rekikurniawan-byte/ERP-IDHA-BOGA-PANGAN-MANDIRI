@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 
 from app.extensions import db
@@ -9,6 +10,8 @@ from app.services.audit_log_service import record_audit_log
 from app.services.canteen_service import get_debt_paid_amount, get_debt_remaining_amount
 from app.services.invoice_identity_service import build_company_bank_snapshot, get_required_client_pic
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
+
+logger = logging.getLogger(__name__)
 
 
 MANUAL_BILLING_INVOICE_SOURCE = "MANUAL_BILLING_RECAP"
@@ -27,10 +30,21 @@ class ManualBillingError(Exception):
     pass
 
 
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def _to_float(value):
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/manual_billing_service.py:43")
         return 0
 
 
@@ -333,6 +347,27 @@ def create_manual_billing_invoice(branch_id, mandor_id, period_start, period_end
     )
 
     return batch, invoice
+
+
+def create_manual_billing_invoice_record(
+    *,
+    branch_id,
+    mandor_id,
+    period_start,
+    period_end,
+    client_pic_id,
+    created_by,
+    notes=None,
+):
+    return _run_in_transaction(lambda: create_manual_billing_invoice(
+        branch_id=branch_id,
+        mandor_id=mandor_id,
+        period_start=period_start,
+        period_end=period_end,
+        client_pic_id=client_pic_id,
+        created_by=created_by,
+        notes=notes,
+    ))
 
 
 def get_manual_billing_batch_for_invoice(invoice):

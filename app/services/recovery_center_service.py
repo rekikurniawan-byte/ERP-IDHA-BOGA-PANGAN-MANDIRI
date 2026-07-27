@@ -6,6 +6,7 @@ ringkasan read-only untuk owner/admin. Tidak ada restore aktif, overwrite DB,
 migration, atau mutation data bisnis di service ini.
 """
 from __future__ import annotations
+import logging
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -34,6 +35,8 @@ from app.services.system_health_service import (
     build_empty_system_health_report,
     build_system_health_report,
 )
+
+logger = logging.getLogger(__name__)
 
 
 APP_VERSION = "PRODUCTION"
@@ -77,6 +80,7 @@ def _parse_iso_datetime(value: Any) -> Optional[datetime]:
     try:
         return datetime.fromisoformat(text.replace("Z", "+00:00"))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/recovery_center_service.py:79")
         return None
 
 

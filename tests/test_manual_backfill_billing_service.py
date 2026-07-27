@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.services.billing_input_source_service import INPUT_SOURCE_MANUAL_BACKFILL
+from app.services import manual_backfill_billing_service
 from app.services.manual_backfill_billing_service import (
     MANUAL_BACKFILL_ITEM_CATERING,
     MANUAL_BACKFILL_ITEM_WARUNG,
@@ -17,7 +18,9 @@ from app.services.manual_backfill_billing_service import (
     build_manual_backfill_register_summary,
     collect_manual_backfill_duplicate_conflicts,
     create_invoice_from_manual_backfill_batch,
+    create_invoice_from_manual_backfill_batch_record,
     create_manual_backfill_batch,
+    create_manual_backfill_batch_record,
     summarize_backfill_rows,
     validate_manual_backfill_batch_before_invoice,
     validate_manual_backfill_invoice_consistency,
@@ -46,6 +49,26 @@ class _FakeSession:
                 obj.id = 123
             if obj.__class__.__name__ in {"Invoice", "FakeInvoice"} and not getattr(obj, "id", None):
                 obj.id = 456
+
+
+class _FakeTransactionSession:
+    def __init__(self, *, fail_commit=False):
+        self.commit_count = 0
+        self.rollback_count = 0
+        self.fail_commit = fail_commit
+
+    def commit(self):
+        self.commit_count += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
+
+    def rollback(self):
+        self.rollback_count += 1
+
+
+class _FakeDb:
+    def __init__(self, session):
+        self.session = session
 
 
 class _FakeQuery:
@@ -77,6 +100,76 @@ def test_build_catering_backfill_rows_matches_book_format():
     assert row["subtotal"] == 210000
     assert "Siang 7" in row["description"]
     assert "Sore 7" in row["description"]
+
+
+def test_create_manual_backfill_batch_record_commits_once(monkeypatch):
+    session = _FakeTransactionSession()
+    monkeypatch.setattr(manual_backfill_billing_service, "db", _FakeDb(session))
+    batch = SimpleNamespace(id=12, batch_number="MBR-1")
+    calls = {}
+
+    def fake_create_manual_backfill_batch(**kwargs):
+        calls.update(kwargs)
+        return batch
+
+    monkeypatch.setattr(
+        manual_backfill_billing_service,
+        "create_manual_backfill_batch",
+        fake_create_manual_backfill_batch,
+    )
+
+    result = create_manual_backfill_batch_record(
+        branch_id=1,
+        period_start=date(2026, 1, 1),
+        period_end=date(2026, 1, 31),
+        created_by=9,
+    )
+
+    assert result is batch
+    assert calls["commit"] is False
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_manual_backfill_record_wrapper_rolls_back_when_commit_fails(monkeypatch):
+    session = _FakeTransactionSession(fail_commit=True)
+    monkeypatch.setattr(manual_backfill_billing_service, "db", _FakeDb(session))
+    monkeypatch.setattr(
+        manual_backfill_billing_service,
+        "create_manual_backfill_batch",
+        lambda **kwargs: SimpleNamespace(id=12),
+    )
+
+    with pytest.raises(RuntimeError, match="commit failed"):
+        create_manual_backfill_batch_record(
+            branch_id=1,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 1, 31),
+            created_by=9,
+        )
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 1
+
+
+def test_create_invoice_from_manual_backfill_batch_record_rolls_back_mid_process_failure(monkeypatch):
+    session = _FakeTransactionSession()
+    monkeypatch.setattr(manual_backfill_billing_service, "db", _FakeDb(session))
+    monkeypatch.setattr(
+        manual_backfill_billing_service,
+        "create_invoice_from_manual_backfill_batch",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("journal failed")),
+    )
+
+    with pytest.raises(RuntimeError, match="journal failed"):
+        create_invoice_from_manual_backfill_batch_record(
+            batch_id=12,
+            branch_id=1,
+            created_by=7,
+        )
+
+    assert session.commit_count == 0
+    assert session.rollback_count == 1
 
 
 

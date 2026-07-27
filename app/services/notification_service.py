@@ -5,6 +5,7 @@ prevents duplicate generated reminders through generated_key, and keeps read /
 dismiss / resolved state separate from the existing Live Reminder Center.
 """
 from __future__ import annotations
+import logging
 
 import json
 from datetime import date, datetime
@@ -15,6 +16,8 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models.system import Notification
 from app.services.live_reminder_service import build_live_reminder_center
+
+logger = logging.getLogger(__name__)
 
 NOTIFICATION_STATUSES = {"UNREAD", "READ", "DISMISSED", "RESOLVED"}
 NOTIFICATION_PRIORITIES = {"CRITICAL", "WARNING", "INFO"}
@@ -65,6 +68,7 @@ def _json_loads(raw: Optional[str]) -> Dict[str, Any]:
         value = json.loads(raw)
         return value if isinstance(value, dict) else {"value": value}
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/notification_service.py:67")
         return {"raw": raw}
 
 
@@ -168,6 +172,7 @@ def list_notifications(
     try:
         limit = max(1, min(int(limit), 500))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/notification_service.py:170")
         limit = 200
 
     return query.order_by(

@@ -7,12 +7,15 @@ coverage, CSS build/theme/filter locks, print/export checks, and the manual
 browser matrix that must be executed on a real browser before production use.
 """
 from __future__ import annotations
+import logging
 
 import json
 import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Set
+
+logger = logging.getLogger(__name__)
 
 APP_VERSION = "PRODUCTION"
 FINAL_BROWSER_QA_VERSION = "PRODUCTION_VISUAL_ALIGNMENT_EMERGENCY_LOCK_V1"
@@ -126,6 +129,7 @@ def _rel(path: Path, root: Path) -> str:
     try:
         return str(path.relative_to(root)).replace("\\", "/")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/final_visual_browser_qa_service.py:128")
         return str(path).replace("\\", "/")
 
 
@@ -167,6 +171,7 @@ def _css_report(root: Path) -> Dict[str, Any]:
     try:
         raw_report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {}
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/final_visual_browser_qa_service.py:169")
         raw_report = {}
 
     style_text = style_path.read_text(encoding="utf-8") if style_path.exists() else ""

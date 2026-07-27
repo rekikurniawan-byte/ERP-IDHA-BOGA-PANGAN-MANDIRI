@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, date
 import json
 
@@ -5,14 +6,13 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from app.utils.decorators import role_required
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
-from sqlalchemy import func
-
 from app.extensions import db
 from app.models.canteen import CanteenSale, WorkerDebt, CanteenExternalReceivable
 from app.models.finance import BankAccount
 from app.models.master import Item, Worker, Mandor
 from app.services.canteen_service import (
     create_canteen_sale,
+    get_or_create_custom_item,
     pay_worker_debt,
     pay_external_receivable,
     get_debt_paid_amount,
@@ -23,11 +23,12 @@ from app.services.canteen_service import (
     PAID_PAYMENT_METHODS,
     BUYER_TYPES,
 )
-from app.services.master_data_service import generate_item_code
 from app.services.manual_billing_service import (
     MANUAL_BILLING_SOURCE_WORKER_DEBT,
     find_manual_billing_invoice_for_source,
 )
+
+logger = logging.getLogger(__name__)
 
 canteen_bp = Blueprint("canteen", __name__, url_prefix="/canteen")
 
@@ -56,6 +57,7 @@ def _parse_date(value, fallback=None):
     try:
         return datetime.strptime(str(value or ""), "%Y-%m-%d").date()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/routes/canteen_routes.py:56")
         return fallback
 
 
@@ -72,40 +74,6 @@ def get_quick_canteen_items():
         })
 
     return quick_items
-
-
-def get_or_create_custom_item(item_name, selling_price=0):
-    clean_name = (item_name or "").strip()
-
-    if not clean_name:
-        return None
-
-    existing_item = Item.query.filter(
-        Item.category == "MERCHANDISE",
-        func.lower(Item.item_name) == clean_name.lower()
-    ).first()
-
-    if existing_item:
-        if hasattr(existing_item, "selling_price") and (existing_item.selling_price or 0) <= 0 and float(selling_price or 0) > 0:
-            existing_item.selling_price = float(selling_price or 0)
-            db.session.commit()
-        return existing_item
-
-    item = Item(
-        item_code=generate_item_code("MERCHANDISE"),
-        item_name=clean_name,
-        category="MERCHANDISE",
-        unit="PCS",
-        minimum_stock=0,
-        selling_price=float(selling_price or 0),
-        is_stock_tracked=False,
-        is_active=True
-    )
-
-    db.session.add(item)
-    db.session.flush()
-
-    return item
 
 
 def _sale_payment_method(sale):

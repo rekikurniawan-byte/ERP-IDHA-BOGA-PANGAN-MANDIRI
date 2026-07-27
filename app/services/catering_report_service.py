@@ -1,3 +1,4 @@
+import logging
 from calendar import monthrange
 from datetime import date, datetime
 
@@ -7,11 +8,14 @@ from app.models.master import Mandor
 from app.models.operational import DailyOrder
 from app.services.delivery_service import get_delivery_type_from_notes
 
+logger = logging.getLogger(__name__)
+
 
 def parse_date(value, fallback=None):
     try:
         return datetime.strptime(str(value or "").strip(), "%Y-%m-%d").date()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/catering_report_service.py:14")
         return fallback
 
 
@@ -20,6 +24,7 @@ def parse_month(value, fallback=None):
         parsed = datetime.strptime(str(value or "").strip(), "%Y-%m").date()
         return parsed.year, parsed.month
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/catering_report_service.py:22")
         fallback = fallback or date.today()
         return fallback.year, fallback.month
 

@@ -1,9 +1,16 @@
-"""Placeholder test to verify pytest framework is operational."""
+"""Basic startup regression tests."""
 
 
-def test_framework_operational():
-    """Verify pytest runs correctly."""
-    assert True
+def test_flask_app_factory_builds_route_map():
+    """Verify the app factory registers the expected core route map."""
+    from app import create_app
+
+    app = create_app()
+    endpoints = {rule.endpoint for rule in app.url_map.iter_rules()}
+
+    assert "auth.login" in endpoints
+    assert "dashboard.index" in endpoints
+    assert "finance.generate_period_invoice_preview" in endpoints
 
 
 def test_import_app():

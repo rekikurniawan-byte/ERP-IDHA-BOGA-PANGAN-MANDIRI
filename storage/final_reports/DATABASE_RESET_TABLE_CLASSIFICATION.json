@@ -1,0 +1,5427 @@
+{
+  "generated_at": "2026-07-27T08:20:49.852354+00:00",
+  "status": "READY_FOR_OWNER_APPROVAL",
+  "database": {
+    "driver": "postgresql+psycopg",
+    "host": "localhost",
+    "port": 5432,
+    "database": "idha_boga_staging",
+    "schema": "public",
+    "password_redacted": true
+  },
+  "app_env": "development",
+  "table_count": 113,
+  "classification_counts": {
+    "MEMERLUKAN_KEPUTUSAN_SAYA": 32,
+    "AMAN_DIKOSONGKAN": 76,
+    "WAJIB_DIPERTAHANKAN": 5
+  },
+  "tables": [
+    {
+      "table": "accounts",
+      "model": "Account",
+      "module": "app.models.accounting",
+      "record_count": 40,
+      "foreign_key_out": [],
+      "foreign_key_in": [
+        {
+          "table": "journal_details",
+          "columns": [
+            "account_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "advance_settlements",
+      "model": "AdvanceSettlement",
+      "module": "app.models.finance",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "advance_id"
+          ],
+          "referred_table": "advance_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "advance_transactions",
+      "model": "AdvanceTransaction",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "supplier_id"
+          ],
+          "referred_table": "suppliers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "advance_settlements",
+          "columns": [
+            "advance_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "alembic_version",
+      "model": null,
+      "module": null,
+      "record_count": 1,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "WAJIB_DIPERTAHANKAN",
+      "option_a_action": "preserve",
+      "option_b_action": "preserve",
+      "reason": "Required to keep login, branch dependency, application configuration, or migration recognition valid.",
+      "recommendation": "Preserve in both reset options.",
+      "file_metadata": false
+    },
+    {
+      "table": "approval_requests",
+      "model": "ApprovalRequest",
+      "module": "app.models.system",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "requested_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "reviewed_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "asset_financing_contracts",
+      "model": "AssetFinancingContract",
+      "module": "app.models.accounting",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "acquisition_journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "fixed_asset_id"
+          ],
+          "referred_table": "fixed_assets",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "contract_id"
+          ]
+        },
+        {
+          "table": "asset_installment_schedules",
+          "columns": [
+            "contract_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "asset_installment_payments",
+      "model": "AssetInstallmentPayment",
+      "module": "app.models.accounting",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "contract_id"
+          ],
+          "referred_table": "asset_financing_contracts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "schedule_id"
+          ],
+          "referred_table": "asset_installment_schedules",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "asset_installment_schedules",
+      "model": "AssetInstallmentSchedule",
+      "module": "app.models.accounting",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "contract_id"
+          ],
+          "referred_table": "asset_financing_contracts",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "schedule_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "audit_logs",
+      "model": "AuditLog",
+      "module": "app.models.system",
+      "record_count": 243,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "bank_accounts",
+      "model": "BankAccount",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "canteen_external_receivable_payments",
+          "columns": [
+            "cash_bank_account_id"
+          ]
+        },
+        {
+          "table": "canteen_sales",
+          "columns": [
+            "cash_bank_account_id"
+          ]
+        },
+        {
+          "table": "cash_bank_adjustments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "cash_bank_opening_balances",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "cash_bank_transactions",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "cash_bank_transfers",
+          "columns": [
+            "from_bank_account_id"
+          ]
+        },
+        {
+          "table": "cash_bank_transfers",
+          "columns": [
+            "to_bank_account_id"
+          ]
+        },
+        {
+          "table": "debt_payments",
+          "columns": [
+            "cash_bank_account_id"
+          ]
+        },
+        {
+          "table": "field_transactions",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_purchases",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "operational_expenses",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "payments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "supplier_payments",
+          "columns": [
+            "bank_account_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "bank_account_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "branch_settings",
+      "model": "BranchSetting",
+      "module": "app.models.master",
+      "record_count": 9,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "WAJIB_DIPERTAHANKAN",
+      "option_a_action": "preserve",
+      "option_b_action": "preserve",
+      "reason": "Required to keep login, branch dependency, application configuration, or migration recognition valid.",
+      "recommendation": "Preserve in both reset options.",
+      "file_metadata": false
+    },
+    {
+      "table": "branches",
+      "model": "Branch",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [],
+      "foreign_key_in": [
+        {
+          "table": "advance_settlements",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "approval_requests",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "asset_financing_contracts",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "asset_installment_schedules",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "audit_logs",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "bank_accounts",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "branch_settings",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "canteen_external_receivables",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "canteen_sales",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "cash_bank_adjustments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "cash_bank_opening_balances",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "cash_bank_transactions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "cash_bank_transfers",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "cash_daily",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "daily_orders",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "damaged_items",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "deliveries",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "digital_attachments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "drivers",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "employee_assignments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "employee_attendance",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "employees",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "field_counterparties",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "field_transactions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_depreciation_configs",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_depreciations",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_purchases",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "fixed_assets",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "idempotency_keys",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "invoices",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "item_cost_profiles",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "item_requests",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "mandors",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_billing_batches",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_book_recaps",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_payables",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "manual_receivables",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "menus",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "notifications",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "operational_expenses",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshots",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "order_hpp_stock_consumptions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "overhead_profiles",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "packaging_profiles",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "payments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "payrolls",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "period_closings",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "procurements",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "productions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "recipe_headers",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "recipe_versions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "stock_adjustments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "stock_movements",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "stock_opening_balances",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "supplier_bills",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "supplier_payments",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "suppliers",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "unit_conversions",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "users",
+          "columns": [
+            "branch_id"
+          ]
+        },
+        {
+          "table": "worker_debts",
+          "columns": [
+            "branch_id"
+          ]
+        }
+      ],
+      "category": "WAJIB_DIPERTAHANKAN",
+      "option_a_action": "preserve",
+      "option_b_action": "preserve",
+      "reason": "Required to keep login, branch dependency, application configuration, or migration recognition valid.",
+      "recommendation": "Preserve in both reset options.",
+      "file_metadata": false
+    },
+    {
+      "table": "canteen_external_receivable_payments",
+      "model": "CanteenExternalReceivablePayment",
+      "module": "app.models.canteen",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "cash_bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "receivable_id"
+          ],
+          "referred_table": "canteen_external_receivables",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "canteen_external_receivables",
+      "model": "CanteenExternalReceivable",
+      "module": "app.models.canteen",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "sale_id"
+          ],
+          "referred_table": "canteen_sales",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "canteen_external_receivable_payments",
+          "columns": [
+            "receivable_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "canteen_sale_items",
+      "model": "CanteenSaleItem",
+      "module": "app.models.canteen",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "sale_id"
+          ],
+          "referred_table": "canteen_sales",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "canteen_sales",
+      "model": "CanteenSale",
+      "module": "app.models.canteen",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "canteen_external_receivables",
+          "columns": [
+            "sale_id"
+          ]
+        },
+        {
+          "table": "canteen_sale_items",
+          "columns": [
+            "sale_id"
+          ]
+        },
+        {
+          "table": "worker_debts",
+          "columns": [
+            "sale_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_bank_adjustments",
+      "model": "CashBankAdjustment",
+      "module": "app.models.finance",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "ledger_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_bank_opening_balances",
+      "model": "CashBankOpeningBalance",
+      "module": "app.models.finance",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "ledger_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_bank_transactions",
+      "model": "CashBankTransaction",
+      "module": "app.models.finance",
+      "record_count": 11,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "transfer_group_id"
+          ],
+          "referred_table": "cash_bank_transfers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "cash_bank_adjustments",
+          "columns": [
+            "ledger_transaction_id"
+          ]
+        },
+        {
+          "table": "cash_bank_opening_balances",
+          "columns": [
+            "ledger_transaction_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_purchases",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "operational_expenses",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "cash_bank_transaction_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_bank_transfers",
+      "model": "CashBankTransfer",
+      "module": "app.models.finance",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "from_bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "to_bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "cash_bank_transactions",
+          "columns": [
+            "transfer_group_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_daily",
+      "model": "CashDaily",
+      "module": "app.models.canteen",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "cash_expenses",
+          "columns": [
+            "cash_daily_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "cash_expenses",
+      "model": "CashExpense",
+      "module": "app.models.canteen",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "cash_daily_id"
+          ],
+          "referred_table": "cash_daily",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "client_pics",
+      "model": "ClientPic",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "invoices",
+          "columns": [
+            "client_pic_id"
+          ]
+        },
+        {
+          "table": "manual_billing_batches",
+          "columns": [
+            "client_pic_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "clients",
+      "model": "Client",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [],
+      "foreign_key_in": [
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "table": "client_pics",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "table": "field_counterparties",
+          "columns": [
+            "linked_client_id"
+          ]
+        },
+        {
+          "table": "invoices",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "table": "mandors",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "table": "manual_billing_batches",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "table": "manual_book_recaps",
+          "columns": [
+            "client_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "daily_order_details",
+      "model": "DailyOrderDetail",
+      "module": "app.models.operational",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "daily_order_id"
+          ],
+          "referred_table": "daily_orders",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "delivery_location_id"
+          ],
+          "referred_table": "delivery_locations",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "delivery_details",
+          "columns": [
+            "daily_order_detail_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_allocations",
+          "columns": [
+            "daily_order_detail_id"
+          ]
+        },
+        {
+          "table": "order_revisions",
+          "columns": [
+            "daily_order_detail_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "daily_orders",
+      "model": "DailyOrder",
+      "module": "app.models.operational",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "dinner_menu_id"
+          ],
+          "referred_table": "menus",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "lunch_menu_id"
+          ],
+          "referred_table": "menus",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "overhead_profile_id"
+          ],
+          "referred_table": "overhead_profiles",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "packaging_profile_id"
+          ],
+          "referred_table": "packaging_profiles",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "daily_order_details",
+          "columns": [
+            "daily_order_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshots",
+          "columns": [
+            "daily_order_id"
+          ]
+        },
+        {
+          "table": "order_hpp_stock_consumptions",
+          "columns": [
+            "daily_order_id"
+          ]
+        },
+        {
+          "table": "order_snapshots",
+          "columns": [
+            "daily_order_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "damaged_items",
+      "model": "DamagedItem",
+      "module": "app.models.logistics",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "debt_payments",
+      "model": "DebtPayment",
+      "module": "app.models.canteen",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "cash_bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "worker_debt_id"
+          ],
+          "referred_table": "worker_debts",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "deliveries",
+      "model": "Delivery",
+      "module": "app.models.delivery",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "driver_id"
+          ],
+          "referred_table": "drivers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "delivery_details",
+          "columns": [
+            "delivery_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "delivery_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "delivery_details",
+      "model": "DeliveryDetail",
+      "module": "app.models.delivery",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "daily_order_detail_id"
+          ],
+          "referred_table": "daily_order_details",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "delivery_id"
+          ],
+          "referred_table": "deliveries",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "delivery_location_id"
+          ],
+          "referred_table": "delivery_locations",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "delivery_receipts",
+          "columns": [
+            "delivery_detail_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "delivery_locations",
+      "model": "DeliveryLocation",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "daily_order_details",
+          "columns": [
+            "delivery_location_id"
+          ]
+        },
+        {
+          "table": "delivery_details",
+          "columns": [
+            "delivery_location_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_allocations",
+          "columns": [
+            "delivery_location_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "delivery_receipts",
+      "model": "DeliveryReceipt",
+      "module": "app.models.delivery",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "delivery_detail_id"
+          ],
+          "referred_table": "delivery_details",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "digital_attachments",
+      "model": "DigitalAttachment",
+      "module": "app.models.system",
+      "record_count": 9,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "deleted_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "uploaded_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "field_transaction_attachments",
+          "columns": [
+            "digital_attachment_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": true
+    },
+    {
+      "table": "drivers",
+      "model": "Driver",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "deliveries",
+          "columns": [
+            "driver_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "driver_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "employee_assignments",
+      "model": "EmployeeAssignment",
+      "module": "app.models.hr",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "employee_id"
+          ],
+          "referred_table": "employees",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "employee_attendance",
+      "model": "EmployeeAttendance",
+      "module": "app.models.hr",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "employee_id"
+          ],
+          "referred_table": "employees",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "employee_salary_history",
+      "model": "EmployeeSalaryHistory",
+      "module": "app.models.hr",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "employee_id"
+          ],
+          "referred_table": "employees",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "employee_skills",
+      "model": "EmployeeSkill",
+      "module": "app.models.master",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "employee_id"
+          ],
+          "referred_table": "employees",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "employees",
+      "model": "Employee",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "employee_assignments",
+          "columns": [
+            "employee_id"
+          ]
+        },
+        {
+          "table": "employee_attendance",
+          "columns": [
+            "employee_id"
+          ]
+        },
+        {
+          "table": "employee_salary_history",
+          "columns": [
+            "employee_id"
+          ]
+        },
+        {
+          "table": "employee_skills",
+          "columns": [
+            "employee_id"
+          ]
+        },
+        {
+          "table": "payroll_details",
+          "columns": [
+            "employee_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_counterparties",
+      "model": "FieldCounterparty",
+      "module": "app.models.field_transaction",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "linked_client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "linked_mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "linked_supplier_id"
+          ],
+          "referred_table": "suppliers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "field_transactions",
+          "columns": [
+            "counterparty_id"
+          ]
+        },
+        {
+          "table": "manual_payables",
+          "columns": [
+            "counterparty_id"
+          ]
+        },
+        {
+          "table": "manual_receivables",
+          "columns": [
+            "counterparty_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_transaction_attachments",
+      "model": "FieldTransactionAttachment",
+      "module": "app.models.field_transaction",
+      "record_count": 4,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "digital_attachment_id"
+          ],
+          "referred_table": "digital_attachments",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "verified_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_transaction_links",
+      "model": "FieldTransactionLink",
+      "module": "app.models.field_transaction",
+      "record_count": 8,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_transaction_review_logs",
+      "model": "FieldTransactionReviewLog",
+      "module": "app.models.field_transaction",
+      "record_count": 17,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "acted_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_transaction_settlements",
+      "model": "FieldTransactionSettlement",
+      "module": "app.models.field_transaction",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "field_transactions",
+      "model": "FieldTransaction",
+      "module": "app.models.field_transaction",
+      "record_count": 5,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "counterparty_id"
+          ],
+          "referred_table": "field_counterparties",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "posted_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "reviewed_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "field_transaction_attachments",
+          "columns": [
+            "field_transaction_id"
+          ]
+        },
+        {
+          "table": "field_transaction_links",
+          "columns": [
+            "field_transaction_id"
+          ]
+        },
+        {
+          "table": "field_transaction_review_logs",
+          "columns": [
+            "field_transaction_id"
+          ]
+        },
+        {
+          "table": "field_transaction_settlements",
+          "columns": [
+            "field_transaction_id"
+          ]
+        },
+        {
+          "table": "manual_payables",
+          "columns": [
+            "field_transaction_id"
+          ]
+        },
+        {
+          "table": "manual_receivables",
+          "columns": [
+            "field_transaction_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "fixed_asset_depreciation_configs",
+      "model": "FixedAssetDepreciationConfig",
+      "module": "app.models.accounting",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "fixed_asset_id"
+          ],
+          "referred_table": "fixed_assets",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "fixed_asset_depreciations",
+      "model": "FixedAssetDepreciation",
+      "module": "app.models.accounting",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "fixed_asset_id"
+          ],
+          "referred_table": "fixed_assets",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "fixed_asset_purchases",
+      "model": "FixedAssetPurchase",
+      "module": "app.models.accounting",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "fixed_asset_id"
+          ],
+          "referred_table": "fixed_assets",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "fixed_assets",
+      "model": "FixedAsset",
+      "module": "app.models.accounting",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "asset_financing_contracts",
+          "columns": [
+            "fixed_asset_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_depreciation_configs",
+          "columns": [
+            "fixed_asset_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_depreciations",
+          "columns": [
+            "fixed_asset_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_purchases",
+          "columns": [
+            "fixed_asset_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "idempotency_keys",
+      "model": "IdempotencyKey",
+      "module": "app.models.system",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "invoice_collection_logs",
+      "model": "InvoiceCollectionLog",
+      "module": "app.models.finance",
+      "record_count": 9,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "invoice_id"
+          ],
+          "referred_table": "invoices",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "invoice_items",
+      "model": "InvoiceItem",
+      "module": "app.models.finance",
+      "record_count": 6,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "invoice_id"
+          ],
+          "referred_table": "invoices",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "invoices",
+      "model": "Invoice",
+      "module": "app.models.finance",
+      "record_count": 4,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_pic_id"
+          ],
+          "referred_table": "client_pics",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "invoice_collection_logs",
+          "columns": [
+            "invoice_id"
+          ]
+        },
+        {
+          "table": "invoice_items",
+          "columns": [
+            "invoice_id"
+          ]
+        },
+        {
+          "table": "manual_billing_batches",
+          "columns": [
+            "invoice_id"
+          ]
+        },
+        {
+          "table": "manual_book_recaps",
+          "columns": [
+            "invoice_id"
+          ]
+        },
+        {
+          "table": "payments",
+          "columns": [
+            "invoice_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "item_cost_profiles",
+      "model": "ItemCostProfile",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "item_request_details",
+      "model": "ItemRequestDetail",
+      "module": "app.models.logistics",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_request_id"
+          ],
+          "referred_table": "item_requests",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "item_requests",
+      "model": "ItemRequest",
+      "module": "app.models.logistics",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "item_request_details",
+          "columns": [
+            "item_request_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "items",
+      "model": "Item",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [],
+      "foreign_key_in": [
+        {
+          "table": "canteen_sale_items",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "damaged_items",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "item_cost_profiles",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "item_request_details",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_components",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "order_hpp_stock_consumption_lines",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "procurement_items",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "production_details",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "recipe_items",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "recipe_version_items",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "stock_adjustments",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "stock_movements",
+          "columns": [
+            "item_id"
+          ]
+        },
+        {
+          "table": "stock_opening_balances",
+          "columns": [
+            "item_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "journal_details",
+      "model": "JournalDetail",
+      "module": "app.models.accounting",
+      "record_count": 30,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "account_id"
+          ],
+          "referred_table": "accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "journals",
+      "model": "Journal",
+      "module": "app.models.accounting",
+      "record_count": 14,
+      "foreign_key_out": [],
+      "foreign_key_in": [
+        {
+          "table": "advance_settlements",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "asset_financing_contracts",
+          "columns": [
+            "acquisition_journal_id"
+          ]
+        },
+        {
+          "table": "asset_installment_payments",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_depreciations",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "fixed_asset_purchases",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "journal_details",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "operational_expenses",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "period_closings",
+          "columns": [
+            "journal_id"
+          ]
+        },
+        {
+          "table": "transport_vehicle_expenses",
+          "columns": [
+            "journal_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "mandors",
+      "model": "Mandor",
+      "module": "app.models.master",
+      "record_count": 2,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "daily_order_details",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "delivery_details",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "delivery_locations",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "field_counterparties",
+          "columns": [
+            "linked_mandor_id"
+          ]
+        },
+        {
+          "table": "invoices",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "manual_billing_batches",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "manual_book_recaps",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_allocations",
+          "columns": [
+            "mandor_id"
+          ]
+        },
+        {
+          "table": "workers",
+          "columns": [
+            "mandor_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_billing_batch_items",
+      "model": "ManualBillingBatchItem",
+      "module": "app.models.finance",
+      "record_count": 10,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "batch_id"
+          ],
+          "referred_table": "manual_billing_batches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_billing_batches",
+      "model": "ManualBillingBatch",
+      "module": "app.models.finance",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_pic_id"
+          ],
+          "referred_table": "client_pics",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "invoice_id"
+          ],
+          "referred_table": "invoices",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "manual_billing_batch_items",
+          "columns": [
+            "batch_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_book_recap_catering_lines",
+      "model": null,
+      "module": null,
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "recap_id"
+          ],
+          "referred_table": "manual_book_recaps",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_book_recap_warung_lines",
+      "model": null,
+      "module": null,
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "recap_id"
+          ],
+          "referred_table": "manual_book_recaps",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_book_recaps",
+      "model": null,
+      "module": null,
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "client_id"
+          ],
+          "referred_table": "clients",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "invoice_id"
+          ],
+          "referred_table": "invoices",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "manual_book_recap_catering_lines",
+          "columns": [
+            "recap_id"
+          ]
+        },
+        {
+          "table": "manual_book_recap_warung_lines",
+          "columns": [
+            "recap_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_payable_payments",
+      "model": "ManualPayablePayment",
+      "module": "app.models.field_transaction",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "manual_payable_id"
+          ],
+          "referred_table": "manual_payables",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "paid_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_payables",
+      "model": "ManualPayable",
+      "module": "app.models.field_transaction",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "counterparty_id"
+          ],
+          "referred_table": "field_counterparties",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "manual_payable_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_receivable_payments",
+      "model": "ManualReceivablePayment",
+      "module": "app.models.field_transaction",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "manual_receivable_id"
+          ],
+          "referred_table": "manual_receivables",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "paid_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "manual_receivables",
+      "model": "ManualReceivable",
+      "module": "app.models.field_transaction",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "counterparty_id"
+          ],
+          "referred_table": "field_counterparties",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "field_transaction_id"
+          ],
+          "referred_table": "field_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "manual_receivable_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "menus",
+      "model": "Menu",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "daily_orders",
+          "columns": [
+            "dinner_menu_id"
+          ]
+        },
+        {
+          "table": "daily_orders",
+          "columns": [
+            "lunch_menu_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_lines",
+          "columns": [
+            "menu_id"
+          ]
+        },
+        {
+          "table": "recipe_headers",
+          "columns": [
+            "menu_id"
+          ]
+        },
+        {
+          "table": "recipe_versions",
+          "columns": [
+            "menu_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "migrations",
+      "model": null,
+      "module": null,
+      "record_count": 5,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "WAJIB_DIPERTAHANKAN",
+      "option_a_action": "preserve",
+      "option_b_action": "preserve",
+      "reason": "Required to keep login, branch dependency, application configuration, or migration recognition valid.",
+      "recommendation": "Preserve in both reset options.",
+      "file_metadata": false
+    },
+    {
+      "table": "ml_catering_historical",
+      "model": null,
+      "module": null,
+      "record_count": 5243,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "ml_mandor",
+      "model": null,
+      "module": null,
+      "record_count": 19,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "ml_predictions",
+      "model": null,
+      "module": null,
+      "record_count": 67,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "ml_recipe_bom",
+      "model": null,
+      "module": null,
+      "record_count": 1,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "ml_training_runs",
+      "model": null,
+      "module": null,
+      "record_count": 13,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "notifications",
+      "model": "Notification",
+      "module": "app.models.system",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "target_user_id"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "operational_expenses",
+      "model": "OperationalExpense",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "supplier_id"
+          ],
+          "referred_table": "suppliers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_snapshot_allocations",
+      "model": "OrderHppSnapshotAllocation",
+      "module": "app.models.operational",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "daily_order_detail_id"
+          ],
+          "referred_table": "daily_order_details",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "delivery_location_id"
+          ],
+          "referred_table": "delivery_locations",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "snapshot_id"
+          ],
+          "referred_table": "order_hpp_snapshots",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "snapshot_line_id"
+          ],
+          "referred_table": "order_hpp_snapshot_lines",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_snapshot_components",
+      "model": "OrderHppSnapshotComponent",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "snapshot_line_id"
+          ],
+          "referred_table": "order_hpp_snapshot_lines",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_snapshot_lines",
+      "model": "OrderHppSnapshotLine",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "menu_id"
+          ],
+          "referred_table": "menus",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "overhead_profile_id"
+          ],
+          "referred_table": "overhead_profiles",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "packaging_profile_id"
+          ],
+          "referred_table": "packaging_profiles",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "recipe_id"
+          ],
+          "referred_table": "recipe_headers",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "snapshot_id"
+          ],
+          "referred_table": "order_hpp_snapshots",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "order_hpp_snapshot_allocations",
+          "columns": [
+            "snapshot_line_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_components",
+          "columns": [
+            "snapshot_line_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_snapshots",
+      "model": "OrderHppSnapshot",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "daily_order_id"
+          ],
+          "referred_table": "daily_orders",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "order_hpp_snapshot_allocations",
+          "columns": [
+            "snapshot_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_lines",
+          "columns": [
+            "snapshot_id"
+          ]
+        },
+        {
+          "table": "order_hpp_stock_consumptions",
+          "columns": [
+            "snapshot_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_stock_consumption_lines",
+      "model": "OrderHppStockConsumptionLine",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "consumption_id"
+          ],
+          "referred_table": "order_hpp_stock_consumptions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "stock_movement_id"
+          ],
+          "referred_table": "stock_movements",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_hpp_stock_consumptions",
+      "model": "OrderHppStockConsumption",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "daily_order_id"
+          ],
+          "referred_table": "daily_orders",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "snapshot_id"
+          ],
+          "referred_table": "order_hpp_snapshots",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "order_hpp_stock_consumption_lines",
+          "columns": [
+            "consumption_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_revisions",
+      "model": "OrderRevision",
+      "module": "app.models.operational",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "daily_order_detail_id"
+          ],
+          "referred_table": "daily_order_details",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "order_snapshots",
+      "model": "OrderSnapshot",
+      "module": "app.models.operational",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "daily_order_id"
+          ],
+          "referred_table": "daily_orders",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "overhead_profiles",
+      "model": "OverheadProfile",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "daily_orders",
+          "columns": [
+            "overhead_profile_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_lines",
+          "columns": [
+            "overhead_profile_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "packaging_profiles",
+      "model": "PackagingProfile",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "daily_orders",
+          "columns": [
+            "packaging_profile_id"
+          ]
+        },
+        {
+          "table": "order_hpp_snapshot_lines",
+          "columns": [
+            "packaging_profile_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "payments",
+      "model": "Payment",
+      "module": "app.models.finance",
+      "record_count": 7,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "invoice_id"
+          ],
+          "referred_table": "invoices",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "payroll_details",
+      "model": "PayrollDetail",
+      "module": "app.models.hr",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "employee_id"
+          ],
+          "referred_table": "employees",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "payroll_id"
+          ],
+          "referred_table": "payrolls",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "payrolls",
+      "model": "Payroll",
+      "module": "app.models.hr",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "payroll_details",
+          "columns": [
+            "payroll_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "period_closings",
+      "model": "PeriodClosing",
+      "module": "app.models.accounting",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "procurement_items",
+      "model": "ProcurementItem",
+      "module": "app.models.logistics",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "procurement_id"
+          ],
+          "referred_table": "procurements",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "procurements",
+      "model": "Procurement",
+      "module": "app.models.logistics",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "supplier_id"
+          ],
+          "referred_table": "suppliers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "procurement_items",
+          "columns": [
+            "procurement_id"
+          ]
+        },
+        {
+          "table": "supplier_bills",
+          "columns": [
+            "procurement_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "production_details",
+      "model": "ProductionDetail",
+      "module": "app.models.production",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "production_id"
+          ],
+          "referred_table": "productions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "productions",
+      "model": "Production",
+      "module": "app.models.production",
+      "record_count": 3,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "production_details",
+          "columns": [
+            "production_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "recipe_headers",
+      "model": "RecipeHeader",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "menu_id"
+          ],
+          "referred_table": "menus",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "order_hpp_snapshot_lines",
+          "columns": [
+            "recipe_id"
+          ]
+        },
+        {
+          "table": "recipe_items",
+          "columns": [
+            "recipe_id"
+          ]
+        },
+        {
+          "table": "recipe_versions",
+          "columns": [
+            "recipe_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "recipe_items",
+      "model": "RecipeItem",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "recipe_id"
+          ],
+          "referred_table": "recipe_headers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "recipe_version_items",
+      "model": "RecipeVersionItem",
+      "module": "app.models.master",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "recipe_version_id"
+          ],
+          "referred_table": "recipe_versions",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "recipe_versions",
+      "model": "RecipeVersion",
+      "module": "app.models.master",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "finalized_by"
+          ],
+          "referred_table": "users",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "menu_id"
+          ],
+          "referred_table": "menus",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "recipe_id"
+          ],
+          "referred_table": "recipe_headers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "recipe_version_items",
+          "columns": [
+            "recipe_version_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "research_dataset_clean",
+      "model": null,
+      "module": null,
+      "record_count": 4720,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "research_dataset_features",
+      "model": null,
+      "module": null,
+      "record_count": 4720,
+      "foreign_key_out": [],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "approval_required",
+      "option_b_action": "approval_required",
+      "reason": "System/audit/document/ML/research data may be useful evidence or external file metadata. It must not be removed without explicit decision.",
+      "recommendation": "Review and approve table-specific action before any destructive run.",
+      "file_metadata": false
+    },
+    {
+      "table": "stock_adjustments",
+      "model": "StockAdjustment",
+      "module": "app.models.logistics",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "stock_movements",
+      "model": "StockMovement",
+      "module": "app.models.logistics",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "order_hpp_stock_consumption_lines",
+          "columns": [
+            "stock_movement_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "stock_opening_balances",
+      "model": "StockOpeningBalance",
+      "module": "app.models.logistics",
+      "record_count": 0,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "item_id"
+          ],
+          "referred_table": "items",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "supplier_bills",
+      "model": "SupplierBill",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "procurement_id"
+          ],
+          "referred_table": "procurements",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "supplier_id"
+          ],
+          "referred_table": "suppliers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "supplier_payments",
+          "columns": [
+            "supplier_bill_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "supplier_payments",
+      "model": "SupplierPayment",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "supplier_bill_id"
+          ],
+          "referred_table": "supplier_bills",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "suppliers",
+      "model": "Supplier",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "advance_transactions",
+          "columns": [
+            "supplier_id"
+          ]
+        },
+        {
+          "table": "field_counterparties",
+          "columns": [
+            "linked_supplier_id"
+          ]
+        },
+        {
+          "table": "operational_expenses",
+          "columns": [
+            "supplier_id"
+          ]
+        },
+        {
+          "table": "procurements",
+          "columns": [
+            "supplier_id"
+          ]
+        },
+        {
+          "table": "supplier_bills",
+          "columns": [
+            "supplier_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "transport_vehicle_expenses",
+      "model": "TransportVehicleExpense",
+      "module": "app.models.finance",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "bank_account_id"
+          ],
+          "referred_table": "bank_accounts",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "cash_bank_transaction_id"
+          ],
+          "referred_table": "cash_bank_transactions",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "delivery_id"
+          ],
+          "referred_table": "deliveries",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "driver_id"
+          ],
+          "referred_table": "drivers",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "journal_id"
+          ],
+          "referred_table": "journals",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "unit_conversions",
+      "model": "UnitConversion",
+      "module": "app.models.master",
+      "record_count": 5,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    },
+    {
+      "table": "users",
+      "model": "User",
+      "module": "app.models.master",
+      "record_count": 8,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "approval_requests",
+          "columns": [
+            "requested_by"
+          ]
+        },
+        {
+          "table": "approval_requests",
+          "columns": [
+            "reviewed_by"
+          ]
+        },
+        {
+          "table": "audit_logs",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "table": "digital_attachments",
+          "columns": [
+            "deleted_by"
+          ]
+        },
+        {
+          "table": "digital_attachments",
+          "columns": [
+            "uploaded_by"
+          ]
+        },
+        {
+          "table": "field_counterparties",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "field_transaction_attachments",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "field_transaction_attachments",
+          "columns": [
+            "verified_by"
+          ]
+        },
+        {
+          "table": "field_transaction_links",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "field_transaction_review_logs",
+          "columns": [
+            "acted_by"
+          ]
+        },
+        {
+          "table": "field_transaction_settlements",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "field_transactions",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "field_transactions",
+          "columns": [
+            "posted_by"
+          ]
+        },
+        {
+          "table": "field_transactions",
+          "columns": [
+            "reviewed_by"
+          ]
+        },
+        {
+          "table": "idempotency_keys",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "table": "manual_payable_payments",
+          "columns": [
+            "paid_by"
+          ]
+        },
+        {
+          "table": "manual_payables",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "manual_receivable_payments",
+          "columns": [
+            "paid_by"
+          ]
+        },
+        {
+          "table": "manual_receivables",
+          "columns": [
+            "created_by"
+          ]
+        },
+        {
+          "table": "notifications",
+          "columns": [
+            "target_user_id"
+          ]
+        },
+        {
+          "table": "recipe_versions",
+          "columns": [
+            "finalized_by"
+          ]
+        }
+      ],
+      "category": "WAJIB_DIPERTAHANKAN",
+      "option_a_action": "preserve",
+      "option_b_action": "preserve",
+      "reason": "Required to keep login, branch dependency, application configuration, or migration recognition valid.",
+      "recommendation": "Preserve in both reset options.",
+      "file_metadata": false
+    },
+    {
+      "table": "worker_debts",
+      "model": "WorkerDebt",
+      "module": "app.models.canteen",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "branch_id"
+          ],
+          "referred_table": "branches",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "sale_id"
+          ],
+          "referred_table": "canteen_sales",
+          "referred_columns": [
+            "id"
+          ]
+        },
+        {
+          "columns": [
+            "worker_id"
+          ],
+          "referred_table": "workers",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "debt_payments",
+          "columns": [
+            "worker_debt_id"
+          ]
+        }
+      ],
+      "category": "AMAN_DIKOSONGKAN",
+      "option_a_action": "empty",
+      "option_b_action": "empty",
+      "reason": "Operational, transactional, detail, allocation, log, or generated data that is not required for login/startup once dependencies are respected.",
+      "recommendation": "Empty after backup and dry-run approval.",
+      "file_metadata": false
+    },
+    {
+      "table": "workers",
+      "model": "Worker",
+      "module": "app.models.master",
+      "record_count": 1,
+      "foreign_key_out": [
+        {
+          "columns": [
+            "mandor_id"
+          ],
+          "referred_table": "mandors",
+          "referred_columns": [
+            "id"
+          ]
+        }
+      ],
+      "foreign_key_in": [
+        {
+          "table": "worker_debts",
+          "columns": [
+            "worker_id"
+          ]
+        }
+      ],
+      "category": "MEMERLUKAN_KEPUTUSAN_SAYA",
+      "option_a_action": "preserve",
+      "option_b_action": "approval_required",
+      "reason": "Business master/reference data. Safe Operational Reset should preserve it; Near-Empty Reset may empty it only after owner approval.",
+      "recommendation": "Preserve for Option A; decide explicitly before Option B.",
+      "file_metadata": false
+    }
+  ]
+}

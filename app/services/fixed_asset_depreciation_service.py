@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from calendar import monthrange
 from datetime import date
@@ -18,8 +19,22 @@ from app.models.accounting import (
 from app.services.accounting_service import generate_journal_number
 from app.services.audit_log_service import record_audit_log
 
+logger = logging.getLogger(__name__)
+
 
 FIXED_ASSET_DEPRECIATION_REFERENCE_TYPE = "FIXED_ASSET_DEPRECIATION"
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 DEPRECIATION_METHOD_STRAIGHT_LINE = "STRAIGHT_LINE"
 DEPRECIATION_STATUS_CONFIGURED = "CONFIGURED"
 DEPRECIATION_STATUS_ACTIVE = "ACTIVE"
@@ -70,6 +85,7 @@ def _money(value: Any) -> str:
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/fixed_asset_depreciation_service.py:84")
         return "Rp 0"
 
 
@@ -78,6 +94,7 @@ def is_depreciation_schema_ready() -> bool:
         inspector = inspect(db.engine)
         return inspector.has_table("fixed_asset_depreciation_configs") and inspector.has_table("fixed_asset_depreciations")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/fixed_asset_depreciation_service.py:92")
         return False
 
 
@@ -258,6 +275,11 @@ def configure_asset_depreciation(
     if commit:
         db.session.commit()
     return config
+
+
+def configure_asset_depreciation_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: configure_asset_depreciation(**kwargs))
 
 
 def preview_asset_depreciation(asset: FixedAsset, months: int = 12) -> list[dict[str, Any]]:
@@ -450,6 +472,11 @@ def post_asset_depreciation(
     if commit:
         db.session.commit()
     return entry
+
+
+def post_asset_depreciation_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: post_asset_depreciation(**kwargs))
 
 
 def get_depreciation_summary(branch_id: int) -> dict[str, Any]:

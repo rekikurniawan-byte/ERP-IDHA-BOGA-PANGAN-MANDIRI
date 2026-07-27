@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import os
 import re
@@ -12,6 +13,8 @@ from flask import current_app
 from sqlalchemy import text
 
 from app.extensions import db
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> str:
@@ -78,6 +81,7 @@ def _check_database() -> Dict[str, Any]:
         ok = True
         message = f"Database reachable via backend {backend}."
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:80")
         ok = False
         message = f"Database tidak reachable: {exc}"
     return _check("database_reachable", ok, message, details={"backend": backend})
@@ -90,6 +94,7 @@ def _check_migration() -> Dict[str, Any]:
         row = db.session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
         current = row[0] if row else None
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:92")
         return _check("migration_current", False, f"alembic_version tidak bisa dibaca: {exc}", details={"head_revisions": heads})
     ok = bool(current and current in heads)
     return _check(
@@ -108,6 +113,7 @@ def _check_path(name: str, path: Path, *, must_be_private: bool = False) -> Dict
         try:
             public_static = (_project_root() / "app" / "static").resolve() in path.parents or path == (_project_root() / "app" / "static").resolve()
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:110")
             public_static = False
     ok = exists and writable and not public_static
     message = "Path tersedia dan writable."
@@ -132,6 +138,7 @@ def _check_disk(paths: Iterable[Path]) -> Dict[str, Any]:
             checked.append({"path": str(path), "free_bytes": usage.free, "total_bytes": usage.total, "required_bytes": min_free, "ok": item_ok})
             ok = ok and item_ok
         except Exception as exc:
+            logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:134")
             checked.append({"path": str(path), "error": str(exc), "ok": False})
             ok = False
     return _check("disk_space", ok, "Disk free space cukup." if ok else "Disk free space perlu dicek.", details={"checked_paths": checked})
@@ -141,6 +148,7 @@ def _check_journal_balance() -> Dict[str, Any]:
     try:
         exists = db.session.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name='journal_details' LIMIT 1")).fetchone()
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:143")
         return _check("journal_balance_quick", False, f"Tabel journal_details tidak bisa dicek: {exc}", critical=False)
     if not exists:
         return _check("journal_balance_quick", True, "Tabel journal_details belum ada/masih kosong untuk dicek.", critical=False)
@@ -158,6 +166,7 @@ def _check_journal_balance() -> Dict[str, Any]:
         count = int(row[0] or 0)
         return _check("journal_balance_quick", count == 0, f"Journal imbalance count: {count}.", details={"imbalance_count": count}, critical=False)
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/production_runtime_health_service.py:160")
         return _check("journal_balance_quick", False, f"Journal balance quick check gagal: {exc}", critical=False)
 
 

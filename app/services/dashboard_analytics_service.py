@@ -6,8 +6,9 @@ Efficiency donut payload, and PRODUCTION adds the Revenue Explorer foundation
 without creating dummy data, committing database changes, generating invoices,
 mutating delivery status, or posting journals.
 """
-
 from __future__ import annotations
+
+import logging
 
 import calendar
 from datetime import date, datetime, timedelta
@@ -16,6 +17,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from sqlalchemy import text
 
 from app.extensions import db
+
+logger = logging.getLogger(__name__)
 
 
 CANCELLED_STATUSES = ("CANCELLED", "CANCELED")
@@ -31,6 +34,11 @@ ASSET_SPENDING_REFERENCES = (
     "FIXED_ASSET",
     "ASSET_PURCHASE",
 )
+QUERY_OPTION_IDENTIFIER_WHITELIST = {
+    ("branches", "id", "name"),
+    ("clients", "id", "name"),
+    ("mandors", "id", "name"),
+}
 
 
 MONTH_SHORT_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
@@ -105,6 +113,7 @@ def _rollback_after_read_error() -> None:
     try:
         db.session.rollback()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_analytics_service.py:112")
         pass
 
 
@@ -115,6 +124,7 @@ def _dialect_name() -> str:
         bind = db.session.get_bind()
         return str(getattr(bind.dialect, "name", "") or "").lower()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_analytics_service.py:122")
         return ""
 
 
@@ -158,6 +168,7 @@ def _execute_rows(sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dic
     try:
         return [dict(row) for row in db.session.execute(text(sql), params or {}).mappings().all()]
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_analytics_service.py:165")
         _rollback_after_read_error()
         return []
 
@@ -167,6 +178,7 @@ def _execute_scalar(sql: str, params: Optional[Dict[str, Any]] = None, default: 
         value = db.session.execute(text(sql), params or {}).scalar()
         return default if value is None else value
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_analytics_service.py:174")
         _rollback_after_read_error()
         return default
 
@@ -433,6 +445,8 @@ def _where_optional_client_mandor(alias: str, client_id: Optional[int], mandor_i
 
 
 def _query_options(table: str, value_field: str, label_field: str, where_sql: str = "", params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    if (table, value_field, label_field) not in QUERY_OPTION_IDENTIFIER_WHITELIST:
+        raise ValueError(f"Identifier opsi dashboard tidak diizinkan: {table}.{value_field}/{label_field}")
     rows = _execute_rows(
         f"""
         SELECT {value_field} AS value, {label_field} AS label

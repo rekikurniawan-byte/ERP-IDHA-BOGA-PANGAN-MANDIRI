@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from collections import OrderedDict
 from datetime import date, timedelta
@@ -12,6 +13,8 @@ from app.models.logistics import Procurement
 from app.models.operational import DailyOrder
 from app.services.digital_attachment_service import count_reference_attachments
 from app.services.stock_service import get_stock_summary
+
+logger = logging.getLogger(__name__)
 
 
 SEVERITY_META = {
@@ -80,6 +83,7 @@ def _safe_url(endpoint: str, **kwargs) -> str:
     try:
         return url_for(endpoint, **kwargs)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:82")
         return "#"
 
 
@@ -261,7 +265,7 @@ def _build_hpp_order_reminders(branch_id: int, today: date, reminders: Dict[str,
                 message=f"Lengkapi {', '.join(missing)} agar prediksi bahan dan snapshot HPP tidak perlu input manual berulang.",
                 reference_label=order.order_number,
                 due_date=order.order_date,
-                action_url=_safe_url("operational.order_hpp_defaults", order_id=order.id),
+                action_url=_safe_url("operational.update_order_hpp_defaults_route", order_id=order.id),
                 action_label="Atur Default HPP",
                 metadata={"missing": missing},
             ))
@@ -429,10 +433,12 @@ def build_live_reminder_center(branch_id: int, *, due_days: int = 7, limit_per_s
     try:
         due_days = max(0, min(int(due_days), 60))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:431")
         due_days = 7
     try:
         limit_per_section = max(5, min(int(limit_per_section), 50))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:435")
         limit_per_section = 15
 
     reminders: Dict[str, List[Dict[str, Any]]] = {key: [] for key in SECTION_LABELS.keys()}
@@ -506,6 +512,7 @@ def build_empty_live_reminder_center(*, due_days: int = 7, runtime_warning: Opti
     try:
         due_days = max(0, min(int(due_days), 60))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:508")
         due_days = 7
 
     section_rows = []

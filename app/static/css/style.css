@@ -3576,7 +3576,11 @@ th.text-end {
 }
 
 .sidebar-logout-link {
+    appearance: none;
+    background: transparent;
     margin-top: 8px;
+    padding: 0 10px;
+    text-align: left;
 }
 
 .app-main {
@@ -5401,10 +5405,48 @@ form.app-form .app-danger-separated {
    Scope: invoice detail payment history table.
    Keeps upload controls readable without horizontal text collapse.
    ================================================== */
+.payment-history-table {
+    min-width: 1640px;
+    table-layout: fixed !important;
+}
+
+.payment-history-col-number {
+    width: 180px;
+}
+
+.payment-history-col-date {
+    width: 130px;
+}
+
+.payment-history-col-method {
+    width: 130px;
+}
+
+.payment-history-col-account {
+    width: 360px;
+}
+
+.payment-history-col-amount {
+    width: 150px;
+}
+
+.payment-history-col-reference {
+    width: 210px;
+}
+
+.payment-history-col-proof {
+    width: 560px;
+}
+
+.payment-history-table th,
+.payment-history-table td {
+    vertical-align: top;
+}
+
 .payment-proof-cell {
-    min-width: 680px;
-    width: 48vw;
-    max-width: 820px;
+    min-width: 560px;
+    width: 560px;
+    max-width: 560px;
     vertical-align: top !important;
 }
 
@@ -5438,6 +5480,8 @@ form.app-form .app-danger-separated {
 .payment-proof-upload-form {
     display: grid;
     gap: 10px;
+    min-width: 0;
+    overflow: hidden;
     padding: 12px;
     border: 1px solid var(--border-soft);
     border-radius: var(--radius-card, 16px);
@@ -5446,20 +5490,27 @@ form.app-form .app-danger-separated {
 
 .payment-proof-attachment-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(260px, 1fr) auto;
     gap: 10px;
-    align-items: start;
+    align-items: center;
 }
 
 .payment-proof-attachment-main strong,
-.payment-proof-attachment-main span,
+.payment-proof-attachment-main span {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-wrap: normal;
+}
+
 .payment-proof-upload-label {
     display: block;
     min-width: 0;
     white-space: normal;
     overflow-wrap: anywhere;
-    writing-mode: horizontal-tb;
-    text-orientation: mixed;
 }
 
 .payment-proof-attachment-main strong,
@@ -5479,41 +5530,80 @@ form.app-form .app-danger-separated {
 
 .payment-proof-attachment-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 6px;
 }
 
 .payment-proof-delete-form {
-    display: flex;
+    display: inline-flex;
     justify-content: flex-start;
+    width: auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .payment-proof-upload-grid {
     display: grid;
-    grid-template-columns: minmax(180px, 1.05fr) minmax(190px, 1.1fr) minmax(180px, 1fr) auto;
+    grid-template-columns: minmax(160px, 0.95fr) minmax(220px, 1.2fr);
     gap: 8px;
     align-items: center;
     min-width: 0;
+    max-width: 100%;
+}
+
+.payment-proof-upload-grid .form-control,
+.payment-proof-upload-grid .form-select,
+.payment-proof-upload-grid .btn,
+.payment-proof-upload-grid .app-file-field {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .payment-proof-upload-grid .form-control,
 .payment-proof-upload-grid .form-select,
 .payment-proof-upload-grid .btn {
-    width: 100%;
-    min-width: 0;
     white-space: nowrap;
 }
 
-@media (max-width: 1199.98px) {
-    .payment-proof-cell {
-        min-width: 620px;
-        width: 620px;
-    }
+.payment-proof-upload-grid .app-file-field {
+    min-height: 40px;
+    padding: 4px;
+    border-radius: 16px;
+    box-shadow: none;
+}
 
-    .payment-proof-upload-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+.payment-proof-upload-grid .app-file-trigger {
+    min-height: 32px;
+    min-width: 112px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 12px;
+    background: #111827;
+    color: #ffffff;
+}
+
+.payment-proof-upload-grid .app-file-name {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+[data-theme="dark-enterprise"] .payment-proof-upload-grid .app-file-trigger {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+[data-theme="dark-enterprise"] .payment-proof-upload-grid .app-file-field {
+    background: color-mix(in srgb, var(--surface) 84%, #000 16%);
+    border-color: var(--border-color);
+}
+
+.payment-proof-upload-grid .btn {
+    min-height: 40px;
 }
 
 @media (max-width: 767.98px) {
@@ -5522,14 +5612,31 @@ form.app-form .app-danger-separated {
         width: 520px;
     }
 
-    .payment-proof-attachment-main,
     .payment-proof-upload-grid {
         grid-template-columns: 1fr;
     }
 
-    .payment-proof-attachment-actions,
+    .payment-proof-attachment-main {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .payment-proof-attachment-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
     .payment-proof-upload-grid .btn {
         justify-content: flex-start;
+        width: 100%;
+    }
+
+    .payment-proof-upload-grid .app-file-field {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .payment-proof-upload-grid .app-file-trigger {
         width: 100%;
     }
 }
@@ -24189,5 +24296,409 @@ form[data-app-confirm] :is(button[type="submit"], input[type="submit"], button:n
     .app-ui-regression-action[data-app-action="back"],
     .app-ui-regression-action[data-app-action="close"] {
         display: none !important;
+    }
+}
+
+/* Global table alignment regression guard.
+   Normalizes ordinary app tables after all theme/table locks have loaded. */
+body.is-authenticated .content-area :where(.table-responsive, .app-table-wrapper, .table-wrapper, .data-table-wrapper):not(.payment-history-scroll) {
+    overflow-x: auto !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) {
+    width: 100% !important;
+    min-width: 760px;
+    margin-bottom: 0 !important;
+    table-layout: auto !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-variant-numeric: tabular-nums;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) thead,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tfoot {
+    vertical-align: middle !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) thead th {
+    height: 42px !important;
+    padding: 10px 14px !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0.04em !important;
+    white-space: nowrap !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody td,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody th {
+    min-height: 54px !important;
+    padding: 13px 14px !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody td > :first-child,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody th > :first-child {
+    margin-top: 0 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody td > :last-child,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody th > :last-child {
+    margin-bottom: 0 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td.text-end,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th.text-end,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td[data-finance-money="true"],
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .table-money,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .money-cell {
+    text-align: right !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td.text-center,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th.text-center {
+    text-align: center !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td:has(.btn),
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th:has(.btn),
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td:has(.table-actions),
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th:has(.table-actions),
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td.app-table-action-cell,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th.app-table-action-cell,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td[data-table-action-cell="true"],
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th[data-table-action-cell="true"] {
+    width: auto !important;
+    min-width: 132px !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .table-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td:has(.btn) > :where(a.btn, button.btn, .btn),
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th:has(.btn) > :where(a.btn, button.btn, .btn) {
+    display: inline-flex !important;
+    vertical-align: middle !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td form,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th form {
+    margin: 0 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .btn,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .badge,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .status-badge,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .posting-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .btn {
+    min-height: 34px !important;
+    line-height: 1 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .badge,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .status-badge,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .posting-badge {
+    min-height: 24px !important;
+    line-height: 1 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) small,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .small,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .text-muted {
+    line-height: 1.35 !important;
+    white-space: normal !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td[colspan] {
+    text-align: center !important;
+    white-space: normal !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td[colspan] .empty-state,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td[colspan] .app-empty-state {
+    margin-inline: auto !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) td.cash-bank-ledger-action-cell,
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) th.cash-bank-ledger-action-cell {
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .cash-bank-ledger-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) .cash-bank-ledger-actions > .btn {
+    align-self: flex-end !important;
+    min-width: 64px !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) form.cash-bank-ledger-reconcile-form {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) form.cash-bank-ledger-reconcile-form .form-control {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+body.is-authenticated .content-area table.app-table:not(.payment-history-table) form.cash-bank-ledger-reconcile-form .btn {
+    min-width: 64px !important;
+}
+
+@media (max-width: 767.98px) {
+    body.is-authenticated .content-area table.app-table:not(.payment-history-table) {
+        min-width: 720px;
+    }
+
+    body.is-authenticated .content-area table.app-table:not(.payment-history-table) thead th,
+    body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody td,
+    body.is-authenticated .content-area table.app-table:not(.payment-history-table) tbody th {
+        padding: 11px 12px !important;
+        font-size: 12.5px !important;
+    }
+}
+
+/* Invoice detail payment proof regression guard.
+   This must live after the global table locks because they force
+   app tables back to width:100% and table-layout:auto. */
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-scroll {
+    overflow-x: auto !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] table.payment-history-table {
+    display: table !important;
+    width: 1640px !important;
+    min-width: 1640px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table thead {
+    display: table-header-group !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table tbody {
+    display: table-row-group !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table tr {
+    display: table-row !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table th,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table td {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-number {
+    width: 180px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-date {
+    width: 130px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-method {
+    width: 130px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-account {
+    width: 360px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-amount {
+    width: 150px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-reference {
+    width: 210px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-proof {
+    width: 480px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table th:nth-child(7),
+.finance-page-shell[data-invoice-detail-page="true"] .payment-history-table td.payment-proof-cell {
+    width: 480px !important;
+    min-width: 480px !important;
+    max-width: 480px !important;
+    vertical-align: top !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-cell > *,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-cell * {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-stack,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-list,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-card,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-form {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-card,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-form {
+    overflow: hidden !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+}
+
+body.is-authenticated .content-area .finance-page-shell[data-invoice-detail-page="true"] form.payment-proof-upload-form.app-form {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-main {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-main > div:first-child {
+    min-width: 0 !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-main strong,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-main span {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-actions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    justify-content: flex-end !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-attachment-actions .btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-label {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 2px !important;
+    grid-column: 1 / -1 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .form-select,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .form-control,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .btn,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .app-file-field {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .app-file-field {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    align-items: center !important;
+}
+
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .app-file-trigger,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .app-file-name,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .btn,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .form-control,
+.finance-page-shell[data-invoice-detail-page="true"] .payment-proof-upload-grid .form-select {
+    min-height: 38px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+@media (max-width: 767.98px) {
+    .finance-page-shell[data-invoice-detail-page="true"] table.payment-history-table {
+        width: 1440px !important;
+        min-width: 1440px !important;
+    }
+
+    .finance-page-shell[data-invoice-detail-page="true"] .payment-history-table col.payment-history-col-proof {
+        width: 440px !important;
+    }
+
+    .finance-page-shell[data-invoice-detail-page="true"] .payment-history-table th:nth-child(7),
+    .finance-page-shell[data-invoice-detail-page="true"] .payment-history-table td.payment-proof-cell {
+        width: 440px !important;
+        min-width: 440px !important;
+        max-width: 440px !important;
     }
 }

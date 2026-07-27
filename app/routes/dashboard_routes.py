@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import Blueprint, abort, render_template, redirect, request, url_for
 from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
@@ -20,6 +20,18 @@ from app.services.global_filter_service import resolve_date_filter, build_filter
 
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+
+def _nested_get(data, *keys, default=None):
+    current = data
+    for key in keys:
+        if isinstance(current, dict):
+            current = current.get(key)
+        else:
+            current = getattr(current, key, None)
+        if current is None:
+            return default
+    return current
 
 
 def _analytics_request_filters():
@@ -153,7 +165,7 @@ def _role_landing_payload(role, branch_id=None):
 def index():
     endpoint = _role_landing_endpoint(current_user.role)
     if not endpoint:
-        return redirect(url_for("auth.logout"))
+        abort(403)
 
     return redirect(url_for(endpoint))
 
@@ -196,7 +208,7 @@ def revenue_explorer():
         start_key="revenue_start_date",
         end_key="revenue_end_date",
         preset_key="revenue_period",
-        default_preset=explorer.filters.period_preset if explorer else "this_month",
+        default_preset=_nested_get(explorer, "filters", "period_preset", default="this_month"),
     )
     filter_bar = build_filter_bar_context(
         state=date_filter,
@@ -208,13 +220,13 @@ def revenue_explorer():
         end_name="revenue_end_date",
         preset_name="revenue_period",
         source_name="revenue_source",
-        source_value=explorer.filters.source if explorer else "ALL",
-        source_options=explorer.options.sources if explorer else [],
+        source_value=_nested_get(explorer, "filters", "source", default="ALL"),
+        source_options=_nested_get(explorer, "options", "sources", default=[]),
         hidden_fields={
-            "revenue_group_by": explorer.filters.group_by if explorer else "day",
-            "revenue_client_id": explorer.filters.client_id if explorer else "",
-            "revenue_mandor_id": explorer.filters.mandor_id if explorer else "",
-            "revenue_branch_id": explorer.filters.requested_branch_id if explorer else "",
+            "revenue_group_by": _nested_get(explorer, "filters", "group_by", default="day"),
+            "revenue_client_id": _nested_get(explorer, "filters", "client_id", default=""),
+            "revenue_mandor_id": _nested_get(explorer, "filters", "mandor_id", default=""),
+            "revenue_branch_id": _nested_get(explorer, "filters", "requested_branch_id", default=""),
         },
     )
     return render_template("dashboard/revenue_explorer.html", explorer=explorer, filter_bar=filter_bar)

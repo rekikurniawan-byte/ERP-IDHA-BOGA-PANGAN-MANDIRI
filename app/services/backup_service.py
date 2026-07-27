@@ -5,6 +5,7 @@ Runtime backup uses pg_dump custom format (.dump). Full backup package contains
 that PostgreSQL dump plus private uploads and metadata.
 """
 from __future__ import annotations
+import logging
 
 import hashlib
 import json
@@ -16,10 +17,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
-from flask import current_app
+from flask import current_app, has_app_context
 from sqlalchemy import text
 
 from app.extensions import db
+
+logger = logging.getLogger(__name__)
 
 APP_VERSION = "POSTGRES_ONLY_PRODUCTION"
 BACKUP_CONTRACT_VERSION = "POSTGRES_ONLY_BACKUP_CONTRACT_V1"
@@ -91,16 +94,25 @@ def _database_url() -> str:
     return uri
 
 
+def _postgres_client_url(uri: str) -> str:
+    if uri.startswith("postgresql+psycopg://"):
+        return "postgresql://" + uri[len("postgresql+psycopg://"):]
+    if uri.startswith("postgresql+psycopg2://"):
+        return "postgresql://" + uri[len("postgresql+psycopg2://"):]
+    return uri
+
+
 def _redact_database_url(uri: str) -> str:
     try:
         from sqlalchemy.engine.url import make_url
         return make_url(uri).render_as_string(hide_password=True)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:106")
         return "postgresql://***"
 
 
 def _pg_dump(output_path: Path) -> None:
-    cmd = ["pg_dump", "--format=custom", "--no-owner", "--no-privileges", "--file", str(output_path), _database_url()]
+    cmd = ["pg_dump", "--format=custom", "--no-owner", "--no-privileges", "--file", str(output_path), _postgres_client_url(_database_url())]
     completed = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if completed.returncode != 0:
         raise RuntimeError("pg_dump gagal: " + (completed.stderr or completed.stdout or "unknown error"))
@@ -125,16 +137,38 @@ def _alembic_version() -> str | None:
         row = db.session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
         return row[0] if row else None
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:135")
         return None
+
+
+_BACKUP_COUNT_TABLES = (
+    "users",
+    "branches",
+    "invoices",
+    "payments",
+    "journals",
+    "journal_details",
+    "digital_attachments",
+)
+_BACKUP_COUNT_SQL = {
+    "users": "SELECT COUNT(*) FROM users",
+    "branches": "SELECT COUNT(*) FROM branches",
+    "invoices": "SELECT COUNT(*) FROM invoices",
+    "payments": "SELECT COUNT(*) FROM payments",
+    "journals": "SELECT COUNT(*) FROM journals",
+    "journal_details": "SELECT COUNT(*) FROM journal_details",
+    "digital_attachments": "SELECT COUNT(*) FROM digital_attachments",
+}
 
 
 def _simple_db_counts() -> Dict[str, int]:
     counts: Dict[str, int] = {}
-    for table in ["users", "branches", "invoices", "payments", "journals", "journal_details", "digital_attachments"]:
+    for table in _BACKUP_COUNT_TABLES:
         try:
-            row = db.session.execute(text(f"SELECT COUNT(*) FROM {table}")).fetchone()
+            row = db.session.execute(text(_BACKUP_COUNT_SQL[table])).fetchone()
             counts[table] = int(row[0] or 0) if row else 0
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/backup_service.py:165")
             counts[table] = -1
     return counts
 
@@ -153,6 +187,7 @@ def run_pre_backup_health_check() -> Dict[str, object]:
         db.session.execute(text("SELECT 1"))
         add("POSTGRES_REACHABLE", "PostgreSQL reachable", True, "PostgreSQL reachable.")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:183")
         add("POSTGRES_REACHABLE", "PostgreSQL reachable", False, f"PostgreSQL tidak reachable: {exc}")
 
     add("DATABASE_URL_POSTGRES", "DATABASE_URL PostgreSQL", _database_url().startswith(("postgresql", "postgres")), "DATABASE_URL memakai PostgreSQL.")
@@ -174,6 +209,7 @@ def run_pre_backup_health_check() -> Dict[str, object]:
         imbalanced = int(row[0] or 0)
         add("JOURNAL_BALANCE", "Journal balance", imbalanced == 0, f"Journal imbalance count: {imbalanced}.")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:204")
         warnings.append(f"Journal quick check dilewati/gagal: {exc}")
         checks.append({"code": "JOURNAL_BALANCE", "label": "Journal balance", "status": "WARNING", "message": str(exc)})
 
@@ -311,7 +347,7 @@ def _backup_entry(path: Path, backup_type: str) -> Dict[str, object]:
         "path": str(path),
         "size_bytes": path.stat().st_size if path.exists() else 0,
         "sha256": calculate_sha256(path) if path.exists() and path.is_file() else None,
-        "created_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds") if path.exists() else None,
+        "created_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone() if path.exists() else None,
         "backup_type": backup_type,
         "is_verified_backup": False,
         "restore_dry_run_status": "RUN MANUAL",
@@ -363,6 +399,99 @@ def validate_restore_backup_preview(uploaded_file) -> Dict[str, object]:
         "errors": [] if allowed else ["File restore PostgreSQL harus .dump atau .zip full backup PostgreSQL."],
         "warnings": ["Preview ini tidak menimpa database aktif. Restore tetap manual ke database kosong/test terlebih dahulu."],
         "successes": ["Ekstensi file sesuai backup PostgreSQL."] if allowed else [],
+    }
+
+
+def verify_full_backup_package(zip_file_path: str | Path) -> Dict[str, object]:
+    """Verify a full backup ZIP manifest, database dump entry, and upload hashes.
+
+    This does not restore a database. It proves that the package is internally
+    consistent before a manual or shadow restore drill is attempted.
+    """
+    zip_path = Path(zip_file_path)
+    errors: List[str] = []
+    warnings: List[str] = []
+    successes: List[str] = []
+
+    if not zip_path.exists() or not zip_path.is_file():
+        return {
+            "status": "FAIL",
+            "errors": [f"File tidak ditemukan: {zip_path.name}"],
+            "warnings": [],
+            "successes": [],
+            "verified_at": _now_iso(),
+        }
+
+    sidecar_path = zip_path.with_name(zip_path.name + CHECKSUM_SUFFINAL)
+    zip_sha256 = calculate_sha256(zip_path)
+    if sidecar_path.exists():
+        sidecar_text = sidecar_path.read_text(encoding="utf-8").strip()
+        if not sidecar_text.startswith(zip_sha256):
+            errors.append("SHA256 ZIP tidak cocok dengan sidecar.")
+        else:
+            successes.append("SHA256 ZIP cocok dengan sidecar.")
+    else:
+        warnings.append("Sidecar SHA256 ZIP tidak ditemukan.")
+
+    try:
+        with zipfile.ZipFile(zip_path, "r") as zipf:
+            names = set(zipf.namelist())
+            required = {"manifest.json", FULL_BACKUP_DATABASE_ARC_PATH, "restore_readme.txt"}
+            missing_required = sorted(required - names)
+            if missing_required:
+                errors.append("Entry wajib tidak ada: " + ", ".join(missing_required))
+
+            try:
+                manifest = json.loads(zipf.read("manifest.json").decode("utf-8"))
+            except Exception as exc:
+                logger.exception("Suppressed unexpected exception in app/services/backup_service.py:438")
+                manifest = {}
+                errors.append(f"manifest.json tidak valid: {exc}")
+
+            if manifest:
+                if manifest.get("contract_version") != BACKUP_CONTRACT_VERSION:
+                    warnings.append(f"Contract version berbeda: {manifest.get('contract_version')}")
+                if manifest.get("database_arc_path") != FULL_BACKUP_DATABASE_ARC_PATH:
+                    errors.append("database_arc_path di manifest tidak sesuai.")
+                if FULL_BACKUP_DATABASE_ARC_PATH in names:
+                    database_bytes = zipf.read(FULL_BACKUP_DATABASE_ARC_PATH)
+                    database_sha = hashlib.sha256(database_bytes).hexdigest()
+                    if database_sha != manifest.get("database_sha256"):
+                        errors.append("SHA256 database dump tidak cocok dengan manifest.")
+                    else:
+                        successes.append("SHA256 database dump cocok dengan manifest.")
+                    if len(database_bytes) != int(manifest.get("database_size_bytes") or 0):
+                        errors.append("Ukuran database dump tidak cocok dengan manifest.")
+
+                uploads = manifest.get("uploads") or {}
+                for arc_path, expected in uploads.items():
+                    if arc_path not in names:
+                        errors.append(f"Upload di manifest tidak ada di ZIP: {arc_path}")
+                        continue
+                    upload_bytes = zipf.read(arc_path)
+                    if hashlib.sha256(upload_bytes).hexdigest() != expected.get("sha256"):
+                        errors.append(f"SHA256 upload tidak cocok: {arc_path}")
+                    if len(upload_bytes) != int(expected.get("size_bytes") or 0):
+                        errors.append(f"Ukuran upload tidak cocok: {arc_path}")
+                if uploads and not any(error.startswith("SHA256 upload") or error.startswith("Ukuran upload") for error in errors):
+                    successes.append(f"{len(uploads)} upload cocok dengan manifest.")
+
+            bad_zip_entries = zipf.testzip()
+            if bad_zip_entries:
+                errors.append(f"ZIP corrupt pada entry: {bad_zip_entries}")
+            else:
+                successes.append("ZIP integrity test PASS.")
+    except zipfile.BadZipFile:
+        errors.append("File bukan ZIP valid.")
+
+    return {
+        "status": "PASS" if not errors else "FAIL",
+        "errors": errors,
+        "warnings": warnings,
+        "successes": successes,
+        "zip_sha256": zip_sha256,
+        "sidecar_path": str(sidecar_path) if sidecar_path.exists() else None,
+        "verified_at": _now_iso(),
     }
 
 
@@ -480,6 +609,7 @@ def restore_dry_run(dump_file_path: str | Path) -> Dict[str, object]:
     except subprocess.TimeoutExpired:
         return {"status": "FAIL", "error": "pg_restore --list timeout (file mungkin corrupt atau terlalu besar)."}
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:602")
         return {"status": "FAIL", "error": str(exc)}
 
 
@@ -502,11 +632,12 @@ def restore_dry_run_to_shadow(dump_file_path: str | Path, shadow_db_name: str = 
     try:
         from sqlalchemy.engine.url import make_url
         parsed = make_url(base_url)
-        shadow_url = str(parsed.set(database=shadow_db_name))
+        shadow_url = _postgres_client_url(str(parsed.set(database=shadow_db_name)))
         host = parsed.host or "localhost"
         port = str(parsed.port or 5432)
         user = parsed.username or "postgres"
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:629")
         return {"status": "FAIL", "error": f"Gagal parse DATABASE_URL: {exc}", "steps_completed": steps}
 
     # Step 1: Create shadow database
@@ -519,6 +650,7 @@ def restore_dry_run_to_shadow(dump_file_path: str | Path, shadow_db_name: str = 
     except FileNotFoundError:
         return {"status": "FAIL", "error": "createdb tidak ditemukan di PATH.", "steps_completed": steps}
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:641")
         return {"status": "FAIL", "error": str(exc), "steps_completed": steps}
 
     # Step 2: pg_restore to shadow
@@ -548,6 +680,7 @@ def restore_dry_run_to_shadow(dump_file_path: str | Path, shadow_db_name: str = 
                        check=False, capture_output=True, timeout=15)
         return {"status": "FAIL", "error": "pg_restore timeout.", "steps_completed": steps}
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:670")
         subprocess.run(["dropdb", "-h", host, "-p", port, "-U", user, "--if-exists", shadow_db_name],
                        check=False, capture_output=True, timeout=15)
         return {"status": "FAIL", "error": str(exc), "steps_completed": steps}
@@ -563,6 +696,7 @@ def restore_dry_run_to_shadow(dump_file_path: str | Path, shadow_db_name: str = 
         steps.append("VERIFY_SHADOW_DATA")
         verification = {"user_count": user_count, "alembic_version": alembic}
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:685")
         verification = {"error": str(exc)}
         steps.append("VERIFY_SHADOW_FAILED")
 
@@ -572,6 +706,7 @@ def restore_dry_run_to_shadow(dump_file_path: str | Path, shadow_db_name: str = 
                        check=False, capture_output=True, timeout=15)
         steps.append("DROP_SHADOW_DB")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/backup_service.py:694")
         steps.append("DROP_SHADOW_FAILED")
 
     return {
@@ -607,7 +742,8 @@ def _log_backup_action(action: str, details: Dict[str, object], user=None) -> No
         )
     except Exception:
         # Audit log failure should never break backup operations
-        pass
+        if has_app_context():
+            current_app.logger.exception("Audit log backup/restore gagal.")
 
 
 def create_database_backup_with_audit(user=None) -> Dict[str, object]:

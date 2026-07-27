@@ -1,0 +1,58 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Prediction</span>
+        <h1>Form Prediksi Catering</h1>
+        <p>Prediksi permintaan berdasarkan tanggal dan mandor/PIC aktif.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('prediction.index') }}" class="btn app-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Kembali
+        </a>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="post" class="row g-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="col-md-4">
+            <label class="form-label">Tanggal Prediksi</label>
+            <input type="date" name="prediction_date" value="{{ prediction_date or '' }}" class="form-control">
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Mandor/PIC</label>
+            <select name="mandor_ids" class="form-select" multiple>
+                <option value="all" selected>Semua mandor aktif</option>
+                {% for mandor in mandors %}
+                    <option value="{{ mandor.id }}" {{ "selected" if selected_mandor_ids and mandor.id in selected_mandor_ids else "" }}>
+                        {{ mandor.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-lightning-charge"></i>
+                Hitung Prediksi
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if prediction_result %}
+<div class="app-card mt-4">
+    <h3>Hasil Prediksi</h3>
+    <pre class="mb-0">{{ prediction_result|tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+
+{% if material_result %}
+<div class="app-card mt-4">
+    <h3>Estimasi Bahan</h3>
+    <pre class="mb-0">{{ material_result|tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+{% endblock %}

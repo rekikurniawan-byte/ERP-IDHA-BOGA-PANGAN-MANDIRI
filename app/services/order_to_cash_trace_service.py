@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from app.models.accounting import Account, Journal, JournalDetail
@@ -5,6 +6,8 @@ from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, InvoiceItem, Payment
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production, ProductionDetail
+
+logger = logging.getLogger(__name__)
 
 
 CANCELLED_STATUSES = {"CANCELLED", "CANCELED"}
@@ -15,6 +18,7 @@ def _money_value(value):
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/order_to_cash_trace_service.py:17")
         return 0.0
 
 

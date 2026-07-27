@@ -120,6 +120,10 @@
             <div class="col-12 d-flex gap-2">
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
                 <a class="btn app-btn-secondary" href="{{ url_for('settings.audit_logs') }}">Reset</a>
+                <a class="btn app-btn-secondary" href="{{ url_for('settings.export_audit_logs_csv') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}">
+                    <i class="bi bi-download"></i>
+                    Export CSV
+                </a>
             </div>
         </form>
     </div>

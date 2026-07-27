@@ -1,3 +1,4 @@
+import logging
 import json
 from datetime import datetime
 
@@ -7,6 +8,8 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.system import AuditLog
+
+logger = logging.getLogger(__name__)
 
 
 APP_VERSION = "PRODUCTION"
@@ -51,6 +54,7 @@ def _safe_json(value):
     try:
         return json.dumps(value, ensure_ascii=False, default=str)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/audit_log_service.py:53")
         return str(value)
 
 
@@ -64,6 +68,7 @@ def _metadata_to_dict(value):
             decoded = json.loads(value)
             return decoded if isinstance(decoded, dict) else {"raw_metadata": decoded}
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/audit_log_service.py:66")
             return {"raw_metadata": value}
     return {"raw_metadata": str(value)}
 
@@ -161,6 +166,7 @@ def _current_user_snapshot():
                 getattr(current_user, "role", None),
             )
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/audit_log_service.py:163")
         pass
 
     return None, None, None, None
@@ -235,6 +241,7 @@ def record_audit_log(
             db.session.commit()
         return log
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/audit_log_service.py:237")
         db.session.rollback()
         return None
 
@@ -303,6 +310,7 @@ def _decode_json_text(value):
     try:
         return json.loads(value)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/audit_log_service.py:305")
         return value
 
 

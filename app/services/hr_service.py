@@ -70,6 +70,91 @@ def create_or_update_salary(employee, salary_amount, effective_date, notes=None)
     return record
 
 
+def _commit_or_rollback():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def _skill_names(skills_raw):
+    return [item.strip() for item in str(skills_raw or "").split(",") if item.strip()]
+
+
+def _add_employee_skills(employee_id, skill_names):
+    for skill_name in skill_names:
+        db.session.add(EmployeeSkill(
+            employee_id=employee_id,
+            skill_name=skill_name,
+        ))
+
+
+def create_employee_record(*, branch_id, full_name, phone, join_date, salary_amount, skills_raw):
+    employee = Employee(
+        branch_id=branch_id,
+        full_name=full_name,
+        phone=phone or None,
+        join_date=join_date,
+        status="ACTIVE",
+    )
+
+    db.session.add(employee)
+    db.session.flush()
+    _add_employee_skills(employee.id, _skill_names(skills_raw))
+
+    salary_amount = float(salary_amount or 0)
+    if salary_amount > 0:
+        create_or_update_salary(
+            employee=employee,
+            salary_amount=salary_amount,
+            effective_date=join_date or date.today(),
+            notes="Gaji awal karyawan",
+        )
+
+    _commit_or_rollback()
+    return employee
+
+
+def update_employee_record(
+    employee,
+    *,
+    full_name,
+    phone,
+    join_date,
+    status,
+    salary_amount,
+    salary_effective_date,
+    skills_raw,
+):
+    employee.full_name = full_name
+    employee.phone = phone or None
+    employee.status = status
+    employee.join_date = join_date
+
+    EmployeeSkill.query.filter_by(employee_id=employee.id).delete()
+    _add_employee_skills(employee.id, _skill_names(skills_raw))
+
+    if salary_amount not in [None, ""]:
+        salary_amount = float(salary_amount or 0)
+        if salary_amount > 0:
+            create_or_update_salary(
+                employee=employee,
+                salary_amount=salary_amount,
+                effective_date=salary_effective_date or date.today(),
+                notes="Update gaji karyawan",
+            )
+
+    _commit_or_rollback()
+    return employee
+
+
+def toggle_employee_status(employee):
+    employee.status = "INACTIVE" if employee.status == "ACTIVE" else "ACTIVE"
+    _commit_or_rollback()
+    return employee
+
+
 def generate_payroll(branch_id, period_month, period_year, created_by):
     existing = Payroll.query.filter_by(
         branch_id=branch_id,
@@ -136,6 +221,15 @@ def recalculate_payroll_detail(detail):
     if detail.final_salary < 0:
         detail.final_salary = 0
 
+    return detail
+
+
+def update_payroll_detail_record(detail, *, base_salary, bonus, deduction):
+    detail.base_salary = float(base_salary or 0)
+    detail.bonus = float(bonus or 0)
+    detail.deduction = float(deduction or 0)
+    recalculate_payroll_detail(detail)
+    _commit_or_rollback()
     return detail
 
 

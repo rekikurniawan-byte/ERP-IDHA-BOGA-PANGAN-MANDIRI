@@ -9,6 +9,7 @@ Alur kerja:
 4. Prediksi jumlah bungkus per mandor per waktu makan untuk tanggal tertentu
 5. Konversi prediksi bungkus → estimasi bahan baku via Recipe/BOM
 """
+import logging
 import os
 import pickle
 from datetime import date, timedelta
@@ -17,6 +18,8 @@ from collections import OrderedDict
 from sqlalchemy import text
 
 from app.extensions import db
+
+logger = logging.getLogger(__name__)
 
 
 # Path untuk menyimpan trained model
@@ -77,6 +80,7 @@ def get_historical_data(branch_id, min_date=None, max_date=None):
         rows = db.session.execute(text(sql), params).mappings().all()
         return [dict(row) for row in rows]
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:79")
         db.session.rollback()
         return []
 
@@ -93,6 +97,7 @@ def get_active_mandors(branch_id):
         rows = db.session.execute(text(sql), {"branch_id": branch_id}).mappings().all()
         return [dict(row) for row in rows]
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:95")
         db.session.rollback()
         return []
 
@@ -115,6 +120,7 @@ def get_data_summary(branch_id):
         if row:
             return dict(row)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:117")
         db.session.rollback()
 
     return {
@@ -439,6 +445,7 @@ def get_model_status():
             "metadata": metadata,
         }
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:441")
         return {
             "trained": True,
             "message": "Model file ditemukan tapi metadata tidak bisa dibaca.",
@@ -456,6 +463,7 @@ def _load_model():
         with open(model_file, "rb") as f:
             return pickle.load(f)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:458")
         return None
 
 
@@ -619,6 +627,7 @@ def estimate_materials_from_prediction(branch_id, prediction_result):
     try:
         rows = db.session.execute(text(sql), {"branch_id": branch_id}).mappings().all()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/ml_prediction_service.py:621")
         db.session.rollback()
         return {
             "success": False,

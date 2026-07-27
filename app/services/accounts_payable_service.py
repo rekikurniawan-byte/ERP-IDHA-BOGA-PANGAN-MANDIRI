@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from app.extensions import db
@@ -11,6 +12,8 @@ from app.services.business_logic_guard_service import (
     validate_choice,
 )
 
+logger = logging.getLogger(__name__)
+
 
 SUPPLIER_BILL_STATUS_OPEN = "OPEN"
 SUPPLIER_BILL_STATUS_PARTIAL = "PARTIAL"
@@ -21,6 +24,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounts_payable_service.py:23")
         return "Rp 0"
 
 

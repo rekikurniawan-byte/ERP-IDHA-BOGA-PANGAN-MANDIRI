@@ -8,7 +8,9 @@ from app.models.canteen import (
     CanteenExternalReceivablePayment,
 )
 from app.models.finance import BankAccount, CashBankTransaction
+from app.models.master import Item
 from app.services.atomic_transaction_service import atomic_business_action
+from app.services.master_data_service import generate_item_code
 
 PAYMENT_METHODS = ["CASH", "QRIS", "TRANSFER", "DEBT"]
 PAID_PAYMENT_METHODS = ["CASH", "QRIS", "TRANSFER"]
@@ -26,6 +28,14 @@ def _normalize_choice(value, allowed, default_value):
     return clean if clean in allowed else default_value
 
 
+def _commit_or_rollback():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def _require_active_bank_account(branch_id, bank_account_id):
     if not bank_account_id:
         return None
@@ -40,6 +50,40 @@ def _require_active_bank_account(branch_id, bank_account_id):
         branch_id=branch_id,
         is_active=True,
     ).first()
+
+
+def get_or_create_custom_item(item_name, selling_price=0):
+    clean_name = (item_name or "").strip()
+
+    if not clean_name:
+        return None
+
+    existing_item = Item.query.filter(
+        Item.category == "MERCHANDISE",
+        db.func.lower(Item.item_name) == clean_name.lower(),
+    ).first()
+
+    if existing_item:
+        if hasattr(existing_item, "selling_price") and (existing_item.selling_price or 0) <= 0 and float(selling_price or 0) > 0:
+            existing_item.selling_price = float(selling_price or 0)
+            _commit_or_rollback()
+        return existing_item
+
+    item = Item(
+        item_code=generate_item_code("MERCHANDISE"),
+        item_name=clean_name,
+        category="MERCHANDISE",
+        unit="PCS",
+        minimum_stock=0,
+        selling_price=float(selling_price or 0),
+        is_stock_tracked=False,
+        is_active=True,
+    )
+
+    db.session.add(item)
+    db.session.flush()
+
+    return item
 
 
 def _create_warung_cash_bank_transaction(sale, created_by):

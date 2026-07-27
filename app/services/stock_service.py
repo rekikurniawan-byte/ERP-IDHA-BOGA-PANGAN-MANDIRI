@@ -1,7 +1,7 @@
-from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from app.extensions import db
-from app.models.logistics import StockMovement
+from app.models.logistics import StockMovement, StockOpeningBalance
 from app.models.master import Item
 from app.services.business_logic_guard_service import (
     STOCK_IN_TYPES as GUARDED_STOCK_IN_TYPES,
@@ -15,6 +15,13 @@ STOCK_IN_TYPES = list(GUARDED_STOCK_IN_TYPES)
 STOCK_OUT_TYPES = list(GUARDED_STOCK_OUT_TYPES)
 
 INTEGER_UNIT_KEYWORDS = ["pcs", "pc", "tabung", "pak", "pack", "dus", "box", "unit", "karung", "sak"]
+
+
+def _to_decimal(value):
+    try:
+        return Decimal(str(value or "0"))
+    except (InvalidOperation, ValueError):
+        return None
 
 
 def is_integer_unit(unit):
@@ -31,6 +38,46 @@ def get_stock_items():
     ).order_by(Item.item_name.asc()).all()
 
 
+def get_stock_opening_balance(branch_id, item_id):
+    return StockOpeningBalance.query.filter_by(
+        branch_id=branch_id,
+        item_id=item_id,
+    ).first()
+
+
+def save_stock_opening_balance(branch_id, item_id, opening_date, qty, notes, created_by):
+    item = Item.query.get(item_id)
+    if not item:
+        return False, "Item tidak ditemukan.", None
+    if not item.is_stock_tracked:
+        return False, "Item ini tidak dilacak stoknya.", None
+
+    qty = _to_decimal(qty)
+    if qty is None:
+        return False, "Saldo awal stok tidak valid.", None
+    if qty < 0:
+        return False, "Saldo awal stok tidak boleh negatif.", None
+
+    opening = get_stock_opening_balance(branch_id, item_id)
+    if opening:
+        opening.opening_date = opening_date
+        opening.qty = qty
+        opening.notes = notes
+    else:
+        opening = StockOpeningBalance(
+            branch_id=branch_id,
+            item_id=item_id,
+            opening_date=opening_date,
+            qty=qty,
+            notes=notes,
+            created_by=created_by,
+        )
+        db.session.add(opening)
+
+    db.session.commit()
+    return True, "Saldo awal stok berhasil disimpan.", opening
+
+
 def movement_sign(movement_type):
     if movement_type in STOCK_IN_TYPES:
         return 1
@@ -42,15 +89,21 @@ def movement_sign(movement_type):
 
 
 def get_item_stock(branch_id, item_id):
-    movements = StockMovement.query.filter_by(
+    opening = StockOpeningBalance.query.filter_by(
+        branch_id=branch_id,
+        item_id=item_id,
+    ).first()
+    query = StockMovement.query.filter_by(
         branch_id=branch_id,
         item_id=item_id
-    ).all()
+    )
+    total = Decimal(opening.qty or 0) if opening else Decimal("0")
 
-    total = 0
+    if opening:
+        query = query.filter(StockMovement.movement_date >= opening.opening_date)
 
-    for movement in movements:
-        total += movement_sign(movement.movement_type) * float(movement.qty or 0)
+    for movement in query.all():
+        total += Decimal(movement_sign(movement.movement_type)) * Decimal(movement.qty or 0)
 
     return total
 
@@ -61,25 +114,20 @@ def get_item_stock_for_update(branch_id, item_id):
     Use this instead of get_item_stock() when creating stock OUT movements
     to ensure no two concurrent transactions can overdraw the same item.
     """
-    from sqlalchemy import text
-    from app.extensions import db
+    opening = StockOpeningBalance.query.filter_by(
+        branch_id=branch_id,
+        item_id=item_id,
+    ).with_for_update().first()
+    opening_qty = Decimal(opening.qty or 0) if opening else Decimal("0")
+    query = StockMovement.query.filter_by(branch_id=branch_id, item_id=item_id)
+    if opening:
+        query = query.filter(StockMovement.movement_date >= opening.opening_date)
 
-    result = db.session.execute(text("""
-        SELECT COALESCE(SUM(
-            CASE
-                WHEN movement_type = 'IN' THEN qty
-                WHEN movement_type = 'OUT' THEN -qty
-                WHEN movement_type = 'ADJUSTMENT_IN' THEN qty
-                WHEN movement_type = 'ADJUSTMENT_OUT' THEN -qty
-                ELSE 0
-            END
-        ), 0) AS current_stock
-        FROM stock_movements
-        WHERE branch_id = :branch_id AND item_id = :item_id
-        FOR UPDATE
-    """), {"branch_id": branch_id, "item_id": item_id})
+    total = opening_qty
+    for movement in query.with_for_update().all():
+        total += Decimal(movement_sign(movement.movement_type)) * Decimal(movement.qty or 0)
 
-    return float(result.scalar() or 0)
+    return total
 
 
 def get_stock_summary(branch_id):
@@ -93,10 +141,10 @@ def get_stock_summary(branch_id):
     for item in items:
         stock_qty = get_item_stock(branch_id, item.id)
 
-        if stock_qty <= 0:
+        if stock_qty <= Decimal("0"):
             stock_status = "OUT"
             out_stock_count += 1
-        elif stock_qty <= float(item.minimum_stock or 0):
+        elif stock_qty <= Decimal(item.minimum_stock or 0):
             stock_status = "LOW"
             low_stock_count += 1
         else:

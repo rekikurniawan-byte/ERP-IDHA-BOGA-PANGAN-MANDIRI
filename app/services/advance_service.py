@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from sqlalchemy import inspect
@@ -20,9 +21,22 @@ from app.services.field_transaction_service import (
     find_field_transaction_linked_source,
 )
 
+logger = logging.getLogger(__name__)
+
 
 ADVANCE_REFERENCE_TYPE = "ADVANCE_TRANSACTION"
 ADVANCE_SETTLEMENT_REFERENCE_TYPE = "ADVANCE_SETTLEMENT"
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
 
 CLIENT_DP_RECEIVED = "CLIENT_DP_RECEIVED"
 SUPPLIER_ADVANCE_PAID = "SUPPLIER_ADVANCE_PAID"
@@ -118,6 +132,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/advance_service.py:131")
         return "Rp 0"
 
 
@@ -131,6 +146,7 @@ def is_advance_schema_ready():
         inspector = inspect(db.engine)
         return inspector.has_table("advance_transactions") and inspector.has_table("advance_settlements")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/advance_service.py:144")
         return False
 
 
@@ -399,6 +415,11 @@ def create_advance_transaction(
         db.session.commit()
 
     return True, f"{rule['label']} berhasil dibuat secara optional dan traceable.", advance
+
+
+def create_advance_transaction_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_advance_transaction(**kwargs))
 
 
 def resolve_settlement_reference(branch_id, settlement_type, reference_id):
@@ -679,6 +700,11 @@ def create_advance_settlement(
         db.session.commit()
 
     return True, "Settlement advance berhasil dibuat.", settlement
+
+
+def create_advance_settlement_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_advance_settlement(**kwargs))
 
 
 def get_settlement_reference_options(branch_id, advance):

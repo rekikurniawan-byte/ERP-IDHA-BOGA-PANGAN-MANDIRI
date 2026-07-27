@@ -4,6 +4,7 @@ POSTGRES-ONLY LOCK: old SQLite file-copy failure injection has been removed.
 This smoke test uses a PostgreSQL transaction with a temporary table and rolls it back.
 """
 from __future__ import annotations
+import logging
 
 from datetime import datetime
 from typing import Any, Dict
@@ -11,6 +12,8 @@ from typing import Any, Dict
 from sqlalchemy import text
 
 from app.extensions import db
+
+logger = logging.getLogger(__name__)
 
 APP_VERSION = "POSTGRES_ONLY_PRODUCTION"
 ATOMIC_SMOKE_SCHEMA_VERSION = "POSTGRES_ONLY_ATOMIC_SMOKE_SCHEMA_V1"
@@ -69,6 +72,7 @@ def run_atomic_failure_injection_smoke() -> Dict[str, Any]:
                 "Session database tetap sehat setelah rollback smoke.",
             ))
         except Exception as exc:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_failure_simulation_service.py:71")
             failed.append("session_alive_after_rollback")
             scenarios.append(_scenario_result(
                 "session_alive_after_rollback",
@@ -77,6 +81,7 @@ def run_atomic_failure_injection_smoke() -> Dict[str, Any]:
                 f"Session bermasalah setelah rollback smoke: {exc}",
             ))
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/atomic_failure_simulation_service.py:79")
         failed.append("postgres_transaction_rollback")
         scenarios.append(_scenario_result(
             "postgres_transaction_rollback",

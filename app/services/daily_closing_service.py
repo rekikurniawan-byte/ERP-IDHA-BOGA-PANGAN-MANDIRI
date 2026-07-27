@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime
 
 from app.models.accounting import Journal
@@ -7,6 +8,8 @@ from app.models.finance import Invoice, Payment
 from app.models.logistics import StockMovement
 from app.models.operational import DailyOrder
 from app.models.production import Production
+
+logger = logging.getLogger(__name__)
 
 
 CANCELLED_STATUSES = {"CANCELLED", "CANCELED"}
@@ -37,6 +40,7 @@ def _safe_date(value):
     try:
         return value.strftime("%d-%m-%Y")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/daily_closing_service.py:39")
         return str(value)
 
 
@@ -104,6 +108,7 @@ def _parse_date(value):
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/daily_closing_service.py:106")
         return None
 
 

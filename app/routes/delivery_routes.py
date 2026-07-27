@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file
 from flask_login import current_user
 from datetime import datetime
@@ -33,6 +34,8 @@ from app.services.digital_attachment_service import (
 from app.utils.decorators import role_required
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context
 from app.services.atomic_transaction_service import atomic_business_action
+
+logger = logging.getLogger(__name__)
 
 
 delivery_bp = Blueprint("delivery", __name__, url_prefix="/delivery")
@@ -196,6 +199,7 @@ def mark_dispatch(delivery_id):
             delivery.status = "ON_THE_WAY"
         flash("Jam berangkat delivery berhasil dicatat secara atomic.", "success")
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:198")
         flash(f"Gagal mencatat jam berangkat delivery secara atomic: {error}", "danger")
     return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
@@ -247,6 +251,7 @@ def update_sla(delivery_id):
 
         flash("Target SLA delivery berhasil diperbarui secara atomic.", "success")
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:249")
         flash(f"Gagal update SLA delivery secara atomic: {error}", "danger")
     return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
@@ -299,6 +304,7 @@ def receive(detail_id):
                 except AttachmentValidationError as exc:
                     flash(f"Penerimaan tersimpan, tapi bukti digital gagal diunggah: {exc}", "warning")
                 except Exception as exc:
+                    logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:301")
                     flash(f"Penerimaan tersimpan, tapi bukti digital gagal diunggah: {exc}", "danger")
 
         flash(message, "success" if success else "warning")
@@ -368,6 +374,7 @@ def upload_receipt_attachment(receipt_id):
     except AttachmentValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:370")
         flash(f"Bukti digital gagal diunggah: {exc}", "danger")
 
     return redirect(url_for("delivery.receive", detail_id=receipt.delivery_detail_id))
@@ -381,6 +388,7 @@ def view_attachment(attachment_id):
     try:
         file_path = get_attachment_file_path(attachment)
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:383")
         flash(f"File bukti digital tidak bisa dibuka: {exc}", "danger")
         return redirect(url_for("delivery.detail", delivery_id=receipt.delivery_detail.delivery_id))
 
@@ -400,6 +408,7 @@ def download_attachment(attachment_id):
     try:
         file_path = get_attachment_file_path(attachment)
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:402")
         flash(f"File bukti digital tidak bisa diunduh: {exc}", "danger")
         return redirect(url_for("delivery.detail", delivery_id=receipt.delivery_detail.delivery_id))
 

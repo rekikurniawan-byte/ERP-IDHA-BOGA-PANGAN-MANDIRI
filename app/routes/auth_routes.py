@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user, login_required
 
 from app.services.auth_service import authenticate_user
@@ -60,7 +60,7 @@ def login():
     return render_template("auth/login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
     """Logout resmi: audit aman, session dibersihkan, lalu redirect ke login."""
@@ -79,7 +79,7 @@ def logout():
         )
     except Exception:
         # Logout tidak boleh gagal hanya karena audit log bermasalah.
-        pass
+        current_app.logger.exception("Audit logout gagal.")
 
     logout_user()
     flash("Logout berhasil. Silakan login kembali jika ingin masuk ke dashboard.", "success")

@@ -1,6 +1,9 @@
+import logging
 from flask import Blueprint, jsonify
 
 from app.services.production_runtime_health_service import build_healthz_payload, build_readiness_payload
+
+logger = logging.getLogger(__name__)
 
 
 health_bp = Blueprint("health", __name__)
@@ -14,6 +17,7 @@ def _is_admin_request():
         if current_user and current_user.is_authenticated:
             return getattr(current_user, "role", None) in ("OWNER", "ADMIN")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/routes/health_routes.py:16")
         pass
     return False
 

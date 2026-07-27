@@ -7,12 +7,15 @@ references and oversized/legacy empty-state patterns that should not become
 large blank panels in production pages.
 """
 from __future__ import annotations
+import logging
 
 import re
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 APP_VERSION = "PRODUCTION"
 VISUAL_SWEEP_VERSION = "PRODUCTION_ZERO_EMPTY_PANEL_BROKEN_ROUTE_SWEEP_V1"
@@ -26,6 +29,7 @@ def _rel(path: Path, root: Path) -> str:
     try:
         return str(path.relative_to(root)).replace("\\", "/")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/visual_sweep_service.py:28")
         return str(path).replace("\\", "/")
 
 
@@ -224,6 +228,7 @@ def _css_sweep(root: Path) -> Dict[str, Any]:
         import json
         report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {}
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/visual_sweep_service.py:226")
         report = {}
     return {
         "status": "AMAN" if report_path.exists() and style_path.exists() and src_path.exists() else "PERLU CEK",

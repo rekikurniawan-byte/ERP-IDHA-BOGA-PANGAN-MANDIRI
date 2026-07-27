@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from datetime import datetime
@@ -10,6 +11,8 @@ from app.services.delivery_sla_service import calculate_production_sla, get_prod
 from app.utils.decorators import role_required
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
+
+logger = logging.getLogger(__name__)
 
 
 production_bp = Blueprint("production", __name__, url_prefix="/production")
@@ -170,6 +173,7 @@ def update_realization(production_id):
             if notes:
                 production.notes = notes
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/production_routes.py:172")
         flash(f"Gagal menyimpan realisasi produksi secara atomic: {error}", "danger")
         return redirect(url_for("production.detail", production_id=production.id))
 

@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 from datetime import date, datetime
 
@@ -10,6 +11,8 @@ from app.models.operational import (
 from app.services.hpp_service import find_unit_multiplier, normalize_unit
 from app.services.stock_service import get_item_stock, get_item_stock_for_update, is_integer_unit
 from app.services.business_logic_guard_service import validate_stock_movement_guard
+
+logger = logging.getLogger(__name__)
 
 
 FOOD_COMPONENT_TYPE = "FOOD"
@@ -384,6 +387,7 @@ def commit_hpp_stock_consumption(snapshot, committed_by, consumption_date=None, 
                     is_integer_unit=is_integer_unit(item.unit),
                 )
             except Exception as error:
+                logger.exception("Suppressed unexpected exception in app/services/hpp_stock_consumption_service.py:386")
                 db.session.rollback()
                 return False, str(error), None
 
@@ -430,5 +434,6 @@ def commit_hpp_stock_consumption(snapshot, committed_by, consumption_date=None, 
         return True, "Pemakaian stok dari snapshot HPP berhasil di-commit. StockMovement OUT sudah dibuat.", consumption
 
     except Exception as exc:
+        logger.exception("Suppressed unexpected exception in app/services/hpp_stock_consumption_service.py:432")
         db.session.rollback()
         return False, f"Commit pemakaian stok gagal: {exc}", None

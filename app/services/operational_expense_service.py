@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from sqlalchemy import inspect
@@ -9,8 +10,21 @@ from app.models.master import Supplier
 from app.services.accounting_service import generate_journal_number
 from app.services.audit_log_service import record_audit_log
 
+logger = logging.getLogger(__name__)
+
 
 OPERATIONAL_EXPENSE_REFERENCE_TYPE = "OPERATIONAL_EXPENSE"
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
 
 ELECTRIC_WATER = "ELECTRIC_WATER"
 GAS_LPG = "GAS_LPG"
@@ -60,6 +74,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/operational_expense_service.py:73")
         return "Rp 0"
 
 
@@ -69,6 +84,7 @@ def is_operational_expense_schema_ready():
         inspector = inspect(db.engine)
         return inspector.has_table("operational_expenses")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/operational_expense_service.py:82")
         return False
 
 
@@ -286,3 +302,8 @@ def create_operational_expense(
         db.session.commit()
 
     return True, f"{rule['label']} berhasil diposting ke {rule['account_label']}.", expense
+
+
+def create_operational_expense_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_operational_expense(**kwargs))

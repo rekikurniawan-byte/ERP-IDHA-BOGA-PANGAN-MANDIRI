@@ -3,6 +3,7 @@
 Guard ini sengaja tidak membuat tabel/permission baru. Tujuannya menjadi lapisan
 proteksi reusable untuk aksi sensitif sebelum tahap permission detail/migration.
 """
+import logging
 
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional, Tuple
@@ -12,6 +13,8 @@ from flask_login import current_user
 from werkzeug.security import check_password_hash
 
 from app.services.audit_log_service import record_critical_audit_log
+
+logger = logging.getLogger(__name__)
 
 
 APP_VERSION = "PRODUCTION"
@@ -138,6 +141,7 @@ def _current_user_role() -> Optional[str]:
         if current_user and current_user.is_authenticated:
             return getattr(current_user, "role", None)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/sensitive_action_guard_service.py:140")
         return None
     return None
 
@@ -147,6 +151,7 @@ def _current_user_password_hash() -> Optional[str]:
         if current_user and current_user.is_authenticated:
             return getattr(current_user, "password_hash", None)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/sensitive_action_guard_service.py:149")
         return None
     return None
 
@@ -259,6 +264,7 @@ def validate_sensitive_action_guard(
         try:
             password_ok = check_password_hash(password_hash, password)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/sensitive_action_guard_service.py:261")
             password_ok = False
 
         if not password_ok:

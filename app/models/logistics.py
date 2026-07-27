@@ -13,7 +13,7 @@ class Procurement(BaseModel):
     procurement_date = db.Column(db.Date, nullable=False, index=True)
     purchase_type = db.Column(db.String(30), nullable=False)
     supplier_name = db.Column(db.String(150), nullable=False)
-    total_amount = db.Column(db.Float, nullable=False, default=0)
+    total_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
 
@@ -25,9 +25,9 @@ class ProcurementItem(BaseModel):
 
     procurement_id = db.Column(db.Integer, db.ForeignKey("procurements.id"), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
-    qty = db.Column(db.Float, nullable=False, default=0)
-    unit_price = db.Column(db.Float, nullable=False, default=0)
-    subtotal = db.Column(db.Float, nullable=False, default=0)
+    qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    unit_price = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    subtotal = db.Column(db.Numeric(18, 2), nullable=False, default=0)
 
     item = db.relationship("Item", lazy=True)
 
@@ -40,7 +40,22 @@ class StockMovement(BaseModel):
     movement_type = db.Column(db.String(30), nullable=False)
     reference_type = db.Column(db.String(50), nullable=False)
     reference_id = db.Column(db.Integer, nullable=True)
-    qty = db.Column(db.Float, nullable=False, default=0)
+    qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    notes = db.Column(db.Text, nullable=True)
+    created_by = db.Column(db.Integer, nullable=False)
+
+    item = db.relationship("Item", lazy=True)
+
+class StockOpeningBalance(BaseModel):
+    __tablename__ = "stock_opening_balances"
+    __table_args__ = (
+        db.UniqueConstraint("branch_id", "item_id", name="uq_stock_opening_balance_branch_item"),
+    )
+
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False, index=True)
+    item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False, index=True)
+    opening_date = db.Column(db.Date, nullable=False, index=True)
+    qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
 
@@ -52,7 +67,7 @@ class DamagedItem(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
     damage_date = db.Column(db.Date, nullable=False)
-    qty = db.Column(db.Float, nullable=False, default=0)
+    qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     reason = db.Column(db.Text, nullable=False)
     reported_by = db.Column(db.Integer, nullable=False)
 
@@ -63,9 +78,9 @@ class StockAdjustment(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
     adjustment_date = db.Column(db.Date, nullable=False)
-    system_qty = db.Column(db.Float, nullable=False, default=0)
-    actual_qty = db.Column(db.Float, nullable=False, default=0)
-    difference_qty = db.Column(db.Float, nullable=False, default=0)
+    system_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    actual_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    difference_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     reason = db.Column(db.Text, nullable=False)
     created_by = db.Column(db.Integer, nullable=False)
 
@@ -99,13 +114,13 @@ class ItemRequestDetail(BaseModel):
 
     # Kolom legacy yang sudah ada di database awal.
     # Tetap dipertahankan agar data lama dan form lama tidak rusak.
-    qty = db.Column(db.Float, nullable=False, default=0)
+    qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     unit = db.Column(db.String(30), nullable=False)
 
     # Kolom alur permintaan barang dapur yang dipakai modul logistik aktif.
-    requested_qty = db.Column(db.Float, nullable=False, default=0)
-    approved_qty = db.Column(db.Float, nullable=False, default=0)
-    fulfilled_qty = db.Column(db.Float, nullable=False, default=0)
+    requested_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    approved_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    fulfilled_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     notes = db.Column(db.Text, nullable=True)
 
     item = db.relationship("Item", lazy=True)

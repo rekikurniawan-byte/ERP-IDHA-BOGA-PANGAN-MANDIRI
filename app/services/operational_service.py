@@ -5,6 +5,14 @@ from app.extensions import db
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderRevision, OrderSnapshot
 
 
+def _commit_or_rollback():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def generate_order_number(order_date):
     date_code = order_date.strftime("%Y%m%d")
 
@@ -78,7 +86,7 @@ def add_or_update_order_detail(
     return True, "Detail order berhasil disimpan.", detail
 
 
-def create_order_snapshot(daily_order, created_by):
+def create_order_snapshot(daily_order, created_by, commit=True):
     snapshot_details = []
 
     for detail in daily_order.details:
@@ -102,7 +110,8 @@ def create_order_snapshot(daily_order, created_by):
     )
 
     db.session.add(snapshot)
-    db.session.commit()
+    if commit:
+        _commit_or_rollback()
 
     return snapshot
 
@@ -118,9 +127,8 @@ def lock_daily_order(daily_order, locked_by):
     daily_order.is_locked = True
     daily_order.locked_at = datetime.utcnow()
 
-    db.session.commit()
-
-    create_order_snapshot(daily_order, locked_by)
+    create_order_snapshot(daily_order, locked_by, commit=False)
+    _commit_or_rollback()
 
     return True, "Order berhasil di-lock."
 
@@ -133,7 +141,8 @@ def revise_order_detail(
     dinner_qty_change,
     reason,
     created_by,
-    price_per_portion=None
+    price_per_portion=None,
+    commit=True,
 ):
     lunch_qty_change = int(lunch_qty_change or 0)
     dinner_qty_change = int(dinner_qty_change or 0)
@@ -183,7 +192,8 @@ def revise_order_detail(
     )
 
     db.session.add(revision)
-    db.session.commit()
+    if commit:
+        _commit_or_rollback()
 
     return True, "Revisi order berhasil disimpan."
 
@@ -238,8 +248,12 @@ def add_increase_after_lock(
                 else "Penambahan order setelah lock"
             ),
             created_by=created_by,
-            price_per_portion=new_price
+            price_per_portion=new_price,
+            commit=False,
         )
+
+        if success:
+            _commit_or_rollback()
 
         if success and abs(old_price - new_price) > 0.01:
             return True, "Tambahan setelah lock berhasil disimpan sebagai revisi harga baru. Harga awal detail tidak berubah.", existing_detail
@@ -273,7 +287,7 @@ def add_increase_after_lock(
     )
 
     db.session.add(revision)
-    db.session.commit()
+    _commit_or_rollback()
 
     return True, "Tambahan mandor/lokasi baru setelah lock berhasil disimpan.", detail
 

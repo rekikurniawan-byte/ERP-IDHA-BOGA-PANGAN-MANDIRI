@@ -5,6 +5,7 @@ It records old/manual book recap data as MANUAL_BACKFILL draft batches first;
 invoice/piutang promotion is handled in a later stage so the live flow is not
 changed accidentally.
 """
+import logging
 
 from datetime import date, datetime, timedelta, timezone
 
@@ -20,6 +21,8 @@ from app.services.manual_billing_service import (
     generate_manual_billing_invoice_number,
     generate_manual_billing_number,
 )
+
+logger = logging.getLogger(__name__)
 
 MANUAL_BACKFILL_SOURCE_CATERING = "MANUAL_BOOK_CATERING"
 MANUAL_BACKFILL_SOURCE_WARUNG = "MANUAL_BOOK_WARUNG"
@@ -85,274 +88,72 @@ class ManualBackfillBillingError(Exception):
     pass
 
 
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def _to_float(value):
     if isinstance(value, str):
         value = value.replace(".", "").replace(",", ".").strip()
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/manual_backfill_billing_service.py:103")
         return 0.0
 
 
-def _clean_text(value):
-    return str(value or "").strip()
 
-
-def _normalize_bill_to_type(value):
-    normalized = _clean_text(value).upper()
-    normalized = BILL_TO_ALIASES.get(normalized, normalized)
-    if normalized not in FLEXIBLE_BILL_TO_TYPES:
-        raise ManualBackfillBillingError("Tipe pihak ditagih tidak valid.")
-    return normalized
-
-
-def _normalize_party_name(value):
-    return " ".join(_clean_text(value).lower().split())
-
-
-def _infer_bill_to_type(value=None, mandor_id=None, client_id=None, name=None):
-    """Normalize bill-to type while keeping older test/data objects compatible.
-
-    Tahap 10 stored manual/realtime invoices as MANDOR or CLIENT. Tahap 10.5
-    stores manual backfill batches with the wider type set. For duplicate guard
-    and lightweight unit fakes, infer the old mandor/client meaning when the type
-    field is absent but ids are present.
-    """
-    raw = _clean_text(value)
-    if raw:
-        return _normalize_bill_to_type(raw)
-    if mandor_id:
-        return BILL_TO_MANDOR_EXISTING
-    if client_id:
-        return BILL_TO_CLIENT_EXISTING
-    if _clean_text(name):
-        return BILL_TO_CLIENT_LAIN
-    return None
-
-
-def _legacy_invoice_bill_to_type(value):
-    normalized = _normalize_bill_to_type(value or BILL_TO_MANDOR_EXISTING)
-    if normalized == BILL_TO_MANDOR_EXISTING:
-        return "MANDOR"
-    if normalized == BILL_TO_CLIENT_EXISTING:
-        return "CLIENT"
-    return normalized
-
-
-def _bill_to_display_label(value):
-    mapping = {
-        BILL_TO_MANDOR_EXISTING: "Mandor existing",
-        BILL_TO_CLIENT_EXISTING: "Client existing",
-        BILL_TO_KELOMPOK: "Kelompok",
-        BILL_TO_PERORANGAN: "Perorangan",
-        BILL_TO_CLIENT_LAIN: "Client lain",
-    }
-    return mapping.get(_clean_text(value).upper(), _clean_text(value) or "-")
-
-
-def _resolve_manual_backfill_bill_to(
-    *,
-    branch_id,
-    bill_to_type=None,
-    mandor_id=None,
-    client_id=None,
-    bill_to_name_snapshot=None,
-    bill_to_phone_snapshot=None,
-    bill_to_address_snapshot=None,
-    bill_to_notes=None,
-):
-    bill_to_type = _normalize_bill_to_type(bill_to_type or BILL_TO_MANDOR_EXISTING)
-    mandor = None
-    client = None
-
-    if bill_to_type == BILL_TO_MANDOR_EXISTING:
-        try:
-            mandor_id = int(mandor_id)
-        except (TypeError, ValueError):
-            raise ManualBackfillBillingError("Mandor existing wajib dipilih.")
-        mandor = Mandor.query.filter_by(id=mandor_id, branch_id=branch_id, is_active=True).first()
-        if not mandor:
-            raise ManualBackfillBillingError("Mandor/PIC lapangan tidak ditemukan atau nonaktif.")
-        client = getattr(mandor, "client", None)
-        return {
-            "bill_to_type": bill_to_type,
-            "mandor": mandor,
-            "client": client,
-            "mandor_id": getattr(mandor, "id", None),
-            "client_id": getattr(client, "id", None) or getattr(mandor, "client_id", None),
-            "bill_to_name_snapshot": _clean_text(bill_to_name_snapshot) or _clean_text(getattr(mandor, "name", "")),
-            "bill_to_phone_snapshot": _clean_text(bill_to_phone_snapshot) or _clean_text(getattr(mandor, "phone", "")),
-            "bill_to_address_snapshot": _clean_text(bill_to_address_snapshot),
-            "bill_to_notes": _clean_text(bill_to_notes),
-        }
-
-    if bill_to_type == BILL_TO_CLIENT_EXISTING:
-        try:
-            client_id = int(client_id)
-        except (TypeError, ValueError):
-            raise ManualBackfillBillingError("Client existing wajib dipilih.")
-        client = Client.query.filter_by(id=client_id, is_active=True).first()
-        if not client:
-            raise ManualBackfillBillingError("Client tidak ditemukan atau nonaktif.")
-        return {
-            "bill_to_type": bill_to_type,
-            "mandor": None,
-            "client": client,
-            "mandor_id": None,
-            "client_id": getattr(client, "id", None),
-            "bill_to_name_snapshot": _clean_text(bill_to_name_snapshot) or _clean_text(getattr(client, "name", "")),
-            "bill_to_phone_snapshot": _clean_text(bill_to_phone_snapshot) or _clean_text(getattr(client, "phone", "")),
-            "bill_to_address_snapshot": _clean_text(bill_to_address_snapshot) or _clean_text(getattr(client, "address", "")),
-            "bill_to_notes": _clean_text(bill_to_notes),
-        }
-
-    bill_to_name_snapshot = _clean_text(bill_to_name_snapshot)
-    if not bill_to_name_snapshot:
-        raise ManualBackfillBillingError("Nama pihak ditagih wajib diisi untuk pihak bebas.")
-    return {
-        "bill_to_type": bill_to_type,
-        "mandor": None,
-        "client": None,
-        "mandor_id": None,
-        "client_id": None,
-        "bill_to_name_snapshot": bill_to_name_snapshot,
-        "bill_to_phone_snapshot": _clean_text(bill_to_phone_snapshot),
-        "bill_to_address_snapshot": _clean_text(bill_to_address_snapshot),
-        "bill_to_notes": _clean_text(bill_to_notes),
-    }
-
-
-def _parse_date(value):
-    if isinstance(value, date):
-        return value
-    value = _clean_text(value)
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
-def build_catering_backfill_rows(dates, lunch_qtys, dinner_qtys, unit_prices, notes=None, breakfast_qtys=None):
-    """Normalize repeated catering form rows into ready-to-persist line dicts.
-
-    Tahap 10.13 keeps breakfast/sarapan inside MANUAL_BACKFILL only by storing
-    it in the line description and total qty. No realtime order schema is touched.
-    Duplicate dates inside one manual recap are rejected so users do not silently
-    double-charge the same catering day. Put sarapan/siang/sore in one row for
-    the date, or adjust the same row before lock.
-    """
-    notes = notes or []
-    breakfast_qtys = breakfast_qtys or []
-    rows = []
-    seen_dates = {}
-    max_len = max(
-        len(dates or []),
-        len(breakfast_qtys or []),
-        len(lunch_qtys or []),
-        len(dinner_qtys or []),
-        len(unit_prices or []),
-        len(notes or []),
-        0,
-    )
-
-    for index in range(max_len):
-        row_date = _parse_date(dates[index] if index < len(dates or []) else None)
-        breakfast_qty = _to_float(breakfast_qtys[index] if index < len(breakfast_qtys or []) else 0)
-        lunch_qty = _to_float(lunch_qtys[index] if index < len(lunch_qtys or []) else 0)
-        dinner_qty = _to_float(dinner_qtys[index] if index < len(dinner_qtys or []) else 0)
-        unit_price = _to_float(unit_prices[index] if index < len(unit_prices or []) else 0)
-        note = _clean_text(notes[index] if index < len(notes or []) else "")
-
-        # Blank row: ignore it. Partially filled row: fail loudly so totals do not lie.
-        if not row_date and breakfast_qty <= 0 and lunch_qty <= 0 and dinner_qty <= 0 and unit_price <= 0 and not note:
-            continue
-        if not row_date:
-            raise ManualBackfillBillingError(f"Tanggal catering baris {index + 1} wajib diisi.")
-        if row_date in seen_dates:
-            first_row = seen_dates[row_date]
-            raise ManualBackfillBillingError(
-                "Tanggal catering tidak boleh dobel dalam satu rekap. "
-                f"Tanggal {row_date.strftime('%d-%m-%Y')} sudah ada di baris {first_row}. "
-                "Gabungkan sarapan/siang/sore atau penyesuaian pada satu baris tanggal yang sama."
-            )
-        seen_dates[row_date] = index + 1
-
-        total_qty = breakfast_qty + lunch_qty + dinner_qty
-        if total_qty <= 0:
-            raise ManualBackfillBillingError(f"Porsi catering baris {index + 1} wajib lebih dari 0.")
-        if unit_price <= 0:
-            raise ManualBackfillBillingError(f"Harga per porsi catering baris {index + 1} wajib lebih dari 0.")
-
-        subtotal = total_qty * unit_price
-        description = (
-            f"Catering manual buku {row_date.strftime('%d-%m-%Y')} | "
-            f"Sarapan {breakfast_qty:g} | Siang {lunch_qty:g} | Sore {dinner_qty:g} | Total {total_qty:g} porsi"
-        )
-        if note:
-            description = f"{description} | {note}"
-
-        rows.append({
-            "item_type": MANUAL_BACKFILL_ITEM_CATERING,
-            "source_type": MANUAL_BACKFILL_SOURCE_CATERING,
-            "source_date": row_date,
-            "description": description,
-            "qty": total_qty,
-            "unit_price": unit_price,
-            "subtotal": subtotal,
-            "source_label": row_date.strftime("%d-%m-%Y"),
-        })
-
-    return rows
-
-
-def build_warung_backfill_rows(worker_names, debt_amounts, notes=None):
-    """Normalize repeated warung/kasbon form rows into ready-to-persist line dicts."""
-    notes = notes or []
-    rows = []
-    max_len = max(len(worker_names or []), len(debt_amounts or []), len(notes or []), 0)
-
-    for index in range(max_len):
-        worker_name = _clean_text(worker_names[index] if index < len(worker_names or []) else "")
-        amount = _to_float(debt_amounts[index] if index < len(debt_amounts or []) else 0)
-        note = _clean_text(notes[index] if index < len(notes or []) else "")
-
-        if not worker_name and amount <= 0 and not note:
-            continue
-        if not worker_name:
-            raise ManualBackfillBillingError(f"Nama pekerja warung/kasbon baris {index + 1} wajib diisi.")
-        if amount <= 0:
-            raise ManualBackfillBillingError(f"Nominal warung/kasbon baris {index + 1} wajib lebih dari 0.")
-
-        description = f"Kasbon/hutang warung pekerja {worker_name}"
-        if note:
-            description = f"{description} | {note}"
-
-        rows.append({
-            "item_type": MANUAL_BACKFILL_ITEM_WARUNG,
-            "source_type": MANUAL_BACKFILL_SOURCE_WARUNG,
-            "source_date": None,
-            "description": description,
-            "qty": 1,
-            "unit_price": amount,
-            "subtotal": amount,
-            "source_label": worker_name,
-        })
-
-    return rows
-
-
-def summarize_backfill_rows(rows):
-    catering_total = sum(_to_float(row.get("subtotal")) for row in rows if row.get("item_type") == MANUAL_BACKFILL_ITEM_CATERING)
-    warung_total = sum(_to_float(row.get("subtotal")) for row in rows if row.get("item_type") == MANUAL_BACKFILL_ITEM_WARUNG)
-    return {
-        "catering_total": catering_total,
-        "warung_total": warung_total,
-        "total_amount": catering_total + warung_total,
-        "item_count": len(rows),
-    }
-
+from app.services.manual_backfill_bill_to_service import (  # noqa: E402
+    _bill_to_display_label,
+    _clean_text,
+    _infer_bill_to_type,
+    _legacy_invoice_bill_to_type,
+    _normalize_bill_to_type,
+    _normalize_party_name,
+    _resolve_manual_backfill_bill_to,
+)
+from app.services.manual_backfill_rows_service import (  # noqa: E402
+    _parse_date,
+    build_catering_backfill_rows,
+    build_warung_backfill_rows,
+    summarize_backfill_rows,
+)
+from app.services.manual_backfill_duplicate_service import (  # noqa: E402
+    _active_status,
+    _batch_party_key,
+    _category_labels,
+    _format_period,
+    _invoice_billing_categories,
+    _invoice_party_key,
+    _invoice_period,
+    _item_categories_from_items,
+    _normalize_billing_category,
+    _party_key_from_values,
+    _period_from_daily_order,
+    _query_all_or_first,
+    _ranges_overlap,
+    _same_billed_party,
+    assert_no_manual_backfill_duplicate_conflicts,
+    build_manual_backfill_duplicate_guard_context,
+    collect_manual_backfill_duplicate_conflicts,
+    format_manual_backfill_duplicate_conflict_message,
+    get_manual_backfill_bill_to_context,
+)
+from app.services.manual_backfill_presentation_service import (  # noqa: E402
+    build_manual_backfill_print_context,
+    build_manual_backfill_register_summary,
+    get_manual_backfill_bill_to_filter_choices,
+    get_manual_backfill_status_context,
+    get_manual_backfill_status_filter_choices,
+    normalize_manual_backfill_bill_to_filter,
+    normalize_manual_backfill_status_filter,
+)
 
 def _normalize_manual_backfill_batch_payload(
     *,
@@ -447,6 +248,7 @@ def create_manual_backfill_batch(
     warung_rows=None,
     notes=None,
     created_by,
+    commit=False,
 ):
     """Create a MANUAL_BACKFILL draft recap from manual book rows.
 
@@ -508,7 +310,15 @@ def create_manual_backfill_batch(
         commit=False,
     )
 
+    if commit:
+        db.session.commit()
+
     return batch
+
+
+def create_manual_backfill_batch_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_manual_backfill_batch(**kwargs))
 
 
 def _delete_manual_backfill_batch_items(batch):
@@ -603,537 +413,10 @@ def update_manual_backfill_batch(
     return batch
 
 
-def _query_all_or_first(model, **filters):
-    """Return query results while staying friendly to lightweight unit fakes."""
-    query = getattr(model, "query", None)
-    if query is None:
-        return []
-    query = query.filter_by(**filters)
-    if hasattr(query, "all"):
-        return [item for item in (query.all() or []) if item is not None]
-    if hasattr(query, "first"):
-        first = query.first()
-        return [first] if first is not None else []
-    return []
+def update_manual_backfill_batch_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: update_manual_backfill_batch(**kwargs))
 
-
-def _ranges_overlap(start_a, end_a, start_b, end_b):
-    if not start_a or not end_a or not start_b or not end_b:
-        return False
-    return start_a <= end_b and start_b <= end_a
-
-
-def _normalize_billing_category(item_type=None, source_type=None):
-    item_type = _clean_text(item_type).upper()
-    source_type = _clean_text(source_type).upper()
-    if item_type in CATERING_ITEM_TYPES or source_type in CATERING_SOURCE_TYPES:
-        return BILLING_CATEGORY_CATERING
-    if item_type in WARUNG_ITEM_TYPES or source_type in WARUNG_SOURCE_TYPES:
-        return BILLING_CATEGORY_WARUNG
-    return BILLING_CATEGORY_OTHER
-
-
-def _item_categories_from_items(items):
-    categories = set()
-    for item in list(items or []):
-        categories.add(_normalize_billing_category(
-            getattr(item, "item_type", None),
-            getattr(item, "source_type", None),
-        ))
-    return categories or {BILLING_CATEGORY_OTHER}
-
-
-def _party_key_from_values(bill_to_type=None, mandor_id=None, client_id=None, name=None):
-    normalized_type = _infer_bill_to_type(bill_to_type, mandor_id, client_id, name)
-
-    if normalized_type == BILL_TO_MANDOR_EXISTING and mandor_id:
-        return ("MANDOR_ID", int(mandor_id))
-    if normalized_type == BILL_TO_CLIENT_EXISTING and client_id:
-        return ("CLIENT_ID", int(client_id))
-    if normalized_type in {BILL_TO_KELOMPOK, BILL_TO_PERORANGAN, BILL_TO_CLIENT_LAIN}:
-        normalized_name = _normalize_party_name(name)
-        if normalized_name:
-            return ("FREE_NAME", normalized_type, normalized_name)
-    return None
-
-
-def _batch_party_key(batch):
-    return _party_key_from_values(
-        getattr(batch, "bill_to_type", None),
-        getattr(batch, "mandor_id", None),
-        getattr(batch, "client_id", None),
-        getattr(batch, "bill_to_name_snapshot", None),
-    )
-
-
-def _invoice_party_key(invoice):
-    return _party_key_from_values(
-        getattr(invoice, "bill_to_type", None),
-        getattr(invoice, "mandor_id", None),
-        getattr(invoice, "client_id", None),
-        getattr(invoice, "client_name_snapshot", None),
-    )
-
-
-def _same_billed_party(left_key, right_key):
-    return bool(left_key and right_key and left_key == right_key)
-
-
-def _period_from_daily_order(invoice):
-    source_order_id = getattr(invoice, "source_order_id", None)
-    if not source_order_id:
-        return None, None
-    try:
-        from app.models.operational import DailyOrder
-        order = DailyOrder.query.get(source_order_id)
-        order_date = getattr(order, "order_date", None)
-        if order_date:
-            return order_date, order_date
-    except Exception:
-        return None, None
-    return None, None
-
-
-def _invoice_period(invoice):
-    period_start = getattr(invoice, "period_start", None)
-    period_end = getattr(invoice, "period_end", None)
-    if period_start and period_end:
-        return period_start, period_end
-
-    # Invoice order harian lama ada yang belum menyimpan periode. Fallback ini
-    # penting agar backfill tidak bisa menabrak invoice order harian lama.
-    if _clean_text(getattr(invoice, "source_type", "")).upper() == "DAILY_ORDER":
-        return _period_from_daily_order(invoice)
-
-    return None, None
-
-
-def _invoice_billing_categories(invoice):
-    categories = _item_categories_from_items(getattr(invoice, "items", []) or [])
-    if categories and categories != {BILLING_CATEGORY_OTHER}:
-        return categories
-    source_type = _clean_text(getattr(invoice, "source_type", "")).upper()
-    if source_type == "DAILY_ORDER":
-        return {BILLING_CATEGORY_CATERING}
-    if source_type == "PERIOD_INVOICE":
-        return {BILLING_CATEGORY_CATERING, BILLING_CATEGORY_WARUNG}
-    if source_type == MANUAL_BILLING_INVOICE_SOURCE:
-        return categories
-    return categories
-
-
-def _active_status(value):
-    return _clean_text(value).upper() not in INACTIVE_BILLING_STATUSES
-
-
-def _format_period(start, end):
-    if not start or not end:
-        return "periode tidak diketahui"
-    try:
-        return f"{start.strftime('%d-%m-%Y')} s/d {end.strftime('%d-%m-%Y')}"
-    except Exception:
-        return f"{start} s/d {end}"
-
-
-def _category_labels(categories):
-    labels = []
-    if BILLING_CATEGORY_CATERING in categories:
-        labels.append("catering")
-    if BILLING_CATEGORY_WARUNG in categories:
-        labels.append("warung/kasbon")
-    if BILLING_CATEGORY_OTHER in categories:
-        labels.append("tagihan lain")
-    return ", ".join(labels) or "tagihan"
-
-
-def collect_manual_backfill_duplicate_conflicts(batch):
-    """Find active documents that could double-charge this manual-book recap.
-
-    Guard boundary:
-    - Same branch
-    - Same mandor/kelompok
-    - Overlapping period
-    - Overlapping billing category, e.g. catering vs catering or warung vs warung
-
-    This intentionally blocks across input lanes: REALTIME and MANUAL_BACKFILL.
-    """
-    if not batch:
-        return []
-    if not _active_status(getattr(batch, "status", None)):
-        return []
-
-    branch_id = getattr(batch, "branch_id", None)
-    period_start = getattr(batch, "period_start", None)
-    period_end = getattr(batch, "period_end", None)
-    current_batch_id = getattr(batch, "id", None)
-    current_invoice_id = getattr(batch, "invoice_id", None)
-    target_categories = _item_categories_from_items(getattr(batch, "items", []) or [])
-    target_party_key = _batch_party_key(batch)
-
-    if not branch_id or not target_party_key or not period_start or not period_end or not target_categories:
-        return []
-
-    conflicts = []
-
-    invoices = _query_all_or_first(Invoice, branch_id=branch_id)
-    for invoice in invoices:
-        if not _same_billed_party(target_party_key, _invoice_party_key(invoice)):
-            continue
-        if current_invoice_id and int(getattr(invoice, "id", 0) or 0) == int(current_invoice_id):
-            continue
-        if not _active_status(getattr(invoice, "status", None)):
-            continue
-
-        invoice_start, invoice_end = _invoice_period(invoice)
-        if not _ranges_overlap(period_start, period_end, invoice_start, invoice_end):
-            continue
-
-        invoice_categories = _invoice_billing_categories(invoice)
-        overlap_categories = target_categories & invoice_categories
-        if not overlap_categories:
-            continue
-
-        conflicts.append({
-            "kind": "INVOICE",
-            "invoice_id": getattr(invoice, "id", None),
-            "number": getattr(invoice, "invoice_number", None) or f"Invoice #{getattr(invoice, 'id', '-')}",
-            "status": getattr(invoice, "status", None),
-            "status_label": _clean_text(getattr(invoice, "status", None)).upper() or "-",
-            "input_source": getattr(invoice, "input_source", None) or INPUT_SOURCE_REALTIME,
-            "period": _format_period(invoice_start, invoice_end),
-            "categories": sorted(overlap_categories),
-            "category_label": _category_labels(overlap_categories),
-        })
-
-    batches = _query_all_or_first(ManualBillingBatch, branch_id=branch_id)
-    for other_batch in batches:
-        if not _same_billed_party(target_party_key, _batch_party_key(other_batch)):
-            continue
-        if current_batch_id and int(getattr(other_batch, "id", 0) or 0) == int(current_batch_id):
-            continue
-        status = _clean_text(getattr(other_batch, "status", "")).upper()
-        if status == MANUAL_BACKFILL_STATUS_DRAFT or not _active_status(status):
-            continue
-        if not _ranges_overlap(period_start, period_end, getattr(other_batch, "period_start", None), getattr(other_batch, "period_end", None)):
-            continue
-
-        other_categories = _item_categories_from_items(getattr(other_batch, "items", []) or [])
-        overlap_categories = target_categories & other_categories
-        if not overlap_categories:
-            continue
-
-        conflicts.append({
-            "kind": "REKAP",
-            "batch_id": getattr(other_batch, "id", None),
-            "invoice_id": getattr(other_batch, "invoice_id", None),
-            "number": getattr(other_batch, "batch_number", None) or f"Rekap #{getattr(other_batch, 'id', '-')}",
-            "linked_invoice_number": getattr(getattr(other_batch, "invoice", None), "invoice_number", None),
-            "status": getattr(other_batch, "status", None),
-            "status_label": _clean_text(getattr(other_batch, "status", None)).upper() or "-",
-            "input_source": getattr(other_batch, "input_source", None) or INPUT_SOURCE_REALTIME,
-            "period": _format_period(getattr(other_batch, "period_start", None), getattr(other_batch, "period_end", None)),
-            "categories": sorted(overlap_categories),
-            "category_label": _category_labels(overlap_categories),
-        })
-
-    return conflicts
-
-
-def build_manual_backfill_duplicate_guard_context(batch):
-    conflicts = collect_manual_backfill_duplicate_conflicts(batch)
-    return {
-        "has_conflicts": bool(conflicts),
-        "conflicts": conflicts,
-        "message": format_manual_backfill_duplicate_conflict_message(conflicts) if conflicts else "",
-    }
-
-
-def format_manual_backfill_duplicate_conflict_message(conflicts):
-    if not conflicts:
-        return ""
-    first = conflicts[0]
-    return (
-        "Rekap ini berpotensi menagih data dobel. "
-        f"Bentrok dengan {first['kind'].lower()} {first['number']} "
-        f"periode {first['period']} untuk kategori {first['category_label']}."
-    )
-
-
-def assert_no_manual_backfill_duplicate_conflicts(batch):
-    conflicts = collect_manual_backfill_duplicate_conflicts(batch)
-    if conflicts:
-        raise ManualBackfillBillingError(format_manual_backfill_duplicate_conflict_message(conflicts))
-    return True
-
-
-def get_manual_backfill_bill_to_context(batch):
-    """Return display-safe billed party data for manual backfill screens."""
-    if not batch:
-        return {
-            "type": "",
-            "type_label": "-",
-            "name": "-",
-            "phone": "",
-            "address": "",
-            "notes": "",
-            "master_context": "-",
-        }
-
-    bill_to_type = _infer_bill_to_type(
-        getattr(batch, "bill_to_type", None),
-        getattr(batch, "mandor_id", None),
-        getattr(batch, "client_id", None),
-        getattr(batch, "bill_to_name_snapshot", None),
-    ) or _clean_text(getattr(batch, "bill_to_type", ""))
-    mandor = getattr(batch, "mandor", None)
-    client = getattr(batch, "client", None)
-
-    snapshot_name = _clean_text(getattr(batch, "bill_to_name_snapshot", ""))
-    if not snapshot_name and bill_to_type == BILL_TO_MANDOR_EXISTING:
-        snapshot_name = _clean_text(getattr(mandor, "name", ""))
-    if not snapshot_name and bill_to_type == BILL_TO_CLIENT_EXISTING:
-        snapshot_name = _clean_text(getattr(client, "name", ""))
-
-    master_context = "-"
-    if bill_to_type == BILL_TO_MANDOR_EXISTING:
-        master_context = _clean_text(getattr(mandor, "name", "")) or f"Mandor ID {getattr(batch, 'mandor_id', '-')}"
-        if client:
-            master_context = f"{master_context} / {getattr(client, 'name', '-')}"
-    elif bill_to_type == BILL_TO_CLIENT_EXISTING:
-        master_context = _clean_text(getattr(client, "name", "")) or f"Client ID {getattr(batch, 'client_id', '-')}"
-    else:
-        master_context = "Pihak bebas tanpa master mandor/client"
-
-    return {
-        "type": bill_to_type,
-        "type_label": _bill_to_display_label(bill_to_type),
-        "name": snapshot_name or "-",
-        "phone": _clean_text(getattr(batch, "bill_to_phone_snapshot", "")),
-        "address": _clean_text(getattr(batch, "bill_to_address_snapshot", "")),
-        "notes": _clean_text(getattr(batch, "bill_to_notes", "")),
-        "master_context": master_context,
-    }
-
-
-def get_manual_backfill_status_context(status):
-    """Return human-readable status metadata for the manual-book backfill flow."""
-    normalized = _clean_text(status).upper() or MANUAL_BACKFILL_STATUS_DRAFT
-    mapping = {
-        MANUAL_BACKFILL_STATUS_DRAFT: {
-            "label": "Draft",
-            "badge_class": "status-warning",
-            "helper": "Masih bisa diperiksa. Belum dikunci, belum menjadi invoice/piutang.",
-        },
-        MANUAL_BACKFILL_STATUS_LOCKED: {
-            "label": "Terkunci",
-            "badge_class": "status-success",
-            "helper": "Data sudah dikunci sebagai dasar tagihan. Tahap berikutnya bisa dipromosikan ke invoice.",
-        },
-        MANUAL_BACKFILL_STATUS_INVOICED: {
-            "label": "Sudah Jadi Invoice",
-            "badge_class": "status-info",
-            "helper": "Rekap sudah dipromosikan menjadi invoice/piutang.",
-        },
-        MANUAL_BACKFILL_STATUS_PARTIALLY_PAID: {
-            "label": "Dibayar Sebagian",
-            "badge_class": "status-progress",
-            "helper": "Invoice dari rekap ini sudah dibayar sebagian.",
-        },
-        MANUAL_BACKFILL_STATUS_PAID: {
-            "label": "Lunas",
-            "badge_class": "status-success",
-            "helper": "Invoice dari rekap ini sudah lunas.",
-        },
-        MANUAL_BACKFILL_STATUS_VOID: {
-            "label": "Batal",
-            "badge_class": "status-danger",
-            "helper": "Rekap ini dibatalkan dan tidak boleh dipakai untuk invoice.",
-        },
-    }
-    return mapping.get(normalized, {
-        "label": normalized,
-        "badge_class": "status-progress",
-        "helper": "Status rekap belum dikenali penuh oleh UI.",
-    })
-
-
-
-def get_manual_backfill_status_filter_choices():
-    """Choices for the manual-book recap register filter.
-
-    Kept in the service layer so route, template, and tests use one status
-    vocabulary. This is read-only UI metadata and does not affect REALTIME flow.
-    """
-    return [
-        {"value": "", "label": "Semua status"},
-        {"value": MANUAL_BACKFILL_STATUS_DRAFT, "label": "Draft"},
-        {"value": MANUAL_BACKFILL_STATUS_LOCKED, "label": "Terkunci"},
-        {"value": MANUAL_BACKFILL_STATUS_INVOICED, "label": "Sudah Jadi Invoice"},
-        {"value": MANUAL_BACKFILL_STATUS_PARTIALLY_PAID, "label": "Dibayar Sebagian"},
-        {"value": MANUAL_BACKFILL_STATUS_PAID, "label": "Lunas"},
-        {"value": MANUAL_BACKFILL_STATUS_VOID, "label": "Batal/Void"},
-    ]
-
-
-def get_manual_backfill_bill_to_filter_choices():
-    """Choices for the manual-book billed-party type filter."""
-    return [
-        {"value": "", "label": "Semua pihak"},
-        {"value": BILL_TO_MANDOR_EXISTING, "label": "Mandor existing"},
-        {"value": BILL_TO_CLIENT_EXISTING, "label": "Client existing"},
-        {"value": BILL_TO_KELOMPOK, "label": "Kelompok"},
-        {"value": BILL_TO_PERORANGAN, "label": "Perorangan"},
-        {"value": BILL_TO_CLIENT_LAIN, "label": "Client lain"},
-    ]
-
-
-def normalize_manual_backfill_status_filter(value):
-    normalized = _clean_text(value).upper()
-    valid_statuses = {choice["value"] for choice in get_manual_backfill_status_filter_choices() if choice["value"]}
-    return normalized if normalized in valid_statuses else ""
-
-
-def normalize_manual_backfill_bill_to_filter(value):
-    normalized = _clean_text(value).upper()
-    if not normalized:
-        return ""
-    normalized = BILL_TO_ALIASES.get(normalized, normalized)
-    return normalized if normalized in FLEXIBLE_BILL_TO_TYPES else ""
-
-
-def build_manual_backfill_register_summary(batches):
-    """Build compact totals for the manual-book recap register.
-
-    The register is an operational control screen, not accounting posting. VOID
-    rows remain visible for trace, but they are excluded from active amount so
-    users do not read cancelled book input as collectable receivable.
-    """
-    rows = list(batches or [])
-    status_counts = {
-        MANUAL_BACKFILL_STATUS_DRAFT: 0,
-        MANUAL_BACKFILL_STATUS_LOCKED: 0,
-        MANUAL_BACKFILL_STATUS_INVOICED: 0,
-        MANUAL_BACKFILL_STATUS_PARTIALLY_PAID: 0,
-        MANUAL_BACKFILL_STATUS_PAID: 0,
-        MANUAL_BACKFILL_STATUS_VOID: 0,
-    }
-    total_amount = 0.0
-    active_total_amount = 0.0
-    invoice_ready_count = 0
-    receivable_count = 0
-
-    for batch in rows:
-        status = _clean_text(getattr(batch, "status", "")).upper() or MANUAL_BACKFILL_STATUS_DRAFT
-        amount = _to_float(getattr(batch, "total_amount", 0))
-        total_amount += amount
-        status_counts[status] = status_counts.get(status, 0) + 1
-
-        if status != MANUAL_BACKFILL_STATUS_VOID:
-            active_total_amount += amount
-        if status == MANUAL_BACKFILL_STATUS_LOCKED and not getattr(batch, "invoice_id", None):
-            invoice_ready_count += 1
-        if status in {
-            MANUAL_BACKFILL_STATUS_INVOICED,
-            MANUAL_BACKFILL_STATUS_PARTIALLY_PAID,
-        }:
-            receivable_count += 1
-
-    return {
-        "total_count": len(rows),
-        "total_amount": total_amount,
-        "active_total_amount": active_total_amount,
-        "draft_count": status_counts.get(MANUAL_BACKFILL_STATUS_DRAFT, 0),
-        "locked_count": status_counts.get(MANUAL_BACKFILL_STATUS_LOCKED, 0),
-        "invoice_ready_count": invoice_ready_count,
-        "receivable_count": receivable_count,
-        "paid_count": status_counts.get(MANUAL_BACKFILL_STATUS_PAID, 0),
-        "void_count": status_counts.get(MANUAL_BACKFILL_STATUS_VOID, 0),
-        "status_counts": status_counts,
-    }
-
-
-
-def build_manual_backfill_print_context(batch):
-    """Build read-only print context for one MANUAL_BACKFILL recap.
-
-    This helper only summarizes an existing batch for browser print/save-PDF.
-    It does not create files, write database rows, or touch the REALTIME flow.
-    """
-    items = sorted(
-        list(getattr(batch, "items", []) or []),
-        key=lambda item: (
-            getattr(item, "source_date", None) is None,
-            getattr(item, "source_date", None) or date.min,
-            getattr(item, "id", 0) or 0,
-        ),
-    )
-    catering_rows = []
-    warung_rows = []
-    other_rows = []
-    summary = {
-        "item_count": len(items),
-        "catering_count": 0,
-        "warung_count": 0,
-        "other_count": 0,
-        "catering_qty": 0.0,
-        "warung_qty": 0.0,
-        "other_qty": 0.0,
-        "catering_total": 0.0,
-        "warung_total": 0.0,
-        "other_total": 0.0,
-        "grand_total": _to_float(getattr(batch, "total_amount", 0)),
-    }
-
-    for index, item in enumerate(items, start=1):
-        item_type = _clean_text(getattr(item, "item_type", "")).upper()
-        qty = _to_float(getattr(item, "qty", 0))
-        subtotal = _to_float(getattr(item, "subtotal", 0))
-        row = {
-            "index": index,
-            "item": item,
-            "source_date": getattr(item, "source_date", None),
-            "item_type": item_type,
-            "description": getattr(item, "description", "") or "-",
-            "source_label": getattr(item, "source_label", "") or "-",
-            "qty": qty,
-            "unit_price": _to_float(getattr(item, "unit_price", 0)),
-            "subtotal": subtotal,
-        }
-        if item_type == MANUAL_BACKFILL_ITEM_CATERING:
-            summary["catering_count"] += 1
-            summary["catering_qty"] += qty
-            summary["catering_total"] += subtotal
-            catering_rows.append(row)
-        elif item_type == MANUAL_BACKFILL_ITEM_WARUNG:
-            summary["warung_count"] += 1
-            summary["warung_qty"] += qty
-            summary["warung_total"] += subtotal
-            warung_rows.append(row)
-        else:
-            summary["other_count"] += 1
-            summary["other_qty"] += qty
-            summary["other_total"] += subtotal
-            other_rows.append(row)
-
-    invoice = getattr(batch, "invoice", None)
-    payment_summary = {
-        "invoice_number": getattr(invoice, "invoice_number", None) if invoice else None,
-        "invoice_status": getattr(invoice, "status", None) if invoice else None,
-        "paid_amount": _to_float(getattr(invoice, "paid_amount", 0)) if invoice else 0.0,
-        "remaining_amount": _to_float(getattr(invoice, "remaining_amount", 0)) if invoice else summary["grand_total"],
-    }
-
-    return {
-        "generated_date": date.today(),
-        "batch": batch,
-        "bill_to_context": get_manual_backfill_bill_to_context(batch),
-        "status_context": get_manual_backfill_status_context(getattr(batch, "status", None)),
-        "summary": summary,
-        "payment_summary": payment_summary,
-        "catering_rows": catering_rows,
-        "warung_rows": warung_rows,
-        "other_rows": other_rows,
-    }
 
 def _get_manual_backfill_batch(batch_id, branch_id):
     try:
@@ -1285,6 +568,15 @@ def lock_manual_backfill_batch(*, batch_id, branch_id, locked_by, commit=False):
     return batch
 
 
+def lock_manual_backfill_batch_record(*, batch_id, branch_id, locked_by):
+    return _run_in_transaction(lambda: lock_manual_backfill_batch(
+        batch_id=batch_id,
+        branch_id=branch_id,
+        locked_by=locked_by,
+        commit=False,
+    ))
+
+
 def validate_manual_backfill_batch_before_void(batch):
     """Validate a manual-book recap can be voided before invoice creation.
 
@@ -1352,6 +644,16 @@ def void_manual_backfill_batch(*, batch_id, branch_id, voided_by, reason=None, c
         db.session.commit()
 
     return batch
+
+
+def void_manual_backfill_batch_record(*, batch_id, branch_id, voided_by, reason=None):
+    return _run_in_transaction(lambda: void_manual_backfill_batch(
+        batch_id=batch_id,
+        branch_id=branch_id,
+        voided_by=voided_by,
+        reason=reason,
+        commit=False,
+    ))
 
 
 def validate_manual_backfill_batch_before_invoice(batch, *, invoice_date=None):
@@ -1654,6 +956,16 @@ def create_invoice_from_manual_backfill_batch(*, batch_id, branch_id, created_by
         db.session.commit()
 
     return batch, invoice
+
+
+def create_invoice_from_manual_backfill_batch_record(*, batch_id, branch_id, created_by, notes=None):
+    return _run_in_transaction(lambda: create_invoice_from_manual_backfill_batch(
+        batch_id=batch_id,
+        branch_id=branch_id,
+        created_by=created_by,
+        notes=notes,
+        commit=False,
+    ))
 
 
 

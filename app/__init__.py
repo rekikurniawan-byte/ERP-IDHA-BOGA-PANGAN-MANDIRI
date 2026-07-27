@@ -1,10 +1,14 @@
-from flask import Flask, render_template
+from uuid import uuid4
+
+from flask import Flask, g, render_template, request
 from flask_wtf.csrf import CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from app.extensions import db, migrate, login_manager, csrf, limiter
 from app.services.production_logging_service import configure_production_logging
+from app.services.slow_query_logger_service import init_slow_query_logging
+from app.services.ttl_cache_service import get_cached_value
 
 
 def create_app():
@@ -17,6 +21,7 @@ def create_app():
     configure_production_logging(flask_app)
 
     db.init_app(flask_app)
+    init_slow_query_logging(flask_app)
     migrate.init_app(flask_app, db)
     login_manager.init_app(flask_app)
     csrf.init_app(flask_app)
@@ -38,6 +43,7 @@ def create_app():
     from app.routes.sop_routes import sop_bp
     from app.routes.health_routes import health_bp
     from app.routes.field_transaction_routes import field_transaction_bp
+    from app.routes.prediction_routes import prediction_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -55,14 +61,32 @@ def create_app():
     flask_app.register_blueprint(sop_bp)
     flask_app.register_blueprint(health_bp)
     flask_app.register_blueprint(field_transaction_bp)
+    flask_app.register_blueprint(prediction_bp)
+
+
+    @flask_app.before_request
+    def attach_request_id():
+        incoming_request_id = str(request.headers.get("X-Request-ID") or "").strip()
+        g.request_id = incoming_request_id[:128] if incoming_request_id else uuid4().hex
 
 
     @flask_app.after_request
     def add_security_headers(response):
+        request_id = getattr(g, "request_id", None)
+        if request_id:
+            response.headers.setdefault("X-Request-ID", request_id)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        content_security_policy = flask_app.config.get("CONTENT_SECURITY_POLICY")
+        if content_security_policy:
+            header_name = (
+                "Content-Security-Policy-Report-Only"
+                if flask_app.config.get("CONTENT_SECURITY_POLICY_REPORT_ONLY")
+                else "Content-Security-Policy"
+            )
+            response.headers.setdefault(header_name, content_security_policy)
         if flask_app.config.get("IS_PRODUCTION"):
             response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response
@@ -76,10 +100,14 @@ def create_app():
 
             if current_user.is_authenticated:
                 return {
-                    "global_company_settings": get_company_settings(current_user.branch_id)
+                    "global_company_settings": get_cached_value(
+                        ("company_settings", current_user.branch_id),
+                        lambda: get_company_settings(current_user.branch_id),
+                        ttl_seconds=30,
+                    )
                 }
         except Exception:
-            pass
+            flask_app.logger.exception("Gagal memuat company settings global.")
 
         return {"global_company_settings": {}}
 
@@ -91,13 +119,17 @@ def create_app():
 
             if current_user.is_authenticated and current_user.role in ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"]:
                 return {
-                    "global_live_reminder_badge": build_live_reminder_badge_summary(
-                        current_user.branch_id,
-                        due_days=7,
+                    "global_live_reminder_badge": get_cached_value(
+                        ("live_reminder_badge", current_user.branch_id, current_user.role),
+                        lambda: build_live_reminder_badge_summary(
+                            current_user.branch_id,
+                            due_days=7,
+                        ),
+                        ttl_seconds=30,
                     )
                 }
         except Exception:
-            pass
+            flask_app.logger.exception("Gagal memuat live reminder badge global.")
 
         return {
             "global_live_reminder_badge": {
@@ -121,7 +153,11 @@ def create_app():
             from app.services.notification_service import count_unread_notifications
 
             if current_user.is_authenticated and current_user.role in ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"]:
-                summary = count_unread_notifications(branch_id=current_user.branch_id, user=current_user)
+                summary = get_cached_value(
+                    ("persistent_notification_badge", current_user.branch_id, current_user.role, current_user.id),
+                    lambda: count_unread_notifications(branch_id=current_user.branch_id, user=current_user),
+                    ttl_seconds=30,
+                )
                 total = summary.get("total", 0)
                 if summary.get("critical", 0) > 0:
                     badge_class = "bg-danger-subtle text-danger border"
@@ -148,7 +184,7 @@ def create_app():
                     }
                 }
         except Exception:
-            pass
+            flask_app.logger.exception("Gagal memuat persistent notification badge global.")
 
         return {
             "global_persistent_notification_badge": {
@@ -189,7 +225,7 @@ def create_app():
         try:
             db.session.rollback()
         except Exception:
-            pass
+            flask_app.logger.exception("Rollback session gagal setelah CSRF error.")
         return render_template("errors/400_csrf.html"), 400
 
     @flask_app.errorhandler(403)
@@ -205,7 +241,7 @@ def create_app():
         try:
             db.session.rollback()
         except Exception:
-            pass
+            flask_app.logger.exception("Rollback session gagal setelah internal server error.")
         return render_template("errors/500.html"), 500
 
     return flask_app

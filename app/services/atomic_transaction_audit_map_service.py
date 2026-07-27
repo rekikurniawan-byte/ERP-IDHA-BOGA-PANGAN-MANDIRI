@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import ast
 import re
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
 from flask import current_app
+
+logger = logging.getLogger(__name__)
 
 
 ATOMIC_AUDIT_MAP_VERSION = "PRODUCTION"
@@ -113,6 +116,7 @@ def _relative(path: Path, root: Path) -> str:
     try:
         return path.relative_to(root).as_posix()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_audit_map_service.py:115")
         return path.as_posix()
 
 

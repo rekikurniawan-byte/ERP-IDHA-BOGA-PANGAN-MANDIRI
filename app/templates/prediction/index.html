@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Prediction</span>
+        <h1>Prediksi Permintaan Catering</h1>
+        <p>Ringkasan data, status model, dan akses cepat untuk prediksi kebutuhan bahan.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('prediction.predict') }}" class="btn app-btn-primary">
+            <i class="bi bi-graph-up"></i>
+            Buat Prediksi
+        </a>
+        <a href="{{ url_for('prediction.evaluate') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clipboard-data"></i>
+            Evaluasi
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <h3>Status Model</h3>
+            <p class="display-6 mb-1">{{ "Aktif" if model_status.trained else "Belum Training" }}</p>
+            <p class="text-muted mb-0">{{ model_status.message or "-" }}</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <h3>Data Transaksi</h3>
+            <p class="display-6 mb-1">{{ data_summary.total_records or 0 }}</p>
+            <p class="text-muted mb-0">Record historis tersedia.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <h3>Mandor Aktif</h3>
+            <p class="display-6 mb-1">{{ mandors|length }}</p>
+            <p class="text-muted mb-0">Pilihan filter prediksi.</p>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <form method="post" action="{{ url_for('prediction.train') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn app-btn-secondary">
+            <i class="bi bi-cpu"></i>
+            Training Ulang Model
+        </button>
+    </form>
+</div>
+{% endblock %}

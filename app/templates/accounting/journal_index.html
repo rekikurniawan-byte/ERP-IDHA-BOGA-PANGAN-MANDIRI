@@ -66,6 +66,7 @@
                 <form method="POST"
                       action="{{ url_for('accounting.generate_period_invoice_journals') }}" data-app-confirm="Sinkronkan invoice lama yang belum punya jurnal? Sistem akan melewati invoice yang sudah tercatat." data-ui-form="true" class="app-form">
                     {% include "components/csrf_token.html" %}
+                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.period_invoice }}">
                     <button type="submit" class="btn app-btn-secondary w-100 text-start">
                         <i class="bi bi-journal-plus"></i>
                         Sinkronkan Invoice Lama 4001/4002
@@ -77,6 +78,7 @@
                 <form method="POST"
                       action="{{ url_for('accounting.generate_payment_journals') }}" data-app-confirm="Sinkronkan pembayaran invoice lama yang belum punya jurnal? Sistem akan melewati pembayaran yang sudah tercatat." data-ui-form="true" class="app-form">
                     {% include "components/csrf_token.html" %}
+                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.payment }}">
                     <button type="submit" class="btn app-btn-secondary w-100 text-start">
                         <i class="bi bi-credit-card"></i>
                         Sinkronkan Pembayaran Lama
@@ -88,6 +90,7 @@
                 <form method="POST"
                       action="{{ url_for('accounting.generate_warung_payment_correction_journals') }}" data-app-confirm="Sinkronkan koreksi pembayaran warung lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
                     {% include "components/csrf_token.html" %}
+                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.warung_payment_correction }}">
                     <button type="submit" class="btn app-btn-secondary w-100 text-start">
                         <i class="bi bi-cash-coin"></i>
                         Sinkronkan Koreksi Pembayaran Warung Lama
@@ -99,6 +102,7 @@
                 <form method="POST"
                       action="{{ url_for('accounting.generate_hpp_production_journals') }}" data-app-confirm="Sinkronkan HPP produksi lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal HPP." data-ui-form="true" class="app-form">
                     {% include "components/csrf_token.html" %}
+                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.hpp_production }}">
                     <button type="submit" class="btn app-btn-secondary w-100 text-start">
                         <i class="bi bi-calculator"></i>
                         Sinkronkan HPP Produksi Lama
@@ -110,6 +114,7 @@
                 <form method="POST"
                       action="{{ url_for('accounting.generate_procurement_journals') }}" data-app-confirm="Sinkronkan pembelian barang lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
                     {% include "components/csrf_token.html" %}
+                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.procurement }}">
                     <button type="submit" class="btn app-btn-secondary w-100 text-start">
                         <i class="bi bi-box-seam"></i>
                         Sinkronkan Pembelian Lama

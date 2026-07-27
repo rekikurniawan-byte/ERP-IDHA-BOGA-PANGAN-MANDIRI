@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from app.extensions import db
@@ -29,6 +30,8 @@ from app.services.business_logic_guard_service import (
 )
 from app.services.field_transaction_policy_service import resolve_cash_bank_coa_code
 
+logger = logging.getLogger(__name__)
+
 
 class FieldTransactionSettlementError(Exception):
     """Raised when manual receivable/payable settlement is invalid."""
@@ -38,6 +41,7 @@ def _money(value):
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/field_transaction_settlement_service.py:40")
         return "Rp 0"
 
 

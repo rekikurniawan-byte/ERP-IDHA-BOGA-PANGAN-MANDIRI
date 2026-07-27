@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from datetime import date
 from typing import Any, Optional
@@ -12,8 +13,21 @@ from app.services.accounting_service import generate_journal_number, get_active_
 from app.services.audit_log_service import record_audit_log
 from app.services.cash_bank_service import calculate_account_balance, get_account_label, normalize_cash_bank_account
 
+logger = logging.getLogger(__name__)
+
 
 FIXED_ASSET_PURCHASE_REFERENCE_TYPE = "FIXED_ASSET_PURCHASE"
+
+
+def _run_in_transaction(action):
+    try:
+        result = action()
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
 
 ASSET_ACCOUNT_OPTIONS = [
     {"code": "1101", "label": "1101 - Peralatan Dapur"},
@@ -29,6 +43,7 @@ def _money(value: Any) -> str:
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/fixed_asset_purchase_service.py:42")
         return "Rp 0"
 
 
@@ -354,3 +369,8 @@ def create_fixed_asset_purchase(
         db.session.commit()
 
     return purchase, ledger_transaction, journal
+
+
+def create_fixed_asset_purchase_record(**kwargs):
+    kwargs["commit"] = False
+    return _run_in_transaction(lambda: create_fixed_asset_purchase(**kwargs))

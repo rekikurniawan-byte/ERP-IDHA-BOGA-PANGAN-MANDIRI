@@ -1,7 +1,7 @@
 {% extends "layouts/base.html" %}
 
 {% block content %}
-<div class="finance-page-shell" data-ui-finance-page="UI">
+<div class="finance-page-shell" data-ui-finance-page="UI" data-invoice-detail-page="true">
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
 <div class="page-header">
     <div>
@@ -486,6 +486,7 @@
           enctype="multipart/form-data"
           action="{{ url_for('finance.create_invoice_payment', invoice_id=invoice.id) }}" data-app-confirm="Terima pembayaran invoice ini? Sistem akan otomatis mencatat pembayaran dan jurnal keuangan." data-ui-form="true" class="app-form">
         {% include "components/csrf_token.html" %}
+        <input type="hidden" name="idempotency_key" value="{{ payment_form_idempotency_key }}">
 
         <div class="form-grid">
             <div class="form-group">
@@ -557,7 +558,7 @@
                 <div class="form-group">
                     <label>Jenis Bukti</label>
                     <select name="proof_type" class="form-control">
-                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer Customer</option>
+                                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer</option>
                         <option value="SCREENSHOT_PAYMENT">Screenshot Pembayaran</option>
                         <option value="BUKTI_SETOR">Bukti Setor</option>
                         <option value="LAINNYA">Lainnya</option>
@@ -598,8 +599,17 @@
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table app-table align-middle">
+    <div class="table-responsive payment-history-scroll">
+        <table class="table app-table align-middle payment-history-table">
+            <colgroup>
+                <col class="payment-history-col-number">
+                <col class="payment-history-col-date">
+                <col class="payment-history-col-method">
+                <col class="payment-history-col-account">
+                <col class="payment-history-col-amount">
+                <col class="payment-history-col-reference">
+                <col class="payment-history-col-proof">
+            </colgroup>
             <thead>
                 <tr>
                     <th>No Pembayaran</th>
@@ -647,18 +657,18 @@
                                             <div class="payment-proof-attachment-main">
                                                 <div>
                                                     <strong>{{ attachment.original_filename }}</strong>
-                                                    <span>{{ attachment.attachment_type }} · {{ format_file_size(attachment.file_size) }}</span>
+                                                    <span>{{ attachment.attachment_type }} - {{ format_file_size(attachment.file_size) }}</span>
                                                 </div>
                                                 <div class="payment-proof-attachment-actions">
                                                     <a href="{{ url_for('finance.view_customer_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
                                                     <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                                                    <form method="POST" action="{{ url_for('finance.delete_customer_payment_attachment', attachment_id=attachment.id) }}" class="app-form payment-proof-delete-form" data-app-confirm="Hapus lunak bukti payment ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
+                                                        {% include "components/csrf_token.html" %}
+                                                        <input type="hidden" name="delete_note" value="Bukti pembayaran pelanggan salah upload.">
+                                                        <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
+                                                    </form>
                                                 </div>
                                             </div>
-                                            <form method="POST" action="{{ url_for('finance.delete_customer_payment_attachment', attachment_id=attachment.id) }}" class="app-form payment-proof-delete-form" data-app-confirm="Hapus lunak bukti payment ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
-                                                {% include "components/csrf_token.html" %}
-                                                <input type="hidden" name="delete_note" value="Bukti pembayaran pelanggan salah upload.">
-                                                <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
-                                            </form>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -668,16 +678,16 @@
 
                             <form method="POST" enctype="multipart/form-data" action="{{ url_for('finance.upload_customer_payment_attachment', payment_id=payment.id) }}" class="app-form payment-proof-upload-form" data-ui-form="true">
                                 {% include "components/csrf_token.html" %}
-                                <div class="payment-proof-upload-label">Upload bukti tambahan</div>
+                                <div class="payment-proof-upload-label">Upload bukti</div>
                                 <div class="payment-proof-upload-grid">
                                     <select name="proof_type" class="form-select form-select-sm">
-                                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer Customer</option>
+                                        <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer</option>
                                         <option value="SCREENSHOT_PAYMENT">Screenshot Pembayaran</option>
                                         <option value="BUKTI_SETOR">Bukti Setor</option>
                                         <option value="LAINNYA">Lainnya</option>
                                     </select>
                                     <input type="file" name="proof_file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
-                                    <input type="text" name="proof_notes" class="form-control form-control-sm" placeholder="Catatan bukti, opsional">
+                                    <input type="text" name="proof_notes" class="form-control form-control-sm" placeholder="Catatan opsional">
                                     <button type="submit" class="btn btn-sm app-btn-secondary">Upload Bukti</button>
                                 </div>
                             </form>

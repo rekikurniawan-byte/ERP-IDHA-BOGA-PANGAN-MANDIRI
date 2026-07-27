@@ -4,10 +4,13 @@ Centralized date preset parsing for dashboard/report pages. This module is
 read-only: it never writes to the database and is safe to call from GET routes.
 """
 from __future__ import annotations
+import logging
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 PRESET_TODAY = "today"
@@ -61,6 +64,7 @@ def parse_date(value: Any) -> date | None:
     try:
         return datetime.strptime(text, "%Y-%m-%d").date()
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/global_filter_service.py:63")
         return None
 
 
@@ -158,6 +162,7 @@ def date_in_range(value: Any, state: DateFilterState) -> bool:
     try:
         current = value.date() if hasattr(value, "date") and not isinstance(value, date) else value
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/global_filter_service.py:160")
         current = value
     if state.start_date and current < state.start_date:
         return False

@@ -65,6 +65,59 @@ def _get_secret_key():
     )
 
 
+def _is_production_env(app_env):
+    return str(app_env or "").strip().lower() in {"production", "prod"}
+
+
+def _validate_production_security_config(
+    app_env,
+    debug,
+    secret_key,
+    session_cookie_secure,
+    trusted_hosts,
+    ratelimit_storage_uri,
+):
+    if not _is_production_env(app_env):
+        return
+
+    errors = []
+    placeholder_secrets = {
+        "change-this-local-secret-key",
+        "dev-only-change-this-secret-key",
+        "replace-with-a-long-random-secret-key",
+        "test-secret-key-not-for-production",
+    }
+    normalized_secret = str(secret_key or "").strip()
+    normalized_rate_limit_uri = str(ratelimit_storage_uri or "").strip().lower()
+
+    if debug:
+        errors.append("APP_DEBUG/FLASK_DEBUG harus 0")
+    if not normalized_secret or normalized_secret in placeholder_secrets or len(normalized_secret) < 32:
+        errors.append("SECRET_KEY production harus acak, bukan placeholder, minimal 32 karakter")
+    if not session_cookie_secure:
+        errors.append("SESSION_COOKIE_SECURE harus aktif")
+    if not trusted_hosts:
+        errors.append("TRUSTED_HOSTS wajib diisi")
+    if normalized_rate_limit_uri in {"", "memory", "memory://"}:
+        errors.append("RATELIMIT_STORAGE_URI production tidak boleh memory://")
+
+    if errors:
+        raise RuntimeError("Konfigurasi production tidak aman: " + "; ".join(errors))
+
+
+DEFAULT_CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "base-uri 'self'; "
+    "frame-ancestors 'self'; "
+    "object-src 'none'; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https:; "
+    "style-src 'self' 'unsafe-inline' https:; "
+    "script-src 'self' 'unsafe-inline' https:; "
+    "connect-src 'self'"
+)
+
+
 class Config:
     APP_ENV = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "production")).strip().lower()
     APP_VERSION = os.getenv("APP_VERSION", "POSTGRES_ONLY_PRODUCTION")
@@ -78,6 +131,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    SLOW_QUERY_LOGGING_ENABLED = _env_bool("SLOW_QUERY_LOGGING_ENABLED", True)
+    SLOW_QUERY_THRESHOLD_MS = int(os.getenv("SLOW_QUERY_THRESHOLD_MS", "500"))
 
     IS_PRODUCTION = APP_ENV in {"production", "prod"}
     PREFERRED_URL_SCHEME = "https" if IS_PRODUCTION else "http"
@@ -91,6 +146,8 @@ class Config:
     TRUSTED_HOSTS = _csv_env("TRUSTED_HOSTS", os.getenv("APP_TRUSTED_HOSTS", "")) or None
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
     LOGIN_RATE_LIMIT = os.getenv("LOGIN_RATE_LIMIT", "5 per minute")
+    CONTENT_SECURITY_POLICY = os.getenv("CONTENT_SECURITY_POLICY", DEFAULT_CONTENT_SECURITY_POLICY)
+    CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", False)
 
     UPLOAD_ROOT = os.getenv("UPLOAD_ROOT", os.path.join(INSTANCE_DIR, "uploads"))
     DIGITAL_ATTACHMENT_UPLOAD_DIR = os.getenv(
@@ -114,3 +171,12 @@ class Config:
     HEALTH_REQUIRE_POSTGRES_IN_PRODUCTION = True
     PROXY_HEADERS_ENABLED = _env_bool("PROXY_HEADERS_ENABLED", IS_PRODUCTION)
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(DIGITAL_ATTACHMENT_MAX_BYTES)))
+
+    _validate_production_security_config(
+        APP_ENV,
+        DEBUG,
+        SECRET_KEY,
+        SESSION_COOKIE_SECURE,
+        TRUSTED_HOSTS,
+        RATELIMIT_STORAGE_URI,
+    )

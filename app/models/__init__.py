@@ -62,6 +62,7 @@ from app.models.logistics import (
     Procurement,
     ProcurementItem,
     StockMovement,
+    StockOpeningBalance,
     DamagedItem,
     StockAdjustment,
     ItemRequest,
@@ -114,6 +115,8 @@ from app.models.system import (
     Notification,
     AuditLog,
     DigitalAttachment,
+    IdempotencyKey,
+    ApprovalRequest,
 )
 
 from app.models.field_transaction import (

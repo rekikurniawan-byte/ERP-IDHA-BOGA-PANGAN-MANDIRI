@@ -23,10 +23,9 @@ class ProductionDetail(BaseModel):
 
     production_id = db.Column(db.Integer, db.ForeignKey("productions.id"), nullable=False)
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
-    planned_qty = db.Column(db.Float, nullable=False, default=0)
-    actual_qty = db.Column(db.Float, nullable=False, default=0)
+    planned_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    actual_qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
     unit = db.Column(db.String(30), nullable=False)
     notes = db.Column(db.Text, nullable=True)
 
     item = db.relationship("Item", lazy=True)
-

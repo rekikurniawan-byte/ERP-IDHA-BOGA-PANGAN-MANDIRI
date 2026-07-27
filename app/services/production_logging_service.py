@@ -5,6 +5,8 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
+from flask import g, has_request_context
+
 
 _CONFIGURED_ATTR = "_idha_boga_production_logging_configured"
 
@@ -12,6 +14,12 @@ _CONFIGURED_ATTR = "_idha_boga_production_logging_configured"
 def _level_from_config(value: Any) -> int:
     name = str(value or "INFO").upper().strip()
     return getattr(logging, name, logging.INFO)
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = getattr(g, "request_id", "-") if has_request_context() else "-"
+        return True
 
 
 def configure_production_logging(app) -> None:
@@ -31,8 +39,9 @@ def configure_production_logging(app) -> None:
     max_bytes = int(app.config.get("LOG_MAX_BYTES") or (10 * 1024 * 1024))
     backup_count = int(app.config.get("LOG_BACKUP_COUNT") or 10)
 
+    request_id_filter = RequestIdFilter()
     formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        "%(asctime)s %(levelname)s [%(name)s] [request_id=%(request_id)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
@@ -44,10 +53,12 @@ def configure_production_logging(app) -> None:
     app_handler = RotatingFileHandler(app_log, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
     app_handler.setLevel(level)
     app_handler.setFormatter(formatter)
+    app_handler.addFilter(request_id_filter)
 
     error_handler = RotatingFileHandler(error_log, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(formatter)
+    error_handler.addFilter(request_id_filter)
 
     app.logger.setLevel(level)
     app.logger.addHandler(app_handler)

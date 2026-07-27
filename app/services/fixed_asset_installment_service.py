@@ -6,6 +6,7 @@ Prinsip akuntansi:
 - Pokok cicilan bukan beban langsung; penyusutan tetap lewat depreciation engine.
 """
 from __future__ import annotations
+import logging
 
 from calendar import monthrange
 from datetime import date
@@ -28,6 +29,8 @@ from app.services.accounting_service import generate_journal_number, get_active_
 from app.services.audit_log_service import record_audit_log
 from app.services.cash_bank_service import calculate_account_balance, get_account_label, normalize_cash_bank_account
 from app.services.fixed_asset_purchase_service import ASSET_ACCOUNT_OPTIONS, ASSET_CATEGORY_OPTIONS, generate_fixed_asset_code
+
+logger = logging.getLogger(__name__)
 
 ASSET_FINANCING_CONTRACT_REFERENCE_TYPE = "ASSET_FINANCING_CONTRACT"
 ASSET_INSTALLMENT_PAYMENT_REFERENCE_TYPE = "ASSET_INSTALLMENT_PAYMENT"
@@ -74,6 +77,7 @@ def _money(value: Any) -> str:
     try:
         return f"Rp {float(value or 0):,.0f}".replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/fixed_asset_installment_service.py:76")
         return "Rp 0"
 
 
@@ -106,6 +110,7 @@ def is_installment_schema_ready() -> bool:
         ]
         return all(inspector.has_table(name) for name in required)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/fixed_asset_installment_service.py:108")
         return False
 
 

@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from collections import Counter
 
@@ -10,10 +11,12 @@ from app.models.master import Employee, EmployeeSkill
 from app.models.hr import Payroll, PayrollDetail, EmployeeSalaryHistory
 from app.models.accounting import Journal, Account
 from app.services.hr_service import (
-    create_or_update_salary,
+    create_employee_record,
     generate_payroll,
     payroll_total,
-    recalculate_payroll_detail,
+    toggle_employee_status,
+    update_employee_record,
+    update_payroll_detail_record,
 )
 from app.services.accounting_service import (
     create_payroll_journal_for_payroll,
@@ -22,6 +25,8 @@ from app.services.accounting_service import (
 from app.utils.decorators import role_required
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, date_in_range
 from app.services.atomic_transaction_service import AtomicTransactionError, atomic_business_action
+
+logger = logging.getLogger(__name__)
 
 
 # SDM2A_HR_ROUTES
@@ -303,36 +308,14 @@ def create_employee():
         if join_date_raw:
             join_date = date.fromisoformat(join_date_raw)
 
-        employee = Employee(
+        create_employee_record(
             branch_id=current_user.branch_id,
             full_name=full_name,
             phone=phone or None,
             join_date=join_date,
-            status="ACTIVE",
+            salary_amount=salary_raw,
+            skills_raw=skills_raw,
         )
-
-        db.session.add(employee)
-        db.session.flush()
-
-        skills = [item.strip() for item in skills_raw.split(",") if item.strip()]
-
-        for skill in skills:
-            db.session.add(EmployeeSkill(
-                employee_id=employee.id,
-                skill_name=skill,
-            ))
-
-        salary_amount = float(salary_raw or 0)
-
-        if salary_amount > 0:
-            create_or_update_salary(
-                employee=employee,
-                salary_amount=salary_amount,
-                effective_date=join_date or date.today(),
-                notes="Gaji awal karyawan",
-            )
-
-        db.session.commit()
         flash("Karyawan berhasil ditambahkan.", "success")
         return redirect(url_for("hr.employees"))
 
@@ -357,36 +340,22 @@ def edit_employee(employee_id):
             flash("Nama karyawan wajib diisi.", "danger")
             return redirect(url_for("hr.edit_employee", employee_id=employee.id))
 
-        employee.full_name = full_name
-        employee.phone = phone or None
-        employee.status = status
-
         if join_date_raw:
-            employee.join_date = date.fromisoformat(join_date_raw)
+            join_date = date.fromisoformat(join_date_raw)
         else:
-            employee.join_date = None
+            join_date = None
 
-        EmployeeSkill.query.filter_by(employee_id=employee.id).delete()
-
-        skills = [item.strip() for item in skills_raw.split(",") if item.strip()]
-        for skill in skills:
-            db.session.add(EmployeeSkill(
-                employee_id=employee.id,
-                skill_name=skill,
-            ))
-
-        if salary_raw not in [None, ""]:
-            salary_amount = float(salary_raw or 0)
-            if salary_amount > 0:
-                effective_date = date.fromisoformat(salary_effective_raw) if salary_effective_raw else date.today()
-                create_or_update_salary(
-                    employee=employee,
-                    salary_amount=salary_amount,
-                    effective_date=effective_date,
-                    notes="Update gaji karyawan",
-                )
-
-        db.session.commit()
+        salary_effective_date = date.fromisoformat(salary_effective_raw) if salary_effective_raw else None
+        update_employee_record(
+            employee,
+            full_name=full_name,
+            phone=phone,
+            join_date=join_date,
+            status=status,
+            salary_amount=salary_raw,
+            salary_effective_date=salary_effective_date,
+            skills_raw=skills_raw,
+        )
         flash("Karyawan berhasil diperbarui.", "success")
         return redirect(url_for("hr.employees"))
 
@@ -411,8 +380,7 @@ def edit_employee(employee_id):
 @role_required("ADMIN", "HR")
 def toggle_employee(employee_id):
     employee = Employee.query.get_or_404(employee_id)
-    employee.status = "INACTIVE" if employee.status == "ACTIVE" else "ACTIVE"
-    db.session.commit()
+    toggle_employee_status(employee)
 
     flash("Status karyawan berhasil diperbarui.", "success")
     return redirect(url_for("hr.employees"))
@@ -507,6 +475,7 @@ def generate_payroll_route():
             flash(str(error), "warning")
             return redirect(url_for("hr.payrolls"))
         except Exception as error:
+            logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:474")
             flash(f"Gagal generate payroll secara atomic: {error}", "danger")
             return redirect(url_for("hr.payrolls"))
 
@@ -551,13 +520,12 @@ def update_payroll_detail(payroll_id, detail_id):
         flash("Payroll yang sudah final/posting tidak bisa diubah.", "warning")
         return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
-    detail.base_salary = float(request.form.get("base_salary") or 0)
-    detail.bonus = float(request.form.get("bonus") or 0)
-    detail.deduction = float(request.form.get("deduction") or 0)
-
-    recalculate_payroll_detail(detail)
-
-    db.session.commit()
+    update_payroll_detail_record(
+        detail,
+        base_salary=request.form.get("base_salary"),
+        bonus=request.form.get("bonus"),
+        deduction=request.form.get("deduction"),
+    )
     flash("Detail payroll berhasil diperbarui.", "success")
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
@@ -590,6 +558,7 @@ def finalize_payroll(payroll_id):
 
         flash("Payroll berhasil difinalkan secara atomic.", "success")
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:556")
         flash(f"Gagal finalisasi payroll secara atomic: {error}", "danger")
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
@@ -623,6 +592,7 @@ def post_payroll_journal(payroll_id):
     except AtomicTransactionError as error:
         flash(str(error), "warning")
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:589")
         flash(f"Gagal posting jurnal payroll secara atomic: {error}", "danger")
 
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
@@ -659,6 +629,7 @@ def pay_payroll(payroll_id):
     except AtomicTransactionError as error:
         flash(str(error), "warning")
     except Exception as error:
+        logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:625")
         flash(f"Gagal bayar payroll secara atomic: {error}", "danger")
 
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))

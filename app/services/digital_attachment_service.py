@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import hashlib
 import mimetypes
@@ -15,6 +16,8 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models.system import DigitalAttachment
 from app.services.audit_log_service import record_audit_log
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "pdf"}
@@ -56,6 +59,7 @@ def get_max_upload_bytes() -> int:
     try:
         return int(current_app.config.get("DIGITAL_ATTACHMENT_MAX_BYTES", DEFAULT_MAX_BYTES))
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/digital_attachment_service.py:58")
         return DEFAULT_MAX_BYTES
 
 

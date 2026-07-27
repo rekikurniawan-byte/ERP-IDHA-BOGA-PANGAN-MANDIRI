@@ -2,11 +2,13 @@ from datetime import date
 from types import SimpleNamespace
 
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
+from app.services import manual_billing_service
 from app.services.manual_billing_service import (
     MANUAL_BILLING_INVOICE_SOURCE,
     MANUAL_BILLING_SOURCE_MANUAL_RECEIVABLE,
     collect_manual_billing_candidates,
     create_manual_billing_invoice,
+    create_manual_billing_invoice_record,
     find_manual_billing_invoice_for_source,
 )
 
@@ -89,6 +91,26 @@ class _FakeSession:
         return None
 
 
+class _FakeTransactionSession:
+    def __init__(self, *, fail_commit=False):
+        self.commit_count = 0
+        self.rollback_count = 0
+        self.fail_commit = fail_commit
+
+    def commit(self):
+        self.commit_count += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
+
+    def rollback(self):
+        self.rollback_count += 1
+
+
+class _FakeDb:
+    def __init__(self, session):
+        self.session = session
+
+
 def test_collect_manual_billing_candidates_includes_manual_receivable_and_worker_debt(monkeypatch):
     field_tx = SimpleNamespace(id=11)
     counterparty = SimpleNamespace(linked_mandor_id=7, name="Mandor Alpha")
@@ -149,6 +171,66 @@ def test_collect_manual_billing_candidates_includes_manual_receivable_and_worker
     assert len(result["rows"]) == 2
     assert result["manual_receivable_total"] == 150000
     assert result["warung_total"] == 50000
+
+
+def test_create_manual_billing_invoice_record_commits_once(monkeypatch):
+    session = _FakeTransactionSession()
+    monkeypatch.setattr(manual_billing_service, "db", _FakeDb(session))
+    batch = SimpleNamespace(id=1)
+    invoice = SimpleNamespace(id=2)
+    calls = {}
+
+    def fake_create_manual_billing_invoice(**kwargs):
+        calls.update(kwargs)
+        return batch, invoice
+
+    monkeypatch.setattr(
+        manual_billing_service,
+        "create_manual_billing_invoice",
+        fake_create_manual_billing_invoice,
+    )
+
+    result = create_manual_billing_invoice_record(
+        branch_id=1,
+        mandor_id=7,
+        period_start=date(2026, 7, 1),
+        period_end=date(2026, 7, 31),
+        client_pic_id=501,
+        created_by=9,
+        notes="rekap manual",
+    )
+
+    assert result == (batch, invoice)
+    assert calls["mandor_id"] == 7
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_create_manual_billing_invoice_record_rolls_back_when_commit_fails(monkeypatch):
+    session = _FakeTransactionSession(fail_commit=True)
+    monkeypatch.setattr(manual_billing_service, "db", _FakeDb(session))
+    monkeypatch.setattr(
+        manual_billing_service,
+        "create_manual_billing_invoice",
+        lambda **kwargs: (SimpleNamespace(id=1), SimpleNamespace(id=2)),
+    )
+
+    try:
+        create_manual_billing_invoice_record(
+            branch_id=1,
+            mandor_id=7,
+            period_start=date(2026, 7, 1),
+            period_end=date(2026, 7, 31),
+            client_pic_id=501,
+            created_by=9,
+        )
+    except RuntimeError as error:
+        assert str(error) == "commit failed"
+    else:
+        raise AssertionError("create_manual_billing_invoice_record should re-raise commit errors")
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 1
 
 
 def test_create_manual_billing_invoice_builds_invoice_and_batch(monkeypatch):

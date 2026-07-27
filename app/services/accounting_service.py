@@ -1,8 +1,11 @@
+import logging
 from app.extensions import db
 from app.models.accounting import Account, Journal, JournalDetail
 from app.models.finance import InvoiceItem, Invoice, Payment, SupplierBill
 from datetime import date
 from app.services.audit_log_service import record_audit_log
+
+logger = logging.getLogger(__name__)
 
 
 def generate_journal_number(journal_date):
@@ -19,6 +22,18 @@ def generate_journal_number(journal_date):
             return journal_number
 
         counter += 1
+
+
+def commit_accounting_transaction():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def rollback_accounting_transaction():
+    db.session.rollback()
 
 
 def get_active_account_by_code(account_code):
@@ -407,6 +422,251 @@ def create_payment_journal_for_payment(payment, created_by, commit=False):
     return True, "Jurnal payment berhasil dibuat.", journal
 
 
+def generate_period_invoice_journals_batch(*, created_by):
+    invoices = Invoice.query.filter(
+        Invoice.source_type.in_(["PERIOD_INVOICE", "DAILY_ORDER", "MANUAL_BILLING_RECAP"])
+    ).order_by(
+        Invoice.invoice_date.asc(),
+        Invoice.id.asc()
+    ).all()
+
+    created_count = 0
+    skipped_count = 0
+    skipped_cancelled_count = 0
+
+    try:
+        for invoice in invoices:
+            status = str(getattr(invoice, "status", "") or "").upper()
+
+            if status == "CANCELLED":
+                skipped_count += 1
+                skipped_cancelled_count += 1
+                continue
+
+            success, message, journal = create_invoice_journal_for_invoice(
+                invoice=invoice,
+                created_by=created_by,
+                commit=False
+            )
+
+            if success:
+                created_count += 1
+            else:
+                skipped_count += 1
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return {
+        "created_count": created_count,
+        "skipped_count": skipped_count,
+        "skipped_cancelled_count": skipped_cancelled_count,
+    }
+
+
+def generate_payment_journals_batch(*, created_by):
+    payments = Payment.query.order_by(
+        Payment.payment_date.asc(),
+        Payment.id.asc()
+    ).all()
+
+    created_count = 0
+    skipped_count = 0
+
+    try:
+        for payment in payments:
+            success, message, journal = create_payment_journal_for_payment(
+                payment=payment,
+                created_by=created_by,
+                commit=False
+            )
+
+            if success:
+                created_count += 1
+            else:
+                skipped_count += 1
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return {
+        "created_count": created_count,
+        "skipped_count": skipped_count,
+    }
+
+
+def _accounting2e_float(value):
+    try:
+        return float(value or 0)
+    except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:502")
+        return 0
+
+
+def _accounting2e_procurement_amount(procurement):
+    amount = _accounting2e_float(getattr(procurement, "total_amount", 0))
+
+    if amount > 0:
+        return amount
+
+    total = 0
+
+    for item in getattr(procurement, "items", []) or []:
+        total += _accounting2e_float(getattr(item, "subtotal", 0))
+
+    return total
+
+
+def _accounting2e_purchase_credit_account(procurement):
+    purchase_type = str(getattr(procurement, "purchase_type", "") or "").upper()
+
+    if purchase_type == "CASH":
+        return get_active_account_by_code("1001"), "Kas"
+
+    if purchase_type == "CREDIT":
+        return get_active_account_by_code("2002"), "Hutang Supplier"
+
+    if purchase_type in ["TRANSFER", "BANK"]:
+        return get_active_account_by_code("1002"), "Bank 1"
+
+    return None, "UNKNOWN"
+
+
+def build_procurement_journal_candidates():
+    from app.models.logistics import Procurement
+
+    procurements = Procurement.query.order_by(
+        Procurement.procurement_date.asc(),
+        Procurement.id.asc()
+    ).all()
+
+    candidates = []
+
+    for procurement in procurements:
+        existing = Journal.query.filter_by(
+            reference_type="PROCUREMENT",
+            reference_id=procurement.id
+        ).first()
+
+        amount = _accounting2e_procurement_amount(procurement)
+        credit_account, credit_label = _accounting2e_purchase_credit_account(procurement)
+
+        candidates.append({
+            "procurement": procurement,
+            "amount": amount,
+            "purchase_type": str(procurement.purchase_type or "").upper(),
+            "credit_account": credit_account,
+            "credit_label": credit_label,
+            "existing_journal": existing,
+            "can_generate": (
+                existing is None
+                and amount > 0
+                and credit_account is not None
+            ),
+        })
+
+    return candidates
+
+
+def generate_procurement_journals_batch(*, created_by_id, commit=True):
+    acc_inventory = get_active_account_by_code("1006")
+
+    missing_accounts = []
+
+    if not acc_inventory:
+        missing_accounts.append("1006 - Persediaan Bahan Baku")
+
+    candidates = build_procurement_journal_candidates()
+
+    created = []
+    skipped = []
+
+    if missing_accounts:
+        return {
+            "created": created,
+            "skipped": skipped,
+            "errors": [f"Akun wajib belum ada: {', '.join(missing_accounts)}"],
+        }
+
+    try:
+        for candidate in candidates:
+            procurement = candidate["procurement"]
+            amount = candidate["amount"]
+            credit_account = candidate["credit_account"]
+            purchase_type = candidate["purchase_type"]
+
+            if candidate["existing_journal"]:
+                skipped.append({
+                    "procurement": procurement,
+                    "reason": "Sudah ada jurnal",
+                })
+                continue
+
+            if amount <= 0:
+                skipped.append({
+                    "procurement": procurement,
+                    "reason": "Nominal pembelian tidak valid",
+                })
+                continue
+
+            if credit_account is None:
+                skipped.append({
+                    "procurement": procurement,
+                    "reason": f"Tipe pembelian belum didukung: {purchase_type}",
+                })
+                continue
+
+            journal = Journal(
+                journal_number=generate_journal_number(procurement.procurement_date),
+                journal_date=procurement.procurement_date,
+                reference_type="PROCUREMENT",
+                reference_id=procurement.id,
+                description=f"Jurnal pembelian barang {procurement.procurement_number} - {purchase_type}",
+                created_by=created_by_id
+            )
+
+            db.session.add(journal)
+            db.session.flush()
+
+            db.session.add(JournalDetail(
+                journal_id=journal.id,
+                account_id=acc_inventory.id,
+                debit=amount,
+                credit=0
+            ))
+
+            db.session.add(JournalDetail(
+                journal_id=journal.id,
+                account_id=credit_account.id,
+                debit=0,
+                credit=amount
+            ))
+
+            created.append({
+                "journal": journal,
+                "procurement": procurement,
+                "amount": amount,
+                "debit_account": acc_inventory,
+                "credit_account": credit_account,
+            })
+
+        if commit:
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return {
+        "created": created,
+        "skipped": skipped,
+        "errors": [],
+    }
+
+
 # ACCOUNTING9D_WARUNG_FUTURE_ACCRUAL_SERVICE
 ACCOUNTING9D_CUTOVER_CANTEEN_SALE_ID = 2
 ACCOUNTING9D_CUTOVER_WORKER_DEBT_ID = 2
@@ -418,6 +678,7 @@ def _accounting9d_float(value):
     try:
         return float(value or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:676")
         return 0
 
 

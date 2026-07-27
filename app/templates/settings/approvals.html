@@ -1,0 +1,80 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="settings-page-shell">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Settings | Maker Checker</span>
+            <h1>Approval Center</h1>
+            <p>Daftar pengajuan aksi sensitif yang perlu diperiksa checker.</p>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('settings.approvals') }}" class="app-form filter-bar mb-3" data-ui-form="true">
+        <select name="status" class="form-select app-input">
+            <option value="">Semua status</option>
+            <option value="SUBMITTED" {% if current_status == 'SUBMITTED' %}selected{% endif %}>Menunggu</option>
+            <option value="APPROVED" {% if current_status == 'APPROVED' %}selected{% endif %}>Disetujui</option>
+            <option value="REJECTED" {% if current_status == 'REJECTED' %}selected{% endif %}>Ditolak</option>
+        </select>
+        <button type="submit" class="btn app-btn-secondary">
+            <i class="bi bi-funnel"></i>
+            Filter
+        </button>
+    </form>
+
+    <div class="app-table-wrap">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Aksi</th>
+                    <th>Referensi</th>
+                    <th>Status</th>
+                    <th>Alasan</th>
+                    <th>Reviewer</th>
+                    <th class="text-end">Tindakan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in approval_requests %}
+                <tr>
+                    <td>#{{ approval.id }}</td>
+                    <td>{{ approval.action_key }}</td>
+                    <td>{{ approval.reference_type }} #{{ approval.reference_id }}</td>
+                    <td><span class="status-badge status-info">{{ approval.status }}</span></td>
+                    <td>{{ approval.requested_reason }}</td>
+                    <td>{{ approval.reviewed_by or '-' }}</td>
+                    <td class="text-end">
+                        {% if approval.status == 'SUBMITTED' %}
+                        <form method="POST" action="{{ url_for('settings.approve_approval_request', approval_id=approval.id) }}" class="d-inline app-form" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <input type="hidden" name="review_note" value="Disetujui dari Approval Center">
+                            <button type="submit" class="btn btn-sm app-btn-primary">
+                                <i class="bi bi-check2-circle"></i>
+                                Approve
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('settings.reject_approval_request', approval_id=approval.id) }}" class="d-inline app-form" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="review_note" class="form-control app-input d-inline-block w-auto" placeholder="Alasan reject" required>
+                            <button type="submit" class="btn btn-sm app-btn-danger">
+                                <i class="bi bi-x-circle"></i>
+                                Reject
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted">Final</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Belum ada approval request.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

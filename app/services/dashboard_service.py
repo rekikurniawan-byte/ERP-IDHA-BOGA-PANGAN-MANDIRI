@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from app.models.operational import DailyOrder
@@ -10,6 +11,27 @@ from app.services.dashboard_command_center_service import (
     build_owner_command_center,
 )
 from app.services.delivery_service import get_pending_delivery_next_actions
+
+logger = logging.getLogger(__name__)
+
+
+_ALLOWED_COUNT_TABLES = {
+    "delivery_receipts",
+    "items",
+    "stock_movements",
+    "item_requests",
+    "damaged_items",
+}
+_COUNT_SQL = {
+    "delivery_receipts": "SELECT COUNT(*) FROM delivery_receipts",
+    "items": "SELECT COUNT(*) FROM items",
+    "stock_movements": "SELECT COUNT(*) FROM stock_movements",
+    "item_requests": "SELECT COUNT(*) FROM item_requests",
+    "damaged_items": "SELECT COUNT(*) FROM damaged_items",
+}
+_COUNT_WHERE_SQL = {
+    ("item_requests", "status = 'FULFILLED'"): "SELECT COUNT(*) FROM item_requests WHERE status = 'FULFILLED'",
+}
 
 
 def get_debt_paid_amount(worker_debt):
@@ -63,6 +85,7 @@ def get_owner_dashboard_data(
             try:
                 total += float(value or 0)
             except Exception:
+                logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:84")
                 pass
 
         return total
@@ -71,19 +94,26 @@ def get_owner_dashboard_data(
         try:
             db.session.rollback()
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:92")
             pass
 
     def _table_count(table_name):
+        if table_name not in _ALLOWED_COUNT_TABLES:
+            raise ValueError(f"Table tidak diizinkan untuk dashboard count: {table_name}")
         try:
-            return int(db.session.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar() or 0)
+            return int(db.session.execute(text(_COUNT_SQL[table_name])).scalar() or 0)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:100")
             _rollback_after_read_error()
             return 0
 
     def _table_count_where(table_name, where_clause):
+        if (table_name, where_clause) not in _COUNT_WHERE_SQL:
+            raise ValueError(f"Filter count tidak diizinkan untuk dashboard: {table_name} {where_clause}")
         try:
-            return int(db.session.execute(text(f"SELECT COUNT(*) FROM {table_name} WHERE {where_clause}")).scalar() or 0)
+            return int(db.session.execute(text(_COUNT_WHERE_SQL[(table_name, where_clause)])).scalar() or 0)
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:109")
             _rollback_after_read_error()
             return 0
 
@@ -91,6 +121,7 @@ def get_owner_dashboard_data(
         try:
             return [dict(row) for row in db.session.execute(text(sql), params or {}).mappings().all()]
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:116")
             _rollback_after_read_error()
             return []
 
@@ -539,6 +570,7 @@ def _format_dashboard_rupiah(value):
         value = float(value or 0)
         return "Rp {:,.0f}".format(value).replace(",", ".")
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:564")
         return "Rp 0"
 
 
@@ -635,6 +667,7 @@ def get_role_dashboard_metrics(role, branch_id=None):
                     ) unbalanced
                 """)).scalar() or 0)
             except Exception:
+                logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:660")
                 unbalanced_count = 0
 
             return [
@@ -692,9 +725,11 @@ def get_role_dashboard_metrics(role, branch_id=None):
                     ) low_items
                 """)).scalar() or 0)
             except Exception:
+                logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:717")
                 try:
                     db.session.rollback()
                 except Exception:
+                    logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:720")
                     pass
                 low_stock_count = 0
 
@@ -732,6 +767,7 @@ def get_role_dashboard_metrics(role, branch_id=None):
             ]
 
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:757")
         pass
 
     return [
@@ -838,9 +874,11 @@ def get_admin_dashboard_data(
             ) low_items
         """), {"branch_id": branch_id}).scalar() or 0)
     except Exception:
+        logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:863")
         try:
             db.session.rollback()
         except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:866")
             pass
         admin_low_stock_count = 0
 

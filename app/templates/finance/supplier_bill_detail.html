@@ -201,6 +201,7 @@
               enctype="multipart/form-data"
               action="{{ url_for('finance.create_supplier_bill_payment', bill_id=bill.id) }}" data-app-confirm="Bayar hutang supplier ini? Sistem akan mencatat supplier payment, jurnal, dan buku kas/bank keluar." data-ui-form="true" class="app-form">
             {% include "components/csrf_token.html" %}
+            <input type="hidden" name="idempotency_key" value="{{ supplier_payment_form_idempotency_key }}">
 
             <div class="form-grid">
                 <div class="form-group">

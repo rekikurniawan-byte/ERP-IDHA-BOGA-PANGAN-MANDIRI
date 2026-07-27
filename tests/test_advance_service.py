@@ -20,6 +20,21 @@ class _FakeSession:
         return None
 
 
+class _FakeTransactionSession:
+    def __init__(self, *, fail_commit=False):
+        self.commit_count = 0
+        self.rollback_count = 0
+        self.fail_commit = fail_commit
+
+    def commit(self):
+        self.commit_count += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
+
+    def rollback(self):
+        self.rollback_count += 1
+
+
 class _FakeAdvanceSettlement:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -31,6 +46,59 @@ class _FakeJournal:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
         self.id = kwargs.get("id", 601)
+
+
+def test_create_advance_transaction_record_commits_once(monkeypatch):
+    session = _FakeTransactionSession()
+    monkeypatch.setattr(target, "db", SimpleNamespace(session=session))
+    advance = SimpleNamespace(id=41)
+    calls = {}
+
+    def fake_create_advance_transaction(**kwargs):
+        calls.update(kwargs)
+        return True, "ok", advance
+
+    monkeypatch.setattr(target, "create_advance_transaction", fake_create_advance_transaction)
+
+    result = target.create_advance_transaction_record(
+        branch_id=1,
+        advance_date=date(2026, 7, 1),
+        advance_type=target.CLIENT_DP_RECEIVED,
+        payment_method="CASH",
+        amount=100000,
+        created_by=7,
+    )
+
+    assert result == (True, "ok", advance)
+    assert calls["commit"] is False
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_create_advance_settlement_record_rolls_back_when_commit_fails(monkeypatch):
+    session = _FakeTransactionSession(fail_commit=True)
+    monkeypatch.setattr(target, "db", SimpleNamespace(session=session))
+    monkeypatch.setattr(
+        target,
+        "create_advance_settlement",
+        lambda **kwargs: (True, "ok", SimpleNamespace(id=51)),
+    )
+
+    try:
+        target.create_advance_settlement_record(
+            advance=SimpleNamespace(id=41),
+            settlement_date=date(2026, 7, 3),
+            settlement_type="CLIENT_INVOICE",
+            amount=50000,
+            created_by=7,
+        )
+    except RuntimeError as error:
+        assert str(error) == "commit failed"
+    else:
+        raise AssertionError("create_advance_settlement_record should re-raise commit errors")
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 1
 
 
 def test_create_advance_settlement_creates_field_trace_for_linked_mandor_advance(monkeypatch):
