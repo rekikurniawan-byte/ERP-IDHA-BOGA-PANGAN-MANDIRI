@@ -4,12 +4,14 @@ from datetime import date, timedelta
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
+from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment
-from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Mandor, User
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production
 from app.services.portal_access_service import (
     build_portal_access_scope,
+    build_portal_delivery_visibility,
     build_portal_financial_visibility,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
@@ -241,6 +243,98 @@ def _create_other_branch_order_status_data(user):
     return order
 
 
+def _create_delivery_visibility_data(user):
+    order, detail, _ = _create_order_status_data(user)
+    driver = Driver(
+        branch_id=user.branch_id,
+        name="AAA Test Portal Driver",
+        phone="0800000044",
+        is_active=True,
+    )
+    db.session.add(driver)
+    db.session.flush()
+
+    delivery = Delivery(
+        delivery_number=f"T-PORTAL-DLV-{uuid4().hex[:8]}",
+        branch_id=user.branch_id,
+        delivery_date=order.order_date,
+        driver_id=driver.id,
+        status="DELIVERED",
+        created_by=user.id,
+    )
+    db.session.add(delivery)
+    db.session.flush()
+
+    delivery_detail = DeliveryDetail(
+        delivery_id=delivery.id,
+        daily_order_detail_id=detail.id,
+        mandor_id=detail.mandor_id,
+        delivery_location_id=detail.delivery_location_id,
+        planned_qty=10,
+        delivered_qty=8,
+        shortage_qty=2,
+    )
+    db.session.add(delivery_detail)
+    db.session.flush()
+    return delivery
+
+
+def _create_other_branch_delivery_visibility_data(user):
+    branch, _, mandor, location = _create_other_branch_scope_data()
+    order = DailyOrder(
+        order_number=f"T-PORTAL-OTHER-DLV-ORD-{uuid4().hex[:8]}",
+        branch_id=branch.id,
+        order_date=date.today(),
+        status="LOCKED",
+        is_locked=True,
+        created_by=user.id,
+    )
+    db.session.add(order)
+    db.session.flush()
+    order_detail = DailyOrderDetail(
+        daily_order_id=order.id,
+        mandor_id=mandor.id,
+        delivery_location_id=location.id,
+        price_per_portion=10000,
+        lunch_qty=90,
+        dinner_qty=0,
+        total_qty=90,
+    )
+    driver = Driver(
+        branch_id=branch.id,
+        name="ZZZ Other Portal Driver",
+        phone="0800000094",
+        is_active=True,
+    )
+    db.session.add(order_detail)
+    db.session.add(driver)
+    db.session.flush()
+
+    delivery = Delivery(
+        delivery_number=f"T-PORTAL-OTHER-DLV-{uuid4().hex[:8]}",
+        branch_id=branch.id,
+        delivery_date=order.order_date,
+        driver_id=driver.id,
+        status="DELIVERED",
+        created_by=user.id,
+    )
+    db.session.add(delivery)
+    db.session.flush()
+    db.session.add(
+        DeliveryDetail(
+            delivery_id=delivery.id,
+            daily_order_detail_id=order_detail.id,
+            mandor_id=mandor.id,
+            delivery_location_id=location.id,
+            planned_qty=90,
+            delivered_qty=90,
+            shortage_qty=0,
+        )
+    )
+    db.session.flush()
+    return delivery
+
+
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -327,6 +421,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/ownership"' in html
             assert 'href="/portal/financial"' in html
             assert 'href="/portal/orders"' in html
+            assert 'href="/portal/deliveries"' in html
         finally:
             transaction.rollback()
 
@@ -542,6 +637,39 @@ def test_portal_order_status_visibility_is_read_only_and_branch_scoped(app):
             assert "Order Status Visibility" in html
             assert order.order_number in html
             assert other_order.order_number not in html
+            assert 'action="/portal' not in html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_delivery_visibility_is_read_only_and_branch_scoped(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            delivery = _create_delivery_visibility_data(user)
+            other_delivery = _create_other_branch_delivery_visibility_data(user)
+            deliveries = build_portal_delivery_visibility(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/deliveries")
+
+            html = response.get_data(as_text=True)
+            assert deliveries["scope_mode"] == "ADMIN_BRANCH_DELIVERY_PREVIEW"
+            assert deliveries["summary"]["delivery_count"] == 1
+            assert deliveries["summary"]["delivered_count"] == 1
+            assert int(deliveries["summary"]["planned_qty"]) == 10
+            assert int(deliveries["summary"]["delivered_qty"]) == 8
+            assert int(deliveries["summary"]["shortage_qty"]) == 2
+            assert response.status_code == 200
+            assert "Delivery Visibility" in html
+            assert delivery.delivery_number in html
+            assert "AAA Test Portal Driver" in html
+            assert other_delivery.delivery_number not in html
+            assert "ZZZ Other Portal Driver" not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()

@@ -4,6 +4,7 @@ from flask_login import current_user
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_customer_directory,
+    build_portal_delivery_visibility,
     build_portal_financial_visibility,
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
@@ -129,3 +130,15 @@ def orders():
         "orders": build_portal_order_status_visibility(current_user),
     }
     return render_template("portal/orders.html", data=data)
+
+
+@portal_bp.route("/deliveries")
+@role_required("ADMIN")
+def deliveries():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "deliveries": build_portal_delivery_visibility(current_user),
+    }
+    return render_template("portal/deliveries.html", data=data)

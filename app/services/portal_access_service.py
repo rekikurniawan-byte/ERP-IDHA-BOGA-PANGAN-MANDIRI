@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 
 from app.extensions import db
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment, SupplierBill
 from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
 from app.models.operational import DailyOrder, DailyOrderDetail
@@ -547,5 +547,69 @@ def build_portal_order_status_visibility(user, limit=10):
             "delivery_count": delivery_query.count(),
         },
         "recent_orders": recent_orders,
+        "limit": limit,
+    }
+
+
+def _delivery_status_count(query, status):
+    return query.filter(Delivery.status == status).count()
+
+
+def _delivery_detail_sum(query, column):
+    return query.with_entities(func.coalesce(func.sum(column), 0)).scalar() or 0
+
+
+def build_portal_delivery_visibility(user, limit=10):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "summary": {},
+            "recent_deliveries": [],
+        }
+
+    delivery_query = Delivery.query
+    detail_query = DeliveryDetail.query.join(Delivery)
+    if role == "ADMIN":
+        delivery_query = delivery_query.filter(Delivery.branch_id == branch_id)
+        detail_query = detail_query.filter(Delivery.branch_id == branch_id)
+
+    recent_deliveries = []
+    for delivery in delivery_query.order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(limit).all():
+        planned_qty = sum(int(detail.planned_qty or 0) for detail in delivery.details)
+        delivered_qty = sum(int(detail.delivered_qty or 0) for detail in delivery.details)
+        shortage_qty = sum(int(detail.shortage_qty or 0) for detail in delivery.details)
+        recent_deliveries.append(
+            {
+                "delivery_number": delivery.delivery_number,
+                "delivery_date": delivery.delivery_date,
+                "status": delivery.status,
+                "driver_name": delivery.driver.name if delivery.driver else "-",
+                "detail_count": len(delivery.details),
+                "planned_qty": planned_qty,
+                "delivered_qty": delivered_qty,
+                "shortage_qty": shortage_qty,
+            }
+        )
+
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "scope_mode": "OWNER_ALL_BRANCH_DELIVERY_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_DELIVERY_PREVIEW",
+        "summary": {
+            "delivery_count": delivery_query.count(),
+            "preparing_count": _delivery_status_count(delivery_query, "PREPARING"),
+            "delivered_count": _delivery_status_count(delivery_query, "DELIVERED"),
+            "planned_qty": _delivery_detail_sum(detail_query, DeliveryDetail.planned_qty),
+            "delivered_qty": _delivery_detail_sum(detail_query, DeliveryDetail.delivered_qty),
+            "shortage_qty": _delivery_detail_sum(detail_query, DeliveryDetail.shortage_qty),
+        },
+        "recent_deliveries": recent_deliveries,
         "limit": limit,
     }
