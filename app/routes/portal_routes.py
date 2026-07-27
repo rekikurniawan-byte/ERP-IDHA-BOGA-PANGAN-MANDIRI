@@ -6,6 +6,7 @@ from app.services.portal_access_service import (
     build_portal_customer_directory,
     build_portal_delivery_visibility,
     build_portal_financial_visibility,
+    build_portal_inventory_visibility,
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
@@ -155,3 +156,15 @@ def productions():
         "productions": build_portal_production_visibility(current_user),
     }
     return render_template("portal/productions.html", data=data)
+
+
+@portal_bp.route("/inventory")
+@role_required("ADMIN")
+def inventory():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "inventory": build_portal_inventory_visibility(current_user),
+    }
+    return render_template("portal/inventory.html", data=data)

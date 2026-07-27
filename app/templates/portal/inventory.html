@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Inventory Visibility</h1>
+            <p class="page-description">Ringkasan read-only saldo stok dan mutasi dari modul logistik existing.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.inventory.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id or '-' }}</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Item Stok</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.inventory.summary.item_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.inventory.summary.movement_count }} movement.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Aman</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.inventory.summary.safe_count }}</div>
+                        <p class="text-muted mb-0 mt-2">Di atas minimum stok.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Menipis</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.inventory.summary.low_count }}</div>
+                        <p class="text-muted mb-0 mt-2">Perlu dipantau.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Kosong</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.inventory.summary.out_count }}</div>
+                        <p class="text-muted mb-0 mt-2">Tidak melakukan auto-fix.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Saldo Stok</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Item</th>
+                            <th>Status</th>
+                            <th>Stok</th>
+                            <th>Minimum</th>
+                            <th>Satuan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.inventory.stock_rows %}
+                            <tr>
+                                <td>{{ row.item_code }}</td>
+                                <td>{{ row.item_name }}</td>
+                                <td><span class="status-badge neutral">{{ row.stock_status }}</span></td>
+                                <td>{{ row.stock_qty|qty }}</td>
+                                <td>{{ row.minimum_stock|qty }}</td>
+                                <td>{{ row.unit }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada saldo atau movement stok dalam scope portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Mutasi Terbaru</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Tipe</th>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Satuan</th>
+                            <th>Referensi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.inventory.recent_movements %}
+                            <tr>
+                                <td>{{ row.movement_date.strftime('%d-%m-%Y') if row.movement_date else '-' }}</td>
+                                <td><span class="status-badge neutral">{{ row.movement_type }}</span></td>
+                                <td>{{ row.item_name }}</td>
+                                <td>{{ row.qty|qty }}</td>
+                                <td>{{ row.unit }}</td>
+                                <td>{{ row.reference_type }} #{{ row.reference_id or '-' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada mutasi stok dalam scope portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
