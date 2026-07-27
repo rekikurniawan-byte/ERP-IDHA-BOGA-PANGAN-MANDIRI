@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.models.operational import DailyOrder
+from app.models.system import PortalOrderDraft
 from app.models.system import PortalUserMapping
 from app.services.portal_access_service import (
     build_portal_access_scope,
@@ -95,7 +97,16 @@ def _create_scope_master_data(user):
     return client, client_pic, mandor, location
 
 
-def _create_portal_mapping(user, *, principal_type, mandor=None, client=None, client_pic=None, location=None):
+def _create_portal_mapping(
+    user,
+    *,
+    principal_type,
+    mandor=None,
+    client=None,
+    client_pic=None,
+    location=None,
+    access_level="READ_ONLY",
+):
     mapping = PortalUserMapping(
         user_id=user.id,
         principal_type=principal_type,
@@ -103,7 +114,7 @@ def _create_portal_mapping(user, *, principal_type, mandor=None, client=None, cl
         mandor_id=mandor.id if mandor else None,
         client_pic_id=client_pic.id if client_pic else None,
         delivery_location_id=location.id if location else None,
-        access_level="READ_ONLY",
+        access_level=access_level,
         is_active=True,
     )
     db.session.add(mapping)
@@ -253,6 +264,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/customers"' in html
             assert 'href="/portal/mandors"' in html
             assert 'href="/portal/locations"' in html
+            assert 'href="/portal/orders/draft"' in html
             assert 'href="/portal/status"' in html
             assert 'href="/portal/ownership"' in html
         finally:
@@ -638,6 +650,134 @@ def test_unmapped_portal_external_user_does_not_receive_master_data(app):
             assert "User belum memiliki mapping portal aktif" in html
         finally:
             transaction.rollback()
+
+
+def test_portal_draft_order_requires_draft_order_mapping(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        db.session.commit()
+
+        with app.test_client() as client:
+            _login(client, user)
+            get_response = client.get("/portal/orders/draft")
+            post_response = client.post(
+                "/portal/orders/draft",
+                data={
+                    "order_date": "2099-01-01",
+                    "meal_type": "LUNCH",
+                    "portion_qty": "10",
+                    "delivery_location_id": str(location.id),
+                    "idempotency_key": f"readonly-{uuid4().hex}",
+                },
+            )
+
+        assert get_response.status_code == 200
+        assert "Belum Bisa Membuat Draft" in get_response.get_data(as_text=True)
+        assert post_response.status_code == 400
+        assert (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user.id).count()
+            == 0
+        )
+
+
+def test_portal_draft_order_submit_is_idempotent_and_does_not_create_operational_order(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+        _create_portal_mapping(
+            user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+        operational_count_before = DailyOrder.query.count()
+        key = f"draft-{uuid4().hex}"
+
+        with app.test_client() as client:
+            _login(client, user)
+            get_response = client.get("/portal/orders/draft")
+            first_response = client.post(
+                "/portal/orders/draft",
+                data={
+                    "order_date": "2099-01-01",
+                    "meal_type": "LUNCH",
+                    "portion_qty": "10",
+                    "delivery_location_id": str(location.id),
+                    "notes": "QA draft portal",
+                    "idempotency_key": key,
+                },
+            )
+            second_response = client.post(
+                "/portal/orders/draft",
+                data={
+                    "order_date": "2099-01-01",
+                    "meal_type": "LUNCH",
+                    "portion_qty": "10",
+                    "delivery_location_id": str(location.id),
+                    "notes": "QA draft portal duplicate",
+                    "idempotency_key": key,
+                },
+            )
+
+        drafts = PortalOrderDraft.query.filter(
+            PortalOrderDraft.user_id == user.id,
+            PortalOrderDraft.idempotency_key == key,
+        ).all()
+
+        assert get_response.status_code == 200
+        assert "Kirim Draft" in get_response.get_data(as_text=True)
+        assert first_response.status_code == 302
+        assert second_response.status_code == 302
+        assert len(drafts) == 1
+        assert drafts[0].status == "PENDING_ADMIN_CONFIRMATION"
+        assert drafts[0].portion_qty == 10
+        assert drafts[0].delivery_location_id == location.id
+        assert DailyOrder.query.count() == operational_count_before
+
+
+def test_portal_draft_order_rejects_location_outside_scope(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
+        _other_branch, _other_client, _other_mandor, other_location = _create_other_branch_scope_data()
+        _create_portal_mapping(
+            user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+
+        with app.test_client() as client:
+            _login(client, user)
+            response = client.post(
+                "/portal/orders/draft",
+                data={
+                    "order_date": "2099-01-01",
+                    "meal_type": "LUNCH",
+                    "portion_qty": "10",
+                    "delivery_location_id": str(other_location.id),
+                    "idempotency_key": f"outside-{uuid4().hex}",
+                },
+            )
+
+        assert response.status_code == 400
+        assert (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user.id).count()
+            == 0
+        )
 
 
 def test_portal_mapping_service_has_no_session_commit_or_rollback():

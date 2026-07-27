@@ -1,4 +1,6 @@
-from flask import Blueprint, abort, current_app, redirect, render_template, url_for
+from uuid import uuid4
+
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.services.portal_access_service import (
@@ -10,6 +12,7 @@ from app.services.portal_access_service import (
     build_portal_profile,
     build_portal_status_shell,
 )
+from app.services.portal_order_draft_service import build_portal_draft_order_context, create_portal_order_draft
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
@@ -118,6 +121,42 @@ def locations():
         "directory": build_portal_location_directory(current_user),
     }
     return render_template("portal/locations.html", data=data)
+
+
+@portal_bp.route("/orders/draft", methods=["GET", "POST"])
+@role_required(*PORTAL_READONLY_ROLES)
+def draft_order():
+    if request.method == "POST":
+        draft, created, error = create_portal_order_draft(current_user, request.form)
+        if error:
+            flash(error, "danger")
+            context = build_portal_draft_order_context(current_user)
+            return render_template(
+                "portal/draft_order.html",
+                data={
+                    "status_label": "Pending admin",
+                    "active_role": current_user.role,
+                    "branch_id": current_user.branch_id,
+                    "context": context,
+                    "idempotency_key": request.form.get("idempotency_key") or uuid4().hex,
+                },
+            ), 400
+
+        if created:
+            flash("Draft order portal berhasil dikirim dan menunggu konfirmasi admin.", "success")
+        else:
+            flash("Draft order yang sama sudah pernah diterima. Tidak dibuat duplikat.", "info")
+        return redirect(url_for("portal.draft_order"))
+
+    context = build_portal_draft_order_context(current_user)
+    data = {
+        "status_label": "Pending admin",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "context": context,
+        "idempotency_key": uuid4().hex,
+    }
+    return render_template("portal/draft_order.html", data=data)
 
 
 @portal_bp.route("/status")

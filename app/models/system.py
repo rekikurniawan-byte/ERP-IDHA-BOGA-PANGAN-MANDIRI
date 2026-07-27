@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.extensions import db
 from app.models.base import BaseModel
 
@@ -156,3 +158,45 @@ class PortalUserMapping(BaseModel):
     delivery_location = db.relationship("DeliveryLocation", foreign_keys=[delivery_location_id], lazy="joined")
     creator = db.relationship("User", foreign_keys=[created_by], lazy="joined")
     updater = db.relationship("User", foreign_keys=[updated_by], lazy="joined")
+
+
+class PortalOrderDraft(BaseModel):
+    __tablename__ = "portal_order_drafts"
+    __table_args__ = (
+        db.CheckConstraint(
+            "meal_type IN ('LUNCH', 'DINNER')",
+            name="ck_portal_order_drafts_meal_type",
+        ),
+        db.CheckConstraint(
+            "status IN ('PENDING_ADMIN_CONFIRMATION', 'CONFIRMED', 'REJECTED', 'CANCELLED')",
+            name="ck_portal_order_drafts_status",
+        ),
+        db.CheckConstraint("portion_qty > 0", name="ck_portal_order_drafts_portion_qty_positive"),
+        db.UniqueConstraint("user_id", "idempotency_key", name="uq_portal_order_drafts_user_idempotency"),
+        db.Index("ix_portal_order_drafts_user_status", "user_id", "status"),
+        db.Index("ix_portal_order_drafts_branch_date", "branch_id", "order_date"),
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False, index=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False, index=True)
+    mandor_id = db.Column(db.Integer, db.ForeignKey("mandors.id"), nullable=False, index=True)
+    delivery_location_id = db.Column(db.Integer, db.ForeignKey("delivery_locations.id"), nullable=False, index=True)
+    order_date = db.Column(db.Date, nullable=False, index=True)
+    meal_type = db.Column(db.String(20), nullable=False, index=True)
+    portion_qty = db.Column(db.Integer, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(40), nullable=False, default="PENDING_ADMIN_CONFIRMATION", index=True)
+    idempotency_key = db.Column(db.String(120), nullable=False, index=True)
+    submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_note = db.Column(db.Text, nullable=True)
+    converted_daily_order_id = db.Column(db.Integer, db.ForeignKey("daily_orders.id"), nullable=True, index=True)
+
+    user = db.relationship("User", foreign_keys=[user_id], lazy="joined")
+    branch = db.relationship("Branch", foreign_keys=[branch_id], lazy="joined")
+    client = db.relationship("Client", foreign_keys=[client_id], lazy="joined")
+    mandor = db.relationship("Mandor", foreign_keys=[mandor_id], lazy="joined")
+    delivery_location = db.relationship("DeliveryLocation", foreign_keys=[delivery_location_id], lazy="joined")
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by], lazy="joined")
