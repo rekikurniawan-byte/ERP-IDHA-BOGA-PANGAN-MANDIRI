@@ -22,6 +22,7 @@ from app.services.portal_mapping_service import (
 )
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_MANDOR,
     validate_user_payload,
@@ -1050,6 +1051,45 @@ def test_admin_confirmation_bridge_reject_action_does_not_create_daily_order(app
         assert draft.status == "REJECTED"
         assert draft.converted_daily_order_id is None
         assert DailyOrder.query.count() == operational_count_before
+
+
+def test_portal_customer_prepayment_guard_blocks_draft_order(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CUSTOMER)
+        username = user.username
+        user_id = user.id
+        db.session.commit()
+
+    client = app.test_client()
+    _login_with_password(client, username)
+    get_response = client.get("/portal/orders/draft")
+    post_response = client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-03-01",
+            "meal_type": "LUNCH",
+            "portion_qty": "4",
+            "delivery_location_id": "1",
+            "idempotency_key": f"customer-{uuid4().hex}",
+        },
+    )
+    status_response = client.get("/portal/status")
+
+    with app.app_context():
+        draft_count = PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user_id).count()
+
+    get_html = get_response.get_data(as_text=True)
+    status_html = status_response.get_data(as_text=True)
+
+    assert get_response.status_code == 200
+    assert post_response.status_code == 400
+    assert status_response.status_code == 200
+    assert "Pelanggan umum wajib memiliki pembayaran terverifikasi" in get_html
+    assert "Prepayment pelanggan umum" in status_html
+    assert draft_count == 0
 
 
 def test_portal_mapping_service_has_no_session_commit_or_rollback():

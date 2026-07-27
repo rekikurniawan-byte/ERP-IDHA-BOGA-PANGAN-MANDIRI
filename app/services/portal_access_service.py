@@ -35,10 +35,17 @@ PORTAL_STATUS_ROWS = [
     },
     {
         "area": "Draft order portal",
-        "availability": "APPROVAL_REQUIRED",
-        "label": "Belum aktif",
-        "source": "Order existing belum dibuka ke portal",
-        "note": "Butuh approval karena menyentuh workflow order dan confirmation bridge.",
+        "availability": "READY",
+        "label": "Pending admin",
+        "source": "portal_order_drafts",
+        "note": "Draft masuk antrian portal dan baru menjadi order DRAFT setelah admin confirm.",
+    },
+    {
+        "area": "Prepayment pelanggan umum",
+        "availability": "READY",
+        "label": "Guard aktif",
+        "source": "Role PORTAL_CUSTOMER",
+        "note": "Pelanggan umum tidak dapat memproses order sebelum pembayaran terverifikasi.",
     },
     {
         "area": "Status order portal",

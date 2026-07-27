@@ -8,6 +8,7 @@ from app.models.master import DeliveryLocation
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.system import PortalOrderDraft
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
+from app.services.user_management_service import ROLE_PORTAL_CUSTOMER
 from app.services.operational_service import generate_order_number
 
 
@@ -58,6 +59,14 @@ def _allowed_location_options(scope):
 
 def build_portal_draft_order_context(user):
     scope = build_portal_external_scope(user)
+    if getattr(user, "role", None) == ROLE_PORTAL_CUSTOMER:
+        return {
+            "allowed": False,
+            "scope": scope,
+            "reason": "Pelanggan umum wajib memiliki pembayaran terverifikasi sebelum order diproses.",
+            "location_options": [],
+            "drafts": list_portal_order_drafts(user),
+        }
     return {
         "allowed": scope.allowed and ACCESS_DRAFT_ORDER in scope.access_levels,
         "scope": scope,
@@ -108,6 +117,9 @@ def build_portal_order_status_context(user, limit=50):
 
 
 def _validate_draft_payload(user, form):
+    if getattr(user, "role", None) == ROLE_PORTAL_CUSTOMER:
+        return None, "Pelanggan umum wajib memiliki pembayaran terverifikasi sebelum order diproses."
+
     scope = build_portal_external_scope(user)
     if not scope.allowed:
         return None, scope.reason or "User portal belum memiliki scope aktif."
