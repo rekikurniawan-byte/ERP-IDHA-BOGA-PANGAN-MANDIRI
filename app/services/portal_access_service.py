@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, Payment, SupplierBill
-from app.models.logistics import StockMovement, StockOpeningBalance
+from app.models.logistics import Procurement, ProcurementItem, StockMovement, StockOpeningBalance
 from app.models.master import Client, ClientPic, DeliveryLocation, Item, Mandor
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production, ProductionDetail
@@ -792,5 +792,108 @@ def build_portal_inventory_visibility(user, limit=10):
         },
         "stock_rows": stock_rows[:limit],
         "recent_movements": recent_movements,
+        "limit": limit,
+    }
+
+
+def build_portal_procurement_visibility(user, limit=10):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "summary": {},
+            "recent_procurements": [],
+            "recent_supplier_bills": [],
+        }
+
+    procurement_query = Procurement.query
+    procurement_item_query = ProcurementItem.query.join(Procurement)
+    supplier_bill_query = SupplierBill.query
+    if role == "ADMIN":
+        procurement_query = procurement_query.filter(Procurement.branch_id == branch_id)
+        procurement_item_query = procurement_item_query.filter(Procurement.branch_id == branch_id)
+        supplier_bill_query = supplier_bill_query.filter(SupplierBill.branch_id == branch_id)
+
+    open_supplier_bill_query = supplier_bill_query.filter(~SupplierBill.status.in_(["PAID", "CANCELLED", "VOID"]))
+
+    recent_procurement_models = (
+        procurement_query
+        .order_by(Procurement.procurement_date.desc(), Procurement.id.desc())
+        .limit(limit)
+        .all()
+    )
+    procurement_ids = [procurement.id for procurement in recent_procurement_models]
+    bill_by_procurement_id = {}
+    if procurement_ids:
+        bill_scope_query = SupplierBill.query.filter(SupplierBill.procurement_id.in_(procurement_ids))
+        if role == "ADMIN":
+            bill_scope_query = bill_scope_query.filter(SupplierBill.branch_id == branch_id)
+        bill_by_procurement_id = {
+            bill.procurement_id: bill
+            for bill in bill_scope_query.all()
+        }
+
+    recent_procurements = []
+    for procurement in recent_procurement_models:
+        item_count = ProcurementItem.query.filter(ProcurementItem.procurement_id == procurement.id).count()
+        total_qty = (
+            ProcurementItem.query
+            .filter(ProcurementItem.procurement_id == procurement.id)
+            .with_entities(func.coalesce(func.sum(ProcurementItem.qty), 0))
+            .scalar()
+            or 0
+        )
+        bill = bill_by_procurement_id.get(procurement.id)
+        recent_procurements.append(
+            {
+                "procurement_number": procurement.procurement_number,
+                "procurement_date": procurement.procurement_date,
+                "purchase_type": procurement.purchase_type,
+                "supplier_name": procurement.supplier_name,
+                "total_amount": procurement.total_amount,
+                "item_count": item_count,
+                "total_qty": total_qty,
+                "bill_number": bill.bill_number if bill else "-",
+                "bill_status": bill.status if bill else "BELUM ADA BILL",
+            }
+        )
+
+    recent_supplier_bills = []
+    for bill in supplier_bill_query.order_by(SupplierBill.due_date.asc(), SupplierBill.id.desc()).limit(limit).all():
+        recent_supplier_bills.append(
+            {
+                "bill_number": bill.bill_number,
+                "bill_date": bill.bill_date,
+                "due_date": bill.due_date,
+                "supplier_name": bill.supplier_name,
+                "status": bill.status,
+                "total_amount": bill.total_amount,
+                "paid_amount": bill.paid_amount,
+                "remaining_amount": bill.remaining_amount,
+                "procurement_number": bill.procurement.procurement_number if bill.procurement else "-",
+            }
+        )
+
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "scope_mode": "OWNER_ALL_BRANCH_PROCUREMENT_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_PROCUREMENT_PREVIEW",
+        "summary": {
+            "procurement_count": procurement_query.count(),
+            "procurement_total": _sum_or_zero(procurement_query, Procurement.total_amount),
+            "procurement_item_count": procurement_item_query.count(),
+            "procurement_qty": _sum_or_zero(procurement_item_query, ProcurementItem.qty),
+            "supplier_bill_count": supplier_bill_query.count(),
+            "open_supplier_bill_count": open_supplier_bill_query.count(),
+            "open_supplier_bill_remaining": _sum_or_zero(open_supplier_bill_query, SupplierBill.remaining_amount),
+        },
+        "recent_procurements": recent_procurements,
+        "recent_supplier_bills": recent_supplier_bills,
         "limit": limit,
     }

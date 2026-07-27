@@ -1,0 +1,153 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Procurement Visibility</h1>
+            <p class="page-description">Ringkasan read-only pembelian dan hutang supplier dari workflow existing.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.procurement.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id or '-' }}</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Pembelian</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.procurement.summary.procurement_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.procurement.summary.procurement_total|rupiah }}</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Item Pembelian</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.procurement.summary.procurement_item_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.procurement.summary.procurement_qty|qty }} qty.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Supplier Bill</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.procurement.summary.supplier_bill_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.procurement.summary.open_supplier_bill_count }} terbuka.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Outstanding</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.procurement.summary.open_supplier_bill_remaining|rupiah }}</div>
+                        <p class="text-muted mb-0 mt-2">Tidak membuat pembayaran.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Pembelian Terbaru</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>No Pembelian</th>
+                            <th>Tanggal</th>
+                            <th>Tipe</th>
+                            <th>Supplier</th>
+                            <th>Item</th>
+                            <th>Total Qty</th>
+                            <th>Total</th>
+                            <th>Bill</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.procurement.recent_procurements %}
+                            <tr>
+                                <td>{{ row.procurement_number }}</td>
+                                <td>{{ row.procurement_date.strftime('%d-%m-%Y') if row.procurement_date else '-' }}</td>
+                                <td>{{ row.purchase_type }}</td>
+                                <td>{{ row.supplier_name }}</td>
+                                <td>{{ row.item_count }}</td>
+                                <td>{{ row.total_qty|qty }}</td>
+                                <td>{{ row.total_amount|rupiah }}</td>
+                                <td>{{ row.bill_number }} <span class="status-badge neutral">{{ row.bill_status }}</span></td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada pembelian dalam scope portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Supplier Bill Terdekat</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>No Bill</th>
+                            <th>Tanggal</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Supplier</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Terbayar</th>
+                            <th>Sisa</th>
+                            <th>Procurement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.procurement.recent_supplier_bills %}
+                            <tr>
+                                <td>{{ row.bill_number }}</td>
+                                <td>{{ row.bill_date.strftime('%d-%m-%Y') if row.bill_date else '-' }}</td>
+                                <td>{{ row.due_date.strftime('%d-%m-%Y') if row.due_date else '-' }}</td>
+                                <td>{{ row.supplier_name }}</td>
+                                <td><span class="status-badge neutral">{{ row.status }}</span></td>
+                                <td>{{ row.total_amount|rupiah }}</td>
+                                <td>{{ row.paid_amount|rupiah }}</td>
+                                <td>{{ row.remaining_amount|rupiah }}</td>
+                                <td>{{ row.procurement_number }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada supplier bill dalam scope portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

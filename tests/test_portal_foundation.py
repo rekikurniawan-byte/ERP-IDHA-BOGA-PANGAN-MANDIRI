@@ -5,9 +5,9 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
-from app.models.finance import Invoice, Payment
-from app.models.logistics import StockMovement, StockOpeningBalance
-from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Item, Mandor, User
+from app.models.finance import Invoice, Payment, SupplierBill
+from app.models.logistics import Procurement, ProcurementItem, StockMovement, StockOpeningBalance
+from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Item, Mandor, Supplier, User
 from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production, ProductionDetail
 from app.services.portal_access_service import (
@@ -17,6 +17,7 @@ from app.services.portal_access_service import (
     build_portal_inventory_visibility,
     build_portal_ownership_analysis,
     build_portal_order_status_visibility,
+    build_portal_procurement_visibility,
     build_portal_production_visibility,
     build_portal_status_shell,
 )
@@ -503,6 +504,139 @@ def _create_other_branch_inventory_visibility_data(user):
     return item
 
 
+def _create_procurement_visibility_data(user):
+    supplier = Supplier(
+        branch_id=user.branch_id,
+        supplier_code=f"T-PORTAL-SUP-{uuid4().hex[:8]}",
+        supplier_name="AAA Test Portal Supplier",
+        supplier_type="GENERAL",
+        is_active=True,
+    )
+    item = Item(
+        item_code=f"T-PORTAL-PROC-ITEM-{uuid4().hex[:8]}",
+        item_name="AAA Test Portal Procurement Item",
+        category="RAW_MATERIAL",
+        unit="KG",
+        minimum_stock=0,
+        selling_price=0,
+        is_stock_tracked=True,
+        is_active=True,
+    )
+    db.session.add(supplier)
+    db.session.add(item)
+    db.session.flush()
+    procurement = Procurement(
+        procurement_number=f"T-PORTAL-PROC-{uuid4().hex[:8]}",
+        branch_id=user.branch_id,
+        supplier_id=supplier.id,
+        procurement_date=date.today(),
+        purchase_type="CREDIT",
+        supplier_name=supplier.supplier_name,
+        total_amount=75000,
+        created_by=user.id,
+    )
+    db.session.add(procurement)
+    db.session.flush()
+    db.session.add(
+        ProcurementItem(
+            procurement_id=procurement.id,
+            item_id=item.id,
+            qty=5,
+            unit_price=15000,
+            subtotal=75000,
+        )
+    )
+    db.session.flush()
+    bill = SupplierBill(
+        branch_id=user.branch_id,
+        bill_number=f"T-PORTAL-BILL-{uuid4().hex[:8]}",
+        supplier_id=supplier.id,
+        procurement_id=procurement.id,
+        bill_date=date.today(),
+        due_date=date.today() + timedelta(days=7),
+        supplier_name=supplier.supplier_name,
+        total_amount=75000,
+        paid_amount=25000,
+        remaining_amount=50000,
+        status="PARTIAL",
+        created_by=user.id,
+    )
+    db.session.add(bill)
+    db.session.flush()
+    return procurement, bill, supplier
+
+
+def _create_other_branch_procurement_visibility_data(user):
+    branch = Branch(
+        code=f"T-PORTAL-OTHER-PROC-{uuid4().hex[:8]}",
+        name="Other Procurement Branch",
+        address="Other",
+        phone="0800000066",
+        is_active=True,
+    )
+    db.session.add(branch)
+    db.session.flush()
+    supplier = Supplier(
+        branch_id=branch.id,
+        supplier_code=f"T-PORTAL-OTHER-SUP-{uuid4().hex[:8]}",
+        supplier_name="ZZZ Other Portal Supplier",
+        supplier_type="GENERAL",
+        is_active=True,
+    )
+    item = Item(
+        item_code=f"T-PORTAL-OTHER-PROC-ITEM-{uuid4().hex[:8]}",
+        item_name="ZZZ Other Portal Procurement Item",
+        category="RAW_MATERIAL",
+        unit="KG",
+        minimum_stock=0,
+        selling_price=0,
+        is_stock_tracked=True,
+        is_active=True,
+    )
+    db.session.add(supplier)
+    db.session.add(item)
+    db.session.flush()
+    procurement = Procurement(
+        procurement_number=f"T-PORTAL-OTHER-PROC-{uuid4().hex[:8]}",
+        branch_id=branch.id,
+        supplier_id=supplier.id,
+        procurement_date=date.today(),
+        purchase_type="CREDIT",
+        supplier_name=supplier.supplier_name,
+        total_amount=99000,
+        created_by=user.id,
+    )
+    db.session.add(procurement)
+    db.session.flush()
+    db.session.add(
+        ProcurementItem(
+            procurement_id=procurement.id,
+            item_id=item.id,
+            qty=9,
+            unit_price=11000,
+            subtotal=99000,
+        )
+    )
+    db.session.flush()
+    bill = SupplierBill(
+        branch_id=branch.id,
+        bill_number=f"T-PORTAL-OTHER-BILL-{uuid4().hex[:8]}",
+        supplier_id=supplier.id,
+        procurement_id=procurement.id,
+        bill_date=date.today(),
+        due_date=date.today() + timedelta(days=7),
+        supplier_name=supplier.supplier_name,
+        total_amount=99000,
+        paid_amount=0,
+        remaining_amount=99000,
+        status="OPEN",
+        created_by=user.id,
+    )
+    db.session.add(bill)
+    db.session.flush()
+    return procurement, bill, supplier
+
+
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -592,6 +726,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/deliveries"' in html
             assert 'href="/portal/productions"' in html
             assert 'href="/portal/inventory"' in html
+            assert 'href="/portal/procurement"' in html
         finally:
             transaction.rollback()
 
@@ -907,6 +1042,43 @@ def test_portal_inventory_visibility_is_read_only_and_branch_scoped(app):
             assert "PORTAL_TEST #2" in html
             assert other_item.item_name not in html
             assert "PORTAL_TEST_OTHER" not in html
+            assert 'action="/portal' not in html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_procurement_visibility_is_read_only_and_branch_scoped(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            procurement, bill, supplier = _create_procurement_visibility_data(user)
+            other_procurement, other_bill, other_supplier = _create_other_branch_procurement_visibility_data(user)
+            procurement_visibility = build_portal_procurement_visibility(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/procurement")
+
+            html = response.get_data(as_text=True)
+            assert procurement_visibility["scope_mode"] == "ADMIN_BRANCH_PROCUREMENT_PREVIEW"
+            assert procurement_visibility["summary"]["procurement_count"] == 1
+            assert int(procurement_visibility["summary"]["procurement_total"]) == 75000
+            assert procurement_visibility["summary"]["procurement_item_count"] == 1
+            assert int(procurement_visibility["summary"]["procurement_qty"]) == 5
+            assert procurement_visibility["summary"]["supplier_bill_count"] == 1
+            assert procurement_visibility["summary"]["open_supplier_bill_count"] == 1
+            assert int(procurement_visibility["summary"]["open_supplier_bill_remaining"]) == 50000
+            assert response.status_code == 200
+            assert "Procurement Visibility" in html
+            assert procurement.procurement_number in html
+            assert bill.bill_number in html
+            assert supplier.supplier_name in html
+            assert other_procurement.procurement_number not in html
+            assert other_bill.bill_number not in html
+            assert other_supplier.supplier_name not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()
