@@ -117,6 +117,7 @@ from app.models.system import (
     DigitalAttachment,
     IdempotencyKey,
     ApprovalRequest,
+    PortalUserMapping,
 )
 
 from app.models.field_transaction import (

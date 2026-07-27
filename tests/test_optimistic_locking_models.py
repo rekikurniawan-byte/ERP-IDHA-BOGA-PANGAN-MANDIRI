@@ -16,6 +16,9 @@ idempotency_migration = importlib.import_module(
 approval_migration = importlib.import_module(
     "migrations.versions.88a0a1b2c3d4_approval_requests"
 )
+portal_mapping_migration = importlib.import_module(
+    "migrations.versions.91a0a1b2c3d4_portal_user_mappings"
+)
 
 
 def _versioned_model_tables():
@@ -40,6 +43,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(stock_opening_migration.VERSIONED_TABLES)
     migration_tables.update(idempotency_migration.VERSIONED_TABLES)
     migration_tables.update(approval_migration.VERSIONED_TABLES)
+    migration_tables.update(portal_mapping_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

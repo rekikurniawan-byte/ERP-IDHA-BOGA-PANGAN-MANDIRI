@@ -61,7 +61,9 @@
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.customers') }}">Client/PT</a>
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.mandors') }}">Mandor</a>
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.status') }}">Status Portal</a>
-                    <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.ownership') }}">Ownership</a>
+                    {% if data.active_role in ["OWNER", "ADMIN"] %}
+                        <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.ownership') }}">Ownership</a>
+                    {% endif %}
                     <span class="status-badge neutral">Read-only</span>
                 </div>
             </div>
@@ -81,13 +83,13 @@
                             <td>Client</td>
                             <td>{{ data.scope.counts.clients }}</td>
                             <td>{{ data.scope.active_counts.clients }}</td>
-                            <td>Client tersambung ke mandor existing untuk ADMIN branch scope.</td>
+                            <td>Client tersambung ke mandor existing sesuai scope role aktif.</td>
                         </tr>
                         <tr>
                             <td>Mandor</td>
                             <td>{{ data.scope.counts.mandors }}</td>
                             <td>{{ data.scope.active_counts.mandors }}</td>
-                            <td>Mandor tetap master internal, belum menjadi akun portal eksternal.</td>
+                            <td>Mandor tetap master existing; akun portal dibatasi mapping aktif.</td>
                         </tr>
                         <tr>
                             <td>Lokasi</td>

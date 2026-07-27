@@ -1,4 +1,5 @@
 from flask import Blueprint, abort, render_template, redirect, request, url_for
+from flask import current_app
 from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
@@ -7,6 +8,10 @@ from app.services.user_management_service import (
     ROLE_FINANCE,
     ROLE_HR,
     ROLE_LOGISTICS,
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_CUSTOMER,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_MANDOR,
 )
 from app.services.dashboard_service import (
     get_owner_dashboard_data,
@@ -68,6 +73,8 @@ def _role_landing_endpoint(role):
         ROLE_LOGISTICS: "dashboard.logistics",
         ROLE_HR: "dashboard.hr",
     }
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_MANDOR, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
+        return "portal.dashboard" if current_app.config.get("PORTAL_ENABLED", False) else None
     return landing_map.get(role)
 
 

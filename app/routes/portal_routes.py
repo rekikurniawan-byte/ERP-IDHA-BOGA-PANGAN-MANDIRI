@@ -8,10 +8,23 @@ from app.services.portal_access_service import (
     build_portal_ownership_analysis,
     build_portal_status_shell,
 )
+from app.services.user_management_service import (
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_CUSTOMER,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_MANDOR,
+)
 from app.utils.decorators import role_required
 
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
+PORTAL_READONLY_ROLES = (
+    "ADMIN",
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_CUSTOMER,
+)
 
 
 @portal_bp.before_request
@@ -22,13 +35,13 @@ def require_portal_feature_flag():
 
 @portal_bp.route("")
 @portal_bp.route("/")
-@role_required("ADMIN")
+@role_required(*PORTAL_READONLY_ROLES)
 def index():
     return redirect(url_for("portal.dashboard"))
 
 
 @portal_bp.route("/dashboard")
-@role_required("ADMIN")
+@role_required(*PORTAL_READONLY_ROLES)
 def dashboard():
     scope = build_portal_access_scope(current_user)
     data = {
@@ -58,7 +71,7 @@ def dashboard():
 
 
 @portal_bp.route("/customers")
-@role_required("ADMIN")
+@role_required(*PORTAL_READONLY_ROLES)
 def customers():
     data = {
         "status_label": "Read-only",
@@ -70,7 +83,7 @@ def customers():
 
 
 @portal_bp.route("/mandors")
-@role_required("ADMIN")
+@role_required(*PORTAL_READONLY_ROLES)
 def mandors():
     data = {
         "status_label": "Read-only",
@@ -82,7 +95,7 @@ def mandors():
 
 
 @portal_bp.route("/status")
-@role_required("ADMIN")
+@role_required(*PORTAL_READONLY_ROLES)
 def status():
     data = {
         "status_label": "Read-only",

@@ -12,6 +12,17 @@ ROLE_LOGISTICS = "LOGISTICS"
 ROLE_HR = "HR"
 ROLE_DAPUR = "DAPUR"
 ROLE_PENGANTAR = "PENGANTAR"
+ROLE_PORTAL_CLIENT = "PORTAL_CLIENT"
+ROLE_PORTAL_MANDOR = "PORTAL_MANDOR"
+ROLE_PORTAL_DELEGATE = "PORTAL_DELEGATE"
+ROLE_PORTAL_CUSTOMER = "PORTAL_CUSTOMER"
+
+PORTAL_EXTERNAL_ROLES = {
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_CUSTOMER,
+}
 
 ALLOWED_ROLES = [
     ROLE_OWNER,
@@ -22,6 +33,10 @@ ALLOWED_ROLES = [
     ROLE_HR,
     ROLE_DAPUR,
     ROLE_PENGANTAR,
+    ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_DELEGATE,
+    ROLE_PORTAL_CUSTOMER,
 ]
 
 ROLE_LABELS = {
@@ -33,6 +48,10 @@ ROLE_LABELS = {
     ROLE_HR: "HR / SDM",
     ROLE_DAPUR: "Dapur / Produksi",
     ROLE_PENGANTAR: "Pengantar / Delivery",
+    ROLE_PORTAL_CLIENT: "Portal Client/PT",
+    ROLE_PORTAL_MANDOR: "Portal Mandor",
+    ROLE_PORTAL_DELEGATE: "Portal Delegasi",
+    ROLE_PORTAL_CUSTOMER: "Portal Pelanggan Umum",
 }
 
 ROLE_DESCRIPTIONS = {
@@ -44,6 +63,10 @@ ROLE_DESCRIPTIONS = {
     ROLE_HR: "Disiapkan untuk karyawan internal dan payroll. Mandor tetap bukan employee/payroll.",
     ROLE_DAPUR: "Akses produksi dapur, permintaan bahan, dan pemakaian dapur.",
     ROLE_PENGANTAR: "Akses pengiriman, penerimaan, riwayat delivery, dan bukti digital delivery.",
+    ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PT berdasarkan mapping eksplisit.",
+    ROLE_PORTAL_MANDOR: "Akses portal read-only untuk Mandor berdasarkan mapping eksplisit.",
+    ROLE_PORTAL_DELEGATE: "Akses portal read-only terbatas untuk delegasi Client/PIC/lokasi.",
+    ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",
 }
 
 MIN_PASSWORD_LENGTH = 8

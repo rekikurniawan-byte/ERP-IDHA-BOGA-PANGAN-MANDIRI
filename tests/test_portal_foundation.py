@@ -4,11 +4,17 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.models.system import PortalUserMapping
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_ownership_analysis,
     build_portal_status_shell,
 )
+from app.services.portal_mapping_service import (
+    PRINCIPAL_MANDOR,
+    build_portal_external_scope,
+)
+from app.services.user_management_service import ROLE_PORTAL_MANDOR, validate_user_payload
 
 
 def _create_test_user(role="OWNER"):
@@ -79,6 +85,22 @@ def _create_scope_master_data(user):
     db.session.add(location)
     db.session.flush()
     return client, client_pic, mandor, location
+
+
+def _create_portal_mapping(user, *, principal_type, mandor=None, client=None, client_pic=None, location=None):
+    mapping = PortalUserMapping(
+        user_id=user.id,
+        principal_type=principal_type,
+        client_id=client.id if client else None,
+        mandor_id=mandor.id if mandor else None,
+        client_pic_id=client_pic.id if client_pic else None,
+        delivery_location_id=location.id if location else None,
+        access_level="READ_ONLY",
+        is_active=True,
+    )
+    db.session.add(mapping)
+    db.session.flush()
+    return mapping
 
 
 def _create_other_branch_scope_data():
@@ -161,7 +183,7 @@ def test_portal_enabled_allows_owner_and_admin_preview(app):
                 assert "Portal Pelanggan" in html
                 assert "Preview internal" in html
                 assert "Scope read-only dari master client" in html
-                assert "Role eksternal dan mapping portal masih ditunda sampai approval owner." in html
+                assert "OWNER/ADMIN melihat preview internal. User eksternal memakai mapping portal eksplisit." in html
         finally:
             transaction.rollback()
 
@@ -364,6 +386,120 @@ def test_portal_ownership_analysis_is_read_only_and_branch_scoped(app):
 
 def test_portal_access_service_has_no_session_commit_or_rollback():
     source = open("app/services/portal_access_service.py", encoding="utf-8").read()
+
+    assert "db.session.commit(" not in source
+    assert "db.session.rollback(" not in source
+
+
+def test_user_management_accepts_portal_roles_on_existing_auth(app):
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            owner = _create_test_user("OWNER")
+            payload, error = validate_user_payload(
+                {
+                    "full_name": "Portal Mandor User",
+                    "username": f"portal-mandor-{uuid4().hex[:8]}",
+                    "role": ROLE_PORTAL_MANDOR,
+                    "branch_id": str(owner.branch_id),
+                    "is_active": "on",
+                }
+            )
+
+            assert error is None
+            assert payload["role"] == ROLE_PORTAL_MANDOR
+            assert payload["branch_id"] == owner.branch_id
+        finally:
+            transaction.rollback()
+
+
+def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user(ROLE_PORTAL_MANDOR)
+            client_obj, client_pic, mandor, location = _create_scope_master_data(user)
+            _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+            _create_other_branch_scope_data()
+
+            scope = build_portal_external_scope(user)
+            access_scope = build_portal_access_scope(user)
+
+            assert scope.allowed is True
+            assert scope.scope_mode == "PORTAL_MANDOR_SCOPE"
+            assert scope.client_ids == {client_obj.id}
+            assert scope.mandor_ids == {mandor.id}
+            assert scope.delivery_location_ids == {location.id}
+            assert client_pic.id in scope.client_pic_ids
+            assert access_scope["allowed"] is True
+            assert access_scope["counts"]["clients"] == 1
+            assert access_scope["counts"]["mandors"] == 1
+            assert access_scope["counts"]["locations"] == 1
+
+            with app.test_client() as client:
+                _login(client, user)
+                index_response = client.get("/")
+                dashboard_response = client.get("/portal/dashboard")
+                customers_response = client.get("/portal/customers")
+                mandors_response = client.get("/portal/mandors")
+                ownership_response = client.get("/portal/ownership")
+
+            assert index_response.status_code == 302
+            assert index_response.headers["Location"].endswith("/portal/dashboard")
+
+            dashboard_html = dashboard_response.get_data(as_text=True)
+            customers_html = customers_response.get_data(as_text=True)
+            mandors_html = mandors_response.get_data(as_text=True)
+
+            assert dashboard_response.status_code == 200
+            assert customers_response.status_code == 200
+            assert mandors_response.status_code == 200
+            assert "PORTAL_MANDOR_SCOPE" in dashboard_html
+            assert "AAA Test Portal Client" in dashboard_html
+            assert "AAA Test Portal Mandor" in dashboard_html
+            assert "ZZZ Other Branch Client" not in dashboard_html
+            assert "ZZZ Other Branch Mandor" not in dashboard_html
+            assert "Ownership" not in dashboard_html
+            assert "AAA Test Portal Client" in customers_html
+            assert "ZZZ Other Branch Client" not in customers_html
+            assert "AAA Test Portal Mandor" in mandors_html
+            assert "ZZZ Other Branch Mandor" not in mandors_html
+            assert ownership_response.status_code == 302
+        finally:
+            transaction.rollback()
+
+
+def test_unmapped_portal_external_user_does_not_receive_master_data(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user(ROLE_PORTAL_MANDOR)
+            _create_scope_master_data(user)
+
+            access_scope = build_portal_access_scope(user)
+            assert access_scope["allowed"] is False
+            assert access_scope["scope_mode"] == "NO_PORTAL_SCOPE"
+            assert access_scope["counts"]["clients"] == 0
+            assert access_scope["counts"]["mandors"] == 0
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/dashboard")
+
+            html = response.get_data(as_text=True)
+            assert response.status_code == 200
+            assert "AAA Test Portal Client" not in html
+            assert "User belum memiliki mapping portal aktif" in html
+        finally:
+            transaction.rollback()
+
+
+def test_portal_mapping_service_has_no_session_commit_or_rollback():
+    source = open("app/services/portal_mapping_service.py", encoding="utf-8").read()
 
     assert "db.session.commit(" not in source
     assert "db.session.rollback(" not in source

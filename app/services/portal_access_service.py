@@ -2,6 +2,7 @@ from sqlalchemy import func, select
 
 from app.extensions import db
 from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
+from app.services.portal_mapping_service import build_portal_external_scope, is_portal_external_role
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -23,10 +24,10 @@ PORTAL_STATUS_ROWS = [
     },
     {
         "area": "Akun eksternal Client/PT/Mandor",
-        "availability": "APPROVAL_REQUIRED",
-        "label": "Belum aktif",
-        "source": "Belum ada mapping user eksternal yang disetujui",
-        "note": "Butuh approval karena menyentuh role, permission, dan ownership data.",
+        "availability": "READY",
+        "label": "Mapping aktif",
+        "source": "portal_user_mappings",
+        "note": "Role portal memakai auth existing dan scope eksplisit ke client/mandor/PIC/lokasi.",
     },
     {
         "area": "Draft order portal",
@@ -60,16 +61,39 @@ def _empty_scope(role, branch_id, reason):
         "scope_mode": "NO_PORTAL_SCOPE",
         "reason": reason,
         "approval_required": True,
-        "approval_note": "Mapping user eksternal ke client/mandor/PT belum disetujui.",
+        "approval_note": "User belum memiliki mapping portal aktif yang cocok dengan role-nya.",
         "counts": {
             "clients": 0,
             "client_pics": 0,
             "mandors": 0,
             "locations": 0,
         },
+        "active_counts": {
+            "clients": 0,
+            "mandors": 0,
+            "locations": 0,
+        },
+        "distinct_client_from_mandor": 0,
         "client_preview": [],
         "mandor_preview": [],
         "location_preview": [],
+    }
+
+
+def _query_by_ids(model, ids):
+    if not ids:
+        return model.query.filter(model.id.in_([-1]))
+    return model.query.filter(model.id.in_(sorted(ids)))
+
+
+def _external_queries(user):
+    scope = build_portal_external_scope(user)
+    return scope, {
+        "scope_mode": scope.scope_mode,
+        "client_query": _query_by_ids(Client, scope.client_ids),
+        "mandor_query": _query_by_ids(Mandor, scope.mandor_ids),
+        "location_query": _query_by_ids(DeliveryLocation, scope.delivery_location_ids),
+        "client_pic_query": _query_by_ids(ClientPic, scope.client_pic_ids),
     }
 
 
@@ -155,6 +179,41 @@ def build_portal_access_scope(user):
     transactional access. OWNER receives a global preview; ADMIN receives a
     branch-scoped preview based on mandors in the user's branch.
     """
+    role = getattr(user, "role", None)
+    if is_portal_external_role(role):
+        external_scope, queries = _external_queries(user)
+        if not external_scope.allowed:
+            return _empty_scope(role, getattr(user, "branch_id", None), external_scope.reason)
+
+        client_query = queries["client_query"]
+        mandor_query = queries["mandor_query"]
+        location_query = queries["location_query"]
+        client_pic_query = queries["client_pic_query"]
+        return {
+            "allowed": True,
+            "role": role,
+            "branch_id": getattr(user, "branch_id", None),
+            "scope_mode": external_scope.scope_mode,
+            "reason": external_scope.reason,
+            "approval_required": False,
+            "approval_note": "Mapping portal aktif. Akses tetap read-only pada batch ini.",
+            "counts": {
+                "clients": client_query.count(),
+                "client_pics": client_pic_query.count(),
+                "mandors": mandor_query.count(),
+                "locations": location_query.count(),
+            },
+            "active_counts": {
+                "clients": client_query.filter(Client.is_active.is_(True)).count(),
+                "mandors": mandor_query.filter(Mandor.is_active.is_(True)).count(),
+                "locations": location_query.filter(DeliveryLocation.is_active.is_(True)).count(),
+            },
+            "distinct_client_from_mandor": len(external_scope.client_ids),
+            "client_preview": _client_preview(client_query),
+            "mandor_preview": _mandor_preview(mandor_query),
+            "location_preview": _location_preview(location_query),
+        }
+
     allowed, role, branch_id, reason = _scope_allowed(user)
     if not allowed:
         return _empty_scope(role, branch_id, reason)
@@ -173,7 +232,7 @@ def build_portal_access_scope(user):
         "scope_mode": scope_mode,
         "reason": "Preview read-only dari master data existing.",
         "approval_required": False,
-        "approval_note": "Role eksternal dan mapping portal masih ditunda sampai approval owner.",
+        "approval_note": "OWNER/ADMIN melihat preview internal. User eksternal memakai mapping portal eksplisit.",
         "counts": {
             "clients": client_query.count(),
             "client_pics": client_pic_query.count(),
@@ -200,6 +259,45 @@ def _distinct_client_from_mandor_count(role, branch_id):
 
 
 def build_portal_customer_directory(user, limit=50):
+    role = getattr(user, "role", None)
+    if is_portal_external_role(role):
+        external_scope, queries = _external_queries(user)
+        if not external_scope.allowed:
+            return {
+                "allowed": False,
+                "reason": external_scope.reason,
+                "scope_mode": external_scope.scope_mode,
+                "rows": [],
+            }
+        rows = []
+        for client in queries["client_query"].order_by(Client.name.asc()).limit(limit).all():
+            mandor_query = Mandor.query.filter(Mandor.id.in_(sorted(external_scope.mandor_ids))).filter(
+                Mandor.client_id == client.id
+            )
+            location_query = DeliveryLocation.query.filter(
+                DeliveryLocation.id.in_(sorted(external_scope.delivery_location_ids))
+            ).join(Mandor).filter(Mandor.client_id == client.id)
+            rows.append(
+                {
+                    "id": client.id,
+                    "name": client.name,
+                    "code": client.client_code,
+                    "phone": client.phone,
+                    "is_active": client.is_active,
+                    "pic_count": ClientPic.query.filter(ClientPic.id.in_(sorted(external_scope.client_pic_ids))).filter(
+                        ClientPic.client_id == client.id
+                    ).count(),
+                    "mandor_count": mandor_query.count(),
+                    "location_count": location_query.count(),
+                }
+            )
+        return {
+            "allowed": True,
+            "scope_mode": external_scope.scope_mode,
+            "rows": rows,
+            "limit": limit,
+        }
+
     allowed, role, branch_id, reason = _scope_allowed(user)
     if not allowed:
         return {
@@ -240,6 +338,40 @@ def build_portal_customer_directory(user, limit=50):
 
 
 def build_portal_mandor_directory(user, limit=50):
+    role = getattr(user, "role", None)
+    if is_portal_external_role(role):
+        external_scope, queries = _external_queries(user)
+        if not external_scope.allowed:
+            return {
+                "allowed": False,
+                "reason": external_scope.reason,
+                "scope_mode": external_scope.scope_mode,
+                "rows": [],
+            }
+        rows = []
+        for mandor in queries["mandor_query"].order_by(Mandor.name.asc()).limit(limit).all():
+            location_query = DeliveryLocation.query.filter(
+                DeliveryLocation.id.in_(sorted(external_scope.delivery_location_ids))
+            ).filter(DeliveryLocation.mandor_id == mandor.id)
+            rows.append(
+                {
+                    "id": mandor.id,
+                    "name": mandor.name,
+                    "phone": mandor.phone,
+                    "client_id": mandor.client_id,
+                    "client_name": mandor.client.name if mandor.client else "-",
+                    "branch_id": mandor.branch_id,
+                    "is_active": mandor.is_active,
+                    "location_count": location_query.count(),
+                }
+            )
+        return {
+            "allowed": True,
+            "scope_mode": external_scope.scope_mode,
+            "rows": rows,
+            "limit": limit,
+        }
+
     allowed, role, branch_id, reason = _scope_allowed(user)
     if not allowed:
         return {
@@ -275,6 +407,20 @@ def build_portal_mandor_directory(user, limit=50):
 
 
 def build_portal_status_shell(user):
+    role = getattr(user, "role", None)
+    if is_portal_external_role(role):
+        external_scope = build_portal_external_scope(user)
+        rows = [dict(row) for row in PORTAL_STATUS_ROWS]
+        return {
+            "allowed": external_scope.allowed,
+            "reason": external_scope.reason,
+            "role": role,
+            "branch_id": getattr(user, "branch_id", None),
+            "rows": rows,
+            "ready_count": sum(1 for row in rows if row["availability"] == "READY"),
+            "approval_required_count": sum(1 for row in rows if row["availability"] == "APPROVAL_REQUIRED"),
+        }
+
     allowed, role, branch_id, reason = _scope_allowed(user)
     if not allowed:
         return {

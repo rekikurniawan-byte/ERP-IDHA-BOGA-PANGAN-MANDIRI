@@ -120,3 +120,39 @@ class ApprovalRequest(BaseModel):
     branch = db.relationship("Branch", foreign_keys=[branch_id], lazy="joined")
     requester = db.relationship("User", foreign_keys=[requested_by], lazy="joined")
     reviewer = db.relationship("User", foreign_keys=[reviewed_by], lazy="joined")
+
+
+class PortalUserMapping(BaseModel):
+    __tablename__ = "portal_user_mappings"
+    __table_args__ = (
+        db.CheckConstraint(
+            "principal_type IN ('CLIENT', 'MANDOR', 'CLIENT_PIC', 'DELEGATE')",
+            name="ck_portal_user_mappings_principal_type",
+        ),
+        db.CheckConstraint(
+            "access_level IN ('READ_ONLY', 'DRAFT_ORDER')",
+            name="ck_portal_user_mappings_access_level",
+        ),
+        db.Index("ix_portal_user_mappings_user_active", "user_id", "is_active"),
+        db.Index("ix_portal_user_mappings_principal_active", "principal_type", "is_active"),
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    principal_type = db.Column(db.String(30), nullable=False, index=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=True, index=True)
+    mandor_id = db.Column(db.Integer, db.ForeignKey("mandors.id"), nullable=True, index=True)
+    client_pic_id = db.Column(db.Integer, db.ForeignKey("client_pics.id"), nullable=True, index=True)
+    delivery_location_id = db.Column(db.Integer, db.ForeignKey("delivery_locations.id"), nullable=True, index=True)
+    access_level = db.Column(db.String(30), nullable=False, default="READ_ONLY", index=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    updated_at = db.Column(db.DateTime, nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+
+    user = db.relationship("User", foreign_keys=[user_id], lazy="joined")
+    client = db.relationship("Client", foreign_keys=[client_id], lazy="joined")
+    mandor = db.relationship("Mandor", foreign_keys=[mandor_id], lazy="joined")
+    client_pic = db.relationship("ClientPic", foreign_keys=[client_pic_id], lazy="joined")
+    delivery_location = db.relationship("DeliveryLocation", foreign_keys=[delivery_location_id], lazy="joined")
+    creator = db.relationship("User", foreign_keys=[created_by], lazy="joined")
+    updater = db.relationship("User", foreign_keys=[updated_by], lazy="joined")
