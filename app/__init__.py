@@ -200,6 +200,10 @@ def create_app():
             }
         }
 
+    @flask_app.context_processor
+    def inject_portal_feature_flags():
+        return {"global_portal_enabled": bool(flask_app.config.get("PORTAL_ENABLED", False))}
+
     @flask_app.template_filter("rupiah")
     def rupiah(value):
         try:

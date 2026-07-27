@@ -28,6 +28,7 @@
 {% set is_accounting = endpoint.startswith("accounting.") %}
 {% set is_accounting_period_closing = endpoint in ["accounting.period_closing", "accounting.post_period_closing_route", "accounting.period_closing_detail"] %}
 {% set is_logistics = endpoint.startswith("logistics.") %}
+{% set is_portal = endpoint.startswith("portal.") %}
 {% set is_material_forecast = endpoint == "logistics.material_forecast" %}
 {% set is_hr = endpoint.startswith("hr.") %}
 {% set is_settings = endpoint.startswith("settings.") %}
@@ -73,6 +74,7 @@
 {% set can_view_hr = role in ["OWNER", "ADMIN", "HR"] %}
 {% set can_view_master = role in ["OWNER", "ADMIN", "FINANCE", "LOGISTICS"] %}
 {% set can_view_costing = role in ["OWNER", "ADMIN"] %}
+{% set can_view_portal = (global_portal_enabled|default(false)) and role in ["OWNER", "ADMIN"] %}
 
 <aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
     <div class="sidebar-brand">
@@ -101,6 +103,41 @@
                     <span class="badge {{ global_live_reminder_badge.badge_class }} ms-auto">{{ global_live_reminder_badge.total }}</span>
                 {% endif %}
             </a>
+
+            {% if can_view_portal %}
+                <details class="sidebar-group" {% if is_portal %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_portal else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-window-sidebar"></i>
+                            <span>Portal</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        <a href="{{ url_for('portal.dashboard') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.dashboard' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'portal.dashboard' else 'false' }}">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Portal Pelanggan</span>
+                        </a>
+
+                        <a href="{{ url_for('portal.customers') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customers' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'portal.customers' else 'false' }}">
+                            <i class="bi bi-buildings"></i>
+                            <span>Client/PT</span>
+                        </a>
+
+                        <a href="{{ url_for('portal.mandors') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandors' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'portal.mandors' else 'false' }}">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Mandor</span>
+                        </a>
+                    </div>
+                </details>
+            {% endif %}
 
             {% if role in ["OWNER", "ADMIN", "DAPUR", "PENGANTAR"] %}
                 <details class="sidebar-group" {% if is_operational %}open{% endif %}>

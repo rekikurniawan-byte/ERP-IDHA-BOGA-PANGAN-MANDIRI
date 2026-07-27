@@ -162,6 +162,64 @@ def test_portal_enabled_allows_owner_and_admin_preview(app):
             transaction.rollback()
 
 
+def test_portal_navigation_is_hidden_when_feature_flag_off(app):
+    app.config["PORTAL_ENABLED"] = False
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("OWNER")
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/settings/change-password")
+
+            html = response.get_data(as_text=True)
+            assert response.status_code == 200
+            assert 'href="/portal' not in html
+            assert "Portal Pelanggan" not in html
+        finally:
+            transaction.rollback()
+
+
+def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("OWNER")
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/settings/change-password")
+
+            html = response.get_data(as_text=True)
+            assert response.status_code == 200
+            assert 'href="/portal/dashboard"' in html
+            assert 'href="/portal/customers"' in html
+            assert 'href="/portal/mandors"' in html
+        finally:
+            transaction.rollback()
+
+
+def test_portal_navigation_is_hidden_for_non_preview_role_even_when_enabled(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("FINANCE")
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/settings/change-password")
+
+            html = response.get_data(as_text=True)
+            assert response.status_code == 200
+            assert 'href="/portal' not in html
+            assert "Portal Pelanggan" not in html
+        finally:
+            transaction.rollback()
+
+
 def test_portal_enabled_rejects_unauthorized_internal_role(app):
     app.config["PORTAL_ENABLED"] = True
 
