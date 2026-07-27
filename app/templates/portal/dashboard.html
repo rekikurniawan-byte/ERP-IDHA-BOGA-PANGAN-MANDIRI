@@ -6,7 +6,7 @@
         <div>
             <p class="page-eyebrow">Portal</p>
             <h1>Portal Pelanggan</h1>
-            <p class="page-description">Foundation read-only untuk validasi akses dan namespace portal.</p>
+            <p class="page-description">Scope read-only dari master client, mandor, dan lokasi existing.</p>
         </div>
         <span class="status-badge neutral">{{ data.status_label }}</span>
     </div>
@@ -37,6 +37,115 @@
                 <div class="col-12 col-md-6">
                     <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
                     <div class="fw-semibold">{{ data.branch_id }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.scope.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Status mapping eksternal</div>
+                    <div class="fw-semibold">{{ data.scope.approval_note }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Coverage Master Data</h2>
+                    <p class="text-muted mb-0">Preview terbatas untuk membuktikan scope tanpa membuka transaksi.</p>
+                </div>
+                <span class="status-badge neutral">Read-only</span>
+            </div>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Area</th>
+                            <th>Total</th>
+                            <th>Aktif</th>
+                            <th>Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Client</td>
+                            <td>{{ data.scope.counts.clients }}</td>
+                            <td>{{ data.scope.active_counts.clients }}</td>
+                            <td>Client tersambung ke mandor existing untuk ADMIN branch scope.</td>
+                        </tr>
+                        <tr>
+                            <td>Mandor</td>
+                            <td>{{ data.scope.counts.mandors }}</td>
+                            <td>{{ data.scope.active_counts.mandors }}</td>
+                            <td>Mandor tetap master internal, belum menjadi akun portal eksternal.</td>
+                        </tr>
+                        <tr>
+                            <td>Lokasi</td>
+                            <td>{{ data.scope.counts.locations }}</td>
+                            <td>{{ data.scope.active_counts.locations }}</td>
+                            <td>Lokasi dibaca dari DeliveryLocation existing.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Preview Client dan Mandor</h2>
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="table-responsive app-table-wrap">
+                        <table class="table app-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Kode</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for client in data.scope.client_preview %}
+                                    <tr>
+                                        <td>{{ client.name }}</td>
+                                        <td>{{ client.code or '-' }}</td>
+                                        <td>{{ 'Aktif' if client.is_active else 'Nonaktif' }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="3" class="text-muted">Belum ada client dalam scope.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="table-responsive app-table-wrap">
+                        <table class="table app-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Mandor</th>
+                                    <th>Client ID</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mandor in data.scope.mandor_preview %}
+                                    <tr>
+                                        <td>{{ mandor.name }}</td>
+                                        <td>{{ mandor.client_id }}</td>
+                                        <td>{{ 'Aktif' if mandor.is_active else 'Nonaktif' }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="3" class="text-muted">Belum ada mandor dalam scope.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

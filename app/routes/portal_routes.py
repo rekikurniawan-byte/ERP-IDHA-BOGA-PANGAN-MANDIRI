@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, redirect, render_template, url_for
 from flask_login import current_user
 
+from app.services.portal_access_service import build_portal_access_scope
 from app.utils.decorators import role_required
 
 
@@ -23,25 +24,27 @@ def index():
 @portal_bp.route("/dashboard")
 @role_required("ADMIN")
 def dashboard():
+    scope = build_portal_access_scope(current_user)
     data = {
         "status_label": "Preview internal",
         "active_role": current_user.role,
         "branch_id": current_user.branch_id,
+        "scope": scope,
         "cards": [
             {
                 "title": "Pelanggan",
-                "value": "Read-only",
+                "value": scope["counts"]["clients"],
                 "caption": "Client, mandor, dan lokasi memakai data master existing.",
             },
             {
-                "title": "Order",
-                "value": "Belum aktif",
-                "caption": "Batch 1A tidak membuat atau mengubah order.",
+                "title": "Mandor",
+                "value": scope["counts"]["mandors"],
+                "caption": "Scope mandor dibaca dari cabang user atau preview OWNER.",
             },
             {
-                "title": "Pembayaran",
-                "value": "Tidak tersambung",
-                "caption": "Tidak ada posting payment, invoice, jurnal, atau kas.",
+                "title": "Lokasi",
+                "value": scope["counts"]["locations"],
+                "caption": "Lokasi pengiriman tetap memakai DeliveryLocation existing.",
             },
         ],
     }

@@ -3,7 +3,8 @@ from uuid import uuid4
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
-from app.models.master import Branch, User
+from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.services.portal_access_service import build_portal_access_scope
 
 
 def _create_test_user(role="OWNER"):
@@ -33,6 +34,47 @@ def _login(client, user):
     with client.session_transaction() as session:
         session["_user_id"] = str(user.id)
         session["_fresh"] = True
+
+
+def _create_scope_master_data(user):
+    client = Client(
+        client_code=f"T-PORTAL-CLIENT-{uuid4().hex[:8]}",
+        name="AAA Test Portal Client",
+        address="Test",
+        phone="0800000001",
+        is_active=True,
+    )
+    db.session.add(client)
+    db.session.flush()
+
+    client_pic = ClientPic(
+        client_id=client.id,
+        name="AAA Test Portal PIC",
+        phone="0800000002",
+        email="portal@example.test",
+        position="PIC",
+        is_active=True,
+    )
+    mandor = Mandor(
+        branch_id=user.branch_id,
+        client_id=client.id,
+        name="AAA Test Portal Mandor",
+        phone="0800000003",
+        is_active=True,
+    )
+    db.session.add(client_pic)
+    db.session.add(mandor)
+    db.session.flush()
+
+    location = DeliveryLocation(
+        mandor_id=mandor.id,
+        location_name="AAA Test Portal Location",
+        description="Test location",
+        is_active=True,
+    )
+    db.session.add(location)
+    db.session.flush()
+    return client, client_pic, mandor, location
 
 
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
@@ -76,8 +118,8 @@ def test_portal_enabled_allows_owner_and_admin_preview(app):
                 assert response.status_code == 200
                 assert "Portal Pelanggan" in html
                 assert "Preview internal" in html
-                assert "Batch 1A tidak membuat atau mengubah order." in html
-                assert "Tidak ada posting payment" in html
+                assert "Scope read-only dari master client" in html
+                assert "Role eksternal dan mapping portal masih ditunda sampai approval owner." in html
         finally:
             transaction.rollback()
 
@@ -101,6 +143,38 @@ def test_portal_enabled_rejects_unauthorized_internal_role(app):
 
 def test_portal_route_has_no_session_commit_or_rollback():
     source = open("app/routes/portal_routes.py", encoding="utf-8").read()
+
+    assert "db.session.commit(" not in source
+    assert "db.session.rollback(" not in source
+
+
+def test_portal_access_scope_is_branch_scoped_for_admin(app):
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            _create_scope_master_data(user)
+
+            scope = build_portal_access_scope(user)
+
+            assert scope["allowed"] is True
+            assert scope["scope_mode"] == "ADMIN_BRANCH_PREVIEW"
+            assert scope["counts"]["clients"] == 1
+            assert scope["counts"]["client_pics"] == 1
+            assert scope["counts"]["mandors"] == 1
+            assert scope["counts"]["locations"] == 1
+            assert scope["active_counts"]["clients"] == 1
+            assert scope["active_counts"]["mandors"] == 1
+            assert scope["active_counts"]["locations"] == 1
+            assert scope["client_preview"][0]["name"] == "AAA Test Portal Client"
+            assert scope["mandor_preview"][0]["name"] == "AAA Test Portal Mandor"
+            assert scope["location_preview"][0]["name"] == "AAA Test Portal Location"
+        finally:
+            transaction.rollback()
+
+
+def test_portal_access_service_has_no_session_commit_or_rollback():
+    source = open("app/services/portal_access_service.py", encoding="utf-8").read()
 
     assert "db.session.commit(" not in source
     assert "db.session.rollback(" not in source
