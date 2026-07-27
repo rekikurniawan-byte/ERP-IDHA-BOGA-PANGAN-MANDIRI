@@ -1,0 +1,109 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Order Status Visibility</h1>
+            <p class="page-description">Ringkasan read-only order, produksi, dan delivery dari workflow existing.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
+                    <div class="fw-semibold">{{ data.orders.scope_mode }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id or '-' }}</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Order</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.orders.summary.order_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.orders.summary.total_portion|qty }} porsi.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Locked</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.orders.summary.locked_order_count }}</div>
+                        <p class="text-muted mb-0 mt-2">{{ data.orders.summary.draft_order_count }} belum locked.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Produksi</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.orders.summary.production_count }}</div>
+                        <p class="text-muted mb-0 mt-2">Read-only dari produksi existing.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small text-uppercase fw-bold">Delivery</div>
+                        <div class="fs-5 fw-bold mt-2">{{ data.orders.summary.delivery_count }}</div>
+                        <p class="text-muted mb-0 mt-2">Read-only dari delivery existing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Order Terbaru</h2>
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>No Order</th>
+                            <th>Tanggal</th>
+                            <th>Status</th>
+                            <th>Locked</th>
+                            <th>Porsi</th>
+                            <th>Mandor</th>
+                            <th>Produksi</th>
+                            <th>Delivery</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.orders.recent_orders %}
+                            <tr>
+                                <td>{{ row.order_number }}</td>
+                                <td>{{ row.order_date.strftime('%d-%m-%Y') if row.order_date else '-' }}</td>
+                                <td><span class="status-badge neutral">{{ row.status }}</span></td>
+                                <td>{{ 'Ya' if row.is_locked else 'Tidak' }}</td>
+                                <td>{{ row.total_qty|qty }}</td>
+                                <td>{{ row.mandor_count }}</td>
+                                <td>{{ row.production_count }}</td>
+                                <td>{{ row.delivery_count }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-muted" data-portal-empty-state="true">
+                                    Belum ada order dalam scope portal.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

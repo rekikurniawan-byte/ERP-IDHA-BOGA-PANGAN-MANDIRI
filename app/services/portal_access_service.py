@@ -1,8 +1,11 @@
 from sqlalchemy import func, select
 
 from app.extensions import db
+from app.models.delivery import Delivery
 from app.models.finance import Invoice, Payment, SupplierBill
 from app.models.master import Client, ClientPic, DeliveryLocation, Mandor
+from app.models.operational import DailyOrder, DailyOrderDetail
+from app.models.production import Production
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -481,5 +484,68 @@ def build_portal_financial_visibility(user, limit=10):
             "open_supplier_bill_remaining": _sum_or_zero(open_supplier_bill_query, SupplierBill.remaining_amount),
         },
         "recent_invoices": recent_invoices,
+        "limit": limit,
+    }
+
+
+def build_portal_order_status_visibility(user, limit=10):
+    allowed, role, branch_id, reason = _scope_allowed(user)
+    if not allowed:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "role": role,
+            "branch_id": branch_id,
+            "scope_mode": "NO_PORTAL_SCOPE",
+            "summary": {},
+            "recent_orders": [],
+        }
+
+    order_query = DailyOrder.query
+    production_query = Production.query
+    delivery_query = Delivery.query
+    if role == "ADMIN":
+        order_query = order_query.filter(DailyOrder.branch_id == branch_id)
+        production_query = production_query.filter(Production.branch_id == branch_id)
+        delivery_query = delivery_query.filter(Delivery.branch_id == branch_id)
+
+    detail_query = DailyOrderDetail.query.join(DailyOrder)
+    if role == "ADMIN":
+        detail_query = detail_query.filter(DailyOrder.branch_id == branch_id)
+
+    recent_orders = []
+    for order in order_query.order_by(DailyOrder.order_date.desc(), DailyOrder.id.desc()).limit(limit).all():
+        total_qty = sum(int(detail.total_qty or 0) for detail in order.details)
+        mandor_count = len({detail.mandor_id for detail in order.details})
+        production_count = production_query.filter(Production.production_date == order.order_date).count()
+        delivery_count = delivery_query.filter(Delivery.delivery_date == order.order_date).count()
+        recent_orders.append(
+            {
+                "order_number": order.order_number,
+                "order_date": order.order_date,
+                "status": order.status,
+                "is_locked": order.is_locked,
+                "total_qty": total_qty,
+                "mandor_count": mandor_count,
+                "production_count": production_count,
+                "delivery_count": delivery_count,
+            }
+        )
+
+    return {
+        "allowed": True,
+        "reason": None,
+        "role": role,
+        "branch_id": branch_id,
+        "scope_mode": "OWNER_ALL_BRANCH_ORDER_PREVIEW" if role == "OWNER" else "ADMIN_BRANCH_ORDER_PREVIEW",
+        "summary": {
+            "order_count": order_query.count(),
+            "locked_order_count": order_query.filter(DailyOrder.is_locked.is_(True)).count(),
+            "draft_order_count": order_query.filter(DailyOrder.is_locked.is_(False)).count(),
+            "total_portion": detail_query.with_entities(func.coalesce(func.sum(DailyOrderDetail.total_qty), 0)).scalar() or 0,
+            "production_count": production_query.count(),
+            "delivery_count": delivery_query.count(),
+        },
+        "recent_orders": recent_orders,
         "limit": limit,
     }

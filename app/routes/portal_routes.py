@@ -7,6 +7,7 @@ from app.services.portal_access_service import (
     build_portal_financial_visibility,
     build_portal_mandor_directory,
     build_portal_ownership_analysis,
+    build_portal_order_status_visibility,
     build_portal_status_shell,
 )
 from app.utils.decorators import role_required
@@ -116,3 +117,15 @@ def financial():
         "financial": build_portal_financial_visibility(current_user),
     }
     return render_template("portal/financial.html", data=data)
+
+
+@portal_bp.route("/orders")
+@role_required("ADMIN")
+def orders():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "orders": build_portal_order_status_visibility(current_user),
+    }
+    return render_template("portal/orders.html", data=data)

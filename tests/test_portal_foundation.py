@@ -6,10 +6,13 @@ from werkzeug.security import generate_password_hash
 from app.extensions import db
 from app.models.finance import Invoice, Payment
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.models.operational import DailyOrder, DailyOrderDetail
+from app.models.production import Production
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_financial_visibility,
     build_portal_ownership_analysis,
+    build_portal_order_status_visibility,
     build_portal_status_shell,
 )
 
@@ -178,6 +181,66 @@ def _create_other_branch_financial_data(user):
     return invoice
 
 
+def _create_order_status_data(user):
+    _, _, mandor, location = _create_scope_master_data(user)
+    order = DailyOrder(
+        order_number=f"T-PORTAL-ORD-{uuid4().hex[:8]}",
+        branch_id=user.branch_id,
+        order_date=date.today(),
+        status="LOCKED",
+        is_locked=True,
+        created_by=user.id,
+    )
+    db.session.add(order)
+    db.session.flush()
+    detail = DailyOrderDetail(
+        daily_order_id=order.id,
+        mandor_id=mandor.id,
+        delivery_location_id=location.id,
+        price_per_portion=10000,
+        lunch_qty=10,
+        dinner_qty=0,
+        total_qty=10,
+    )
+    production = Production(
+        branch_id=user.branch_id,
+        production_date=order.order_date,
+        production_type="LUNCH",
+        status="COMPLETED",
+        created_by=user.id,
+    )
+    db.session.add(detail)
+    db.session.add(production)
+    db.session.flush()
+    return order, detail, production
+
+
+def _create_other_branch_order_status_data(user):
+    branch, client, mandor, location = _create_other_branch_scope_data()
+    order = DailyOrder(
+        order_number=f"T-PORTAL-OTHER-ORD-{uuid4().hex[:8]}",
+        branch_id=branch.id,
+        order_date=date.today(),
+        status="LOCKED",
+        is_locked=True,
+        created_by=user.id,
+    )
+    db.session.add(order)
+    db.session.flush()
+    detail = DailyOrderDetail(
+        daily_order_id=order.id,
+        mandor_id=mandor.id,
+        delivery_location_id=location.id,
+        price_per_portion=10000,
+        lunch_qty=99,
+        dinner_qty=0,
+        total_qty=99,
+    )
+    db.session.add(detail)
+    db.session.flush()
+    return order
+
+
 def test_portal_feature_flag_off_returns_404_for_authenticated_owner(app):
     app.config["PORTAL_ENABLED"] = False
 
@@ -263,6 +326,7 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/status"' in html
             assert 'href="/portal/ownership"' in html
             assert 'href="/portal/financial"' in html
+            assert 'href="/portal/orders"' in html
         finally:
             transaction.rollback()
 
@@ -448,6 +512,36 @@ def test_portal_financial_visibility_is_read_only_and_branch_scoped(app):
             assert "Financial Visibility" in html
             assert "AAA Test Portal Client" in html
             assert "ZZZ Other Branch Client" not in html
+            assert 'action="/portal' not in html.lower()
+        finally:
+            transaction.rollback()
+
+
+def test_portal_order_status_visibility_is_read_only_and_branch_scoped(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_test_user("ADMIN")
+            order, _, _ = _create_order_status_data(user)
+            other_order = _create_other_branch_order_status_data(user)
+            orders = build_portal_order_status_visibility(user)
+
+            with app.test_client() as client:
+                _login(client, user)
+                response = client.get("/portal/orders")
+
+            html = response.get_data(as_text=True)
+            assert orders["scope_mode"] == "ADMIN_BRANCH_ORDER_PREVIEW"
+            assert orders["summary"]["order_count"] == 1
+            assert orders["summary"]["locked_order_count"] == 1
+            assert int(orders["summary"]["total_portion"]) == 10
+            assert orders["summary"]["production_count"] == 1
+            assert response.status_code == 200
+            assert "Order Status Visibility" in html
+            assert order.order_number in html
+            assert other_order.order_number not in html
             assert 'action="/portal' not in html.lower()
         finally:
             transaction.rollback()
