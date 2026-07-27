@@ -335,7 +335,10 @@ def smoke_get_routes(app, db, route_rows: list[RouteRow]) -> dict[str, object]:
                 location = response.headers.get("Location", "")
                 markers = [marker for marker in ERROR_MARKERS if marker in body]
                 redirect_ok = response.status_code != 302 or (location and urlparse(location).path != row.rule)
-                ok_status = response.status_code in {200, 302, 401, 403}
+                feature_flag_disabled = row.rule.startswith("/portal") and not app.config.get("PORTAL_ENABLED", False)
+                ok_status = response.status_code in {200, 302, 401, 403} or (
+                    feature_flag_disabled and response.status_code == 404
+                )
                 results.append(
                     {
                         "rule": row.rule,
@@ -344,6 +347,7 @@ def smoke_get_routes(app, db, route_rows: list[RouteRow]) -> dict[str, object]:
                         "location": location,
                         "ok": bool(ok_status and redirect_ok and not markers),
                         "error_markers": markers,
+                        "feature_flag_disabled": feature_flag_disabled,
                         "template_rendered": response.status_code == 200 and "text/html" in response.content_type,
                     }
                 )

@@ -29,6 +29,7 @@ def create_app():
 
     from app.routes.auth_routes import auth_bp
     from app.routes.dashboard_routes import dashboard_bp
+    from app.routes.portal_routes import portal_bp
     from app.routes.master_routes import master_bp
     from app.routes.operational_routes import operational_bp
     from app.routes.production_routes import production_bp
@@ -47,6 +48,7 @@ def create_app():
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
+    flask_app.register_blueprint(portal_bp)
     flask_app.register_blueprint(master_bp)
     flask_app.register_blueprint(operational_bp)
     flask_app.register_blueprint(production_bp)

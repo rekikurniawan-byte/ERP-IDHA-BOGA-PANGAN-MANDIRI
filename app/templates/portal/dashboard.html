@@ -1,0 +1,45 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Portal Pelanggan</h1>
+            <p class="page-description">Foundation read-only untuk validasi akses dan namespace portal.</p>
+        </div>
+        <span class="status-badge neutral">{{ data.status_label }}</span>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3">
+                {% for card in data.cards %}
+                    <div class="col-12 col-md-4">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small text-uppercase fw-bold">{{ card.title }}</div>
+                            <div class="fs-5 fw-bold mt-2">{{ card.value }}</div>
+                            <p class="text-muted mb-0 mt-2">{{ card.caption }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
+                    <div class="fw-semibold">{{ data.active_role }}</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="fw-semibold">{{ data.branch_id }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
