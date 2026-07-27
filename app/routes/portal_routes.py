@@ -13,6 +13,7 @@ from app.services.portal_access_service import (
     build_portal_status_shell,
 )
 from app.services.portal_order_draft_service import (
+    build_portal_order_status_context,
     build_portal_draft_order_context,
     confirm_portal_order_draft,
     create_portal_order_draft,
@@ -163,6 +164,18 @@ def draft_order():
         "idempotency_key": uuid4().hex,
     }
     return render_template("portal/draft_order.html", data=data)
+
+
+@portal_bp.route("/orders/status")
+@role_required(*PORTAL_READONLY_ROLES)
+def order_status():
+    data = {
+        "status_label": "Read-only",
+        "active_role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "orders": build_portal_order_status_context(current_user),
+    }
+    return render_template("portal/order_status.html", data=data)
 
 
 @portal_bp.route("/admin/order-drafts")

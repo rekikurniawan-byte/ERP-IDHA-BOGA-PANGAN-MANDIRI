@@ -79,6 +79,34 @@ def list_portal_order_drafts(user, limit=25):
     )
 
 
+def build_portal_order_status_context(user, limit=50):
+    drafts = list_portal_order_drafts(user, limit=limit)
+    rows = []
+    for draft in drafts:
+        order = draft.converted_daily_order
+        rows.append(
+            {
+                "draft_id": draft.id,
+                "order_date": draft.order_date,
+                "meal_type": draft.meal_type,
+                "portion_qty": draft.portion_qty,
+                "location_name": draft.delivery_location.location_name if draft.delivery_location else "-",
+                "draft_status": draft.status,
+                "internal_order_number": order.order_number if order else "-",
+                "internal_order_status": order.status if order else "-",
+                "internal_order_locked": order.is_locked if order else False,
+                "review_note": draft.review_note,
+            }
+        )
+    return {
+        "rows": rows,
+        "total": len(rows),
+        "pending": sum(1 for row in rows if row["draft_status"] == DRAFT_STATUS_PENDING),
+        "confirmed": sum(1 for row in rows if row["draft_status"] == DRAFT_STATUS_CONFIRMED),
+        "rejected": sum(1 for row in rows if row["draft_status"] == DRAFT_STATUS_REJECTED),
+    }
+
+
 def _validate_draft_payload(user, form):
     scope = build_portal_external_scope(user)
     if not scope.allowed:

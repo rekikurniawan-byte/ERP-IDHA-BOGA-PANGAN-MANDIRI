@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import uuid4
 
 from werkzeug.security import generate_password_hash
@@ -855,6 +856,10 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
     first_confirm = client.post(f"/portal/admin/order-drafts/{draft_id}/confirm")
     second_confirm = client.post(f"/portal/admin/order-drafts/{draft_id}/confirm")
 
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    status_response = client.get("/portal/orders/status")
+
     with app.app_context():
         draft = PortalOrderDraft.query.get(draft_id)
         db.session.refresh(draft)
@@ -863,7 +868,12 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
 
         assert submit_response.status_code == 302
         assert list_response.status_code == 200
+        assert status_response.status_code == 200
         assert "QA bridge portal" in list_response.get_data(as_text=True)
+        status_html = status_response.get_data(as_text=True)
+        assert "CONFIRMED" in status_html
+        assert daily_order.order_number in status_html
+        assert "Rp " not in status_html
         assert first_confirm.status_code == 302
         assert second_confirm.status_code == 302
         assert DailyOrder.query.count() == operational_count_before + 1
@@ -874,6 +884,61 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
         assert details[0].lunch_qty == 0
         assert details[0].total_qty == 12
         assert draft.status == "CONFIRMED"
+
+
+def test_portal_order_status_shows_only_current_user_drafts(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        first_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        second_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        first_username = first_user.username
+        first_client, _first_pic, first_mandor, first_location = _create_scope_master_data(first_user)
+        second_client, _second_pic, second_mandor, second_location = _create_scope_master_data(second_user)
+        first_location.location_name = "VISIBLE STATUS LOCATION"
+        second_location.location_name = "HIDDEN STATUS LOCATION"
+        first_draft = PortalOrderDraft(
+            user_id=first_user.id,
+            branch_id=first_user.branch_id,
+            client_id=first_client.id,
+            mandor_id=first_mandor.id,
+            delivery_location_id=first_location.id,
+            order_date=date(2099, 2, 1),
+            meal_type="LUNCH",
+            portion_qty=5,
+            notes="VISIBLE STATUS NOTE",
+            status="PENDING_ADMIN_CONFIRMATION",
+            idempotency_key=f"status-a-{uuid4().hex}",
+        )
+        second_draft = PortalOrderDraft(
+            user_id=second_user.id,
+            branch_id=second_user.branch_id,
+            client_id=second_client.id,
+            mandor_id=second_mandor.id,
+            delivery_location_id=second_location.id,
+            order_date=date(2099, 2, 1),
+            meal_type="LUNCH",
+            portion_qty=7,
+            notes="HIDDEN STATUS NOTE",
+            status="PENDING_ADMIN_CONFIRMATION",
+            idempotency_key=f"status-b-{uuid4().hex}",
+        )
+        db.session.add(first_draft)
+        db.session.add(second_draft)
+        db.session.commit()
+
+    client = app.test_client()
+    _login_with_password(client, first_username)
+    response = client.get("/portal/orders/status")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "VISIBLE STATUS NOTE" not in html
+    assert "HIDDEN STATUS NOTE" not in html
+    assert "VISIBLE STATUS LOCATION" in html
+    assert "HIDDEN STATUS LOCATION" not in html
+    assert "Rp " not in html
 
 
 def test_admin_confirmation_bridge_rejects_other_branch_admin(app):

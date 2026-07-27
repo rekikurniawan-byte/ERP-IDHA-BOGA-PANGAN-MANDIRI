@@ -200,3 +200,4 @@ class PortalOrderDraft(BaseModel):
     mandor = db.relationship("Mandor", foreign_keys=[mandor_id], lazy="joined")
     delivery_location = db.relationship("DeliveryLocation", foreign_keys=[delivery_location_id], lazy="joined")
     reviewer = db.relationship("User", foreign_keys=[reviewed_by], lazy="joined")
+    converted_daily_order = db.relationship("DailyOrder", foreign_keys=[converted_daily_order_id], lazy="joined")
