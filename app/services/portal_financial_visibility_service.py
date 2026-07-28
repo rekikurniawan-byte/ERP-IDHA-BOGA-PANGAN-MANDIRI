@@ -173,6 +173,49 @@ def build_portal_invoice_read_model(user, *, limit: int = 100) -> dict:
     }
 
 
+def get_portal_owned_invoice(user, invoice_id: int) -> dict:
+    """Resolve one invoice only if the portal user owns it."""
+    scope = build_portal_external_scope(user)
+    role = getattr(user, "role", None)
+
+    if role == ROLE_PORTAL_CUSTOMER:
+        return {
+            "allowed": False,
+            "scope_mode": "PORTAL_CUSTOMER_FINANCIAL_BLOCKED",
+            "reason": "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "invoice": None,
+        }
+
+    if not scope.allowed:
+        return {
+            "allowed": False,
+            "scope_mode": scope.scope_mode,
+            "reason": scope.reason,
+            "invoice": None,
+        }
+
+    invoice = (
+        Invoice.query.filter(Invoice.id == invoice_id)
+        .filter(_ownership_filter_for_scope(user, scope))
+        .first()
+    )
+
+    if not invoice:
+        return {
+            "allowed": False,
+            "scope_mode": scope.scope_mode,
+            "reason": "Invoice tidak ditemukan dalam ownership portal user.",
+            "invoice": None,
+        }
+
+    return {
+        "allowed": True,
+        "scope_mode": scope.scope_mode,
+        "reason": "Invoice ditemukan dalam ownership portal user.",
+        "invoice": invoice,
+    }
+
+
 def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
     """Return read-only payment history for invoices visible to the portal user."""
     scope = build_portal_external_scope(user)

@@ -369,6 +369,17 @@ Gate Stage 2:
 
 Tujuan: pembayaran terkontrol tanpa auto-lunas palsu.
 
+Status Stage 3: Batch 3A selesai pada tag `batch-3a-static-payment-instructions`.
+
+Catatan batas Stage 3A:
+
+- instruksi pembayaran statis tersedia sebagai service read-only;
+- QRIS statis memakai `branch_settings` existing, tanpa migration;
+- belum ada upload bukti pembayaran;
+- belum ada payment creation/allocation;
+- belum ada journal/cash-bank mutation;
+- bukti bayar tidak otomatis membuat invoice lunas.
+
 Batch:
 
 3A. QRIS statis dan instruksi pembayaran.
