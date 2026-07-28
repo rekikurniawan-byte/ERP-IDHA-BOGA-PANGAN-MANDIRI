@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Hutang Pekerja</h1>
+            <p class="page-description">Hutang catering/warung pekerja dibatasi ke mandor dalam ownership portal.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            {% if not data.model.allowed %}
+                <div class="alert alert-warning mb-0">{{ data.model.reason }}</div>
+            {% else %}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3"><strong>{{ data.model.totals.debt_count }}</strong><div class="text-muted small">Total hutang</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.active_debt_count }}</strong><div class="text-muted small">Aktif</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.debt_amount|rupiah }}</strong><div class="text-muted small">Nilai</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.active_remaining_amount|rupiah }}</strong><div class="text-muted small">Sisa aktif</div></div>
+                </div>
+                <div class="table-responsive app-table-wrap">
+                    <table class="table app-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Pekerja</th>
+                                <th>Mandor</th>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th class="text-end">Hutang</th>
+                                <th class="text-end">Paid</th>
+                                <th class="text-end">Sisa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for debt in data.model.debts %}
+                                <tr>
+                                    <td class="fw-semibold">{{ debt.worker_name }}</td>
+                                    <td>{{ debt.mandor_name }}</td>
+                                    <td>{{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else '-' }}</td>
+                                    <td><span class="status-badge neutral">{{ debt.status }}</span></td>
+                                    <td class="text-end">{{ debt.debt_amount|rupiah }}</td>
+                                    <td class="text-end">{{ debt.paid_amount|rupiah }}</td>
+                                    <td class="text-end">{{ debt.remaining_amount|rupiah }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="7" class="text-muted text-center">Belum ada hutang pekerja dalam scope portal.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

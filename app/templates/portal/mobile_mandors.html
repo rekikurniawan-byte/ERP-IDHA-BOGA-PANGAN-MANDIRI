@@ -1,0 +1,53 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+<section class="portal-feature-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>Portal PT</p>
+            <h1>Seluruh Mandor</h1>
+            <span>{{ data.mandor_model.scope_mode }}</span>
+        </div>
+    </div>
+
+    <div class="portal-mini-metrics">
+        <div><span>Mandor</span><strong>{{ data.mandor_model.totals.mandor_count }}</strong></div>
+        <div><span>Lokasi</span><strong>{{ data.mandor_model.totals.location_count }}</strong></div>
+        <div><span>Invoice</span><strong>{{ data.invoices.totals.invoice_count }}</strong></div>
+        <div><span>Bayar</span><strong>{{ data.payments.totals.payment_count }}</strong></div>
+    </div>
+
+    {% if not data.mandor_model.allowed %}
+        <div class="portal-mobile-alert">{{ data.mandor_model.reason }}</div>
+    {% endif %}
+
+    <div class="portal-section-heading">
+        <h2>Mandor & Lokasi</h2>
+        <span>ERP existing</span>
+    </div>
+
+    <div class="portal-card-list">
+        {% for mandor in data.mandor_model.mandors %}
+            <article class="portal-mobile-card portal-mandor-card">
+                <div>
+                    <h3>{{ mandor.name }}</h3>
+                    <p>{{ mandor.client_name }} - {{ mandor.location_count }} lokasi</p>
+                    {% if mandor.phone %}<p><i class="bi bi-telephone"></i> {{ mandor.phone }}</p>{% endif %}
+                    {% if mandor.locations %}
+                        <div class="portal-chip-row">
+                            {% for location in mandor.locations[:3] %}
+                                <span>{{ location.name }}</span>
+                            {% endfor %}
+                            {% if mandor.locations|length > 3 %}<span>+{{ mandor.locations|length - 3 }}</span>{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <strong>{{ "AKTIF" if mandor.is_active else "NONAKTIF" }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-mobile-alert">Belum ada mandor dalam scope PT ini.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

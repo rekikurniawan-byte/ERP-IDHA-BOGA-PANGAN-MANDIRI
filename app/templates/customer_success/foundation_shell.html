@@ -1,0 +1,67 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Customer Success</span>
+            <h1>{{ data.title }}</h1>
+            <p>{{ data.description }}</p>
+        </div>
+        <span class="status-badge neutral">{{ data.status }}</span>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3">
+                {% for card in data.summary %}
+                    <div class="col-12 col-md-4">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small text-uppercase fw-bold">{{ card.label }}</div>
+                            <div class="fs-5 fw-bold mt-2">{{ card.value }}</div>
+                            <p class="text-muted mb-0 mt-2">{{ card.caption }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Integrasi Data</h2>
+                    <p class="text-muted mb-0">Sumber: {{ data.source }}. Halaman ini tidak membuat tabel atau workflow paralel.</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for action in data.actions %}
+                        <a class="btn app-btn-secondary btn-sm" href="{{ action.url }}">
+                            <i class="bi {{ action.icon }}"></i> {{ action.label }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Aturan</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in data.rules %}
+                            <tr>
+                                <td class="fw-semibold">Kontrol Integrasi</td>
+                                <td>{{ rule }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

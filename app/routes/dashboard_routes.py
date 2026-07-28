@@ -7,11 +7,13 @@ from app.services.user_management_service import (
     ROLE_ACCOUNTING,
     ROLE_FINANCE,
     ROLE_HR,
+    ROLE_CUSTOMER_SUCCESS,
     ROLE_LOGISTICS,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_PT,
 )
 from app.services.dashboard_service import (
     get_owner_dashboard_data,
@@ -72,9 +74,10 @@ def _role_landing_endpoint(role):
         ROLE_ACCOUNTING: "dashboard.accounting",
         ROLE_LOGISTICS: "dashboard.logistics",
         ROLE_HR: "dashboard.hr",
+        ROLE_CUSTOMER_SUCCESS: "customer_success.contracts",
     }
-    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_MANDOR, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
-        return "portal.dashboard" if current_app.config.get("PORTAL_ENABLED", False) else None
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_MANDOR, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
+        return "portal.my_dashboard" if current_app.config.get("PORTAL_ENABLED", False) else None
     return landing_map.get(role)
 
 

@@ -1,100 +1,89 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/portal_mobile.html" %}
 
-{% block content %}
-<section class="page-section">
-    <div class="page-header">
+{% block portal_content %}
+<section class="portal-feature-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Draft Order Portal</h1>
-            <p class="page-description">Draft ini menunggu konfirmasi admin dan belum masuk produksi, invoice, pembayaran, jurnal, atau stok.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
+            <p>Portal Order</p>
+            <h1>Order Catering</h1>
+            <span>{{ data.status_label }}</span>
         </div>
     </div>
 
-    <div class="app-card">
-        <div class="card-body">
-            {% if data.context.allowed %}
-                <form method="post" action="{{ url_for('portal.draft_order') }}" class="row g-3">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="idempotency_key" value="{{ data.idempotency_key }}">
-
-                    <div class="col-12 col-md-3">
-                        <label class="form-label" for="order_date">Tanggal</label>
-                        <input class="form-control" type="date" id="order_date" name="order_date" required>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <label class="form-label" for="meal_type">Tipe</label>
-                        <select class="form-select" id="meal_type" name="meal_type" required>
-                            <option value="LUNCH">LUNCH</option>
-                            <option value="DINNER">DINNER</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <label class="form-label" for="portion_qty">Porsi</label>
-                        <input class="form-control" type="number" id="portion_qty" name="portion_qty" min="1" step="1" required>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <label class="form-label" for="delivery_location_id">Lokasi</label>
-                        <select class="form-select" id="delivery_location_id" name="delivery_location_id" required>
-                            {% for location in data.context.location_options %}
-                                <option value="{{ location.id }}">{{ location.location_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label" for="notes">Catatan</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
-                    </div>
-                    <div class="col-12">
-                        <button class="btn app-btn-primary" type="submit">Kirim Draft</button>
-                    </div>
-                </form>
-            {% else %}
-                <div class="status-badge warning">Belum Bisa Membuat Draft</div>
-                <p class="text-muted mt-3 mb-0">
-                    {{ data.context.reason or "Mapping portal belum memiliki akses DRAFT_ORDER." }}
-                </p>
-            {% endif %}
-        </div>
+    <div class="portal-feature-card primary">
+        <h2>Draft Order</h2>
+        <p>Order ini masuk antrian admin. Belum menyentuh produksi, stok, invoice, payment, atau jurnal.</p>
+        <div class="portal-source-pill"><i class="bi bi-shield-check"></i><span>ERP existing - idempotent draft</span></div>
     </div>
 
-    <div class="app-card mt-3">
-        <div class="card-body">
-            <h2 class="h5 mb-3">Riwayat Draft</h2>
-            <div class="table-responsive app-table-wrap">
-                <table class="table app-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Tipe</th>
-                            <th>Porsi</th>
-                            <th>Lokasi</th>
-                            <th>Status</th>
-                            <th>Catatan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for draft in data.context.drafts %}
-                            <tr>
-                                <td>{{ draft.order_date.strftime('%d-%m-%Y') }}</td>
-                                <td>{{ draft.meal_type }}</td>
-                                <td>{{ draft.portion_qty }}</td>
-                                <td>{{ draft.delivery_location.location_name if draft.delivery_location else '-' }}</td>
-                                <td><span class="status-badge warning">{{ draft.status }}</span></td>
-                                <td>{{ draft.notes or '-' }}</td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="6" class="text-muted">Belum ada draft order dari user ini.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    {% if data.context.allowed %}
+        <form method="post" action="{{ url_for('portal.draft_order') }}" class="portal-mobile-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="idempotency_key" value="{{ data.idempotency_key }}">
+
+            <label>
+                <span>Tanggal</span>
+                <input type="date" name="order_date" required>
+            </label>
+
+            <label>
+                <span>Sesi Makan</span>
+                <select name="meal_type" required>
+                    <option value="LUNCH">Lunch</option>
+                    <option value="DINNER">Dinner</option>
+                </select>
+            </label>
+
+            <label>
+                <span>Lokasi</span>
+                <select name="delivery_location_id" required>
+                    {% for location in data.context.location_options %}
+                        <option value="{{ location.id }}">{{ location.location_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                <span>Jumlah Porsi</span>
+                <input type="number" name="portion_qty" min="1" step="1" inputmode="numeric" required>
+            </label>
+
+            <label>
+                <span>Catatan</span>
+                <textarea name="notes" rows="3" placeholder="Contoh: tanpa pedas, kirim jam 11.00"></textarea>
+            </label>
+
+            <button class="portal-primary-action" type="submit">
+                <i class="bi bi-send"></i>
+                <span>Kirim Draft Order</span>
+            </button>
+        </form>
+    {% else %}
+        <div class="portal-mobile-alert">
+            <strong>Belum Bisa Membuat Draft</strong><br>
+            {{ data.context.reason or "Mapping portal belum memiliki akses DRAFT_ORDER." }}
         </div>
+    {% endif %}
+
+    <div class="portal-section-heading">
+        <h2>Riwayat Draft</h2>
+        <span>{{ data.context.drafts|length }} draft</span>
+    </div>
+
+    <div class="portal-card-list">
+        {% for draft in data.context.drafts %}
+            <article class="portal-mobile-card">
+                <div>
+                    <h3>{{ draft.meal_type }} - {{ draft.portion_qty }} porsi</h3>
+                    <p>{{ draft.order_date.strftime('%d-%m-%Y') }} - {{ draft.delivery_location.location_name if draft.delivery_location else '-' }}</p>
+                    {% if draft.notes %}<p>{{ draft.notes }}</p>{% endif %}
+                </div>
+                <strong>{{ draft.status }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-mobile-alert">Belum ada draft order dari user ini.</div>
+        {% endfor %}
     </div>
 </section>
 {% endblock %}

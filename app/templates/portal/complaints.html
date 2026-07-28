@@ -1,0 +1,79 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+<section class="portal-feature-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ data.complaints.scope_mode }}</span>
+        </div>
+    </div>
+
+    <div class="portal-feature-card primary">
+        <h2>{{ data.complaints.totals.open_count }} aktif</h2>
+        <p>{{ data.page_description }}</p>
+        <div class="portal-source-pill"><i class="bi bi-chat-square-text"></i><span>customer_complaints ERP existing</span></div>
+    </div>
+
+    <div class="portal-mini-metrics">
+        <div><span>Total</span><strong>{{ data.complaints.totals.complaint_count }}</strong></div>
+        <div><span>Aktif</span><strong>{{ data.complaints.totals.open_count }}</strong></div>
+        <div><span>Selesai</span><strong>{{ data.complaints.totals.done_count }}</strong></div>
+        <div><span>Scope</span><strong>{{ data.scope.counts.clients }}</strong></div>
+    </div>
+
+    {% if data.complaints.allowed %}
+        <form method="post" action="{{ url_for('portal.customer_complaints') }}" class="portal-mobile-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>
+                <span>Kategori</span>
+                <select name="category" required>
+                    {% for category in data.complaints.categories %}
+                        <option value="{{ category }}">{{ category.replace("_", " ") }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span>Judul</span>
+                <input type="text" name="title" maxlength="180" placeholder="Contoh: Porsi kurang" required>
+            </label>
+            <label>
+                <span>Deskripsi</span>
+                <textarea name="description" rows="4" placeholder="Tulis detail kejadian, tanggal, lokasi, dan jumlah porsi." required></textarea>
+            </label>
+            <button class="portal-primary-action" type="submit">
+                <i class="bi bi-send"></i>
+                <span>Kirim Komplain</span>
+            </button>
+        </form>
+    {% else %}
+        <div class="portal-mobile-alert">{{ data.complaints.reason }}</div>
+    {% endif %}
+
+    <div class="portal-section-heading">
+        <h2>Riwayat Komplain</h2>
+        <span>Customer Success</span>
+    </div>
+
+    <div class="portal-card-list">
+        {% for complaint in data.complaints.rows %}
+            <article class="portal-mobile-card portal-complaint-card">
+                <div>
+                    <h3>{{ complaint.complaint_number }}</h3>
+                    <p>{{ complaint.title }} - {{ complaint.category.replace("_", " ") }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ complaint.status }}</span>
+                        <span>{{ complaint.submitted_at.strftime('%d-%m-%Y') if complaint.submitted_at else "-" }}</span>
+                    </div>
+                    {% if complaint.resolution_note %}<p>{{ complaint.resolution_note }}</p>{% endif %}
+                </div>
+                <strong>{{ complaint.status }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-mobile-alert">Belum ada komplain dari akun portal ini.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

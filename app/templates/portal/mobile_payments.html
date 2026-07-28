@@ -1,0 +1,51 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+<section class="portal-feature-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ data.payments.scope_mode }}</span>
+        </div>
+    </div>
+
+    <div class="portal-feature-card primary">
+        <h2>{{ data.payments.totals.payment_amount|rupiah }}</h2>
+        <p>{{ data.page_description }}</p>
+        <div class="portal-source-pill"><i class="bi bi-credit-card"></i><span>Payment ERP existing</span></div>
+    </div>
+
+    <div class="portal-mini-metrics">
+        <div><span>Payment</span><strong>{{ data.payments.totals.payment_count }}</strong></div>
+        <div><span>Total</span><strong>{{ data.payments.totals.payment_amount|rupiah }}</strong></div>
+        <div><span>Invoice</span><strong>{{ data.invoices.totals.invoice_count }}</strong></div>
+        <div><span>Sisa</span><strong>{{ data.invoices.totals.active_outstanding_amount|rupiah }}</strong></div>
+    </div>
+
+    {% if not data.payments.allowed %}
+        <div class="portal-mobile-alert">{{ data.payments.reason }}</div>
+    {% endif %}
+
+    <div class="portal-section-heading">
+        <h2>Riwayat</h2>
+        <span>Read-only</span>
+    </div>
+
+    <div class="portal-card-list">
+        {% for payment in data.payments.payments %}
+            <article class="portal-mobile-card portal-payment-card">
+                <div>
+                    <h3>{{ payment.payment_number }}</h3>
+                    <p>{{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }} - {{ payment.payment_method }}</p>
+                    <p>{{ payment.invoice_number }}</p>
+                </div>
+                <strong>{{ payment.amount|rupiah }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-mobile-alert">Belum ada pembayaran dalam scope portal ini.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

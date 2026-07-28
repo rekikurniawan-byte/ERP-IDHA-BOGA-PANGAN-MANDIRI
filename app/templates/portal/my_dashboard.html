@@ -1,0 +1,121 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Dashboard Saya</h1>
+            <p class="page-description">Ringkasan role {{ data.active_role }} dari data ERP existing sesuai ownership mapping.</p>
+        </div>
+        <span class="status-badge neutral">{{ data.status_label }}</span>
+    </div>
+
+    <div class="app-stat-grid">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-clipboard-check"></i></div>
+            <div>
+                <p>Order ERP</p>
+                <h3>{{ data.orders.total }}</h3>
+                <span class="app-stat-helper">{{ data.orders.pending }} pending admin</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-receipt"></i></div>
+            <div>
+                <p>Invoice ERP</p>
+                <h3>{{ data.invoices.totals.invoice_count }}</h3>
+                <span class="app-stat-helper">Outstanding {{ data.invoices.totals.active_outstanding_amount|rupiah }}</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-credit-card"></i></div>
+            <div>
+                <p>Pembayaran ERP</p>
+                <h3>{{ data.payments.totals.payment_count }}</h3>
+                <span class="app-stat-helper">Total {{ data.payments.totals.payment_amount|rupiah }}</span>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon kpi-muted"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <p>Hutang ERP</p>
+                <h3>{{ data.debts.totals.active_debt_count }}</h3>
+                <span class="app-stat-helper">Sisa {{ data.debts.totals.active_remaining_amount|rupiah }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Scope Data</h2>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Mode</div>
+                            <div class="fw-semibold">{{ data.scope.scope_mode }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Client</div>
+                            <div class="fw-semibold">{{ data.scope.counts.clients }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Mandor</div>
+                            <div class="fw-semibold">{{ data.scope.counts.mandors }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Lokasi</div>
+                            <div class="fw-semibold">{{ data.scope.counts.locations }}</div>
+                        </div>
+                    </div>
+                    {% if not data.scope.allowed %}
+                        <div class="alert alert-warning mt-3 mb-0">{{ data.scope.reason }}</div>
+                    {% endif %}
+                    {% if not data.invoices.allowed or not data.payments.allowed or not data.debts.allowed %}
+                        <div class="alert alert-warning mt-3 mb-0">
+                            {% if not data.invoices.allowed %}
+                                <div>{{ data.invoices.reason }}</div>
+                            {% endif %}
+                            {% if not data.payments.allowed %}
+                                <div>{{ data.payments.reason }}</div>
+                            {% endif %}
+                            {% if not data.debts.allowed %}
+                                <div>{{ data.debts.reason }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Closing Periode</h2>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Periode</div>
+                            <div class="fw-semibold">{{ "%02d"|format(data.closing.month) }}-{{ data.closing.year }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Status</div>
+                            <span class="status-badge neutral">{{ data.closing.closing.status }}</span>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Invoice Periode</div>
+                            <div class="fw-semibold">{{ data.closing.totals.invoice_count }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase fw-bold">Payment Periode</div>
+                            <div class="fw-semibold">{{ data.closing.totals.payment_amount|rupiah }}</div>
+                        </div>
+                    </div>
+                    {% if not data.closing.allowed %}
+                        <div class="alert alert-warning mt-3 mb-0">{{ data.closing.reason }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

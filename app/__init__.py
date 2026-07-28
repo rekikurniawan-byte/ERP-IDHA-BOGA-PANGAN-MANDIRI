@@ -45,6 +45,7 @@ def create_app():
     from app.routes.health_routes import health_bp
     from app.routes.field_transaction_routes import field_transaction_bp
     from app.routes.prediction_routes import prediction_bp
+    from app.routes.customer_success_routes import customer_success_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -64,6 +65,7 @@ def create_app():
     flask_app.register_blueprint(health_bp)
     flask_app.register_blueprint(field_transaction_bp)
     flask_app.register_blueprint(prediction_bp)
+    flask_app.register_blueprint(customer_success_bp)
 
 
     @flask_app.before_request

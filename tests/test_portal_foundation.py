@@ -4,6 +4,8 @@ from uuid import uuid4
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
+from app.models.complaint import CustomerComplaint
+from app.models.contract import CustomerContract
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
 from app.models.operational import DailyOrder
 from app.models.system import PortalOrderDraft
@@ -11,6 +13,7 @@ from app.models.system import PortalUserMapping
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_location_directory,
+    build_portal_mandor_directory,
     build_portal_ownership_analysis,
     build_portal_status_shell,
 )
@@ -25,6 +28,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_PT,
     validate_user_payload,
 )
 
@@ -235,6 +239,39 @@ def test_portal_enabled_requires_login(app):
     assert "/auth/login" in response.headers["Location"]
 
 
+def test_portal_external_login_redirects_to_portal_dashboard(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_PT)
+        username = user.username
+        db.session.commit()
+
+    with app.test_client() as client:
+        response = _login_with_password(client, username)
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/portal/my-dashboard")
+
+
+def test_authenticated_portal_external_login_page_redirects_to_portal_dashboard(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CUSTOMER)
+        username = user.username
+        db.session.commit()
+
+    with app.test_client() as client:
+        with app.app_context():
+            _login(client, User.query.filter_by(username=username).first())
+        response = client.get("/auth/login", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/portal/my-dashboard")
+
+
 def test_portal_enabled_allows_owner_and_admin_preview(app):
     app.config["PORTAL_ENABLED"] = True
 
@@ -249,10 +286,12 @@ def test_portal_enabled_allows_owner_and_admin_preview(app):
                     html = response.get_data(as_text=True)
 
                 assert response.status_code == 200
-                assert "Portal Pelanggan" in html
-                assert "Preview internal" in html
-                assert "Scope read-only dari master client" in html
-                assert "OWNER/ADMIN melihat preview internal. User eksternal memakai mapping portal eksplisit." in html
+                assert "Pengaturan Akses Portal" in html
+                assert "Kontrol integrasi user portal ke data ERP existing" in html
+                assert "User Portal" in html
+                assert "Mapping Aktif" in html
+                assert "Draft Pending" in html
+                assert "clients, mandors, delivery_locations" in html
         finally:
             transaction.rollback()
 
@@ -271,7 +310,7 @@ def test_portal_navigation_is_hidden_when_feature_flag_off(app):
             html = response.get_data(as_text=True)
             assert response.status_code == 200
             assert 'href="/portal' not in html
-            assert "Portal Pelanggan" not in html
+            assert "Pengaturan Akses" not in html
         finally:
             transaction.rollback()
 
@@ -290,12 +329,18 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             html = response.get_data(as_text=True)
             assert response.status_code == 200
             assert 'href="/portal/dashboard"' in html
-            assert 'href="/portal/customers"' in html
-            assert 'href="/portal/mandors"' in html
-            assert 'href="/portal/locations"' in html
-            assert 'href="/portal/orders/draft"' in html
-            assert 'href="/portal/status"' in html
-            assert 'href="/portal/ownership"' in html
+            assert 'href="/portal/customers"' not in html
+            assert 'href="/portal/mandors"' not in html
+            assert 'href="/portal/locations"' not in html
+            assert 'href="/portal/orders/draft"' not in html
+            assert 'href="/portal/orders/status"' not in html
+            assert 'href="/portal/invoices"' not in html
+            assert 'href="/portal/payments"' not in html
+            assert 'href="/portal/debts"' not in html
+            assert 'href="/portal/closing"' not in html
+            assert 'href="/portal/status"' not in html
+            assert 'href="/portal/ownership"' not in html
+            assert "Pengaturan Akses" in html
         finally:
             transaction.rollback()
 
@@ -314,7 +359,7 @@ def test_portal_navigation_is_hidden_for_non_preview_role_even_when_enabled(app)
             html = response.get_data(as_text=True)
             assert response.status_code == 200
             assert 'href="/portal' not in html
-            assert "Portal Pelanggan" not in html
+            assert "Pengaturan Akses" not in html
         finally:
             transaction.rollback()
 
@@ -487,6 +532,18 @@ def test_user_management_accepts_portal_roles_on_existing_auth(app):
             assert error is None
             assert payload["role"] == ROLE_PORTAL_MANDOR
             assert payload["branch_id"] == owner.branch_id
+
+            pt_payload, pt_error = validate_user_payload(
+                {
+                    "full_name": "Portal PT User",
+                    "username": f"portal-pt-{uuid4().hex[:8]}",
+                    "role": ROLE_PORTAL_PT,
+                    "branch_id": str(owner.branch_id),
+                    "is_active": "on",
+                }
+            )
+            assert pt_error is None
+            assert pt_payload["role"] == ROLE_PORTAL_PT
         finally:
             transaction.rollback()
 
@@ -522,39 +579,30 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             with app.test_client() as client:
                 _login(client, user)
                 index_response = client.get("/")
-                dashboard_response = client.get("/portal/dashboard")
+                dashboard_response = client.get("/portal/my-dashboard", follow_redirects=True)
                 customers_response = client.get("/portal/customers")
                 mandors_response = client.get("/portal/mandors")
                 locations_response = client.get("/portal/locations")
+                status_response = client.get("/portal/status")
                 ownership_response = client.get("/portal/ownership")
 
             assert index_response.status_code == 302
-            assert index_response.headers["Location"].endswith("/portal/dashboard")
+            assert index_response.headers["Location"].endswith("/portal/my-dashboard")
 
             dashboard_html = dashboard_response.get_data(as_text=True)
-            customers_html = customers_response.get_data(as_text=True)
-            mandors_html = mandors_response.get_data(as_text=True)
-            locations_html = locations_response.get_data(as_text=True)
 
             assert dashboard_response.status_code == 200
-            assert customers_response.status_code == 200
-            assert mandors_response.status_code == 200
-            assert locations_response.status_code == 200
+            assert customers_response.status_code == 302
+            assert mandors_response.status_code == 302
+            assert locations_response.status_code == 302
+            assert status_response.status_code == 302
             assert "PORTAL_MANDOR_SCOPE" in dashboard_html
-            assert "AAA Test Portal Client" in dashboard_html
-            assert "AAA Test Portal Mandor" in dashboard_html
+            assert "AAA Test Portal Client" not in dashboard_html
+            assert "AAA Test Portal Mandor" not in dashboard_html
             assert "BBB Same Client Mandor" not in dashboard_html
             assert "ZZZ Other Branch Client" not in dashboard_html
             assert "ZZZ Other Branch Mandor" not in dashboard_html
             assert "Ownership" not in dashboard_html
-            assert "AAA Test Portal Client" in customers_html
-            assert "ZZZ Other Branch Client" not in customers_html
-            assert "AAA Test Portal Mandor" in mandors_html
-            assert "BBB Same Client Mandor" not in mandors_html
-            assert "ZZZ Other Branch Mandor" not in mandors_html
-            assert "AAA Test Portal Location" in locations_html
-            assert "BBB Same Client Location" not in locations_html
-            assert "ZZZ Other Branch Location" not in locations_html
             assert ownership_response.status_code == 302
         finally:
             transaction.rollback()
@@ -573,12 +621,18 @@ def test_portal_client_scope_covers_client_family_without_other_client(app):
             _create_other_branch_scope_data()
 
             scope = build_portal_external_scope(user)
+            directory = build_portal_mandor_directory(user)
 
             assert scope.allowed is True
             assert scope.scope_mode == "PORTAL_CLIENT_SCOPE"
             assert scope.client_ids == {client_obj.id}
             assert {mandor.id, sibling_mandor.id}.issubset(scope.mandor_ids)
             assert {location.id, sibling_location.id}.issubset(scope.delivery_location_ids)
+            assert directory["allowed"] is True
+            assert {row["name"] for row in directory["rows"]} == {
+                "AAA Test Portal Mandor",
+                "BBB Same Client Mandor",
+            }
 
             with app.test_client() as client:
                 _login(client, user)
@@ -589,10 +643,10 @@ def test_portal_client_scope_covers_client_family_without_other_client(app):
             mandors_html = mandors_response.get_data(as_text=True)
 
             assert profile_response.status_code == 200
-            assert mandors_response.status_code == 200
+            assert mandors_response.status_code == 302
             assert "PORTAL_CLIENT_SCOPE" in profile_html
-            assert "AAA Test Portal Mandor" in mandors_html
-            assert "BBB Same Client Mandor" in mandors_html
+            assert "AAA Test Portal Mandor" not in mandors_html
+            assert "BBB Same Client Mandor" not in mandors_html
             assert "ZZZ Other Branch Mandor" not in mandors_html
         finally:
             transaction.rollback()
@@ -619,6 +673,7 @@ def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
 
             scope = build_portal_external_scope(user)
             directory = build_portal_location_directory(user)
+            mandor_directory = build_portal_mandor_directory(user)
 
             assert scope.allowed is True
             assert scope.scope_mode == "PORTAL_DELEGATE_SCOPE"
@@ -629,6 +684,8 @@ def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
             assert directory["allowed"] is True
             assert len(directory["rows"]) == 1
             assert directory["rows"][0]["name"] == "AAA Test Portal Location"
+            assert mandor_directory["allowed"] is True
+            assert {row["name"] for row in mandor_directory["rows"]} == {"AAA Test Portal Mandor"}
 
             with app.test_client() as client:
                 _login(client, user)
@@ -641,13 +698,14 @@ def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
             locations_html = locations_response.get_data(as_text=True)
 
             assert profile_response.status_code == 200
-            assert locations_response.status_code == 200
+            assert mandors_response.status_code == 302
+            assert locations_response.status_code == 302
             assert "PORTAL_DELEGATE_SCOPE" in profile_html
             assert "AAA Test Portal Location" in profile_html
             assert "BBB Same Mandor Other Location" not in profile_html
-            assert "AAA Test Portal Mandor" in mandors_html
+            assert "AAA Test Portal Mandor" not in mandors_html
             assert "CCC Same Client Other Mandor" not in mandors_html
-            assert "AAA Test Portal Location" in locations_html
+            assert "AAA Test Portal Location" not in locations_html
             assert "BBB Same Mandor Other Location" not in locations_html
             assert "CCC Same Client Other Location" not in locations_html
         finally:
@@ -671,12 +729,12 @@ def test_unmapped_portal_external_user_does_not_receive_master_data(app):
 
             with app.test_client() as client:
                 _login(client, user)
-                response = client.get("/portal/dashboard")
+                response = client.get("/portal/my-dashboard", follow_redirects=True)
 
             html = response.get_data(as_text=True)
             assert response.status_code == 200
             assert "AAA Test Portal Client" not in html
-            assert "User belum memiliki mapping portal aktif" in html
+            assert "User portal belum memiliki mapping aktif" in html
         finally:
             transaction.rollback()
 
@@ -1064,7 +1122,9 @@ def test_portal_customer_prepayment_guard_blocks_draft_order(app):
         db.session.commit()
 
     client = app.test_client()
-    _login_with_password(client, username)
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        _login(client, user)
     get_response = client.get("/portal/orders/draft")
     post_response = client.post(
         "/portal/orders/draft",
@@ -1076,19 +1136,21 @@ def test_portal_customer_prepayment_guard_blocks_draft_order(app):
             "idempotency_key": f"customer-{uuid4().hex}",
         },
     )
-    status_response = client.get("/portal/status")
+    status_response = client.get("/portal/status", follow_redirects=False)
+    dashboard_response = client.get("/portal/my-dashboard", follow_redirects=True)
 
     with app.app_context():
         draft_count = PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user_id).count()
 
     get_html = get_response.get_data(as_text=True)
-    status_html = status_response.get_data(as_text=True)
+    dashboard_html = dashboard_response.get_data(as_text=True)
 
     assert get_response.status_code == 200
     assert post_response.status_code == 400
-    assert status_response.status_code == 200
+    assert status_response.status_code == 302
+    assert dashboard_response.status_code == 200
     assert "Pelanggan umum wajib memiliki pembayaran terverifikasi" in get_html
-    assert "Prepayment pelanggan umum" in status_html
+    assert "Prepayment tetap wajib" in dashboard_html
     assert draft_count == 0
 
 
@@ -1097,3 +1159,420 @@ def test_portal_mapping_service_has_no_session_commit_or_rollback():
 
     assert "db.session.commit(" not in source
     assert "db.session.rollback(" not in source
+
+
+def test_portal_external_mandor_role_can_render_role_dashboard_pages(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        username = user.username
+        _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(
+            user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        _login(client, user)
+
+    page_expectations = {
+        "/portal/my-dashboard": ["Dashboard Mandor", "PORTAL_MANDOR_SCOPE", "portal-mobile-shell"],
+        "/portal/invoices": ["Invoice Portal", "Belum ada invoice dalam scope portal"],
+        "/portal/payments": ["Riwayat Pembayaran", "Belum ada pembayaran dalam scope portal"],
+        "/portal/debts": ["Hutang Pekerja", "Belum ada hutang pekerja dalam scope portal"],
+        "/portal/closing": ["Closing Portal", "Status closing"],
+    }
+
+    for path, texts in page_expectations.items():
+        response = client.get(path, follow_redirects=(path == "/portal/my-dashboard"))
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200
+        assert "Halaman tidak ditemukan" not in html
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+        for text in texts:
+            assert text in html
+
+
+def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    role_cases = [
+        (ROLE_PORTAL_CUSTOMER, None, None, "/portal/customer", "Dashboard Pelanggan"),
+        (ROLE_PORTAL_MANDOR, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", "Dashboard Mandor"),
+        (ROLE_PORTAL_PT, PRINCIPAL_CLIENT, "client", "/portal/pt", "Dashboard PT"),
+        (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/client", "Dashboard Client"),
+        (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", "Dashboard Delegasi"),
+    ]
+
+    for role, principal_type, principal_key, expected_path, expected_title in role_cases:
+        with app.app_context():
+            user = _create_test_user(role)
+            username = user.username
+            client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+            if principal_type:
+                kwargs = {"principal_type": principal_type}
+                if principal_key == "client":
+                    kwargs["client"] = client_obj
+                elif principal_key == "mandor":
+                    kwargs["mandor"] = mandor
+                elif principal_key == "location":
+                    kwargs["location"] = location
+                _create_portal_mapping(user, **kwargs)
+            db.session.commit()
+
+        client = app.test_client()
+        with app.app_context():
+            user = User.query.filter_by(username=username).first()
+            _login(client, user)
+
+        redirect_response = client.get("/portal/my-dashboard", follow_redirects=False)
+        page_response = client.get(expected_path)
+        html = page_response.get_data(as_text=True)
+
+        assert redirect_response.status_code == 302
+        assert redirect_response.headers["Location"].endswith(expected_path)
+        assert page_response.status_code == 200
+        assert expected_title in html
+        assert "portal-mobile-shell" in html
+        assert "portal-web-nav" in html
+        assert 'action="/auth/logout"' in html
+        assert "portal-web-logout-button" in html
+        assert "portal-mobile-bottom-nav" not in html
+        assert "app-sidebar" not in html
+
+
+def test_portal_internal_configuration_pages_are_not_external_portal_pages(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    internal_paths = [
+        "/portal/dashboard",
+        "/portal/customers",
+        "/portal/mandors",
+        "/portal/locations",
+        "/portal/status",
+        "/portal/ownership",
+        "/portal/admin/order-drafts",
+    ]
+
+    with app.app_context():
+        admin = _create_test_user("ADMIN")
+        external = _create_test_user(ROLE_PORTAL_MANDOR)
+        _client_obj, _client_pic, mandor, _location = _create_scope_master_data(external)
+        _create_portal_mapping(external, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        db.session.commit()
+        admin_username = admin.username
+        external_username = external.username
+
+    admin_client = app.test_client()
+    external_client = app.test_client()
+    with app.app_context():
+        _login(admin_client, User.query.filter_by(username=admin_username).first())
+        _login(external_client, User.query.filter_by(username=external_username).first())
+
+    for path in internal_paths:
+        admin_response = admin_client.get(path)
+        external_response = external_client.get(path, follow_redirects=False)
+
+        assert admin_response.status_code == 200, path
+        assert external_response.status_code == 302, path
+        assert external_response.headers["Location"] == "/"
+
+
+def test_portal_role_dashboard_pages_reject_other_portal_roles(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        mandor_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        client_obj, _client_pic, mandor, _location = _create_scope_master_data(mandor_user)
+        _create_portal_mapping(mandor_user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        pt_user = _create_test_user(ROLE_PORTAL_PT)
+        _create_portal_mapping(pt_user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
+        db.session.commit()
+        mandor_username = mandor_user.username
+        pt_username = pt_user.username
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=mandor_username).first())
+
+    wrong_role_response = client.get("/portal/pt", follow_redirects=False)
+    own_role_response = client.get("/portal/mandor")
+
+    assert wrong_role_response.status_code == 302
+    assert wrong_role_response.headers["Location"] == "/"
+    assert own_role_response.status_code == 200
+    assert "Dashboard Mandor" in own_role_response.get_data(as_text=True)
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=pt_username).first())
+
+    assert client.get("/portal/pt").status_code == 200
+
+
+def test_portal_customer_feature_foundation_pages_render(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CUSTOMER)
+        username = user.username
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    pages = {
+        "/portal/customer/order": "Order Catering",
+        "/portal/customer/orders": "Riwayat Order",
+        "/portal/customer/tracking": "Tracking Order",
+        "/portal/customer/invoices": "Invoice",
+        "/portal/customer/payments": "Pembayaran",
+        "/portal/customer/complaints": "Komplain",
+    }
+
+    for path, title in pages.items():
+        response = client.get(path)
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200, path
+        assert title in html
+        assert "ERP existing" in html
+        assert "portal-mobile-shell" in html
+        assert "app-sidebar" not in html
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+
+
+def test_portal_mandor_feature_foundation_pages_render(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        username = user.username
+        _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    pages = {
+        "/portal/mandor/order": "Order Catering",
+        "/portal/mandor/workers": "Data Pekerja",
+        "/portal/mandor/catering-debts": "Hutang Catering",
+        "/portal/mandor/canteen-debts": "Hutang Warung",
+        "/portal/mandor/installments": "Cicilan",
+        "/portal/mandor/invoices": "Invoice",
+        "/portal/mandor/payments": "Riwayat Pembayaran",
+    }
+
+    for path, title in pages.items():
+        response = client.get(path)
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200, path
+        assert title in html
+        assert "ERP existing" in html
+        assert "portal-mobile-shell" in html
+        assert "app-sidebar" not in html
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+
+
+def test_portal_pt_feature_foundation_pages_render(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_PT)
+        username = user.username
+        client_obj, _client_pic, _mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    pages = {
+        "/portal/pt/mandors": "Seluruh Mandor",
+        "/portal/pt/invoices": "Seluruh Invoice",
+        "/portal/pt/receivables": "Seluruh Piutang",
+        "/portal/pt/contracts": "Seluruh Kontrak",
+    }
+
+    for path, title in pages.items():
+        response = client.get(path)
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200, path
+        assert title in html
+        assert "ERP existing" in html
+        assert "portal-mobile-shell" in html
+        assert "app-sidebar" not in html
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+
+
+def test_portal_customer_complaint_submits_to_existing_complaint_table(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CUSTOMER)
+        client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        username = user.username
+        user_id = user.id
+        client_id = client_obj.id
+        mandor_id = mandor.id
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    response = client.post(
+        "/portal/customer/complaints",
+        data={
+            "category": "LATE_DELIVERY",
+            "title": "Pengiriman terlambat",
+            "description": "Pesanan datang lewat dari jam makan.",
+        },
+        follow_redirects=True,
+    )
+    html = response.get_data(as_text=True)
+
+    with app.app_context():
+        complaint = CustomerComplaint.query.filter_by(submitted_by=user_id).one()
+
+    assert response.status_code == 200
+    assert "Komplain" in html
+    assert "customer_complaints ERP existing" in html
+    assert "Pengiriman terlambat" in html
+    assert complaint.client_id == client_id
+    assert complaint.mandor_id == mandor_id
+    assert complaint.status == "OPEN"
+
+
+def test_portal_pt_contract_page_reads_existing_customer_contracts(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_PT)
+        client_obj, client_pic, _mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
+        contract = CustomerContract(
+            branch_id=user.branch_id,
+            client_id=client_obj.id,
+            client_pic_id=client_pic.id,
+            contract_number=f"QA-PORTAL-CONTRACT-{uuid4().hex[:8]}",
+            title="Kontrak Catering PT",
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 12, 31),
+            payment_terms="NET 14",
+            credit_limit=1000000,
+            status="ACTIVE",
+            version_no=1,
+            created_by=user.id,
+        )
+        db.session.add(contract)
+        username = user.username
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    response = client.get("/portal/pt/contracts")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Seluruh Kontrak" in html
+    assert "customer_contracts ERP existing" in html
+    assert "Kontrak Catering PT" in html
+    assert "NET 14" in html
+    assert "Rp 1.000.000" in html
+
+
+def test_portal_sidebar_exposes_role_pages_for_external_portal_user(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
+        username = user.username
+        client_obj, _client_pic, _mandor, _location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        _login(client, user)
+    response = client.get("/portal/my-dashboard", follow_redirects=True)
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'href="/portal/my-dashboard"' in html
+    assert "portal-mobile-shell" in html
+    assert "app-sidebar" not in html
+    assert 'href="/portal/orders/draft"' not in html
+    assert 'href="/portal/orders/status"' not in html
+    assert 'href="/customer-success' not in html
+
+
+def test_portal_customer_general_pages_render_with_financial_guards(app):
+    app.config["PORTAL_ENABLED"] = True
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CUSTOMER)
+        username = user.username
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        _login(client, user)
+
+    guarded_pages = {
+        "/portal/my-dashboard": [
+            "Dashboard Pelanggan",
+            "portal-mobile-shell",
+        ],
+        "/portal/invoices": [
+            "Invoice Portal",
+            "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3.",
+        ],
+        "/portal/payments": [
+            "Riwayat Pembayaran",
+            "Payment history pelanggan umum menunggu prepayment/payment flow Stage 3.",
+        ],
+        "/portal/debts": [
+            "Hutang Pekerja",
+            "Worker debt visibility pelanggan umum tidak dibuka pada Stage 2.",
+        ],
+        "/portal/closing": [
+            "Closing Portal",
+            "Closing visibility pelanggan umum tidak dibuka pada Stage 2.",
+        ],
+    }
+
+    for path, texts in guarded_pages.items():
+        response = client.get(path, follow_redirects=(path == "/portal/my-dashboard"))
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200, path
+        assert "Halaman tidak ditemukan" not in html
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+        for text in texts:
+            assert text in html

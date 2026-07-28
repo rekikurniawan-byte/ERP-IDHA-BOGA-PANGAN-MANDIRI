@@ -7,6 +7,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_PT,
 )
 
 
@@ -142,9 +143,9 @@ def build_portal_external_scope(user):
             reason="User portal belum memiliki mapping aktif ke client/mandor/lokasi.",
         )
 
-    if role == ROLE_PORTAL_CLIENT:
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT}:
         expected_principals = {PRINCIPAL_CLIENT, PRINCIPAL_DELEGATE}
-        scope_mode = "PORTAL_CLIENT_SCOPE"
+        scope_mode = "PORTAL_PT_SCOPE" if role == ROLE_PORTAL_PT else "PORTAL_CLIENT_SCOPE"
     elif role == ROLE_PORTAL_MANDOR:
         expected_principals = {PRINCIPAL_MANDOR, PRINCIPAL_DELEGATE}
         scope_mode = "PORTAL_MANDOR_SCOPE"

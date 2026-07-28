@@ -1,0 +1,70 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% set correction = data.correction %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Koreksi Customer</span>
+            <h1>{{ correction.correction_number }}</h1>
+            <p>{{ correction.reason }}</p>
+        </div>
+        <div class="page-actions" data-page-actions>
+            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.corrections') }}">Kembali</a>
+            {% if correction.status == 'DRAFT' %}
+                <form method="post" action="{{ url_for('customer_success.submit_correction', correction_id=correction.id) }}" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button class="btn app-btn-primary" type="submit">Ajukan</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Status</div>
+                    <span class="status-badge neutral">{{ correction.status }}</span>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Tipe</div>
+                    <div class="fw-semibold">{{ correction.correction_type }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Nominal</div>
+                    <div class="fw-semibold">{{ correction.correction_amount|rupiah }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Complaint</div>
+                    <div class="fw-semibold">{{ correction.complaint.complaint_number if correction.complaint else '-' }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Client</div>
+                    <div class="fw-semibold">{{ correction.client.name if correction.client else '-' }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Mandor</div>
+                    <div class="fw-semibold">{{ correction.mandor.name if correction.mandor else '-' }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Efek Stok</div>
+                    <div class="fw-semibold">{{ correction.stock_effect }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small text-uppercase fw-bold">Efek Keuangan</div>
+                    <div class="fw-semibold">{{ correction.financial_effect }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small text-uppercase fw-bold">Rencana Tindakan</div>
+                    <div>{{ correction.proposed_action }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small text-uppercase fw-bold">Catatan</div>
+                    <div>{{ correction.notes or '-' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

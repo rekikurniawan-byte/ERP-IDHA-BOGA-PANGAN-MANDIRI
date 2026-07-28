@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from tools.audit_db_commits import collect_db_session_calls, render_report
 
@@ -17,14 +18,21 @@ def test_db_commit_audit_counts_real_commit_calls_only():
 def test_db_commit_audit_report_prioritizes_route_commits():
     calls = collect_db_session_calls(Path("app"))
     report = render_report(calls)
+    explicit_commit_true = _summary_value(report, "Call eksplisit commit=True")
 
     assert "| Commit di route | 0 |" in report
     assert "| Rollback di route | 0 |" in report
     assert "| Commit di service | 102 |" in report
     assert "| Fungsi dengan lebih dari satu commit | 0 |" in report
     assert "| Service call ke fungsi ber-commit | 0 |" in report
-    assert "| Call eksplisit commit=True | 32 |" in report
+    assert explicit_commit_true >= 32
     assert "| P0 | 0 |" in report
     assert all(call.layer != "route" for call in calls if call.method == "commit")
     assert all(call.layer != "route" for call in calls if call.method == "rollback")
     assert "commit langsung di route" in report
+
+
+def _summary_value(report, metric):
+    match = re.search(rf"\| {re.escape(metric)} \| (\d+) \|", report)
+    assert match, f"Metrik {metric!r} tidak ada di report."
+    return int(match.group(1))

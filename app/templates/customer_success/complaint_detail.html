@@ -1,0 +1,149 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% set complaint = data.complaint %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Komplain Customer</span>
+            <h1>{{ complaint.complaint_number }}</h1>
+            <p>{{ complaint.title }}</p>
+        </div>
+        <div class="page-actions" data-page-actions>
+            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Kembali</a>
+            <a class="btn app-btn-primary" href="{{ url_for('customer_success.corrections') }}?complaint_id={{ complaint.id }}">Buat Koreksi</a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="text-muted small text-uppercase fw-bold">Status</div>
+                            <span class="status-badge neutral">{{ complaint.status }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small text-uppercase fw-bold">Kategori</div>
+                            <div class="fw-semibold">{{ complaint.category }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small text-uppercase fw-bold">Submitted</div>
+                            <div class="fw-semibold">{{ complaint.submitted_at.strftime('%d-%m-%Y %H:%M') }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Client</div>
+                            <div class="fw-semibold">{{ complaint.client.name if complaint.client else '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Mandor</div>
+                            <div class="fw-semibold">{{ complaint.mandor.name if complaint.mandor else '-' }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted small text-uppercase fw-bold">Deskripsi</div>
+                            <div>{{ complaint.description }}</div>
+                        </div>
+                        {% if complaint.resolution_note %}
+                            <div class="col-12">
+                                <div class="text-muted small text-uppercase fw-bold">Catatan Resolusi</div>
+                                <div>{{ complaint.resolution_note }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Ubah Status</h2>
+                    <form method="post" action="{{ url_for('customer_success.update_complaint_status', complaint_id=complaint.id) }}" class="row g-3 app-form">
+                        {% include "components/csrf_token.html" %}
+                        <div class="col-md-6">
+                            <label class="form-label">Status Baru</label>
+                            <select class="form-select app-input" name="new_status" required>
+                                {% if complaint.status == 'OPEN' %}
+                                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                {% elif complaint.status == 'IN_PROGRESS' %}
+                                    <option value="RESOLVED">RESOLVED</option>
+                                {% elif complaint.status == 'RESOLVED' %}
+                                    <option value="CLOSED">CLOSED</option>
+                                {% else %}
+                                    <option value="">Tidak ada transisi</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Assign</label>
+                            <select class="form-select app-input" name="assigned_to">
+                                <option value="">Tidak berubah</option>
+                                {% for user in data.users %}
+                                    <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Catatan Resolusi</label>
+                            <textarea class="form-control app-input" name="resolution_note" rows="3"></textarea>
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button class="btn app-btn-primary" type="submit" {% if complaint.status == 'CLOSED' %}disabled{% endif %}>Update Status</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Bukti Komplain</h2>
+            <form method="post" action="{{ url_for('customer_success.upload_complaint_evidence', complaint_id=complaint.id) }}" enctype="multipart/form-data" class="row g-3 app-form mb-3">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-3">
+                    <select class="form-select app-input" name="attachment_type">
+                        {% for type in data.attachment_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input class="form-control app-input" type="file" name="evidence_file" required>
+                </div>
+                <div class="col-md-3">
+                    <input class="form-control app-input" name="notes" placeholder="Catatan bukti">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn app-btn-primary" type="submit">Upload</button>
+                </div>
+            </form>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Tipe</th>
+                            <th>Ukuran</th>
+                            <th>Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data.evidence %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.original_filename }}</td>
+                                <td>{{ item.attachment_type }}</td>
+                                <td>{{ item.file_size }} byte</td>
+                                <td>{{ item.notes or '-' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-muted text-center">Belum ada bukti.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Portal</p>
+            <h1>Invoice Portal</h1>
+            <p class="page-description">Invoice read-only sesuai ownership client/mandor/delegasi.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
+            <span class="status-badge neutral">{{ data.status_label }}</span>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            {% if not data.model.allowed %}
+                <div class="alert alert-warning mb-0">{{ data.model.reason }}</div>
+            {% else %}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3"><strong>{{ data.model.totals.invoice_count }}</strong><div class="text-muted small">Invoice</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.total_amount|rupiah }}</strong><div class="text-muted small">Total</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.paid_amount|rupiah }}</strong><div class="text-muted small">Terbayar</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.active_outstanding_amount|rupiah }}</strong><div class="text-muted small">Outstanding aktif</div></div>
+                </div>
+                <div class="table-responsive app-table-wrap">
+                    <table class="table app-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>No Invoice</th>
+                                <th>Tanggal</th>
+                                <th>Jatuh Tempo</th>
+                                <th>Status</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Paid</th>
+                                <th class="text-end">Remaining</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in data.model.invoices %}
+                                <tr>
+                                    <td class="fw-semibold">{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
+                                    <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
+                                    <td><span class="status-badge neutral">{{ invoice.status }}</span></td>
+                                    <td class="text-end">{{ invoice.total_amount|rupiah }}</td>
+                                    <td class="text-end">{{ invoice.paid_amount|rupiah }}</td>
+                                    <td class="text-end">{{ invoice.remaining_amount|rupiah }}</td>
+                                    <td class="text-end">
+                                        <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}">Bayar</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="8" class="text-muted text-center">Belum ada invoice dalam scope portal.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

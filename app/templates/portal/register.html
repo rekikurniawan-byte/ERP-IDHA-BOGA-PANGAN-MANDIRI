@@ -1,0 +1,43 @@
+{% extends "layouts/base.html" %}
+
+{% block content_public %}
+<div class="auth-wrapper" data-ui-auth="UI">
+    <div class="auth-panel">
+        <div class="auth-brand">
+            <div class="auth-logo">IB</div>
+            <div>
+                <h4>PT IDHA BOGA PANGAN MANDIRI</h4>
+                <p>Portal Customer, Mandor, dan PT</p>
+            </div>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <h5>{{ data.title }}</h5>
+                <p>{{ data.description }}</p>
+            </div>
+
+            <div class="d-grid gap-3">
+                {% for step in data.steps %}
+                    <div class="border rounded-3 p-3">
+                        <div class="fw-semibold">Langkah {{ loop.index }}</div>
+                        <div class="text-muted">{{ step }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="alert alert-info mt-3 mb-0">
+                Registrasi mandiri belum membuat user otomatis. Ini sengaja agar akun eksternal tetap valid terhadap role, branch, dan mapping ERP.
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+                {% for action in data.actions %}
+                    <a class="btn app-btn-primary" href="{{ action.url }}">
+                        <i class="bi {{ action.icon }}"></i> {{ action.label }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

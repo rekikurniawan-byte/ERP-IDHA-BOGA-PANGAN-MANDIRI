@@ -32,6 +32,7 @@
 {% set is_material_forecast = endpoint == "logistics.material_forecast" %}
 {% set is_hr = endpoint.startswith("hr.") %}
 {% set is_settings = endpoint.startswith("settings.") %}
+{% set is_customer_success = endpoint.startswith("customer_success.") %}
 {% set is_sop = endpoint.startswith("sop.") %}
 {% set is_disaster_recovery_sop = endpoint == "sop.disaster_recovery" %}
 {% set is_backup_restore_sop = endpoint == "sop.backup_restore" %}
@@ -74,7 +75,9 @@
 {% set can_view_hr = role in ["OWNER", "ADMIN", "HR"] %}
 {% set can_view_master = role in ["OWNER", "ADMIN", "FINANCE", "LOGISTICS"] %}
 {% set can_view_costing = role in ["OWNER", "ADMIN"] %}
-{% set can_view_portal = (global_portal_enabled|default(false)) and role in ["OWNER", "ADMIN"] %}
+{% set can_view_portal = (global_portal_enabled|default(false)) and role in ["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_PT", "PORTAL_MANDOR", "PORTAL_DELEGATE", "PORTAL_CUSTOMER"] %}
+{% set can_admin_portal = role in ["OWNER", "ADMIN"] %}
+{% set can_view_customer_success = role in ["OWNER", "ADMIN", "CUSTOMER_SUCCESS"] %}
 
 <aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
     <div class="sidebar-brand">
@@ -115,67 +118,185 @@
                     </summary>
 
                     <div class="sidebar-submenu">
-                        <a href="{{ url_for('portal.dashboard') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.dashboard' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.dashboard' else 'false' }}">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Portal Pelanggan</span>
+                        {% if can_admin_portal %}
+                            <a href="{{ url_for('portal.dashboard') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.dashboard' else '' }}"
+                               aria-current="{{ 'page' if endpoint == 'portal.dashboard' else 'false' }}">
+                                <i class="bi bi-diagram-3"></i>
+                                <span>Pengaturan Akses</span>
+                            </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('portal.my_dashboard') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.my_dashboard' else '' }}"
+                           aria-current="{{ 'page' if endpoint == 'portal.my_dashboard' else 'false' }}">
+                            <i class="bi bi-person-workspace"></i>
+                            <span>Dashboard Saya</span>
                         </a>
 
-                        <a href="{{ url_for('portal.customers') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customers' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.customers' else 'false' }}">
-                            <i class="bi bi-buildings"></i>
-                            <span>Client/PT</span>
+                        {% if role == "PORTAL_CUSTOMER" %}
+                            <a href="{{ url_for('portal.customer_order') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_order' else '' }}">
+                                <i class="bi bi-plus-square"></i>
+                                <span>Order Catering</span>
+                            </a>
+                            <a href="{{ url_for('portal.customer_order_history') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_order_history' else '' }}">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Riwayat Order</span>
+                            </a>
+                            <a href="{{ url_for('portal.customer_tracking') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_tracking' else '' }}">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>Tracking Order</span>
+                            </a>
+                            <a href="{{ url_for('portal.customer_invoices') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_invoices' else '' }}">
+                                <i class="bi bi-receipt"></i>
+                                <span>Invoice</span>
+                            </a>
+                            <a href="{{ url_for('portal.customer_payments') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_payments' else '' }}">
+                                <i class="bi bi-credit-card"></i>
+                                <span>Pembayaran</span>
+                            </a>
+                            <a href="{{ url_for('portal.customer_complaints') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.customer_complaints' else '' }}">
+                                <i class="bi bi-chat-square-dots"></i>
+                                <span>Komplain</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role == "PORTAL_MANDOR" %}
+                            <a href="{{ url_for('portal.mandor_order') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_order' else '' }}">
+                                <i class="bi bi-plus-square"></i>
+                                <span>Order Catering</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_workers') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_workers' else '' }}">
+                                <i class="bi bi-people"></i>
+                                <span>Data Pekerja</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_catering_debts') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_catering_debts' else '' }}">
+                                <i class="bi bi-cash-stack"></i>
+                                <span>Hutang Catering</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_canteen_debts') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_canteen_debts' else '' }}">
+                                <i class="bi bi-wallet2"></i>
+                                <span>Hutang Warung</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_installments') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_installments' else '' }}">
+                                <i class="bi bi-calendar2-week"></i>
+                                <span>Cicilan</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_invoices') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_invoices' else '' }}">
+                                <i class="bi bi-receipt"></i>
+                                <span>Invoice</span>
+                            </a>
+                            <a href="{{ url_for('portal.mandor_payments') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_payments' else '' }}">
+                                <i class="bi bi-credit-card"></i>
+                                <span>Riwayat Pembayaran</span>
+                            </a>
+                        {% endif %}
+
+                        {% if role == "PORTAL_PT" %}
+                            <a href="{{ url_for('portal.pt_mandors') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_mandors' else '' }}">
+                                <i class="bi bi-diagram-3"></i>
+                                <span>Seluruh Mandor</span>
+                            </a>
+                            <a href="{{ url_for('portal.pt_invoices') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_invoices' else '' }}">
+                                <i class="bi bi-receipt"></i>
+                                <span>Seluruh Invoice</span>
+                            </a>
+                            <a href="{{ url_for('portal.pt_receivables') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_receivables' else '' }}">
+                                <i class="bi bi-cash-stack"></i>
+                                <span>Seluruh Piutang</span>
+                            </a>
+                            <a href="{{ url_for('portal.pt_contracts') }}"
+                               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_contracts' else '' }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span>Seluruh Kontrak</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if can_view_customer_success %}
+                <details class="sidebar-group" {% if is_customer_success %}open{% endif %}>
+                    <summary class="sidebar-group-toggle {{ 'active' if is_customer_success else '' }}">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-person-heart"></i>
+                            <span>Customer Success</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+
+                    <div class="sidebar-submenu">
+                        <a href="{{ url_for('customer_success.contracts') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint in ['customer_success.contracts', 'customer_success.contract_detail'] else '' }}"
+                           aria-current="{{ 'page' if endpoint in ['customer_success.contracts', 'customer_success.contract_detail'] else 'false' }}">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span>Kontrak Customer</span>
                         </a>
 
-                        <a href="{{ url_for('portal.mandors') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandors' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.mandors' else 'false' }}">
-                            <i class="bi bi-person-badge"></i>
-                            <span>Mandor</span>
+                        <a href="{{ url_for('customer_success.complaints') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint in ['customer_success.complaints', 'customer_success.complaint_detail'] else '' }}"
+                           aria-current="{{ 'page' if endpoint in ['customer_success.complaints', 'customer_success.complaint_detail'] else 'false' }}">
+                            <i class="bi bi-chat-square-dots"></i>
+                            <span>Komplain</span>
                         </a>
 
-                        <a href="{{ url_for('portal.locations') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.locations' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.locations' else 'false' }}">
-                            <i class="bi bi-geo-alt"></i>
-                            <span>Lokasi</span>
+                        <a href="{{ url_for('customer_success.corrections') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint in ['customer_success.corrections', 'customer_success.correction_detail'] else '' }}"
+                           aria-current="{{ 'page' if endpoint in ['customer_success.corrections', 'customer_success.correction_detail'] else 'false' }}">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span>Koreksi</span>
                         </a>
 
-                        <a href="{{ url_for('portal.draft_order') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.draft_order' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.draft_order' else 'false' }}">
-                            <i class="bi bi-clipboard-plus"></i>
-                            <span>Draft Order</span>
+                        <a href="{{ url_for('customer_success.returns') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.returns' else '' }}">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>Return Management</span>
                         </a>
 
-                        <a href="{{ url_for('portal.order_status') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.order_status' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.order_status' else 'false' }}">
-                            <i class="bi bi-list-check"></i>
-                            <span>Status Order</span>
-                        </a>
-
-                        <a href="{{ url_for('portal.admin_order_drafts') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.admin_order_drafts' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.admin_order_drafts' else 'false' }}">
+                        <a href="{{ url_for('customer_success.approval_engine') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.approval_engine' else '' }}">
                             <i class="bi bi-check2-square"></i>
-                            <span>Konfirmasi Draft</span>
+                            <span>Approval Engine</span>
                         </a>
 
-                        <a href="{{ url_for('portal.status') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.status' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.status' else 'false' }}">
-                            <i class="bi bi-shield-check"></i>
-                            <span>Status Portal</span>
+                        <a href="{{ url_for('customer_success.notification_center') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.notification_center' else '' }}">
+                            <i class="bi bi-bell"></i>
+                            <span>Notification Center</span>
                         </a>
 
-                        <a href="{{ url_for('portal.ownership') }}"
-                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.ownership' else '' }}"
-                           aria-current="{{ 'page' if endpoint == 'portal.ownership' else 'false' }}">
-                            <i class="bi bi-diagram-3"></i>
-                            <span>Ownership</span>
+                        <a href="{{ url_for('customer_success.document_management') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.document_management' else '' }}">
+                            <i class="bi bi-folder2-open"></i>
+                            <span>Document Management</span>
+                        </a>
+
+                        <a href="{{ url_for('customer_success.subscriptions') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.subscriptions' else '' }}">
+                            <i class="bi bi-calendar2-plus"></i>
+                            <span>Subscription Order</span>
+                        </a>
+
+                        <a href="{{ url_for('customer_success.operational_calendar') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'customer_success.operational_calendar' else '' }}">
+                            <i class="bi bi-calendar3"></i>
+                            <span>Operational Calendar</span>
                         </a>
                     </div>
                 </details>

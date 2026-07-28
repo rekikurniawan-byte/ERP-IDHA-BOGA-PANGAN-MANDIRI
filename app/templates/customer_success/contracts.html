@@ -1,0 +1,134 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Customer Success</span>
+            <h1>Kontrak Customer</h1>
+            <p>Pengelolaan kontrak customer tanpa mengubah invoice, payment, jurnal, stok, atau closing.</p>
+        </div>
+        <div class="page-actions" data-page-actions>
+            <form method="post" action="{{ url_for('customer_success.generate_contract_expiry_notifications_route') }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="due_days" value="30">
+                <input type="hidden" name="target_role" value="FINANCE">
+                <button class="btn app-btn-secondary" type="submit">
+                    <i class="bi bi-bell"></i> Generate Reminder
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="card-body">
+            <form method="post" class="row g-3 app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-4">
+                    <label class="form-label">Client</label>
+                    <select class="form-select app-input" name="client_id" required>
+                        <option value="">Pilih client</option>
+                        {% for client in data.clients %}
+                            <option value="{{ client.id }}">{{ client.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">PIC</label>
+                    <select class="form-select app-input" name="client_pic_id">
+                        <option value="">Tanpa PIC</option>
+                        {% for pic in data.client_pics %}
+                            <option value="{{ pic.id }}">{{ pic.name }} - {{ pic.client.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Judul</label>
+                    <input class="form-control app-input" name="title" required placeholder="Kontrak catering bulanan">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mulai</label>
+                    <input class="form-control app-input" type="date" name="start_date" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Selesai</label>
+                    <input class="form-control app-input" type="date" name="end_date" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Termin</label>
+                    <input class="form-control app-input" name="payment_terms" required placeholder="NET 30">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Limit Kredit</label>
+                    <input class="form-control app-input" name="credit_limit" type="number" min="0" step="0.01" value="0">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status Awal</label>
+                    <select class="form-select app-input" name="status">
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label">Catatan</label>
+                    <input class="form-control app-input" name="notes" placeholder="Opsional">
+                </div>
+                <div class="col-md-2 d-grid align-items-end">
+                    <button class="btn app-btn-primary" type="submit">
+                        <i class="bi bi-plus-circle"></i> Buat
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <form method="get" class="filter-bar app-form mb-3">
+                <select class="form-select app-input" name="status">
+                    {% for status in data.status_options %}
+                        <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn app-btn-secondary" type="submit">Filter</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Reset</a>
+            </form>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>No Kontrak</th>
+                            <th>Client</th>
+                            <th>Periode</th>
+                            <th>Termin</th>
+                            <th class="text-end">Limit</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in data.contracts %}
+                            <tr>
+                                <td class="fw-semibold">{{ contract.contract_number }}</td>
+                                <td>{{ contract.client.name }}</td>
+                                <td>{{ contract.start_date.strftime('%d-%m-%Y') }} - {{ contract.end_date.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ contract.payment_terms }}</td>
+                                <td class="text-end">{{ contract.credit_limit|rupiah }}</td>
+                                <td><span class="status-badge neutral">{{ contract.status }}</span></td>
+                                <td class="text-end">
+                                    <div class="table-actions justify-content-end">
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.contract_detail', contract_id=contract.id) }}">Detail</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-muted text-center">Belum ada kontrak customer.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

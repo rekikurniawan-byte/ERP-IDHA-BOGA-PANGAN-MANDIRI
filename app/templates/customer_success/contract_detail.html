@@ -1,0 +1,145 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+{% set contract = data.contract %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Kontrak Customer</span>
+            <h1>{{ contract.contract_number }}</h1>
+            <p>{{ contract.title }} - {{ contract.client.name }}</p>
+        </div>
+        <div class="page-actions" data-page-actions>
+            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Kembali</a>
+            {% if contract.status == 'DRAFT' %}
+                <form method="post" action="{{ url_for('customer_success.activate_contract', contract_id=contract.id) }}" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <button class="btn app-btn-primary" type="submit">Aktifkan</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Status</div>
+                            <span class="status-badge neutral">{{ contract.status }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Version</div>
+                            <div class="fw-semibold">{{ contract.version_no }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Periode</div>
+                            <div class="fw-semibold">{{ contract.start_date.strftime('%d-%m-%Y') }} - {{ contract.end_date.strftime('%d-%m-%Y') }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Limit Kredit</div>
+                            <div class="fw-semibold">{{ contract.credit_limit|rupiah }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Termin</div>
+                            <div class="fw-semibold">{{ contract.payment_terms }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">PIC</div>
+                            <div class="fw-semibold">{{ contract.client_pic.name if contract.client_pic else '-' }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted small text-uppercase fw-bold">Catatan</div>
+                            <div>{{ contract.notes or '-' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="app-card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Perpanjang Kontrak</h2>
+                    <form method="post" action="{{ url_for('customer_success.renew_contract', contract_id=contract.id) }}" class="row g-3 app-form">
+                        {% include "components/csrf_token.html" %}
+                        <div class="col-md-6">
+                            <label class="form-label">Mulai Baru</label>
+                            <input class="form-control app-input" type="date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Selesai Baru</label>
+                            <input class="form-control app-input" type="date" name="end_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Termin</label>
+                            <input class="form-control app-input" name="payment_terms" value="{{ contract.payment_terms }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Limit Kredit</label>
+                            <input class="form-control app-input" name="credit_limit" type="number" min="0" step="0.01" value="{{ contract.credit_limit }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Catatan Renewal</label>
+                            <input class="form-control app-input" name="notes" placeholder="Opsional">
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button class="btn app-btn-secondary" type="submit">Buat Versi Baru</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Dokumen Kontrak</h2>
+            <form method="post" action="{{ url_for('customer_success.upload_contract_document', contract_id=contract.id) }}" enctype="multipart/form-data" class="row g-3 app-form mb-3">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-3">
+                    <select class="form-select app-input" name="attachment_type">
+                        {% for type in data.attachment_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input class="form-control app-input" type="file" name="document_file" required>
+                </div>
+                <div class="col-md-3">
+                    <input class="form-control app-input" name="notes" placeholder="Catatan dokumen">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn app-btn-primary" type="submit">Upload</button>
+                </div>
+            </form>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Tipe</th>
+                            <th>Ukuran</th>
+                            <th>Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in data.documents %}
+                            <tr>
+                                <td class="fw-semibold">{{ document.original_filename }}</td>
+                                <td>{{ document.attachment_type }}</td>
+                                <td>{{ document.file_size }} byte</td>
+                                <td>{{ document.notes or '-' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-muted text-center">Belum ada dokumen.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Customer Success</span>
+            <h1>Koreksi Customer</h1>
+            <p>Request koreksi/return/kompensasi. Posting stok dan keuangan tetap menunggu approval dan service terpisah.</p>
+        </div>
+        <div class="page-actions" data-page-actions>
+            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Komplain</a>
+            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Kontrak</a>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="card-body">
+            <form method="post" class="row g-3 app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-3">
+                    <label class="form-label">Tipe</label>
+                    <select class="form-select app-input" name="correction_type" required>
+                        {% for type in data.type_options %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Complaint</label>
+                    <select class="form-select app-input" name="complaint_id">
+                        <option value="">Tanpa complaint</option>
+                        {% for complaint in data.complaints %}
+                            <option value="{{ complaint.id }}" {% if request.args.get('complaint_id')|int == complaint.id %}selected{% endif %}>{{ complaint.complaint_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Client</label>
+                    <select class="form-select app-input" name="client_id">
+                        <option value="">Tanpa client</option>
+                        {% for client in data.clients %}
+                            <option value="{{ client.id }}">{{ client.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mandor</label>
+                    <select class="form-select app-input" name="mandor_id">
+                        <option value="">Tanpa mandor</option>
+                        {% for mandor in data.mandors %}
+                            <option value="{{ mandor.id }}">{{ mandor.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Alasan</label>
+                    <input class="form-control app-input" name="reason" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Rencana Tindakan</label>
+                    <input class="form-control app-input" name="proposed_action" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nominal</label>
+                    <input class="form-control app-input" name="correction_amount" type="number" min="0" step="0.01" value="0">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Efek Stok</label>
+                    <select class="form-select app-input" name="stock_effect">
+                        {% for effect in data.effect_options %}
+                            <option value="{{ effect }}">{{ effect }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Efek Keuangan</label>
+                    <select class="form-select app-input" name="financial_effect">
+                        {% for effect in data.effect_options %}
+                            <option value="{{ effect }}">{{ effect }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-grid align-items-end">
+                    <button class="btn app-btn-primary" type="submit">
+                        <i class="bi bi-plus-circle"></i> Buat Draft
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <form method="get" class="filter-bar app-form mb-3">
+                <select class="form-select app-input" name="status">
+                    {% for status in data.status_options %}
+                        <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn app-btn-secondary" type="submit">Filter</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('customer_success.corrections') }}">Reset</a>
+            </form>
+
+            <div class="table-responsive app-table-wrap">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>No Koreksi</th>
+                            <th>Tipe</th>
+                            <th>Alasan</th>
+                            <th class="text-end">Nominal</th>
+                            <th>Efek</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for correction in data.corrections %}
+                            <tr>
+                                <td class="fw-semibold">{{ correction.correction_number }}</td>
+                                <td>{{ correction.correction_type }}</td>
+                                <td>{{ correction.reason }}</td>
+                                <td class="text-end">{{ correction.correction_amount|rupiah }}</td>
+                                <td>{{ correction.stock_effect }} / {{ correction.financial_effect }}</td>
+                                <td><span class="status-badge neutral">{{ correction.status }}</span></td>
+                                <td class="text-end">
+                                    <div class="table-actions justify-content-end">
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.correction_detail', correction_id=correction.id) }}">Detail</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-muted text-center">Belum ada request koreksi.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,79 +1,52 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/portal_mobile.html" %}
 
-{% block content %}
-<section class="page-section">
-    <div class="page-header">
+{% block portal_content %}
+<section class="portal-feature-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Status Order Portal</h1>
-            <p class="page-description">Status draft dan order internal milik akun portal ini tanpa detail finansial.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.dashboard') }}">Dashboard</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
+            <p>{{ data.persona.eyebrow if data.persona is defined else "Portal" }}</p>
+            <h1>{{ data.page_title or "Status Order Portal" }}</h1>
+            <span>{{ data.status_label }}</span>
         </div>
     </div>
 
-    <div class="app-card">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Total</div>
-                    <div class="fw-semibold">{{ data.orders.total }}</div>
-                </div>
-                <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Pending</div>
-                    <div class="fw-semibold">{{ data.orders.pending }}</div>
-                </div>
-                <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Confirmed</div>
-                    <div class="fw-semibold">{{ data.orders.confirmed }}</div>
-                </div>
-                <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Rejected</div>
-                    <div class="fw-semibold">{{ data.orders.rejected }}</div>
-                </div>
-            </div>
-        </div>
+    <div class="portal-feature-card primary">
+        <h2>{{ data.orders.total }} order</h2>
+        <p>{{ data.page_description or "Status draft dan order internal milik akun portal ini tanpa detail finansial." }}</p>
+        <div class="portal-source-pill"><i class="bi bi-diagram-3"></i><span>ERP existing - portal_order_drafts, daily_orders</span></div>
     </div>
 
-    <div class="app-card mt-3">
-        <div class="card-body">
-            <div class="table-responsive app-table-wrap">
-                <table class="table app-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Tipe</th>
-                            <th>Porsi</th>
-                            <th>Lokasi</th>
-                            <th>Status Draft</th>
-                            <th>Order Internal</th>
-                            <th>Status Internal</th>
-                            <th>Catatan Review</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in data.orders.rows %}
-                            <tr>
-                                <td>{{ row.order_date.strftime('%d-%m-%Y') }}</td>
-                                <td>{{ row.meal_type }}</td>
-                                <td>{{ row.portion_qty }}</td>
-                                <td>{{ row.location_name }}</td>
-                                <td><span class="status-badge neutral">{{ row.draft_status }}</span></td>
-                                <td>{{ row.internal_order_number }}</td>
-                                <td>{{ row.internal_order_status }}</td>
-                                <td>{{ row.review_note or '-' }}</td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="8" class="text-muted">Belum ada order portal milik user ini.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="portal-mini-metrics">
+        <div><span>Total</span><strong>{{ data.orders.total }}</strong></div>
+        <div><span>Pending</span><strong>{{ data.orders.pending }}</strong></div>
+        <div><span>Confirmed</span><strong>{{ data.orders.confirmed }}</strong></div>
+        <div><span>Rejected</span><strong>{{ data.orders.rejected }}</strong></div>
+    </div>
+
+    <div class="portal-section-heading">
+        <h2>Riwayat Order</h2>
+        <span>Read-only</span>
+    </div>
+
+    <div class="portal-card-list">
+        {% for row in data.orders.rows %}
+            <article class="portal-mobile-card portal-order-card">
+                <div>
+                    <h3>{{ row.meal_type }} - {{ row.portion_qty }} porsi</h3>
+                    <p>{{ row.order_date.strftime('%d-%m-%Y') }} - {{ row.location_name }}</p>
+                    <div class="portal-chip-row">
+                        <span>Draft: {{ row.draft_status }}</span>
+                        <span>Internal: {{ row.internal_order_status }}</span>
+                        <span>{{ row.internal_order_number }}</span>
+                    </div>
+                    {% if row.review_note %}<p>{{ row.review_note }}</p>{% endif %}
+                </div>
+                <strong>{{ "LOCKED" if row.internal_order_locked else row.draft_status }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-mobile-alert">Belum ada order portal milik user ini.</div>
+        {% endfor %}
     </div>
 </section>
 {% endblock %}

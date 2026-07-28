@@ -6,16 +6,27 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app.services.auth_service import authenticate_user
 from app.extensions import limiter
 from app.services.audit_log_service import record_audit_log, record_critical_audit_log
+from app.services.user_management_service import PORTAL_EXTERNAL_ROLES
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+
+def _post_login_redirect_for(user):
+    """Keep external portal users out of the internal ERP landing page."""
+    if (
+        current_app.config.get("PORTAL_ENABLED", False)
+        and getattr(user, "role", None) in PORTAL_EXTERNAL_ROLES
+    ):
+        return redirect(url_for("portal.my_dashboard"))
+    return redirect(url_for("dashboard.index"))
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit(os.getenv("LOGIN_RATE_LIMIT", "5 per minute"), methods=["POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard.index"))
+        return _post_login_redirect_for(current_user)
 
     if request.method == "POST":
         username = request.form.get("username")
@@ -55,7 +66,7 @@ def login():
             user_role_snapshot=user.role,
         )
         flash("Login berhasil.", "success")
-        return redirect(url_for("dashboard.index"))
+        return _post_login_redirect_for(user)
 
     return render_template("auth/login.html")
 
