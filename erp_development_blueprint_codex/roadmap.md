@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4A - Contract model impact plan
+Stage 4C - Contract document archive
 ```
 
 Status:
 
 ```text
-READY_FOR_STAGE_4A_IMPACT_PLAN
+READY_FOR_BATCH_4C_IMPACT_PLAN
 ```
 
 Alasan:
@@ -632,15 +632,16 @@ Alasan:
 - Stage 3B menambahkan upload bukti pembayaran pending;
 - Stage 3C menambahkan queue dan decision state finance;
 - Batch 3D sudah menyentuh `Payment`, invoice remaining, journal, cash-bank, dan collection log melalui service atomic.
-- Stage 3 payment enhancement sudah selesai sebagai service foundation.
-- Stage 4 berikutnya menyentuh contract, complaint, dan document archive sehingga wajib dimulai dari impact plan, bukan langsung schema/migration.
+- Stage 4A contract model impact plan selesai pada tag `stage-4a-contract-model-impact-plan`.
+- Stage 4B customer contract lifecycle foundation selesai pada tag `batch-4b-customer-contract-lifecycle`.
+- Batch 4C berikutnya harus memakai `DigitalAttachment` existing untuk arsip dokumen kontrak, tanpa file store paralel.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi Stage 4A impact plan;
-- audit model/document/archive existing;
-- audit contract/complaint yang mungkin sudah ada;
-- berhenti dengan `APPROVAL REQUIRED` bila Stage 4 membutuhkan schema, migration, role, atau business rule baru.
+- dokumentasi Batch 4C impact plan;
+- service attach/list contract documents via `DigitalAttachment`;
+- private access berdasarkan branch contract;
+- berhenti dengan `APPROVAL REQUIRED` bila archive membutuhkan schema, migration, role, atau business rule baru.
 
 ## 10. Catatan Disiplin Scope
 

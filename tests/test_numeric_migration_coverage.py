@@ -15,6 +15,9 @@ numeric_wave_84 = importlib.import_module(
 numeric_wave_86 = importlib.import_module(
     "migrations.versions.86a0a1b2c3d4_stock_opening_balance"
 )
+customer_contracts_93 = importlib.import_module(
+    "migrations.versions.93a0a1b2c3d4_customer_contracts"
+)
 
 
 def _migration_columns(module):
@@ -46,6 +49,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(numeric_wave_83),
         **_migration_columns(numeric_wave_84),
         **_migration_columns(numeric_wave_86),
+        **_migration_columns(customer_contracts_93),
     }
 
     assert migration_columns

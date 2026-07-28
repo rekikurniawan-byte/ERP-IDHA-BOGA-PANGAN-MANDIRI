@@ -97,6 +97,10 @@ from app.models.finance import (
     InvoiceCollectionLog,
 )
 
+from app.models.contract import (
+    CustomerContract,
+)
+
 from app.models.accounting import (
     Account,
     Journal,
