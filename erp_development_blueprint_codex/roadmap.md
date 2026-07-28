@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4E3 - Complaint attachment service
+Stage 4E4 - Complaint notification/read queue
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_4E3
+READY_FOR_BATCH_4E4
 ```
 
 Alasan:
@@ -639,12 +639,13 @@ Alasan:
 - Batch 4E complaint workflow impact plan selesai dan menyimpulkan implementasi membutuhkan approval karena perlu schema/lifecycle/role.
 - Batch 4E1 complaint schema additive selesai dengan tabel baru `customer_complaints`, tanpa route/template dan tanpa mutasi transaksi existing.
 - Batch 4E2 complaint service foundation selesai untuk submit/list/read dan transisi status, tanpa route/template.
+- Batch 4E3 complaint attachment service selesai memakai `DigitalAttachment`, tanpa mengubah status complaint dari upload bukti.
 
 Alternatif aman sebelum approval:
 
-- attachment complaint via `DigitalAttachment`;
-- bukti complaint private berdasarkan branch;
-- tidak mengubah lifecycle complaint dari upload bukti saja;
+- read queue complaint untuk admin/operasional;
+- notification service untuk complaint OPEN/IN_PROGRESS;
+- tidak mengirim layanan eksternal;
 - tidak mengubah invoice/payment/journal/stock/closing;
 - tetap berhenti jika diminta membuat return/correction otomatis sebelum Stage 4F.
 
