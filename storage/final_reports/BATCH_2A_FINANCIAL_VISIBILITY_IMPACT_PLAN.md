@@ -1,6 +1,6 @@
 # Batch 2A - Financial Visibility Impact Plan
 
-Status: READY_FOR_BATCH_2B_PLAN_COMPLETE_DB_GATE_REQUIRED
+Status: READY_FOR_BATCH_2B
 
 Tanggal: 2026-07-28
 
@@ -217,7 +217,7 @@ Karena batch ini dokumen saja, tidak ada rollback database.
 - next batch 2B dibatasi ke read model;
 - tidak ada perubahan kode fitur;
 - compile tetap lulus;
-- full pytest harus dijalankan ulang setelah PostgreSQL lokal aktif.
+- full pytest lulus setelah PostgreSQL lokal aktif.
 
 ## 13. Verification
 
@@ -228,7 +228,7 @@ Hasil yang sudah dijalankan:
 PASS
 ```
 
-Full pytest dicoba dua kali, tetapi tidak dapat menjadi bukti lulus karena PostgreSQL lokal tidak reachable:
+Full pytest awalnya sempat blocked karena PostgreSQL lokal tidak reachable:
 
 ```text
 DATABASE_URL=postgresql+psycopg://<user>:****@localhost:5432/idha_boga_staging
@@ -247,10 +247,18 @@ Gejala:
 Kesimpulan verifikasi:
 
 - perubahan Batch 2A adalah dokumen saja dan compile aman;
-- full regression database/runtime belum bisa diklaim lulus sampai PostgreSQL lokal aktif kembali.
+- setelah PostgreSQL lokal aktif kembali, database gate cleared.
+
+Hasil verifikasi ulang setelah PostgreSQL aktif:
+
+```text
+Test-NetConnection localhost:5432 => TcpTestSucceeded True
+tests/test_period_invoice_route_runtime.py => 1 passed, 3 warnings
+.venv\Scripts\python.exe -m pytest -q => 309 passed, 32 warnings in 73.54s
+```
 
 ## 14. Putusan
 
-READY_FOR_BATCH_2B_PLAN_COMPLETE_DB_GATE_REQUIRED
+READY_FOR_BATCH_2B
 
-Batch berikutnya yang aman adalah `2B - Invoice/hutang read model`, dimulai dari service read-only dan test ownership, bukan route/template penuh. Namun sebelum coding 2B, PostgreSQL lokal harus reachable agar test database dapat benar-benar berjalan.
+Batch berikutnya yang aman adalah `2B - Invoice/hutang read model`, dimulai dari service read-only dan test ownership, bukan route/template penuh.
