@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4E - Complaint workflow impact plan
+Stage 4E1 - Complaint schema additive
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_4E_IMPACT_PLAN
+APPROVAL_REQUIRED_FOR_BATCH_4E1
 ```
 
 Alasan:
@@ -636,12 +636,14 @@ Alasan:
 - Stage 4B customer contract lifecycle foundation selesai pada tag `batch-4b-customer-contract-lifecycle`.
 - Batch 4C contract document archive selesai sebagai service foundation memakai `DigitalAttachment` existing, tanpa file store paralel.
 - Batch 4D contract expiry notification selesai sebagai service foundation memakai `notifications` existing, tanpa auto-expire kontrak dan tanpa scheduler eksternal.
+- Batch 4E complaint workflow impact plan selesai dan menyimpulkan implementasi membutuhkan approval karena perlu schema/lifecycle/role.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi Batch 4E complaint workflow impact plan;
-- audit model/service existing untuk complaint/return;
-- berhenti dengan `APPROVAL REQUIRED` bila complaint workflow membutuhkan schema, role, approval engine, route/template, atau business rule lifecycle baru.
+- approval eksplisit untuk Batch 4E1 complaint schema additive;
+- migration baru khusus `customer_complaints` bila disetujui;
+- tidak mengubah invoice/payment/journal/stock/closing;
+- tetap berhenti jika diminta membuat return/correction otomatis sebelum Stage 4F.
 
 ## 10. Catatan Disiplin Scope
 
