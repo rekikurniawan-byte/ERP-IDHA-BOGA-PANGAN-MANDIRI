@@ -101,6 +101,10 @@ from app.models.contract import (
     CustomerContract,
 )
 
+from app.models.complaint import (
+    CustomerComplaint,
+)
+
 from app.models.accounting import (
     Account,
     Journal,
