@@ -315,6 +315,16 @@ Tujuan: transparansi hutang/invoice/payment history sesuai role.
 
 Stage ini tidak boleh dimulai sebelum Stage 1 selesai dan disetujui.
 
+Status Stage 2: selesai sebagai read model only pada tag `batch-2e-portal-closing-visibility-read-model`.
+
+Catatan batas Stage 2:
+
+- service read model invoice/outstanding, payment history, worker debt, dan closing visibility tersedia;
+- belum ada route/template portal financial;
+- tidak ada payment creation/allocation;
+- tidak ada invoice/payment/journal/closing mutation;
+- procurement/supplier/cash-bank/HPP/profit tetap out of scope.
+
 Batch:
 
 2A. Impact plan financial visibility.

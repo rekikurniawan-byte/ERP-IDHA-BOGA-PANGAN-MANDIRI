@@ -94,7 +94,7 @@ def _create_mapping(user, principal_type, *, client=None, mandor=None, location=
     return mapping
 
 
-def _create_worker_debt(user, mandor, *, amount="20000", paid="5000", status="PARTIAL"):
+def _create_worker_debt(user, mandor, *, amount="20000", paid="5000", status="PARTIAL", sale_date=date(2099, 2, 1)):
     suffix = _suffix()
     worker = Worker(
         mandor_id=mandor.id,
@@ -107,7 +107,7 @@ def _create_worker_debt(user, mandor, *, amount="20000", paid="5000", status="PA
     db.session.flush()
     sale = CanteenSale(
         branch_id=user.branch_id,
-        sale_date=date(2099, 2, 1),
+        sale_date=sale_date,
         sale_type="DEBT",
         payment_method="DEBT",
         buyer_type="WORKER",
