@@ -369,7 +369,11 @@ Gate Stage 2:
 
 Tujuan: pembayaran terkontrol tanpa auto-lunas palsu.
 
-Status Stage 3: Batch 3A selesai pada tag `batch-3a-static-payment-instructions`.
+Status Stage 3: Batch 3A sampai 3C selesai pada tag berikut:
+
+- `batch-3a-static-payment-instructions`;
+- `batch-3b-payment-proof-upload-service`;
+- `batch-3c-payment-proof-verification-queue`.
 
 Catatan batas Stage 3A:
 
@@ -379,6 +383,22 @@ Catatan batas Stage 3A:
 - belum ada payment creation/allocation;
 - belum ada journal/cash-bank mutation;
 - bukti bayar tidak otomatis membuat invoice lunas.
+
+Catatan batas Stage 3B:
+
+- upload bukti pembayaran tersedia sebagai service;
+- upload menyimpan `DigitalAttachment` private dengan attachment type `PAYMENT_PROOF_PENDING`;
+- upload tidak membuat `Payment`;
+- upload tidak mengubah paid/remaining/status invoice;
+- upload tidak membuat journal/cash-bank/allocation.
+
+Catatan batas Stage 3C:
+
+- finance verification queue tersedia sebagai service;
+- keputusan proof memakai attachment type `PAYMENT_PROOF_VERIFIED` atau `PAYMENT_PROOF_REJECTED`;
+- keputusan verified/rejected belum membuat `Payment`;
+- payment creation tetap masuk Batch 3D melalui service existing;
+- tidak ada migration, route, template, journal, cash-bank, atau allocation baru.
 
 Batch:
 
@@ -565,28 +585,30 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 1H - Approval Decision for External Mapping
+Stage 3D - Payment creation via existing service
 ```
 
 Status:
 
 ```text
-APPROVAL REQUIRED
+READY_FOR_BATCH_3D_IMPACT_PLAN
 ```
 
 Alasan:
 
-- role eksternal pelanggan umum, mandor, PT, dan delegasi belum final;
-- mapping user ke client/mandor/PT menyentuh ownership dan permission;
-- jika schema baru diperlukan, migration wajib disetujui;
-- tanpa mapping final, order portal tidak boleh dibuka.
+- Stage 1 dan Stage 2 sudah memiliki checkpoint yang sah;
+- Stage 3A menambahkan instruksi pembayaran statis;
+- Stage 3B menambahkan upload bukti pembayaran pending;
+- Stage 3C menambahkan queue dan decision state finance;
+- Batch 3D berikutnya menyentuh `Payment`, invoice remaining, allocation/receivable, dan kemungkinan cash-bank sehingga wajib dimulai dari impact plan dan invariant test.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi role matrix;
-- audit existing user/role;
-- audit existing client/mandor/PT relationship;
-- membuat decision log tanpa coding fitur.
+- dokumentasi Batch 3D impact plan;
+- audit service payment existing;
+- audit idempotency payment creation existing;
+- audit invariant invoice/payment/receivable existing;
+- berhenti dengan `APPROVAL REQUIRED` bila payment creation membutuhkan schema, role, migration, atau business rule baru.
 
 ## 10. Catatan Disiplin Scope
 
