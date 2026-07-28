@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4E2 - Complaint service foundation
+Stage 4E3 - Complaint attachment service
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_4E2
+READY_FOR_BATCH_4E3
 ```
 
 Alasan:
@@ -638,12 +638,13 @@ Alasan:
 - Batch 4D contract expiry notification selesai sebagai service foundation memakai `notifications` existing, tanpa auto-expire kontrak dan tanpa scheduler eksternal.
 - Batch 4E complaint workflow impact plan selesai dan menyimpulkan implementasi membutuhkan approval karena perlu schema/lifecycle/role.
 - Batch 4E1 complaint schema additive selesai dengan tabel baru `customer_complaints`, tanpa route/template dan tanpa mutasi transaksi existing.
+- Batch 4E2 complaint service foundation selesai untuk submit/list/read dan transisi status, tanpa route/template.
 
 Alternatif aman sebelum approval:
 
-- service submit/list/read complaint;
-- status transition service `OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED`;
-- audit log untuk submit dan transisi;
+- attachment complaint via `DigitalAttachment`;
+- bukti complaint private berdasarkan branch;
+- tidak mengubah lifecycle complaint dari upload bukti saja;
 - tidak mengubah invoice/payment/journal/stock/closing;
 - tetap berhenti jika diminta membuat return/correction otomatis sebelum Stage 4F.
 
