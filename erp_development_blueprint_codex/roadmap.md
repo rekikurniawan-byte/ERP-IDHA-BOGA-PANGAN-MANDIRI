@@ -53,9 +53,9 @@ Dilarang:
 
 ## 2. Status Baseline Saat Ini
 
-Titik aman aktif setelah rollback scope Batch 2 adalah Batch 1G.
+Titik aman aktif saat ini adalah tag `stage-1h-1o-complete`.
 
-Perubahan Batch 2A sampai Batch 2F telah dicabut dan tidak boleh dianggap bagian scope aktif:
+Perubahan Batch 2A sampai Batch 2F yang lama telah dicabut dan tidak boleh dianggap bagian scope aktif:
 
 - financial visibility;
 - order status visibility;
@@ -74,6 +74,14 @@ Batch yang boleh dianggap aktif:
 - Batch 1E portal status shell;
 - Batch 1F portal ownership analysis;
 - Batch 1G external mapping approval package.
+- Batch 1H approval decision untuk external mapping;
+- Batch 1I portal authentication mapping;
+- Batch 1J portal profile dan scope resolver final;
+- Batch 1K location selection read-only/controlled;
+- Batch 1L draft order portal;
+- Batch 1M admin confirmation bridge;
+- Batch 1N portal order status dasar;
+- Batch 1O prepayment guard untuk pelanggan umum.
 
 Portal template aktif yang sah:
 
@@ -82,6 +90,11 @@ Portal template aktif yang sah:
 - `mandors.html`;
 - `ownership.html`;
 - `status.html`.
+- `profile.html`;
+- `locations.html`;
+- `order_draft.html`;
+- `order_status.html`;
+- `admin_order_drafts.html`.
 
 ## 3. Aturan Anti-Pengulangan
 
@@ -208,7 +221,7 @@ Tidak termasuk:
 - scoring;
 - approval engine kompleks.
 
-Batch 1 aktif yang sudah ada:
+Batch 1 aktif yang sudah selesai:
 
 1A. Portal foundation.
 
@@ -223,8 +236,6 @@ Batch 1 aktif yang sudah ada:
 1F. Ownership analysis.
 
 1G. External mapping approval package.
-
-Batch berikutnya yang benar:
 
 1H. Approval decision untuk external mapping.
 
@@ -275,6 +286,17 @@ Batch berikutnya yang benar:
 - Order pelanggan umum tidak diproses sebelum pembayaran terverifikasi.
 - QRIS/payment upload masuk Stage 3 jika menyentuh payment actual.
 
+Status Stage 1: selesai pada tag `stage-1h-1o-complete`.
+
+Catatan batas Stage 1:
+
+- portal sudah memakai auth existing;
+- mapping eksternal memakai `PortalUserMapping`;
+- draft order portal tidak membuat invoice/payment/journal/stock/closing;
+- admin confirmation bridge hanya menghubungkan draft portal ke workflow order internal existing;
+- pelanggan umum tetap ditahan oleh prepayment guard;
+- financial visibility, payment upload, payment creation, journal, stock, procurement, dan supplier tetap bukan bagian Stage 1.
+
 Gate Stage 1:
 
 - semua endpoint portal punya test unauthenticated, unauthorized, authorized, ownership;
@@ -300,6 +322,9 @@ Batch:
 - Hanya dokumen.
 - Tentukan scope pelanggan umum, mandor, PT.
 - Tentukan data mana yang boleh tampil.
+- Jangan menghidupkan kembali Batch 2A-2F lama yang sudah dicabut.
+- Tidak membuat route/template/service baru pada batch ini.
+- Tidak mengubah invoice/payment/journal/stock/cash/bank/receivable/payable.
 
 2B. Invoice/hutang read model.
 
