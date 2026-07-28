@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4D - Expiry notification
+Stage 4E - Complaint workflow impact plan
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_4D_IMPACT_PLAN
+READY_FOR_BATCH_4E_IMPACT_PLAN
 ```
 
 Alasan:
@@ -635,13 +635,13 @@ Alasan:
 - Stage 4A contract model impact plan selesai pada tag `stage-4a-contract-model-impact-plan`.
 - Stage 4B customer contract lifecycle foundation selesai pada tag `batch-4b-customer-contract-lifecycle`.
 - Batch 4C contract document archive selesai sebagai service foundation memakai `DigitalAttachment` existing, tanpa file store paralel.
+- Batch 4D contract expiry notification selesai sebagai service foundation memakai `notifications` existing, tanpa auto-expire kontrak dan tanpa scheduler eksternal.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi Batch 4D impact plan;
-- expiry notification read model/job service untuk kontrak yang akan berakhir;
-- tidak mengubah lifecycle/status kontrak otomatis tanpa approval;
-- berhenti dengan `APPROVAL REQUIRED` bila notification membutuhkan schema, role, scheduler eksternal, atau business rule baru.
+- dokumentasi Batch 4E complaint workflow impact plan;
+- audit model/service existing untuk complaint/return;
+- berhenti dengan `APPROVAL REQUIRED` bila complaint workflow membutuhkan schema, role, approval engine, route/template, atau business rule lifecycle baru.
 
 ## 10. Catatan Disiplin Scope
 
