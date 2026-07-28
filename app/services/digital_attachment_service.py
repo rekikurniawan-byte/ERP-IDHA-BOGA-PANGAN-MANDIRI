@@ -138,7 +138,7 @@ def _validate_file(file_storage: FileStorage) -> Tuple[str, str]:
     return original, extension
 
 
-def save_digital_attachment(
+def stage_digital_attachment(
     *,
     file_storage: FileStorage,
     module: str,
@@ -148,13 +148,11 @@ def save_digital_attachment(
     branch_id: Optional[int],
     uploaded_by: Optional[int],
     notes: Optional[str] = None,
-    commit: bool = True,
 ) -> DigitalAttachment:
-    """Save one attachment safely outside public static folder.
+    """Stage one attachment file and metadata without opening a transaction boundary.
 
     File fisik disimpan di instance/uploads/digital_attachments, sedangkan DB hanya
-    menyimpan metadata. Fungsi ini belum memaksa modul tertentu supaya bisa dipakai
-    bertahap oleh delivery/procurement/payment pada patch berikutnya.
+    menyimpan metadata. Caller bertanggung jawab melakukan flush/commit/rollback.
     """
     original_name, extension = _validate_file(file_storage)
     max_bytes = get_max_upload_bytes()
@@ -203,30 +201,76 @@ def save_digital_attachment(
             created_at=datetime.utcnow(),
         )
         db.session.add(attachment)
-        if commit:
-            db.session.commit()
-            record_audit_log(
-                module="ATTACHMENT",
-                event_type="DIGITAL_ATTACHMENT_UPLOADED",
-                action="CREATE",
-                table_name="digital_attachments",
-                record_id=attachment.id,
-                description=f"Lampiran digital diunggah untuk {module_safe}/{ref_type_safe} #{reference_id}.",
-                metadata={
-                    "module": module_safe,
-                    "reference_type": ref_type_safe,
-                    "reference_id": reference_id,
-                    "attachment_type": attachment_type_safe,
-                    "original_filename": original_name,
-                    "file_size": size,
-                    "sha256": sha256_hash,
-                },
-            )
         return attachment
     except Exception:
         if target_path.exists():
             target_path.unlink(missing_ok=True)
         raise
+
+
+def _unlink_attachment_file_safely(attachment: DigitalAttachment) -> None:
+    try:
+        path = get_attachment_file_path(attachment)
+    except FileNotFoundError:
+        return
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        logger.exception("Failed to remove staged attachment file after transaction failure.")
+
+
+def save_digital_attachment(
+    *,
+    file_storage: FileStorage,
+    module: str,
+    reference_type: str,
+    reference_id: int,
+    attachment_type: str,
+    branch_id: Optional[int],
+    uploaded_by: Optional[int],
+    notes: Optional[str] = None,
+    commit: bool = True,
+) -> DigitalAttachment:
+    """Save one attachment safely outside public static folder.
+
+    Existing callers keep this compatibility wrapper. New nested business services
+    should prefer stage_digital_attachment() and own their transaction boundary.
+    """
+    attachment = stage_digital_attachment(
+        file_storage=file_storage,
+        module=module,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        attachment_type=attachment_type,
+        branch_id=branch_id,
+        uploaded_by=uploaded_by,
+        notes=notes,
+    )
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            _unlink_attachment_file_safely(attachment)
+            db.session.rollback()
+            raise
+        record_audit_log(
+            module="ATTACHMENT",
+            event_type="DIGITAL_ATTACHMENT_UPLOADED",
+            action="CREATE",
+            table_name="digital_attachments",
+            record_id=attachment.id,
+            description=f"Lampiran digital diunggah untuk {attachment.module}/{attachment.reference_type} #{reference_id}.",
+            metadata={
+                "module": attachment.module,
+                "reference_type": attachment.reference_type,
+                "reference_id": reference_id,
+                "attachment_type": attachment.attachment_type,
+                "original_filename": attachment.original_filename,
+                "file_size": attachment.file_size,
+                "sha256": attachment.sha256_hash,
+            },
+        )
+    return attachment
 
 
 def get_attachment_file_path(attachment: DigitalAttachment) -> Path:
