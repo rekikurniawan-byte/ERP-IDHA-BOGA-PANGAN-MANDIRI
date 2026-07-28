@@ -369,13 +369,14 @@ Gate Stage 2:
 
 Tujuan: pembayaran terkontrol tanpa auto-lunas palsu.
 
-Status Stage 3: Batch 3A sampai 3E selesai pada tag berikut:
+Status Stage 3: selesai sebagai service foundation pada tag berikut:
 
 - `batch-3a-static-payment-instructions`;
 - `batch-3b-payment-proof-upload-service`;
 - `batch-3c-payment-proof-verification-queue`;
 - `batch-3d-payment-creation-from-verified-proof`;
-- `batch-3e-allocation-receivable-recap`.
+- `batch-3e-allocation-receivable-recap`;
+- `batch-3f-cash-confirmation`.
 
 Catatan batas Stage 3A:
 
@@ -416,6 +417,19 @@ Catatan batas Stage 3E:
 - sistem existing masih merepresentasikan allocation customer payment via `payments.invoice_id`;
 - recap mendeteksi payment sum mismatch, remaining mismatch, over-allocation, dan cancelled invoice pada active receivable;
 - tidak ada route/template, migration, atau mutasi data.
+
+Catatan batas Stage 3F:
+
+- cash confirmation tersedia sebagai read-only service;
+- service mendeteksi missing ledger, duplicate ledger, amount mismatch, account type mismatch, dan bank account mismatch;
+- tidak ada route/template, migration, atau mutasi data.
+
+Catatan batas akhir Stage 3:
+
+- Stage 3 selesai sebagai fondasi service, belum UI end-to-end;
+- payment gateway/webhook tetap deferred dan `APPROVAL REQUIRED`;
+- existing route payment lama belum direfactor ke service baru;
+- UAT finance tetap diperlukan sebelum dipakai operasional.
 
 Batch:
 
@@ -602,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 3F - Cash confirmation
+Stage 4A - Contract model impact plan
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_3F_IMPACT_PLAN
+READY_FOR_STAGE_4A_IMPACT_PLAN
 ```
 
 Alasan:
@@ -618,15 +632,15 @@ Alasan:
 - Stage 3B menambahkan upload bukti pembayaran pending;
 - Stage 3C menambahkan queue dan decision state finance;
 - Batch 3D sudah menyentuh `Payment`, invoice remaining, journal, cash-bank, dan collection log melalui service atomic.
-- Batch 3E sudah membuktikan recap receivable/allocation read-only.
-- Batch 3F berikutnya harus membuktikan cash-bank confirmation untuk payment customer tanpa menggandakan ledger.
+- Stage 3 payment enhancement sudah selesai sebagai service foundation.
+- Stage 4 berikutnya menyentuh contract, complaint, dan document archive sehingga wajib dimulai dari impact plan, bukan langsung schema/migration.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi Batch 3F impact plan;
-- audit cash-bank ledger existing untuk payment customer;
-- audit duplicate cash-bank reference existing;
-- berhenti dengan `APPROVAL REQUIRED` bila cash confirmation membutuhkan schema, migration, role, atau business rule baru.
+- dokumentasi Stage 4A impact plan;
+- audit model/document/archive existing;
+- audit contract/complaint yang mungkin sudah ada;
+- berhenti dengan `APPROVAL REQUIRED` bila Stage 4 membutuhkan schema, migration, role, atau business rule baru.
 
 ## 10. Catatan Disiplin Scope
 
