@@ -36,7 +36,7 @@ def reserve_idempotency_key(
     request_payload: Mapping[str, Any] | None = None,
 ) -> tuple[IdempotencyKey, bool]:
     request_hash = build_request_hash(request_payload)
-    existing = IdempotencyKey.query.filter_by(scope=scope, key=key).with_for_update().first()
+    existing = IdempotencyKey.query.filter_by(scope=scope, key=key).with_for_update(of=IdempotencyKey).first()
     if existing:
         assert_replay_matches(existing.request_hash, request_hash)
         return existing, False
@@ -54,7 +54,7 @@ def reserve_idempotency_key(
         db.session.flush()
     except IntegrityError:
         db.session.rollback()
-        existing = IdempotencyKey.query.filter_by(scope=scope, key=key).with_for_update().first()
+        existing = IdempotencyKey.query.filter_by(scope=scope, key=key).with_for_update(of=IdempotencyKey).first()
         if not existing:
             raise
         assert_replay_matches(existing.request_hash, request_hash)

@@ -369,11 +369,12 @@ Gate Stage 2:
 
 Tujuan: pembayaran terkontrol tanpa auto-lunas palsu.
 
-Status Stage 3: Batch 3A sampai 3C selesai pada tag berikut:
+Status Stage 3: Batch 3A sampai 3D selesai pada tag berikut:
 
 - `batch-3a-static-payment-instructions`;
 - `batch-3b-payment-proof-upload-service`;
-- `batch-3c-payment-proof-verification-queue`.
+- `batch-3c-payment-proof-verification-queue`;
+- `batch-3d-payment-creation-from-verified-proof`.
 
 Catatan batas Stage 3A:
 
@@ -399,6 +400,14 @@ Catatan batas Stage 3C:
 - keputusan verified/rejected belum membuat `Payment`;
 - payment creation tetap masuk Batch 3D melalui service existing;
 - tidak ada migration, route, template, journal, cash-bank, atau allocation baru.
+
+Catatan batas Stage 3D:
+
+- payment creation dari proof verified tersedia sebagai service;
+- finance wajib mengisi amount/payment method/bank account/reference eksplisit;
+- service membuat `Payment`, update invoice paid/remaining/status, journal payment, cash-bank ledger, collection log, dan proof consumed;
+- idempotency key wajib dan retry tidak menggandakan payment;
+- tidak ada route/template, migration, gateway, webhook, atau auto-settlement baru.
 
 Batch:
 
@@ -585,13 +594,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 3D - Payment creation via existing service
+Stage 3E - Allocation and receivable recap
 ```
 
 Status:
 
 ```text
-READY_FOR_BATCH_3D_IMPACT_PLAN
+READY_FOR_BATCH_3E_IMPACT_PLAN
 ```
 
 Alasan:
@@ -600,15 +609,15 @@ Alasan:
 - Stage 3A menambahkan instruksi pembayaran statis;
 - Stage 3B menambahkan upload bukti pembayaran pending;
 - Stage 3C menambahkan queue dan decision state finance;
-- Batch 3D berikutnya menyentuh `Payment`, invoice remaining, allocation/receivable, dan kemungkinan cash-bank sehingga wajib dimulai dari impact plan dan invariant test.
+- Batch 3D sudah menyentuh `Payment`, invoice remaining, journal, cash-bank, dan collection log melalui service atomic.
+- Batch 3E berikutnya harus membuktikan recap receivable/allocation tidak over-allocate dan tidak membuat saldo negatif.
 
 Alternatif aman sebelum approval:
 
-- dokumentasi Batch 3D impact plan;
-- audit service payment existing;
-- audit idempotency payment creation existing;
-- audit invariant invoice/payment/receivable existing;
-- berhenti dengan `APPROVAL REQUIRED` bila payment creation membutuhkan schema, role, migration, atau business rule baru.
+- dokumentasi Batch 3E impact plan;
+- audit model allocation/receivable existing;
+- audit recap invoice-payment-receivable existing;
+- berhenti dengan `APPROVAL REQUIRED` bila allocation membutuhkan schema, migration, role, atau business rule baru.
 
 ## 10. Catatan Disiplin Scope
 
