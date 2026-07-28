@@ -105,6 +105,10 @@ from app.models.complaint import (
     CustomerComplaint,
 )
 
+from app.models.correction import (
+    CustomerCorrection,
+)
+
 from app.models.accounting import (
     Account,
     Journal,

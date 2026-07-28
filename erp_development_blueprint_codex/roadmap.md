@@ -616,13 +616,13 @@ Jika diminta lanjut, urutan yang benar:
 Next safe step saat ini:
 
 ```text
-Stage 4F1 - Return/correction schema additive
+Stage 4F2 - Return/correction service foundation
 ```
 
 Status:
 
 ```text
-APPROVAL_REQUIRED_FOR_BATCH_4F1
+READY_FOR_BATCH_4F2
 ```
 
 Alasan:
@@ -642,11 +642,13 @@ Alasan:
 - Batch 4E3 complaint attachment service selesai memakai `DigitalAttachment`, tanpa mengubah status complaint dari upload bukti.
 - Batch 4E4 complaint notification/read queue selesai sebagai service foundation, tanpa route/template dan tanpa layanan eksternal.
 - Batch 4F return/correction impact plan selesai dan menyimpulkan implementasi berikutnya membutuhkan approval karena berpotensi menyentuh invoice/payment/journal/stock/closing.
+- Batch 4F1 return/correction schema additive selesai dengan tabel baru `customer_corrections`, tanpa posting finansial/stok.
 
 Alternatif aman sebelum approval:
 
-- approval eksplisit untuk Batch 4F1 return/correction schema additive;
-- migration baru khusus tabel correction bila disetujui;
+- service draft/submit correction;
+- status transition awal tanpa posting finansial/stok;
+- approval request bridge masih dapat dipisah ke batch berikutnya;
 - tidak membuat posting invoice/payment/journal/stock otomatis;
 - tidak mengubah invoice/payment/journal/stock/closing;
 - tetap berhenti jika diminta membuat return/correction otomatis sebelum Stage 4F.
