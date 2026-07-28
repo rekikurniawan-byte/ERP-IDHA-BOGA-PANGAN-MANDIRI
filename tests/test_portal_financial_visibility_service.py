@@ -8,7 +8,10 @@ from app.extensions import db
 from app.models.finance import Invoice, Payment
 from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
 from app.models.system import PortalUserMapping
-from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
+from app.services.portal_financial_visibility_service import (
+    build_portal_invoice_read_model,
+    build_portal_payment_history_read_model,
+)
 from app.services.portal_mapping_service import (
     PRINCIPAL_CLIENT,
     PRINCIPAL_CLIENT_PIC,
@@ -319,5 +322,100 @@ def test_cancelled_invoice_is_visible_but_excluded_from_active_outstanding(app):
             assert read_model["totals"]["active_invoice_count"] == 1
             assert read_model["totals"]["remaining_amount"] == Decimal("140000")
             assert read_model["totals"]["active_outstanding_amount"] == Decimal("90000")
+        finally:
+            transaction.rollback()
+
+
+def test_portal_client_payment_history_only_returns_owned_invoice_payments(app, monkeypatch):
+    monkeypatch.setattr(db.session, "commit", lambda: (_ for _ in ()).throw(AssertionError("read model must not commit")))
+    monkeypatch.setattr(db.session, "rollback", lambda: (_ for _ in ()).throw(AssertionError("read model must not rollback")))
+
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_user(ROLE_PORTAL_CLIENT)
+            owned_client, owned_pic, owned_mandor, _ = _create_client_family(user.branch, "PAYOWN")
+            other_client, _, other_mandor, _ = _create_client_family(user.branch, "PAYOTHER")
+            _create_mapping(user, PRINCIPAL_CLIENT, client=owned_client)
+
+            owned_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=owned_client, mandor=owned_mandor, client_pic=owned_pic)
+            other_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=other_client, mandor=other_mandor)
+
+            read_model = build_portal_payment_history_read_model(user)
+            invoice_numbers = {row["invoice_number"] for row in read_model["payments"]}
+
+            assert read_model["allowed"] is True
+            assert invoice_numbers == {owned_invoice.invoice_number}
+            assert other_invoice.invoice_number not in invoice_numbers
+            assert read_model["totals"]["payment_count"] == 1
+            assert read_model["totals"]["payment_amount"] == Decimal("25000")
+        finally:
+            transaction.rollback()
+
+
+def test_portal_mandor_payment_history_does_not_return_client_level_payments(app):
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_user(ROLE_PORTAL_MANDOR)
+            client, _, mandor, _ = _create_client_family(user.branch, "PAYMANDOR")
+            _create_mapping(user, PRINCIPAL_MANDOR, mandor=mandor)
+
+            mandor_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=mandor)
+            client_level_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=None)
+
+            read_model = build_portal_payment_history_read_model(user)
+            invoice_numbers = {row["invoice_number"] for row in read_model["payments"]}
+
+            assert invoice_numbers == {mandor_invoice.invoice_number}
+            assert client_level_invoice.invoice_number not in invoice_numbers
+        finally:
+            transaction.rollback()
+
+
+def test_portal_delegate_location_payment_history_stays_on_delegated_mandor(app):
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_user(ROLE_PORTAL_DELEGATE)
+            client, _, delegated_mandor, delegated_location = _create_client_family(user.branch, "PAYDELEGATE")
+            sibling_mandor = Mandor(
+                branch_id=user.branch_id,
+                client_id=client.id,
+                name=f"Sibling Payment Mandor {_suffix()}",
+                phone="0800000099",
+                is_active=True,
+            )
+            db.session.add(sibling_mandor)
+            db.session.flush()
+            _create_mapping(user, PRINCIPAL_DELEGATE, location=delegated_location)
+
+            delegated_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=delegated_mandor)
+            sibling_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=sibling_mandor)
+
+            read_model = build_portal_payment_history_read_model(user)
+            invoice_numbers = {row["invoice_number"] for row in read_model["payments"]}
+
+            assert invoice_numbers == {delegated_invoice.invoice_number}
+            assert sibling_invoice.invoice_number not in invoice_numbers
+        finally:
+            transaction.rollback()
+
+
+def test_portal_customer_payment_history_is_blocked(app):
+    with app.app_context():
+        transaction = db.session.begin_nested()
+        try:
+            user = _create_user(ROLE_PORTAL_CUSTOMER)
+            client, _, mandor, location = _create_client_family(user.branch, "PAYCUSTOMER")
+            _create_mapping(user, PRINCIPAL_DELEGATE, client=client, mandor=mandor, location=location)
+            _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=mandor)
+
+            read_model = build_portal_payment_history_read_model(user)
+
+            assert read_model["allowed"] is False
+            assert read_model["scope_mode"] == "PORTAL_CUSTOMER_PAYMENT_HISTORY_BLOCKED"
+            assert read_model["payments"] == []
+            assert read_model["totals"]["payment_count"] == 0
         finally:
             transaction.rollback()

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy import false, or_
 
-from app.models.finance import Invoice
+from app.models.finance import Invoice, Payment
 from app.services.portal_mapping_service import (
     PRINCIPAL_CLIENT_PIC,
     PRINCIPAL_DELEGATE,
@@ -173,6 +173,64 @@ def build_portal_invoice_read_model(user, *, limit: int = 100) -> dict:
     }
 
 
+def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
+    """Return read-only payment history for invoices visible to the portal user."""
+    scope = build_portal_external_scope(user)
+    role = getattr(user, "role", None)
+
+    if role == ROLE_PORTAL_CUSTOMER:
+        return {
+            "allowed": False,
+            "scope_mode": "PORTAL_CUSTOMER_PAYMENT_HISTORY_BLOCKED",
+            "reason": "Payment history pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "payments": [],
+            "totals": _empty_payment_totals(),
+        }
+
+    if not scope.allowed:
+        return {
+            "allowed": False,
+            "scope_mode": scope.scope_mode,
+            "reason": scope.reason,
+            "payments": [],
+            "totals": _empty_payment_totals(),
+        }
+
+    ownership_filter = _ownership_filter_for_scope(user, scope)
+    payments = (
+        Payment.query.join(Invoice, Payment.invoice_id == Invoice.id)
+        .filter(ownership_filter)
+        .order_by(Payment.payment_date.desc(), Payment.id.desc())
+        .limit(limit)
+        .all()
+    )
+    rows = [_payment_row(payment) for payment in payments]
+
+    return {
+        "allowed": True,
+        "scope_mode": scope.scope_mode,
+        "reason": "Payment history dibatasi oleh invoice ownership mapping.",
+        "payments": rows,
+        "totals": _build_payment_totals(rows),
+    }
+
+
+def _payment_row(payment: Payment) -> dict:
+    invoice = payment.invoice
+    return {
+        "payment_id": payment.id,
+        "payment_number": payment.payment_number,
+        "payment_date": payment.payment_date,
+        "payment_method": payment.payment_method,
+        "amount": _money(payment.amount),
+        "reference_number": payment.reference_number,
+        "invoice_id": payment.invoice_id,
+        "invoice_number": invoice.invoice_number if invoice else None,
+        "invoice_status": _normalized_status(invoice.status) if invoice else None,
+        "invoice_active_receivable": _is_active_receivable(invoice) if invoice else False,
+    }
+
+
 def _empty_totals() -> dict:
     return {
         "invoice_count": 0,
@@ -183,6 +241,13 @@ def _empty_totals() -> dict:
         "active_outstanding_amount": Decimal("0"),
         "payment_total": Decimal("0"),
         "payment_mismatch_count": 0,
+    }
+
+
+def _empty_payment_totals() -> dict:
+    return {
+        "payment_count": 0,
+        "payment_amount": Decimal("0"),
     }
 
 
@@ -199,4 +264,12 @@ def _build_totals(rows: list[dict]) -> dict:
         if row["active_receivable"]:
             totals["active_invoice_count"] += 1
             totals["active_outstanding_amount"] += row["remaining_amount"]
+    return totals
+
+
+def _build_payment_totals(rows: list[dict]) -> dict:
+    totals = _empty_payment_totals()
+    totals["payment_count"] = len(rows)
+    for row in rows:
+        totals["payment_amount"] += row["amount"]
     return totals
