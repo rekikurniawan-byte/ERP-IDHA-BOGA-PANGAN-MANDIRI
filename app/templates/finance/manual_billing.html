@@ -1,32 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan | Rekap Tagihan Mandor</span>
-            <h1>Rekap Tagihan Mandor</h1>
-            <p>Ubah sumber yang sudah tercatat di sistem menjadi invoice piutang formal. Ini bukan input buku/manual belakangan.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.manual_billing_backfill_form') }}" class="btn app-btn-primary">
-                <i class="bi bi-journal-plus"></i>
-                Input Rekap dari Buku
-            </a>
-            <a href="{{ url_for('finance.manual_billing_batches_list') }}" class="btn app-btn-secondary">
-                <i class="bi bi-list-check"></i>
-                Daftar Rekap Buku
-            </a>
-            <a href="{{ url_for('finance.index') }}" class="btn app-btn-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Pusat Keuangan
-            </a>
-            <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-                <i class="bi bi-receipt"></i>
-                Invoice
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Rekap Tagihan Mandor",
+        "Ubah sumber yang sudah tercatat di sistem menjadi invoice piutang formal. Ini bukan input buku/manual belakangan.",
+        "Keuangan | Rekap Tagihan Mandor",
+        actions=[
+            {"label": "Input Rekap dari Buku", "url": url_for('finance.manual_billing_backfill_form'), "icon": "bi-journal-plus", "variant": "primary"},
+            {"label": "Daftar Rekap Buku", "url": url_for('finance.manual_billing_batches_list'), "icon": "bi-list-check"},
+            {"label": "Pusat Keuangan", "url": url_for('finance.index'), "icon": "bi-arrow-left"},
+            {"label": "Invoice", "url": url_for('finance.invoices'), "icon": "bi-receipt"},
+        ]
+    ) }}
 
     <div class="app-card mt-4">
         <div class="card-header-clean">

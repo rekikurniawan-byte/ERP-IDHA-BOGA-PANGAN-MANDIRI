@@ -7,7 +7,7 @@ import pytest
 from app.extensions import db
 from app.models.accounting import Account, Journal
 from app.models.finance import BankAccount, CashBankTransaction, Invoice, InvoiceCollectionLog, Payment
-from app.models.system import DigitalAttachment
+from app.models.system import DigitalAttachment, Notification
 from app.services.portal_mapping_service import PRINCIPAL_CLIENT
 from app.services.portal_payment_creation_service import (
     PAYMENT_PROOF_PAYMENT_CREATED_TYPE,
@@ -161,6 +161,16 @@ def test_create_payment_from_verified_proof_posts_payment_journal_ledger_and_con
             assert attachment.attachment_type == PAYMENT_PROOF_PAYMENT_CREATED_TYPE
             assert result["payment_created"] is True
             assert result["idempotent_replay"] is False
+            notification = Notification.query.filter_by(
+                notification_type="PORTAL_PAYMENT_CREATED",
+                target_user_id=attachment.uploaded_by,
+                reference_type="PAYMENT",
+                reference_id=payment.id,
+            ).first()
+            assert notification is not None
+            assert notification.branch_id == invoice.branch_id
+            assert payment.payment_number in notification.title
+            assert notification.action_url == f"/portal/invoices/{invoice.id}/payment"
         finally:
             transaction.rollback()
 

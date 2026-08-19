@@ -1,41 +1,21 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Buku Kas/Bank</h1>
-        <p>Saldo buku kas/bank dari saldo awal, pembayaran pelanggan, pembelian, pembayaran supplier, transfer, dan penyesuaian.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.cash_bank_opening_balances') }}" class="btn app-btn-secondary">
-            <i class="bi bi-wallet2"></i>
-            Saldo Awal
-        </a>
-        <a href="{{ url_for('finance.cash_bank_transfers') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left-right"></i>
-            Transfer
-        </a>
-        <a href="{{ url_for('finance.cash_bank_adjustments') }}" class="btn app-btn-secondary">
-            <i class="bi bi-sliders"></i>
-            Penyesuaian
-        </a>
-        <a href="{{ export_cash_bank_ledger_url }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Download CSV
-        </a>
-        <a href="{{ url_for('finance.print_cash_bank_ledger', **request.args.to_dict(flat=True)) }}" class="btn app-btn-secondary">
-            <i class="bi bi-printer"></i>
-            Cetak / Save PDF
-        </a>
-        <a href="{{ url_for('master.bank_accounts') }}" class="btn app-btn-secondary">
-            <i class="bi bi-bank"></i>
-            Rekening Bank
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Buku Kas/Bank",
+    "Saldo buku kas/bank dari saldo awal, pembayaran pelanggan, pembelian, pembayaran supplier, transfer, dan penyesuaian.",
+    "Finance",
+    actions=[
+        {"label": "Saldo Awal", "url": url_for('finance.cash_bank_opening_balances'), "icon": "bi-wallet2"},
+        {"label": "Transfer", "url": url_for('finance.cash_bank_transfers'), "icon": "bi-arrow-left-right"},
+        {"label": "Penyesuaian", "url": url_for('finance.cash_bank_adjustments'), "icon": "bi-sliders"},
+        {"label": "Download CSV", "url": export_cash_bank_ledger_url, "icon": "bi-download"},
+        {"label": "Cetak / Save PDF", "url": url_for('finance.print_cash_bank_ledger', **request.args.to_dict(flat=True)), "icon": "bi-printer"},
+        {"label": "Rekening Bank", "url": url_for('master.bank_accounts'), "icon": "bi-bank"},
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
@@ -59,7 +39,7 @@
     <div class="app-stat-card">
         <span>Jumlah Transaksi</span>
         <h3>{{ summary.count }}</h3>
-        <p>{{ summary.reconciled_count }} rekonsiliasi · {{ summary.unreconciled_count }} belum.</p>
+        <p>{{ summary.reconciled_count }} rekonsiliasi | {{ summary.unreconciled_count }} belum.</p>
     </div>
 </div>
 
@@ -67,13 +47,13 @@
     <div class="app-stat-card">
         <span>Saldo Kas</span>
         <h3>{{ summary.cash_net|rupiah }}</h3>
-        <p>Masuk {{ summary.cash_in|rupiah }} · Keluar {{ summary.cash_out|rupiah }}</p>
+        <p>Masuk {{ summary.cash_in|rupiah }} | Keluar {{ summary.cash_out|rupiah }}</p>
     </div>
 
     <div class="app-stat-card">
         <span>Saldo Bank</span>
         <h3>{{ summary.bank_net|rupiah }}</h3>
-        <p>Masuk {{ summary.bank_in|rupiah }} · Keluar {{ summary.bank_out|rupiah }}</p>
+        <p>Masuk {{ summary.bank_in|rupiah }} | Keluar {{ summary.bank_out|rupiah }}</p>
     </div>
 
     <div class="app-stat-card">
@@ -169,7 +149,7 @@
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive app-table-wrapper">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -194,7 +174,7 @@
                         <td class="text-end text-success fw-semibold">{{ row.total_in|rupiah }}</td>
                         <td class="text-end text-danger fw-semibold">{{ row.total_out|rupiah }}</td>
                         <td class="text-end fw-semibold">{{ row.net|rupiah }}</td>
-                        <td class="text-center small">{{ row.reconciled_count }} sudah · {{ row.unreconciled_count }} belum</td>
+                        <td class="text-center small">{{ row.reconciled_count }} sudah | {{ row.unreconciled_count }} belum</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -217,7 +197,7 @@
         </div>
     {% endif %}
 
-    <div class="table-responsive">
+    <div class="table-responsive app-table-wrapper">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -329,3 +309,6 @@
 </div>
 </div>
 {% endblock %}
+
+
+

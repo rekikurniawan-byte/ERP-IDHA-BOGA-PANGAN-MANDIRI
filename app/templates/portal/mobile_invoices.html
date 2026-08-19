@@ -1,56 +1,113 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.invoice_model %}
+{% set totals = model.totals %}
+<section class="portal-feature-page portal-ledger-page portal-finance-page">
+    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>{{ data.invoice_model.scope_mode }}</span>
+            <span>Daftar tagihan</span>
         </div>
+        <strong class="portal-hero-status">{{ "Aktif" if model.allowed else "Belum aktif" }}</strong>
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>{{ data.invoice_model.totals.active_outstanding_amount|rupiah }}</h2>
-        <p>{{ data.page_description }}</p>
-        <div class="portal-source-pill"><i class="bi bi-receipt"></i><span>Invoice ERP existing</span></div>
+    <div class="portal-ledger-summary portal-finance-summary">
+        <article class="portal-ledger-total">
+            <span>Sisa Tagihan Aktif</span>
+            <strong>{{ totals.active_outstanding_amount|rupiah }}</strong>
+            <p>{{ data.page_description }}</p>
+        </article>
+        <article><span>Tagihan</span><strong>{{ totals.invoice_count }}</strong><small>Total dokumen tagihan</small></article>
+        <article><span>Bisa Dibayar</span><strong>{{ totals.payable_invoice_count }}</strong><small>Masih bisa dibayar</small></article>
+        <article><span>Jatuh Tempo</span><strong>{{ totals.overdue_invoice_count }}</strong><small>{{ totals.overdue_outstanding_amount|rupiah }}</small></article>
+        <article><span>Bukti Bayar</span><strong>{{ totals.proof_count }}</strong><small>{{ totals.pending_proof_count }} menunggu cek</small></article>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Invoice</span><strong>{{ data.invoice_model.totals.invoice_count }}</strong></div>
-        <div><span>Total</span><strong>{{ data.invoice_model.totals.total_amount|rupiah }}</strong></div>
-        <div><span>Paid</span><strong>{{ data.invoice_model.totals.paid_amount|rupiah }}</strong></div>
-        <div><span>Sisa</span><strong>{{ data.invoice_model.totals.active_outstanding_amount|rupiah }}</strong></div>
+    <div class="portal-finance-aging-grid">
+        <article><span>Belum Jatuh Tempo</span><strong>{{ totals.aging.CURRENT|rupiah }}</strong></article>
+        <article><span>1-7 Hari</span><strong>{{ totals.aging.DUE_1_7|rupiah }}</strong></article>
+        <article><span>8-30 Hari</span><strong>{{ totals.aging.DUE_8_30|rupiah }}</strong></article>
+        <article><span>>30 Hari</span><strong>{{ totals.aging.DUE_OVER_30|rupiah }}</strong></article>
     </div>
 
-    {% if not data.invoice_model.allowed %}
-        <div class="portal-mobile-alert">{{ data.invoice_model.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Tagihan belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Daftar Invoice</h2>
-        <span>Read-only</span>
+        <h2>Daftar Tagihan</h2>
+        <span>Daftar aktif</span>
     </div>
 
-    <div class="portal-card-list">
-        {% for invoice in data.invoice_model.invoices %}
-            <article class="portal-mobile-card portal-invoice-card">
-                <div>
-                    <h3>{{ invoice.invoice_number }}</h3>
-                    <p>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }} - {{ invoice.status }}</p>
-                    <p>Jatuh tempo: {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}</p>
+    <div class="portal-ledger-list portal-finance-ledger-list">
+        {% for invoice in model.invoices %}
+            <article class="portal-ledger-card portal-finance-card {{ 'is-overdue' if invoice.days_overdue > 0 else '' }}">
+                <div class="portal-ledger-card-main">
+                    <span class="portal-record-icon"><i class="bi bi-receipt"></i></span>
+                    <div>
+                        <h3>{{ invoice.invoice_number }}</h3>
+                        <p>
+                            {{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}
+                            | Jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}
+                            | {{ invoice.party.label }}
+                        </p>
+                        <div class="portal-chip-row">
+                            <span>{{ invoice.status_label }}</span>
+                            <span>{{ invoice.bill_to_type or "-" }}</span>
+                            <span>{{ invoice.input_source or "-" }}</span>
+                            {% if invoice.days_overdue > 0 %}<span>Terlambat {{ invoice.days_overdue }} hari</span>{% endif %}
+                            {% if invoice.payment_mismatch %}<span>Selisih pembayaran</span>{% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="portal-card-actions">
-                    <strong>{{ invoice.remaining_amount|rupiah }}</strong>
-                    <a class="portal-action-link" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}">
-                        <i class="bi bi-credit-card"></i>
-                        <span>Bayar</span>
-                    </a>
+                <div class="portal-ledger-amounts">
+                    <div><span>Total</span><strong>{{ invoice.total_amount|rupiah }}</strong></div>
+                    <div><span>Dibayar</span><strong>{{ invoice.paid_amount|rupiah }}</strong></div>
+                    <div><span>Sisa</span><strong>{{ invoice.remaining_amount|rupiah }}</strong></div>
+                </div>
+                <div class="portal-finance-proof-strip">
+                    <div>
+                        <span>Bukti pembayaran</span>
+                        <strong>{{ invoice.proof_summary.latest_status }}</strong>
+                        <small>
+                            {{ invoice.proof_summary.count }} file
+                            {% if invoice.proof_summary.latest_uploaded_at %}
+                                | terakhir {{ invoice.proof_summary.latest_uploaded_at.strftime('%d-%m-%Y %H:%M') }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    <div>
+                        <span>Pembayaran</span>
+                        <strong>{{ invoice.payment_count }}</strong>
+                        <small>Total payment {{ invoice.payment_total|rupiah }}</small>
+                    </div>
+                </div>
+                <div class="portal-ledger-actions">
+                    {% if invoice.payable %}
+                        <a class="portal-action-link" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}">
+                            <i class="bi bi-credit-card"></i>
+                            <span>Bayar / Unggah Bukti</span>
+                        </a>
+                    {% else %}
+                        <span class="portal-action-link secondary"><i class="bi bi-check2-circle"></i><span>Tidak bisa dibayar</span></span>
+                    {% endif %}
                 </div>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada invoice dalam scope portal ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-receipt"></i>
+                <strong>Belum ada invoice</strong>
+                <p>Tagihan sesuai akun akan tampil di sini.</p>
+            </div>
         {% endfor %}
     </div>
 </section>

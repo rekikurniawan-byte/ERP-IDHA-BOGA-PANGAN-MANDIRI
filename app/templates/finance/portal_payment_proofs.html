@@ -1,0 +1,215 @@
+﻿{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Finance - Portal</p>
+            <h1>Verifikasi Bukti Pembayaran Portal</h1>
+            <p class="page-description">Bukti dari portal masuk sebagai arsip bukti digital ERP. Pembayaran resmi hanya dibuat setelah finance memverifikasi dan memprosesnya ke modul Pembayaran ERP.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.index') }}">Pusat Finance</a>
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.payment_history') }}">Riwayat Pembayaran</a>
+        </div>
+    </div>
+
+    <div class="finance-portal-proof-overview">
+        <article>
+            <span>Status Antrean</span>
+            <strong>{{ portal_payment_status.status_label }}</strong>
+            <small>{{ queue_summary.pending_count }} bukti menunggu keputusan finance</small>
+        </article>
+        <article>
+            <span>Bukti Diverifikasi</span>
+            <strong>{{ queue_summary.verified_count }}</strong>
+            <small>Siap dibuat menjadi pembayaran resmi</small>
+        </article>
+        <article>
+            <span>Sudah Menjadi Pembayaran</span>
+            <strong>{{ queue_summary.payment_created_count }}</strong>
+            <small>Sudah masuk tabel pembayaran ERP</small>
+        </article>
+        <article>
+            <span>Integrasi ERP Pusat</span>
+            <strong>{{ erp_integration.status_label }}</strong>
+            <small>{{ erp_integration.totals.connected_count }} dari {{ erp_integration.totals.module_count }} area sudah terbaca</small>
+        </article>
+    </div>
+
+    <div class="app-card mb-3">
+        <div class="card-body">
+            <div class="finance-portal-proof-tabs">
+                {% for key in ["PENDING", "VERIFIED", "PAYMENT_CREATED", "REJECTED"] %}
+                    <a class="{{ 'is-active' if status == key else '' }}" href="{{ url_for('finance.portal_payment_proofs', status=key) }}">
+                        <span>{{ labels[key] }}</span>
+                        <strong>{{ counts[key] }}</strong>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-3">
+        <div class="card-header-clean">
+            <div>
+                <h5>Jalur Data Portal ke ERP Pusat</h5>
+                <p>{{ erp_integration.principle }}</p>
+            </div>
+        </div>
+        <div class="finance-erp-integration-grid">
+            {% for card in erp_integration.cards %}
+                <a class="finance-erp-integration-card status-{{ card.status|lower }}" href="{{ card.href }}">
+                    <span>{{ card.owner }}</span>
+                    <strong>{{ card.title }}</strong>
+                    <small>{{ card.source }}</small>
+                    <b>{{ card.count }}</b>
+                    <em>{{ card.status_label }} - {{ card.detail }}</em>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Daftar Bukti Pembayaran</h5>
+                <p>Status aktif: {{ labels[status] }}. Unggah bukti tidak otomatis membuat pembayaran, jurnal, atau kas/bank.</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive app-table-wrapper">
+                <table class="table app-table align-middle mb-0 finance-portal-proof-table">
+                    <thead>
+                        <tr>
+                            <th>Bukti</th>
+                            <th>Sumber ERP</th>
+                            <th>Status Sumber</th>
+                            <th class="text-end">Sisa</th>
+                            <th>Unggah</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>
+                                    <strong class="finance-proof-file-name">{{ row.original_filename }}</strong>
+                                    <div class="small text-muted">Lampiran #{{ row.attachment_id }} - {{ row.status_label }}</div>
+                                    <div class="mt-2 finance-proof-inline-actions">
+                                        <a class="btn btn-sm app-btn-secondary" target="_blank" href="{{ url_for('finance.view_portal_payment_proof_attachment', attachment_id=row.attachment_id) }}">Lihat</a>
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('finance.download_portal_payment_proof_attachment', attachment_id=row.attachment_id) }}">Unduh</a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>{{ row.source_label }}</strong>
+                                    {% if row.is_invoice_source %}
+                                        <div class="small text-muted">Invoice #{{ row.invoice_id }}</div>
+                                        <a class="btn btn-sm app-btn-secondary mt-2" href="{{ url_for('finance.invoice_detail', invoice_id=row.invoice_id) }}">Detail Invoice</a>
+                                    {% else %}
+                                        <div class="small text-muted">PortalOrderDraft #{{ row.draft_id }}</div>
+                                        <div class="small text-muted mt-1">
+                                            {{ row.draft_date.strftime('%d-%m-%Y') if row.draft_date else '-' }}
+                                            | {{ row.draft_meal_type or '-' }}
+                                            | {{ row.draft_portion_qty or 0 }} porsi
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge neutral">{{ row.invoice_status }}</span>
+                                    <div class="small text-muted mt-1">
+                                        {% if row.is_invoice_source %}
+                                            Total {{ row.invoice_total|rupiah }}
+                                        {% else %}
+                                            Bukti awal sebelum order diproses
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    {% if row.is_invoice_source %}
+                                        <strong>{{ row.invoice_remaining|rupiah }}</strong>
+                                        <div class="small text-muted">Dibayar {{ row.invoice_paid|rupiah }}</div>
+                                    {% else %}
+                                        <strong>-</strong>
+                                        <div class="small text-muted">Belum menjadi invoice</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ row.created_at.strftime('%d-%m-%Y %H:%M') if row.created_at else '-' }}
+                                    <div class="small text-muted">User ID {{ row.uploaded_by or '-' }}</div>
+                                </td>
+                                <td class="finance-proof-action-cell">
+                                    {% if status == "PENDING" %}
+                                        <div class="finance-proof-review-actions">
+                                            <form method="POST" action="{{ url_for('finance.decide_portal_payment_proof', attachment_id=row.attachment_id) }}" class="app-form" data-ui-form="true">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="decision" value="VERIFIED">
+                                                <input type="hidden" name="notes" value="Diverifikasi dari queue finance portal.">
+                                                <button class="btn btn-sm app-btn-primary" type="submit">Verifikasi</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('finance.decide_portal_payment_proof', attachment_id=row.attachment_id) }}" class="app-form" data-ui-form="true" data-app-confirm="Tolak bukti pembayaran portal ini?">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="decision" value="REJECTED">
+                                                <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan penolakan">
+                                                <button class="btn btn-sm app-btn-secondary" type="submit">Tolak</button>
+                                            </form>
+                                        </div>
+                                    {% elif status == "VERIFIED" and row.is_invoice_source %}
+                                        <form method="POST" action="{{ url_for('finance.create_payment_from_portal_proof', attachment_id=row.attachment_id) }}" class="app-form finance-proof-payment-form" data-ui-form="true" data-app-confirm="Buat pembayaran resmi dari bukti portal ini?">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="idempotency_key" value="{{ row.idempotency_key }}">
+                                            <label>
+                                                <span>Tanggal</span>
+                                                <input type="date" name="payment_date" class="form-control form-control-sm" value="{{ today.isoformat() }}" required>
+                                            </label>
+                                            <label>
+                                                <span>Nominal</span>
+                                                <input type="number" min="1" step="0.01" name="amount" class="form-control form-control-sm" value="{{ row.invoice_remaining }}" required>
+                                            </label>
+                                            <label>
+                                                <span>Metode</span>
+                                                <select name="payment_method" class="form-select form-select-sm" required>
+                                                    {% for method in payment_methods %}
+                                                        <option value="{{ method }}" {{ 'selected' if method == 'TRANSFER' else '' }}>{{ method }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Rekening Bank</span>
+                                                <select name="bank_account_id" class="form-select form-select-sm">
+                                                    <option value="">Pilih jika transfer</option>
+                                                    {% for account in bank_accounts %}
+                                                        <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} ({{ account.account_number }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <input type="text" name="reference_number" class="form-control form-control-sm" placeholder="Nomor referensi transfer">
+                                            <input type="text" name="notes" class="form-control form-control-sm" value="Pembayaran dari bukti portal yang sudah diverifikasi.">
+                                            <button class="btn btn-sm app-btn-primary" type="submit">Buat Pembayaran Resmi</button>
+                                        </form>
+                                    {% elif status == "VERIFIED" and row.is_draft_source %}
+                                        <div class="finance-proof-draft-action">
+                                            <span class="status-badge status-success">Bukti awal terverifikasi</span>
+                                            <small>Admin dapat memproses draft ini dari antrean konfirmasi portal.</small>
+                                            <a class="btn btn-sm app-btn-secondary" href="{{ url_for('portal.admin_order_drafts') }}">Buka Antrean Draft</a>
+                                        </div>
+                                    {% elif status == "PAYMENT_CREATED" %}
+                                        <span class="status-badge status-success">Sudah masuk Pembayaran ERP</span>
+                                    {% else %}
+                                        <span class="text-muted">Tidak ada aksi</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Tidak ada bukti pembayaran portal pada status ini.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

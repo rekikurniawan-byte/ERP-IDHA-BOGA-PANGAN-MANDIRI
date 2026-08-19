@@ -10,6 +10,7 @@ COMPANY_SETTINGS_SECTIONS = [
         "fields": [
             {"key": "company_name", "label": "Nama Perusahaan", "type": "text", "required": True},
             {"key": "company_subtitle", "label": "Subjudul Sistem/Dokumen", "type": "text", "required": False},
+            {"key": "company_logo_url", "label": "URL Logo Perusahaan", "type": "hidden", "required": False},
             {"key": "company_address", "label": "Alamat", "type": "textarea", "required": False},
             {"key": "company_phone", "label": "Telepon", "type": "text", "required": False},
             {"key": "company_email", "label": "Email", "type": "text", "required": False},
@@ -62,6 +63,7 @@ SETTING_KEYS = [
 DEFAULT_SETTINGS = {
     "company_name": "PT Idha Boga Pangan Mandiri",
     "company_subtitle": "Sistem Manajemen Catering",
+    "company_logo_url": "",
     "company_address": "",
     "company_phone": "",
     "company_email": "",

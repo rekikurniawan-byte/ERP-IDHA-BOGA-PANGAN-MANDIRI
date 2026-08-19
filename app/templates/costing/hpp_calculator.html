@@ -1,26 +1,24 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="hpp_calculator">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 3</span>
-        <h1>Kalkulator HPP Read-only</h1>
-        <p>Hitung estimasi HPP dari resep/BOM, profil HPP item, kemasan, dan overhead. Belum menyimpan snapshot, belum memotong stok, dan belum membuat jurnal.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Menu & Resep</a>
-        <a href="{{ url_for('costing.packaging_profiles') }}" class="btn app-btn-secondary">Profil Kemasan</a>
-        <a href="{{ url_for('costing.overhead_profiles') }}" class="btn app-btn-secondary">Profil Overhead</a>
-    </div>
-</div>
+{{ page_header(
+    "Kalkulator HPP Mode pantau",
+    "Hitung estimasi HPP dari resep/BOM, profil HPP item, kemasan, dan overhead. Belum menyimpan snapshot, belum memotong stok, dan belum membuat jurnal.",
+    eyebrow="HPP Tahap 3",
+    actions=[
+        {"label": "Menu & Resep", "url": url_for('costing.menus')},
+        {"label": "Profil Kemasan", "url": url_for('costing.packaging_profiles')},
+        {"label": "Profil Overhead", "url": url_for('costing.overhead_profiles')},
+    ]
+) }}
 
 
 
 <div class="app-card mb-3">
     <div class="alert alert-info mb-3">
-        <strong>Read-only:</strong> perhitungan ini hanya simulasi. Order lama tidak berubah, stok tidak berkurang, jurnal tidak dibuat.
+        <strong>Mode pantau:</strong> perhitungan ini hanya simulasi. Order lama tidak berubah, stok tidak berkurang, jurnal tidak dibuat.
     </div>
 
     <form method="GET" action="{{ url_for('costing.hpp_calculator') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
@@ -273,3 +271,4 @@
 {% endif %}
 </div>
 {% endblock %}
+

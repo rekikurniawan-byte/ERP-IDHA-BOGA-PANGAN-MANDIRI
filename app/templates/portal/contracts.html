@@ -1,55 +1,113 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.contracts %}
+{% set totals = model.totals %}
+<!-- customer_contracts ERP existing -->
+<section class="portal-feature-page portal-contract-page">
+    <div class="portal-feature-hero portal-contract-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>{{ data.contracts.scope_mode }}</span>
+            <span>Kontrak perusahaan</span>
+        </div>
+        <div class="portal-hero-proof">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Kontrak</span>
         </div>
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>{{ data.contracts.totals.active_count }} kontrak aktif</h2>
-        <p>{{ data.page_description }}</p>
-        <div class="portal-source-pill"><i class="bi bi-file-earmark-text"></i><span>customer_contracts ERP existing</span></div>
+    <div class="portal-contract-summary">
+        <article class="primary">
+            <span>Limit Kredit Aktif</span>
+            <strong>{{ totals.credit_limit|rupiah }}</strong>
+            <p>{{ data.page_description }}</p>
+        </article>
+        <article><span>Total</span><strong>{{ totals.contract_count }}</strong><small>Kontrak dalam akses</small></article>
+        <article><span>Aktif</span><strong>{{ totals.active_count }}</strong><small>Status aktif</small></article>
+        <article><span>Hampir Habis</span><strong>{{ totals.expiring_soon_count }}</strong><small>30 hari ke depan</small></article>
+        <article><span>Kedaluwarsa</span><strong>{{ totals.expired_count }}</strong><small>Lewat tanggal akhir</small></article>
+        <article><span>Dokumen</span><strong>{{ totals.document_count }}</strong><small>Arsip digital</small></article>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Kontrak</span><strong>{{ data.contracts.totals.contract_count }}</strong></div>
-        <div><span>Aktif</span><strong>{{ data.contracts.totals.active_count }}</strong></div>
-        <div><span>Limit</span><strong>{{ data.contracts.totals.credit_limit|rupiah }}</strong></div>
-        <div><span>Invoice</span><strong>{{ data.invoices.totals.invoice_count }}</strong></div>
-    </div>
-
-    {% if not data.contracts.allowed %}
-        <div class="portal-mobile-alert">{{ data.contracts.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Kontrak belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
-    <div class="portal-section-heading">
-        <h2>Daftar Kontrak</h2>
-        <span>Read-only</span>
+    <div class="portal-contract-finance-strip">
+        <article>
+            <span>Tagihan</span>
+            <strong>{{ data.invoices.totals.invoice_count }}</strong>
+            <small>Dalam akun</small>
+        </article>
+        <article>
+            <span>Sisa Tagihan</span>
+            <strong>{{ data.invoices.totals.active_outstanding_amount|rupiah }}</strong>
+            <small>Piutang aktif</small>
+        </article>
+        <article>
+            <span>Jatuh Tempo</span>
+            <strong>{{ data.invoices.totals.overdue_count or 0 }}</strong>
+            <small>Perlu dipantau</small>
+        </article>
     </div>
 
-    <div class="portal-card-list">
-        {% for contract in data.contracts.rows %}
-            <article class="portal-mobile-card portal-contract-card">
-                <div>
-                    <h3>{{ contract.contract_number }}</h3>
-                    <p>{{ contract.title }} - {{ contract.client.name if contract.client else "-" }}</p>
-                    <div class="portal-chip-row">
-                        <span>{{ contract.status }}</span>
-                        <span>{{ contract.start_date.strftime('%d-%m-%Y') }} s/d {{ contract.end_date.strftime('%d-%m-%Y') }}</span>
-                        <span>{{ contract.payment_terms }}</span>
+    <div class="portal-section-heading">
+        <h2>Kesehatan Kontrak</h2>
+        <span>Status</span>
+    </div>
+
+    <div class="portal-contract-health-list">
+        {% for row in model.health_rows %}
+            <article class="portal-contract-health-card tone-{{ row.tone }}">
+                <div class="portal-contract-health-main">
+                    <span class="portal-record-icon"><i class="bi bi-file-earmark-text"></i></span>
+                    <div>
+                        <h3>{{ row.contract_number }}</h3>
+                        <p>{{ row.title }} | {{ row.client_name }}</p>
+                        <div class="portal-chip-row">
+                            <span>{{ row.lifecycle }}</span>
+                            <span>{{ row.payment_terms }}</span>
+                            <span>v{{ row.version_no }}</span>
+                            <span>{{ row.document_count }} dokumen</span>
+                        </div>
                     </div>
-                    {% if contract.notes %}<p>{{ contract.notes }}</p>{% endif %}
                 </div>
-                <strong>{{ contract.credit_limit|rupiah }}</strong>
+                <div class="portal-contract-health-meta">
+                    <div>
+                        <span>Periode</span>
+                        <strong>
+                            {{ row.start_date.strftime('%d-%m-%Y') if row.start_date else "-" }}
+                            -
+                            {{ row.end_date.strftime('%d-%m-%Y') if row.end_date else "-" }}
+                        </strong>
+                    </div>
+                    <div>
+                        <span>Sisa Hari</span>
+                        <strong>{{ row.days_remaining if row.days_remaining is not none else "-" }}</strong>
+                    </div>
+                    <div>
+                        <span>Limit Kredit</span>
+                        <strong>{{ row.credit_limit|rupiah }}</strong>
+                    </div>
+                </div>
+                {% if row.notes %}
+                    <p class="portal-muted-note">{{ row.notes }}</p>
+                {% endif %}
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada kontrak dalam scope PT ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-file-earmark-text"></i>
+                <strong>Belum ada kontrak</strong>
+                <p>Kontrak PT akan tampil setelah admin menghubungkannya ke perusahaan yang benar.</p>
+            </div>
         {% endfor %}
     </div>
 </section>

@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 {% include "accounting/_accounting_print_report_styles.html" %}
@@ -6,7 +6,7 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <span class="eyebrow">Akuntansi | Print Ready</span>
             <h1>Jejak Order sampai Lunas</h1>
             <p>Halaman print-ready. Gunakan Cetak / Save PDF dari browser.</p>
         </div>
@@ -40,11 +40,12 @@
             <div class="app-stat-card print-box"><span>Status Overall</span><strong>{{ report.overall_status }}</strong></div>
             <div class="app-stat-card print-box"><span>Status Piutang</span><strong>{{ report.receivable_status }}</strong></div>
             <div class="app-stat-card print-box"><span>Order Dipilih</span><strong>{{ report.selected_order_number or '-' }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
 
         {% if not report.has_order %}
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <tbody>
                 <tr>
                     <td><strong>{{ report.empty_message }}</strong></td>
@@ -52,9 +53,11 @@
                 </tr>
             </tbody>
         </table>
+</div>
         {% else %}
         <h5 class="print-section-title">Alur Utama</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Tahap</th>
@@ -72,9 +75,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="print-section-title">Detail Order</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>ID Detail</th>
@@ -106,9 +111,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="print-section-title">Produksi</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Tipe</th>
@@ -132,9 +139,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="print-section-title">Pengiriman</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Nomor Delivery</th>
@@ -162,9 +171,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="print-section-title">Invoice dan Piutang</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Invoice</th>
@@ -192,9 +203,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="print-section-title">Pembayaran dan Jurnal</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Pembayaran</th>
@@ -218,9 +231,14 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
         {% endif %}
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari order-to-cash trace dan bersifat read-only.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari order-to-cash trace dan bersifat Mode pantau.</p>
     </div>
 </div>
 {% endblock %}
+
+
+
+

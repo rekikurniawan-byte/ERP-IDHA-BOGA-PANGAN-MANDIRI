@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
@@ -7,7 +7,7 @@
 <div class="print-report-shell" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Keuangan · Print Ready</span>
+            <span class="eyebrow">Keuangan | Print Ready</span>
             <h1>AP Aging Hutang Supplier</h1>
             <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
         </div>
@@ -51,11 +51,12 @@
             <div class="app-stat-card print-box"><span>&gt; 90 Hari</span><strong>{{ report.buckets.DAYS_OVER_90.total|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Bill Lunas</span><strong>{{ report.summary.paid_count }}</strong></div>
             <div class="app-stat-card print-box"><span>Overdue Count</span><strong>{{ report.summary.overdue_count }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
 
         <h5>Detail Aging Hutang Supplier</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Bucket</th>
@@ -92,9 +93,14 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat read-only. Toko tidak tetap tetap masuk laporan jika filter supplier dikosongkan.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat Mode pantau. Toko tidak tetap tetap masuk laporan jika filter supplier dikosongkan.</p>
     </div>
 </div>
 </div>
 {% endblock %}
+
+
+
+

@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if mandor %}Edit Mandor{% else %}Tambah Mandor{% endif %}</span>
-        <h1>{% if mandor %}Edit Mandor{% else %}Input Mandor{% endif %}</h1>
-        <p>Mandor dipakai pada order harian, lokasi kerja, pekerja, pengiriman, dan laporan.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.mandors') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Mandor" if mandor else "Input Mandor",
+    "Mandor dipakai pada order harian, lokasi kerja, pekerja, pengiriman, dan laporan.",
+    eyebrow="Edit Mandor" if mandor else "Tambah Mandor",
+    actions=[{"label": "Kembali", "url": url_for('master.mandors')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if mandor %}{{ url_for('master.edit_mandor', mandor_id=mandor.id) }}{% else %}{{ url_for('master.create_mandor') }}{% endif %}" data-ui-form="true" class="app-form">

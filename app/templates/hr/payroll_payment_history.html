@@ -1,32 +1,22 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payment-history">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">SDM / PAYMENT HISTORY</span>
-        <h1>Riwayat Pembayaran Gaji</h1>
-        <p>Jejak pembayaran gaji dari payroll PAID dan jurnal pembayaran gaji. Tidak membuat data ganda.</p>
-    </div>
-    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
-        <a href="/hr/payrolls" class="btn app-btn-primary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali ke Payroll
-        </a>
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollHistoryActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi SDM
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollHistoryActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
-                <li><span class="dropdown-item disabled"><i class="bi bi-printer"></i> Print/Export disiapkan batch print safety</span></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "Riwayat Pembayaran Gaji",
+    "Jejak pembayaran gaji dari payroll PAID dan jurnal pembayaran gaji. Tidak membuat data ganda.",
+    eyebrow="SDM / PAYMENT HISTORY",
+    actions_class="hr-master-settings-header-actions",
+    actions=[
+        {"label": "Kembali ke Payroll", "url": "/hr/payrolls", "icon": "bi-arrow-left", "variant": "primary"},
+        {"label": "Aksi SDM", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Dashboard SDM", "url": url_for('hr.index'), "icon": "bi-speedometer2"},
+            {"label": "Karyawan Internal", "url": url_for('hr.employees'), "icon": "bi-people"},
+        ]},
+    ]
+) }}
 
 <div class="app-stat-grid hr-kpi-grid">
     <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div><div><p>Total Baris</p><h3>{{ history_summary.row_count }}</h3><span class="app-stat-helper">Baris pembayaran tampil</span></div></div>

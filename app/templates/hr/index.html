@@ -1,32 +1,23 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="dashboard">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">SDM / HR ENTERPRISE</span>
-        <h1>SDM</h1>
-        <p>Manajemen karyawan internal, payroll, posting jurnal gaji, dan pembayaran gaji perusahaan.</p>
-    </div>
-    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
-        <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">
-            <i class="bi bi-calendar-plus"></i>
-            Buat Payroll Bulanan
-        </a>
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="hrDashboardActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi SDM
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="hrDashboardActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-cash-coin"></i> Daftar Payroll</a></li>
-                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('sop.role_sop', slug='hr') }}"><i class="bi bi-journal-text"></i> SOP SDM</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "SDM",
+    "Manajemen karyawan internal, payroll, posting jurnal gaji, dan pembayaran gaji perusahaan.",
+    eyebrow="SDM / HR ENTERPRISE",
+    actions_class="hr-master-settings-header-actions",
+    actions=[
+        {"label": "Buat Payroll Bulanan", "url": url_for('hr.generate_payroll_route'), "icon": "bi-calendar-plus", "variant": "primary"},
+        {"label": "Aksi SDM", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Karyawan Internal", "url": url_for('hr.employees'), "icon": "bi-people"},
+            {"label": "Daftar Payroll", "url": url_for('hr.payrolls'), "icon": "bi-cash-coin"},
+            {"label": "Riwayat Pembayaran Gaji", "url": "/hr/payroll-payment-history", "icon": "bi-clock-history"},
+            {"label": "SOP SDM", "url": url_for('sop.role_sop', slug='hr'), "icon": "bi-journal-text"},
+        ]},
+    ]
+) }}
 
 <div class="app-stat-grid hr-kpi-grid">
     <div class="app-stat-card">
@@ -85,7 +76,7 @@
             <div class="hr-section-title">
                 <div>
                     <span>Lifecycle Payroll</span>
-                    <h2>Draft → Final → Sudah Diposting → Paid</h2>
+                    <h2>Draft â†’ Final â†’ Sudah Diposting â†’ Paid</h2>
                 </div>
                 <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary btn-sm">Lihat Payroll</a>
             </div>
@@ -106,7 +97,7 @@
                     <small>Hutang gaji tercatat, belum dibayar.</small>
                 </div>
                 <div class="hr-lifecycle-step is-complete">
-                    <strong>PAID</strong>
+                    <strong>Terbayar</strong>
                     <span>{{ payroll_dashboard.lifecycle.PAID }} payroll</span>
                     <small>Gaji sudah dibayar.</small>
                 </div>
@@ -197,3 +188,4 @@
 </div>
 </div>
 {% endblock %}
+

@@ -1,31 +1,22 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="employees">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">SDM / MASTER KARYAWAN</span>
-        <h1>Karyawan Internal</h1>
-        <p>Data karyawan internal perusahaan. Mandor adalah PIC lapangan/partner, bukan payroll internal.</p>
-    </div>
-    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
-        <a href="{{ url_for('hr.create_employee') }}" class="btn app-btn-primary">
-            <i class="bi bi-person-plus"></i>
-            Tambah Karyawan
-        </a>
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="employeeActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi SDM
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="employeeActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-cash-coin"></i> Payroll</a></li>
-                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "Karyawan Internal",
+    "Data karyawan internal perusahaan. Mandor adalah PIC lapangan/partner, bukan payroll internal.",
+    eyebrow="SDM / MASTER KARYAWAN",
+    actions_class="hr-master-settings-header-actions",
+    actions=[
+        {"label": "Tambah Karyawan", "url": url_for('hr.create_employee'), "icon": "bi-person-plus", "variant": "primary"},
+        {"label": "Aksi SDM", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Dashboard SDM", "url": url_for('hr.index'), "icon": "bi-speedometer2"},
+            {"label": "Payroll", "url": url_for('hr.payrolls'), "icon": "bi-cash-coin"},
+            {"label": "Riwayat Pembayaran Gaji", "url": "/hr/payroll-payment-history", "icon": "bi-clock-history"},
+        ]},
+    ]
+) }}
 
 <div class="app-stat-grid hr-kpi-grid">
     <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div><div><p>Total Karyawan</p><h3>{{ employee_summary.total }}</h3><span class="app-stat-helper">Semua data internal</span></div></div>

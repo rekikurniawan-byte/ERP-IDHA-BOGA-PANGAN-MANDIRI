@@ -1,0 +1,87 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.documents %}
+<!-- digital_attachments ERP existing -->
+<section class="portal-feature-page portal-service-page portal-document-page">
+    <div class="portal-feature-hero portal-service-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+        <strong class="portal-hero-status">Arsip Digital</strong>
+    </div>
+
+    <div class="portal-service-summary portal-document-summary">
+        <article class="primary"><span>Dokumen</span><strong>{{ model.totals.total }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Unggahan Saya</span><strong>{{ model.totals.own_upload }}</strong><small>Diunggah user ini</small></article>
+        <article><span>Bukti Bayar</span><strong>{{ model.totals.payment_proof }}</strong><small>Bukti pembayaran portal</small></article>
+        <article><span>Bukti Komplain</span><strong>{{ model.totals.complaint_evidence }}</strong><small>Bukti komplain</small></article>
+        <article><span>Kontrak</span><strong>{{ model.totals.contract_document }}</strong><small>Dokumen kontrak</small></article>
+    </div>
+
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Dokumen belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% for section in model.sections %}
+        <div class="portal-section-heading">
+            <h2>{{ section.title }}</h2>
+            <span>{{ section.rows|length }} file</span>
+        </div>
+
+        <div class="portal-document-grid">
+            {% for document in section.rows %}
+                <article class="portal-document-card">
+                    <div class="portal-document-pratinjau">
+                        {% if document.mime_type and document.mime_type.startswith("image/") %}
+                            <i class="bi bi-file-earmark-image"></i>
+                        {% elif document.mime_type == "application/pdf" %}
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        {% else %}
+                            <i class="bi bi-file-earmark"></i>
+                        {% endif %}
+                    </div>
+                    <div class="portal-document-body">
+                        <h3>{{ document.original_filename }}</h3>
+                        <p>{{ document.module }} | {{ document.reference_type }} #{{ document.reference_id }}</p>
+                        <div class="portal-chip-row">
+                            <span>{{ document.attachment_type }}</span>
+                            <span>{{ document.mime_type or "-" }}</span>
+                            <span>{{ document.file_size }} B</span>
+                            <span>{{ document.created_at.strftime('%d-%m-%Y') if document.created_at else "-" }}</span>
+                        </div>
+                        {% if document.notes %}<p>{{ document.notes }}</p>{% endif %}
+                        <div class="portal-inline-actions">
+                            {% if document.mime_type in ["application/pdf", "image/jpeg", "image/png", "image/webp"] %}
+                                <a class="portal-action-link" target="_blank" href="{{ url_for('portal.view_document', attachment_id=document.id) }}">
+                                    <i class="bi bi-eye"></i>
+                                    <span>Lihat</span>
+                                </a>
+                            {% endif %}
+                            <a class="portal-action-link secondary" href="{{ url_for('portal.download_document', attachment_id=document.id) }}">
+                                <i class="bi bi-download"></i>
+                                <span>Unduh</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            {% else %}
+                <div class="portal-empty-state">
+                    <i class="bi bi-folder2-open"></i>
+                    <strong>Belum ada {{ section.title|lower }}</strong>
+                    <p>File akan muncul jika ada referensi dalam kepemilikan portal.</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

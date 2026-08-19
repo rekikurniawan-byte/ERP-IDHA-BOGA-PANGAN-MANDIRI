@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -545,7 +545,8 @@
         <div class="box-title">Rincian Catering Harian</div>
 
         {% if print_data.catering %}
-        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th style="width: 16%;">No Order</th>
@@ -588,6 +589,7 @@
                 </tr>
             </tbody>
         </table>
+</div>
         {% else %}
         <p class="small-muted">Tidak ada rincian catering pada invoice ini.</p>
         {% endif %}
@@ -597,7 +599,8 @@
         <div class="box-title">Rincian Revisi Tambah Setelah Lock</div>
 
         {% if print_data.revision %}
-        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th style="width: 16%;">No Order</th>
@@ -640,6 +643,7 @@
                 </tr>
             </tbody>
         </table>
+</div>
         {% else %}
         <p class="small-muted">Tidak ada revisi tambah pada invoice ini.</p>
         {% endif %}
@@ -649,7 +653,8 @@
         <div class="box-title">Rincian Hutang Warung Pekerja</div>
 
         {% if print_data.warung %}
-        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th style="width: 25%;">Nama Pekerja</th>
@@ -680,6 +685,7 @@
                 </tr>
             </tbody>
         </table>
+</div>
         {% else %}
         <p class="small-muted">Tidak ada hutang warung pekerja pada invoice ini.</p>
         {% endif %}
@@ -689,7 +695,8 @@
     <div class="box">
         <div class="box-title">Rincian Lainnya</div>
 
-        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Jenis</th>
@@ -715,6 +722,7 @@
                 </tr>
             </tbody>
         </table>
+</div>
     </div>
     {% endif %}
 
@@ -781,7 +789,7 @@
     </div>
     {% else %}
     <div class="box official-print-warning">
-        <strong>Rekening pembayaran PT belum diisi.</strong> Lengkapi di Settings → Identitas Perusahaan sebelum invoice resmi dikirim.
+        <strong>Rekening pembayaran PT belum diisi.</strong> Lengkapi di Settings â†’ Identitas Perusahaan sebelum invoice resmi dikirim.
     </div>
     {% endif %}
 
@@ -796,7 +804,8 @@
     <div class="box payment-box">
         <div class="box-title">Riwayat Pembayaran</div>
 
-        <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>No Pembayaran</th>
@@ -816,6 +825,7 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
     </div>
     {% endif %}
 
@@ -891,3 +901,5 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
 
 </body>
 </html>
+
+

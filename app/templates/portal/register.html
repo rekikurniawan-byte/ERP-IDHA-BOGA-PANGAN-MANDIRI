@@ -1,43 +1,99 @@
 {% extends "layouts/base.html" %}
 
 {% block content_public %}
-<div class="auth-wrapper" data-ui-auth="UI">
-    <div class="auth-panel">
-        <div class="auth-brand">
-            <div class="auth-logo">IB</div>
+{% set form = data.form %}
+<div class="portal-register-shell">
+    <section class="portal-register-card">
+        <div class="portal-register-brand">
+            {% with class_name="auth-logo company-logo-mark" %}
+                {% include "components/company_logo.html" %}
+            {% endwith %}
             <div>
-                <h4>PT IDHA BOGA PANGAN MANDIRI</h4>
-                <p>Portal Customer, Mandor, dan PT</p>
+                <span>Daftar pelanggan</span>
+                <h1>Daftar Pelanggan</h1>
+                <p>Buat akun untuk memesan catering dan mengirim bukti pembayaran.</p>
             </div>
         </div>
 
-        <div class="auth-card">
-            <div class="auth-card-header">
-                <h5>{{ data.title }}</h5>
-                <p>{{ data.description }}</p>
+        <form method="post" action="{{ url_for('portal.register') }}" class="portal-register-form app-form">
+            {% include "components/csrf_token.html" %}
+
+            <div class="portal-form-section">
+                <h2>Data akun</h2>
+                <div class="portal-register-grid">
+                    <label>
+                        <span>Nama lengkap</span>
+                        <input class="app-input" type="text" name="full_name" value="{{ form.get('full_name', '') }}" autocomplete="name" required>
+                    </label>
+                    <label>
+                        <span>Nomor HP</span>
+                        <input class="app-input" type="tel" name="phone" value="{{ form.get('phone', '') }}" autocomplete="tel" placeholder="08..." required>
+                    </label>
+                    <label>
+                        <span>Nama pengguna</span>
+                        <input class="app-input" type="text" name="username" value="{{ form.get('username', '') }}" autocomplete="username" required>
+                    </label>
+                    <label>
+                        <span>Cabang</span>
+                        <select class="app-input" name="branch_id" required>
+                            {% for branch in data.branches %}
+                                <option value="{{ branch.id }}" {% if form.get('branch_id')|string == branch.id|string %}selected{% endif %}>{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span>Kata sandi</span>
+                        <input class="app-input" type="password" name="password" autocomplete="new-password" minlength="8" required>
+                    </label>
+                    <label>
+                        <span>Ulangi kata sandi</span>
+                        <input class="app-input" type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required>
+                    </label>
+                </div>
             </div>
 
-            <div class="d-grid gap-3">
-                {% for step in data.steps %}
-                    <div class="border rounded-3 p-3">
-                        <div class="fw-semibold">Langkah {{ loop.index }}</div>
-                        <div class="text-muted">{{ step }}</div>
-                    </div>
-                {% endfor %}
+            <div class="portal-form-section">
+                <h2>Alamat pengiriman</h2>
+                <div class="portal-register-grid">
+                    <label>
+                        <span>Nama lokasi</span>
+                        <input class="app-input" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, proyek, atau acara">
+                    </label>
+                    <label class="wide">
+                        <span>Alamat lengkap</span>
+                        <textarea class="app-input" name="address" rows="4" required data-no-textarea-footer>{{ form.get('address', '') }}</textarea>
+                    </label>
+                    <label class="wide">
+                        <span>Catatan lokasi</span>
+                        <input class="app-input" type="text" name="notes" value="{{ form.get('notes', '') }}" placeholder="Patokan, nama penerima, atau catatan lain">
+                    </label>
+                </div>
             </div>
 
-            <div class="alert alert-info mt-3 mb-0">
-                Registrasi mandiri belum membuat user otomatis. Ini sengaja agar akun eksternal tetap valid terhadap role, branch, dan mapping ERP.
+            <div class="portal-register-note">
+                <i class="bi bi-info-circle"></i>
+                <span>Akun PT dan mandor dibuat admin agar kontrak, lokasi, tagihan, dan pembayaran tersambung tepat.</span>
             </div>
 
-            <div class="d-grid gap-2 mt-3">
-                {% for action in data.actions %}
-                    <a class="btn app-btn-primary" href="{{ action.url }}">
-                        <i class="bi {{ action.icon }}"></i> {{ action.label }}
-                    </a>
-                {% endfor %}
-            </div>
+            <button class="app-btn-primary portal-register-submit" type="submit">
+                <i class="bi bi-person-plus"></i>
+                <span>Buat Akun Pelanggan</span>
+            </button>
+        </form>
+    </section>
+
+    <aside class="portal-register-aside">
+        <a class="portal-register-login" href="{{ data.login_url }}">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Sudah punya akun? Masuk</span>
+        </a>
+        <div class="portal-register-flow">
+            <h2>Alur pelanggan</h2>
+            <article><i class="bi bi-person-check"></i><strong>Daftar</strong><span>Akun aktif</span></article>
+            <article><i class="bi bi-bag-plus"></i><strong>Pesan</strong><span>Pilih tanggal dan porsi</span></article>
+            <article><i class="bi bi-credit-card"></i><strong>Bayar</strong><span>Unggah bukti</span></article>
+            <article><i class="bi bi-truck"></i><strong>Diproses</strong><span>Dicek admin</span></article>
         </div>
-    </div>
+    </aside>
 </div>
 {% endblock %}

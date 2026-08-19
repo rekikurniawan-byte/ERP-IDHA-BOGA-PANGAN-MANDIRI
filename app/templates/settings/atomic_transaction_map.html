@@ -1,22 +1,20 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="atomic-map">
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Recovery Center</span>
-        <h1>Atomic Transaction Audit Map</h1>
-        <p>Atomic transaction map untuk memantau atomic guard, sisa risiko transaksi, dan akses ke failure injection smoke simulation.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.atomic_smoke_simulation') }}" class="btn app-btn-primary">Atomic Smoke</a>
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
-        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">Audit Log</a>
-        <a href="{{ url_for('settings.backups') }}" class="btn app-btn-secondary">Backup & Restore</a>
-    </div>
-</div>
+{{ page_header(
+    "Atomic Transaction Audit Map",
+    "Atomic transaction map untuk memantau atomic guard, sisa risiko transaksi, dan akses ke failure injection smoke simulation.",
+    eyebrow="Recovery Center",
+    actions=[
+        {"label": "Atomic Smoke", "url": url_for('settings.atomic_smoke_simulation'), "variant": "primary"},
+        {"label": "System Health", "url": url_for('settings.system_health')},
+        {"label": "Audit Log", "url": url_for('settings.audit_logs')},
+        {"label": "Backup & Restore", "url": url_for('settings.backups')},
+    ]
+) }}
 
 {% set summary = report.get("summary", {}) %}
 <div class="app-card mb-4">

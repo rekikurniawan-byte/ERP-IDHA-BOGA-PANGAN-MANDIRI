@@ -26,6 +26,13 @@ ROOT = Path(__file__).resolve().parents[1]
 CSS_SRC_DIR = ROOT / "app" / "static" / "css" / "src"
 CSS_OUTPUT = ROOT / "app" / "static" / "css" / "style.css"
 REPORT_OUTPUT = ROOT / "app" / "static" / "css" / "css_build_report.json"
+FORBIDDEN_CSS_FILENAME_WORDS = ("final", "lock", "fix", "override", "repair", "cleanup", "polish")
+STATUS_TOKEN_NAMES = ("success", "warning", "danger", "info")
+VAR_REFERENCE_RE = re.compile(r"var\(\s*--([a-zA-Z0-9_-]+)(?:\s*,\s*([^)]+))?\)")
+IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"
+# 8,728 is the current literal-token count across the 92 ordered source files.
+# The previous 8,643 value counted matching lines, not individual declarations.
+IMPORTANT_BASELINE_COUNT = 8728
 
 SOURCE_ORDER = [
     "00_tokens.css",
@@ -51,6 +58,9 @@ SOURCE_ORDER = [
     "26_module_hr.css",
     "27_module_sop.css",
     "28_module_settings_security.css",
+    "29_module_master.css",
+    "30_ui_primitives.css",
+    "31_ui_patterns.css",
     "90_responsive.css",
     "99_utilities.css",
     "100_theme_black_white_lock.css",
@@ -94,7 +104,88 @@ SOURCE_ORDER = [
     "140_atomic_card_section_layout_polish.css",
     "141_ui_regression_inline_js_cleanup.css",
     "142_portal_responsive_web.css",
+    "143_erp_ui_system_final_override.css",
+    "144_end_to_end_ui_ux_sweep.css",
+    "145_no_gradient_lock.css",
+    "146_portal_contrast_lock.css",
+    "147_global_ui_ux_density_lock.css",
+    "148_portal_executive_polish_lock.css",
+    "149_portal_topbar_compact_lock.css",
+    "150_portal_topbar_single_row_lock.css",
+    "151_portal_topbar_collision_fix.css",
+    "152_portal_topbar_structural_grid_fix.css",
+    "153_portal_topbar_no_avatar_lock.css",
+    "154_global_calm_interface_lock.css",
+    "155_global_layout_balance_lock.css",
+    "156_global_minimal_clarity_lock.css",
+    "157_dark_card_contrast_rescue_lock.css",
+    "158_portal_feature_dark_summary_contrast_lock.css",
+    "159_portal_summary_grid_spacing_lock.css",
+    "160_global_typography_weight_slim_lock.css",
+    "161_portal_component_precision_lock.css",
+    "162_portal_neutral_metric_card_lock.css",
+    "163_portal_active_button_inner_box_lock.css",
+    "164_global_flash_toast_compact_lock.css",
+    "165_global_flash_toast_redesign_lock.css",
+    "166_password_button_surface_lock.css",
+    "167_public_auth_register_clean_lock.css",
 ]
+
+LEGACY_FORBIDDEN_CSS_SOURCE_NAMES = {
+    "100_theme_black_white_lock.css",
+    "105_final_visual_browser_qa_lock.css",
+    "107_ui_contrast_table_login_toggle_spacing_lock.css",
+    "108_final_ui_system_consolidation_regression_repair.css",
+    "109_final_targeted_ui_regression_cleanup.css",
+    "112_universal_page_card_rhythm_lock.css",
+    "113_full_module_spacing_coverage_lock.css",
+    "115_full_route_spacing_smoke_outlier_lock.css",
+    "116_final_card_density_release_lock.css",
+    "118_full_page_visual_outlier_sweep_lock.css",
+    "119_dashboard_header_alignment_rebaseline_lock.css",
+    "120_dashboard_owner_header_icon_color_lock.css",
+    "121_revenue_explorer_icon_color_lock.css",
+    "122_dashboard_demo_data_visual_balance_polish.css",
+    "123_dark_mode_table_dashboard_contrast_polish.css",
+    "124_form_grid_input_alignment_polish.css",
+    "125_manual_backfill_row_ux_polish.css",
+    "128_atomic_field_validation_mobile_polish.css",
+    "130_atomic_file_checkbox_numeric_polish.css",
+    "131_centered_flash_notification_polish.css",
+    "133_atomic_time_password_dropdown_ui_polish.css",
+    "134_atomic_static_alert_empty_state_polish.css",
+    "135_atomic_table_scroll_density_polish.css",
+    "136_atomic_print_export_ui_polish.css",
+    "137_atomic_textarea_filter_input_polish.css",
+    "138_atomic_page_header_navigation_context_polish.css",
+    "139_atomic_badge_metric_progress_polish.css",
+    "140_atomic_card_section_layout_polish.css",
+    "141_ui_regression_inline_js_cleanup.css",
+    "143_erp_ui_system_final_override.css",
+    "145_no_gradient_lock.css",
+    "146_portal_contrast_lock.css",
+    "147_global_ui_ux_density_lock.css",
+    "148_portal_executive_polish_lock.css",
+    "149_portal_topbar_compact_lock.css",
+    "150_portal_topbar_single_row_lock.css",
+    "151_portal_topbar_collision_fix.css",
+    "152_portal_topbar_structural_grid_fix.css",
+    "153_portal_topbar_no_avatar_lock.css",
+    "154_global_calm_interface_lock.css",
+    "155_global_layout_balance_lock.css",
+    "156_global_minimal_clarity_lock.css",
+    "157_dark_card_contrast_rescue_lock.css",
+    "158_portal_feature_dark_summary_contrast_lock.css",
+    "159_portal_summary_grid_spacing_lock.css",
+    "160_global_typography_weight_slim_lock.css",
+    "161_portal_component_precision_lock.css",
+    "162_portal_neutral_metric_card_lock.css",
+    "163_portal_active_button_inner_box_lock.css",
+    "164_global_flash_toast_compact_lock.css",
+    "165_global_flash_toast_redesign_lock.css",
+    "166_password_button_surface_lock.css",
+    "167_public_auth_register_clean_lock.css",
+}
 
 HEADER = """/* ==================================================
    GENERATED FILE - DO NOT EDIT DIRECTLY
@@ -255,7 +346,192 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _load_previous_architecture_guard() -> Dict[str, object]:
+    if not REPORT_OUTPUT.exists():
+        return {}
+    try:
+        report = json.loads(REPORT_OUTPUT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    guard = report.get("architecture_guard", {})
+    return guard if isinstance(guard, dict) else {}
+
+
+def _filename_has_forbidden_word(filename: str) -> bool:
+    name = Path(filename).stem.lower()
+    pattern = r"(?:^|[^a-z])(" + "|".join(FORBIDDEN_CSS_FILENAME_WORDS) + r")(?:[^a-z]|$)"
+    return re.search(pattern, name) is not None
+
+
+def _important_occurrences(loaded: List[Tuple[str, str]]) -> List[Dict[str, object]]:
+    occurrences: List[Dict[str, object]] = []
+    for filename, text in loaded:
+        rel = f"app/static/css/src/{filename}"
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            for match in re.finditer(r"!important", line):
+                occurrences.append(
+                    {
+                        "file": rel,
+                        "line": line_number,
+                        "column": match.start() + 1,
+                        "text": line.strip()[:180],
+                    }
+                )
+    return occurrences
+
+
+def _important_guard(
+    occurrences: List[Dict[str, object]],
+    previous_guard: Dict[str, object],
+) -> Tuple[Dict[str, object], List[str]]:
+    errors: List[str] = []
+    current_by_source = Counter(str(item["file"]) for item in occurrences)
+    current_total = len(occurrences)
+    previous_total = previous_guard.get("important_count")
+    previous_by_source = previous_guard.get("important_by_source", {})
+    previous_method = previous_guard.get("important_count_method")
+
+    # A report produced by the first guard used matching-line counts. Migrate
+    # once to the literal-token metric instead of comparing incompatible data.
+    if previous_method != IMPORTANT_COUNT_METHOD:
+        previous_total = IMPORTANT_BASELINE_COUNT
+        previous_by_source = {}
+    elif not isinstance(previous_total, int):
+        previous_total = IMPORTANT_BASELINE_COUNT
+    if not isinstance(previous_by_source, dict):
+        previous_by_source = {}
+
+    source_increases = {
+        source: count - int(previous_by_source.get(source, count))
+        for source, count in current_by_source.items()
+        if count > int(previous_by_source.get(source, count))
+    }
+    if current_total > previous_total or source_increases:
+        suspect_sources = set(source_increases)
+        if not suspect_sources:
+            suspect_sources = set(current_by_source)
+        suspect_lines = [
+            item for item in occurrences if str(item["file"]) in suspect_sources
+        ][:80]
+        errors.append(
+            "New !important usage detected. "
+            f"Previous total: {previous_total}; current total: {current_total}; "
+            "suspect file/line entries: " + json.dumps(suspect_lines, ensure_ascii=False)
+        )
+
+    return (
+        {
+            "important_count": current_total,
+            "important_count_method": IMPORTANT_COUNT_METHOD,
+            "important_by_source": dict(sorted(current_by_source.items())),
+            "important_previous_count": previous_total,
+            "important_source_increases": dict(sorted(source_increases.items())),
+        },
+        errors,
+    )
+
+
+def _custom_property_values(css: str) -> Dict[str, str]:
+    declarations: Dict[str, str] = {}
+    for match in re.finditer(r"--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);", css):
+        value = match.group(2).replace("!important", "").strip()
+        declarations[match.group(1)] = re.sub(r"\s+", " ", value)
+    return declarations
+
+
+def _resolve_custom_property(name: str, values: Dict[str, str], seen: set[str] | None = None) -> str:
+    seen = seen or set()
+    if name in seen:
+        return values.get(name, "")
+    seen.add(name)
+    value = values.get(name, "")
+
+    def replace_var(match: re.Match[str]) -> str:
+        target = match.group(1)
+        fallback = (match.group(2) or "").strip()
+        resolved = _resolve_custom_property(target, values, seen.copy())
+        return resolved or fallback
+
+    previous = None
+    while previous != value and "var(" in value:
+        previous = value
+        value = VAR_REFERENCE_RE.sub(replace_var, value)
+    return value.strip()
+
+
+def _status_token_report(css: str) -> Tuple[Dict[str, object], List[str]]:
+    values = _custom_property_values(css)
+    resolved = {
+        token: _resolve_custom_property(token, values)
+        for token in STATUS_TOKEN_NAMES
+    }
+    normalized = {
+        token: re.sub(r"\s+", "", value.lower())
+        for token, value in resolved.items()
+    }
+    missing = [token for token, value in resolved.items() if not value]
+    duplicate_groups: Dict[str, List[str]] = {}
+    for token, value in normalized.items():
+        duplicate_groups.setdefault(value, []).append(token)
+    duplicates = [
+        {"value": value, "tokens": tokens}
+        for value, tokens in duplicate_groups.items()
+        if value and len(tokens) > 1
+    ]
+    errors = []
+    if missing or duplicates:
+        errors.append(
+            "Status token values must be present and distinct for success, warning, danger, and info. "
+            + json.dumps({"missing": missing, "resolved": resolved, "duplicates": duplicates}, ensure_ascii=False)
+        )
+    return (
+        {
+            "status_tokens": resolved,
+            "status_tokens_distinct": not missing and not duplicates,
+            "status_token_duplicates": duplicates,
+        },
+        errors,
+    )
+
+
+def _architecture_guard(
+    loaded: List[Tuple[str, str]],
+    output_css: str,
+    previous_guard: Dict[str, object],
+) -> Tuple[Dict[str, object], List[str]]:
+    errors: List[str] = []
+    source_files = sorted(p.name for p in CSS_SRC_DIR.glob("*.css"))
+    forbidden_sources = {
+        filename for filename in source_files if _filename_has_forbidden_word(filename)
+    }
+    new_forbidden_sources = sorted(forbidden_sources - LEGACY_FORBIDDEN_CSS_SOURCE_NAMES)
+    if new_forbidden_sources:
+        errors.append(
+            "Forbidden CSS source filename(s): " + ", ".join(new_forbidden_sources)
+        )
+
+    important_report, important_errors = _important_guard(
+        _important_occurrences(loaded),
+        previous_guard,
+    )
+    status_report, status_errors = _status_token_report(output_css)
+    errors.extend(important_errors)
+    errors.extend(status_errors)
+
+    report: Dict[str, object] = {
+        "forbidden_filename_words": list(FORBIDDEN_CSS_FILENAME_WORDS),
+        "legacy_forbidden_source_names": sorted(LEGACY_FORBIDDEN_CSS_SOURCE_NAMES),
+        "forbidden_filename_violations": new_forbidden_sources,
+        "source_order_locked": True,
+        "unexpected_source_files_fail_build": True,
+    }
+    report.update(important_report)
+    report.update(status_report)
+    return report, errors
+
+
 def build() -> int:
+    previous_guard = _load_previous_architecture_guard()
     loaded, errors = _read_source_files()
     if errors:
         for error in errors:
@@ -290,6 +566,16 @@ def build() -> int:
         print(json.dumps(brace, indent=2), file=sys.stderr)
         return 1
 
+    architecture_report, architecture_errors = _architecture_guard(
+        loaded,
+        output_css,
+        previous_guard,
+    )
+    if architecture_errors:
+        for error in architecture_errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        return 1
+
     CSS_OUTPUT.write_text(output_css, encoding="utf-8")
 
     report = {
@@ -313,6 +599,7 @@ def build() -> int:
             "brace_balance": brace,
             "duplicate_selector_report_generated": True,
         },
+        "architecture_guard": architecture_report,
         "selector_report": selectors,
         "notes": [
             "PRODUCTION keeps the modular build lock and adds final compact empty-state and card-density rules across dashboard, operational, delivery, production, warung, receivables, and expense drilldown pages.",

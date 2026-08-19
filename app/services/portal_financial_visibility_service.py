@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import false, or_
 
 from app.models.finance import Invoice, Payment
+from app.models.system import DigitalAttachment
 from app.services.portal_mapping_service import (
     PRINCIPAL_CLIENT_PIC,
     PRINCIPAL_DELEGATE,
@@ -21,6 +23,30 @@ from app.services.user_management_service import (
 
 
 EXCLUDED_ACTIVE_RECEIVABLE_STATUSES = {"CANCELLED", "VOID", "VOIDED"}
+PORTAL_PAYMENT_MODULE = "PORTAL_PAYMENT"
+PAYMENT_PROOF_REFERENCE_TYPE = "INVOICE"
+PAYMENT_PROOF_STATUS_LABELS = {
+    "PAYMENT_PROOF_PENDING": "Menunggu Finance",
+    "PAYMENT_PROOF_VERIFIED": "Diverifikasi",
+    "PAYMENT_PROOF_REJECTED": "Ditolak",
+    "PAYMENT_PROOF_PAYMENT_CREATED": "Pembayaran Resmi Dibuat",
+}
+PORTAL_CUSTOMER_FINANCIAL_BLOCKED_REASON = (
+    "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3."
+)
+INVOICE_STATUS_LABELS = {
+    "DRAFT": "Draft",
+    "OPEN": "Terbuka",
+    "PARTIAL": "Dibayar Sebagian",
+    "PARTIAL_PAID": "Dibayar Sebagian",
+    "PAID": "Lunas",
+    "OVERDUE": "Jatuh Tempo",
+    "CLOSED": "Ditutup",
+    "CANCELLED": "Dibatalkan",
+    "CANCELED": "Dibatalkan",
+    "VOID": "Dibatalkan",
+    "VOIDED": "Dibatalkan",
+}
 
 
 def _money(value) -> Decimal:
@@ -35,9 +61,110 @@ def _normalized_status(value) -> str:
     return str(value or "").strip().upper()
 
 
+def _status_label(value) -> str:
+    status = _normalized_status(value)
+    return INVOICE_STATUS_LABELS.get(status, status.replace("_", " ").title() if status else "-")
+
+
 def _is_active_receivable(invoice: Invoice) -> bool:
     status = _normalized_status(invoice.status)
     return status not in EXCLUDED_ACTIVE_RECEIVABLE_STATUSES
+
+
+def _days_overdue(invoice: Invoice) -> int:
+    if not invoice.due_date:
+        return 0
+    if not _is_active_receivable(invoice):
+        return 0
+    if _money(invoice.remaining_amount) <= 0:
+        return 0
+    return max((date.today() - invoice.due_date).days, 0)
+
+
+def _aging_bucket(days_overdue: int) -> str:
+    if days_overdue <= 0:
+        return "CURRENT"
+    if days_overdue <= 7:
+        return "DUE_1_7"
+    if days_overdue <= 30:
+        return "DUE_8_30"
+    return "DUE_OVER_30"
+
+
+def _invoice_party(invoice: Invoice) -> dict:
+    client = invoice.client
+    mandor = invoice.mandor
+    client_pic = invoice.client_pic
+    snapshot_name = invoice.client_name_snapshot or invoice.client_pic_name_snapshot
+    if invoice.bill_to_type == "MANDOR" and mandor:
+        label = mandor.name
+    elif client_pic:
+        label = client_pic.name
+    elif client:
+        label = client.name
+    else:
+        label = snapshot_name or "-"
+    return {
+        "label": label,
+        "client_name": client.name if client else invoice.client_name_snapshot,
+        "mandor_name": mandor.name if mandor else None,
+        "client_pic_name": client_pic.name if client_pic else invoice.client_pic_name_snapshot,
+        "phone": (
+            invoice.client_pic_phone_snapshot
+            or (client_pic.phone if client_pic else None)
+            or (mandor.phone if mandor else None)
+            or (client.phone if client else None)
+        ),
+    }
+
+
+def _proof_rows_for_invoice_ids(invoice_ids: list[int]) -> dict[int, list[dict]]:
+    if not invoice_ids:
+        return {}
+    attachments = (
+        DigitalAttachment.query.filter(
+            DigitalAttachment.module == PORTAL_PAYMENT_MODULE,
+            DigitalAttachment.reference_type == PAYMENT_PROOF_REFERENCE_TYPE,
+            DigitalAttachment.reference_id.in_(invoice_ids),
+            DigitalAttachment.is_deleted.is_(False),
+        )
+        .order_by(DigitalAttachment.created_at.desc(), DigitalAttachment.id.desc())
+        .all()
+    )
+    grouped: dict[int, list[dict]] = {invoice_id: [] for invoice_id in invoice_ids}
+    for attachment in attachments:
+        grouped.setdefault(attachment.reference_id, []).append(
+            {
+                "attachment_id": attachment.id,
+                "attachment_type": attachment.attachment_type,
+                "status_label": PAYMENT_PROOF_STATUS_LABELS.get(
+                    attachment.attachment_type,
+                    attachment.attachment_type,
+                ),
+                "filename": attachment.original_filename,
+                "file_size": attachment.file_size,
+                "uploaded_at": attachment.created_at,
+                "uploaded_by": attachment.uploaded_by,
+                "notes": attachment.notes,
+            }
+        )
+    return grouped
+
+
+def _proof_summary(proofs: list[dict]) -> dict:
+    by_type = {}
+    for proof in proofs:
+        by_type[proof["attachment_type"]] = by_type.get(proof["attachment_type"], 0) + 1
+    latest = proofs[0] if proofs else None
+    return {
+        "count": len(proofs),
+        "pending": by_type.get("PAYMENT_PROOF_PENDING", 0),
+        "verified": by_type.get("PAYMENT_PROOF_VERIFIED", 0),
+        "rejected": by_type.get("PAYMENT_PROOF_REJECTED", 0),
+        "payment_created": by_type.get("PAYMENT_PROOF_PAYMENT_CREATED", 0),
+        "latest_status": latest["status_label"] if latest else "Belum ada bukti",
+        "latest_uploaded_at": latest["uploaded_at"] if latest else None,
+    }
 
 
 def _payment_sum(invoice: Invoice) -> Decimal:
@@ -106,23 +233,29 @@ def _ownership_filter_for_scope(user, scope):
     return false()
 
 
-def _invoice_row(invoice: Invoice) -> dict:
+def _invoice_row(invoice: Invoice, proofs_by_invoice: dict[int, list[dict]] | None = None) -> dict:
     payment_total = _payment_sum(invoice)
     total_amount = _money(invoice.total_amount)
     paid_amount = _money(invoice.paid_amount)
     remaining_amount = _money(invoice.remaining_amount)
     active_receivable = _is_active_receivable(invoice)
+    days_overdue = _days_overdue(invoice)
+    proofs = (proofs_by_invoice or {}).get(invoice.id, [])
 
     return {
         "invoice_id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "invoice_date": invoice.invoice_date,
         "due_date": invoice.due_date,
+        "period_start": invoice.period_start,
+        "period_end": invoice.period_end,
         "status": _normalized_status(invoice.status),
+        "status_label": _status_label(invoice.status),
         "bill_to_type": invoice.bill_to_type,
         "client_id": invoice.client_id,
         "mandor_id": invoice.mandor_id,
         "client_pic_id": invoice.client_pic_id,
+        "party": _invoice_party(invoice),
         "total_amount": total_amount,
         "paid_amount": paid_amount,
         "remaining_amount": remaining_amount,
@@ -130,6 +263,13 @@ def _invoice_row(invoice: Invoice) -> dict:
         "payment_count": len(invoice.payments),
         "payment_mismatch": payment_total != paid_amount,
         "active_receivable": active_receivable,
+        "payable": active_receivable and remaining_amount > 0,
+        "days_overdue": days_overdue,
+        "aging_bucket": _aging_bucket(days_overdue),
+        "input_source": invoice.input_source,
+        "source_type": invoice.source_type,
+        "proofs": proofs,
+        "proof_summary": _proof_summary(proofs),
     }
 
 
@@ -142,7 +282,7 @@ def build_portal_invoice_read_model(user, *, limit: int = 100) -> dict:
         return {
             "allowed": False,
             "scope_mode": "PORTAL_CUSTOMER_FINANCIAL_BLOCKED",
-            "reason": "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "reason": PORTAL_CUSTOMER_FINANCIAL_BLOCKED_REASON,
             "invoices": [],
             "totals": _empty_totals(),
         }
@@ -163,12 +303,13 @@ def build_portal_invoice_read_model(user, *, limit: int = 100) -> dict:
         .limit(limit)
         .all()
     )
-    rows = [_invoice_row(invoice) for invoice in invoices]
+    proofs_by_invoice = _proof_rows_for_invoice_ids([invoice.id for invoice in invoices])
+    rows = [_invoice_row(invoice, proofs_by_invoice) for invoice in invoices]
 
     return {
         "allowed": True,
         "scope_mode": scope.scope_mode,
-        "reason": "Invoice read model dibatasi oleh portal ownership mapping.",
+            "reason": "Tagihan ditampilkan sesuai akun.",
         "invoices": rows,
         "totals": _build_totals(rows),
     }
@@ -183,7 +324,7 @@ def get_portal_owned_invoice(user, invoice_id: int) -> dict:
         return {
             "allowed": False,
             "scope_mode": "PORTAL_CUSTOMER_FINANCIAL_BLOCKED",
-            "reason": "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "reason": PORTAL_CUSTOMER_FINANCIAL_BLOCKED_REASON,
             "invoice": None,
         }
 
@@ -205,14 +346,14 @@ def get_portal_owned_invoice(user, invoice_id: int) -> dict:
         return {
             "allowed": False,
             "scope_mode": scope.scope_mode,
-            "reason": "Invoice tidak ditemukan dalam ownership portal user.",
+            "reason": "Invoice tidak ditemukan untuk akun ini.",
             "invoice": None,
         }
 
     return {
         "allowed": True,
         "scope_mode": scope.scope_mode,
-        "reason": "Invoice ditemukan dalam ownership portal user.",
+        "reason": "Invoice ditemukan.",
         "invoice": invoice,
     }
 
@@ -226,7 +367,7 @@ def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
         return {
             "allowed": False,
             "scope_mode": "PORTAL_CUSTOMER_PAYMENT_HISTORY_BLOCKED",
-            "reason": "Payment history pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "reason": "Riwayat pembayaran pelanggan umum menunggu alur bayar di awal aktif.",
             "payments": [],
             "totals": _empty_payment_totals(),
         }
@@ -253,7 +394,7 @@ def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
     return {
         "allowed": True,
         "scope_mode": scope.scope_mode,
-        "reason": "Payment history dibatasi oleh invoice ownership mapping.",
+            "reason": "Riwayat pembayaran ditampilkan sesuai akun.",
         "payments": rows,
         "totals": _build_payment_totals(rows),
     }
@@ -268,10 +409,18 @@ def _payment_row(payment: Payment) -> dict:
         "payment_method": payment.payment_method,
         "amount": _money(payment.amount),
         "reference_number": payment.reference_number,
+        "notes": payment.notes,
+        "bank_account": {
+            "bank_name": payment.bank_account.bank_name if payment.bank_account else None,
+            "account_name": payment.bank_account.account_name if payment.bank_account else None,
+            "account_number": payment.bank_account.account_number if payment.bank_account else None,
+        },
         "invoice_id": payment.invoice_id,
         "invoice_number": invoice.invoice_number if invoice else None,
         "invoice_status": _normalized_status(invoice.status) if invoice else None,
+        "invoice_status_label": _status_label(invoice.status) if invoice else "-",
         "invoice_active_receivable": _is_active_receivable(invoice) if invoice else False,
+        "invoice_remaining_amount": _money(invoice.remaining_amount) if invoice else Decimal("0"),
     }
 
 
@@ -285,6 +434,19 @@ def _empty_totals() -> dict:
         "active_outstanding_amount": Decimal("0"),
         "payment_total": Decimal("0"),
         "payment_mismatch_count": 0,
+        "overdue_invoice_count": 0,
+        "overdue_outstanding_amount": Decimal("0"),
+        "payable_invoice_count": 0,
+        "proof_count": 0,
+        "pending_proof_count": 0,
+        "verified_proof_count": 0,
+        "rejected_proof_count": 0,
+        "aging": {
+            "CURRENT": Decimal("0"),
+            "DUE_1_7": Decimal("0"),
+            "DUE_8_30": Decimal("0"),
+            "DUE_OVER_30": Decimal("0"),
+        },
     }
 
 
@@ -308,6 +470,16 @@ def _build_totals(rows: list[dict]) -> dict:
         if row["active_receivable"]:
             totals["active_invoice_count"] += 1
             totals["active_outstanding_amount"] += row["remaining_amount"]
+        if row["payable"]:
+            totals["payable_invoice_count"] += 1
+        if row["days_overdue"] > 0:
+            totals["overdue_invoice_count"] += 1
+            totals["overdue_outstanding_amount"] += row["remaining_amount"]
+        totals["proof_count"] += row["proof_summary"]["count"]
+        totals["pending_proof_count"] += row["proof_summary"]["pending"]
+        totals["verified_proof_count"] += row["proof_summary"]["verified"]
+        totals["rejected_proof_count"] += row["proof_summary"]["rejected"]
+        totals["aging"][row["aging_bucket"]] += row["remaining_amount"]
     return totals
 
 

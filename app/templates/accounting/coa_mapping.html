@@ -1,16 +1,15 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
 <!-- ACCOUNTINGUX4B_BUSINESS_LANGUAGE_MAINTENANCE -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Accounting</span>
-        <h1>Peta Akun & Mapping Jurnal</h1>
-        <p>Halaman read-only untuk melihat pemakaian COA dan rencana mapping jurnal otomatis bertahap.</p>
-    </div>
-
-</div>
+{{ page_header(
+    "Peta Akun & Mapping Jurnal",
+    "Halaman Mode pantau untuk melihat pemakaian COA dan rencana mapping jurnal otomatis bertahap.",
+    eyebrow="Accounting",
+    actions=[]
+) }}
 
 {% set precision_key = 'coa_mapping' %}
 
@@ -222,3 +221,4 @@
 </div>
 </div>
 {% endblock %}
+

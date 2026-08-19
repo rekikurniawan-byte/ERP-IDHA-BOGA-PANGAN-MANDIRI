@@ -16,63 +16,61 @@
             }
         })();
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20260728-portal-web-v1') }}">
+    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
-<body class="portal-mobile-body portal-web-body is-authenticated" data-endpoint="{{ request.endpoint or 'portal' }}">
+<body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
+    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_MANDOR" else "PT" if current_user.role == "PORTAL_PT" else "Client" if current_user.role == "PORTAL_CLIENT" else "Delegasi" if current_user.role == "PORTAL_DELEGATE" else "Portal" %}
     <header class="portal-mobile-topbar portal-web-topbar">
         <div class="portal-web-topbar-inner">
             <a href="{{ url_for('portal.my_dashboard') }}" class="portal-web-brand" aria-label="Portal Idha Boga">
-                <span class="portal-web-brand-mark">IB</span>
+                {% with class_name="portal-web-brand-mark company-logo-mark" %}
+                    {% include "components/company_logo.html" %}
+                {% endwith %}
                 <span>
                     <span class="portal-mobile-kicker">IDHA BOGA PORTAL</span>
-                    <strong>Portal Catering Terintegrasi</strong>
+                    <strong>Portal Katering Terintegrasi</strong>
                 </span>
             </a>
-            <div class="portal-web-user">
-                <span>{{ current_user.full_name or current_user.username }}</span>
-                <div class="portal-mobile-avatar">{{ (current_user.full_name or current_user.username or "P")[:1] }}</div>
-                <form method="POST" action="{{ url_for('auth.logout') }}" class="portal-web-logout-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="portal-web-logout-button" title="Logout">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <nav class="portal-web-nav" aria-label="Navigasi portal">
+            <nav class="portal-web-nav" aria-label="Navigasi portal">
             <a href="{{ url_for('portal.my_dashboard') }}" class="{{ 'active' if request.endpoint in ['portal.my_dashboard', 'portal.customer_dashboard', 'portal.mandor_dashboard', 'portal.pt_dashboard', 'portal.client_dashboard', 'portal.delegate_dashboard'] else '' }}">
                 <i class="bi bi-house-door"></i>
-                <span>Dashboard</span>
+                <span>Beranda</span>
             </a>
             {% if current_user.role == "PORTAL_CUSTOMER" %}
                 <a href="{{ url_for('portal.customer_order') }}" class="{{ 'active' if request.endpoint == 'portal.customer_order' else '' }}">
                     <i class="bi bi-bag-plus"></i>
-                    <span>Order</span>
+                    <span>Pesan</span>
+                </a>
+                <a href="{{ url_for('portal.customer_tracking') }}" class="{{ 'active' if request.endpoint == 'portal.customer_tracking' else '' }}">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>Lacak</span>
                 </a>
                 <a href="{{ url_for('portal.customer_order_history') }}" class="{{ 'active' if request.endpoint == 'portal.customer_order_history' else '' }}">
                     <i class="bi bi-clock-history"></i>
                     <span>Riwayat</span>
                 </a>
-                <a href="{{ url_for('portal.customer_tracking') }}" class="{{ 'active' if request.endpoint == 'portal.customer_tracking' else '' }}">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>Tracking</span>
-                </a>
-                <a href="{{ url_for('portal.customer_payments') }}" class="{{ 'active' if request.endpoint == 'portal.customer_payments' else '' }}">
+                <a href="{{ url_for('portal.customer_payments') }}" class="{{ 'active' if request.endpoint in ['portal.customer_payments', 'portal.customer_invoices'] else '' }}">
                     <i class="bi bi-credit-card"></i>
-                    <span>Pembayaran</span>
+                    <span>Bayar / Bukti</span>
                 </a>
                 <a href="{{ url_for('portal.customer_complaints') }}" class="{{ 'active' if request.endpoint == 'portal.customer_complaints' else '' }}">
                     <i class="bi bi-chat-square-text"></i>
                     <span>Komplain</span>
                 </a>
+                <a href="{{ url_for('portal.customer_returns') }}" class="{{ 'active' if request.endpoint == 'portal.customer_returns' else '' }}">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span>Retur</span>
+                </a>
             {% elif current_user.role == "PORTAL_MANDOR" %}
                 <a href="{{ url_for('portal.mandor_order') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_order' else '' }}">
                     <i class="bi bi-bag-plus"></i>
-                    <span>Order</span>
+                    <span>Pesan</span>
+                </a>
+                <a href="{{ url_for('portal.order_status') }}" class="{{ 'active' if request.endpoint == 'portal.order_status' else '' }}">
+                    <i class="bi bi-list-check"></i>
+                    <span>Status</span>
                 </a>
                 <a href="{{ url_for('portal.mandor_workers') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_workers' else '' }}">
                     <i class="bi bi-people"></i>
@@ -80,7 +78,15 @@
                 </a>
                 <a href="{{ url_for('portal.mandor_canteen_debts') }}" class="{{ 'active' if request.endpoint in ['portal.mandor_canteen_debts', 'portal.mandor_catering_debts', 'portal.mandor_installments'] else '' }}">
                     <i class="bi bi-wallet2"></i>
-                    <span>Hutang</span>
+                    <span>Hutang Warung</span>
+                </a>
+                <a href="{{ url_for('portal.mandor_catering_debts') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_catering_debts' else '' }}">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    <span>Hutang Catering</span>
+                </a>
+                <a href="{{ url_for('portal.mandor_installments') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_installments' else '' }}">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Cicilan</span>
                 </a>
                 <a href="{{ url_for('portal.mandor_invoices') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_invoices' else '' }}">
                     <i class="bi bi-receipt"></i>
@@ -88,16 +94,16 @@
                 </a>
                 <a href="{{ url_for('portal.mandor_payments') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_payments' else '' }}">
                     <i class="bi bi-credit-card"></i>
-                    <span>Bayar</span>
+                    <span>Pembayaran</span>
                 </a>
             {% elif current_user.role == "PORTAL_PT" %}
                 <a href="{{ url_for('portal.pt_mandors') }}" class="{{ 'active' if request.endpoint == 'portal.pt_mandors' else '' }}">
                     <i class="bi bi-diagram-3"></i>
-                    <span>Mandor</span>
+                    <span>Seluruh Mandor</span>
                 </a>
                 <a href="{{ url_for('portal.pt_invoices') }}" class="{{ 'active' if request.endpoint == 'portal.pt_invoices' else '' }}">
                     <i class="bi bi-receipt"></i>
-                    <span>Invoice</span>
+                    <span>Seluruh Invoice</span>
                 </a>
                 <a href="{{ url_for('portal.pt_receivables') }}" class="{{ 'active' if request.endpoint == 'portal.pt_receivables' else '' }}">
                     <i class="bi bi-cash-stack"></i>
@@ -107,10 +113,14 @@
                     <i class="bi bi-file-earmark-text"></i>
                     <span>Kontrak</span>
                 </a>
+                <a href="{{ url_for('portal.pt_payments') }}" class="{{ 'active' if request.endpoint in ['portal.pt_payments', 'portal.payments'] else '' }}">
+                    <i class="bi bi-credit-card"></i>
+                    <span>Pembayaran</span>
+                </a>
             {% else %}
                 <a href="{{ url_for('portal.invoices') }}">
                     <i class="bi bi-receipt"></i>
-                    <span>Invoice</span>
+                    <span>Tagihan</span>
                 </a>
                 <a href="{{ url_for('portal.payments') }}">
                     <i class="bi bi-credit-card"></i>
@@ -121,7 +131,39 @@
                     <span>Profil</span>
                 </a>
             {% endif %}
-        </nav>
+            {% if current_user.role not in ["PORTAL_CUSTOMER", "PORTAL_MANDOR", "PORTAL_PT"] %}
+                <a href="{{ url_for('portal.notifications') }}" class="{{ 'active' if request.endpoint == 'portal.notifications' else '' }}">
+                    <i class="bi bi-bell"></i>
+                    <span>Notif</span>
+                </a>
+                <a href="{{ url_for('portal.documents') }}" class="{{ 'active' if request.endpoint == 'portal.documents' else '' }}">
+                    <i class="bi bi-folder2-open"></i>
+                    <span>Dokumen</span>
+                </a>
+                <a href="{{ url_for('portal.calendar') }}" class="{{ 'active' if request.endpoint == 'portal.calendar' else '' }}">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Kalender</span>
+                </a>
+                <a href="{{ url_for('portal.approvals') }}" class="{{ 'active' if request.endpoint == 'portal.approvals' else '' }}">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Persetujuan</span>
+                </a>
+            {% endif %}
+            </nav>
+
+            <div class="portal-web-user">
+                <span class="portal-web-user-name">{{ current_user.full_name or current_user.username }}</span>
+                <span class="portal-web-role-chip">{{ portal_role_label }}</span>
+                <div class="portal-mobile-avatar">{{ (current_user.full_name or current_user.username or "P")[:1] }}</div>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="portal-web-logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="portal-web-logout-button" title="Keluar">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Keluar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
     </header>
 
     <main class="portal-mobile-shell portal-web-shell" id="mainContent">
@@ -141,7 +183,7 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 </body>
 </html>

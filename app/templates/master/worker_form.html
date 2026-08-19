@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if worker %}Edit Pekerja{% else %}Tambah Pekerja{% endif %}</span>
-        <h1>{% if worker %}Edit Pekerja{% else %}Input Pekerja{% endif %}</h1>
-        <p>Kode pekerja dibuat otomatis oleh sistem dan tidak perlu diisi manual.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.workers') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Pekerja" if worker else "Input Pekerja",
+    "Kode pekerja dibuat otomatis oleh sistem dan tidak perlu diisi manual.",
+    eyebrow="Edit Pekerja" if worker else "Tambah Pekerja",
+    actions=[{"label": "Kembali", "url": url_for('master.workers')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if worker %}{{ url_for('master.edit_worker', worker_id=worker.id) }}{% else %}{{ url_for('master.create_worker') }}{% endif %}" data-ui-form="true" class="app-form">

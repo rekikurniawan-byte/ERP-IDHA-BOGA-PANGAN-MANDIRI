@@ -1,37 +1,34 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Mandor Read-only</h1>
-            <p class="page-description">Preview mandor dan jumlah lokasi sesuai scope portal aktif.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Mandor Read-only",
+        "Pratinjau mandor dan jumlah lokasi sesuai akses portal aktif.",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
             <div class="row g-3 mb-3">
                 <div class="col-12 col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
-                    <div class="fw-semibold">{{ data.directory.scope_mode }}</div>
+                    <div class="text-muted small text-uppercase fw-bold">Akses akun</div>
+                    <div class="fw-semibold">{{ "Aktif" if data.directory.allowed else "Belum aktif" }}</div>
                 </div>
                 <div class="col-12 col-md-4">
                     <div class="text-muted small text-uppercase fw-bold">Role aktif</div>
                     <div class="fw-semibold">{{ data.active_role }}</div>
                 </div>
                 <div class="col-12 col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="text-muted small text-uppercase fw-bold">Cabang</div>
                     <div class="fw-semibold">{{ data.branch_id }}</div>
                 </div>
             </div>
 
-            <div class="table-responsive app-table-wrap">
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
@@ -55,7 +52,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-muted">Belum ada mandor dalam scope portal.</td>
+                                <td colspan="6" class="text-muted">Belum ada mandor dalam akses portal.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -65,3 +62,4 @@
     </div>
 </section>
 {% endblock %}
+

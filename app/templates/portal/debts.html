@@ -1,18 +1,16 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
+<!-- Belum ada hutang pekerja dalam scope portal -->
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Hutang Pekerja</h1>
-            <p class="page-description">Hutang catering/warung pekerja dibatasi ke mandor dalam ownership portal.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Hutang Pekerja",
+        "Hutang catering dan warung pekerja sesuai akses mandor.",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
@@ -25,7 +23,7 @@
                     <div class="col-md-3"><strong>{{ data.model.totals.debt_amount|rupiah }}</strong><div class="text-muted small">Nilai</div></div>
                     <div class="col-md-3"><strong>{{ data.model.totals.active_remaining_amount|rupiah }}</strong><div class="text-muted small">Sisa aktif</div></div>
                 </div>
-                <div class="table-responsive app-table-wrap">
+                <div class="table-responsive app-table-wrapper">
                     <table class="table app-table align-middle mb-0">
                         <thead>
                             <tr>
@@ -34,7 +32,7 @@
                                 <th>Tanggal</th>
                                 <th>Status</th>
                                 <th class="text-end">Hutang</th>
-                                <th class="text-end">Paid</th>
+                                <th class="text-end">Terbayar</th>
                                 <th class="text-end">Sisa</th>
                             </tr>
                         </thead>
@@ -50,7 +48,7 @@
                                     <td class="text-end">{{ debt.remaining_amount|rupiah }}</td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="7" class="text-muted text-center">Belum ada hutang pekerja dalam scope portal.</td></tr>
+                                <tr><td colspan="7" class="text-muted text-center">Belum ada hutang pekerja dalam akses portal.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -60,3 +58,5 @@
     </div>
 </section>
 {% endblock %}
+
+

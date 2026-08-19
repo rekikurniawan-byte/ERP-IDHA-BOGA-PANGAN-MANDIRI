@@ -1,29 +1,19 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-ui-accounting-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Daily Closing</span>
-        <h1>Closing Harian Read-only</h1>
-        <p>Ringkasan harian order, produksi, delivery, invoice, payment, warung, stok, dan jurnal.</p>
-    </div>
-
-    <div class="page-actions accounting-header-actions">
-        <a href="{{ url_for('accounting.print_daily_closing', date=report.selected_date_value) }}" class="btn app-btn-secondary">
-            <i class="bi bi-printer"></i>
-            Cetak / Save PDF
-        </a>
-        <a href="{{ url_for('accounting.export_daily_closing_csv', date=report.selected_date_value) }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Download CSV
-        </a>
-        <a href="{{ url_for('accounting.data_health') }}" class="btn app-btn-secondary">
-            <i class="bi bi-clipboard-pulse"></i>
-            Data Health
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Closing Harian Mode pantau",
+    "Ringkasan harian order, produksi, delivery, invoice, payment, warung, stok, dan jurnal.",
+    eyebrow="Daily Closing",
+    actions_class="accounting-header-actions",
+    actions=[
+        {"label": "Cetak / Save PDF", "url": url_for('accounting.print_daily_closing', date=report.selected_date_value), "icon": "bi-printer"},
+        {"label": "Download CSV", "url": url_for('accounting.export_daily_closing_csv', date=report.selected_date_value), "icon": "bi-download"},
+        {"label": "Data Health", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
+    ]
+) }}
 
 
 <div class="app-card">
@@ -140,3 +130,4 @@
 {% endfor %}
 </div>
 {% endblock %}
+

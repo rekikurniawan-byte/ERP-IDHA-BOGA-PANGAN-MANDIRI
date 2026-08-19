@@ -1,26 +1,18 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-operational-page="monthly-catering-recap">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Operasional Catering</span>
-            <h1>Rekap Catering Bulanan</h1>
-            <p>Rekap porsi, nilai catering, revisi tambah, delivery, dan status tagihan untuk dasar invoice periode.</p>
-        </div>
-
-        <div class="page-actions">
-            <a href="{{ url_for('operational.daily_catering_log') }}" class="btn app-btn-primary">
-                <i class="bi bi-journal-text"></i>
-                Log Harian
-            </a>
-            <a href="{{ url_for('finance.generate_period_invoice_preview') }}" class="btn app-btn-secondary">
-                <i class="bi bi-receipt-cutoff"></i>
-                Invoice Periode
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Rekap Catering Bulanan",
+        "Rekap porsi, nilai catering, revisi tambah, delivery, dan status tagihan untuk dasar invoice periode.",
+        eyebrow="Operasional Catering",
+        actions=[
+            {"label": "Log Harian", "url": url_for('operational.daily_catering_log'), "icon": "bi-journal-text", "variant": "primary"},
+            {"label": "Invoice Periode", "url": url_for('finance.generate_period_invoice_preview'), "icon": "bi-receipt-cutoff"},
+        ]
+    ) }}
 
 
     {{ global_filter_bar(filter_bar) }}

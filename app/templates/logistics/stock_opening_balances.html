@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="stock_opening_balances">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Logistik & Stok</span>
-        <h1>Saldo Awal Stok</h1>
-        <p>Tetapkan saldo cutover per item agar kartu stok dihitung dari tanggal awal yang jelas.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Saldo Awal Stok",
+    "Tetapkan saldo cutover per item agar kartu stok dihitung dari tanggal awal yang jelas.",
+    eyebrow="Logistik & Stok",
+    actions=[{"label": "Kembali", "url": url_for('logistics.index'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{{ url_for('logistics.stock_opening_balances') }}" data-ui-form="true" class="app-form">

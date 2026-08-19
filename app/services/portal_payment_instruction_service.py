@@ -5,9 +5,12 @@ from decimal import Decimal
 from app.services.company_settings_service import get_company_settings
 from app.services.invoice_identity_service import get_invoice_official_identity
 from app.services.portal_financial_visibility_service import get_portal_owned_invoice
+from app.models.system import DigitalAttachment
 
 
 NON_PAYABLE_INVOICE_STATUSES = {"CANCELLED", "VOID", "VOIDED", "PAID"}
+PORTAL_PAYMENT_MODULE = "PORTAL_PAYMENT"
+PAYMENT_PROOF_REFERENCE_TYPE = "INVOICE"
 
 
 def _money(value) -> Decimal:
@@ -43,6 +46,8 @@ def build_portal_payment_instruction(user, *, invoice_id: int) -> dict:
             "amount_due": Decimal("0"),
             "bank_transfer": _empty_bank_instruction(),
             "qris": _empty_qris_instruction(),
+            "proofs": [],
+            "proof_summary": _empty_proof_summary(),
             "mutation_allowed": False,
         }
 
@@ -69,8 +74,70 @@ def build_portal_payment_instruction(user, *, invoice_id: int) -> dict:
         "amount_due": amount_due if payable else Decimal("0"),
         "bank_transfer": _bank_instruction(identity),
         "qris": _qris_instruction(settings),
+        "proofs": _payment_proof_rows(invoice.id),
+        "proof_summary": _payment_proof_summary(invoice.id),
         "mutation_allowed": False,
     }
+
+
+def _payment_proof_rows(invoice_id: int) -> list[dict]:
+    attachments = (
+        DigitalAttachment.query.filter(
+            DigitalAttachment.module == PORTAL_PAYMENT_MODULE,
+            DigitalAttachment.reference_type == PAYMENT_PROOF_REFERENCE_TYPE,
+            DigitalAttachment.reference_id == invoice_id,
+            DigitalAttachment.is_deleted.is_(False),
+        )
+        .order_by(DigitalAttachment.created_at.desc(), DigitalAttachment.id.desc())
+        .all()
+    )
+    return [
+        {
+            "attachment_id": attachment.id,
+            "attachment_type": attachment.attachment_type,
+            "filename": attachment.original_filename,
+            "file_size": attachment.file_size,
+            "uploaded_at": attachment.created_at,
+            "notes": attachment.notes,
+        }
+        for attachment in attachments
+    ]
+
+
+def _empty_proof_summary() -> dict:
+    return {
+        "count": 0,
+        "pending": 0,
+        "verified": 0,
+        "rejected": 0,
+        "payment_created": 0,
+        "latest_status": "Belum ada bukti",
+    }
+
+
+def _payment_proof_summary(invoice_id: int) -> dict:
+    rows = _payment_proof_rows(invoice_id)
+    summary = _empty_proof_summary()
+    summary["count"] = len(rows)
+    for row in rows:
+        attachment_type = row["attachment_type"]
+        if attachment_type == "PAYMENT_PROOF_PENDING":
+            summary["pending"] += 1
+        elif attachment_type == "PAYMENT_PROOF_VERIFIED":
+            summary["verified"] += 1
+        elif attachment_type == "PAYMENT_PROOF_REJECTED":
+            summary["rejected"] += 1
+        elif attachment_type == "PAYMENT_PROOF_PAYMENT_CREATED":
+            summary["payment_created"] += 1
+    if rows:
+        latest = rows[0]["attachment_type"]
+        summary["latest_status"] = {
+            "PAYMENT_PROOF_PENDING": "Menunggu Finance",
+            "PAYMENT_PROOF_VERIFIED": "Diverifikasi",
+            "PAYMENT_PROOF_REJECTED": "Ditolak",
+            "PAYMENT_PROOF_PAYMENT_CREATED": "Payment Dibuat",
+        }.get(latest, latest)
+    return summary
 
 
 def _empty_bank_instruction() -> dict:

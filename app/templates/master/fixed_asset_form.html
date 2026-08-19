@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if asset %}Edit Aset{% else %}Tambah Aset{% endif %}</span>
-        <h1>{% if asset %}Edit Aset Tetap{% else %}Input Aset Tetap{% endif %}</h1>
-        <p>Kode aset dibuat otomatis oleh sistem untuk menjaga konsistensi data.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Aset Tetap" if asset else "Input Aset Tetap",
+    "Kode aset dibuat otomatis oleh sistem untuk menjaga konsistensi data.",
+    eyebrow="Edit Aset" if asset else "Tambah Aset",
+    actions=[{"label": "Kembali", "url": url_for('master.fixed_assets')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if asset %}{{ url_for('master.edit_fixed_asset', asset_id=asset.id) }}{% else %}{{ url_for('master.create_fixed_asset') }}{% endif %}" data-ui-form="true" class="app-form">

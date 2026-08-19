@@ -1,28 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan | Manual Backfill</span>
-            <h1>Daftar Rekap Manual dari Buku</h1>
-            <p>Register operasional untuk melacak draft, lock, invoice/piutang, pembayaran, dan void pada jalur input belakangan.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.manual_billing_backfill_form') }}" class="btn app-btn-primary">
-                <i class="bi bi-journal-plus"></i>
-                Input Rekap Baru
-            </a>
-            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Rekap Tagihan Mandor
-            </a>
-            <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-                <i class="bi bi-receipt"></i>
-                Invoice
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Daftar Rekap Manual dari Buku",
+        "Register operasional untuk melacak draft, lock, invoice/piutang, pembayaran, dan void pada jalur input belakangan.",
+        "Keuangan | Manual Backfill",
+        actions=[
+            {"label": "Input Rekap Baru", "url": url_for('finance.manual_billing_backfill_form'), "icon": "bi-journal-plus", "variant": "primary"},
+            {"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-arrow-left"},
+            {"label": "Invoice", "url": url_for('finance.invoices'), "icon": "bi-receipt"},
+        ]
+    ) }}
 
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card">

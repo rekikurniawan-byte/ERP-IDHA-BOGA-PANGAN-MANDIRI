@@ -1,27 +1,20 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Reminder Live</span>
-        <h1>Live Reminder Center</h1>
-        <p>Ringkasan hal penting yang perlu dicek dari invoice, hutang supplier, stok, HPP, delivery, bukti digital, dan kas/bank. Halaman ini read-only dan tidak menyimpan notifikasi baru.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-grid-1x2"></i>
-            Dashboard
-        </a>
-        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">
-            <i class="bi bi-activity"></i>
-            Audit Log
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Live Reminder Center",
+    "Ringkasan hal penting yang perlu dicek dari invoice, hutang supplier, stok, HPP, delivery, bukti digital, dan kas/bank.",
+    eyebrow="Reminder Live",
+    actions=[
+        {"label": "Dashboard", "url": url_for('dashboard.index'), "icon": "bi-grid-1x2"},
+        {"label": "Audit Log", "url": url_for('settings.audit_logs'), "icon": "bi-activity"},
+    ]
+) }}
 
 <div class="app-card soft-warning-card">
-    <strong>Read-only.</strong>
+    <strong>Mode pantau.</strong>
     <p>
         Reminder di halaman ini dihitung langsung dari data aktif saat halaman dibuka. Sistem tidak membuat row notification,
         tidak mengubah transaksi, tidak membuat jurnal, tidak memotong stok, dan tidak mengubah database.

@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 {% include "accounting/_accounting_print_report_styles.html" %}
@@ -6,7 +6,7 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <span class="eyebrow">Akuntansi | Print Ready</span>
             <h1>Data Health Check</h1>
             <p>Halaman print-ready. Gunakan Cetak / Save PDF dari browser.</p>
         </div>
@@ -42,14 +42,15 @@
             <div class="app-stat-card print-box"><span>WARNING</span><strong>{{ report.summary.WARNING }}</strong></div>
             <div class="app-stat-card print-box"><span>RISIKO</span><strong>{{ report.summary.RISIKO }}</strong></div>
             <div class="app-stat-card print-box"><span>Section</span><strong>{{ report.sections|length }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
             <div class="app-stat-card print-box"><span>Perubahan Data</span><strong>Tidak ada</strong></div>
         </div>
 
         {% for section in report.sections %}
-        <h5 class="print-section-title">{{ section.title }} — {{ section.status }}</h5>
+        <h5 class="print-section-title">{{ section.title }} €” {{ section.status }}</h5>
         <p class="print-note">{{ section.description }}</p>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Status</th>
@@ -79,9 +80,14 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
         {% endfor %}
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari data health report dan bersifat read-only.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari data health report dan bersifat Mode pantau.</p>
     </div>
 </div>
 {% endblock %}
+
+
+
+

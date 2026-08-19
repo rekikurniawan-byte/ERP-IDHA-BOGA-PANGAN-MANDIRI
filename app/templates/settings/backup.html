@@ -1,22 +1,20 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 {% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Production Safety</span>
-        <h1>Backup Database & Lampiran Digital</h1>
-        <p>Backup verified: verified tetap wajib melewati sensitive action guard: alasan, password re-confirm, dan audit log.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.recovery_center') }}" class="btn app-btn-primary">Recovery Center</a>
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
-        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Backup Database & Lampiran Digital",
+    "Backup verified: verified tetap wajib melewati sensitive action guard: alasan, password re-confirm, dan audit log.",
+    eyebrow="Production Safety",
+    actions=[
+        {"label": "Recovery Center", "url": url_for('settings.recovery_center'), "variant": "primary"},
+        {"label": "System Health", "url": url_for('settings.system_health')},
+        {"label": "Kembali", "url": url_for('dashboard.index')},
+    ]
+) }}
 
 <div class="app-card soft-info-card mb-4">
     <strong>Catatan penting:</strong>
@@ -88,7 +86,7 @@
     <div class="section-title">
         <div>
             <h3>Backup Baseline, Package Policy & Pre-check</h3>
-            <p>Audit read-only untuk memastikan folder aman dan pre-backup health check PASS sebelum backup baru dibuat.</p>
+            <p>Audit Mode pantau untuk memastikan folder aman dan pre-backup health check PASS sebelum backup baru dibuat.</p>
         </div>
         {% if baseline.get("baseline_pass") %}
             <span class="status-badge success">POLICY AMAN</span>
@@ -151,7 +149,7 @@
             <div class="section-title">
                 <div>
                     <h3>Status Database Aktif</h3>
-                    <p>Informasi read-only dari database yang sedang dipakai aplikasi.</p>
+                    <p>Informasi Mode pantau dari database yang sedang dipakai aplikasi.</p>
                 </div>
             </div>
 
@@ -283,8 +281,8 @@
             <div>
                 <h4 class="mb-1">Hasil Validasi</h4>
                 <div class="text-muted small">
-                    File: <strong>{{ restore_validation["filename"] }}</strong> ·
-                    Tipe: <strong>{{ restore_validation["backup_type"] }}</strong> ·
+                    File: <strong>{{ restore_validation["filename"] }}</strong> |
+                    Tipe: <strong>{{ restore_validation["backup_type"] }}</strong> |
                     Dicek: {{ restore_validation["checked_at"].strftime('%d/%m/%Y %H:%M:%S') if restore_validation["checked_at"] else '-' }}
                 </div>
             </div>
@@ -393,7 +391,7 @@
                     <div class="col-md-3"><div class="detail-row"><span>Verified</span><strong>{{ 'YA' if dryrun.get("is_verified_backup") else 'BELUM' }}</strong></div></div>
                 </div>
                 <div class="text-muted small mt-3">
-                    Active DB touched: {{ dryrun.get("preview", {}).get("active_database_touched", False) }} ·
+                    Active DB touched: {{ dryrun.get("preview", {}).get("active_database_touched", False) }} |
                     Active uploads touched: {{ dryrun.get("preview", {}).get("active_uploads_touched", False) }}
                 </div>
             </div>
@@ -612,13 +610,13 @@
                                 <div class="text-muted small mt-1">Schema: {{ backup.manifest_schema_version }}</div>
                             {% endif %}
                             {% if backup.pre_backup_health_status %}
-                                <div class="text-muted small mt-1">Pre-check: {{ backup.pre_backup_health_status }}{% if backup.pre_backup_warning_count %} · {{ backup.pre_backup_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Pre-check: {{ backup.pre_backup_health_status }}{% if backup.pre_backup_warning_count %} | {{ backup.pre_backup_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.post_backup_verification_status %}
-                                <div class="text-muted small mt-1">Post-check: {{ backup.post_backup_verification_status }}{% if backup.post_backup_warning_count %} · {{ backup.post_backup_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Post-check: {{ backup.post_backup_verification_status }}{% if backup.post_backup_warning_count %} | {{ backup.post_backup_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.restore_dry_run_status %}
-                                <div class="text-muted small mt-1">Restore dry-run: {{ backup.restore_dry_run_status }}{% if backup.restore_dry_run_warning_count %} · {{ backup.restore_dry_run_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Restore dry-run: {{ backup.restore_dry_run_status }}{% if backup.restore_dry_run_warning_count %} | {{ backup.restore_dry_run_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.restore_dry_run_schema_version %}
                                 <div class="text-muted small mt-1">Dry-run schema: {{ backup.restore_dry_run_schema_version }}</div>
@@ -711,3 +709,5 @@
 </div>
 </div>
 {% endblock %}
+
+

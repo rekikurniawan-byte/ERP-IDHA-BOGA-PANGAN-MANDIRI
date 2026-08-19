@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if client %}Edit Client{% else %}Tambah Client{% endif %}</span>
-        <h1>{% if client %}Edit Client{% else %}Input Client{% endif %}</h1>
-        <p>Client dipakai untuk mengelompokkan mandor dan data proyek.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.clients') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Client" if client else "Input Client",
+    "Client dipakai untuk mengelompokkan mandor dan data proyek.",
+    eyebrow="Edit Client" if client else "Tambah Client",
+    actions=[{"label": "Kembali", "url": url_for('master.clients')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if client %}{{ url_for('master.edit_client', client_id=client.id) }}{% else %}{{ url_for('master.create_client') }}{% endif %}" data-ui-form="true" class="app-form">

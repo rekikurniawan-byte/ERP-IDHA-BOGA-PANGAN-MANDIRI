@@ -1,18 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Accounting • COA 3002</span>
-            <h1>Closing Periode & Laba Ditahan</h1>
-            <p>Menutup pendapatan dan beban periode ke akun 3002 Laba Ditahan. Closing hanya bisa diposting jika jurnal periode balance dan belum pernah closing.</p>
-        </div>
-        <div class="page-actions accounting-header-actions">
-            <a href="{{ url_for('accounting.reports') }}" class="btn app-btn-secondary">Laporan Akuntansi</a>
-            <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">Jurnal</a>
-        </div>
-    </div>
+    {{ page_header(
+        "Closing Periode & Laba Ditahan",
+        "Menutup pendapatan dan beban periode ke akun 3002 Laba Ditahan. Closing hanya bisa diposting jika jurnal periode balance dan belum pernah closing.",
+        eyebrow="Accounting • COA 3002",
+        actions_class="accounting-header-actions",
+        actions=[
+            {"label": "Laporan Akuntansi", "url": url_for('accounting.reports')},
+            {"label": "Jurnal", "url": url_for('accounting.journals')},
+        ]
+    ) }}
 
 {% set precision_key = 'closing' %}
 

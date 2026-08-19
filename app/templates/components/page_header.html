@@ -5,7 +5,59 @@
    all next UI polish cleanupes.
    ================================================== #}
 
-{% macro page_header(title, description='', eyebrow='', primary_label='', primary_url='', primary_icon='bi-plus-circle', secondary_label='', secondary_url='', secondary_icon='bi-arrow-left', more_actions=[]) %}
+{% macro page_header(title, description='', eyebrow='', primary_label='', primary_url='', primary_icon='bi-plus-circle', secondary_label='', secondary_url='', secondary_icon='bi-arrow-left', more_actions=[], actions=none, actions_class='') %}
+{% if actions is not none %}
+{#- Flat action-list mode. Renders the plain <div class="page-header"> markup
+   that ~175 hand-rolled templates already use (no extra app-page-header /
+   page-title styling classes), so migrating a template to this macro is a
+   zero-visual-diff change, not a redesign. Each item in `actions` is either
+   {label, url, icon='', variant='secondary'} for a plain button, or
+   {label, icon='', dropdown=[{label, url, icon=''}, ...]} for a grouped
+   "Aksi lainnya"-style dropdown -- both patterns already exist across the
+   finance/accounting/portal templates this replaces. See Fase 2,
+   RINCIAN_AUDIT_UI_UX_CSS_ERP_IDHA_BOGA.md. #}
+<div class="page-header">
+    <div>
+        {% if eyebrow %}<span class="eyebrow">{{ eyebrow }}</span>{% endif %}
+        <h1>{{ title }}</h1>
+        {% if description %}<p>{{ description }}</p>{% endif %}
+    </div>
+    {% if actions %}
+    <div class="page-actions finance-header-actions{% if actions_class %} {{ actions_class }}{% endif %}" data-page-actions>
+        {% for action in actions %}
+            {% if action.dropdown is defined %}
+                {% set dropdown_id = "pageHeaderActionDropdown" ~ loop.index %}
+                <div class="dropdown app-action-dropdown" data-action-dropdown="true">
+                    <button class="btn app-btn-secondary dropdown-toggle" type="button" id="{{ dropdown_id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if action.icon is defined and action.icon %}<i class="bi {{ action.icon }}" aria-hidden="true"></i>{% endif %}
+                        {{ action.label }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="{{ dropdown_id }}">
+                        {% for item in action.dropdown %}
+                            <li>
+                                <a class="dropdown-item" href="{{ item.url }}">
+                                    {% if item.icon is defined and item.icon %}<i class="bi {{ item.icon }}" aria-hidden="true"></i>{% endif %}
+                                    {{ item.label }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <a href="{{ action.url }}" class="btn app-btn-{{ action.variant if action.variant is defined else 'secondary' }}"{% if action.target is defined and action.target %} target="{{ action.target }}"{% endif %}>
+                    {% if action.icon is defined and action.icon %}<i class="bi {{ action.icon }}" aria-hidden="true"></i>{% endif %}
+                    {{ action.label }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% else %}
+{#- Legacy primary/secondary/more_actions mode. Kept as-is for existing
+   callers (adds app-page-header / page-title styling on top of the plain
+   pattern above) -- do not change this branch's markup without checking
+   every current caller, since it is a different, already-styled contract. #}
 <div class="page-header app-page-header" data-page-header>
     <div class="page-header-main">
         {% if eyebrow %}<span class="eyebrow">{{ eyebrow }}</span>{% endif %}
@@ -45,6 +97,31 @@
             </div>
         {% endif %}
     </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro portal_page_header(title, description='', eyebrow='Portal', status_label='', link_label='', link_url='', link_icon='') %}
+{#- Portal module's header pattern -- byte-for-byte match of the 12 identical
+   hand-rolled portal/*.html headers (page-eyebrow/page-description classes,
+   not the plain .eyebrow used by page_header()'s flat-action mode; status
+   pill instead of buttons). Kept as its own macro instead of another
+   page_header() variant since the two patterns share no markup. See Fase 2,
+   RINCIAN_AUDIT_UI_UX_CSS_ERP_IDHA_BOGA.md. #}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">{{ eyebrow }}</p>
+        <h1>{{ title }}</h1>
+        {% if description %}<p class="page-description">{{ description }}</p>{% endif %}
+    </div>
+    {% if link_label and link_url %}
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ link_url }}">{% if link_icon %}<i class="bi {{ link_icon }}"></i> {% endif %}{{ link_label }}</a>
+            {% if status_label %}<span class="status-badge neutral">{{ status_label }}</span>{% endif %}
+        </div>
+    {% elif status_label %}
+        <span class="status-badge neutral">{{ status_label }}</span>
     {% endif %}
 </div>
 {% endmacro %}

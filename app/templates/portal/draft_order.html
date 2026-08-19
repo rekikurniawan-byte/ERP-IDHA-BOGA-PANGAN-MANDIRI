@@ -1,89 +1,371 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set context = data.context %}
+{% set scope = context.scope %}
+{% set summary = context.draft_summary %}
+{% set precheck = context.payment_precheck %}
+{% if current_user.role == "PORTAL_PT" %}
+<section class="portal-feature-page portal-workflow-page portal-order-page portal-pt-no-order-page">
+    <div class="portal-feature-hero portal-workflow-hero portal-order-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.pt_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>Portal PT</p>
+            <h1>PT tidak membuat pesanan personal.</h1>
+            <span>Akses rekap perusahaan</span>
+        </div>
+        <strong class="portal-hero-status">Monitoring</strong>
+    </div>
+
+    <div class="portal-home-grid two">
+        <section class="portal-home-panel">
+            <div class="portal-home-panel-head">
+                <div>
+                    <span>Alur yang benar</span>
+                    <h2>Order dibuat oleh mandor atau pelanggan.</h2>
+                </div>
+                <i class="bi bi-diagram-3"></i>
+            </div>
+            <div class="portal-customer-flow">
+                <article class="done"><i class="bi bi-person-check"></i><strong>Mandor/Pelanggan login</strong></article>
+                <article class="done"><i class="bi bi-card-checklist"></i><strong>Membuat draft pesanan</strong></article>
+                <article><i class="bi bi-shield-check"></i><strong>Admin konfirmasi pesanan</strong></article>
+                <article><i class="bi bi-building"></i><strong>PT memantau rekap tagihan</strong></article>
+            </div>
+        </section>
+
+        <section class="portal-home-panel">
+            <div class="portal-home-panel-head">
+                <div>
+                    <span>Fitur PT</span>
+                    <h2>Kontrol mandor, invoice, piutang, dan kontrak.</h2>
+                </div>
+                <i class="bi bi-building-check"></i>
+            </div>
+            <div class="portal-home-action-grid">
+                <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh Mandor</strong><small>Perusahaan</small></a>
+                <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Total sisa tagihan</small></a>
+                <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Invoice</strong><small>Diterbitkan dan belum lunas</small></a>
+                <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Pembayaran</strong><small>Riwayat bayar</small></a>
+            </div>
+        </section>
+    </div>
+</section>
+{% else %}
+<section class="portal-feature-page portal-workflow-page portal-order-page" data-portal-order-page>
+    <div class="portal-feature-hero portal-workflow-hero portal-order-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p>Portal Order</p>
-            <h1>Order Catering</h1>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>Pesan Catering</h1>
             <span>{{ data.status_label }}</span>
         </div>
+        <strong class="portal-hero-status">{{ "Siap Pesan" if context.allowed else "Belum Aktif" }}</strong>
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>Draft Order</h2>
-        <p>Order ini masuk antrian admin. Belum menyentuh produksi, stok, invoice, payment, atau jurnal.</p>
-        <div class="portal-source-pill"><i class="bi bi-shield-check"></i><span>ERP existing - idempotent draft</span></div>
+    <div class="portal-order-command-grid">
+        <section class="portal-workflow-panel primary portal-order-command">
+            <div class="portal-workflow-panel-head">
+                <span class="portal-source-pill"><i class="bi bi-bag-check"></i> Pesanan Baru</span>
+                <strong>{{ summary.total }} draft</strong>
+            </div>
+            <h2>Pesanan masuk ke admin sebelum diproses</h2>
+            <p>Setelah dikirim, admin akan memeriksa pesanan dan melanjutkannya ke operasional. Pelanggan umum wajib menyertakan bukti pembayaran awal.</p>
+            <div class="portal-workflow-steps">
+                <div class="is-active"><i class="bi bi-person-check"></i><span>Login</span></div>
+                <div class="is-active"><i class="bi bi-card-checklist"></i><span>Draft</span></div>
+                <div class="{{ 'is-active' if summary.confirmed else '' }}"><i class="bi bi-shield-check"></i><span>Admin</span></div>
+                <div><i class="bi bi-egg-fried"></i><span>Produksi</span></div>
+                <div><i class="bi bi-truck"></i><span>Kirim</span></div>
+            </div>
+        </section>
+
+        <aside class="portal-workflow-panel portal-order-scope">
+            <div class="portal-workflow-panel-head">
+                <span>Akses Akun</span>
+                <strong>{{ "Aktif" if context.allowed else "Belum Aktif" }}</strong>
+            </div>
+            <div class="portal-workflow-facts">
+                <article><span>Perusahaan</span><strong>{{ scope.client_ids|length }}</strong></article>
+                <article><span>Mandor</span><strong>{{ scope.mandor_ids|length }}</strong></article>
+                <article><span>Lokasi</span><strong>{{ context.location_cards|length }}</strong></article>
+                <article><span>Menunggu</span><strong>{{ summary.pending }}</strong></article>
+            </div>
+            <p class="portal-muted-note">{{ context.reason or "Akses pesanan mengikuti data akun." }}</p>
+        </aside>
     </div>
 
-    {% if data.context.allowed %}
-        <form method="post" action="{{ url_for('portal.draft_order') }}" class="portal-mobile-form">
+    <div class="portal-precheck-card tone-{{ precheck.tone }}">
+        <div>
+            <span class="portal-source-pill"><i class="bi bi-shield-check"></i> Cek Pembayaran</span>
+            <h2>{{ precheck.status }}</h2>
+            <p>{{ precheck.message }}</p>
+        </div>
+        <div class="portal-precheck-grid">
+            <article><span>Bukti</span><strong>{{ precheck.proof_count }}</strong><small>Total bukti</small></article>
+            <article><span>Menunggu</span><strong>{{ precheck.pending_count }}</strong><small>Perlu dicek</small></article>
+            <article><span>Diverifikasi</span><strong>{{ precheck.verified_count }}</strong><small>Bukti sah</small></article>
+            <article><span>Tagihan</span><strong>{{ precheck.payable_invoice_count }}</strong><small>{{ precheck.outstanding_amount|rupiah }}</small></article>
+        </div>
+        {% if precheck.action_endpoint %}
+            <a class="portal-secondary-action" href="{{ url_for(precheck.action_endpoint) }}">
+                <i class="bi bi-credit-card"></i>
+                <span>{{ precheck.action_label }}</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="portal-order-policy-strip">
+        <article>
+            <span>Batas Makan Siang</span>
+            <strong>{{ context.cutoff_times.LUNCH }}</strong>
+            <small>Order hari ini setelah jam ini perlu approval admin/checker.</small>
+        </article>
+        <article>
+            <span>Batas Makan Malam</span>
+            <strong>{{ context.cutoff_times.DINNER }}</strong>
+            <small>Order hari ini setelah jam ini tidak langsung diproses.</small>
+        </article>
+        <article>
+            <span>Pelanggan Umum</span>
+            <strong>{{ "Bayar Dulu" if context.prepayment_required else "Tempo/Kredit" }}</strong>
+            <small>{{ "Bukti awal wajib diperiksa sebelum diproses." if context.prepayment_required else "Mengikuti tempo dan kontrak yang berlaku." }}</small>
+        </article>
+    </div>
+
+    <div class="portal-order-mini-ledger">
+        <article>
+            <span>Total Draft</span>
+            <strong>{{ summary.total }}</strong>
+            <small>{{ summary.portion_total }} porsi tercatat</small>
+        </article>
+        <article>
+            <span>Menunggu Admin</span>
+            <strong>{{ summary.pending }}</strong>
+            <small>{{ summary.next_pending_date.strftime('%d-%m-%Y') if summary.next_pending_date else "Tidak ada antrian" }}</small>
+        </article>
+        <article>
+            <span>Siang</span>
+            <strong>{{ summary.lunch_portion_total }}</strong>
+            <small>Porsi draft siang</small>
+        </article>
+        <article>
+            <span>Malam</span>
+            <strong>{{ summary.dinner_portion_total }}</strong>
+            <small>Porsi draft malam</small>
+        </article>
+    </div>
+
+    {% if context.allowed %}
+        <form method="post" action="{{ url_for('portal.draft_order') }}" class="portal-order-builder" data-portal-order-form data-app-confirm="Kirim draft order ini ke admin?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="idempotency_key" value="{{ data.idempotency_key }}">
 
-            <label>
-                <span>Tanggal</span>
-                <input type="date" name="order_date" required>
-            </label>
+            <div class="portal-order-builder-main">
+                <div class="portal-section-heading">
+                    <h2>Detail Pesanan</h2>
+                    <span>Aman dari kirim ganda</span>
+                </div>
+                <div class="portal-form-grid">
+                    <label>
+                    <span>Tanggal Pesanan</span>
+                        <input type="date" name="order_date" required data-portal-order-date>
+                    </label>
+                    <label>
+                        <span>Sesi Makan</span>
+                        <select name="meal_type" required data-portal-meal-type>
+                            {% for value, label in context.meal_types.items() %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span>Lokasi Pengiriman</span>
+                        <select name="delivery_location_id" required data-portal-location-select>
+                            {% for location in context.location_cards %}
+                                <option
+                                    value="{{ location.id }}"
+                                    data-client-name="{{ location.client_name }}"
+                                    data-mandor-name="{{ location.mandor_name }}"
+                                    data-location-description="{{ location.description or '' }}"
+                                >
+                                    {{ location.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span>Jumlah Porsi</span>
+                        <input type="number" name="portion_qty" min="1" step="1" inputmode="numeric" required data-portal-portion-input>
+                    </label>
+                    <label>
+                        <span>Jam Kirim</span>
+                        <input type="time" name="delivery_time" data-portal-time-input>
+                    </label>
+                    <label>
+                        <span>Nama Penerima</span>
+                        <input type="text" name="contact_name" maxlength="120" placeholder="Nama orang di lokasi" data-portal-contact-input>
+                    </label>
+                    <label>
+                        <span>Nomor HP Penerima</span>
+                        <input type="tel" name="contact_phone" maxlength="40" placeholder="08..." data-portal-phone-input>
+                    </label>
+                </div>
+                <label class="portal-form-wide">
+                    <span>Catatan Pesanan</span>
+                    <textarea name="notes" rows="4" maxlength="1000" placeholder="Contoh: kirim jam 11.00, tanpa pedas, tambahan sendok." data-portal-notes></textarea>
+                </label>
 
-            <label>
-                <span>Sesi Makan</span>
-                <select name="meal_type" required>
-                    <option value="LUNCH">Lunch</option>
-                    <option value="DINNER">Dinner</option>
-                </select>
-            </label>
+                <div class="portal-order-live-preview" data-portal-order-preview>
+                    <div>
+                        <span>Pratinjau Draft</span>
+                        <strong data-portal-preview-title>Pilih tanggal, lokasi, dan jumlah porsi</strong>
+                    </div>
+                    <p data-portal-preview-detail>Pesanan ini menunggu admin sebelum masuk proses produksi dan pengiriman.</p>
+                </div>
+            </div>
 
-            <label>
-                <span>Lokasi</span>
-                <select name="delivery_location_id" required>
-                    {% for location in data.context.location_options %}
-                        <option value="{{ location.id }}">{{ location.location_name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-
-            <label>
-                <span>Jumlah Porsi</span>
-                <input type="number" name="portion_qty" min="1" step="1" inputmode="numeric" required>
-            </label>
-
-            <label>
-                <span>Catatan</span>
-                <textarea name="notes" rows="3" placeholder="Contoh: tanpa pedas, kirim jam 11.00"></textarea>
-            </label>
-
-            <button class="portal-primary-action" type="submit">
-                <i class="bi bi-send"></i>
-                <span>Kirim Draft Order</span>
-            </button>
+            <aside class="portal-order-submit-card">
+                <i class="bi bi-bag-check"></i>
+                <h3>Kirim sebagai draft</h3>
+                <p>Admin memeriksa pesanan agar jadwal, pembayaran, dan pengiriman tetap rapi.</p>
+                <button class="portal-primary-action" type="submit" data-portal-submit-label>
+                    <i class="bi bi-send"></i>
+                    <span>Kirim Draft Pesanan</span>
+                </button>
+                <small>Kirim ganda otomatis dicegah.</small>
+            </aside>
         </form>
     {% else %}
-        <div class="portal-mobile-alert">
-            <strong>Belum Bisa Membuat Draft</strong><br>
-            {{ data.context.reason or "Mapping portal belum memiliki akses DRAFT_ORDER." }}
+        <div class="portal-blocked-state portal-order-blocked">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Belum Bisa Membuat Draft</h2>
+                <p>{{ context.reason or "Akun belum bisa membuat pesanan. Hubungi admin." }}</p>
+                {% if context.prepayment_required %}
+                    <a class="portal-secondary-action" href="{{ url_for('portal.customer_payments') }}">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Lihat Pembayaran</span>
+                    </a>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Riwayat Draft</h2>
-        <span>{{ data.context.drafts|length }} draft</span>
+        <h2>Lokasi Dalam Akses</h2>
+        <span>{{ context.location_cards|length }} lokasi</span>
     </div>
-
-    <div class="portal-card-list">
-        {% for draft in data.context.drafts %}
-            <article class="portal-mobile-card">
+    <div class="portal-location-scope-grid">
+        {% for location in context.location_cards %}
+            <article class="portal-location-scope-card">
                 <div>
-                    <h3>{{ draft.meal_type }} - {{ draft.portion_qty }} porsi</h3>
-                    <p>{{ draft.order_date.strftime('%d-%m-%Y') }} - {{ draft.delivery_location.location_name if draft.delivery_location else '-' }}</p>
-                    {% if draft.notes %}<p>{{ draft.notes }}</p>{% endif %}
+                    <span class="portal-source-pill"><i class="bi bi-geo-alt"></i> Lokasi</span>
+                    <h3>{{ location.name }}</h3>
+                    <p>{{ location.description or "Belum ada catatan lokasi." }}</p>
                 </div>
-                <strong>{{ draft.status }}</strong>
+                <dl>
+                    <div><dt>PT/Client</dt><dd>{{ location.client_name }}</dd></div>
+                    <div><dt>Mandor</dt><dd>{{ location.mandor_name }}</dd></div>
+                    <div><dt>Status</dt><dd>{{ "Aktif" if location.is_active else "Nonaktif" }}</dd></div>
+                </dl>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada draft order dari user ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-geo-alt"></i>
+                <strong>Belum ada lokasi aktif</strong>
+                <p>Admin perlu menambahkan lokasi pengiriman untuk akun ini.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="portal-section-heading">
+        <h2>Pesanan Terhubung</h2>
+        <span>{{ context.daily_order_conflicts|length }} record terbaru</span>
+    </div>
+    <div class="portal-order-conflict-list">
+        {% for order in context.daily_order_conflicts %}
+            <article class="portal-order-conflict-card {{ 'is-locked' if order.is_locked else '' }}">
+                <div>
+                    <strong>{{ order.order_number }}</strong>
+                    <p>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} | {{ order.location_name }}</p>
+                    <span>{{ order.mandor_name }} - {{ order.portion_label }}</span>
+                </div>
+                <div>
+                    <span class="portal-status-pill">{{ order.status }}</span>
+                    {% if order.is_locked %}
+                        <small>Dikunci</small>
+                    {% else %}
+                        <small>Dapat direview admin</small>
+                    {% endif %}
+                </div>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-clipboard-check"></i>
+                <strong>Belum ada pesanan terhubung</strong>
+                <p>Setelah admin konfirmasi, status pesanan akan tampil di sini.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="portal-section-heading">
+        <h2>Riwayat Draft</h2>
+        <span>{{ context.drafts|length }} draft terakhir</span>
+    </div>
+
+    <div class="portal-record-list portal-draft-history">
+        {% for row in context.draft_rows %}
+            {% set draft = row.draft %}
+            <article class="portal-record-card">
+                <div class="portal-record-main">
+                    <span class="portal-record-icon"><i class="bi bi-bag"></i></span>
+                    <div>
+                        <h3>{{ row.meal_type_label }} - {{ draft.portion_qty }} porsi</h3>
+                        <p>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} | {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</p>
+                        <div class="portal-chip-row">
+                            <span>{{ row.status_label }}</span>
+                            <span>{{ draft.submitted_at.strftime('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</span>
+                            {% if draft.converted_daily_order %}<span>{{ draft.converted_daily_order.order_number }}</span>{% endif %}
+                        </div>
+                        {% if draft.notes %}<p>{{ draft.notes }}</p>{% endif %}
+                        {% if draft.review_note %}<p>Catatan admin: {{ draft.review_note }}</p>{% endif %}
+                        {% if row.gate %}
+                            <div class="portal-draft-gate-grid">
+                                {% for gate in row.gate.gates %}
+                                    <span class="portal-gate-pill tone-{{ gate.tone }}">
+                                        <i class="bi bi-check2-circle"></i>
+                                        {{ gate.title }}: {{ gate.label }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                            {% if row.needs_payment %}
+                                <form method="post" enctype="multipart/form-data" action="{{ url_for('portal.upload_draft_payment_proof', draft_id=draft.id) }}" class="portal-draft-proof-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <label>
+                                        <span>Unggah bukti pembayaran awal</span>
+                                        <input type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                                    </label>
+                                    <input type="text" name="notes" maxlength="300" placeholder="Catatan transfer/QRIS">
+                                    <button class="portal-secondary-action" type="submit">
+                                        <i class="bi bi-upload"></i>
+                                        <span>Unggah Bukti</span>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <strong class="portal-status-pill">{{ row.status_label }}</strong>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-inbox"></i>
+                <strong>Belum ada pesanan</strong>
+                <p>Draft pertama akan tampil di sini setelah dikirim.</p>
+            </div>
         {% endfor %}
     </div>
 </section>
+{% endif %}
 {% endblock %}

@@ -1,23 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan • COA 5003 / 5011</span>
-        <h1>Transport & BBM</h1>
-        <p>Biaya transport dan BBM diposting langsung ke COA yang tepat: 5003 untuk transportasi, 5011 untuk BBM kendaraan.</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        {% if schema_ready %}
-            <a href="{{ url_for('finance.transport_expense_create') }}" class="btn app-btn-primary">
-                <i class="bi bi-plus-circle"></i>
-                Catat Biaya
-            </a>
-        {% endif %}
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Buku Kas/Bank</a>
-    </div>
-</div>
+{% set header_actions = [] %}
+{% if schema_ready %}
+    {% do header_actions.append({"label": "Catat Biaya", "url": url_for('finance.transport_expense_create'), "icon": "bi-plus-circle", "variant": "primary"}) %}
+{% endif %}
+{% do header_actions.append({"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger')}) %}
+{{ page_header(
+    "Transport & BBM",
+    "Biaya transport dan BBM diposting langsung ke COA yang tepat: 5003 untuk transportasi, 5011 untuk BBM kendaraan.",
+    "Keuangan • COA 5003 / 5011",
+    actions=header_actions
+) }}
 {% set precision_key = 'transport' %}
 
 {% if not schema_ready %}

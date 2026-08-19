@@ -1,18 +1,16 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
+<!-- Belum ada invoice dalam scope portal -->
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Invoice Portal</h1>
-            <p class="page-description">Invoice read-only sesuai ownership client/mandor/delegasi.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Invoice Portal",
+        "Invoice yang terhubung dengan akun ini.",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
@@ -23,9 +21,9 @@
                     <div class="col-md-3"><strong>{{ data.model.totals.invoice_count }}</strong><div class="text-muted small">Invoice</div></div>
                     <div class="col-md-3"><strong>{{ data.model.totals.total_amount|rupiah }}</strong><div class="text-muted small">Total</div></div>
                     <div class="col-md-3"><strong>{{ data.model.totals.paid_amount|rupiah }}</strong><div class="text-muted small">Terbayar</div></div>
-                    <div class="col-md-3"><strong>{{ data.model.totals.active_outstanding_amount|rupiah }}</strong><div class="text-muted small">Outstanding aktif</div></div>
+                    <div class="col-md-3"><strong>{{ data.model.totals.active_outstanding_amount|rupiah }}</strong><div class="text-muted small">Sisa tagihan aktif</div></div>
                 </div>
-                <div class="table-responsive app-table-wrap">
+                <div class="table-responsive app-table-wrapper">
                     <table class="table app-table align-middle mb-0">
                         <thead>
                             <tr>
@@ -34,8 +32,8 @@
                                 <th>Jatuh Tempo</th>
                                 <th>Status</th>
                                 <th class="text-end">Total</th>
-                                <th class="text-end">Paid</th>
-                                <th class="text-end">Remaining</th>
+                                <th class="text-end">Terbayar</th>
+                                <th class="text-end">Sisa</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
@@ -54,7 +52,7 @@
                                     </td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="8" class="text-muted text-center">Belum ada invoice dalam scope portal.</td></tr>
+                                <tr><td colspan="8" class="text-muted text-center">Belum ada invoice dalam akses portal.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -64,3 +62,5 @@
     </div>
 </section>
 {% endblock %}
+
+

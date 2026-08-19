@@ -1,25 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-operational-page="daily-catering-log">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Operasional Catering</span>
-            <h1>Log Catering Harian</h1>
-            <p>Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per mandor/lokasi.</p>
-        </div>
-
-        <div class="page-actions">
-            <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
-                <i class="bi bi-plus-circle"></i>
-                Input Order
-            </a>
-            <a href="{{ url_for('operational.monthly_catering_recap') }}" class="btn app-btn-secondary">
-                <i class="bi bi-calendar3"></i>
-                Rekap Catering Bulanan
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Log Catering Harian",
+        "Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per mandor/lokasi.",
+        eyebrow="Operasional Catering",
+        actions=[
+            {"label": "Input Order", "url": url_for('operational.create_order'), "icon": "bi-plus-circle", "variant": "primary"},
+            {"label": "Rekap Catering Bulanan", "url": url_for('operational.monthly_catering_recap'), "icon": "bi-calendar3"},
+        ]
+    ) }}
 
 
     <div class="app-card">

@@ -82,7 +82,9 @@
 <aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
     <div class="sidebar-brand">
         <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand-link" aria-label="Kembali ke dashboard">
-            <div class="brand-mark">IB</div>
+            {% with class_name="brand-mark company-logo-mark" %}
+                {% include "components/company_logo.html" %}
+            {% endwith %}
             <div>
                 <div class="brand-title">IDHA BOGA</div>
                 <div class="brand-subtitle">Pangan Mandiri</div>

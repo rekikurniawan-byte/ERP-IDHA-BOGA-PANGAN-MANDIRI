@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
@@ -7,7 +7,7 @@
 <div class="print-report-shell" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Keuangan · Manual Backfill · Print Ready</span>
+            <span class="eyebrow">Keuangan | Manual Backfill | Print Ready</span>
             <h1>Cetak Rekap Manual dari Buku</h1>
             <p>Dokumen pembanding buku manual. Gunakan tombol Cetak / Save PDF dari browser.</p>
         </div>
@@ -64,12 +64,13 @@
             <div class="app-stat-card print-box"><span>Alamat Pihak</span><strong>{{ bill_to_context.address or '-' }}</strong></div>
             <div class="app-stat-card print-box"><span>Catatan Pihak</span><strong>{{ bill_to_context.notes or '-' }}</strong></div>
             <div class="app-stat-card print-box"><span>Catatan Rekap</span><strong>{{ batch.notes or '-' }}</strong></div>
-            <div class="app-stat-card print-box"><span>Catatan Dokumen</span><strong>Read-only, tidak mengubah data sistem</strong></div>
+            <div class="app-stat-card print-box"><span>Catatan Dokumen</span><strong>Mode pantau, tidak mengubah data sistem</strong></div>
         </div>
 
         {% if catering_rows %}
         <h5 class="mt-4">Rincian Catering</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>No</th>
@@ -103,11 +104,13 @@
                 </tr>
             </tfoot>
         </table>
+</div>
         {% endif %}
 
         {% if warung_rows %}
         <h5 class="mt-4">Rincian Warung / Kasbon</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>No</th>
@@ -141,11 +144,13 @@
                 </tr>
             </tfoot>
         </table>
+</div>
         {% endif %}
 
         {% if other_rows %}
         <h5 class="mt-4">Rincian Lainnya</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>No</th>
@@ -179,6 +184,7 @@
                 </tr>
             </tfoot>
         </table>
+</div>
         {% endif %}
 
         <div class="print-signature-grid">
@@ -200,3 +206,7 @@
 </div>
 </div>
 {% endblock %}
+
+
+
+

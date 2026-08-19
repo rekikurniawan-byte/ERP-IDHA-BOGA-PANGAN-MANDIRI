@@ -1,18 +1,16 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
+<!-- {{ data.profile.scope_mode }} -->
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Profil Scope Portal</h1>
-            <p class="page-description">Mapping akun portal terhadap data master existing.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Profil Portal",
+        "Akses akun portal terhadap data master .",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
@@ -26,8 +24,8 @@
                     <div class="fw-semibold">{{ data.profile.branch_id or '-' }}</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
-                    <div class="fw-semibold">{{ data.profile.scope_mode }}</div>
+                    <div class="text-muted small text-uppercase fw-bold">Akses akun</div>
+                    <div class="fw-semibold">{{ "Aktif" if data.profile.allowed else "Belum aktif" }}</div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Access</div>
@@ -42,12 +40,12 @@
 
     <div class="app-card mt-3">
         <div class="card-body">
-            <div class="table-responsive app-table-wrap">
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Area</th>
-                            <th>Total Scope</th>
+                            <th>Total Akses</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -75,8 +73,8 @@
 
     <div class="app-card mt-3">
         <div class="card-body">
-            <h2 class="h5 mb-3">Mapping Aktif</h2>
-            <div class="table-responsive app-table-wrap">
+            <h2 class="h5 mb-3">Akses Aktif</h2>
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
@@ -102,7 +100,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="text-muted">Belum ada mapping aktif untuk user ini.</td>
+                                <td colspan="7" class="text-muted">Belum ada akses aktif untuk user ini.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -112,3 +110,4 @@
     </div>
 </section>
 {% endblock %}
+

@@ -1,22 +1,17 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="packaging_profiles">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 3</span>
-        <h1>Profil Kemasan</h1>
-        <p>Kelola biaya kemasan per porsi untuk kalkulator HPP. Data ini masih read-only dan belum memotong stok.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('costing.hpp_calculator') }}" class="btn app-btn-secondary">Kalkulator HPP</a>
-        <a href="{{ url_for('costing.create_packaging_profile') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Profil Kemasan
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Profil Kemasan",
+    "Kelola biaya kemasan per porsi untuk kalkulator HPP. Data ini masih Mode pantau dan belum memotong stok.",
+    eyebrow="HPP Tahap 3",
+    actions=[
+        {"label": "Kalkulator HPP", "url": url_for('costing.hpp_calculator')},
+        {"label": "Tambah Profil Kemasan", "url": url_for('costing.create_packaging_profile'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 
 
@@ -106,3 +101,4 @@
 </div>
 </div>
 {% endblock %}
+

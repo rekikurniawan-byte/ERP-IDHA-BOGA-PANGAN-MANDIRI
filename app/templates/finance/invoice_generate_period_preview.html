@@ -1,22 +1,15 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Lihat Data Buat Invoice Periode Client</h1>
-        <p>Lihat Data tagihan resmi ke client/perusahaan yang berisi catering, revisi tambah, dan hutang warung dalam satu periode.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Invoice
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Lihat Data Buat Invoice Periode Client",
+    "Lihat Data tagihan resmi ke client/perusahaan yang berisi catering, revisi tambah, dan hutang warung dalam satu periode.",
+    "Finance",
+    actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="app-card soft-warning-card">
     <strong>Step Aman</strong>

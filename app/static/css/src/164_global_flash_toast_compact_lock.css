@@ -1,0 +1,365 @@
+/*
+   Global Flash Toast Compact Lock
+   Flash messages should read like modern web toasts, not oversized hero cards.
+   CSS only; affects success/warning/error/info flash containers and close icons.
+*/
+
+:root {
+    --gft-success-bg: #f0fdf4;
+    --gft-success-line: #86efac;
+    --gft-success-accent: #16a34a;
+    --gft-success-text: #14532d;
+    --gft-info-bg: #f8fafc;
+    --gft-info-line: #cbd5e1;
+    --gft-info-accent: #2563eb;
+    --gft-info-text: #1e293b;
+    --gft-warning-bg: #fffbeb;
+    --gft-warning-line: #fcd34d;
+    --gft-warning-accent: #d97706;
+    --gft-warning-text: #78350f;
+    --gft-danger-bg: #fef2f2;
+    --gft-danger-line: #fca5a5;
+    --gft-danger-accent: #dc2626;
+    --gft-danger-text: #7f1d1d;
+}
+
+/* Runtime flash host: top-end toast stack, not a centered modal-like banner. */
+.app-flash-center-host {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2140 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    padding: 18px 22px !important;
+    pointer-events: none !important;
+}
+
+.app-flash-center-stack {
+    width: min(420px, calc(100vw - 32px)) !important;
+    max-height: min(80vh, 560px) !important;
+    display: grid !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+}
+
+.auth-alert-wrapper {
+    width: min(720px, calc(100vw - 32px)) !important;
+    margin: 0 auto 18px !important;
+    display: grid !important;
+    gap: 10px !important;
+}
+
+.container-fluid > .app-alert,
+.content-area .app-alert,
+.auth-alert-wrapper .app-alert,
+.portal-mobile-flashes .app-alert {
+    width: min(720px, 100%) !important;
+    min-height: 46px !important;
+    margin: 0 auto 14px !important;
+    padding: 11px 44px 11px 46px !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--gft-info-line) !important;
+    border-left-width: 4px !important;
+    background: var(--gft-info-bg) !important;
+    background-image: none !important;
+    color: var(--gft-info-text) !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .07) !important;
+    font-size: .94rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0 !important;
+}
+
+.auth-page .auth-alert-wrapper .app-alert {
+    margin-top: 0 !important;
+}
+
+.container-fluid > .app-alert::before,
+.content-area .app-alert::before,
+.auth-alert-wrapper .app-alert::before,
+.portal-mobile-flashes .app-alert::before {
+    content: "i" !important;
+    width: 26px !important;
+    height: 26px !important;
+    position: absolute !important;
+    left: 13px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    background: rgba(37, 99, 235, .1) !important;
+    color: var(--gft-info-accent) !important;
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+}
+
+.container-fluid > .alert-success.app-alert,
+.content-area .alert-success.app-alert,
+.auth-alert-wrapper .alert-success.app-alert,
+.portal-mobile-flashes .alert-success.app-alert {
+    border-color: var(--gft-success-line) !important;
+    border-left-color: var(--gft-success-accent) !important;
+    background: var(--gft-success-bg) !important;
+    color: var(--gft-success-text) !important;
+}
+
+.container-fluid > .alert-success.app-alert::before,
+.content-area .alert-success.app-alert::before,
+.auth-alert-wrapper .alert-success.app-alert::before,
+.portal-mobile-flashes .alert-success.app-alert::before {
+    content: "✓" !important;
+    background: rgba(22, 163, 74, .12) !important;
+    color: var(--gft-success-accent) !important;
+}
+
+.container-fluid > .alert-warning.app-alert,
+.content-area .alert-warning.app-alert,
+.auth-alert-wrapper .alert-warning.app-alert,
+.portal-mobile-flashes .alert-warning.app-alert {
+    border-color: var(--gft-warning-line) !important;
+    border-left-color: var(--gft-warning-accent) !important;
+    background: var(--gft-warning-bg) !important;
+    color: var(--gft-warning-text) !important;
+}
+
+.container-fluid > .alert-warning.app-alert::before,
+.content-area .alert-warning.app-alert::before,
+.auth-alert-wrapper .alert-warning.app-alert::before,
+.portal-mobile-flashes .alert-warning.app-alert::before {
+    content: "!" !important;
+    background: rgba(217, 119, 6, .12) !important;
+    color: var(--gft-warning-accent) !important;
+}
+
+.container-fluid > .alert-danger.app-alert,
+.content-area .alert-danger.app-alert,
+.auth-alert-wrapper .alert-danger.app-alert,
+.portal-mobile-flashes .alert-danger.app-alert {
+    border-color: var(--gft-danger-line) !important;
+    border-left-color: var(--gft-danger-accent) !important;
+    background: var(--gft-danger-bg) !important;
+    color: var(--gft-danger-text) !important;
+}
+
+.container-fluid > .alert-danger.app-alert::before,
+.content-area .alert-danger.app-alert::before,
+.auth-alert-wrapper .alert-danger.app-alert::before,
+.portal-mobile-flashes .alert-danger.app-alert::before {
+    content: "×" !important;
+    background: rgba(220, 38, 38, .12) !important;
+    color: var(--gft-danger-accent) !important;
+}
+
+.container-fluid > .app-alert .btn-close,
+.content-area .app-alert .btn-close,
+.auth-alert-wrapper .app-alert .btn-close {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 10px !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    opacity: .62 !important;
+}
+
+.container-fluid > .app-alert .btn-close:hover,
+.content-area .app-alert .btn-close:hover,
+.auth-alert-wrapper .app-alert .btn-close:hover {
+    background-color: rgba(15, 23, 42, .06) !important;
+    opacity: .86 !important;
+}
+
+.container-fluid > .app-alert .btn-close:focus,
+.content-area .app-alert .btn-close:focus,
+.auth-alert-wrapper .app-alert .btn-close:focus {
+    outline: 2px solid rgba(37, 99, 235, .24) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+.portal-mobile-flashes {
+    width: min(720px, calc(100% - 24px)) !important;
+    margin: 0 auto 16px !important;
+    display: grid !important;
+    gap: 10px !important;
+}
+
+.portal-mobile-flashes .app-alert {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+}
+
+/*
+   Runtime flash enhancer adds .app-flash-centered. Override that exact class
+   because it was the source of the oversized rounded banner in the login shot.
+*/
+.app-alert.app-flash-centered {
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 10px 38px 10px 42px !important;
+    display: block !important;
+    position: relative !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--gft-info-line) !important;
+    border-left: 4px solid var(--gft-info-accent) !important;
+    background: var(--gft-info-bg) !important;
+    background-image: none !important;
+    color: var(--gft-info-text) !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .06) !important;
+    font-size: .92rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0 !important;
+    overflow: hidden !important;
+}
+
+.app-alert.app-flash-centered::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 auto 0 0 !important;
+    width: 0 !important;
+    height: auto !important;
+    background: transparent !important;
+}
+
+.app-alert.app-flash-centered::after {
+    content: "i" !important;
+    width: 24px !important;
+    height: 24px !important;
+    position: absolute !important;
+    left: 11px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    background: rgba(37, 99, 235, .1) !important;
+    color: var(--gft-info-accent) !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+}
+
+.app-alert.app-flash-centered .app-flash-message-text {
+    display: block !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+}
+
+.app-alert.app-flash-centered .btn-close {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 9px !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    opacity: .58 !important;
+}
+
+.app-alert.app-flash-centered .btn-close:hover,
+.app-alert.app-flash-centered .btn-close:focus-visible {
+    background-color: rgba(15, 23, 42, .06) !important;
+    opacity: .86 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.app-alert.app-flash-centered.alert-success {
+    border-color: var(--gft-success-line) !important;
+    border-left-color: var(--gft-success-accent) !important;
+    background: var(--gft-success-bg) !important;
+    color: var(--gft-success-text) !important;
+}
+
+.app-alert.app-flash-centered.alert-success::after {
+    content: "✓" !important;
+    background: rgba(22, 163, 74, .12) !important;
+    color: var(--gft-success-accent) !important;
+}
+
+.app-alert.app-flash-centered.alert-warning {
+    border-color: var(--gft-warning-line) !important;
+    border-left-color: var(--gft-warning-accent) !important;
+    background: var(--gft-warning-bg) !important;
+    color: var(--gft-warning-text) !important;
+}
+
+.app-alert.app-flash-centered.alert-warning::after {
+    content: "!" !important;
+    background: rgba(217, 119, 6, .12) !important;
+    color: var(--gft-warning-accent) !important;
+}
+
+.app-alert.app-flash-centered.alert-danger,
+.app-alert.app-flash-centered.alert-error {
+    border-color: var(--gft-danger-line) !important;
+    border-left-color: var(--gft-danger-accent) !important;
+    background: var(--gft-danger-bg) !important;
+    color: var(--gft-danger-text) !important;
+}
+
+.app-alert.app-flash-centered.alert-danger::after,
+.app-alert.app-flash-centered.alert-error::after {
+    content: "×" !important;
+    background: rgba(220, 38, 38, .12) !important;
+    color: var(--gft-danger-accent) !important;
+}
+
+@media (max-width: 720px) {
+    .app-flash-center-host {
+        align-items: flex-start !important;
+        justify-content: center !important;
+        padding: 12px !important;
+    }
+
+    .app-flash-center-stack {
+        width: calc(100vw - 24px) !important;
+    }
+
+    .auth-alert-wrapper,
+    .portal-mobile-flashes {
+        width: calc(100vw - 24px) !important;
+    }
+
+    .container-fluid > .app-alert,
+    .content-area .app-alert,
+    .auth-alert-wrapper .app-alert,
+    .portal-mobile-flashes .app-alert,
+    .app-alert.app-flash-centered {
+        min-height: 44px !important;
+        padding: 10px 38px 10px 42px !important;
+        border-radius: 10px !important;
+        font-size: .88rem !important;
+    }
+}

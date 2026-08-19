@@ -1,21 +1,21 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Cicilan Aset & Kendaraan</h1>
-        <p>Kelola kontrak pembiayaan aset. Pokok cicilan mengurangi hutang, bunga/admin menjadi beban, bukan semua cicilan dianggap beban.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary"><i class="bi bi-archive"></i> Pembelian Aset Tunai</a>
-        <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary"><i class="bi bi-graph-down-arrow"></i> Penyusutan</a>
-        {% if schema_ready %}
-        <a href="{{ url_for('finance.create_fixed_asset_installment_contract') }}" class="btn app-btn-primary"><i class="bi bi-plus-circle"></i> Buat Kontrak Cicilan</a>
-        {% endif %}
-    </div>
-</div>
+{% set header_actions = [
+    {"label": "Pembelian Aset Tunai", "url": url_for('finance.fixed_asset_purchases'), "icon": "bi-archive"},
+    {"label": "Penyusutan", "url": url_for('finance.fixed_asset_depreciation'), "icon": "bi-graph-down-arrow"},
+] %}
+{% if schema_ready %}
+    {% do header_actions.append({"label": "Buat Kontrak Cicilan", "url": url_for('finance.create_fixed_asset_installment_contract'), "icon": "bi-plus-circle", "variant": "primary"}) %}
+{% endif %}
+{{ page_header(
+    "Cicilan Aset & Kendaraan",
+    "Kelola kontrak pembiayaan aset. Pokok cicilan mengurangi hutang, bunga/admin menjadi beban, bukan semua cicilan dianggap beban.",
+    "Finance",
+    actions=header_actions
+) }}
 
 {% if not schema_ready %}
 <div class="alert alert-warning small">
@@ -28,7 +28,7 @@
 
 <div class="app-stat-grid asset-installment-summary-grid">
     <div class="app-stat-card"><span>Total Kontrak</span><h3>{{ summary.total_contract|rupiah }}</h3><p>Nilai pokok + bunga/admin.</p></div>
-    <div class="app-stat-card"><span>Sisa Cicilan</span><h3>{{ summary.remaining|rupiah }}</h3><p>Outstanding schedule.</p></div>
+    <div class="app-stat-card"><span>Sisa Cicilan</span><h3>{{ summary.remaining|rupiah }}</h3><p>Jadwal cicilan belum lunas.</p></div>
     <div class="app-stat-card"><span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>Buku Kas/Bank OUT tercatat.</p></div>
     <div class="app-stat-card"><span>Kontrak Aktif</span><h3>{{ summary.active_count }}</h3><p>Dari {{ summary.count }} kontrak.</p></div>
 </div>

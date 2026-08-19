@@ -6,7 +6,10 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app.services.auth_service import authenticate_user
 from app.extensions import limiter
 from app.services.audit_log_service import record_audit_log, record_critical_audit_log
-from app.services.user_management_service import PORTAL_EXTERNAL_ROLES
+from app.services.user_management_service import (
+    PORTAL_EXTERNAL_ROLES,
+    get_portal_role_landing_endpoint,
+)
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -18,7 +21,8 @@ def _post_login_redirect_for(user):
         current_app.config.get("PORTAL_ENABLED", False)
         and getattr(user, "role", None) in PORTAL_EXTERNAL_ROLES
     ):
-        return redirect(url_for("portal.my_dashboard"))
+        endpoint = get_portal_role_landing_endpoint(getattr(user, "role", None)) or "portal.my_dashboard"
+        return redirect(url_for(endpoint))
     return redirect(url_for("dashboard.index"))
 
 

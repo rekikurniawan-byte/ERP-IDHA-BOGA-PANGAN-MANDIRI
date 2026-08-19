@@ -1,0 +1,68 @@
+{% macro ui_button(label, variant='secondary', href='', icon='', compact=false, aria_label='', title='', button_type='', extra_class='', form_submit=false) -%}
+{% if form_submit %}
+<button type="submit" class="ui-button ui-button--{{ variant }}{% if compact %} ui-button--compact{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+{% elif href %}
+<a href="{{ href }}" class="ui-button ui-button--{{ variant }}{% if compact %} ui-button--compact{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+{% else %}
+<button{% if button_type %} type="{{ button_type }}"{% endif %} class="ui-button ui-button--{{ variant }}{% if compact %} ui-button--compact{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+{% endif %}
+    {% if icon %}<i class="bi {{ icon }}" aria-hidden="true"></i>{% endif %}
+    <span class="ui-button-label">{{ label }}</span>
+{% if form_submit %}</button>{% elif href %}</a>{% else %}</button>{% endif %}
+{%- endmacro %}
+
+{% macro ui_search_field(id, name, label, value='', placeholder='') -%}
+<div class="ui-field ui-search-field">
+    <label class="ui-field-label" for="{{ id }}">{{ label }}</label>
+    <div class="ui-search-control">
+        <i class="bi bi-search ui-search-icon" aria-hidden="true"></i>
+        <input id="{{ id }}" type="search" name="{{ name }}" class="ui-control ui-search-input" value="{{ value }}" placeholder="{{ placeholder }}" data-app-text-ui="off">
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro ui_select_field(id, name, label, options, selected='') -%}
+<div class="ui-field ui-select">
+    <label class="ui-field-label" for="{{ id }}">{{ label }}</label>
+    <select id="{{ id }}" name="{{ name }}" class="ui-control ui-select-control">
+        {% for option_value, option_label in options %}
+        <option value="{{ option_value }}"{% if selected == option_value %} selected{% endif %}>{{ option_label }}</option>
+        {% endfor %}
+    </select>
+</div>
+{%- endmacro %}
+
+{% macro ui_status_badge(label, tone='neutral') -%}
+<span class="ui-status-badge ui-status-badge--{{ tone }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro ui_row_actions(edit_url, toggle_url, delete_url, item_label, is_active, delete_confirm) -%}
+<div class="ui-row-actions" data-ui-row-actions>
+    <button type="button" class="ui-button ui-button--secondary ui-button--compact ui-row-actions-menu-trigger" data-ui-action-menu-trigger aria-expanded="false" aria-label="Buka aksi untuk {{ item_label }}" title="Aksi">
+        <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+        <span class="ui-button-label">Aksi</span>
+    </button>
+    <div class="ui-row-actions-list" data-ui-action-menu>
+        {{ ui_button('Edit', 'secondary', edit_url, 'bi-pencil', true, 'Edit barang ' ~ item_label, 'Edit barang') }}
+        <form method="POST" action="{{ toggle_url }}" class="ui-row-action-form" data-ui-foundation-form>
+            {% include "components/csrf_token.html" %}
+            {{ ui_button('Nonaktif' if is_active else 'Aktifkan', 'secondary', '', 'bi-power', true, ('Nonaktifkan' if is_active else 'Aktifkan') ~ ' barang ' ~ item_label, ('Nonaktifkan' if is_active else 'Aktifkan') ~ ' barang', '', '', true) }}
+        </form>
+        <form method="POST" action="{{ delete_url }}" class="ui-row-action-form" data-ui-foundation-form data-app-confirm="{{ delete_confirm }}">
+            {% include "components/csrf_token.html" %}
+            {{ ui_button('Hapus', 'danger', '', 'bi-trash3', true, 'Hapus barang ' ~ item_label, 'Hapus barang', '', '', true) }}
+        </form>
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro ui_empty_state(title, copy, action_label='', action_url='', icon='bi-inbox') -%}
+<div class="ui-empty-state" role="status">
+    <i class="bi {{ icon }} ui-empty-state-icon" aria-hidden="true"></i>
+    <strong class="ui-empty-state-title">{{ title }}</strong>
+    <p class="ui-empty-state-copy">{{ copy }}</p>
+    {% if action_label and action_url %}
+        {{ ui_button(action_label, 'secondary', action_url, 'bi-plus-circle') }}
+    {% endif %}
+</div>
+{%- endmacro %}

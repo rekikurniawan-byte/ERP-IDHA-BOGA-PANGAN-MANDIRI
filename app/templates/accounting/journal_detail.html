@@ -1,31 +1,22 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Akuntansi</span>
-        <h1>{{ journal.journal_number }}</h1>
-        <p>{{ journal.description }}</p>
-    </div>
-
-    <div class="page-actions accounting-header-actions">
-        <a href="{{ url_for('accounting.print_journal_detail', journal_id=journal.id) }}" class="btn app-btn-primary">
-            <i class="bi bi-printer"></i>
-            Cetak / Save PDF
-        </a>
-        {% if field_transaction_link %}
-        <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-repeat"></i>
-            Kembali Ke Transaksi Kas Lapangan
-        </a>
-        {% endif %}
-        <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Jurnal
-        </a>
-    </div>
-</div>
+{% set journal_detail_actions = [
+    {"label": "Cetak / Save PDF", "url": url_for('accounting.print_journal_detail', journal_id=journal.id), "icon": "bi-printer", "variant": "primary"},
+] %}
+{% if field_transaction_link %}
+    {% do journal_detail_actions.append({"label": "Kembali Ke Transaksi Kas Lapangan", "url": url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id), "icon": "bi-arrow-repeat"}) %}
+{% endif %}
+{% do journal_detail_actions.append({"label": "Daftar Jurnal", "url": url_for('accounting.journals'), "icon": "bi-arrow-left"}) %}
+{{ page_header(
+    journal.journal_number,
+    journal.description,
+    eyebrow="Akuntansi",
+    actions_class="accounting-header-actions",
+    actions=journal_detail_actions
+) }}
 
 {% set precision_key = 'journal_trace' %}
 

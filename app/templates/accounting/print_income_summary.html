@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 {% include "accounting/_accounting_print_report_styles.html" %}
@@ -6,7 +6,7 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <span class="eyebrow">Akuntansi | Print Ready</span>
             <h1>Laba/Rugi Ringkas</h1>
             <p>Halaman print-ready ringkasan pendapatan, beban/HPP, dan laba/rugi.</p>
         </div>
@@ -48,7 +48,8 @@
 
         <div class="empty-state d-none" data-ui-empty-state="UI">Data belum ada untuk periode laporan ini.</div>
 
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Item</th>
@@ -74,8 +75,13 @@
                 </tr>
             </tbody>
         </table>
+</div>
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat read-only. Laporan ini adalah ringkasan awal berdasarkan klasifikasi akun.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat Mode pantau. Laporan ini adalah ringkasan awal berdasarkan klasifikasi akun.</p>
     </div>
 </div>
 {% endblock %}
+
+
+
+

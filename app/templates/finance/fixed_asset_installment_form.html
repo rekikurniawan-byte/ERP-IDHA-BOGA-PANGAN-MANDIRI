@@ -1,17 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Buat Kontrak Cicilan Aset</h1>
-        <p>Membuat aset tetap, jurnal akuisisi kredit, dan jadwal cicilan bulanan. Tidak mengurangi kas/bank saat kontrak dibuat.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.fixed_asset_installments') }}" class="btn app-btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Buat Kontrak Cicilan Aset",
+    "Membuat aset tetap, jurnal akuisisi kredit, dan jadwal cicilan bulanan. Tidak mengurangi kas/bank saat kontrak dibuat.",
+    "Finance",
+    actions=[{"label": "Kembali", "url": url_for('finance.fixed_asset_installments'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="alert alert-warning small">
     <strong>Penting:</strong> pakai halaman ini untuk aset besar/kendaraan yang dibeli kredit. Pokok cicilan tidak masuk beban langsung. Beban muncul dari bunga/admin dan penyusutan aset.

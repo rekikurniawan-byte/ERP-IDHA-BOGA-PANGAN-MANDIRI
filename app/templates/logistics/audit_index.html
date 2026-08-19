@@ -1,25 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="audit_index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Logistik & Stok</span>
-        <h1>Audit Stok</h1>
-        <p>Riwayat pengecekan stok fisik dibandingkan dengan stok sistem.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Dashboard Stok
-        </a>
-        <a href="{{ url_for('logistics.create_audit') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Audit Stok Baru
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Audit Stok",
+    "Riwayat pengecekan stok fisik dibandingkan dengan stok sistem.",
+    eyebrow="Logistik & Stok",
+    actions=[
+        {"label": "Dashboard Stok", "url": url_for('logistics.index'), "icon": "bi-arrow-left"},
+        {"label": "Audit Stok Baru", "url": url_for('logistics.create_audit'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 
 

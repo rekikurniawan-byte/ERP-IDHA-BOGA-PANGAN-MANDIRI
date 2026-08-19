@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan • Transport & BBM</span>
-        <h1>Catat Biaya Transport / BBM</h1>
-        <p>Pilih jenis biaya yang benar agar jurnal otomatis masuk ke COA 5003 atau 5011.</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Biaya
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Catat Biaya Transport / BBM",
+    "Pilih jenis biaya yang benar agar jurnal otomatis masuk ke COA 5003 atau 5011.",
+    "Keuangan • Transport & BBM",
+    actions=[{"label": "Daftar Biaya", "url": url_for('finance.transport_expenses'), "icon": "bi-arrow-left"}]
+) }}
 {% set precision_key = 'transport' %}
 
 <form method="POST" action="{{ url_for('finance.transport_expense_create') }}" class="app-form" data-ui-form="true">

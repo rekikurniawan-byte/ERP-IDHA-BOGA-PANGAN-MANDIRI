@@ -1,0 +1,481 @@
+/* ==================================================
+   UI/UX sweep: table, form, portal, dashboard, print
+   Scope: visual-only; no workflow, database, or route changes.
+   ================================================== */
+
+:root {
+    --ux-sweep-gap: 16px;
+    --ux-sweep-inner-gap: 12px;
+    --ux-sweep-border: rgba(17, 24, 39, .12);
+    --ux-sweep-muted: #475569;
+    --ux-sweep-ink: #0f172a;
+    --ux-sweep-soft: #fff7ed;
+    --ux-sweep-orange: #f97316;
+}
+
+/* 1. Global page/card rhythm without changing the recovered visual language. */
+body.is-authenticated .content-area :where(
+    .page-section,
+    .dashboard-command-center-page,
+    .dashboard-owner-page,
+    .customer-success-shell,
+    .customer-success-page-shell,
+    .portal-page-shell,
+    .portal-management-shell,
+    .portal-dashboard-shell,
+    .portal-feature-shell,
+    .settings-page-shell,
+    .canteen-page-shell,
+    .finance-page-shell,
+    .accounting-page-shell,
+    .logistics-page-shell,
+    .master-page-shell,
+    .hr-page-shell
+) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ux-sweep-gap);
+    width: 100%;
+    max-width: none;
+}
+
+body.is-authenticated .content-area :where(
+    .page-section,
+    .dashboard-command-center-page,
+    .dashboard-owner-page,
+    .customer-success-shell,
+    .customer-success-page-shell,
+    .portal-page-shell,
+    .portal-management-shell,
+    .portal-dashboard-shell,
+    .portal-feature-shell,
+    .settings-page-shell,
+    .canteen-page-shell
+) > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+body.is-authenticated .content-area :where(.app-card, .card.app-card, .content-card, .section-card, .table-card, .form-card) {
+    min-width: 0;
+}
+
+body.is-authenticated .content-area :where(.app-card, .card.app-card) > .card-body {
+    min-width: 0;
+}
+
+/* 2. Table sweep: stable rows, action column, and responsive overflow. */
+body.is-authenticated .content-area :where(.app-table-wrapper, .app-table-wrap, .table-responsive) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+}
+
+body.is-authenticated .content-area table.app-table {
+    width: 100%;
+    min-width: 860px;
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+body.is-authenticated .content-area .app-table :where(th, td) {
+    vertical-align: middle !important;
+    line-height: 1.35;
+}
+
+body.is-authenticated .content-area .app-table th:last-child,
+body.is-authenticated .content-area .app-table td:last-child {
+    width: 1%;
+    min-width: 132px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+body.is-authenticated .content-area .app-table td:last-child :where(.btn, button, a, summary) {
+    margin: 2px;
+}
+
+body.is-authenticated .content-area .app-table :where(.table-actions, .action-buttons, .row-actions, .btn-group, .button-group) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: max-content;
+}
+
+body.is-authenticated .content-area .app-table :where(.amount, .text-end, [data-column="amount"], .money-cell) {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+body.is-authenticated .content-area .app-table :where(.text-break, .long-text, .description-cell) {
+    min-width: 220px;
+    max-width: 520px;
+    white-space: normal;
+}
+
+/* Legacy table fallback: old ERP pages often use plain Bootstrap tables. */
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) :where(th, td) {
+    vertical-align: middle;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) :where(th:last-child, td:last-child) {
+    width: 1%;
+    min-width: 112px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) td:last-child :where(a, button, .btn, .app-btn, form) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px 0 2px 6px;
+    vertical-align: middle;
+}
+
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) td:last-child form {
+    display: inline-flex;
+}
+
+body.is-authenticated .content-area :where(table:not(.calendar-table):not(.flatpickr-days table):not(.app-table)) :where(td.amount, td.money, td.text-end, th.text-end) {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+body.is-authenticated .content-area :where(.table-responsive > table:not(.calendar-table):not(.flatpickr-days table)) {
+    min-width: 760px;
+}
+
+/* 3. Form sweep: consistent input heights, grids, and action alignment. */
+body.is-authenticated .content-area :where(.app-form, form[data-ui-form="true"], .form-grid, .app-form-grid, .portal-form-grid) {
+    gap: var(--ux-sweep-inner-gap) !important;
+    align-items: end;
+}
+
+body.is-authenticated .content-area :where(
+    .form-control,
+    .form-select,
+    .choices__inner,
+    .flatpickr-input,
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    select
+) {
+    min-height: 46px;
+}
+
+body.is-authenticated .content-area textarea.form-control,
+body.is-authenticated .content-area textarea {
+    min-height: 92px;
+    resize: vertical;
+}
+
+body.is-authenticated .content-area :where(.form-actions, .app-form-actions, .filter-actions, .portal-form-actions) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body.is-authenticated .content-area :where(.app-btn-primary, .app-btn-secondary, .app-btn-danger, .btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    white-space: nowrap;
+}
+
+body.is-authenticated .content-area form :where(button[type="submit"].app-btn-primary, .btn.app-btn-primary) {
+    min-width: 140px;
+}
+
+body.is-authenticated .content-area :where(.dashboard-checkbox-chip, .form-check, .form-switch, .checkbox-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.is-authenticated .content-area :where(input[type="checkbox"], .form-check-input) {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    border: 1px solid rgba(249, 115, 22, .45);
+    border-radius: 6px;
+    background-color: #fff;
+}
+
+body.is-authenticated .content-area :where(input[type="checkbox"]:checked, .form-check-input:checked) {
+    background-color: var(--ux-sweep-orange);
+    border-color: var(--ux-sweep-orange);
+}
+
+/* 4. Internal new modules: keep them aligned with the ERP module layout. */
+body.is-authenticated .content-area :where(.customer-success-shell, .customer-success-page-shell) .app-card,
+body.is-authenticated .content-area :where(.portal-management-shell, .portal-dashboard-shell) .app-card {
+    width: 100%;
+}
+
+body.is-authenticated .content-area .customer-success-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ux-sweep-gap);
+    width: 100%;
+}
+
+body.is-authenticated .content-area .customer-success-summary-card {
+    display: flex;
+    min-width: 0;
+    min-height: 122px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px;
+    border: 1px solid var(--ux-sweep-border);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(17, 24, 39, .04);
+}
+
+body.is-authenticated .content-area .customer-success-summary-card span {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+body.is-authenticated .content-area .customer-success-summary-card strong {
+    color: var(--ux-sweep-ink);
+    font-size: 1.35rem;
+    line-height: 1.1;
+}
+
+body.is-authenticated .content-area .customer-success-summary-card small {
+    color: var(--ux-sweep-muted);
+    line-height: 1.4;
+}
+
+body.is-authenticated .content-area .customer-success-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--ux-sweep-gap);
+    margin-bottom: var(--ux-sweep-gap);
+}
+
+body.is-authenticated .content-area .customer-success-card-header h2 {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+}
+
+body.is-authenticated .content-area .customer-success-card-header p {
+    margin: 0;
+    color: var(--ux-sweep-muted);
+}
+
+body.is-authenticated .content-area .customer-success-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+body.is-authenticated .content-area :where(.customer-success-shell, .customer-success-page-shell) .row,
+body.is-authenticated .content-area :where(.portal-management-shell, .portal-dashboard-shell) .row {
+    --bs-gutter-x: 16px;
+    --bs-gutter-y: 16px;
+}
+
+body.is-authenticated .content-area :where(.customer-success-shell, .customer-success-page-shell) :where(.border.rounded-3, .border.rounded),
+body.is-authenticated .content-area :where(.portal-management-shell, .portal-dashboard-shell) :where(.border.rounded-3, .border.rounded) {
+    border-color: var(--ux-sweep-border) !important;
+    background: #fff;
+}
+
+/* 5. External portal: different per role, but same clean web rhythm. */
+body.is-authenticated .portal-home {
+    --portal-home-gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--portal-home-gap);
+}
+
+body.is-authenticated .portal-home :where(.portal-home-hero, .portal-home-panel, .portal-home-metric-row, .portal-home-action-band, .portal-home-alert-strip) {
+    margin: 0 !important;
+}
+
+body.is-authenticated .portal-home :where(.portal-home-metric-row, .portal-home-action-band, .portal-home-scope-grid, .portal-home-mini-ledger) {
+    gap: 12px !important;
+}
+
+body.is-authenticated .portal-home :where(.portal-home-panel, .portal-home-metric-row > article, .portal-home-action-band > a, .portal-home-list article) {
+    min-width: 0;
+}
+
+body.is-authenticated .portal-home :where(.portal-home-panel-head, .portal-home-list article, .portal-home-alert) {
+    align-items: center;
+}
+
+body.is-authenticated .portal-home :where(.portal-home-panel h2, .portal-home-hero h1, .portal-home-list strong, .portal-home-list small) {
+    overflow-wrap: anywhere;
+}
+
+body.is-authenticated .portal-home-customer .portal-home-hero {
+    background: linear-gradient(135deg, #111827 0%, #f97316 100%);
+}
+
+body.is-authenticated .portal-home-mandor .portal-home-hero {
+    background: linear-gradient(135deg, #111827 0%, #fb923c 100%);
+}
+
+body.is-authenticated .portal-home-pt .portal-home-hero {
+    background: linear-gradient(135deg, #111827 0%, #fbbf24 100%);
+}
+
+/* 6. Dashboard/chart proportions. */
+body.is-authenticated .content-area :where(.dashboard-analytics-card, .dashboard-chart-card, .chart-card, .analytics-card) {
+    min-height: 0;
+}
+
+body.is-authenticated .content-area :where(.dashboard-analytics-card, .dashboard-chart-card, .chart-card, .analytics-card) canvas {
+    max-width: 100%;
+}
+
+body.is-authenticated .content-area :where(.dashboard-analytics-card .status-badge, .dashboard-command-center-page .status-badge, .dashboard-period-chip) {
+    max-width: 100%;
+    white-space: normal;
+}
+
+body.is-authenticated .content-area :where(.amount-badge, .metric-badge, .dashboard-amount-badge) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    min-height: 32px;
+    padding-inline: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* 7. Canteen and settings wide layouts. */
+body.is-authenticated .content-area .quick-sale-layout {
+    align-items: start;
+}
+
+body.is-authenticated .content-area .quick-sale-layout :where(.app-card, .quick-cart-card) {
+    min-width: 0;
+}
+
+body.is-authenticated .content-area .company-settings-form {
+    gap: var(--ux-sweep-gap);
+}
+
+body.is-authenticated .content-area .company-settings-form :where(.app-card, .sensitive-action-guard) {
+    min-width: 0;
+}
+
+/* 8. Login/register polish and logo consistency. */
+body.is-public :where(.auth-card, .portal-register-card) {
+    border-top: 5px solid var(--ux-sweep-orange);
+}
+
+body.is-public :where(.auth-card, .portal-register-card) :where(.form-control, input, select) {
+    min-height: 46px;
+}
+
+body.is-public :where(.auth-card, .portal-register-card) :where(.app-btn-primary, button[type="submit"]) {
+    width: 100%;
+    min-height: 48px;
+}
+
+.company-logo-mark,
+.sidebar-brand-logo,
+.topbar-logo,
+.portal-brand-logo {
+    flex: 0 0 auto;
+}
+
+/* 9. Dark mode safety. */
+html[data-theme="dark-mono"] body.is-authenticated .content-area :where(.app-card, .card.app-card, .content-card, .section-card, .table-card, .form-card) {
+    color: #f8fafc;
+}
+
+html[data-theme="dark-mono"] body.is-authenticated .content-area :where(.form-control, .form-select, input, select, textarea) {
+    color: #f8fafc;
+    background-color: #0f172a;
+    border-color: rgba(248, 250, 252, .24);
+}
+
+html[data-theme="dark-mono"] body.is-authenticated .content-area :where(.form-control::placeholder, input::placeholder, textarea::placeholder) {
+    color: rgba(248, 250, 252, .62);
+}
+
+html[data-theme="dark-mono"] body.is-authenticated .content-area .app-table {
+    color: #f8fafc;
+}
+
+html[data-theme="dark-mono"] body.is-authenticated .content-area .app-table :where(th, td) {
+    border-color: rgba(248, 250, 252, .14);
+}
+
+/* 10. Print/report pages should not depend on screen-only wrappers. */
+@media print {
+    .app-table {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+
+    .app-table :where(th, td) {
+        white-space: normal !important;
+    }
+
+    .app-table th:last-child,
+    .app-table td:last-child {
+        min-width: 0 !important;
+        text-align: inherit !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    body.is-authenticated .content-area table.app-table {
+        min-width: 720px;
+    }
+
+    body.is-authenticated .content-area :where(.page-header, .app-page-header, .app-page-header-atomic) {
+        gap: 14px;
+    }
+
+    body.is-authenticated .portal-home :where(.portal-home-metric-row, .portal-home-action-band, .portal-home-grid, .portal-home-grid.two) {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.is-authenticated .content-area .customer-success-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.is-authenticated .content-area .customer-success-card-header {
+        flex-direction: column;
+    }
+}

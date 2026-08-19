@@ -1,25 +1,22 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Ownership Portal</h1>
-            <p class="page-description">Analisis read-only untuk memetakan akun eksternal ke data existing tanpa mengubah role atau schema.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Ownership Portal",
+        "Cek hubungan akun dengan data perusahaan, mandor, dan lokasi.",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
             <div class="row g-3 mb-3">
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Scope mode</div>
-                    <div class="fw-semibold">{{ data.ownership.summary.scope_mode }}</div>
+                    <div class="text-muted small text-uppercase fw-bold">Akses akun</div>
+                    <div class="fw-semibold">Aktif</div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Client/PT</div>
@@ -56,13 +53,13 @@
 
     <div class="app-card mt-3">
         <div class="card-body">
-            <h2 class="h5 mb-3">Relationship Existing</h2>
-            <div class="table-responsive app-table-wrap">
+            <h2 class="h5 mb-3">Hubungan Data</h2>
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Principal</th>
-                            <th>Sumber Existing</th>
+                            <th>Akun</th>
+                            <th>Sumber Data</th>
                             <th>Link Saat Ini</th>
                             <th>Kesiapan</th>
                             <th>Risiko</th>
@@ -92,8 +89,8 @@
 
     <div class="app-card mt-3">
         <div class="card-body">
-            <h2 class="h5 mb-3">Decision Gate</h2>
-            <div class="table-responsive app-table-wrap">
+            <h2 class="h5 mb-3">Keputusan Akses</h2>
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
@@ -127,3 +124,4 @@
     </div>
 </section>
 {% endblock %}
+

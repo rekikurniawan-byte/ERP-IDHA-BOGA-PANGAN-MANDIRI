@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
@@ -7,7 +7,7 @@
 <div class="print-report-shell" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Keuangan · Print Ready</span>
+            <span class="eyebrow">Keuangan | Print Ready</span>
             <h1>Kartu Hutang Supplier</h1>
             <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
         </div>
@@ -44,11 +44,12 @@
             <div class="app-stat-card print-box"><span>Saldo Akhir</span><strong>{{ report.summary.ending_balance|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Jumlah Mutasi</span><strong>{{ report.activities|length }}</strong></div>
             <div class="app-stat-card print-box"><span>Jumlah Supplier/Toko</span><strong>{{ report.groups|length }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
 
         <h5>Mutasi Kartu Hutang</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Tanggal</th>
@@ -93,9 +94,11 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <h5 class="mt-4">Ringkasan Semua Supplier/Toko</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Supplier / Tempat</th>
@@ -123,9 +126,14 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat read-only. Saldo akhir mengikuti filter periode dan supplier aktif.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat Mode pantau. Saldo akhir mengikuti filter periode dan supplier aktif.</p>
     </div>
 </div>
 </div>
 {% endblock %}
+
+
+
+

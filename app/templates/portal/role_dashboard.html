@@ -1,121 +1,13 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-mobile-home">
-    <div class="portal-hero">
-        <div>
-            <p class="portal-hero-eyebrow">{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.persona.title }}</h1>
-            <p>{{ data.persona.primary_note }}</p>
-        </div>
-        <span class="portal-role-pill">{{ data.active_role.replace("PORTAL_", "") }}</span>
-    </div>
-
-    <div class="portal-summary-strip">
-        <div>
-            <strong>{{ data.orders.total }}</strong>
-            <span>Order</span>
-        </div>
-        <div>
-            <strong>{{ data.invoices.totals.invoice_count }}</strong>
-            <span>Invoice</span>
-        </div>
-        <div>
-            <strong>{{ data.payments.totals.payment_count }}</strong>
-            <span>Bayar</span>
-        </div>
-        <div>
-            <strong>{{ data.debts.totals.active_debt_count }}</strong>
-            <span>Hutang</span>
-        </div>
-    </div>
-
-    <div class="portal-section-heading">
-        <h2>Aksi Cepat</h2>
-        <span>{{ data.scope.scope_mode }}</span>
-    </div>
-
-    <div class="portal-service-grid">
-        {% if data.active_role == "PORTAL_CUSTOMER" %}
-            <a href="{{ url_for('portal.customer_order') }}" class="portal-service-tile accent-green">
-                <i class="bi bi-bag-plus"></i><span>Order Catering</span>
-            </a>
-            <a href="{{ url_for('portal.customer_order_history') }}" class="portal-service-tile accent-blue">
-                <i class="bi bi-clock-history"></i><span>Riwayat Order</span>
-            </a>
-            <a href="{{ url_for('portal.customer_tracking') }}" class="portal-service-tile accent-orange">
-                <i class="bi bi-geo-alt"></i><span>Tracking</span>
-            </a>
-            <a href="{{ url_for('portal.customer_payments') }}" class="portal-service-tile accent-purple">
-                <i class="bi bi-credit-card"></i><span>Pembayaran</span>
-            </a>
-            <a href="{{ url_for('portal.customer_invoices') }}" class="portal-service-tile accent-slate">
-                <i class="bi bi-receipt"></i><span>Invoice</span>
-            </a>
-            <a href="{{ url_for('portal.customer_complaints') }}" class="portal-service-tile accent-red">
-                <i class="bi bi-chat-square-dots"></i><span>Komplain</span>
-            </a>
-        {% elif data.active_role == "PORTAL_MANDOR" %}
-            <a href="{{ url_for('portal.mandor_order') }}" class="portal-service-tile accent-green">
-                <i class="bi bi-bag-plus"></i><span>Order Catering</span>
-            </a>
-            <a href="{{ url_for('portal.mandor_workers') }}" class="portal-service-tile accent-blue">
-                <i class="bi bi-people"></i><span>Data Pekerja</span>
-            </a>
-            <a href="{{ url_for('portal.mandor_catering_debts') }}" class="portal-service-tile accent-orange">
-                <i class="bi bi-cash-stack"></i><span>Hutang Catering</span>
-            </a>
-            <a href="{{ url_for('portal.mandor_canteen_debts') }}" class="portal-service-tile accent-purple">
-                <i class="bi bi-wallet2"></i><span>Hutang Warung</span>
-            </a>
-            <a href="{{ url_for('portal.mandor_installments') }}" class="portal-service-tile accent-slate">
-                <i class="bi bi-calendar2-week"></i><span>Cicilan</span>
-            </a>
-            <a href="{{ url_for('portal.mandor_payments') }}" class="portal-service-tile accent-red">
-                <i class="bi bi-credit-card"></i><span>Pembayaran</span>
-            </a>
-        {% elif data.active_role == "PORTAL_PT" %}
-            <a href="{{ url_for('portal.pt_mandors') }}" class="portal-service-tile accent-blue">
-                <i class="bi bi-diagram-3"></i><span>Seluruh Mandor</span>
-            </a>
-            <a href="{{ url_for('portal.pt_invoices') }}" class="portal-service-tile accent-green">
-                <i class="bi bi-receipt"></i><span>Seluruh Invoice</span>
-            </a>
-            <a href="{{ url_for('portal.pt_receivables') }}" class="portal-service-tile accent-orange">
-                <i class="bi bi-cash-stack"></i><span>Piutang</span>
-            </a>
-            <a href="{{ url_for('portal.pt_contracts') }}" class="portal-service-tile accent-purple">
-                <i class="bi bi-file-earmark-text"></i><span>Kontrak</span>
-            </a>
-        {% else %}
-            <a href="{{ url_for('portal.invoices') }}" class="portal-service-tile accent-green">
-                <i class="bi bi-receipt"></i><span>Invoice</span>
-            </a>
-            <a href="{{ url_for('portal.payments') }}" class="portal-service-tile accent-blue">
-                <i class="bi bi-credit-card"></i><span>Pembayaran</span>
-            </a>
-        {% endif %}
-    </div>
-
-    <div class="portal-card-list">
-        <article class="portal-mobile-card">
-            <div>
-                <h3>Outstanding</h3>
-                <p>Tagihan aktif dari invoice ERP existing.</p>
-            </div>
-            <strong>{{ data.invoices.totals.active_outstanding_amount|rupiah }}</strong>
-        </article>
-        <article class="portal-mobile-card">
-            <div>
-                <h3>Closing Periode</h3>
-                <p>Status periode {{ "%02d"|format(data.closing.month) }}-{{ data.closing.year }}.</p>
-            </div>
-            <strong>{{ data.closing.closing.status }}</strong>
-        </article>
-    </div>
-
-    {% if not data.scope.allowed %}
-        <div class="portal-mobile-alert">{{ data.scope.reason }}</div>
+    {% if current_user.role == "PORTAL_CUSTOMER" %}
+        {% include "portal/_dashboard_customer.html" %}
+    {% elif current_user.role == "PORTAL_MANDOR" %}
+        {% include "portal/_dashboard_mandor.html" %}
+    {% elif current_user.role == "PORTAL_PT" %}
+        {% include "portal/_dashboard_pt.html" %}
+    {% else %}
+        {% include "portal/_command_center.html" %}
     {% endif %}
-</section>
 {% endblock %}

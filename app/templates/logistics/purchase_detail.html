@@ -1,24 +1,21 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="purchase_detail">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Detail Pembelian</span>
-        <h1>{{ procurement.procurement_number }}</h1>
-        <p>{{ procurement.procurement_date.strftime('%d-%m-%Y') }} | {{ procurement.purchase_place or procurement.supplier_name or 'Pembelian sendiri' }}{% if procurement.supplier %} | Supplier tetap: {{ procurement.supplier.supplier_code }}{% endif %}</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.purchases') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Pembelian
-        </a>
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            Dashboard Stok
-        </a>
-    </div>
-</div>
+{% set purchase_detail_description = procurement.procurement_date.strftime('%d-%m-%Y') ~ " | " ~ (procurement.purchase_place or procurement.supplier_name or 'Pembelian sendiri') %}
+{% if procurement.supplier %}
+    {% set purchase_detail_description = purchase_detail_description ~ " | Supplier tetap: " ~ procurement.supplier.supplier_code %}
+{% endif %}
+{{ page_header(
+    procurement.procurement_number,
+    purchase_detail_description,
+    eyebrow="Detail Pembelian",
+    actions=[
+        {"label": "Daftar Pembelian", "url": url_for('logistics.purchases'), "icon": "bi-arrow-left"},
+        {"label": "Dashboard Stok", "url": url_for('logistics.index')},
+    ]
+) }}
 
 
 

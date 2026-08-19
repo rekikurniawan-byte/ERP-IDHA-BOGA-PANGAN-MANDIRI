@@ -1,18 +1,14 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="menu_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 2</span>
-        <h1>{% if menu %}Edit Menu{% else %}Tambah Menu{% endif %}</h1>
-        <p>Menu ini dipakai sebagai dasar resep/BOM dan kalkulator HPP read-only.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Menu" if menu else "Tambah Menu",
+    "Menu ini dipakai sebagai dasar resep/BOM dan kalkulator HPP Mode pantau.",
+    eyebrow="HPP Tahap 2",
+    actions=[{"label": "Kembali", "url": url_for('costing.menus')}]
+) }}
 
 
 
@@ -60,3 +56,4 @@
 </div>
 </div>
 {% endblock %}
+

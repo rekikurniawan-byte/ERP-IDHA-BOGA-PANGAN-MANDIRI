@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
@@ -12,28 +13,16 @@
 </a>
 </div>
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Invoice</h1>
-        <p>Daftar invoice catering dan warung. Invoice periode menjadi arah final sistem.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.export_invoices_csv') }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Download CSV
-        </a>
-        <a href="{{ url_for('finance.generate_period_invoice_preview') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Buat Invoice Periode
-        </a>
-        <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
-            <i class="bi bi-receipt-cutoff"></i>
-            Rekap Tagihan Mandor
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Invoice",
+    "Daftar invoice catering dan warung. Invoice periode menjadi arah final sistem.",
+    "Finance",
+    actions=[
+        {"label": "Download CSV", "url": url_for('finance.export_invoices_csv'), "icon": "bi-download"},
+        {"label": "Buat Invoice Periode", "url": url_for('finance.generate_period_invoice_preview'), "icon": "bi-plus-circle", "variant": "primary"},
+        {"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff"},
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

@@ -1,72 +1,26 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Logistik & Stok</span>
-        <h1>Dashboard Stok</h1>
-        <p>Monitoring stok bahan baku, kemasan, gas, dan barang operasional yang dilacak stoknya.</p>
-    </div>
-
-    <div class="page-actions logistics-hpp-header-actions" data-logistics-hpp-actions="UI">
-        <a href="{{ url_for('logistics.purchases') }}" class="btn app-btn-primary">
-            <i class="bi bi-basket"></i>
-            Pembelian Barang
-        </a>
-
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="stockActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi Stok
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="stockActionDropdown">
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.material_forecast') }}">
-                        <i class="bi bi-clipboard-data"></i>
-                        Prediksi Bahan
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.stock_in') }}">
-                        <i class="bi bi-plus-circle"></i>
-                        Stok Masuk
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.stock_opening_balances') }}">
-                        <i class="bi bi-clipboard-data"></i>
-                        Saldo Awal
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.stock_out') }}">
-                        <i class="bi bi-dash-circle"></i>
-                        Stok Keluar
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.audit') }}">
-                        <i class="bi bi-clipboard-check"></i>
-                        Audit Stok
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.damaged') }}">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Barang Rusak
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('logistics.adjustment') }}">
-                        <i class="bi bi-sliders2"></i>
-                        Penyesuaian
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "Dashboard Stok",
+    "Monitoring stok bahan baku, kemasan, gas, dan barang operasional yang dilacak stoknya.",
+    eyebrow="Logistik & Stok",
+    actions_class="logistics-hpp-header-actions",
+    actions=[
+        {"label": "Pembelian Barang", "url": url_for('logistics.purchases'), "icon": "bi-basket", "variant": "primary"},
+        {"label": "Aksi Stok", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Prediksi Bahan", "url": url_for('logistics.material_forecast'), "icon": "bi-clipboard-data"},
+            {"label": "Stok Masuk", "url": url_for('logistics.stock_in'), "icon": "bi-plus-circle"},
+            {"label": "Saldo Awal", "url": url_for('logistics.stock_opening_balances'), "icon": "bi-clipboard-data"},
+            {"label": "Stok Keluar", "url": url_for('logistics.stock_out'), "icon": "bi-dash-circle"},
+            {"label": "Audit Stok", "url": url_for('logistics.audit'), "icon": "bi-clipboard-check"},
+            {"label": "Barang Rusak", "url": url_for('logistics.damaged'), "icon": "bi-exclamation-triangle"},
+            {"label": "Penyesuaian", "url": url_for('logistics.adjustment'), "icon": "bi-sliders2"},
+        ]},
+    ]
+) }}
 
 
 

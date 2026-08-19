@@ -171,8 +171,44 @@ def _role_landing_payload(role, branch_id=None):
 
 
 @dashboard_bp.route("/")
-@login_required
 def index():
+    if not current_user.is_authenticated:
+        data = {
+            "title": "PT Idha Boga Pangan Mandiri",
+            "subtitle": "Portal pemesanan catering dan sistem operasional terintegrasi.",
+            "description": "Pelanggan umum membuat pesanan dan membayar di awal. Mandor mengelola pesanan, pekerja, hutang, tagihan, dan pembayaran. PT memantau seluruh mandor, invoice, piutang, pembayaran, dan kontrak dalam satu ERP.",
+            "primary_url": url_for("auth.login"),
+            "secondary_url": url_for("portal.register") if current_app.config.get("PORTAL_ENABLED", False) else url_for("auth.login"),
+            "portal_enabled": bool(current_app.config.get("PORTAL_ENABLED", False)),
+            "roles": [
+                {
+                    "title": "Pelanggan Umum",
+                    "description": "Pesan catering, upload bukti bayar, lacak pesanan, komplain, dan retur. Tidak ada kredit.",
+                    "icon": "bi-bag-check",
+                    "steps": ["Pesan", "Bayar", "Diverifikasi", "Diproses"],
+                },
+                {
+                    "title": "Mandor",
+                    "description": "Kelola order, pekerja, hutang catering, hutang warung, cicilan, invoice, dan pembayaran.",
+                    "icon": "bi-people",
+                    "steps": ["Order", "Pekerja", "Hutang", "Bayar"],
+                },
+                {
+                    "title": "PT",
+                    "description": "Pantau seluruh mandor, total hutang, invoice diterbitkan, invoice belum lunas, riwayat pembayaran, dan rekap tagihan.",
+                    "icon": "bi-building-check",
+                    "steps": ["Mandor", "Piutang", "Invoice", "Kontrak"],
+                },
+            ],
+            "rules": [
+                "ERP tetap menjadi satu sumber data.",
+                "Akun portal terhubung ke data perusahaan yang sama.",
+                "Customer umum bayar dulu sebelum pesanan diproses.",
+                "Mandor dan PT mengikuti aturan tempo/kredit yang sudah disetujui.",
+            ],
+        }
+        return render_template("public/landing.html", data=data)
+
     endpoint = _role_landing_endpoint(current_user.role)
     if not endpoint:
         abort(403)

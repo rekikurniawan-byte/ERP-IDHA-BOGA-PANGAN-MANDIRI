@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<!--
+  Static component gallery used as a CSS visual-regression baseline.
+
+  Why this exists: the app requires a running PostgreSQL database + an
+  authenticated session to render any real page, which isn't available in
+  every environment that touches CSS. This fixture pulls REAL markup
+  fragments (byte-for-byte, minus Jinja output) out of the actual templates
+  so screenshotting it still exercises the real cascade in app/static/css/style.css
+  against the real component classes.
+
+  Usage: tools/visual_baseline/capture.py loads this file twice (light-mono,
+  dark-mono) via ?theme=<name> and screenshots it at two viewport widths.
+  Re-run after any CSS change and diff against tools/visual_baseline/baseline/.
+
+  Not a substitute for testing the real app once PostgreSQL is available --
+  see RINCIAN_AUDIT_UI_UX_CSS_ERP_IDHA_BOGA.md section 8, Fase 0.
+-->
+<html lang="id" data-theme="light-mono">
+<head>
+<meta charset="UTF-8">
+<title>Component Gallery — Visual Baseline</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+    (function () {
+        var params = new URLSearchParams(location.search);
+        var theme = params.get("theme");
+        if (theme === "dark-mono" || theme === "light-mono") {
+            document.documentElement.setAttribute("data-theme", theme);
+        }
+    })();
+</script>
+<link href="../../../app/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="../../../app/static/vendor/bootstrap-icons/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../../../app/static/css/style.css">
+</head>
+<body class="is-authenticated" data-endpoint="dashboard.index">
+<a class="skip-link" href="#mainContent">Lewati ke konten utama</a>
+<div class="app-shell" data-layout-shell>
+
+    <aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
+        <div class="sidebar-brand">
+            <a href="#" class="sidebar-brand-link" aria-label="Kembali ke dashboard">
+                <span class="brand-mark company-logo-mark">IB</span>
+                <div>
+                    <div class="brand-title">IDHA BOGA</div>
+                    <div class="brand-subtitle">Pangan Mandiri</div>
+                </div>
+            </a>
+            <button class="sidebar-close" type="button" aria-label="Tutup menu navigasi">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigasi utama">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Menu Utama</div>
+
+                <a href="#" class="sidebar-link active" aria-current="page">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                    <span class="badge bg-danger-subtle text-danger border ms-auto">3</span>
+                </a>
+
+                <details class="sidebar-group" open>
+                    <summary class="sidebar-group-toggle active">
+                        <span class="sidebar-group-title">
+                            <i class="bi bi-window-sidebar"></i>
+                            <span>Finance</span>
+                        </span>
+                        <i class="bi bi-chevron-down sidebar-chevron"></i>
+                    </summary>
+                    <div class="sidebar-submenu">
+                        <a href="#" class="sidebar-link sidebar-sublink active" aria-current="page">
+                            <i class="bi bi-receipt"></i>
+                            <span>Invoice</span>
+                        </a>
+                        <a href="#" class="sidebar-link sidebar-sublink">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Pembayaran</span>
+                        </a>
+                    </div>
+                </details>
+
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Logistik</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+    <div class="sidebar-backdrop" aria-hidden="true"></div>
+
+    <div class="app-main">
+        <header class="app-topbar" role="banner">
+            <div class="topbar-left">
+                <button class="app-sidebar-toggle sidebar-toggle" type="button" aria-controls="appSidebar" aria-expanded="false" aria-label="Buka menu navigasi">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <div class="topbar-heading">
+                    <div class="topbar-title">PT Idha Boga Pangan Mandiri</div>
+                    <div class="topbar-subtitle">Integrated Catering Management System</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-status d-none d-lg-flex" aria-label="Status sistem">
+                    <span class="status-dot"></span>
+                    <span>Operasional Aktif</span>
+                </div>
+                <a href="#" class="topbar-icon-link" aria-label="Buka notifikasi">
+                    <i class="bi bi-bell" aria-hidden="true"></i>
+                    <span class="topbar-badge">5</span>
+                </a>
+                <div class="theme-segmented-toggle" role="group" aria-label="Mode tampilan">
+                    <button class="theme-mode-option theme-segment-option" type="button" aria-label="Aktifkan Dark Mono">
+                        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                        <span>Dark</span>
+                    </button>
+                    <button class="theme-mode-option theme-segment-option" type="button" aria-label="Aktifkan Light Mono">
+                        <i class="bi bi-sun" aria-hidden="true"></i>
+                        <span>Light</span>
+                    </button>
+                </div>
+                <div class="dropdown user-menu-dropdown">
+                    <button class="user-chip user-chip-button" type="button" aria-expanded="false" aria-label="Menu user">
+                        <span class="user-avatar">A</span>
+                        <span class="user-info d-none d-md-block">
+                            <span class="user-name">Andi Wijaya</span>
+                            <span class="user-role">OWNER</span>
+                        </span>
+                        <i class="bi bi-chevron-down user-menu-chevron d-none d-md-inline" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end user-menu">
+                        <div class="user-menu-header">
+                            <strong>Andi Wijaya</strong>
+                            <span>OWNER</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">
+                            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                            <span>Ganti Password</span>
+                        </a>
+                        <button type="button" class="dropdown-item text-danger">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-area" id="mainContent" tabindex="-1">
+            <div class="container-fluid">
+
+                <div class="alert alert-success alert-dismissible fade show app-alert" role="alert">
+                    Data berhasil disimpan.
+                    <button type="button" class="btn-close" aria-label="Close"></button>
+                </div>
+                <div class="alert alert-danger alert-dismissible fade show app-alert" role="alert">
+                    Gagal memproses permintaan. Silakan coba lagi.
+                    <button type="button" class="btn-close" aria-label="Close"></button>
+                </div>
+
+                <div class="page-header app-page-header" data-page-header>
+                    <div class="page-header-main">
+                        <span class="eyebrow">Finance</span>
+                        <h1 class="page-title">Invoice</h1>
+                        <p class="page-description">Daftar invoice catering dan warung. Invoice periode menjadi arah final sistem.</p>
+                    </div>
+                    <div class="page-actions" data-page-actions aria-label="Aksi halaman">
+                        <a href="#" class="btn app-btn-primary" data-action-tier="primary">
+                            <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                            <span>Buat Invoice Periode</span>
+                        </a>
+                        <div class="dropdown app-action-dropdown page-action-more">
+                            <button class="btn app-btn-secondary action-more-toggle" type="button" aria-expanded="false">
+                                <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                <span>Aksi lainnya</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-stat-grid">
+                    <div class="app-stat-card">
+                        <span>Total Invoice</span>
+                        <h3>Rp 128.450.000</h3>
+                        <p>42 invoice aktif</p>
+                    </div>
+                    <div class="app-stat-card">
+                        <span>Sudah Dibayar</span>
+                        <h3>Rp 96.200.000</h3>
+                        <p>31 lunas</p>
+                    </div>
+                    <div class="app-stat-card">
+                        <span>Sisa Piutang</span>
+                        <h3>Rp 32.250.000</h3>
+                        <p>11 belum lunas</p>
+                    </div>
+                </div>
+
+                <section class="global-filter-bar-v2 app-card" data-filter-bar-v2="PRODUCTION">
+                    <form class="global-filter-bar-v2-form app-form" data-form-kind="filter">
+                        <div class="global-filter-bar-v2-head">
+                            <div>
+                                <span class="eyebrow">Filter Periode</span>
+                                <h5>Rentang Tanggal Invoice</h5>
+                                <p>Pilih rentang tanggal untuk melihat invoice pada periode tertentu.</p>
+                            </div>
+                            <span class="global-filter-active-label">Bulan Ini</span>
+                        </div>
+                        <div class="global-filter-bar-v2-grid">
+                            <div class="global-filter-field">
+                                <label class="form-label">Preset Periode</label>
+                                <select class="form-select app-input">
+                                    <option>Bulan Ini</option>
+                                    <option>Bulan Lalu</option>
+                                </select>
+                            </div>
+                            <div class="global-filter-field">
+                                <label class="form-label">Tanggal Mulai</label>
+                                <input type="date" class="form-control app-input" value="2026-08-01">
+                            </div>
+                            <div class="global-filter-field">
+                                <label class="form-label">Tanggal Akhir</label>
+                                <input type="date" class="form-control app-input" value="2026-08-18">
+                            </div>
+                            <div class="global-filter-actions">
+                                <button type="submit" class="btn app-btn-primary">
+                                    <i class="bi bi-funnel"></i>
+                                    Terapkan
+                                </button>
+                                <a href="#" class="btn app-btn-secondary">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <div class="app-card mt-4">
+                    <div class="card-header-clean">
+                        <div>
+                            <h5>Daftar Invoice</h5>
+                            <p>Invoice yang sudah tercatat di sistem.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>No Invoice</th>
+                                    <th>Jenis</th>
+                                    <th>Ditagihkan Ke</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Sisa</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>INV-2026-08-0142</strong></td>
+                                    <td><span class="status-badge status-progress">PERIODE</span></td>
+                                    <td>PT Sumber Rejeki</td>
+                                    <td class="text-end">Rp 12.500.000</td>
+                                    <td class="text-end">Rp 0</td>
+                                    <td><span class="status-badge status-locked">PAID</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="#" class="btn btn-sm app-btn-secondary">Detail</a>
+                                            <a href="#" class="btn btn-sm app-btn-ghost">Edit</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>INV-2026-08-0143</strong></td>
+                                    <td><span class="status-badge status-locked">ORDER</span></td>
+                                    <td>Warung Cahaya</td>
+                                    <td class="text-end">Rp 3.150.000</td>
+                                    <td class="text-end">Rp 3.150.000</td>
+                                    <td><span class="status-badge status-draft">DRAFT</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="#" class="btn btn-sm app-btn-secondary">Detail</a>
+                                            <a href="#" class="btn btn-sm app-btn-ghost">Edit</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>INV-2026-07-0098</strong></td>
+                                    <td><span class="status-badge status-progress">REKAP TAGIHAN</span></td>
+                                    <td>CV Mitra Boga</td>
+                                    <td class="text-end">Rp 8.900.000</td>
+                                    <td class="text-end">Rp 8.900.000</td>
+                                    <td><span class="status-badge status-cancelled">CANCELLED</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="#" class="btn btn-sm app-btn-secondary">Detail</a>
+                                            <a href="#" class="btn btn-sm app-btn-ghost">Edit</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="app-card mt-4">
+                    <div class="card-header-clean">
+                        <div>
+                            <h5>Form Contoh</h5>
+                            <p>Kombinasi input, select, textarea, checkbox.</p>
+                        </div>
+                    </div>
+                    <form class="app-form">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Nama Klien</label>
+                                <input type="text" class="form-control app-input" placeholder="Nama klien" value="PT Sumber Rejeki">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <select class="form-select app-input">
+                                    <option>Aktif</option>
+                                    <option>Nonaktif</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tanggal</label>
+                                <input type="date" class="form-control app-input" value="2026-08-18">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea class="form-control app-input" rows="3" placeholder="Catatan tambahan"></textarea>
+                            </div>
+                        </div>
+                        <div class="page-actions mt-3">
+                            <button type="submit" class="btn app-btn-primary">Simpan</button>
+                            <button type="button" class="btn app-btn-secondary">Batal</button>
+                            <button type="button" class="btn app-btn-ghost" disabled>Ghost Disabled</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="app-card mt-4">
+                    <div class="card-header-clean">
+                        <div>
+                            <h5>Empty State</h5>
+                        </div>
+                    </div>
+                    <div class="empty-state">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <p>Belum ada data untuk periode ini.</p>
+                    </div>
+                </div>
+
+                <div class="app-card mt-4" style="overflow: visible;">
+                    <div class="card-header-clean">
+                        <div>
+                            <h5>Dropdown Menu (open state)</h5>
+                        </div>
+                    </div>
+                    <div class="dropdown row-action-more" style="position: relative; display: inline-block;">
+                        <button class="btn btn-sm app-icon-btn" type="button" aria-expanded="true" aria-label="Aksi lainnya">
+                            <i class="bi bi-three-dots" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu app-action-menu show" style="position: absolute; top: 100%; left: 0;">
+                            <a href="#" class="dropdown-item">Edit</a>
+                            <a href="#" class="dropdown-item text-danger">Hapus</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+</body>
+</html>

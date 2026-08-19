@@ -1,0 +1,858 @@
+/*
+   Public/auth/register clean lock
+   Focus: first page, login, and customer registration.
+   Keeps the public surface calm, readable, and consistent with the orange,
+   black, white palette without rebuilding workflows.
+*/
+
+:root {
+    --pub-orange: #f97316;
+    --pub-orange-dark: #ea580c;
+    --pub-ink: #111827;
+    --pub-muted: #5b6472;
+    --pub-line: #e5e7eb;
+    --pub-soft: #f8fafc;
+    --pub-cream: #fff7ed;
+    --pub-card: #ffffff;
+    --pub-radius: 18px;
+    --pub-shadow: 0 18px 44px rgba(17, 24, 39, .08);
+}
+
+body.is-public,
+body.is-public .auth-page {
+    min-height: 100vh !important;
+    background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, .10), transparent 32%),
+        linear-gradient(180deg, #ffffff 0%, #fffaf4 46%, #ffffff 100%) !important;
+    color: var(--pub-ink) !important;
+}
+
+body.is-public .auth-page {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 28px 18px !important;
+}
+
+body.is-public .auth-page > .container {
+    width: min(1180px, 100%) !important;
+    max-width: 1180px !important;
+    padding: 0 !important;
+}
+
+/* Shared public cards */
+body.is-public :where(.auth-card, .portal-register-card, .portal-register-aside, .public-role-card, .public-order-card, .public-integrated-strip, .public-final-cta) {
+    background: rgba(255, 255, 255, .96) !important;
+    border: 1px solid rgba(17, 24, 39, .10) !important;
+    border-radius: var(--pub-radius) !important;
+    box-shadow: var(--pub-shadow) !important;
+    color: var(--pub-ink) !important;
+}
+
+body.is-public :where(.auth-card, .portal-register-card, .portal-register-aside, .public-role-card, .public-order-card, .public-integrated-strip, .public-final-cta)::before,
+body.is-public :where(.auth-card, .portal-register-card, .portal-register-aside, .public-role-card, .public-order-card, .public-integrated-strip, .public-final-cta)::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* Landing page */
+body.is-public .public-landing {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+    padding: 0 !important;
+    color: var(--pub-ink) !important;
+}
+
+body.is-public .public-landing-topbar {
+    min-height: 64px !important;
+    padding: 10px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    background: rgba(255, 255, 255, .88) !important;
+    border: 1px solid rgba(17, 24, 39, .08) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 10px 28px rgba(17, 24, 39, .06) !important;
+}
+
+body.is-public .public-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+    color: var(--pub-ink) !important;
+    text-decoration: none !important;
+}
+
+body.is-public .public-brand span {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+    background: transparent !important;
+}
+
+body.is-public .public-brand strong {
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+    font-weight: 700 !important;
+    color: var(--pub-ink) !important;
+}
+
+body.is-public .public-brand small {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+    color: var(--pub-muted) !important;
+}
+
+body.is-public :where(.public-brand-mark, .auth-logo, .company-logo-mark) {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+}
+
+body.is-public .public-nav {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+}
+
+body.is-public .public-nav a {
+    min-height: 40px !important;
+    padding: 0 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(17, 24, 39, .10) !important;
+    background: #ffffff !important;
+    color: var(--pub-ink) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+}
+
+body.is-public .public-nav a.public-nav-login,
+body.is-public .public-primary-action,
+body.is-public .auth-card .app-btn-primary,
+body.is-public .portal-register-submit {
+    background: var(--pub-orange) !important;
+    border-color: var(--pub-orange) !important;
+    color: #ffffff !important;
+    background-image: none !important;
+    box-shadow: 0 12px 28px rgba(249, 115, 22, .18) !important;
+}
+
+body.is-public .public-hero {
+    min-height: 430px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, .75fr) !important;
+    align-items: stretch !important;
+    gap: 18px !important;
+    padding: 28px !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(17, 24, 39, .08) !important;
+    background: #111827 !important;
+    color: #ffffff !important;
+    box-shadow: 0 20px 50px rgba(17, 24, 39, .14) !important;
+}
+
+body.is-public .public-hero-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 16px !important;
+    max-width: 720px !important;
+}
+
+body.is-public .public-eyebrow,
+body.is-public .public-integrated-strip > div > span,
+body.is-public .public-final-cta > div > span {
+    width: max-content !important;
+    max-width: 100% !important;
+    padding: 7px 12px !important;
+    border-radius: 999px !important;
+    background: rgba(249, 115, 22, .14) !important;
+    color: #fed7aa !important;
+    border: 1px solid rgba(249, 115, 22, .32) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: .02em !important;
+    text-transform: none !important;
+}
+
+body.is-public .public-hero h1 {
+    margin: 0 !important;
+    max-width: 760px !important;
+    color: #ffffff !important;
+    font-size: clamp(40px, 6vw, 82px) !important;
+    line-height: .96 !important;
+    letter-spacing: 0 !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .public-hero p {
+    margin: 0 !important;
+    max-width: 680px !important;
+    color: rgba(255, 255, 255, .78) !important;
+    font-size: 16px !important;
+    line-height: 1.65 !important;
+}
+
+body.is-public .public-hero-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+    margin-top: 4px !important;
+}
+
+body.is-public :where(.public-primary-action, .public-secondary-action) {
+    min-height: 48px !important;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    background-image: none !important;
+}
+
+body.is-public .public-secondary-action {
+    background: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, .62) !important;
+    color: var(--pub-ink) !important;
+    box-shadow: none !important;
+}
+
+body.is-public .public-order-card {
+    align-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 18px !important;
+    background: rgba(255, 255, 255, .08) !important;
+    border-color: rgba(255, 255, 255, .16) !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+}
+
+body.is-public .public-order-card > span {
+    color: rgba(255, 255, 255, .70) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+}
+
+body.is-public .public-order-flow {
+    display: grid !important;
+    gap: 10px !important;
+}
+
+body.is-public .public-order-flow article {
+    min-height: 78px !important;
+    display: grid !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    grid-template-areas: "icon title" "icon desc" !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, .10) !important;
+    border: 1px solid rgba(255, 255, 255, .14) !important;
+    color: #ffffff !important;
+}
+
+body.is-public .public-order-flow article i {
+    grid-area: icon !important;
+    width: 42px !important;
+    height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    color: var(--pub-orange) !important;
+}
+
+body.is-public .public-order-flow article strong {
+    grid-area: title !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+}
+
+body.is-public .public-order-flow article small {
+    grid-area: desc !important;
+    color: rgba(255, 255, 255, .66) !important;
+    font-size: 12px !important;
+}
+
+body.is-public .public-role-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+}
+
+body.is-public .public-role-card {
+    padding: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+
+body.is-public .public-role-card i {
+    width: 42px !important;
+    height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 14px !important;
+    background: var(--pub-cream) !important;
+    color: var(--pub-orange) !important;
+    font-size: 20px !important;
+}
+
+body.is-public .public-role-card h2,
+body.is-public .public-integrated-strip h2,
+body.is-public .public-final-cta h2 {
+    margin: 0 !important;
+    color: var(--pub-ink) !important;
+    font-size: 22px !important;
+    line-height: 1.18 !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .public-role-card p,
+body.is-public .public-final-cta p {
+    margin: 0 !important;
+    color: var(--pub-muted) !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+}
+
+body.is-public .public-step-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+}
+
+body.is-public .public-step-row span,
+body.is-public .public-rule-list article {
+    border-radius: 999px !important;
+    border: 1px solid rgba(17, 24, 39, .08) !important;
+    background: #ffffff !important;
+    color: var(--pub-ink) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .public-step-row span {
+    padding: 6px 9px !important;
+}
+
+body.is-public .public-integrated-strip,
+body.is-public .public-final-cta {
+    padding: 20px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr) !important;
+    gap: 18px !important;
+    align-items: center !important;
+}
+
+body.is-public .public-rule-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+}
+
+body.is-public .public-rule-list article {
+    min-height: 42px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+}
+
+body.is-public .public-rule-list i {
+    color: var(--pub-orange) !important;
+}
+
+body.is-public .public-final-cta {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+/* Login page */
+body.is-public .auth-entry-wrapper {
+    min-height: calc(100vh - 56px) !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: 22px 0 !important;
+}
+
+body.is-public .auth-entry-wrapper .auth-panel {
+    width: min(430px, 100%) !important;
+}
+
+body.is-public .auth-entry-wrapper .auth-card {
+    width: 100% !important;
+    padding: 30px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+}
+
+body.is-public .auth-clean-brand,
+body.is-public .portal-register-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+body.is-public .auth-clean-brand strong,
+body.is-public .portal-register-brand h1 {
+    color: var(--pub-ink) !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .auth-clean-brand span,
+body.is-public .portal-register-brand span,
+body.is-public .portal-register-brand p {
+    color: var(--pub-muted) !important;
+}
+
+body.is-public .auth-page-kicker {
+    display: inline-flex !important;
+    width: max-content !important;
+    padding: 6px 10px !important;
+    border-radius: 999px !important;
+    background: var(--pub-cream) !important;
+    color: var(--pub-orange-dark) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .auth-card-header {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+body.is-public .auth-card-header h5 {
+    margin: 0 !important;
+    color: var(--pub-ink) !important;
+    font-size: 42px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .auth-card-header p {
+    margin: 0 !important;
+    color: var(--pub-muted) !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+}
+
+body.is-public :where(.auth-card, .portal-register-card) label,
+body.is-public .portal-register-form label > span,
+body.is-public .auth-card .form-label {
+    color: var(--pub-ink) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    margin-bottom: 8px !important;
+}
+
+body.is-public :where(.auth-card, .portal-register-card) :where(input, select, textarea, .form-control, .app-input) {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(17, 24, 39, .16) !important;
+    background: #ffffff !important;
+    color: var(--pub-ink) !important;
+    box-shadow: none !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+body.is-public :where(.auth-card, .portal-register-card) :where(input, select, textarea, .form-control, .app-input):focus {
+    border-color: rgba(249, 115, 22, .72) !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, .12) !important;
+}
+
+body.is-public .auth-card .app-btn-primary,
+body.is-public .portal-register-submit {
+    min-height: 50px !important;
+    width: 100% !important;
+    border-radius: 14px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+body.is-public .auth-note,
+body.is-public .auth-back-home,
+body.is-public .portal-register-login {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(17, 24, 39, .10) !important;
+    background: #ffffff !important;
+    color: var(--pub-ink) !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .auth-note a,
+body.is-public .portal-register-login {
+    color: var(--pub-orange-dark) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+}
+
+body.is-public .auth-back-home {
+    justify-content: flex-start !important;
+    padding: 0 12px !important;
+    color: var(--pub-muted) !important;
+}
+
+/* Register page */
+body.is-public .portal-register-shell {
+    width: 100% !important;
+    min-height: calc(100vh - 56px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+    align-items: start !important;
+    gap: 18px !important;
+    padding: 16px 0 !important;
+}
+
+body.is-public .portal-register-card {
+    padding: 26px !important;
+}
+
+body.is-public .portal-register-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+}
+
+body.is-public .portal-form-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.is-public .portal-form-section h2 {
+    margin: 0 !important;
+    color: var(--pub-ink) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .portal-register-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+}
+
+body.is-public .portal-register-grid label {
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+body.is-public .portal-register-grid .wide {
+    grid-column: 1 / -1 !important;
+}
+
+body.is-public .portal-register-note {
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(249, 115, 22, .22) !important;
+    background: var(--pub-cream) !important;
+    color: var(--pub-ink) !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+}
+
+body.is-public .portal-register-note i {
+    color: var(--pub-orange) !important;
+}
+
+body.is-public .portal-register-aside {
+    padding: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    position: sticky !important;
+    top: 18px !important;
+}
+
+body.is-public .portal-register-flow {
+    display: grid !important;
+    gap: 10px !important;
+}
+
+body.is-public .portal-register-flow h2 {
+    margin: 0 0 2px !important;
+    color: var(--pub-ink) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+body.is-public .portal-register-flow article {
+    min-height: 58px !important;
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    grid-template-areas: "icon title" "icon desc" !important;
+    column-gap: 10px !important;
+    align-items: center !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(17, 24, 39, .08) !important;
+    background: #ffffff !important;
+}
+
+body.is-public .portal-register-flow article i {
+    grid-area: icon !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    background: var(--pub-cream) !important;
+    color: var(--pub-orange) !important;
+}
+
+body.is-public .portal-register-flow article strong {
+    grid-area: title !important;
+    color: var(--pub-ink) !important;
+    font-size: 14px !important;
+    line-height: 1.1 !important;
+}
+
+body.is-public .portal-register-flow article span {
+    grid-area: desc !important;
+    color: var(--pub-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+
+@media (max-width: 900px) {
+    body.is-public .public-hero,
+    body.is-public .public-integrated-strip,
+    body.is-public .public-final-cta,
+    body.is-public .portal-register-shell {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.is-public .public-role-grid,
+    body.is-public .public-rule-list,
+    body.is-public .portal-register-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.is-public .portal-register-aside {
+        position: static !important;
+    }
+}
+
+@media (max-width: 560px) {
+    body.is-public .auth-page {
+        padding: 12px !important;
+    }
+
+    body.is-public .public-landing-topbar {
+        border-radius: 14px !important;
+    }
+
+    body.is-public .public-nav a:not(.public-nav-login) {
+        display: none !important;
+    }
+
+    body.is-public .public-hero {
+        min-height: 0 !important;
+        padding: 20px !important;
+        border-radius: 18px !important;
+    }
+
+    body.is-public .public-hero h1 {
+        font-size: clamp(36px, 13vw, 54px) !important;
+    }
+
+    body.is-public .auth-entry-wrapper .auth-card,
+    body.is-public .portal-register-card,
+    body.is-public .portal-register-aside {
+        padding: 18px !important;
+    }
+
+    body.is-public .auth-card-header h5 {
+        font-size: 36px !important;
+    }
+}
+
+/* Final public action/button legibility lock.
+   Old button/icon rules are very broad, so these selectors intentionally sit
+   at the end of this source and lock the whole public surface. */
+body.is-public :where(
+    .public-nav-login,
+    .public-primary-action,
+    .auth-card .app-btn-primary,
+    .portal-register-submit,
+    button.app-btn-primary,
+    a.app-btn-primary
+) {
+    background: var(--pub-orange) !important;
+    border-color: var(--pub-orange) !important;
+    color: #ffffff !important;
+    background-image: none !important;
+    text-shadow: none !important;
+    box-shadow: 0 14px 30px rgba(249, 115, 22, .20) !important;
+    -webkit-text-fill-color: #ffffff !important;
+    user-select: none !important;
+}
+
+body.is-public :where(
+    .public-nav-login,
+    .public-primary-action,
+    .auth-card .app-btn-primary,
+    .portal-register-submit,
+    button.app-btn-primary,
+    a.app-btn-primary
+) :where(i, svg, span, strong, small) {
+    color: #ffffff !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+body.is-public :where(
+    .public-nav-login,
+    .public-primary-action,
+    .auth-card .app-btn-primary,
+    .portal-register-submit,
+    button.app-btn-primary,
+    a.app-btn-primary,
+    .public-nav-login *,
+    .public-primary-action *,
+    .auth-card .app-btn-primary *,
+    .portal-register-submit *,
+    button.app-btn-primary *,
+    a.app-btn-primary *
+)::selection {
+    background: transparent !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+body.is-public :where(
+    .public-nav-login,
+    .public-primary-action,
+    .auth-card .app-btn-primary,
+    .portal-register-submit,
+    button.app-btn-primary,
+    a.app-btn-primary,
+    .public-nav-login *,
+    .public-primary-action *,
+    .auth-card .app-btn-primary *,
+    .portal-register-submit *,
+    button.app-btn-primary *,
+    a.app-btn-primary *
+)::-moz-selection {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+body.is-public :where(.public-secondary-action, .auth-note, .auth-back-home, .portal-register-login) {
+    background: #ffffff !important;
+    border-color: rgba(17, 24, 39, .12) !important;
+    color: var(--pub-ink) !important;
+    -webkit-text-fill-color: var(--pub-ink) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+body.is-public :where(.public-secondary-action, .auth-note, .auth-back-home, .portal-register-login) :where(i, svg, span, strong, small) {
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+body.is-public .public-brand {
+    flex: 0 1 auto !important;
+    min-width: 180px !important;
+}
+
+body.is-public .public-brand span {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+}
+
+body.is-public :where(.public-brand-mark, .auth-logo, .company-logo-mark) {
+    flex: 0 0 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+body.is-public .auth-card-header h5 {
+    max-width: 100% !important;
+    font-size: clamp(44px, 6vw, 66px) !important;
+    line-height: .98 !important;
+    word-break: normal !important;
+}
+
+body.is-public .auth-card-header p {
+    max-width: 340px !important;
+}
+
+@media (max-width: 560px) {
+    body.is-public .public-brand {
+        min-width: 0 !important;
+    }
+
+    body.is-public .public-brand strong {
+        font-size: 13px !important;
+    }
+
+    body.is-public .public-brand small {
+        font-size: 11px !important;
+    }
+
+    body.is-public .auth-card-header h5 {
+        font-size: 40px !important;
+    }
+}

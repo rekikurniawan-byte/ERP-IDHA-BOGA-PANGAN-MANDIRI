@@ -1,0 +1,112 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.calendar %}
+{% set sections = model.sections if model.sections is defined else {} %}
+<!-- Draft, invoice, kontrak, delivery ERP existing -->
+<section class="portal-feature-page portal-calendar-page portal-calendar-board">
+    <div class="portal-feature-hero portal-calendar-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+        <div class="portal-hero-proof">
+            <i class="bi bi-calendar-check"></i>
+            <span>Draft, tagihan, pengiriman, kontrak</span>
+        </div>
+    </div>
+
+    <div class="portal-calendar-summary">
+        <article class="primary"><span>Agenda</span><strong>{{ model.totals.total }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Hari Ini</span><strong>{{ model.totals.today }}</strong><small>Perlu dipantau</small></article>
+        <article><span>7 Hari</span><strong>{{ model.totals.next_7_days }}</strong><small>Agenda dekat</small></article>
+        <article><span>Draft</span><strong>{{ model.totals.draft }}</strong><small>Portal order</small></article>
+        <article><span>Tagihan</span><strong>{{ model.totals.invoice }}</strong><small>Jatuh tempo</small></article>
+        <article><span>Pengiriman</span><strong>{{ model.totals.delivery }}</strong><small>Pengiriman</small></article>
+        <article><span>Kontrak</span><strong>{{ model.totals.contract }}</strong><small>Akhir masa kontrak</small></article>
+    </div>
+
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Kalender belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% set board = [
+        ("Hari Ini", "today", "bi-sun", "Agenda yang jatuh pada tanggal hari ini."),
+        ("7 Hari Ke Depan", "next_7_days", "bi-calendar2-week", "Agenda dekat untuk dipantau."),
+        ("Tagihan Jatuh Tempo", "invoice", "bi-receipt", "Jatuh tempo tagihan dari Finance ."),
+        ("Pengiriman", "delivery", "bi-truck", "Pengiriman dari modul delivery ."),
+        ("Kontrak", "contract", "bi-file-earmark-text", "Kontrak PT yang mendekati end date."),
+        ("Draft Pesanan", "draft", "bi-bag-check", "Draft pesanan portal yang sudah dijadwalkan.")
+    ] %}
+
+    <div class="portal-calendar-section-grid">
+        {% for title, key, icon, caption in board %}
+            <section class="portal-calendar-section">
+                <div class="portal-section-heading compact">
+                    <h2><i class="bi {{ icon }}"></i> {{ title }}</h2>
+                    <span>{{ sections.get(key, [])|length }}</span>
+                </div>
+                <p class="portal-muted-note">{{ caption }}</p>
+                <div class="portal-calendar-mini-list">
+                    {% for item in sections.get(key, [])[:8] %}
+                        <article class="portal-calendar-card type-{{ item.type|lower }}">
+                            <time>
+                                <strong>{{ item.date.strftime('%d') if item.date else "--" }}</strong>
+                                <span>{{ item.date.strftime('%b %Y') if item.date else "-" }}</span>
+                            </time>
+                            <div>
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.source }} | {{ item.type.replace("_", " ") }}</p>
+                                <div class="portal-chip-row">
+                                    <span>{{ item.status }}</span>
+                                    {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="portal-soft-empty">Belum ada agenda di section ini.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+
+    <div class="portal-section-heading">
+        <h2>Semua Agenda</h2>
+        <span>{{ model.totals.total }} record</span>
+    </div>
+
+    <div class="portal-calendar-list">
+        {% for item in model.rows %}
+            <article class="portal-calendar-card type-{{ item.type|lower }}">
+                <time>
+                    <strong>{{ item.date.strftime('%d') if item.date else "--" }}</strong>
+                    <span>{{ item.date.strftime('%b %Y') if item.date else "-" }}</span>
+                </time>
+                <div>
+                    <h3>{{ item.title }}</h3>
+                    <p>{{ item.source }} | {{ item.type.replace("_", " ") }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ item.status }}</span>
+                        {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}
+                    </div>
+                </div>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-calendar-event"></i>
+                <strong>Tidak ada agenda dekat</strong>
+                <p>Draft pesanan, tagihan jatuh tempo, pengiriman, dan kontrak akan muncul di kalender ini.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,87 +1,128 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set instruction = data.instruction %}
+<section class="portal-feature-page portal-finance-page portal-payment-instruction-page">
+    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>{{ data.instruction.scope_mode }}</span>
+            <span>Instruksi pembayaran</span>
         </div>
+        <strong class="portal-hero-status">{{ "Bisa dibayar" if instruction.payable else "Hanya dilihat" }}</strong>
     </div>
 
-    {% if not data.instruction.allowed %}
-        <div class="portal-mobile-alert">{{ data.instruction.reason }}</div>
-    {% else %}
-        <div class="portal-feature-card primary">
-            <h2>{{ data.instruction.amount_due|rupiah }}</h2>
-            <p>
-                Invoice {{ data.instruction.invoice.invoice_number }} -
-                {{ data.instruction.invoice.status }}.
-            </p>
-            <div class="portal-source-pill">
-                <i class="bi bi-shield-check"></i>
-                <span>Attachment only, finance verify</span>
+    {% if not instruction.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Tagihan tidak tersedia</h2>
+                <p>{{ instruction.reason }}</p>
             </div>
         </div>
-
-        <div class="portal-mini-metrics">
-            <div><span>Invoice</span><strong>{{ data.instruction.invoice.invoice_number }}</strong></div>
-            <div><span>Sisa</span><strong>{{ data.instruction.invoice.remaining_amount|rupiah }}</strong></div>
-            <div><span>Status</span><strong>{{ data.instruction.invoice.status }}</strong></div>
-            <div><span>Payable</span><strong>{{ "YA" if data.instruction.payable else "TIDAK" }}</strong></div>
+    {% else %}
+        <div class="portal-ledger-summary portal-finance-summary">
+            <article class="portal-ledger-total">
+                <span>Nominal Perlu Dibayar</span>
+                <strong>{{ instruction.amount_due|rupiah }}</strong>
+                <p>{{ data.page_description }}</p>
+            </article>
+            <article><span>Tagihan</span><strong>{{ instruction.invoice.invoice_number }}</strong><small>{{ instruction.invoice.status }}</small></article>
+            <article><span>Sisa</span><strong>{{ instruction.invoice.remaining_amount|rupiah }}</strong><small>Sisa tagihan</small></article>
+            <article><span>Bukti</span><strong>{{ instruction.proof_summary.count }}</strong><small>{{ instruction.proof_summary.latest_status }}</small></article>
         </div>
 
-        <div class="portal-card-list">
-            <article class="portal-mobile-card">
-                <div>
-                    <h3>Transfer Bank</h3>
-                    {% if data.instruction.bank_transfer.available %}
-                        <p>{{ data.instruction.bank_transfer.bank_name }}</p>
-                        <p>{{ data.instruction.bank_transfer.account_number }} - {{ data.instruction.bank_transfer.account_name }}</p>
-                    {% else %}
-                        <p>Rekening pembayaran belum lengkap: {{ data.instruction.bank_transfer.missing|join(", ") }}.</p>
-                    {% endif %}
-                </div>
-                <i class="bi bi-bank"></i>
+        <div class="portal-payment-method-grid">
+            <article class="portal-payment-method-card">
+                <span class="portal-source-pill"><i class="bi bi-bank"></i> Transfer Bank</span>
+                {% if instruction.bank_transfer.available %}
+                    <h2>{{ instruction.bank_transfer.bank_name }}</h2>
+                    <p>{{ instruction.bank_transfer.account_number }}</p>
+                    <strong>{{ instruction.bank_transfer.account_name }}</strong>
+                {% else %}
+                    <h2>Rekening belum lengkap</h2>
+                    <p>Konfigurasi yang kurang: {{ instruction.bank_transfer.missing|join(", ") }}.</p>
+                    <strong>Hubungi finance</strong>
+                {% endif %}
             </article>
 
-            <article class="portal-mobile-card">
-                <div>
-                    <h3>QRIS</h3>
-                    {% if data.instruction.qris.available %}
-                        <p>{{ data.instruction.qris.label or "QRIS pembayaran" }}</p>
-                        <p>{{ data.instruction.qris.note or "Gunakan nominal sesuai sisa invoice." }}</p>
-                    {% else %}
-                        <p>QRIS belum dikonfigurasi. Gunakan transfer bank bila tersedia.</p>
+            <article class="portal-payment-method-card accent">
+                <span class="portal-source-pill"><i class="bi bi-qr-code"></i> QRIS</span>
+                {% if instruction.qris.available %}
+                    <h2>{{ instruction.qris.label or "QRIS pembayaran" }}</h2>
+                    <p>{{ instruction.qris.note or "Gunakan nominal sesuai sisa invoice." }}</p>
+                    {% if instruction.qris.image_url %}
+                        <a class="portal-secondary-action" href="{{ instruction.qris.image_url }}" target="_blank" rel="noopener">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            <span>Buka QRIS</span>
+                        </a>
                     {% endif %}
-                </div>
-                <i class="bi bi-qr-code"></i>
+                {% else %}
+                    <h2>QRIS belum dikonfigurasi</h2>
+                    <p>Gunakan transfer bank bila rekening tersedia.</p>
+                    <strong>Instruksi tetap</strong>
+                {% endif %}
             </article>
         </div>
 
         <div class="portal-section-heading">
             <h2>Upload Bukti</h2>
-            <span>Menunggu finance</span>
+            <span>Attachment only, finance verify</span>
         </div>
 
-        {% if data.instruction.payable %}
-            <form class="portal-feature-card" method="POST" enctype="multipart/form-data">
+        {% if instruction.payable %}
+            <form class="portal-payment-upload-card" method="POST" enctype="multipart/form-data" data-app-confirm="Unggah bukti pembayaran ini ke finance?">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label class="form-label fw-semibold" for="proof_file">Bukti pembayaran</label>
-                <input class="form-control mb-3" id="proof_file" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
-                <label class="form-label fw-semibold" for="notes">Catatan</label>
-                <textarea class="form-control mb-3" id="notes" name="notes" rows="3" placeholder="Contoh: transfer BCA atas nama PT ..."></textarea>
-                <button class="portal-web-logout-button portal-payment-submit" type="submit">
+                <label>
+                    <span>Bukti pembayaran</span>
+                    <input id="proof_file" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                </label>
+                <label>
+                    <span>Catatan</span>
+                    <textarea id="notes" name="notes" rows="3" maxlength="1000" placeholder="Contoh: transfer BCA atas nama PT ..."></textarea>
+                </label>
+                <button class="portal-primary-action" type="submit" data-app-temp-label="Mengupload...">
                     <i class="bi bi-cloud-upload"></i>
                     <span>Upload Bukti</span>
                 </button>
-                <p class="portal-muted-note mt-3 mb-0">Upload ini tidak otomatis membuat payment, jurnal, atau status lunas. Finance tetap wajib verifikasi.</p>
+                <p>Unggahan ini akan diperiksa terlebih dahulu. Setelah sesuai, pembayaran akan tercatat.</p>
             </form>
         {% else %}
-            <div class="portal-mobile-alert">Invoice ini tidak dalam status payable untuk upload bukti pembayaran.</div>
+            <div class="portal-blocked-state">
+                <i class="bi bi-check2-circle"></i>
+                <div>
+                    <h2>Tagihan belum bisa dibayar</h2>
+                    <p>Status tagihan atau sisa tagihan tidak memungkinkan upload bukti baru.</p>
+                </div>
+            </div>
         {% endif %}
+
+        <div class="portal-section-heading">
+            <h2>Riwayat Bukti</h2>
+            <span>{{ instruction.proofs|length }} file</span>
+        </div>
+        <div class="portal-proof-history-list">
+            {% for proof in instruction.proofs %}
+                <article class="portal-proof-history-card">
+                    <span class="portal-record-icon"><i class="bi bi-paperclip"></i></span>
+                    <div>
+                        <h3>{{ proof.filename }}</h3>
+                        <p>{{ proof.uploaded_at.strftime('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} | {{ proof.file_size }} byte</p>
+                        <div class="portal-chip-row">
+                            <span>{{ proof.attachment_type }}</span>
+                            {% if proof.notes %}<span>{{ proof.notes }}</span>{% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% else %}
+                <div class="portal-empty-state">
+                    <i class="bi bi-paperclip"></i>
+                    <strong>Belum ada bukti pembayaran</strong>
+                    <p>Bukti yang diupload portal akan tampil di sini beserta status verifikasi finance.</p>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 </section>
 {% endblock %}

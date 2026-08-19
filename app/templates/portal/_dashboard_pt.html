@@ -1,0 +1,146 @@
+{% set center = data.center %}
+{% set models = center.models %}
+{% set invoices = models.invoices.totals %}
+{% set payments = models.payments.totals %}
+{% set contracts = models.contracts.totals %}
+{% set debts = models.debts.totals %}
+{% set scope = models.scope %}
+
+<!-- {{ data.scope.scope_mode }} -->
+<section class="portal-home portal-home-pt">
+    <div class="portal-home-hero pt">
+        <div class="portal-home-hero-copy">
+            <span class="portal-home-kicker">Portal PT</span>
+            <h1>Rekap mandor, invoice, piutang, dan kontrak perusahaan.</h1>
+            <p>PT melihat rangkuman perusahaan, bukan pesanan pribadi satu mandor.</p>
+            <div class="portal-home-cta-row">
+                <a class="portal-home-primary" href="{{ url_for('portal.pt_receivables') }}">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Cek Piutang</span>
+                </a>
+                <a class="portal-home-secondary" href="{{ url_for('portal.pt_mandors') }}">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>Lihat Mandor</span>
+                </a>
+            </div>
+        </div>
+        <div class="portal-pt-executive-card">
+            <span>Sisa Tagihan PT</span>
+            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
+            <small>{{ invoices.active_invoice_count or invoices.invoice_count }} invoice aktif perusahaan.</small>
+        </div>
+    </div>
+
+    {% if center.alerts %}
+        <div class="portal-home-alert-strip">
+            {% for alert in center.alerts[:4] %}
+                <article class="portal-home-alert level-{{ alert.level }}">
+                    <i class="bi {{ alert.icon }}"></i>
+                    <span>
+                        <strong>{{ alert.title }}</strong>
+                        <small>{{ alert.message }}</small>
+                    </span>
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="portal-home-metric-row pt">
+        <article>
+            <span>Mandor</span>
+            <strong>{{ scope.mandor_ids|length }}</strong>
+            <small>di bawah PT</small>
+        </article>
+        <article>
+            <span>Total Piutang</span>
+            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
+            <small>{{ invoices.overdue_invoice_count or 0 }} lewat jatuh tempo</small>
+        </article>
+        <article>
+            <span>Invoice</span>
+            <strong>{{ invoices.invoice_count }}</strong>
+            <small>{{ invoices.payable_invoice_count or 0 }} masih bisa dibayar</small>
+        </article>
+        <article>
+            <span>Kontrak Aktif</span>
+            <strong>{{ contracts.active_count or 0 }}</strong>
+            <small>{{ contracts.expiring_soon_count or 0 }} hampir berakhir</small>
+        </article>
+    </div>
+
+    <div class="portal-home-action-band pt">
+        <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh Mandor</strong><small>Perusahaan</small></a>
+        <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Seluruh Invoice</strong><small>Diterbitkan</small></a>
+        <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Sisa tagihan</small></a>
+        <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Riwayat Pembayaran</strong><small>Pembayaran</small></a>
+        <a href="{{ url_for('portal.pt_contracts') }}"><i class="bi bi-file-earmark-text"></i><strong>Kontrak</strong><small>Perjanjian</small></a>
+    </div>
+
+    <div class="portal-home-grid two">
+        <section class="portal-home-panel">
+            <div class="portal-home-panel-head">
+                <div>
+                    <span>Invoice Terbaru</span>
+                    <h2>Tagihan perusahaan.</h2>
+                </div>
+                <a href="{{ url_for('portal.pt_invoices') }}">Semua</a>
+            </div>
+            <div class="portal-home-list money">
+                {% for invoice in models.invoices.invoices[:6] %}
+                    <article>
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        <span>
+                            <strong>{{ invoice.invoice_number }}</strong>
+                            <small>{{ invoice.party.label }} | {{ invoice.status_label }}</small>
+                        </span>
+                        <b>{{ invoice.remaining_amount|rupiah }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-home-empty">Belum ada invoice perusahaan.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-home-panel">
+            <div class="portal-home-panel-head">
+                <div>
+                    <span>Kontrak</span>
+                    <h2>Status kontrak PT.</h2>
+                </div>
+                <a href="{{ url_for('portal.pt_contracts') }}">Detail</a>
+            </div>
+            <div class="portal-home-list">
+                {% for contract in models.contracts.rows[:6] %}
+                    <article>
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>
+                            <strong>{{ contract.contract_number }}</strong>
+                            <small>{{ contract.title }} | sampai {{ contract.end_date.strftime('%d-%m-%Y') if contract.end_date else "-" }}</small>
+                        </span>
+                        <b>{{ contract.status }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-home-empty">Belum ada kontrak aktif untuk perusahaan ini.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <section class="portal-home-panel full">
+        <div class="portal-home-panel-head">
+            <div>
+                <span>Rekap Keuangan PT</span>
+                <h2>Ringkasan pembayaran dan sisa tagihan.</h2>
+            </div>
+            <span class="portal-home-soft-pill">Aktif</span>
+        </div>
+        <div class="portal-home-scope-grid finance">
+            <article><span>Total Invoice</span><strong>{{ invoices.total_amount|rupiah }}</strong></article>
+            <article><span>Sudah Dibayar</span><strong>{{ invoices.paid_amount|rupiah }}</strong></article>
+            <article><span>Sisa Invoice</span><strong>{{ invoices.active_outstanding_amount|rupiah }}</strong></article>
+            <article><span>Pembayaran Masuk</span><strong>{{ payments.payment_amount|rupiah }}</strong></article>
+            <article><span>Hutang Pekerja</span><strong>{{ debts.active_remaining_amount|rupiah }}</strong></article>
+            <article><span>Lokasi</span><strong>{{ scope.delivery_location_ids|length }}</strong></article>
+        </div>
+    </section>
+</section>

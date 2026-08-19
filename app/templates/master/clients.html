@@ -1,22 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Master Client</span>
-        <h1>Data Client</h1>
-        <p>Client digunakan untuk mengelompokkan mandor dan kebutuhan proyek.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('master.create_client') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Client
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Data Client",
+    "Client digunakan untuk mengelompokkan mandor dan kebutuhan proyek.",
+    eyebrow="Master Client",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Tambah Client", "url": url_for('master.create_client'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 <div class="app-card">
     <form method="GET" action="{{ url_for('master.clients') }}" class="filter-bar app-form" data-ui-form="true">

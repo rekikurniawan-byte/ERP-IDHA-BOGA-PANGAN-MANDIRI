@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Detail Kas Harian — {{ record.cash_date.strftime('%d-%m-%Y') if record.cash_date else '-' }}</h1>
-        <p>Rincian rekap kas warung untuk tanggal ini beserta angka referensi dari data warung.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.daily_cash') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Detail Kas Harian — " ~ (record.cash_date.strftime('%d-%m-%Y') if record.cash_date else '-'),
+    "Rincian rekap kas warung untuk tanggal ini beserta angka referensi dari data warung.",
+    "Finance",
+    actions=[{"label": "Kembali", "url": url_for('finance.daily_cash'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="app-card">
     <div class="card-header-clean">

@@ -1,29 +1,24 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan • Detail Transport & BBM</span>
-        <h1>{{ expense.expense_number }}</h1>
-        <p>{{ rule.get('description', 'Detail biaya transport/BBM dan jejak jurnalnya.') }}</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        <a href="{{ url_for('finance.transport_expenses') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Biaya
-        </a>
-        {% if expense.cash_bank_transaction_id %}
-            <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=expense.cash_bank_transaction_id) }}" class="btn app-btn-secondary">Lihat Buku Kas/Bank</a>
-        {% endif %}
-        {% if expense.journal_id %}
-            <a href="{{ url_for('accounting.journal_detail', journal_id=expense.journal_id) }}" class="btn app-btn-primary">Lihat Jurnal</a>
-        {% endif %}
-        {% if field_transaction_link %}
-            <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-primary">Kembali Ke Transaksi Kas Lapangan</a>
-        {% endif %}
-    </div>
-</div>
+{% set header_actions = [{"label": "Daftar Biaya", "url": url_for('finance.transport_expenses'), "icon": "bi-arrow-left"}] %}
+{% if expense.cash_bank_transaction_id %}
+    {% do header_actions.append({"label": "Lihat Buku Kas/Bank", "url": url_for('finance.cash_bank_transaction_detail', transaction_id=expense.cash_bank_transaction_id)}) %}
+{% endif %}
+{% if expense.journal_id %}
+    {% do header_actions.append({"label": "Lihat Jurnal", "url": url_for('accounting.journal_detail', journal_id=expense.journal_id), "variant": "primary"}) %}
+{% endif %}
+{% if field_transaction_link %}
+    {% do header_actions.append({"label": "Kembali Ke Transaksi Kas Lapangan", "url": url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id), "variant": "primary"}) %}
+{% endif %}
+{{ page_header(
+    expense.expense_number,
+    rule.get('description', 'Detail biaya transport/BBM dan jejak jurnalnya.'),
+    "Keuangan • Detail Transport & BBM",
+    actions=header_actions
+) }}
 {% set precision_key = 'transport' %}
 
 <div class="app-stat-grid">

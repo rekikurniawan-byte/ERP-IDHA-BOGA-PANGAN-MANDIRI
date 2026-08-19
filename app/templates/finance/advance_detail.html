@@ -1,29 +1,24 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Detail Uang Muka / DP</span>
-        <h1>{{ advance.advance_number }}</h1>
-        <p>{{ rule.get('label', advance.advance_type) }} - {{ get_party_label(advance) }}</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        <a href="{{ url_for('finance.advances') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Advance
-        </a>
-        {% if advance.cash_bank_transaction_id %}
-            <a href="{{ url_for('finance.cash_bank_transaction_detail', transaction_id=advance.cash_bank_transaction_id) }}" class="btn app-btn-secondary">Buku Kas/Bank</a>
-        {% endif %}
-        {% if advance.journal_id %}
-            <a href="{{ url_for('accounting.journal_detail', journal_id=advance.journal_id) }}" class="btn app-btn-secondary">Jurnal</a>
-        {% endif %}
-        {% if field_transaction_link %}
-            <a href="{{ url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id) }}" class="btn app-btn-primary">Kembali Ke Transaksi Kas Lapangan</a>
-        {% endif %}
-    </div>
-</div>
+{% set header_actions = [{"label": "Daftar Advance", "url": url_for('finance.advances'), "icon": "bi-arrow-left"}] %}
+{% if advance.cash_bank_transaction_id %}
+    {% do header_actions.append({"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_transaction_detail', transaction_id=advance.cash_bank_transaction_id)}) %}
+{% endif %}
+{% if advance.journal_id %}
+    {% do header_actions.append({"label": "Jurnal", "url": url_for('accounting.journal_detail', journal_id=advance.journal_id)}) %}
+{% endif %}
+{% if field_transaction_link %}
+    {% do header_actions.append({"label": "Kembali Ke Transaksi Kas Lapangan", "url": url_for('field_transactions.detail', transaction_id=field_transaction_link.field_transaction_id), "variant": "primary"}) %}
+{% endif %}
+{{ page_header(
+    advance.advance_number,
+    rule.get('label', advance.advance_type) ~ " - " ~ get_party_label(advance),
+    "Detail Uang Muka / DP",
+    actions=header_actions
+) }}
 {% set precision_key = 'advance' %}
 
 <div class="app-stat-grid">
@@ -38,7 +33,7 @@
         <p>Terpakai/ditutup</p>
     </div>
     <div class="app-stat-card">
-        <span>Sisa Outstanding</span>
+        <span>Sisa Belum Lunas</span>
         <h3>{{ advance.remaining_amount|rupiah }}</h3>
         <p>Status {{ advance.status }}</p>
     </div>

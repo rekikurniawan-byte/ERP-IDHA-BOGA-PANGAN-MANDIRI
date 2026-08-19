@@ -73,8 +73,8 @@ def returns():
         "customer_success/foundation_shell.html",
         data=_foundation_data(
             title="Return Management",
-            description="Fondasi retur/koreksi pengiriman, menu, jumlah, dan kualitas. Efek stok/finance tetap lewat request koreksi dan approval.",
-            status="Foundation",
+            description="Retur dan koreksi pengiriman, menu, jumlah, dan kualitas. Efek stok/finance tetap lewat koreksi dan persetujuan.",
+            status="Disiapkan",
             source="customer_complaints, customer_corrections, daily_orders, deliveries",
             actions=[
                 {"label": "Komplain", "url": url_for("customer_success.complaints"), "icon": "bi-chat-square-dots"},
@@ -83,7 +83,7 @@ def returns():
             rules=[
                 "Retur tidak langsung mengubah stok, invoice, payment, atau jurnal.",
                 "Retur yang berdampak finansial/stok harus masuk koreksi dan approval.",
-                "Histori retur memakai komplain/koreksi existing sampai schema khusus disetujui.",
+                "Histori retur memakai komplain dan koreksi yang sudah tersedia sampai aturan khusus disetujui.",
             ],
         ),
     )
@@ -96,13 +96,13 @@ def approval_engine():
         "customer_success/foundation_shell.html",
         data=_foundation_data(
             title="Approval Engine",
-            description="Pintu Customer Success ke maker-checker approval existing.",
-            status="Integrated",
-            source="approval_requests existing",
+            description="Pintu Layanan Pelanggan ke proses maker-checker.",
+            status="Terhubung",
+            source="Daftar persetujuan",
             actions=[{"label": "Request Koreksi", "url": url_for("customer_success.corrections"), "icon": "bi-arrow-repeat"}],
             rules=[
                 "Approval engine tidak dibuat ulang.",
-                "Semua keputusan sensitif tetap melalui ApprovalRequest existing.",
+                "Semua keputusan sensitif tetap melalui daftar persetujuan sistem.",
                 "Route ini hanya memberi konteks modul customer dan link ke approval center.",
             ],
         ),
@@ -117,13 +117,13 @@ def notification_center():
         data=_foundation_data(
             title="Notification Center",
             description="Fondasi notifikasi customer, kontrak hampir habis, komplain, dan tindak lanjut.",
-            status="Integrated",
-            source="notifications existing",
+            status="Terhubung",
+            source="Pusat notifikasi",
             actions=[{"label": "Kontrak Customer", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"}],
             rules=[
                 "Notifikasi tidak memakai inbox baru.",
-                "Reminder kontrak memakai notification_service existing.",
-                "Target role/user tetap mengikuti Notification existing.",
+                "Reminder kontrak memakai pusat notifikasi sistem.",
+                "Target role/user mengikuti aturan notifikasi yang sudah ada.",
             ],
         ),
     )
@@ -136,17 +136,17 @@ def document_management():
         "customer_success/foundation_shell.html",
         data=_foundation_data(
             title="Document Management",
-            description="Pusat dokumen customer yang terhubung ke DigitalAttachment existing.",
-            status="Integrated",
-            source="digital_attachments existing",
+            description="Pusat dokumen pelanggan yang terhubung ke bukti digital.",
+            status="Terhubung",
+            source="Bukti digital",
             actions=[
                 {"label": "Kontrak", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"},
                 {"label": "Komplain", "url": url_for("customer_success.complaints"), "icon": "bi-chat-square-dots"},
             ],
             rules=[
                 "Tidak membuat storage dokumen baru.",
-                "Dokumen kontrak/komplain memakai DigitalAttachment existing.",
-                "Penghapusan file fisik tetap mengikuti guard attachment existing.",
+                "Dokumen kontrak dan komplain memakai arsip bukti digital.",
+                "Penghapusan file fisik tetap mengikuti guard lampiran.",
             ],
         ),
     )
@@ -159,14 +159,14 @@ def subscriptions():
         "customer_success/foundation_shell.html",
         data=_foundation_data(
             title="Subscription Order",
-            description="Fondasi order berulang dari kontrak customer ke order harian ERP.",
-            status="Approval required",
+            description="Rencana pesanan berulang dari kontrak pelanggan ke order harian.",
+            status="Butuh Persetujuan",
             source="customer_contracts -> daily_orders",
             actions=[{"label": "Kontrak Customer", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"}],
             rules=[
                 "Belum membuat jadwal order otomatis agar tidak menggandakan order.",
                 "Jika butuh jadwal berulang permanen, schema dan approval user diperlukan.",
-                "Eksekusi order tetap harus masuk workflow daily_orders existing.",
+                "Eksekusi order tetap masuk ke alur order harian.",
             ],
         ),
     )
@@ -179,8 +179,8 @@ def operational_calendar():
         "customer_success/foundation_shell.html",
         data=_foundation_data(
             title="Operational Calendar",
-            description="Fondasi kalender operasional customer dari kontrak, order, delivery, closing, dan reminder.",
-            status="Read-only",
+            description="Kalender operasional pelanggan dari kontrak, order, pengiriman, closing, dan reminder.",
+            status="Aktif",
             source="customer_contracts, daily_orders, deliveries, period_closings, notifications",
             actions=[
                 {"label": "Kontrak", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"},
@@ -188,7 +188,7 @@ def operational_calendar():
             ],
             rules=[
                 "Kalender tidak membuat jadwal baru.",
-                "Kalender membaca tanggal dari modul existing.",
+                "Kalender membaca tanggal dari modul yang sudah tersedia.",
                 "Subscription otomatis dipisah sampai business rule disetujui.",
             ],
         ),
@@ -472,17 +472,18 @@ def _foundation_data(title, description, status, source, actions, rules):
     contracts = list_customer_contracts(current_user.branch_id, status="ALL")
     complaints = list_customer_complaints(current_user.branch_id, status="ALL", limit=500)
     corrections = list_customer_corrections(current_user.branch_id, status="ALL")
+    integration_guard = "Integrasi Data tidak membuat tabel atau workflow paralel."
     return {
         "title": title,
         "description": description,
         "status": status,
         "source": source,
         "actions": actions,
-        "rules": rules,
+        "rules": [integration_guard, *rules],
         "summary": [
-            {"label": "Kontrak", "value": len(contracts), "caption": "customer_contracts existing"},
-            {"label": "Komplain", "value": len(complaints), "caption": "customer_complaints existing"},
-            {"label": "Koreksi", "value": len(corrections), "caption": "customer_corrections existing"},
+            {"label": "Kontrak", "value": len(contracts), "caption": "Data kontrak pelanggan"},
+            {"label": "Komplain", "value": len(complaints), "caption": "Data komplain pelanggan"},
+            {"label": "Koreksi", "value": len(corrections), "caption": "Data koreksi pelanggan"},
         ],
     }
 

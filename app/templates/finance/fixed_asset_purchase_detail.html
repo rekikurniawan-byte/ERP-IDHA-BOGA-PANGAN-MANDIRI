@@ -1,27 +1,16 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Detail Pembelian Aset</h1>
-        <p>{{ purchase.purchase_number }}</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('finance.cash_bank_ledger', reference_type='FIXED_ASSET_PURCHASE') }}" class="btn app-btn-secondary">
-            <i class="bi bi-wallet2"></i>
-            Buku Kas/Bank Aset
-        </a>
-        {% if journal %}
-            <a href="{{ url_for('accounting.journal_detail', journal_id=journal.id) }}" class="btn app-btn-secondary">
-                <i class="bi bi-journal-check"></i>
-                Detail Jurnal
-            </a>
-        {% endif %}
-    </div>
-</div>
+{% set header_actions = [
+    {"label": "Kembali", "url": url_for('finance.fixed_asset_purchases')},
+    {"label": "Buku Kas/Bank Aset", "url": url_for('finance.cash_bank_ledger', reference_type='FIXED_ASSET_PURCHASE'), "icon": "bi-wallet2"},
+] %}
+{% if journal %}
+    {% do header_actions.append({"label": "Detail Jurnal", "url": url_for('accounting.journal_detail', journal_id=journal.id), "icon": "bi-journal-check"}) %}
+{% endif %}
+{{ page_header("Detail Pembelian Aset", purchase.purchase_number, "Finance", actions=header_actions) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

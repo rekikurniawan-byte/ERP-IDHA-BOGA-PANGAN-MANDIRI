@@ -1,22 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Master Lokasi</span>
-        <h1>Lokasi Mandor</h1>
-        <p>Satu mandor bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('master.create_location') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Lokasi
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Lokasi Mandor",
+    "Satu mandor bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja.",
+    eyebrow="Master Lokasi",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Tambah Lokasi", "url": url_for('master.create_location'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 <div class="app-card">
     <form method="GET" action="{{ url_for('master.locations') }}" class="filter-bar app-form" data-ui-form="true">

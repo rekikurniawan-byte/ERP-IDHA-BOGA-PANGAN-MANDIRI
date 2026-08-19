@@ -1,4 +1,5 @@
-from datetime import date
+from io import BytesIO
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 
 from werkzeug.security import generate_password_hash
@@ -6,9 +7,11 @@ from werkzeug.security import generate_password_hash
 from app.extensions import db
 from app.models.complaint import CustomerComplaint
 from app.models.contract import CustomerContract
-from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Mandor, User
+from app.models.delivery import Delivery, DeliveryDetail
+from app.models.master import Branch, Client, ClientPic, DeliveryLocation, Driver, Mandor, User
 from app.models.operational import DailyOrder
-from app.models.system import PortalOrderDraft
+from app.models.production import Production
+from app.models.system import ApprovalRequest, DigitalAttachment, Notification, PortalOrderDraft
 from app.models.system import PortalUserMapping
 from app.services.portal_access_service import (
     build_portal_access_scope,
@@ -252,7 +255,7 @@ def test_portal_external_login_redirects_to_portal_dashboard(app):
         response = _login_with_password(client, username)
 
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/portal/my-dashboard")
+    assert response.headers["Location"].endswith("/portal/pt")
 
 
 def test_authenticated_portal_external_login_page_redirects_to_portal_dashboard(app):
@@ -269,7 +272,7 @@ def test_authenticated_portal_external_login_page_redirects_to_portal_dashboard(
         response = client.get("/auth/login", follow_redirects=False)
 
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/portal/my-dashboard")
+    assert response.headers["Location"].endswith("/portal/customer")
 
 
 def test_portal_enabled_allows_owner_and_admin_preview(app):
@@ -945,6 +948,175 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
         assert draft.status == "CONFIRMED"
 
 
+def test_portal_pt_cannot_submit_draft_order_or_create_operational_data(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_PT)
+        username = user.username
+        client_obj, _client_pic, _mandor, location = _create_scope_master_data(user)
+        _create_portal_mapping(
+            user,
+            principal_type=PRINCIPAL_CLIENT,
+            client=client_obj,
+            access_level="DRAFT_ORDER",
+        )
+        user_id = user.id
+        db.session.commit()
+        operational_count_before = DailyOrder.query.count()
+
+    client = app.test_client()
+    _login_with_password(client, username)
+    page_response = client.get("/portal/pt/order", follow_redirects=False)
+    submit_response = client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-04-01",
+            "meal_type": "LUNCH",
+            "portion_qty": "25",
+            "delivery_location_id": "1",
+            "notes": "PT portal order draft",
+            "idempotency_key": f"pt-draft-{uuid4().hex}",
+        },
+        follow_redirects=False,
+    )
+
+    with app.app_context():
+        draft = PortalOrderDraft.query.filter_by(user_id=user_id).order_by(PortalOrderDraft.id.desc()).first()
+        operational_count_after = DailyOrder.query.count()
+
+    assert page_response.status_code == 302
+    assert page_response.headers["Location"].endswith("/portal/pt")
+    assert submit_response.status_code == 302
+    assert submit_response.headers["Location"].endswith("/portal/pt")
+    assert draft is None
+    assert operational_count_after == operational_count_before
+
+
+def test_portal_order_tracking_reads_converted_order_production_and_delivery(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        other_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        admin = _create_user_for_branch("ADMIN", portal_user.branch)
+        portal_username = portal_user.username
+        other_username = other_user.username
+        admin_username = admin.username
+        admin_id = admin.id
+        _client_obj, _client_pic, mandor, location = _create_scope_master_data(portal_user)
+        _create_portal_mapping(
+            portal_user,
+            principal_type=PRINCIPAL_MANDOR,
+            mandor=mandor,
+            access_level="DRAFT_ORDER",
+        )
+        location_id = location.id
+        db.session.commit()
+
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    client.post(
+        "/portal/orders/draft",
+        data={
+            "order_date": "2099-05-01",
+            "meal_type": "LUNCH",
+            "portion_qty": "14",
+            "delivery_location_id": str(location_id),
+            "notes": "TRACKING DELIVERY VISIBLE",
+            "idempotency_key": f"tracking-{uuid4().hex}",
+        },
+    )
+
+    with app.app_context():
+        draft = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.user.has(username=portal_username))
+            .order_by(PortalOrderDraft.id.desc())
+            .first()
+        )
+        draft_id = draft.id
+
+    client = app.test_client()
+    _login_with_password(client, admin_username)
+    confirm_response = client.post(
+        f"/portal/admin/order-drafts/{draft_id}/confirm",
+        data={"review_note": "Admin confirmed for tracking test."},
+    )
+
+    with app.app_context():
+        draft = PortalOrderDraft.query.get(draft_id)
+        daily_order = DailyOrder.query.get(draft.converted_daily_order_id)
+        detail = daily_order.details[0]
+        production = Production(
+            branch_id=daily_order.branch_id,
+            production_date=daily_order.order_date,
+            production_type="LUNCH",
+            status="COMPLETED",
+            notes=f"Production for {daily_order.order_number}",
+            created_by=admin_id,
+        )
+        driver = Driver(
+            branch_id=daily_order.branch_id,
+            name="Portal Tracking Driver",
+            phone="0800000055",
+            is_active=True,
+        )
+        db.session.add(production)
+        db.session.add(driver)
+        db.session.flush()
+        delivery = Delivery(
+            delivery_number=f"T-PORTAL-DLV-{uuid4().hex[:8]}",
+            branch_id=daily_order.branch_id,
+            delivery_date=daily_order.order_date,
+            driver_id=driver.id,
+            status="DELIVERED",
+            notes="Delivery for portal tracking",
+            created_by=admin_id,
+        )
+        db.session.add(delivery)
+        db.session.flush()
+        db.session.add(
+            DeliveryDetail(
+                delivery_id=delivery.id,
+                daily_order_detail_id=detail.id,
+                mandor_id=detail.mandor_id,
+                delivery_location_id=detail.delivery_location_id,
+                planned_qty=14,
+                delivered_qty=14,
+                shortage_qty=0,
+                sla_status="ON_TIME",
+            )
+        )
+        daily_order_number = daily_order.order_number
+        delivery_number = delivery.delivery_number
+        db.session.commit()
+
+    client = app.test_client()
+    _login_with_password(client, portal_username)
+    response = client.get("/portal/orders/status")
+    html = response.get_data(as_text=True)
+
+    other_client = app.test_client()
+    _login_with_password(other_client, other_username)
+    other_response = other_client.get("/portal/orders/status")
+    other_html = other_response.get_data(as_text=True)
+
+    assert confirm_response.status_code == 302
+    assert response.status_code == 200
+    assert "DELIVERED" in html
+    assert "Production: COMPLETED" in html
+    assert f"Delivery: DELIVERED" in html
+    assert delivery_number in html
+    assert "Delivered 14" in html
+    assert daily_order_number in html
+    assert "Rp " not in html
+    assert other_response.status_code == 200
+    assert delivery_number not in other_html
+    assert daily_order_number not in other_html
+
+
 def test_portal_order_status_shows_only_current_user_drafts(app):
     app.config["PORTAL_ENABLED"] = True
     app.config["WTF_CSRF_ENABLED"] = False
@@ -957,6 +1129,7 @@ def test_portal_order_status_shows_only_current_user_drafts(app):
         second_client, _second_pic, second_mandor, second_location = _create_scope_master_data(second_user)
         first_location.location_name = "VISIBLE STATUS LOCATION"
         second_location.location_name = "HIDDEN STATUS LOCATION"
+        near_calendar_date = date.today() + timedelta(days=7)
         first_draft = PortalOrderDraft(
             user_id=first_user.id,
             branch_id=first_user.branch_id,
@@ -1205,14 +1378,14 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
     app.config["PORTAL_ENABLED"] = True
 
     role_cases = [
-        (ROLE_PORTAL_CUSTOMER, None, None, "/portal/customer", "Dashboard Pelanggan"),
-        (ROLE_PORTAL_MANDOR, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", "Dashboard Mandor"),
-        (ROLE_PORTAL_PT, PRINCIPAL_CLIENT, "client", "/portal/pt", "Dashboard PT"),
-        (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/client", "Dashboard Client"),
-        (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", "Dashboard Delegasi"),
+        (ROLE_PORTAL_CUSTOMER, None, None, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
+        (ROLE_PORTAL_MANDOR, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
+        (ROLE_PORTAL_PT, PRINCIPAL_CLIENT, "client", "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
+        (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/client", 'data-endpoint="portal.client_dashboard"'),
+        (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
     ]
 
-    for role, principal_type, principal_key, expected_path, expected_title in role_cases:
+    for role, principal_type, principal_key, expected_path, expected_endpoint in role_cases:
         with app.app_context():
             user = _create_test_user(role)
             username = user.username
@@ -1240,13 +1413,63 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
         assert redirect_response.status_code == 302
         assert redirect_response.headers["Location"].endswith(expected_path)
         assert page_response.status_code == 200
-        assert expected_title in html
+        assert expected_endpoint in html
         assert "portal-mobile-shell" in html
         assert "portal-web-nav" in html
         assert 'action="/auth/logout"' in html
         assert "portal-web-logout-button" in html
         assert "portal-mobile-bottom-nav" not in html
         assert "app-sidebar" not in html
+
+
+def test_portal_login_routes_each_external_role_to_its_own_page(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    role_cases = [
+        (ROLE_PORTAL_CUSTOMER, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
+        (ROLE_PORTAL_MANDOR, "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
+        (ROLE_PORTAL_PT, "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
+        (ROLE_PORTAL_CLIENT, "/portal/client", 'data-endpoint="portal.client_dashboard"'),
+        (ROLE_PORTAL_DELEGATE, "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
+    ]
+
+    for role, expected_path, expected_endpoint in role_cases:
+        with app.app_context():
+            user = _create_test_user(role)
+            username = user.username
+            db.session.commit()
+
+        client = app.test_client()
+        response = _login_with_password(client, username)
+
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith(expected_path)
+
+        page_response = client.get(expected_path)
+        page_html = page_response.get_data(as_text=True)
+        assert page_response.status_code == 200
+        assert expected_endpoint in page_html
+        assert 'action="/auth/logout"' in page_html
+        assert "Keluar" in page_html
+        assert "app-sidebar" not in page_html
+
+
+def test_internal_login_stays_on_internal_dashboard_flow(app):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user("OWNER")
+        username = user.username
+        db.session.commit()
+
+    response = _login_with_password(app.test_client(), username)
+
+    assert response.status_code == 302
+    assert not response.headers["Location"].endswith("/portal/customer")
+    assert not response.headers["Location"].endswith("/portal/mandor")
+    assert not response.headers["Location"].endswith("/portal/pt")
 
 
 def test_portal_internal_configuration_pages_are_not_external_portal_pages(app):
@@ -1331,12 +1554,16 @@ def test_portal_customer_feature_foundation_pages_render(app):
         _login(client, User.query.filter_by(username=username).first())
 
     pages = {
-        "/portal/customer/order": "Order Catering",
-        "/portal/customer/orders": "Riwayat Order",
-        "/portal/customer/tracking": "Tracking Order",
-        "/portal/customer/invoices": "Invoice",
+        "/portal/customer/order": "Pesan Catering",
+        "/portal/customer/orders": "Riwayat Pesanan",
+        "/portal/customer/tracking": "Lacak Pesanan",
         "/portal/customer/payments": "Pembayaran",
         "/portal/customer/complaints": "Komplain",
+        "/portal/customer/returns": "Retur",
+        "/portal/notifications": "Notifikasi",
+        "/portal/documents": "Dokumen",
+        "/portal/approvals": "Approval",
+        "/portal/calendar": "Kalender Operasional",
     }
 
     for path, title in pages.items():
@@ -1345,11 +1572,14 @@ def test_portal_customer_feature_foundation_pages_render(app):
 
         assert response.status_code == 200, path
         assert title in html
-        assert "ERP existing" in html
         assert "portal-mobile-shell" in html
         assert "app-sidebar" not in html
         assert "BuildError" not in html
         assert "UndefinedError" not in html
+
+    invoices_response = client.get("/portal/customer/invoices", follow_redirects=False)
+    assert invoices_response.status_code == 302
+    assert invoices_response.headers["Location"].endswith("/portal/customer/payments")
 
 
 def test_portal_mandor_feature_foundation_pages_render(app):
@@ -1367,13 +1597,18 @@ def test_portal_mandor_feature_foundation_pages_render(app):
         _login(client, User.query.filter_by(username=username).first())
 
     pages = {
-        "/portal/mandor/order": "Order Catering",
+        "/portal/mandor/order": "Pesan Catering",
         "/portal/mandor/workers": "Data Pekerja",
         "/portal/mandor/catering-debts": "Hutang Catering",
         "/portal/mandor/canteen-debts": "Hutang Warung",
         "/portal/mandor/installments": "Cicilan",
         "/portal/mandor/invoices": "Invoice",
         "/portal/mandor/payments": "Riwayat Pembayaran",
+        "/portal/mandor/subscriptions": "Pesanan Berulang",
+        "/portal/notifications": "Notifikasi",
+        "/portal/documents": "Dokumen",
+        "/portal/approvals": "Approval",
+        "/portal/calendar": "Kalender Operasional",
     }
 
     for path, title in pages.items():
@@ -1382,7 +1617,6 @@ def test_portal_mandor_feature_foundation_pages_render(app):
 
         assert response.status_code == 200, path
         assert title in html
-        assert "ERP existing" in html
         assert "portal-mobile-shell" in html
         assert "app-sidebar" not in html
         assert "BuildError" not in html
@@ -1408,6 +1642,11 @@ def test_portal_pt_feature_foundation_pages_render(app):
         "/portal/pt/invoices": "Seluruh Invoice",
         "/portal/pt/receivables": "Seluruh Piutang",
         "/portal/pt/contracts": "Seluruh Kontrak",
+        "/portal/pt/subscriptions": "Pesanan Berulang",
+        "/portal/notifications": "Notifikasi",
+        "/portal/documents": "Dokumen",
+        "/portal/approvals": "Approval",
+        "/portal/calendar": "Kalender Operasional",
     }
 
     for path, title in pages.items():
@@ -1416,11 +1655,14 @@ def test_portal_pt_feature_foundation_pages_render(app):
 
         assert response.status_code == 200, path
         assert title in html
-        assert "ERP existing" in html
         assert "portal-mobile-shell" in html
         assert "app-sidebar" not in html
         assert "BuildError" not in html
         assert "UndefinedError" not in html
+
+    pt_order_response = client.get("/portal/pt/order", follow_redirects=False)
+    assert pt_order_response.status_code == 302
+    assert pt_order_response.headers["Location"].endswith("/portal/pt")
 
 
 def test_portal_customer_complaint_submits_to_existing_complaint_table(app):
@@ -1504,6 +1746,170 @@ def test_portal_pt_contract_page_reads_existing_customer_contracts(app):
     assert "Rp 1.000.000" in html
 
 
+def test_portal_integrated_foundation_pages_read_existing_tables(app, tmp_path):
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+    app.config["DIGITAL_ATTACHMENT_UPLOAD_DIR"] = str(tmp_path)
+    (tmp_path / "portal-proof.pdf").write_bytes(b"%PDF-1.4\nportal proof\n%%EOF")
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        customer = _create_user_for_branch(ROLE_PORTAL_CUSTOMER, user.branch)
+        client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
+        notification = Notification(
+            branch_id=user.branch_id,
+            notification_type="PORTAL_TEST",
+            title="Jadwal kirim berubah",
+            message="Pengiriman lunch maju 15 menit.",
+            status="UNREAD",
+            target_user_id=user.id,
+            priority="WARNING",
+            reference_type="PORTAL",
+            reference_id=1,
+        )
+        attachment = DigitalAttachment(
+            branch_id=user.branch_id,
+            module="PORTAL_PAYMENT",
+            reference_type="INVOICE",
+            reference_id=999001,
+            attachment_type="PAYMENT_PROOF_PENDING",
+            original_filename="portal-proof.pdf",
+            stored_filename=f"portal-proof-{uuid4().hex}.pdf",
+            file_path="portal-proof.pdf",
+            mime_type="application/pdf",
+            file_size=120,
+            sha256_hash="a" * 64,
+            uploaded_by=user.id,
+            is_deleted=False,
+        )
+        approval = ApprovalRequest(
+            branch_id=user.branch_id,
+            action_key="PORTAL_ORDER_APPROVAL",
+            reference_type="PORTAL_ORDER_DRAFT",
+            reference_id=123,
+            status="SUBMITTED",
+            requested_by=user.id,
+            requested_reason="Butuh approval order portal.",
+        )
+        complaint = CustomerComplaint(
+            branch_id=user.branch_id,
+            complaint_number=f"QA-PORTAL-RETURN-{uuid4().hex[:8]}",
+            category="WRONG_MENU",
+            status="OPEN",
+            title="Menu salah kirim",
+            description="Menu tidak sesuai permintaan.",
+            client_id=client_obj.id,
+            mandor_id=mandor.id,
+            submitted_by=customer.id,
+            submitted_at=datetime(2099, 6, 1, 10, 0),
+        )
+        near_calendar_date = date.today() + timedelta(days=7)
+        first_draft = PortalOrderDraft(
+            user_id=user.id,
+            branch_id=user.branch_id,
+            client_id=client_obj.id,
+            mandor_id=mandor.id,
+            delivery_location_id=location.id,
+            order_date=near_calendar_date,
+            meal_type="LUNCH",
+            portion_qty=20,
+            notes="subscription pattern one",
+            status="PENDING_ADMIN_CONFIRMATION",
+            idempotency_key=f"sub-a-{uuid4().hex}",
+        )
+        second_draft = PortalOrderDraft(
+            user_id=user.id,
+            branch_id=user.branch_id,
+            client_id=client_obj.id,
+            mandor_id=mandor.id,
+            delivery_location_id=location.id,
+            order_date=near_calendar_date + timedelta(days=1),
+            meal_type="LUNCH",
+            portion_qty=20,
+            notes="subscription pattern two",
+            status="PENDING_ADMIN_CONFIRMATION",
+            idempotency_key=f"sub-b-{uuid4().hex}",
+        )
+        db.session.add_all([notification, attachment, approval, complaint, first_draft, second_draft])
+        db.session.flush()
+        username = user.username
+        customer_username = customer.username
+        notification_id = notification.id
+        complaint_id = complaint.id
+        attachment_id = attachment.id
+        db.session.commit()
+
+    client = app.test_client()
+    with app.app_context():
+        _login(client, User.query.filter_by(username=username).first())
+
+    checks = {
+        "/portal/notifications": ["Jadwal kirim berubah", "notifications ERP existing"],
+        "/portal/documents": ["portal-proof.pdf", "digital_attachments ERP existing"],
+        "/portal/approvals": ["PORTAL_ORDER_APPROVAL", "approval_requests ERP existing"],
+        "/portal/mandor/subscriptions": ["2x draft", "portal_order_drafts ERP existing"],
+        "/portal/calendar": ["LUNCH 20 porsi", "Draft, invoice, kontrak, delivery ERP existing"],
+    }
+
+    for path, expected_texts in checks.items():
+        response = client.get(path)
+        html = response.get_data(as_text=True)
+
+        assert response.status_code == 200, path
+        assert "BuildError" not in html
+        assert "UndefinedError" not in html
+        assert "app-sidebar" not in html
+        for expected_text in expected_texts:
+            assert expected_text in html
+
+    view_response = client.get(f"/portal/documents/{attachment_id}/view")
+    download_response = client.get(f"/portal/documents/{attachment_id}/download")
+    read_response = client.post(f"/portal/notifications/{notification_id}/read", follow_redirects=True)
+    dismiss_response = client.post(f"/portal/notifications/{notification_id}/dismiss", follow_redirects=True)
+
+    with app.app_context():
+        updated_notification = Notification.query.get(notification_id)
+
+    assert view_response.status_code == 200
+    assert view_response.headers["Cache-Control"] == "no-store"
+    assert download_response.status_code == 200
+    assert "attachment" in download_response.headers["Content-Disposition"]
+    assert read_response.status_code == 200
+    assert dismiss_response.status_code == 200
+    assert updated_notification.status == "DISMISSED"
+
+    customer_client = app.test_client()
+    with app.app_context():
+        _login(customer_client, User.query.filter_by(username=customer_username).first())
+    returns_response = customer_client.get("/portal/customer/returns")
+    returns_html = returns_response.get_data(as_text=True)
+    evidence_response = customer_client.post(
+        f"/portal/customer/complaints/{complaint_id}/evidence",
+        data={
+            "notes": "Foto menu salah",
+            "evidence_file": (BytesIO(b"%PDF-1.4\ncomplaint evidence\n%%EOF"), "complaint-evidence.pdf"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+    evidence_html = evidence_response.get_data(as_text=True)
+
+    assert returns_response.status_code == 200
+    assert "Menu salah kirim" in returns_html
+    assert "customer_complaints ERP existing" in returns_html
+    assert evidence_response.status_code == 200
+    assert "complaint-evidence.pdf" in evidence_html or "berhasil diupload" in evidence_html
+    with app.app_context():
+        evidence = DigitalAttachment.query.filter_by(
+            module="CUSTOMER_COMPLAINT",
+            reference_type="CUSTOMER_COMPLAINT",
+            reference_id=complaint_id,
+            uploaded_by=User.query.filter_by(username=customer_username).first().id,
+        ).first()
+    assert evidence is not None
+
+
 def test_portal_sidebar_exposes_role_pages_for_external_portal_user(app):
     app.config["PORTAL_ENABLED"] = True
 
@@ -1545,29 +1951,29 @@ def test_portal_customer_general_pages_render_with_financial_guards(app):
 
     guarded_pages = {
         "/portal/my-dashboard": [
-            "Dashboard Pelanggan",
+            'data-endpoint="portal.customer_dashboard"',
             "portal-mobile-shell",
         ],
         "/portal/invoices": [
-            "Invoice Portal",
-            "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "Pembayaran Awal",
+            "Pelanggan umum tidak memiliki fasilitas kredit.",
         ],
         "/portal/payments": [
-            "Riwayat Pembayaran",
-            "Payment history pelanggan umum menunggu prepayment/payment flow Stage 3.",
+            "Pembayaran Awal",
+            "Customer tidak memakai kredit",
         ],
         "/portal/debts": [
-            "Hutang Pekerja",
-            "Worker debt visibility pelanggan umum tidak dibuka pada Stage 2.",
+            'data-endpoint="portal.customer_dashboard"',
+            "Pesan catering, bayar, lalu kami proses.",
         ],
         "/portal/closing": [
-            "Closing Portal",
-            "Closing visibility pelanggan umum tidak dibuka pada Stage 2.",
+            'data-endpoint="portal.customer_dashboard"',
+            "Pelanggan umum tidak memakai kredit.",
         ],
     }
 
     for path, texts in guarded_pages.items():
-        response = client.get(path, follow_redirects=(path == "/portal/my-dashboard"))
+        response = client.get(path, follow_redirects=True)
         html = response.get_data(as_text=True)
 
         assert response.status_code == 200, path

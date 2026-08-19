@@ -1,68 +1,200 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
+
+{% macro draft_card(row) %}
+    {% set draft = row.draft %}
+    <article class="app-card portal-admin-draft-card {{ 'is-blocked' if not row.can_confirm else 'is-ready' }}">
+        <div class="card-body">
+            <div class="portal-admin-draft-head">
+                <div>
+                    <span class="status-badge {{ 'danger' if not row.can_confirm else 'success' }}">{{ row.review_status_label }}</span>
+                    <h2>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} - {{ row.meal_type_label }} - {{ draft.portion_qty }} porsi</h2>
+                    <p>{{ row.client_name }} | {{ row.mandor_name }} | {{ row.location_name }}</p>
+                </div>
+                <div class="portal-admin-draft-source">
+                    <span>Order harian tujuan</span>
+                    <strong>{{ row.daily_order_number }}</strong>
+                    <small>{{ row.daily_order_status_label }}</small>
+                </div>
+            </div>
+
+            <div class="portal-admin-review-grid">
+                <div>
+                    <span>Dikirim</span>
+                    <strong>{{ draft.submitted_at.strftime('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</strong>
+                </div>
+                <div>
+                    <span>Pemesan</span>
+                    <strong>{{ draft.user.full_name if draft.user else "-" }}</strong>
+                </div>
+                <div>
+                    <span>Cabang</span>
+                    <strong>{{ draft.branch.name if draft.branch else "-" }}</strong>
+                </div>
+                <div>
+                    <span>Kunci Anti Ganda</span>
+                    <strong>{{ draft.idempotency_key[:12] }}...</strong>
+                </div>
+            </div>
+
+            {% if draft.notes %}
+                <div class="portal-admin-note">{{ draft.notes|replace('\n', '<br>')|safe }}</div>
+            {% endif %}
+
+            <div class="portal-admin-gate-grid">
+                {% for gate in row.gates %}
+                    <article class="portal-admin-gate-card tone-{{ gate.tone }}">
+                        <span>{{ gate.title }}</span>
+                        <strong>{{ gate.label }}</strong>
+                        <small>{{ gate.message }}</small>
+                    </article>
+                {% endfor %}
+            </div>
+
+            {% if row.blockers %}
+                <div class="alert alert-danger mb-3">
+                    {% for blocker in row.blockers %}
+                        <div><strong>Perlu review:</strong> {{ blocker }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if row.warnings %}
+                <div class="alert alert-warning mb-3">
+                    {% for warning in row.warnings %}
+                        <div>{{ warning }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="portal-admin-actions">
+                <form method="post" action="{{ url_for('portal.confirm_order_draft', draft_id=draft.id) }}" data-app-confirm="Konfirmasi draft ini ke Order Harian ?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="review_note" class="form-control form-control-sm" placeholder="Catatan konfirmasi" value="Dikonfirmasi ke order harian .">
+                    <button class="btn app-btn-primary btn-sm" type="submit" {% if not row.can_confirm %}disabled{% endif %}>
+                        <i class="bi bi-check2-circle"></i> Konfirmasi
+                    </button>
+                </form>
+                <form method="post" action="{{ url_for('portal.reject_order_draft', draft_id=draft.id) }}" data-app-confirm="Tolak draft portal ini?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="review_note" class="form-control form-control-sm" placeholder="Alasan tolak" value="{{ row.blockers|join('; ') if row.blockers else 'Ditolak dari admin portal.' }}">
+                    <button class="btn app-btn-danger btn-sm" type="submit">
+                        <i class="bi bi-x-circle"></i> Tolak
+                    </button>
+                </form>
+            </div>
+        </div>
+    </article>
+{% endmacro %}
 
 {% block content %}
-<section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal Admin</p>
-            <h1>Konfirmasi Draft Order Portal</h1>
-            <p class="page-description">Draft yang dikonfirmasi menjadi order harian DRAFT dan tetap belum masuk produksi/invoice/jurnal/stok.</p>
+<section class="page-section portal-admin-bridge-page">
+    {{ portal_page_header(
+        "Antrean Konfirmasi Pesanan Portal",
+        "Draft yang disetujui masuk ke Order Harian . Tidak membuat produksi, pengiriman, tagihan, pembayaran, stok, atau jurnal otomatis.",
+        eyebrow="Admin Portal",
+        status_label=data.status_label,
+        link_label="Beranda Portal Admin",
+        link_url=url_for('portal.dashboard'),
+        link_icon="bi-speedometer2"
+    ) }}
+
+    <div class="app-stat-grid mb-3">
+        <div class="app-stat-card">
+            <span>Menunggu Admin</span>
+            <h3>{{ data.summary.draft_count }}</h3>
+            <p>draft menunggu keputusan</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
+        <div class="app-stat-card">
+            <span>Siap Dikonfirmasi</span>
+            <h3>{{ data.summary.ready_count }}</h3>
+            <p>aman masuk order harian</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Perlu Review</span>
+            <h3>{{ data.summary.blocked_count }}</h3>
+            <p>ada benturan data</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Menunggu Pembayaran</span>
+            <h3>{{ data.summary.payment_count }}</h3>
+            <p>customer wajib bayar dulu</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Butuh Approval</span>
+            <h3>{{ data.summary.approval_count }}</h3>
+            <p>limit/cut-off perlu checker</p>
+        </div>
+        <div class="app-stat-card">
+            <span>Total Porsi</span>
+            <h3>{{ data.summary.portion_total }}</h3>
+            <p>siang {{ data.summary.lunch_total }} / malam {{ data.summary.dinner_total }}</p>
         </div>
     </div>
 
-    <div class="app-card">
-        <div class="card-body">
-            <div class="table-responsive app-table-wrap">
-                <table class="table app-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Client/PT</th>
-                            <th>Mandor</th>
-                            <th>Lokasi</th>
-                            <th>Tipe</th>
-                            <th>Porsi</th>
-                            <th>Catatan</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for draft in data.drafts %}
-                            <tr>
-                                <td>{{ draft.order_date.strftime('%d-%m-%Y') }}</td>
-                                <td>{{ draft.client.name if draft.client else '-' }}</td>
-                                <td>{{ draft.mandor.name if draft.mandor else '-' }}</td>
-                                <td>{{ draft.delivery_location.location_name if draft.delivery_location else '-' }}</td>
-                                <td>{{ draft.meal_type }}</td>
-                                <td>{{ draft.portion_qty }}</td>
-                                <td>{{ draft.notes or '-' }}</td>
-                                <td>
-                                    <div class="table-actions">
-                                        <form method="post" action="{{ url_for('portal.confirm_order_draft', draft_id=draft.id) }}">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button class="btn app-btn-primary btn-sm" type="submit">Konfirmasi</button>
-                                        </form>
-                                        <form method="post" action="{{ url_for('portal.reject_order_draft', draft_id=draft.id) }}">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <input type="hidden" name="review_note" value="Ditolak dari admin portal.">
-                                            <button class="btn app-btn-danger btn-sm" type="submit">Tolak</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="8" class="text-muted">Belum ada draft order yang menunggu konfirmasi.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="portal-admin-workqueue-grid">
+        <section>
+            <div class="portal-section-heading">
+                <h2>Siap Dikonfirmasi</h2>
+                <span>{{ data.summary.ready_count }} draft</span>
             </div>
-        </div>
+            <div class="portal-admin-draft-list">
+                {% for row in data.sections.ready %}
+                    {{ draft_card(row) }}
+                {% else %}
+                    <div class="app-card">
+                        <div class="card-body text-muted">Belum ada draft yang siap dikonfirmasi.</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section>
+            <div class="portal-section-heading">
+                <h2>Perlu Review Manual</h2>
+                <span>{{ data.sections.blocked|length }} draft</span>
+            </div>
+            <div class="portal-admin-draft-list">
+                {% for row in data.sections.blocked %}
+                    {{ draft_card(row) }}
+                {% else %}
+                    <div class="app-card">
+                        <div class="card-body text-muted">Tidak ada draft bermasalah.</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section>
+            <div class="portal-section-heading">
+                <h2>Menunggu Pembayaran Customer</h2>
+                <span>{{ data.summary.payment_count }} draft</span>
+            </div>
+            <div class="portal-admin-draft-list">
+                {% for row in data.sections.payment %}
+                    {{ draft_card(row) }}
+                {% else %}
+                    <div class="app-card">
+                        <div class="card-body text-muted">Tidak ada draft yang menunggu pembayaran.</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section>
+            <div class="portal-section-heading">
+                <h2>Menunggu Approval</h2>
+                <span>{{ data.summary.approval_count }} draft</span>
+            </div>
+            <div class="portal-admin-draft-list">
+                {% for row in data.sections.approval %}
+                    {{ draft_card(row) }}
+                {% else %}
+                    <div class="app-card">
+                        <div class="card-body text-muted">Tidak ada draft yang menunggu approval checker.</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
 </section>
 {% endblock %}

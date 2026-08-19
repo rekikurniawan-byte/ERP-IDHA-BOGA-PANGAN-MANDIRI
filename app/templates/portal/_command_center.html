@@ -1,0 +1,489 @@
+{% set center = data.center %}
+{% set models = center.models %}
+
+{% if current_user.role == "PORTAL_CUSTOMER" %}
+    {% include "portal/_dashboard_customer.html" %}
+{% elif current_user.role == "PORTAL_MANDOR" %}
+    {% include "portal/_dashboard_mandor.html" %}
+{% elif current_user.role == "PORTAL_PT" %}
+    {% include "portal/_dashboard_pt.html" %}
+{% else %}
+<section class="portal-command-center portal-command-{{ center.role_family }}">
+    <div class="portal-command-hero">
+        <div class="portal-command-copy">
+            <div class="portal-command-eyebrow">
+                <span class="portal-command-dot"></span>
+                <span>Aktif</span>
+            </div>
+            <h2>{{ center.narrative.headline }}</h2>
+            <p>{{ center.narrative.integration }}</p>
+            <div class="portal-command-guard">
+                <i class="bi bi-shield-check"></i>
+                <span>{{ center.narrative.guard }}</span>
+            </div>
+        </div>
+        <div class="portal-command-proof">
+            <span>Sumber Data</span>
+            <strong>Data Terpusat</strong>
+            <p>Tidak ada login, tagihan, pembayaran, stok, atau jurnal paralel di portal.</p>
+        </div>
+    </div>
+
+    {% if center.alerts %}
+        <div class="portal-command-alerts">
+            {% for alert in center.alerts %}
+                {% if alert.endpoint %}
+                    <a class="portal-command-alert is-{{ alert.level }}" href="{{ url_for(alert.endpoint) }}">
+                        <i class="bi {{ alert.icon }}"></i>
+                        <span>
+                            <strong>{{ alert.title }}</strong>
+                            <small>{{ alert.message }}</small>
+                        </span>
+                    </a>
+                {% else %}
+                    <div class="portal-command-alert is-{{ alert.level }}">
+                        <i class="bi {{ alert.icon }}"></i>
+                        <span>
+                            <strong>{{ alert.title }}</strong>
+                            <small>{{ alert.message }}</small>
+                        </span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="portal-command-kpis">
+        {% for kpi in center.kpis %}
+            <article class="portal-command-kpi tone-{{ kpi.tone }}">
+                <div>
+                    <span class="portal-command-icon"><i class="bi {{ kpi.icon }}"></i></span>
+                    <small>{{ kpi.label }}</small>
+                </div>
+                <strong>{{ kpi.value }}</strong>
+                <p>{{ kpi.caption }}</p>
+            </article>
+        {% endfor %}
+    </div>
+
+    <div class="portal-section-heading portal-command-heading">
+        <h2>Fokus Role</h2>
+        <span>{{ center.role.replace("PORTAL_", "") }}</span>
+    </div>
+
+    <div class="portal-role-focus-grid">
+        {% for item in center.role_focus %}
+            {% if item.enabled %}
+                <a class="portal-role-focus-card tone-{{ item.tone }}" href="{{ url_for(item.endpoint) }}">
+                    <i class="bi {{ item.icon }}"></i>
+                    <span>
+                        <small>{{ item.label }}</small>
+                        <strong>{{ item.value }}</strong>
+                        <em>{{ item.caption }}</em>
+                    </span>
+                    <b class="bi bi-chevron-right"></b>
+                </a>
+            {% else %}
+                <article class="portal-role-focus-card tone-{{ item.tone }}">
+                    <i class="bi {{ item.icon }}"></i>
+                    <span>
+                        <small>{{ item.label }}</small>
+                        <strong>{{ item.value }}</strong>
+                        <em>{{ item.caption }}</em>
+                    </span>
+                </article>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="portal-section-heading portal-command-heading">
+        <h2>kksi Portal</h2>
+        <span>{{ center.role.replace("PORTAL_", "") }}</span>
+    </div>
+
+    <div class="portal-command-actions">
+        {% for action in center.quick_actions %}
+            {% if action.enabled %}
+                <a class="portal-command-action tone-{{ action.tone }}" href="{{ url_for(action.endpoint) }}">
+                    <i class="bi {{ action.icon }}"></i>
+                    <span>
+                        <strong>{{ action.label }}</strong>
+                        <small>{{ action.caption }}</small>
+                    </span>
+                    <em class="bi bi-chevron-right"></em>
+                </a>
+            {% else %}
+                <div class="portal-command-action tone-muted is-disabled">
+                    <i class="bi {{ action.icon }}"></i>
+                    <span>
+                        <strong>{{ action.label }}</strong>
+                        <small>{{ action.caption }}</small>
+                    </span>
+                    <em class="bi bi-lock"></em>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="portal-command-grid">
+        <section class="portal-command-panel">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>kktivitas terbaru</span>
+                    <h3>Aktivitas Dalam Akses</h3>
+                </div>
+                <i class="bi bi-activity"></i>
+            </div>
+            <div class="portal-command-timeline">
+                {% for item in center.timeline %}
+                    {% if item.url %}
+                        <a class="portal-command-event tone-{{ item.tone }}" href="{{ item.url }}">
+                            <i class="bi {{ item.icon }}"></i>
+                            <span>
+                                <strong>{{ item.title }}</strong>
+                                <small>{{ item.subtitle }}</small>
+                            </span>
+                            <b>{{ item.status }}</b>
+                            <time>{{ item.date_label }}</time>
+                        </a>
+                    {% else %}
+                        <div class="portal-command-event tone-{{ item.tone }}">
+                            <i class="bi {{ item.icon }}"></i>
+                            <span>
+                                <strong>{{ item.title }}</strong>
+                                <small>{{ item.subtitle }}</small>
+                            </span>
+                            <b>{{ item.status }}</b>
+                            <time>{{ item.date_label }}</time>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="portal-command-empty">
+                        <i class="bi bi-inbox"></i>
+                        <strong>{{ center.empty_state.title }}</strong>
+                        <p>{{ center.empty_state.message }}</p>
+                        {% if center.empty_state.action_endpoint %}
+                            <a href="{{ url_for(center.empty_state.action_endpoint) }}">{{ center.empty_state.action_label }}</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-command-panel">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Status operasional</span>
+                    <h3>Distribusi Data</h3>
+                </div>
+                <i class="bi bi-bar-chart"></i>
+            </div>
+            <div class="portal-command-status-list">
+                {% for group in center.status_distribution %}
+                    <article class="portal-command-status tone-{{ group.tone }}">
+                        <div class="portal-command-status-main">
+                            <i class="bi {{ group.icon }}"></i>
+                            <span>
+                                <strong>{{ group.label }}</strong>
+                                <small>{{ group.total }} data dalam akses</small>
+                            </span>
+                        </div>
+                        <div class="portal-command-status-tags">
+                            {% for item in group["items"] %}
+                                <span>{{ item.status }} <b>{{ item.count }}</b></span>
+                            {% else %}
+                                <span>Belum ada data <b>0</b></span>
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="portal-command-grid three">
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Pesanan</span>
+                    <h3>Draft dan Pelacakan</h3>
+                </div>
+                <i class="bi bi-bag-check"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for order in models.orders.rows[:5] %}
+                    <article>
+                        <strong>{{ order.meal_type_label if order.meal_type_label is defined else order.meal_type }} - {{ order.location_name }}</strong>
+                        <span>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} | {{ order.portion_qty }} porsi</span>
+                        <b>{{ order.stage }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">Belum ada draft/order portal.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Finance</span>
+                    <h3>Tagihan & Pembayaran</h3>
+                </div>
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for invoice in models.invoices.invoices[:5] %}
+                    <article>
+                        <strong>{{ invoice.invoice_number }}</strong>
+                        <span>Sisa {{ invoice.remaining_amount|rupiah }} | Bayar {{ invoice.payment_count }}x</span>
+                        <b>{{ invoice.status }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">{{ models.invoices.reason }}</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Pesan Masuk</span>
+                    <h3>Notifikasi</h3>
+                </div>
+                <i class="bi bi-bell"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for notification in models.notifications.rows[:5] %}
+                    <article>
+                        <strong>{{ notification.title }}</strong>
+                        <span>{{ notification.message }}</span>
+                        <b>{{ notification.priority }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">Belum ada notifikasi aktif.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="portal-command-grid three">
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Dokumen</span>
+                    <h3>krsip Digital</h3>
+                </div>
+                <i class="bi bi-folder2-open"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for document in models.documents.rows[:4] %}
+                    <article>
+                        <strong>{{ document.original_filename }}</strong>
+                        <span>{{ document.module }} | {{ document.attachment_type }}</span>
+                        <b>{{ document.file_size }} B</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">Belum ada dokumen dalam kepemilikan portal.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Kalender</span>
+                    <h3>kgenda Terdekat</h3>
+                </div>
+                <i class="bi bi-calendar-event"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for event in models.calendar.rows[:4] %}
+                    <article>
+                        <strong>{{ event.title }}</strong>
+                        <span>{{ event.source }} | {{ event.date.strftime('%d-%m-%Y') if event.date else "-" }}</span>
+                        <b>{{ event.type|replace("_", " ")|title }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">Belum ada agenda dalam 45 hari.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="portal-command-panel compact">
+            <div class="portal-command-panel-head">
+                <div>
+                    <span>Persetujuan</span>
+                    <h3>Permintaan Saya</h3>
+                </div>
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="portal-command-list">
+                {% for approval in models.approvals.rows[:4] %}
+                    <article>
+                        <strong>{{ approval.action_key|replace("_", " ")|title }}</strong>
+                        <span>{{ approval.reference_type }} #{{ approval.reference_id }}</span>
+                        <b>{{ approval.status|replace("_", " ")|title }}</b>
+                    </article>
+                {% else %}
+                    <div class="portal-command-soft-empty">Belum ada approval request.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    {% if center.role == "PORTAL_CUSTOMER" %}
+        <div class="portal-command-grid">
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Layanan Pelanggan</span>
+                        <h3>Komplain dan Retur</h3>
+                    </div>
+                    <i class="bi bi-chat-square-heart"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for complaint in models.complaints.rows[:5] %}
+                        <article>
+                            <strong>{{ complaint.complaint_number }}</strong>
+                            <span>{{ complaint.title }} | {{ complaint.category|replace("_", " ")|title }}</span>
+                            <b>{{ complaint.status|replace("_", " ")|title }}</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada komplain pelanggan.</div>
+                    {% endfor %}
+                </div>
+            </section>
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Retur</span>
+                        <h3>Kekurangan/Salah Menu</h3>
+                    </div>
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for item in models.returns.rows[:5] %}
+                        <article>
+                            <strong>{{ item.complaint_number }}</strong>
+                            <span>{{ item.title }}</span>
+                            <b>{{ item.status|replace("_", " ")|title }}</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada retur dalam akses user.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    {% if center.role == "PORTAL_MANDOR" %}
+        <div class="portal-command-grid">
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Mandor</span>
+                        <h3>Hutang Pekerja</h3>
+                    </div>
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for debt in models.debts.debts[:6] %}
+                        <article>
+                            <strong>{{ debt.worker_name }}</strong>
+                            <span>Sisa {{ debt.remaining_amount|rupiah }} | {{ debt.mandor_name }}</span>
+                            <b>{{ debt.status }}</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada hutang pekerja dalam akses mandor.</div>
+                    {% endfor %}
+                </div>
+            </section>
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Langganan</span>
+                        <h3>Pola Order</h3>
+                    </div>
+                    <i class="bi bi-calendar2-week"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for item in models.subscriptions.rows[:6] %}
+                        <article>
+                            <strong>{{ item.location_name }}</strong>
+                            <span>{{ item.meal_type|replace("LUNCH", "Makan Siang")|replace("DINNER", "Makan Malam") }} | {{ item.portion_qty }} porsi</span>
+                            <b>{{ item.repeat_count }}x</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada pola order berulang.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    {% if center.role == "PORTAL_PT" %}
+        <div class="portal-command-grid">
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Kontrak PT</span>
+                        <h3>Kontrak Pelanggan</h3>
+                    </div>
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for contract in models.contracts.rows[:6] %}
+                        <article>
+                            <strong>{{ contract.contract_number }}</strong>
+                            <span>{{ contract.title }} | limit {{ contract.credit_limit|rupiah }}</span>
+                            <b>{{ contract.status|replace("_", " ")|title }}</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada kontrak PT dalam akses ini.</div>
+                    {% endfor %}
+                </div>
+            </section>
+            <section class="portal-command-panel">
+                <div class="portal-command-panel-head">
+                    <div>
+                        <span>Piutang</span>
+                        <h3>Sisa Tagihan Client</h3>
+                    </div>
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="portal-command-list">
+                    {% for invoice in models.invoices.invoices[:6] %}
+                        <article>
+                            <strong>{{ invoice.invoice_number }}</strong>
+                            <span>{{ invoice.remaining_amount|rupiah }} tersisa dari {{ invoice.total_amount|rupiah }}</span>
+                            <b>{{ invoice.status|replace("_", " ")|title }}</b>
+                        </article>
+                    {% else %}
+                        <div class="portal-command-soft-empty">Belum ada piutang aktif.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    <section class="portal-command-panel">
+        <div class="portal-command-panel-head">
+            <div>
+                <span>Integrasi Data</span>
+                <h3>Sumber Data </h3>
+            </div>
+            <i class="bi bi-diagram-3"></i>
+        </div>
+        <div class="portal-command-sources">
+            {% for source in center.data_sources %}
+                <article>
+                    <strong>{{ source.label }}</strong>
+                    <span>{{ source.source }}</span>
+                    <em>{{ source.status }}</em>
+                    <b>{{ source.count }}</b>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endif %}

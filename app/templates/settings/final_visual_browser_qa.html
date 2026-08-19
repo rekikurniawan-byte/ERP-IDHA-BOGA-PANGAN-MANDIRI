@@ -1,30 +1,29 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="page-header" data-ui-page-header="PRODUCTION">
-    <div>
-        <span class="eyebrow">Final Browser QA</span>
-        <h1>Final Visual Browser QA</h1>
-        <p>Lock akhir visual: route/template/CSS/print readiness + matriks uji manual desktop, tablet, mobile, dan print preview.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('settings.visual_sweep') }}" class="btn app-btn-secondary"><i class="bi bi-eye"></i> Visual Sweep</a>
-        <a href="{{ url_for('settings.recovery_center') }}" class="btn app-btn-secondary"><i class="bi bi-life-preserver"></i> Recovery Center</a>
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary"><i class="bi bi-heart-pulse"></i> System Health</a>
-    </div>
-</div>
+{{ page_header(
+    "Final Visual Browser QA",
+    "Lock akhir visual: route/template/CSS/print readiness + matriks uji manual desktop, tablet, mobile, dan print preview.",
+    eyebrow="Final Browser QA",
+    actions=[
+        {"label": "Visual Sweep", "url": url_for('settings.visual_sweep'), "icon": "bi-eye"},
+        {"label": "Recovery Center", "url": url_for('settings.recovery_center'), "icon": "bi-life-preserver"},
+        {"label": "System Health", "url": url_for('settings.system_health'), "icon": "bi-heart-pulse"},
+    ]
+) }}
 
 {% set overall = report.get('overall', {}) %}
 <section class="final-browser-qa-hero final-browser-qa-hero-{{ overall.get('status_class', 'warning') }}">
     <div>
         <span class="eyebrow">Keputusan Final QA</span>
         <h2>{{ overall.get('decision', 'PERLU CEK') }}</h2>
-        <p>{{ overall.get('summary') }} · Version: {{ report.get('qa_version') }} · Generated: {{ report.get('generated_at') }}</p>
+        <p>{{ overall.get('summary') }} | Version: {{ report.get('qa_version') }} | Generated: {{ report.get('generated_at') }}</p>
     </div>
     <div class="final-browser-qa-chip">
         <span>Status</span>
         <strong>{{ overall.get('status', 'PERLU CEK') }}</strong>
-        <small>Read-only, tidak mengubah DB</small>
+        <small>Mode pantau, tidak mengubah DB</small>
     </div>
 </section>
 
@@ -46,7 +45,7 @@
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
             <h2>Ringkasan Readiness</h2>
-            <p>Semua check ini static/read-only. Browser manual tetap wajib untuk sign-off visual produksi.</p>
+            <p>Semua check ini static/Mode pantau. Browser manual tetap wajib untuk sign-off visual produksi.</p>
         </div>
         <span class="status-badge {{ overall.get('status_class', 'warning') }}">{{ overall.get('decision') }}</span>
     </div>
@@ -73,7 +72,7 @@
             <article class="final-browser-qa-list-item">
                 <div>
                     <strong>{{ item.name }}</strong>
-                    <small>{{ item.viewport }} · {{ item.target }}</small>
+                    <small>{{ item.viewport }} | {{ item.target }}</small>
                     <p>{{ item.expected }}</p>
                 </div>
                 <span class="status-badge {{ item.status_class }}">{{ item.status }}</span>
@@ -164,3 +163,6 @@
     </div>
 </section>
 {% endblock %}
+
+
+

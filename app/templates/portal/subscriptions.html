@@ -1,0 +1,52 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.subscriptions %}
+<!-- portal_order_drafts ERP existing -->
+<section class="portal-feature-page portal-service-page">
+    <div class="portal-feature-hero portal-service-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+    </div>
+
+    <div class="portal-service-summary">
+        <article class="primary"><span>Pola Berulang</span><strong>{{ model.totals.repeat_pattern }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Pola</span><strong>{{ model.totals.total }}</strong><small>Kombinasi lokasi/sesi</small></article>
+        <article><span>Draft</span><strong>{{ model.totals.draft_count }}</strong><small>PortalOrderDraft</small></article>
+        <article><span>Order</span><strong>{{ data.orders.total }}</strong><small>Status portal</small></article>
+    </div>
+
+    <div class="portal-mobile-alert">
+        Subscription otomatis masih informasi pattern. Aktivasi auto-generate order perlu approval karena akan menyentuh jadwal, order, produksi, delivery, invoice, dan closing.
+    </div>
+
+    <div class="portal-service-list">
+        {% for item in model.rows %}
+            <article class="portal-service-card">
+                <div class="portal-service-card-icon"><i class="bi bi-calendar2-week"></i></div>
+                <div class="portal-service-card-main">
+                    <div class="portal-service-card-title">
+                        <h3>{{ item.location_name }}</h3>
+                        <strong>{{ item.repeat_count }}x draft</strong>
+                    </div>
+                    <p>{{ item.meal_type }} | {{ item.portion_qty }} porsi</p>
+                    <div class="portal-chip-row">
+                        <span>{{ item.status }}</span>
+                        <span>Terakhir {{ item.last_order_date.strftime('%d-%m-%Y') if item.last_order_date else "-" }}</span>
+                    </div>
+                </div>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-calendar2-week"></i>
+                <strong>Belum ada pola langganan</strong>
+                <p>Pola akan muncul jika user membuat draft order berulang dengan lokasi, sesi, dan jumlah porsi yang sama.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

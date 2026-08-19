@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Tutup Kas Harian Warung</h1>
-        <p>Rekap kas warung per hari: saldo awal, penjualan tunai, pemasukan lain, dan pengeluaran. Cocok untuk mencatat total harian saat transaksi tidak diinput satu per satu.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
-            <i class="bi bi-wallet2"></i>
-            Buku Kas/Bank
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Tutup Kas Harian Warung",
+    "Rekap kas warung per hari: saldo awal, penjualan tunai, pemasukan lain, dan pengeluaran. Cocok untuk mencatat total harian saat transaksi tidak diinput satu per satu.",
+    "Finance",
+    actions=[{"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"}]
+) }}
 
 <div class="app-card">
     <div class="card-header-clean">

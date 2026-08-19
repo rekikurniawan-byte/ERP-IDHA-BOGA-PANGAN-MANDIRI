@@ -1,34 +1,23 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="material_forecast">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Prediksi Bahan</span>
-        <h1>Prediksi Kebutuhan Bahan</h1>
-        <p>Hitung kebutuhan bahan dari order, default menu siang/sore, dan recipe/BOM. Halaman ini read-only dan tidak membuat pembelian, stok keluar, jurnal, atau transaksi.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
-            <i class="bi bi-journal-text"></i>
-            Input Order Harian
-        </a>
-        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">
-            <i class="bi bi-card-checklist"></i>
-            Menu & Resep
-        </a>
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-boxes"></i>
-            Dashboard Stok
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Prediksi Kebutuhan Bahan",
+    "Hitung kebutuhan bahan dari order, default menu siang/sore, dan recipe/BOM. Halaman ini Mode pantau dan tidak membuat pembelian, stok keluar, jurnal, atau transaksi.",
+    eyebrow="Prediksi Bahan",
+    actions=[
+        {"label": "Input Order Harian", "url": url_for('operational.orders'), "icon": "bi-journal-text"},
+        {"label": "Menu & Resep", "url": url_for('costing.menus'), "icon": "bi-card-checklist"},
+        {"label": "Dashboard Stok", "url": url_for('logistics.index'), "icon": "bi-boxes"},
+    ]
+) }}
 
 
 
 <div class="app-card soft-warning-card">
-    <strong>Read-only.</strong>
+    <strong>Mode pantau.</strong>
     <p>
         Prediksi ini hanya membaca order dan resep/BOM. Sistem tidak membuat procurement, tidak memotong stok,
         tidak membuat jurnal, dan tidak mengubah database transaksi.
@@ -132,7 +121,7 @@
                 <tr>
                     <td>
                         <strong>{{ row.item_name }}</strong>
-                        <div class="muted-small">{{ row.item_code }} · {{ row.item_unit }}</div>
+                        <div class="muted-small">{{ row.item_code }} | {{ row.item_unit }}</div>
                     </td>
                     <td>
                         {{ row.required_stock_qty|qty }} {{ row.item_unit }}
@@ -323,3 +312,5 @@
 {% endif %}
 </div>
 {% endblock %}
+
+

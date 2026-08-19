@@ -28,6 +28,7 @@ from app.services.idempotency_service import (
     reserve_idempotency_key,
 )
 from app.services.manual_backfill_billing_service import sync_manual_backfill_batch_status_from_invoice
+from app.services.notification_service import create_or_update_notification
 from app.services.portal_payment_proof_service import PAYMENT_PROOF_REFERENCE_TYPE, PORTAL_PAYMENT_MODULE
 from app.services.portal_payment_verification_queue_service import PAYMENT_PROOF_VERIFIED_TYPE
 
@@ -197,6 +198,7 @@ def create_payment_from_verified_proof(
             branch_id=invoice.branch_id,
             commit=False,
         )
+        _notify_portal_payment_created(attachment, invoice, payment, finance_user)
 
     return _payment_result(payment, invoice, attachment, idempotent_replay=False)
 
@@ -297,6 +299,36 @@ def _build_collection_log(invoice: Invoice, payment: Payment, user_id: int | Non
 def _append_payment_created_note(existing: str | None, payment_number: str) -> str:
     line = f"PAYMENT_CREATED_FROM_VERIFIED_PROOF: {payment_number}"
     return f"{existing}\n{line}" if existing else line
+
+
+def _notify_portal_payment_created(
+    attachment: DigitalAttachment,
+    invoice: Invoice,
+    payment: Payment,
+    finance_user,
+) -> None:
+    if not attachment.uploaded_by:
+        return
+    create_or_update_notification(
+        branch_id=invoice.branch_id,
+        notification_type="PORTAL_PAYMENT_CREATED",
+        title=f"Payment resmi dibuat: {payment.payment_number}",
+        message=f"Pembayaran invoice {invoice.invoice_number} sudah dicatat resmi oleh finance.",
+        target_user_id=attachment.uploaded_by,
+        priority="INFO",
+        reference_type="PAYMENT",
+        reference_id=payment.id,
+        action_url=f"/portal/invoices/{invoice.id}/payment",
+        generated_key=f"portal-payment-created-{payment.id}",
+        metadata={
+            "attachment_id": attachment.id,
+            "invoice_id": invoice.id,
+            "payment_id": payment.id,
+            "created_by": getattr(finance_user, "id", None),
+            "mutation_scope": "NOTIFICATION_ONLY",
+        },
+        commit=False,
+    )
 
 
 def _money(value) -> str:

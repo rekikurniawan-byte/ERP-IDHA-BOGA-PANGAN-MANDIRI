@@ -1,21 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Recovery Center</span>
-        <h1>Atomic Smoke Simulation</h1>
-        <p>Atomic smoke failure injection dry-run pada copy database. DB aktif tidak disentuh.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.atomic_transaction_map') }}" class="btn app-btn-secondary">Atomic Map</a>
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
-        <a href="{{ url_for('settings.audit_logs') }}" class="btn app-btn-secondary">Audit Log</a>
-    </div>
-</div>
+{{ page_header(
+    "Atomic Smoke Simulation",
+    "Atomic smoke failure injection dry-run pada copy database. DB aktif tidak disentuh.",
+    eyebrow="Recovery Center",
+    actions=[
+        {"label": "Atomic Map", "url": url_for('settings.atomic_transaction_map')},
+        {"label": "System Health", "url": url_for('settings.system_health')},
+        {"label": "Audit Log", "url": url_for('settings.audit_logs')},
+    ]
+) }}
 
 {% set summary = report.get("scenario_summary", {}) %}
 {% set active_db = report.get("active_database", {}) %}

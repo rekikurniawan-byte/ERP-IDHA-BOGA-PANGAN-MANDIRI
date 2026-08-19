@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Beli Aset Tetap</h1>
-        <p>Transaksi ini akan membuat aset tetap, buku kas/bank OUT, dan jurnal Dr Aset Tetap / Cr Kas-Bank.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Beli Aset Tetap",
+    "Transaksi ini akan membuat aset tetap, buku kas/bank OUT, dan jurnal Dr Aset Tetap / Cr Kas-Bank.",
+    "Finance",
+    actions=[{"label": "Kembali", "url": url_for('finance.fixed_asset_purchases'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="alert alert-danger small">
     <strong>Penting:</strong> pakai halaman ini hanya untuk pembelian aset yang benar-benar dibayar dari kas/bank sistem. Untuk aset lama sebelum go-live, input lewat Master Aset agar saldo uang tidak berubah.

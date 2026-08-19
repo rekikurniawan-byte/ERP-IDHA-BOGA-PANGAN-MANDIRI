@@ -1,17 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan • Optional Depreciation</span>
-            <h1>Konfigurasi Penyusutan Aset</h1>
-            <p>{{ asset.asset_code }} — {{ asset.asset_name }}. Penyusutan hanya aktif jika data konfigurasi lengkap.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.fixed_asset_depreciation') }}" class="btn app-btn-secondary">Kembali</a>
-        </div>
-    </div>
+    {{ page_header(
+        "Konfigurasi Penyusutan Aset",
+        asset.asset_code ~ " — " ~ asset.asset_name ~ ". Penyusutan hanya aktif jika data konfigurasi lengkap.",
+        "Keuangan • Optional Depreciation",
+        actions=[{"label": "Kembali", "url": url_for('finance.fixed_asset_depreciation')}]
+    ) }}
 
 {% set precision_key = 'depreciation' %}
 

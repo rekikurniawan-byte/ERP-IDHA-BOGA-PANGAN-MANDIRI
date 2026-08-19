@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Transfer Kas/Bank</h1>
-        <p>Catat perpindahan dana antar kas dan rekening bank. Sistem membuat buku kas/bank OUT dan IN berpasangan.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Buku Kas/Bank
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Transfer Kas/Bank",
+    "Catat perpindahan dana antar kas dan rekening bank. Sistem membuat buku kas/bank OUT dan IN berpasangan.",
+    "Finance",
+    actions=[{"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="app-card">
     <div class="card-header-clean">

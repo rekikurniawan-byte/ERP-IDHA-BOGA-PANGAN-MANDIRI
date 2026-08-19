@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 {% include "accounting/_accounting_print_report_styles.html" %}
@@ -6,7 +6,7 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi · Print Ready</span>
+            <span class="eyebrow">Akuntansi | Print Ready</span>
             <h1>Buku Besar</h1>
             <p>Halaman print-ready buku besar berdasarkan periode aktif.</p>
         </div>
@@ -43,12 +43,13 @@
             <div class="app-stat-card print-box"><span>Status Periode</span><strong>{{ 'BALANCE' if data.is_period_balanced else 'TIDAK BALANCE' }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Awal</span><strong>{{ data.start_date.strftime('%d-%m-%Y') }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Akhir</span><strong>{{ data.end_date.strftime('%d-%m-%Y') }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
 
         {% for row in data.ledger_rows %}
         <h5 class="print-section-title">{{ row.account.account_code }} - {{ row.account.account_name }} <small>({{ row.account.account_type }})</small></h5>
-        <table class="print-table{% if not loop.first %} mt-2{% endif %} app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table{% if not loop.first %} mt-2{% endif %} app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Tanggal</th>
@@ -81,17 +82,24 @@
                 </tr>
             </tfoot>
         </table>
+</div>
         {% else %}
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <tbody>
                 <tr>
                     <td class="text-center text-muted">Belum ada transaksi buku besar pada periode ini.</td>
                 </tr>
             </tbody>
         </table>
+</div>
         {% endfor %}
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat read-only.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari jurnal yang tercatat dan bersifat Mode pantau.</p>
     </div>
 </div>
 {% endblock %}
+
+
+
+

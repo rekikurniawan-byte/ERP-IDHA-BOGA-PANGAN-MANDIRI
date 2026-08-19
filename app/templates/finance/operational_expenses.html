@@ -1,23 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan • COA 5005 / 5006 / 5007 / 5008 / 5010</span>
-        <h1>Biaya Operasional Catering</h1>
-        <p>Biaya listrik, gas, perawatan, administrasi, dan kemasan diposting langsung ke akun COA beban yang tepat.</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        {% if schema_ready %}
-            <a href="{{ url_for('finance.operational_expense_create') }}" class="btn app-btn-primary">
-                <i class="bi bi-plus-circle"></i>
-                Catat Biaya
-            </a>
-        {% endif %}
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Buku Kas/Bank</a>
-    </div>
-</div>
+{% set header_actions = [] %}
+{% if schema_ready %}
+    {% do header_actions.append({"label": "Catat Biaya", "url": url_for('finance.operational_expense_create'), "icon": "bi-plus-circle", "variant": "primary"}) %}
+{% endif %}
+{% do header_actions.append({"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger')}) %}
+{{ page_header(
+    "Biaya Operasional Catering",
+    "Biaya listrik, gas, perawatan, administrasi, dan kemasan diposting langsung ke akun COA beban yang tepat.",
+    "Keuangan • COA 5005 / 5006 / 5007 / 5008 / 5010",
+    actions=header_actions
+) }}
 {% set precision_key = 'operational_expense' %}
 
 {% if not schema_ready %}

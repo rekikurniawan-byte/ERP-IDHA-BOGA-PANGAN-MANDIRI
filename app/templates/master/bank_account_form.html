@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if account %}Edit Rekening{% else %}Tambah Rekening{% endif %}</span>
-        <h1>{% if account %}Edit Rekening Bank{% else %}Input Rekening Bank{% endif %}</h1>
-        <p>Data ini dipakai sebagai master rekening pembayaran perusahaan/cabang.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.bank_accounts') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Rekening Bank" if account else "Input Rekening Bank",
+    "Data ini dipakai sebagai master rekening pembayaran perusahaan/cabang.",
+    eyebrow="Edit Rekening" if account else "Tambah Rekening",
+    actions=[{"label": "Kembali", "url": url_for('master.bank_accounts')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if account %}{{ url_for('master.edit_bank_account', account_id=account.id) }}{% else %}{{ url_for('master.create_bank_account') }}{% endif %}" data-ui-form="true" class="app-form">

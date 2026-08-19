@@ -4,7 +4,7 @@ import pytest
 
 from app.extensions import db
 from app.models.finance import Payment
-from app.models.system import DigitalAttachment
+from app.models.system import DigitalAttachment, Notification
 from app.services.portal_mapping_service import PRINCIPAL_CLIENT
 from app.services.portal_payment_proof_service import PAYMENT_PROOF_PENDING_TYPE, upload_portal_payment_proof
 from app.services.portal_payment_verification_queue_service import (
@@ -55,7 +55,7 @@ def test_payment_proof_queue_lists_pending_branch_items_only(app, tmp_path):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            _, finance_user, invoice, attachment = _create_pending_proof()
+            portal_user, finance_user, invoice, attachment = _create_pending_proof()
 
             rows = list_payment_proof_verification_queue(finance_user)
 
@@ -75,7 +75,7 @@ def test_finance_verify_payment_proof_does_not_create_payment_or_mutate_invoice(
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            _, finance_user, invoice, attachment = _create_pending_proof()
+            portal_user, finance_user, invoice, attachment = _create_pending_proof()
             original_paid = invoice.paid_amount
             original_remaining = invoice.remaining_amount
             original_status = invoice.status
@@ -104,6 +104,16 @@ def test_finance_verify_payment_proof_does_not_create_payment_or_mutate_invoice(
             assert invoice.status == original_status
             assert attachment.attachment_type == PAYMENT_PROOF_VERIFIED_TYPE
             assert "FINANCE_VERIFICATION VERIFIED" in attachment.notes
+            notification = Notification.query.filter_by(
+                notification_type="PORTAL_PAYMENT_PROOF_DECISION",
+                target_user_id=portal_user.id,
+                reference_type="INVOICE",
+                reference_id=invoice.id,
+            ).first()
+            assert notification is not None
+            assert notification.branch_id == invoice.branch_id
+            assert "diverifikasi" in notification.title
+            assert notification.action_url == f"/portal/invoices/{invoice.id}/payment"
         finally:
             transaction.rollback()
 

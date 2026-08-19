@@ -1,30 +1,24 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="order_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Modul Operasional</span>
-
-        {% if is_after_lock is defined and is_after_lock %}
-            <h1>Tambah Revisi Setelah Lock</h1>
-            <p>Order tanggal ini sudah locked. Input ini akan dicatat sebagai revisi tambah, bukan order baru.</p>
-        {% elif daily_order %}
-            <h1>Tambah Lokasi/Mandor</h1>
-            <p>Tambahkan mandor atau lokasi baru sebelum order dikunci.</p>
-        {% else %}
-            <h1>Input Order Harian</h1>
-            <p>Buat order baru atau tambah detail pada order tanggal yang masih draft.</p>
-        {% endif %}
-            </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{% if is_after_lock is defined and is_after_lock %}
+    {% set order_form_title = "Tambah Revisi Setelah Lock" %}
+    {% set order_form_description = "Order tanggal ini sudah locked. Input ini akan dicatat sebagai revisi tambah, bukan order baru." %}
+{% elif daily_order %}
+    {% set order_form_title = "Tambah Lokasi/Mandor" %}
+    {% set order_form_description = "Tambahkan mandor atau lokasi baru sebelum order dikunci." %}
+{% else %}
+    {% set order_form_title = "Input Order Harian" %}
+    {% set order_form_description = "Buat order baru atau tambah detail pada order tanggal yang masih draft." %}
+{% endif %}
+{{ page_header(
+    order_form_title,
+    order_form_description,
+    eyebrow="Modul Operasional",
+    actions=[{"label": "Kembali", "url": url_for('operational.orders'), "icon": "bi-arrow-left"}]
+) }}
 
 
 <div class="app-card">

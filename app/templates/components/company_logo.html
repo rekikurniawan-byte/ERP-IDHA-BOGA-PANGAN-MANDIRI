@@ -1,0 +1,15 @@
+{% set _settings = global_company_settings|default({}) %}
+{% if _settings is mapping %}
+    {% set _logo_url = _settings.get("company_logo_url", "") %}
+    {% set _company_name = _settings.get("company_name", "PT Idha Boga Pangan Mandiri") %}
+{% else %}
+    {% set _logo_url = _settings.company_logo_url|default("") %}
+    {% set _company_name = _settings.company_name|default("PT Idha Boga Pangan Mandiri") %}
+{% endif %}
+<span class="{{ class_name|default('company-logo-mark') }}" aria-hidden="true">
+    {% if _logo_url %}
+        <img src="{{ _logo_url }}" alt="Logo {{ _company_name }}">
+    {% else %}
+        <i class="bi bi-basket2-fill"></i>
+    {% endif %}
+</span>

@@ -1,22 +1,15 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Buat Invoice Catering Client</h1>
-        <p>Buat invoice resmi ke client/perusahaan dari Order LOCKED + Revisi AFTER_LOCK INCREASE. Mandor tetap dicatat sebagai PIC lapangan.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Invoice
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Buat Invoice Catering Client",
+    "Buat invoice resmi ke client/perusahaan dari Order LOCKED + Revisi AFTER_LOCK INCREASE. Mandor tetap dicatat sebagai PIC lapangan.",
+    "Finance",
+    actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"}]
+) }}
 
 <div class="app-card soft-warning-card">
     <strong>Aturan Invoice Catering</strong>

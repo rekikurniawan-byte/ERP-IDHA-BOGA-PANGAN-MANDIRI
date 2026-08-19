@@ -2,7 +2,34 @@
 
 Route functions moved out without changing URL rules or endpoint names.
 """
+from pathlib import Path
+from uuid import uuid4
+
+from flask import current_app
+from werkzeug.utils import secure_filename
+
 from app.routes.settings_routes import *  # noqa: F401,F403
+
+
+ALLOWED_COMPANY_LOGO_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
+
+def _save_company_logo_upload(upload):
+    if not upload or not upload.filename:
+        return None, None
+
+    filename = secure_filename(upload.filename)
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if extension not in ALLOWED_COMPANY_LOGO_EXTENSIONS:
+        return None, "Logo harus berupa PNG, JPG, JPEG, atau WEBP."
+
+    upload_dir = Path(current_app.root_path) / "static" / "uploads" / "company"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    target_name = f"company-logo-{current_user.branch_id}-{uuid4().hex[:10]}.{extension}"
+    target_path = upload_dir / target_name
+    upload.save(target_path)
+    return url_for("static", filename=f"uploads/company/{target_name}"), None
 
 
 @settings_bp.route("/company", methods=["GET", "POST"])
@@ -18,7 +45,18 @@ def company_settings():
             flash(guard_message, "danger")
             return redirect(url_for("settings.company_settings"))
 
-        save_company_settings(current_user.branch_id, request.form)
+        form_payload = request.form.to_dict()
+        logo_url, logo_error = _save_company_logo_upload(request.files.get("company_logo_file"))
+        if logo_error:
+            flash(logo_error, "warning")
+            return redirect(url_for("settings.company_settings"))
+
+        if logo_url:
+            form_payload["company_logo_url"] = logo_url
+        elif form_payload.get("remove_company_logo") == "1":
+            form_payload["company_logo_url"] = ""
+
+        save_company_settings(current_user.branch_id, form_payload)
         record_critical_audit_log(
             module="SETTINGS",
             event_type="COMPANY_SETTING_UPDATED",

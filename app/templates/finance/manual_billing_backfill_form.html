@@ -1,20 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan | Rekap Tagihan Manual</span>
-            <h1>{{ page_title or 'Input Rekap Manual dari Buku' }}</h1>
-            <p>{{ page_subtitle or 'Jalur tambahan untuk memasukkan rekap lama/buku manual. Ini tidak mengubah alur realtime order harian.' }}</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Rekap Tagihan Mandor
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        page_title or 'Input Rekap Manual dari Buku',
+        page_subtitle or 'Jalur tambahan untuk memasukkan rekap lama/buku manual. Ini tidak mengubah alur realtime order harian.',
+        "Keuangan | Rekap Tagihan Manual",
+        actions=[{"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-arrow-left"}]
+    ) }}
 
     <div class="app-card soft-warning-card mt-4">
         <strong>Aturan Tahap 10.13</strong>

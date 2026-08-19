@@ -1,25 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan • COA 1008</span>
-        <h1>Uang Muka / DP</h1>
-        <p>DP client, uang muka supplier, dan panjar mandor bersifat optional. Jika tidak ada DP, tidak ada jurnal DP.</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        {% if schema_ready %}
-            <a href="{{ url_for('finance.advance_create') }}" class="btn app-btn-primary">
-                <i class="bi bi-plus-circle"></i>
-                Buat Advance
-            </a>
-        {% endif %}
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
-            Buku Kas/Bank
-        </a>
-    </div>
-</div>
+{% set header_actions = [] %}
+{% if schema_ready %}
+    {% do header_actions.append({"label": "Buat Advance", "url": url_for('finance.advance_create'), "icon": "bi-plus-circle", "variant": "primary"}) %}
+{% endif %}
+{% do header_actions.append({"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger')}) %}
+{{ page_header(
+    "Uang Muka / DP",
+    "DP client, uang muka supplier, dan panjar mandor bersifat optional. Jika tidak ada DP, tidak ada jurnal DP.",
+    "Keuangan • COA 1008",
+    actions=header_actions
+) }}
 {% set precision_key = 'advance' %}
 
 {% if not schema_ready %}
@@ -40,7 +34,7 @@
         <p>Masih perlu settlement</p>
     </div>
     <div class="app-stat-card">
-        <span>Sisa Outstanding</span>
+        <span>Sisa Belum Lunas</span>
         <h3>{{ summary.remaining|rupiah }}</h3>
         <p>Nilai DP/panjar belum selesai</p>
     </div>

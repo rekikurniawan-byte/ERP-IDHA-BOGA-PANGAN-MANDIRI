@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell receivables-finance-polish-shell" data-ui-finance-page="UI">
@@ -12,31 +13,18 @@
     </a>
 </div>
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Dashboard Piutang Finance</h1>
-        <p>Monitoring invoice belum lunas dari realtime dan manual backfill tanpa membuat jalur piutang baru.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions receivables-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-            Daftar Invoice
-        </a>
-
-        <a href="{{ url_for('finance.receivables_statement', client_id=selected_client_id) }}" class="btn app-btn-primary">
-            Statement of Account
-        </a>
-        <a href="{{ url_for('finance.receivables_print', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to) }}" class="btn app-btn-secondary" target="_blank">
-            <i class="bi bi-printer"></i>
-            Print
-        </a>
-        <a href="{{ url_for('finance.export_receivables_csv', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to) }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Export CSV
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Dashboard Piutang Finance",
+    "Monitoring invoice belum lunas dari realtime dan manual backfill tanpa membuat jalur piutang baru.",
+    "Finance",
+    actions_class="receivables-header-actions",
+    actions=[
+        {"label": "Daftar Invoice", "url": url_for('finance.invoices')},
+        {"label": "Statement of Account", "url": url_for('finance.receivables_statement', client_id=selected_client_id), "variant": "primary"},
+        {"label": "Print", "url": url_for('finance.receivables_print', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-printer", "target": "_blank"},
+        {"label": "Export CSV", "url": url_for('finance.export_receivables_csv', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-download"},
+    ]
+) }}
 
 <div class="app-card mb-4 receivables-filter-card">
     <div class="card-header-clean">

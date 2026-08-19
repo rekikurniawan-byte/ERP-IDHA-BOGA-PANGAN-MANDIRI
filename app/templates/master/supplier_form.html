@@ -1,19 +1,15 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="supplier_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if supplier %}Edit Supplier{% else %}Tambah Supplier{% endif %}</span>
-        <h1>{% if supplier %}Edit Supplier Tetap{% else %}Input Supplier Tetap{% endif %}</h1>
-        <p>Supplier bersifat opsional. Pembelian dari toko tidak tetap tetap bisa dicatat tanpa data supplier.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Supplier Tetap" if supplier else "Input Supplier Tetap",
+    "Supplier bersifat opsional. Pembelian dari toko tidak tetap tetap bisa dicatat tanpa data supplier.",
+    eyebrow="Edit Supplier" if supplier else "Tambah Supplier",
+    actions=[{"label": "Kembali", "url": url_for('master.suppliers')}]
+) }}
 
 
 

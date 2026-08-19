@@ -1,24 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Persistent Notification</span>
-        <h1>Pusat Notifikasi</h1>
-        <p>Notifikasi permanen yang bisa ditandai sudah dibaca, dikembalikan ke belum dibaca, atau diabaikan. Halaman ini tidak membuat transaksi, jurnal, stok, atau saldo berubah.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('settings.live_reminders') }}" class="btn app-btn-secondary">
-            <i class="bi bi-bell"></i>
-            Reminder Live
-        </a>
-        <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-grid-1x2"></i>
-            Dashboard
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Pusat Notifikasi",
+    "Notifikasi permanen yang bisa ditandai sudah dibaca, dikembalikan ke belum dibaca, atau diabaikan. Halaman ini tidak membuat transaksi, jurnal, stok, atau saldo berubah.",
+    eyebrow="Persistent Notification",
+    actions=[
+        {"label": "Reminder Live", "url": url_for('settings.live_reminders'), "icon": "bi-bell"},
+        {"label": "Dashboard", "url": url_for('dashboard.index'), "icon": "bi-grid-1x2"},
+    ]
+) }}
 
 <div class="app-card soft-info-card">
     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">

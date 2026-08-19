@@ -1,34 +1,22 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell expense-drilldown-page" data-expense-drilldown="PRODUCTION">
-    <div class="page-header app-page-header">
-        <div class="page-header-main">
-            <span class="eyebrow">Akuntansi • Expense Drilldown</span>
-            <h1 class="page-title">Beban / Expense Drilldown</h1>
-            <p class="page-description">
-                Jelaskan angka beban owner: berasal dari akun apa, jurnal apa, komponen apa, dan sumber mana yang masih belum posting.
-            </p>
-        </div>
-        <div class="page-actions">
-            <a href="{{ url_for('accounting.reports', start_date=report.start_date.strftime('%Y-%m-%d'), end_date=report.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary">
-                <i class="bi bi-bar-chart-line"></i>
-                Laporan Akuntansi
-            </a>
-            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-                <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-three-dots"></i>
-                    Aksi lainnya
-                </button>
-                <div class="dropdown-menu dropdown-menu-end app-action-menu">
-                    <a href="{{ url_for('accounting.posting_status') }}" class="dropdown-item"><i class="bi bi-clipboard2-check"></i><span>Status Posting</span></a>
-                    <a href="{{ url_for('accounting.data_health') }}" class="dropdown-item"><i class="bi bi-clipboard-pulse"></i><span>Data Health Check</span></a>
-                    <a href="{{ url_for('sop.role_sop', slug='accounting') }}" class="dropdown-item"><i class="bi bi-book"></i><span>SOP Accounting</span></a>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{ page_header(
+        "Beban / Expense Drilldown",
+        "Jelaskan angka beban owner: berasal dari akun apa, jurnal apa, komponen apa, dan sumber mana yang masih belum posting.",
+        eyebrow="Akuntansi • Expense Drilldown",
+        primary_label="Laporan Akuntansi",
+        primary_url=url_for('accounting.reports', start_date=report.start_date.strftime('%Y-%m-%d'), end_date=report.end_date.strftime('%Y-%m-%d')),
+        primary_icon="bi-bar-chart-line",
+        more_actions=[
+            {"label": "Status Posting", "url": url_for('accounting.posting_status'), "icon": "bi-clipboard2-check"},
+            {"label": "Data Health Check", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
+            {"label": "SOP Accounting", "url": url_for('sop.role_sop', slug='accounting'), "icon": "bi-book"},
+        ]
+    ) }}
     {{ global_filter_bar(filter_bar) }}
 
     <div class="app-stat-grid app-stat-grid-compact expense-summary-grid">

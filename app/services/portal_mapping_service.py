@@ -5,6 +5,7 @@ from app.models.system import PortalUserMapping
 from app.services.user_management_service import (
     PORTAL_EXTERNAL_ROLES,
     ROLE_PORTAL_CLIENT,
+    ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_MANDOR,
     ROLE_PORTAL_PT,
@@ -129,7 +130,7 @@ def build_portal_external_scope(user):
             user_id=user_id,
             branch_id=branch_id,
             scope_mode="NOT_PORTAL_EXTERNAL_ROLE",
-            reason="Role user bukan role portal eksternal.",
+            reason="Akun ini belum memiliki akses portal.",
         )
 
     mappings = list_active_portal_mappings(user)
@@ -140,7 +141,7 @@ def build_portal_external_scope(user):
             user_id=user_id,
             branch_id=branch_id,
             scope_mode="NO_ACTIVE_PORTAL_MAPPING",
-            reason="User portal belum memiliki mapping aktif ke client/mandor/lokasi.",
+            reason="User portal belum memiliki mapping aktif. Hubungi admin.",
         )
 
     if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT}:
@@ -152,6 +153,9 @@ def build_portal_external_scope(user):
     elif role == ROLE_PORTAL_DELEGATE:
         expected_principals = {PRINCIPAL_CLIENT_PIC, PRINCIPAL_DELEGATE}
         scope_mode = "PORTAL_DELEGATE_SCOPE"
+    elif role == ROLE_PORTAL_CUSTOMER:
+        expected_principals = {PRINCIPAL_DELEGATE}
+        scope_mode = "PORTAL_CUSTOMER_SCOPE"
     else:
         expected_principals = set()
         scope_mode = "PORTAL_CUSTOMER_PENDING_SCOPE"
@@ -162,7 +166,7 @@ def build_portal_external_scope(user):
         user_id=user_id,
         branch_id=branch_id,
         scope_mode=scope_mode,
-        reason="Scope portal dibangun dari portal_user_mappings aktif.",
+        reason="Akses akun aktif.",
     )
 
     for mapping in mappings:
@@ -171,6 +175,6 @@ def build_portal_external_scope(user):
 
     if not scope.client_ids and not scope.mandor_ids and not scope.delivery_location_ids:
         scope.allowed = False
-        scope.reason = "Mapping aktif tidak cocok dengan role portal user."
+        scope.reason = "User portal belum memiliki mapping aktif. Hubungi admin."
 
     return scope

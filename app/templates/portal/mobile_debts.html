@@ -1,51 +1,74 @@
-{% extends "layouts/portal_mobile.html" %}
+﻿{% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.debt_model %}
+{% set totals = model.totals %}
+<section class="portal-feature-page portal-ledger-page">
+    <div class="portal-feature-hero portal-ledger-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>{{ data.debt_model.scope_mode }}</span>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>{{ data.debt_model.totals.active_remaining_amount|rupiah }}</h2>
-        <p>{{ data.page_description }}</p>
-        <div class="portal-source-pill"><i class="bi bi-wallet2"></i><span>WorkerDebt ERP existing</span></div>
+    <div class="portal-ledger-summary">
+        <article class="portal-ledger-total">
+            <span>Sisa Hutang Aktif</span>
+            <strong>{{ totals.active_remaining_amount|rupiah }}</strong>
+            <p>{{ data.page_description }}</p>
+        </article>
+        <article><span>Hutang</span><strong>{{ totals.debt_count }}</strong><small>Total record</small></article>
+        <article><span>Aktif</span><strong>{{ totals.active_debt_count }}</strong><small>Belum lunas</small></article>
+        <article><span>Dibayar</span><strong>{{ totals.paid_amount|rupiah }}</strong><small>Total payment hutang</small></article>
+        <article><span>Total</span><strong>{{ totals.debt_amount|rupiah }}</strong><small>Nilai awal</small></article>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Hutang</span><strong>{{ data.debt_model.totals.debt_count }}</strong></div>
-        <div><span>Aktif</span><strong>{{ data.debt_model.totals.active_debt_count }}</strong></div>
-        <div><span>Paid</span><strong>{{ data.debt_model.totals.paid_amount|rupiah }}</strong></div>
-        <div><span>Sisa</span><strong>{{ data.debt_model.totals.active_remaining_amount|rupiah }}</strong></div>
-    </div>
-
-    {% if not data.debt_model.allowed %}
-        <div class="portal-mobile-alert">{{ data.debt_model.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Hutang belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Daftar Hutang</h2>
-        <span>Read-only</span>
+        <h2>Daftar Hutang Pekerja</h2>
+        <span>WorkerDebt </span>
     </div>
 
-    <div class="portal-card-list">
-        {% for debt in data.debt_model.debts %}
-            <article class="portal-mobile-card portal-debt-card">
-                <div>
-                    <h3>{{ debt.worker_name }}</h3>
-                    <p>{{ debt.mandor_name }} - {{ debt.status }}</p>
-                    <p>{{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else "-" }}</p>
+    <div class="portal-ledger-list">
+        {% for debt in model.debts %}
+            <article class="portal-ledger-card compact">
+                <div class="portal-ledger-card-main">
+                    <span class="portal-record-icon"><i class="bi bi-wallet2"></i></span>
+                    <div>
+                        <h3>{{ debt.worker_name }}</h3>
+                        <p>{{ debt.mandor_name }} | {{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else "-" }}</p>
+                        <div class="portal-chip-row">
+                            <span>{{ debt.status }}</span>
+                            <span>{{ debt.payment_count }}x bayar</span>
+                            <span>Sale #{{ debt.sale_id or "-" }}</span>
+                        </div>
+                    </div>
                 </div>
-                <strong>{{ debt.remaining_amount|rupiah }}</strong>
+                <div class="portal-ledger-amounts">
+                    <div><span>Awal</span><strong>{{ debt.debt_amount|rupiah }}</strong></div>
+                    <div><span>Terbayar</span><strong>{{ debt.paid_amount|rupiah }}</strong></div>
+                    <div><span>Sisa</span><strong>{{ debt.remaining_amount|rupiah }}</strong></div>
+                </div>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada hutang warung dalam scope portal ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-wallet2"></i>
+                <strong>Belum ada hutang</strong>
+                <p>Hutang pekerja dari warung/canteen akan tampil sesuai akses mandor atau PT.</p>
+            </div>
         {% endfor %}
     </div>
 </section>
 {% endblock %}
+

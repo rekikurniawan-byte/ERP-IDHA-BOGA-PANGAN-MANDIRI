@@ -1,26 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Detail Hutang Supplier</span>
-        <h1>{{ bill.bill_number }}</h1>
-        <p>{{ bill.supplier_name }} | Jatuh tempo {{ bill.due_date.strftime('%d-%m-%Y') }}</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.supplier_bills') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Hutang
-        </a>
-        {% if procurement %}
-            <a href="{{ url_for('logistics.purchase_detail', procurement_id=procurement.id) }}" class="btn app-btn-secondary">
-                Detail Pembelian
-            </a>
-        {% endif %}
-    </div>
-</div>
+{% set header_actions = [{"label": "Daftar Hutang", "url": url_for('finance.supplier_bills'), "icon": "bi-arrow-left"}] %}
+{% if procurement %}
+    {% do header_actions.append({"label": "Detail Pembelian", "url": url_for('logistics.purchase_detail', procurement_id=procurement.id)}) %}
+{% endif %}
+{{ page_header(
+    bill.bill_number,
+    bill.supplier_name ~ " | Jatuh tempo " ~ bill.due_date.strftime('%d-%m-%Y'),
+    "Detail Hutang Supplier",
+    actions=header_actions
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

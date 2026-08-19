@@ -1,21 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Pengaturan Akses</span>
-        <h1>Manajemen User</h1>
-        <p>Kelola akun login, role, cabang, status aktif, dan reset password user.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.create_user_page') }}" class="btn app-btn-primary">
-            <i class="bi bi-person-plus"></i>
-            Tambah User
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Manajemen User",
+    "Kelola akun login, role, cabang, status aktif, dan reset password user.",
+    eyebrow="Pengaturan Akses",
+    actions=[{"label": "Tambah User", "url": url_for('settings.create_user_page'), "icon": "bi-person-plus", "variant": "primary"}]
+) }}
 
 <div class="app-card soft-info-card mb-4">
     <strong>Catatan keamanan:</strong>

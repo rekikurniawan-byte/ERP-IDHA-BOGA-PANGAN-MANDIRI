@@ -1,18 +1,15 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Status Portal Read-only</h1>
-            <p class="page-description">Gate pengembangan portal yang aman dibuka tanpa transaksi eksternal.</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-            <span class="status-badge neutral">{{ data.status_label }}</span>
-        </div>
-    </div>
+    {{ portal_page_header(
+        "Status Portal Read-only",
+        "Ringkasan kesiapan akses portal untuk akun yang sedang digunakan.",
+        status_label=data.status_label,
+        link_label="Dashboard Saya",
+        link_url=url_for('portal.my_dashboard')
+    ) }}
 
     <div class="app-card">
         <div class="card-body">
@@ -22,20 +19,20 @@
                     <div class="fw-semibold">{{ data.active_role }}</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Branch scope</div>
+                    <div class="text-muted small text-uppercase fw-bold">Cabang</div>
                     <div class="fw-semibold">{{ data.branch_id or '-' }}</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Ready</div>
+                    <div class="text-muted small text-uppercase fw-bold">Siap</div>
                     <div class="fw-semibold">{{ data.status.ready_count }}</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Approval required</div>
+                    <div class="text-muted small text-uppercase fw-bold">Butuh persetujuan</div>
                     <div class="fw-semibold">{{ data.status.approval_required_count }}</div>
                 </div>
             </div>
 
-            <div class="table-responsive app-table-wrap">
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
@@ -73,3 +70,5 @@
     </div>
 </section>
 {% endblock %}
+
+

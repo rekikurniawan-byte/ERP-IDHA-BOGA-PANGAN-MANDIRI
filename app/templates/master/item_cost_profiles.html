@@ -1,23 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_cost_profiles">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 1</span>
-        <h1>Profil HPP Item</h1>
-        <p>Atur harga standar, konversi satuan, yield, dan waste per item. Tahap ini belum mengubah stok, jurnal, invoice, atau order lama.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('master.unit_conversions') }}" class="btn app-btn-primary">
-            <i class="bi bi-arrow-left-right"></i>
-            Konversi Satuan
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Profil HPP Item",
+    "Atur harga standar, konversi satuan, yield, dan waste per item. Tahap ini belum mengubah stok, jurnal, invoice, atau order lama.",
+    eyebrow="HPP Tahap 1",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Konversi Satuan", "url": url_for('master.unit_conversions'), "icon": "bi-arrow-left-right", "variant": "primary"},
+    ]
+) }}
 
 
 

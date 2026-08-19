@@ -1,44 +1,59 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.worker_model %}
+<section class="portal-feature-page portal-directory-page">
+    <div class="portal-feature-hero portal-directory-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>Portal Mandor</p>
             <h1>Data Pekerja</h1>
-            <span>{{ data.worker_model.scope_mode }}</span>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Total</span><strong>{{ data.worker_model.totals.worker_count }}</strong></div>
-        <div><span>Aktif</span><strong>{{ data.worker_model.totals.active_count }}</strong></div>
-        <div><span>Mandor</span><strong>{{ data.scope.counts.mandors }}</strong></div>
-        <div><span>Lokasi</span><strong>{{ data.scope.counts.locations }}</strong></div>
+    <div class="portal-directory-summary">
+        <article><span>Total Pekerja</span><strong>{{ model.totals.worker_count }}</strong><small>Worker </small></article>
+        <article><span>Aktif</span><strong>{{ model.totals.active_count }}</strong><small>Status aktif</small></article>
+        <article><span>Akses Mandor</span><strong>{{ data.scope.counts.mandors }}</strong><small>Akses portal</small></article>
+        <article><span>Lokasi</span><strong>{{ data.scope.counts.locations }}</strong><small>Lokasi Pengiriman</small></article>
     </div>
 
-    {% if not data.worker_model.allowed %}
-        <div class="portal-mobile-alert">{{ data.worker_model.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Data pekerja belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Pekerja</h2>
-        <span>ERP existing</span>
+        <h2>Pekerja Dalam Akses</h2>
+        <span>Hanya dilihat</span>
     </div>
 
-    <div class="portal-card-list">
-        {% for worker in data.worker_model.workers %}
-            <article class="portal-mobile-card portal-worker-card">
-                <div>
+    <div class="portal-directory-grid">
+        {% for worker in model.workers %}
+            <article class="portal-directory-card">
+                <div class="portal-directory-avatar">{{ (worker.full_name or "P")[:1] }}</div>
+                <div class="portal-directory-content">
                     <h3>{{ worker.full_name }}</h3>
-                    <p>{{ worker.worker_code or "Tanpa kode" }} - {{ worker.mandor_name }}</p>
-                    {% if worker.phone %}<p><i class="bi bi-telephone"></i> {{ worker.phone }}</p>{% endif %}
+                    <p>{{ worker.worker_code or "Tanpa kode" }} | {{ worker.mandor_name }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ worker.status or "-" }}</span>
+                        {% if worker.phone %}<span><i class="bi bi-telephone"></i> {{ worker.phone }}</span>{% endif %}
+                    </div>
+                    {% if worker.notes %}<p>{{ worker.notes }}</p>{% endif %}
                 </div>
-                <strong>{{ worker.status }}</strong>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada pekerja dalam scope mandor ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-people"></i>
+                <strong>Belum ada pekerja</strong>
+                <p>Pekerja akan tampil jika master Worker tersambung ke mandor dalam akses portal.</p>
+            </div>
         {% endfor %}
     </div>
 </section>

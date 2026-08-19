@@ -1,22 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Master Rekening</span>
-        <h1>Rekening Bank</h1>
-        <p>Kelola rekening pembayaran resmi PT/cabang untuk kebutuhan pembayaran dan dokumen finance.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('master.create_bank_account') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Rekening
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Rekening Bank",
+    "Kelola rekening pembayaran resmi PT/cabang untuk kebutuhan pembayaran dan dokumen finance.",
+    eyebrow="Master Rekening",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Tambah Rekening", "url": url_for('master.create_bank_account'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 <div class="app-card">
     <form method="GET" action="{{ url_for('master.bank_accounts') }}" class="filter-bar app-form" data-ui-form="true">

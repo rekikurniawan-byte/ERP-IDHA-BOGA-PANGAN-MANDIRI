@@ -1,52 +1,65 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.mandor_model %}
+<section class="portal-feature-page portal-directory-page">
+    <div class="portal-feature-hero portal-directory-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>Portal PT</p>
             <h1>Seluruh Mandor</h1>
-            <span>{{ data.mandor_model.scope_mode }}</span>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Mandor</span><strong>{{ data.mandor_model.totals.mandor_count }}</strong></div>
-        <div><span>Lokasi</span><strong>{{ data.mandor_model.totals.location_count }}</strong></div>
-        <div><span>Invoice</span><strong>{{ data.invoices.totals.invoice_count }}</strong></div>
-        <div><span>Bayar</span><strong>{{ data.payments.totals.payment_count }}</strong></div>
+    <div class="portal-directory-summary">
+        <article><span>Mandor</span><strong>{{ model.totals.mandor_count }}</strong><small>Master Mandor</small></article>
+        <article><span>Lokasi</span><strong>{{ model.totals.location_count }}</strong><small>Lokasi Pengiriman</small></article>
+        <article><span>Tagihan</span><strong>{{ data.invoices.totals.invoice_count }}</strong><small>Akses finance</small></article>
+        <article><span>Pembayaran</span><strong>{{ data.payments.totals.payment_count }}</strong><small>Riwayat bayar</small></article>
     </div>
 
-    {% if not data.mandor_model.allowed %}
-        <div class="portal-mobile-alert">{{ data.mandor_model.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>Mandor belum dibuka</h2>
+                <p>{{ model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="portal-section-heading">
         <h2>Mandor & Lokasi</h2>
-        <span>ERP existing</span>
+        <span>Master </span>
     </div>
 
-    <div class="portal-card-list">
-        {% for mandor in data.mandor_model.mandors %}
-            <article class="portal-mobile-card portal-mandor-card">
-                <div>
+    <div class="portal-directory-grid">
+        {% for mandor in model.mandors %}
+            <article class="portal-directory-card wide">
+                <div class="portal-directory-avatar">{{ (mandor.name or "M")[:1] }}</div>
+                <div class="portal-directory-content">
                     <h3>{{ mandor.name }}</h3>
-                    <p>{{ mandor.client_name }} - {{ mandor.location_count }} lokasi</p>
-                    {% if mandor.phone %}<p><i class="bi bi-telephone"></i> {{ mandor.phone }}</p>{% endif %}
+                    <p>{{ mandor.client_name }} | {{ mandor.location_count }} lokasi | {{ mandor.phone or "Tanpa telepon" }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ "AKTIF" if mandor.is_active else "NONAKTIF" }}</span>
+                        <span>{{ mandor.active_location_count }} lokasi aktif</span>
+                    </div>
                     {% if mandor.locations %}
-                        <div class="portal-chip-row">
-                            {% for location in mandor.locations[:3] %}
-                                <span>{{ location.name }}</span>
+                        <div class="portal-location-stack">
+                            {% for location in mandor.locations %}
+                                <span><i class="bi bi-geo-alt"></i>{{ location.name }}{% if not location.is_active %} (nonaktif){% endif %}</span>
                             {% endfor %}
-                            {% if mandor.locations|length > 3 %}<span>+{{ mandor.locations|length - 3 }}</span>{% endif %}
                         </div>
                     {% endif %}
                 </div>
-                <strong>{{ "AKTIF" if mandor.is_active else "NONAKTIF" }}</strong>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada mandor dalam scope PT ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-diagram-3"></i>
+                <strong>Belum ada mandor</strong>
+                <p>Mandor akan tampil jika client/PT akses memiliki mandor .</p>
+            </div>
         {% endfor %}
     </div>
 </section>

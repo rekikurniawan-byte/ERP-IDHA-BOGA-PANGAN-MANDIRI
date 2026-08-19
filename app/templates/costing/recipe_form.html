@@ -1,22 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="recipe_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 2</span>
-        <h1>Resep / BOM Menu</h1>
-        <p>{{ menu.menu_code }} - {{ menu.menu_name }}. Isi kebutuhan bahan per porsi. Belum memotong stok dan belum membuat jurnal.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('costing.hpp_calculator', menu_id=menu.id, portion_qty=100) }}" class="btn app-btn-primary">
-            <i class="bi bi-graph-up-arrow"></i>
-            Hitung HPP
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Resep / BOM Menu",
+    menu.menu_code ~ " - " ~ menu.menu_name ~ ". Isi kebutuhan bahan per porsi. Belum memotong stok dan belum membuat jurnal.",
+    eyebrow="HPP Tahap 2",
+    actions=[
+        {"label": "Kembali", "url": url_for('costing.menus')},
+        {"label": "Hitung HPP", "url": url_for('costing.hpp_calculator', menu_id=menu.id, portion_qty=100), "icon": "bi-graph-up-arrow", "variant": "primary"},
+    ]
+) }}
 
 
 

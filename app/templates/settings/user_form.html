@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+{% from "components/page_header.html" import page_header %}
 
 {% set is_edit = target_user is not none %}
 {% set selected_branch = form_data.get('branch_id') if form_data else (target_user.branch_id if target_user else current_user.branch_id) %}
@@ -8,17 +9,12 @@
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Manajemen User</span>
-        <h1>{{ 'Edit User' if is_edit else 'Tambah User' }}</h1>
-        <p>{{ 'Perbarui data akun login tanpa menampilkan password hash.' if is_edit else 'Buat akun baru untuk akses sistem production.' }}</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.users') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    'Edit User' if is_edit else 'Tambah User',
+    'Perbarui data akun login tanpa menampilkan password hash.' if is_edit else 'Buat akun baru untuk akses sistem production.',
+    eyebrow="Manajemen User",
+    actions=[{"label": "Kembali", "url": url_for('settings.users')}]
+) }}
 
 <div class="app-card soft-info-card mb-4">
     <strong>Aturan:</strong>

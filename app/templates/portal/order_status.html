@@ -1,51 +1,124 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set orders = data.orders %}
+{% set persona = data.persona if data.persona is defined else {} %}
+{% set role = current_user.role %}
+{% set can_order = role in ["PORTAL_CUSTOMER", "PORTAL_MANDOR"] %}
+{% set order_endpoint = "portal.mandor_order" if role == "PORTAL_MANDOR" else "portal.customer_order" %}
+<section class="portal-feature-page portal-tracking-page">
+    <div class="portal-feature-hero portal-tracking-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p>{{ data.persona.eyebrow if data.persona is defined else "Portal" }}</p>
-            <h1>{{ data.page_title or "Status Order Portal" }}</h1>
+            <p>{{ persona.eyebrow or "Portal" }}</p>
+            <h1>{{ data.page_title or "Lacak Pesanan" }}</h1>
             <span>{{ data.status_label }}</span>
         </div>
+        {% if can_order %}
+            <a class="portal-hero-action" href="{{ url_for(order_endpoint) }}">
+                <i class="bi bi-bag-plus"></i>
+                <span>Order Baru</span>
+            </a>
+        {% endif %}
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>{{ data.orders.total }} order</h2>
-        <p>{{ data.page_description or "Status draft dan order internal milik akun portal ini tanpa detail finansial." }}</p>
-        <div class="portal-source-pill"><i class="bi bi-diagram-3"></i><span>ERP existing - portal_order_drafts, daily_orders</span></div>
+    <div class="portal-tracking-overview">
+        <article class="primary">
+            <span>Pelacakan Terintegrasi</span>
+            <strong>{{ orders.total }}</strong>
+            <p>{{ data.page_description or "Status dibaca dari draft portal, order internal, produksi, dan pengiriman data utama." }}</p>
+        </article>
+        <article><span>Menunggu</span><strong>{{ orders.pending }}</strong><small>Menunggu admin</small></article>
+        <article><span>Dikonfirmasi</span><strong>{{ orders.confirmed }}</strong><small>Masuk alur internal</small></article>
+        <article><span>Pengiriman</span><strong>{{ orders.in_delivery }}</strong><small>Dalam pengiriman</small></article>
+        <article><span>Selesai</span><strong>{{ orders.completed }}</strong><small>Terkirim</small></article>
+        <article><span>Ditolak</span><strong>{{ orders.rejected }}</strong><small>Perlu cek catatan</small></article>
     </div>
 
-    <div class="portal-mini-metrics">
-        <div><span>Total</span><strong>{{ data.orders.total }}</strong></div>
-        <div><span>Pending</span><strong>{{ data.orders.pending }}</strong></div>
-        <div><span>Confirmed</span><strong>{{ data.orders.confirmed }}</strong></div>
-        <div><span>Rejected</span><strong>{{ data.orders.rejected }}</strong></div>
+    <div class="portal-tracking-stage-strip">
+        <div class="is-active"><i class="bi bi-card-list"></i><span>Draft</span></div>
+        <div class="{{ 'is-active' if orders.confirmed else '' }}"><i class="bi bi-shield-check"></i><span>Admin</span></div>
+        <div><i class="bi bi-egg-fried"></i><span>Produksi</span></div>
+        <div class="{{ 'is-active' if orders.in_delivery else '' }}"><i class="bi bi-truck"></i><span>Pengiriman</span></div>
+        <div class="{{ 'is-active' if orders.completed else '' }}"><i class="bi bi-check2-circle"></i><span>Selesai</span></div>
     </div>
 
-    <div class="portal-section-heading">
-        <h2>Riwayat Order</h2>
-        <span>Read-only</span>
-    </div>
-
-    <div class="portal-card-list">
-        {% for row in data.orders.rows %}
-            <article class="portal-mobile-card portal-order-card">
-                <div>
-                    <h3>{{ row.meal_type }} - {{ row.portion_qty }} porsi</h3>
-                    <p>{{ row.order_date.strftime('%d-%m-%Y') }} - {{ row.location_name }}</p>
-                    <div class="portal-chip-row">
-                        <span>Draft: {{ row.draft_status }}</span>
-                        <span>Internal: {{ row.internal_order_status }}</span>
-                        <span>{{ row.internal_order_number }}</span>
+    <div class="portal-record-list portal-tracking-list">
+        {% for row in orders.rows %}
+            {% set has_shortage = row.shortage_qty and row.shortage_qty|float > 0 %}
+            <!-- {{ row.draft_status }} {{ row.stage }} Production: {{ row.production_status }} Delivery: {{ row.delivery_status }} Delivered {{ row.delivered_qty }} -->
+            <article class="portal-tracking-card stage-{{ row.stage|lower }}">
+                <header>
+                    <div>
+                        <small>{{ row.order_date.strftime('%d-%m-%Y') if row.order_date else "-" }}</small>
+                        <h3>{{ row.meal_type_label }} - {{ row.location_name }}</h3>
+                        <p>{{ row.portion_qty }} porsi dari draft portal #{{ row.draft_id }}</p>
                     </div>
-                    {% if row.review_note %}<p>{{ row.review_note }}</p>{% endif %}
+                    <strong class="portal-status-pill">{{ row.stage_label }}</strong>
+                </header>
+
+                <div class="portal-order-progress portal-tracking-progress">
+                    <div class="is-active">
+                        <i class="bi bi-card-checklist"></i>
+                        <span>Draft</span>
+                        <small>{{ row.draft_status_label }}</small>
+                    </div>
+                    <div class="{{ 'is-active' if row.daily_order_id else '' }}">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Order</span>
+                        <small>{{ row.internal_order_number }}</small>
+                    </div>
+                    <div class="{{ 'is-active' if row.production_status != '-' else '' }}">
+                        <i class="bi bi-egg-fried"></i>
+                        <span>Produksi</span>
+                        <small>{{ row.production_status_label }}</small>
+                    </div>
+                    <div class="{{ 'is-active' if row.delivery_status != '-' else '' }}">
+                        <i class="bi bi-truck"></i>
+                        <span>Pengiriman</span>
+                        <small>{{ row.delivery_status_label }}</small>
+                    </div>
+                    <div class="{{ 'is-active' if row.stage == 'DELIVERED' else '' }}">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Selesai</span>
+                        <small>{{ row.delivered_qty }} terkirim</small>
+                    </div>
                 </div>
-                <strong>{{ "LOCKED" if row.internal_order_locked else row.draft_status }}</strong>
+
+                <div class="portal-tracking-detail-grid">
+                    <div><span>Order Internal</span><strong>{{ row.internal_order_number }}</strong><small>{{ row.internal_order_status_label }}</small></div>
+                    <div><span>Produksi</span><strong>{{ row.production_number }}</strong><small>{{ row.production_status_label }}</small></div>
+                    <div><span>Pengiriman</span><strong>{{ row.delivery_number }}</strong><small>{{ row.delivery_status_label }}</small></div>
+                    <div><span>Terkirim</span><strong>{{ row.delivered_qty }}</strong><small>Kurang {{ row.shortage_qty }}</small></div>
+                </div>
+
+                {% if row.review_note or has_shortage or row.draft_status == "REJECTED" %}
+                    <div class="portal-tracking-note {{ 'is-warning' if has_shortage or row.draft_status == 'REJECTED' else '' }}">
+                        <i class="bi {{ 'bi-exclamation-triangle' if has_shortage or row.draft_status == 'REJECTED' else 'bi-info-circle' }}"></i>
+                        <span>
+                            {% if row.review_note %}
+                                {{ row.review_note }}
+                            {% elif has_shortage %}
+                                Ada kekurangan pengiriman. Silakan cek detail dengan admin.
+                            {% else %}
+                                Draft pesanan belum melewati jalur konfirmasi admin.
+                            {% endif %}
+                        </span>
+                        {% if role == "PORTAL_CUSTOMER" and (has_shortage or row.draft_status == "REJECTED") %}
+                            <a href="{{ url_for('portal.customer_complaints') }}">Ajukan Komplain</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada order portal milik user ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-inbox"></i>
+                <strong>Belum ada order</strong>
+                <p>Pesanan portal yang sudah dibuat akan tampil di sini setelah tersimpan di `pesanan`.</p>
+                {% if can_order %}
+                    <a href="{{ url_for(order_endpoint) }}">Buat Draft Pesanan</a>
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
 </section>

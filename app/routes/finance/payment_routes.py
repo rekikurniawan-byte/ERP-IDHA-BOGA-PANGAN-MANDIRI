@@ -320,3 +320,200 @@ def create_invoice_payment(invoice_id):
 
 # === PATCH_PRINT_INVOICE_STEP11A1 ===
 # === PATCH_PRINT_OPERASIONAL_STEP12D1 ===
+
+
+def _portal_payment_proof_attachment_or_404(attachment_id):
+    from app.services.portal_payment_creation_service import PAYMENT_PROOF_PAYMENT_CREATED_TYPE
+    from app.services.portal_payment_proof_service import (
+        PAYMENT_PROOF_PENDING_TYPE,
+        PAYMENT_PROOF_REFERENCE_TYPE,
+        PORTAL_DRAFT_PAYMENT_REFERENCE_TYPE,
+        PORTAL_PAYMENT_MODULE,
+    )
+    from app.services.portal_payment_verification_queue_service import (
+        PAYMENT_PROOF_REJECTED_TYPE,
+        PAYMENT_PROOF_VERIFIED_TYPE,
+    )
+    from app.models.system import PortalOrderDraft
+
+    allowed_types = {
+        PAYMENT_PROOF_PENDING_TYPE,
+        PAYMENT_PROOF_VERIFIED_TYPE,
+        PAYMENT_PROOF_REJECTED_TYPE,
+        PAYMENT_PROOF_PAYMENT_CREATED_TYPE,
+    }
+    attachment = get_attachment_or_none(attachment_id, branch_id=current_user.branch_id)
+    if (
+        not attachment
+        or attachment.module != PORTAL_PAYMENT_MODULE
+        or attachment.reference_type not in {PAYMENT_PROOF_REFERENCE_TYPE, PORTAL_DRAFT_PAYMENT_REFERENCE_TYPE}
+        or attachment.attachment_type not in allowed_types
+    ):
+        abort(404)
+
+    if attachment.reference_type == PAYMENT_PROOF_REFERENCE_TYPE:
+        source = Invoice.query.filter(
+            Invoice.id == attachment.reference_id,
+            Invoice.branch_id == current_user.branch_id,
+        ).first()
+    else:
+        source = PortalOrderDraft.query.filter(
+            PortalOrderDraft.id == attachment.reference_id,
+            PortalOrderDraft.branch_id == current_user.branch_id,
+        ).first()
+    if not source:
+        abort(404)
+    return attachment, source
+
+
+@finance_bp.route("/portal-payment-proofs")
+@role_required("OWNER", "ADMIN", "FINANCE")
+def portal_payment_proofs():
+    from datetime import date
+
+    from app.services.portal_erp_integration_status_service import (
+        build_finance_portal_payment_status,
+        build_portal_erp_integration_status,
+    )
+    from app.services.portal_payment_verification_queue_service import (
+        PAYMENT_PROOF_QUEUE_LABELS,
+        build_payment_proof_verification_summary,
+        list_payment_proof_verification_queue,
+    )
+
+    status = (request.args.get("status") or "PENDING").strip().upper()
+    if status not in {"PENDING", "VERIFIED", "REJECTED", "PAYMENT_CREATED"}:
+        status = "PENDING"
+
+    rows = list_payment_proof_verification_queue(current_user, status=status, limit=100)
+    for row in rows:
+        row["idempotency_key"] = uuid4().hex
+
+    queue_summary = build_payment_proof_verification_summary(current_user)
+    counts = queue_summary["counts"]
+    bank_accounts = (
+        BankAccount.query.filter_by(branch_id=current_user.branch_id, is_active=True)
+        .order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc())
+        .all()
+    )
+
+    return render_template(
+        "finance/portal_payment_proofs.html",
+        rows=rows,
+        status=status,
+        counts=counts,
+        labels=PAYMENT_PROOF_QUEUE_LABELS,
+        queue_summary=queue_summary,
+        portal_payment_status=build_finance_portal_payment_status(current_user),
+        erp_integration=build_portal_erp_integration_status(current_user),
+        bank_accounts=bank_accounts,
+        today=date.today(),
+        payment_methods=CUSTOMER_PAYMENT_METHODS,
+    )
+
+
+@finance_bp.route("/portal-payment-proofs/attachments/<int:attachment_id>/view")
+@role_required("OWNER", "ADMIN", "FINANCE")
+def view_portal_payment_proof_attachment(attachment_id):
+    from app.services.digital_attachment_service import is_inline_view_safe
+
+    attachment, _invoice = _portal_payment_proof_attachment_or_404(attachment_id)
+    if not is_inline_view_safe(attachment):
+        abort(403)
+    try:
+        file_path = get_attachment_file_path(attachment)
+    except Exception as exc:
+        logger.exception("Portal payment proof file view failed.")
+        flash(f"File bukti portal tidak bisa dibuka: {exc}", "danger")
+        return redirect(url_for("finance.portal_payment_proofs"))
+
+    response = send_file(
+        str(file_path),
+        as_attachment=False,
+        download_name=attachment.original_filename,
+        mimetype=attachment.mime_type or "application/octet-stream",
+        max_age=0,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@finance_bp.route("/portal-payment-proofs/attachments/<int:attachment_id>/download")
+@role_required("OWNER", "ADMIN", "FINANCE")
+def download_portal_payment_proof_attachment(attachment_id):
+    attachment, _invoice = _portal_payment_proof_attachment_or_404(attachment_id)
+    try:
+        file_path = get_attachment_file_path(attachment)
+    except Exception as exc:
+        logger.exception("Portal payment proof file download failed.")
+        flash(f"File bukti portal tidak bisa diunduh: {exc}", "danger")
+        return redirect(url_for("finance.portal_payment_proofs"))
+
+    response = send_file(
+        str(file_path),
+        as_attachment=True,
+        download_name=attachment.original_filename,
+        mimetype=attachment.mime_type or "application/octet-stream",
+        max_age=0,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@finance_bp.route("/portal-payment-proofs/<int:attachment_id>/decide", methods=["POST"])
+@role_required("OWNER", "ADMIN", "FINANCE")
+def decide_portal_payment_proof(attachment_id):
+    from app.services.portal_payment_verification_queue_service import (
+        PaymentProofVerificationError,
+        decide_payment_proof,
+    )
+
+    decision = (request.form.get("decision") or "").strip().upper()
+    try:
+        result = decide_payment_proof(
+            current_user,
+            attachment_id=attachment_id,
+            decision=decision,
+            notes=request.form.get("notes"),
+        )
+    except PaymentProofVerificationError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("finance.portal_payment_proofs"))
+
+    if result["changed"]:
+        flash(f"Bukti portal {result['source_label']} ditandai {result['decision']}.", "success")
+    else:
+        flash(f"Bukti portal {result['source_label']} sudah berstatus {result['decision']}.", "info")
+    next_status = "VERIFIED" if result["decision"] == "VERIFIED" else "REJECTED"
+    return redirect(url_for("finance.portal_payment_proofs", status=next_status))
+
+
+@finance_bp.route("/portal-payment-proofs/<int:attachment_id>/create-payment", methods=["POST"])
+@role_required("OWNER", "ADMIN", "FINANCE")
+def create_payment_from_portal_proof(attachment_id):
+    from app.services.portal_payment_creation_service import (
+        PortalPaymentCreationError,
+        create_payment_from_verified_proof,
+    )
+
+    try:
+        result = create_payment_from_verified_proof(
+            current_user,
+            attachment_id=attachment_id,
+            payment_date=request.form.get("payment_date"),
+            amount=request.form.get("amount"),
+            payment_method=request.form.get("payment_method"),
+            bank_account_id=request.form.get("bank_account_id") or None,
+            reference_number=request.form.get("reference_number"),
+            notes=request.form.get("notes"),
+            idempotency_key=request.form.get("idempotency_key"),
+        )
+    except PortalPaymentCreationError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("finance.portal_payment_proofs", status="VERIFIED"))
+
+    flash(
+        f"Payment {result['payment_number']} berhasil dibuat dari bukti portal invoice {result['invoice_number']}.",
+        "success",
+    )
+    return redirect(url_for("finance.invoice_detail", invoice_id=result["invoice_id"]))

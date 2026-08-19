@@ -1,3 +1,5 @@
+import hashlib
+from pathlib import Path
 from uuid import uuid4
 
 from flask import Flask, g, render_template, request
@@ -11,9 +13,30 @@ from app.services.slow_query_logger_service import init_slow_query_logging
 from app.services.ttl_cache_service import get_cached_value
 
 
+def _static_asset_fingerprint(flask_app: Flask, relative_path: str) -> str:
+    """Short content hash used as a cache-busting query string.
+
+    Computed once at startup instead of per-request since static assets
+    do not change while the process is running.
+    """
+    asset_path = Path(flask_app.static_folder) / relative_path
+    try:
+        digest = hashlib.sha1(asset_path.read_bytes()).hexdigest()
+    except OSError:
+        return "0"
+    return digest[:10]
+
+
 def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
+
+    flask_app.config["CSS_ASSET_VERSION"] = _static_asset_fingerprint(flask_app, "css/style.css")
+    flask_app.config["JS_ASSET_VERSION"] = _static_asset_fingerprint(flask_app, "js/main.js")
+
+    # Lets templates build conditional page_header()/macro action lists with
+    # `{% do actions.append(...) %}` instead of verbose `{% set x = x + [...] %}`.
+    flask_app.jinja_env.add_extension("jinja2.ext.do")
 
     if flask_app.config.get("PROXY_HEADERS_ENABLED"):
         flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
@@ -205,6 +228,13 @@ def create_app():
     @flask_app.context_processor
     def inject_portal_feature_flags():
         return {"global_portal_enabled": bool(flask_app.config.get("PORTAL_ENABLED", False))}
+
+    @flask_app.context_processor
+    def inject_asset_versions():
+        return {
+            "css_asset_version": flask_app.config["CSS_ASSET_VERSION"],
+            "js_asset_version": flask_app.config["JS_ASSET_VERSION"],
+        }
 
     @flask_app.template_filter("rupiah")
     def rupiah(value):

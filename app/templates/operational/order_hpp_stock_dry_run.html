@@ -1,25 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_stock_dry_run" data-logistics-hpp-page="order_hpp_stock_dry_run">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Dry-run Pemakaian Stok</span>
-        <h1>{{ snapshot.snapshot_number }}</h1>
-        <p>{{ daily_order.order_number }} · simulasi dari komponen FOOD snapshot HPP.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali ke Snapshot
-        </a>
-        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">
-            <i class="bi bi-journal-text"></i>
-            Detail Order
-        </a>
-    </div>
-</div>
+{{ page_header(
+    snapshot.snapshot_number,
+    daily_order.order_number ~ " · simulasi dari komponen FOOD snapshot HPP.",
+    eyebrow="Dry-run Pemakaian Stok",
+    actions=[
+        {"label": "Kembali ke Snapshot", "url": url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id), "icon": "bi-arrow-left"},
+        {"label": "Detail Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-journal-text"},
+    ]
+) }}
 
 
 

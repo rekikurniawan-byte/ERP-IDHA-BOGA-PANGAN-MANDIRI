@@ -1,29 +1,19 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Profit Invoice dari HPP Allocation</h1>
-        <p>Report read-only yang membandingkan nilai invoice dengan HPP allocation dari snapshot order.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.invoices') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Invoice
-        </a>
-        <a href="{{ url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value) }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Download CSV
-        </a>
-        <a href="{{ url_for('finance.print_invoice_profit_report', start_date=start_value, end_date=end_value) }}" class="btn app-btn-secondary">
-            <i class="bi bi-printer"></i>
-            Cetak / Save PDF
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Profit Invoice dari HPP Allocation",
+    "Report Mode pantau yang membandingkan nilai invoice dengan HPP allocation dari snapshot order.",
+    "Finance",
+    actions=[
+        {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"},
+        {"label": "Download CSV", "url": url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value), "icon": "bi-download"},
+        {"label": "Cetak / Save PDF", "url": url_for('finance.print_invoice_profit_report', start_date=start_value, end_date=end_value), "icon": "bi-printer"},
+    ]
+) }}
 
 <div class="app-card soft-warning-card mt-4">
     <strong>Catatan Presisi</strong>
@@ -160,3 +150,4 @@
 </div>
 </div>
 {% endblock %}
+

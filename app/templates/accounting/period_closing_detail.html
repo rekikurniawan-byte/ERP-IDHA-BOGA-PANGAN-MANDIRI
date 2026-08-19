@@ -1,18 +1,21 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-accounting-precision-ready="true" data-ui-accounting-page="UI">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Accounting • Closing Detail</span>
-            <h1>{{ closing.closing_number }}</h1>
-            <p>Detail closing periode {{ '%02d'|format(closing.period_month) }}/{{ closing.period_year }} dan jurnal retained earnings.</p>
-        </div>
-        <div class="page-actions accounting-header-actions">
-            <a href="{{ url_for('accounting.period_closing') }}" class="btn app-btn-secondary">Kembali</a>
-            {% if journal %}<a href="{{ url_for('accounting.journal_detail', journal_id=journal.id) }}" class="btn app-btn-primary">Lihat Jurnal</a>{% endif %}
-        </div>
-    </div>
+    {% set period_closing_detail_actions = [
+        {"label": "Kembali", "url": url_for('accounting.period_closing')},
+    ] %}
+    {% if journal %}
+        {% do period_closing_detail_actions.append({"label": "Lihat Jurnal", "url": url_for('accounting.journal_detail', journal_id=journal.id), "variant": "primary"}) %}
+    {% endif %}
+    {{ page_header(
+        closing.closing_number,
+        "Detail closing periode " ~ ('%02d'|format(closing.period_month)) ~ "/" ~ closing.period_year ~ " dan jurnal retained earnings.",
+        eyebrow="Accounting • Closing Detail",
+        actions_class="accounting-header-actions",
+        actions=period_closing_detail_actions
+    ) }}
 
 {% set precision_key = 'closing' %}
 

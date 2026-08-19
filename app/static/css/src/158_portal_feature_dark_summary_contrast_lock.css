@@ -1,0 +1,113 @@
+/*
+   Portal Feature Dark Summary Contrast Lock
+   Direct fix for portal feature summary cards:
+   - portal-ledger-total on payments pages
+   - portal-service-summary article.primary on complaints/service pages
+   CSS only.
+*/
+
+:root {
+    --feature-dark-summary-bg: #0f4f53;
+    --feature-dark-summary-border: #0b3f43;
+    --feature-dark-summary-text: #f8fafc;
+    --feature-dark-summary-muted: #dbeafe;
+}
+
+body.portal-web-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+),
+body.portal-mobile-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+) {
+    background: var(--feature-dark-summary-bg) !important;
+    background-image: none !important;
+    border-color: var(--feature-dark-summary-border) !important;
+    color: var(--feature-dark-summary-text) !important;
+}
+
+body.portal-web-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+) :where(span, strong, p, small, h1, h2, h3, h4, h5, h6, b, i, div),
+body.portal-mobile-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+) :where(span, strong, p, small, h1, h2, h3, h4, h5, h6, b, i, div) {
+    color: var(--feature-dark-summary-text) !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+}
+
+body.portal-web-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+) :where(p, small),
+body.portal-mobile-body :where(
+    .portal-ledger-summary .portal-ledger-total,
+    .portal-finance-summary .portal-ledger-total,
+    .portal-service-summary article.primary,
+    .portal-care-summary article.primary
+) :where(p, small) {
+    color: var(--feature-dark-summary-muted) !important;
+}
+
+/* Keep neighboring white summary cards readable and visually separate. */
+body.portal-web-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+),
+body.portal-mobile-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+) {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+    border-color: #e5e7eb !important;
+}
+
+body.portal-web-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+) :where(span, strong, p, small, h1, h2, h3, h4, h5, h6, b, i, div),
+body.portal-mobile-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+) :where(span, strong, p, small, h1, h2, h3, h4, h5, h6, b, i, div) {
+    color: #111827 !important;
+}
+
+body.portal-web-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+) :where(p, small),
+body.portal-mobile-body :where(
+    .portal-ledger-summary article:not(.portal-ledger-total),
+    .portal-finance-summary article:not(.portal-ledger-total),
+    .portal-service-summary article:not(.primary),
+    .portal-care-summary article:not(.primary)
+) :where(p, small) {
+    color: #475569 !important;
+}

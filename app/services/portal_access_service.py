@@ -13,53 +13,53 @@ PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
 
 PORTAL_STATUS_ROWS = [
     {
-        "area": "Portal foundation",
+        "area": "Portal",
         "availability": "READY",
-        "label": "Aktif terbatas",
-        "source": "Route /portal dan feature flag PORTAL_ENABLED",
-        "note": "Shell portal internal tersedia untuk OWNER/ADMIN saat feature flag aktif.",
+        "label": "Aktif",
+        "source": "Portal",
+        "note": "Portal siap digunakan sesuai akun masing-masing.",
     },
     {
-        "area": "Scope Client/PT dan Mandor",
+        "area": "Akses Client/PT dan Mandor",
         "availability": "READY",
-        "label": "Read-only",
-        "source": "Master Client, Mandor, Client PIC, Delivery Location",
-        "note": "Data hanya dibaca dari master existing. Tidak ada create/edit/delete portal.",
+        "label": "Aktif",
+        "source": "Master Data",
+        "note": "Data mengikuti perusahaan, mandor, dan lokasi yang sudah ditentukan admin.",
     },
     {
         "area": "Akun eksternal Client/PT/Mandor",
         "availability": "READY",
-        "label": "Mapping aktif",
-        "source": "portal_user_mappings",
-        "note": "Role portal memakai auth existing dan scope eksplisit ke client/mandor/PIC/lokasi.",
+        "label": "Aktif",
+        "source": "Akun",
+        "note": "Setiap akun hanya melihat data yang menjadi haknya.",
     },
     {
         "area": "Draft order portal",
         "availability": "READY",
         "label": "Pending admin",
-        "source": "portal_order_drafts",
-        "note": "Draft masuk antrian portal dan baru menjadi order DRAFT setelah admin confirm.",
+        "source": "Pesanan",
+        "note": "Pesanan baru masuk antrian admin sebelum diproses.",
     },
     {
         "area": "Prepayment pelanggan umum",
         "availability": "READY",
         "label": "Guard aktif",
-        "source": "Role PORTAL_CUSTOMER",
-        "note": "Pelanggan umum tidak dapat memproses order sebelum pembayaran terverifikasi.",
+        "source": "Pelanggan",
+        "note": "Pelanggan umum wajib membayar di awal sebelum pesanan diproses.",
     },
     {
         "area": "Status order portal",
         "availability": "APPROVAL_REQUIRED",
-        "label": "Belum aktif",
-        "source": "Order, production, delivery existing",
-        "note": "Belum menampilkan data transaksi agar tidak mengubah ekspektasi user eksternal.",
+        "label": "Bertahap",
+        "source": "Pesanan",
+        "note": "Status pesanan ditampilkan sesuai alur operasional.",
     },
     {
         "area": "Invoice/payment portal",
         "availability": "APPROVAL_REQUIRED",
-        "label": "Ditunda",
-        "source": "Invoice, payment, receivable existing",
-        "note": "Tetap ditunda karena menyentuh data keuangan sensitif.",
+        "label": "Bertahap",
+        "source": "Keuangan",
+        "note": "Invoice dan pembayaran ditampilkan sesuai hak akses.",
     },
 ]
 
@@ -72,7 +72,7 @@ def _empty_scope(role, branch_id, reason):
         "scope_mode": "NO_PORTAL_SCOPE",
         "reason": reason,
         "approval_required": True,
-        "approval_note": "User belum memiliki mapping portal aktif yang cocok dengan role-nya.",
+        "approval_note": "Akun belum tersambung ke data pelanggan.",
         "counts": {
             "clients": 0,
             "client_pics": 0,
@@ -175,21 +175,16 @@ def _scope_allowed(user):
     branch_id = getattr(user, "branch_id", None)
 
     if role not in PORTAL_PREVIEW_ROLES:
-        return False, role, branch_id, "Role belum termasuk preview portal internal."
+        return False, role, branch_id, "Akun ini belum memiliki akses portal."
 
     if role == "ADMIN" and not branch_id:
-        return False, role, branch_id, "ADMIN tidak memiliki branch_id yang valid."
+        return False, role, branch_id, "Cabang admin belum valid."
 
     return True, role, branch_id, None
 
 
 def build_portal_access_scope(user):
-    """Build a read-only portal scope preview from existing master data.
-
-    Batch 1B deliberately does not create external-user mappings, roles, or
-    transactional access. OWNER receives a global preview; ADMIN receives a
-    branch-scoped preview based on mandors in the user's branch.
-    """
+    """Build portal access preview from master data."""
     role = getattr(user, "role", None)
     if is_portal_external_role(role):
         external_scope, queries = _external_queries(user)
@@ -207,7 +202,7 @@ def build_portal_access_scope(user):
             "scope_mode": external_scope.scope_mode,
             "reason": external_scope.reason,
             "approval_required": False,
-            "approval_note": "Mapping portal aktif. Akses tetap read-only pada batch ini.",
+            "approval_note": "Akses akun aktif.",
             "counts": {
                 "clients": client_query.count(),
                 "client_pics": client_pic_query.count(),
@@ -241,9 +236,9 @@ def build_portal_access_scope(user):
         "role": role,
         "branch_id": branch_id,
         "scope_mode": scope_mode,
-        "reason": "Preview read-only dari master data existing.",
+        "reason": "Akses akun aktif.",
         "approval_required": False,
-        "approval_note": "OWNER/ADMIN melihat preview internal. User eksternal memakai mapping portal eksplisit.",
+        "approval_note": "Akses mengikuti data yang ditentukan admin.",
         "counts": {
             "clients": client_query.count(),
             "client_pics": client_pic_query.count(),

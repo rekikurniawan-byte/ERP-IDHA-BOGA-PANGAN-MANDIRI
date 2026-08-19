@@ -1,21 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="orders">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Modul Operasional</span>
-        <h1>Input Order Harian</h1>
-        <p>Daftar order catering harian berdasarkan mandor, lokasi, porsi siang, dan porsi sore.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Input Order
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Input Order Harian",
+    "Daftar order catering harian berdasarkan mandor, lokasi, porsi siang, dan porsi sore.",
+    eyebrow="Modul Operasional",
+    actions=[{"label": "Input Order", "url": url_for('operational.create_order'), "icon": "bi-plus-circle", "variant": "primary"}]
+) }}
 
 
 <div class="app-card">

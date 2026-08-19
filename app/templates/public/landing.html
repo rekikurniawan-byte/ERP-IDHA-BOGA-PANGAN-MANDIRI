@@ -1,0 +1,93 @@
+{% extends "layouts/base.html" %}
+
+{% block content_public %}
+<section class="public-landing">
+    <header class="public-landing-topbar">
+        <a class="public-brand" href="{{ url_for('dashboard.index') }}" aria-label="PT Idha Boga Pangan Mandiri">
+            {% with class_name="public-brand-mark company-logo-mark" %}
+                {% include "components/company_logo.html" %}
+            {% endwith %}
+            <span>
+                <strong>Idha Boga</strong>
+                <small>Pangan Mandiri</small>
+            </span>
+        </a>
+        <nav class="public-nav" aria-label="Aksi pengunjung">
+            <a href="#akses">Layanan</a>
+            <a class="public-nav-login" href="{{ data.primary_url }}">Masuk</a>
+        </nav>
+    </header>
+
+    <div class="public-hero">
+        <div class="public-hero-copy">
+            <span class="public-eyebrow">Catering harian perusahaan</span>
+            <h1>{{ data.title }}</h1>
+            <p>{{ data.description }}</p>
+            <div class="public-hero-actions">
+                <a class="public-primary-action" href="{{ data.primary_url }}">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Masuk</span>
+                </a>
+                {% if data.portal_enabled %}
+                    <a class="public-secondary-action" href="{{ data.secondary_url }}">
+                        <i class="bi bi-person-plus"></i>
+                        <span>Daftar pelanggan</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside class="public-order-card" id="alur">
+            <span>Alur pesanan</span>
+            <div class="public-order-flow">
+                <article><i class="bi bi-person"></i><strong>Masuk</strong><small>Akun aktif</small></article>
+                <article><i class="bi bi-bag-plus"></i><strong>Pesan</strong><small>Pilih porsi</small></article>
+                <article><i class="bi bi-credit-card"></i><strong>Bayar</strong><small>Unggah bukti</small></article>
+                <article><i class="bi bi-truck"></i><strong>Diproses</strong><small>Dikirim</small></article>
+            </div>
+        </aside>
+    </div>
+
+    <section class="public-role-grid" id="akses" aria-label="Akses berdasarkan role">
+        {% for role in data.roles %}
+            <article class="public-role-card">
+                <i class="bi {{ role.icon }}"></i>
+                <h2>{{ role.title }}</h2>
+                <p>{{ role.description }}</p>
+                <div class="public-step-row">
+                    {% for step in role.steps %}
+                        <span>{{ step }}</span>
+                    {% endfor %}
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="public-integrated-strip" aria-label="Aturan utama">
+        <div>
+            <span>Terintegrasi</span>
+            <h2>Satu akun, satu data, satu alur operasional.</h2>
+        </div>
+        <div class="public-rule-list">
+            {% for rule in data.rules %}
+                <article>
+                    <i class="bi bi-check2-circle"></i>
+                    <span>{{ rule }}</span>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="public-final-cta">
+        <div>
+            <span>Mulai</span>
+            <h2>Masuk untuk memesan dan memantau tagihan.</h2>
+            <p>Pelanggan umum bisa daftar sendiri. Akun PT dan mandor dibuat oleh admin agar terhubung ke perusahaan, mandor, dan kontrak yang benar.</p>
+        </div>
+        <a class="public-primary-action" href="{{ data.primary_url }}">
+            <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Masuk</span>
+        </a>
+    </section>
+</section>
+{% endblock %}

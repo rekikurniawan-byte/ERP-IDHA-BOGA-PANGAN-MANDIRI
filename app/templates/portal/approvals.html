@@ -1,0 +1,50 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.approvals %}
+<!-- approval_requests ERP existing -->
+<section class="portal-feature-page portal-service-page">
+    <div class="portal-feature-hero portal-service-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+    </div>
+
+    <div class="portal-service-summary">
+        <article class="primary"><span>Menunggu</span><strong>{{ model.totals.submitted }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Pengajuan user</small></article>
+        <article><span>Disetujui</span><strong>{{ model.totals.approved }}</strong><small>Sudah disetujui</small></article>
+        <article><span>Ditolak</span><strong>{{ model.totals.rejected }}</strong><small>Tidak disetujui</small></article>
+    </div>
+
+    <div class="portal-service-list">
+        {% for approval in model.rows %}
+            <article class="portal-service-card">
+                <div class="portal-service-card-icon"><i class="bi bi-shield-check"></i></div>
+                <div class="portal-service-card-main">
+                    <div class="portal-service-card-title">
+                        <h3>{{ approval.action_key }}</h3>
+                        <strong>{{ approval.status }}</strong>
+                    </div>
+                    <p>{{ approval.requested_reason }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ approval.reference_type }} #{{ approval.reference_id }}</span>
+                        <span>{{ approval.created_at.strftime('%d-%m-%Y') if approval.created_at else "-" }}</span>
+                        {% if approval.reviewed_at %}<span>Direview {{ approval.reviewed_at.strftime('%d-%m-%Y') }}</span>{% endif %}
+                    </div>
+                    {% if approval.review_note %}<p>{{ approval.review_note }}</p>{% endif %}
+                </div>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-shield-check"></i>
+                <strong>Belum ada approval</strong>
+                <p>Pengajuan persetujuan yang dibuat user portal akan tampil di sini.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

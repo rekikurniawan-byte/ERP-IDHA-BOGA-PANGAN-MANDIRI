@@ -1,18 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">{% if location %}Edit Lokasi{% else %}Tambah Lokasi{% endif %}</span>
-        <h1>{% if location %}Edit Lokasi Mandor{% else %}Input Lokasi Mandor{% endif %}</h1>
-        <p>Lokasi ini dipakai saat input order harian dan pengiriman.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.locations') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Lokasi Mandor" if location else "Input Lokasi Mandor",
+    "Lokasi ini dipakai saat input order harian dan pengiriman.",
+    eyebrow="Edit Lokasi" if location else "Tambah Lokasi",
+    actions=[{"label": "Kembali", "url": url_for('master.locations')}]
+) }}
 
 <div class="app-card">
     <form method="POST" action="{% if location %}{{ url_for('master.edit_location', location_id=location.id) }}{% else %}{{ url_for('master.create_location') }}{% endif %}" data-ui-form="true" class="app-form">

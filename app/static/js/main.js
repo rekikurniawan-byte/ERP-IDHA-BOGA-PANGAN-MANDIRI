@@ -418,6 +418,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.querySelectorAll("table").forEach(function (table) {
         if (table.closest(".calendar, .datepicker, .flatpickr-calendar")) return;
+        if (table.matches(".ui-data-table, [data-ui-table]")) return;
 
         table.classList.add("app-data-table");
         const wrapper = wrapTable(table);
@@ -744,6 +745,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.querySelectorAll("form").forEach(function (form) {
+        if (form.matches("[data-ui-foundation-form]")) return;
         form.classList.add("app-form");
         form.setAttribute("data-ui-form", "true");
         form.setAttribute("data-enhanced-form", "UI");
@@ -803,7 +805,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return Array.from(group.children).filter(function (child) {
             if (child.classList && (child.classList.contains("app-action-dropdown") || child.classList.contains("finance-more-dropdown"))) return false;
             if (child.matches && child.matches("a.btn, button.btn")) return true;
-            if (child.matches && child.matches("form") && child.querySelector("button.btn, .btn")) return true;
+            if (child.matches && child.matches("form")) return false;
             return false;
         });
     }
@@ -921,7 +923,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return Array.from(group.children).filter(function (child) {
             if (child.classList && (child.classList.contains("app-action-dropdown") || child.classList.contains("accounting-more-dropdown"))) return false;
             if (child.matches && child.matches("a.btn, button.btn")) return true;
-            if (child.matches && child.matches("form") && child.querySelector("button.btn, .btn")) return true;
+            if (child.matches && child.matches("form")) return false;
             return false;
         });
     }
@@ -1072,7 +1074,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return Array.from(group.children).filter(function (child) {
             if (child.classList && (child.classList.contains("app-action-dropdown") || child.classList.contains("logistics-hpp-more-dropdown"))) return false;
             if (child.matches && child.matches("a.btn, button.btn")) return true;
-            if (child.matches && child.matches("form") && child.querySelector("button.btn, .btn")) return true;
+            if (child.matches && child.matches("form")) return false;
             return false;
         });
     }
@@ -1207,7 +1209,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return Array.from(group.children).filter(function (child) {
             if (child.classList && (child.classList.contains("app-action-dropdown") || child.classList.contains("op-prod-delivery-more-dropdown"))) return false;
             if (child.matches && child.matches("a.btn, button.btn")) return true;
-            if (child.matches && child.matches("form") && child.querySelector("button.btn, .btn")) return true;
+            if (child.matches && child.matches("form")) return false;
             return false;
         });
     }
@@ -1360,7 +1362,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return Array.from(group.children).filter(function (child) {
             if (child.classList && (child.classList.contains("app-action-dropdown") || child.classList.contains("hr-master-settings-more-dropdown"))) return false;
             if (child.matches && child.matches("a.btn, button.btn")) return true;
-            if (child.matches && child.matches("form") && child.querySelector("button.btn, .btn")) return true;
+            if (child.matches && child.matches("form")) return false;
             return false;
         });
     }
@@ -1634,7 +1636,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!node.matches) return false;
             if (node.matches(".dropdown, .app-action-dropdown, [data-action-dropdown]")) return false;
             if (node.querySelector && node.querySelector(".dropdown-menu")) return false;
-            if (node.matches("a.btn, button.btn, form")) return true;
+            if (node.matches("a.btn, button.btn")) return true;
             return false;
         });
     }
@@ -2855,7 +2857,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function validationMessage(field) {
         if (!field || !field.willValidate || field.validity.valid) return "";
-        return field.validationMessage || "Field wajib diisi dengan benar.";
+        if (field.validity.valueMissing) {
+            return field.tagName === "SELECT" ? "Pilih salah satu data." : "Bagian ini wajib diisi.";
+        }
+        if (field.validity.typeMismatch) return "Format isian belum benar.";
+        if (field.validity.patternMismatch) return "Format isian belum sesuai.";
+        if (field.validity.rangeUnderflow) return "Nilai terlalu kecil.";
+        if (field.validity.rangeOverflow) return "Nilai terlalu besar.";
+        if (field.validity.stepMismatch) return "Nilai tidak sesuai kelipatan yang diizinkan.";
+        if (field.validity.tooShort) return "Isian terlalu pendek.";
+        if (field.validity.tooLong) return "Isian terlalu panjang.";
+        if (field.validity.badInput) return "Isian belum valid.";
+        if (field.validity.customError && field.validationMessage) return field.validationMessage;
+        return "Bagian ini perlu diisi dengan benar.";
+    }
+
+    function shouldShowInvalid(field, valid) {
+        if (valid) return false;
+        return field.dataset.atomicTouched === "true" ||
+            !!(field.form && field.form.dataset.atomicSubmitted === "true");
     }
 
     function ensureFeedback(shell) {
@@ -2876,13 +2896,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const isDisabled = !!(field.disabled || field.readOnly);
         const isRequired = !!field.required;
         const valid = !field.willValidate || field.validity.valid;
-        const message = validationMessage(field);
+        const showInvalid = shouldShowInvalid(field, valid);
+        const message = showInvalid ? validationMessage(field) : "";
         shell.classList.toggle("is-disabled", isDisabled);
         shell.classList.toggle("is-required", isRequired);
-        shell.classList.toggle("is-invalid", !valid);
-        if (root) root.classList.toggle("is-invalid", !valid);
+        shell.classList.toggle("is-invalid", showInvalid);
+        if (root) root.classList.toggle("is-invalid", showInvalid);
         if (trigger) {
-            trigger.setAttribute("aria-invalid", valid ? "false" : "true");
+            trigger.setAttribute("aria-invalid", showInvalid ? "true" : "false");
             trigger.setAttribute("aria-required", isRequired ? "true" : "false");
             if (isDisabled) {
                 trigger.setAttribute("aria-disabled", "true");
@@ -2954,7 +2975,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.root.classList.toggle("is-disabled", ctx.select.disabled);
         ctx.trigger.setAttribute("aria-disabled", ctx.select.disabled ? "true" : "false");
         ctx.trigger.disabled = ctx.select.disabled;
-        ctx.optionsWrap.querySelectorAll(".app-atomic-option").forEach(function (button) {
+        ctx.optionsWrap.querySelectorAll(".app-atomic-option, .ui-select-option").forEach(function (button) {
             const isSelected = button.getAttribute("data-value") === ctx.select.value;
             button.classList.toggle("is-selected", isSelected);
             button.setAttribute("aria-selected", isSelected ? "true" : "false");
@@ -2971,25 +2992,40 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function createSelectOptionButton(ctx, option) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "app-atomic-option";
+        const button = document.createElement(ctx.isUiSelect ? "div" : "button");
+        if (!ctx.isUiSelect) button.type = "button";
+        button.className = ctx.isUiSelect ? "ui-select-option" : "app-atomic-option";
+        if (ctx.isUiSelect) button.tabIndex = 0;
         button.setAttribute("role", "option");
         button.setAttribute("data-value", option.value);
         button.setAttribute("data-option-index", String(option.index));
         button.textContent = optionLabel(option) || "—";
+        if (ctx.isUiSelect) {
+            const label = document.createElement("span");
+            label.className = "ui-select-option-label";
+            label.textContent = button.textContent;
+            button.textContent = "";
+            button.appendChild(label);
+        }
         if (option.disabled) {
-            button.disabled = true;
+            if (!ctx.isUiSelect) button.disabled = true;
+            button.tabIndex = -1;
             button.setAttribute("aria-disabled", "true");
         }
-        button.addEventListener("click", function () {
-            if (button.disabled) return;
+        function selectOption() {
+            if (button.disabled || button.getAttribute("aria-disabled") === "true") return;
             ctx.select.selectedIndex = option.index;
             ctx.select.dispatchEvent(new Event("input", { bubbles: true }));
             ctx.select.dispatchEvent(new Event("change", { bubbles: true }));
             updateSelectControl(ctx);
             closeSelect();
             ctx.trigger.focus({ preventScroll: true });
+        }
+        button.addEventListener("click", selectOption);
+        button.addEventListener("keydown", function (event) {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            selectOption();
         });
         return button;
     }
@@ -3033,9 +3069,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function moveSelectFocus(ctx, direction) {
-        const options = Array.from(ctx.optionsWrap.querySelectorAll(".app-atomic-option:not(:disabled)"));
+        const options = Array.from(ctx.optionsWrap.querySelectorAll(".app-atomic-option:not(:disabled), .ui-select-option:not([aria-disabled='true'])"));
         if (!options.length) return;
-        const current = document.activeElement && document.activeElement.classList.contains("app-atomic-option") ? document.activeElement : null;
+        const current = document.activeElement && document.activeElement.matches(".app-atomic-option, .ui-select-option") ? document.activeElement : null;
         let index = current ? options.indexOf(current) : -1;
         index = Math.max(0, Math.min(options.length - 1, index + direction));
         options[index].focus({ preventScroll: true });
@@ -3058,11 +3094,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 ctx.search.focus({ preventScroll: true });
                 ctx.search.select();
             } else {
-                const selected = ctx.optionsWrap.querySelector(".app-atomic-option.is-selected:not(:disabled)");
+                const selected = ctx.optionsWrap.querySelector(".app-atomic-option.is-selected:not(:disabled), .ui-select-option.is-selected:not([aria-disabled='true'])");
                 if (selected && typeof selected.scrollIntoView === "function") {
                     selected.scrollIntoView({ block: "nearest" });
                 }
-                (selected || ctx.optionsWrap.querySelector(".app-atomic-option:not(:disabled)") || ctx.trigger).focus({ preventScroll: true });
+                (selected || ctx.optionsWrap.querySelector(".app-atomic-option:not(:disabled), .ui-select-option:not([aria-disabled='true'])") || ctx.trigger).focus({ preventScroll: true });
             }
         }, 0);
     }
@@ -3070,40 +3106,46 @@ document.addEventListener("DOMContentLoaded", function () {
     function enhanceSelect(select) {
         if (shouldSkipControl(select) || select.hasAttribute(ENHANCED_SELECT) || select.multiple) return;
         select.setAttribute(ENHANCED_SELECT, "true");
+        const isUiSelect = select.classList.contains("ui-select-control");
 
         const shell = buildShell(select, "app-atomic-select-shell");
+        if (isUiSelect) shell.classList.add("ui-select-shell");
         const root = document.createElement("div");
-        root.className = "app-atomic-select";
+        root.className = isUiSelect ? "ui-select-enhanced" : "app-atomic-select";
         root.setAttribute("data-atomic-select", "true");
 
         const triggerId = uid("appAtomicSelectTrigger");
         const menuId = uid("appAtomicSelectMenu");
-        const trigger = document.createElement("button");
-        trigger.type = "button";
+        const trigger = document.createElement(isUiSelect ? "div" : "button");
+        if (!isUiSelect) trigger.type = "button";
+        if (isUiSelect) trigger.tabIndex = 0;
         trigger.id = triggerId;
-        trigger.className = "app-atomic-select-trigger";
+        trigger.className = isUiSelect ? "ui-select-trigger" : "app-atomic-select-trigger";
+        if (isUiSelect) trigger.setAttribute("role", "combobox");
         trigger.setAttribute("aria-haspopup", "listbox");
         trigger.setAttribute("aria-expanded", "false");
         trigger.setAttribute("aria-controls", menuId);
-        trigger.innerHTML = '<span class="app-atomic-field-value"></span><span class="app-atomic-field-icon" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>';
+        trigger.innerHTML = isUiSelect
+            ? '<span class="ui-select-value"></span><span class="ui-select-chevron" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>'
+            : '<span class="app-atomic-field-value"></span><span class="app-atomic-field-icon" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>';
 
         const menu = document.createElement("div");
         menu.id = menuId;
-        menu.className = "app-atomic-menu";
+        menu.className = isUiSelect ? "ui-select-menu" : "app-atomic-menu";
         menu.setAttribute("role", "listbox");
         menu.hidden = true;
 
         const searchWrap = document.createElement("div");
-        searchWrap.className = "app-atomic-search-wrap";
+        searchWrap.className = isUiSelect ? "ui-select-search-wrap" : "app-atomic-search-wrap";
         const search = document.createElement("input");
         search.type = "search";
-        search.className = "app-atomic-search";
+        search.className = isUiSelect ? "ui-select-search" : "app-atomic-search";
         search.placeholder = "Cari pilihan...";
         search.setAttribute("aria-label", "Cari pilihan");
         searchWrap.appendChild(search);
 
         const optionsWrap = document.createElement("div");
-        optionsWrap.className = "app-atomic-options";
+        optionsWrap.className = isUiSelect ? "ui-select-options" : "app-atomic-options";
         menu.appendChild(searchWrap);
         menu.appendChild(optionsWrap);
         root.appendChild(trigger);
@@ -3118,8 +3160,12 @@ document.addEventListener("DOMContentLoaded", function () {
             menu: menu,
             search: search,
             optionsWrap: optionsWrap,
-            valueNode: trigger.querySelector(".app-atomic-field-value")
+            valueNode: trigger.querySelector(isUiSelect ? ".ui-select-value" : ".app-atomic-field-value"),
+            isUiSelect: isUiSelect
         };
+        if (isUiSelect) {
+            ctx.valueNode.classList.add("ui-select-value");
+        }
         select.__atomicSelectCtx = ctx;
 
         function syncSearchVisibility() {
@@ -3162,19 +3208,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 moveSelectFocus(ctx, -1);
             } else if (event.key === "Home") {
                 event.preventDefault();
-                const first = ctx.optionsWrap.querySelector(".app-atomic-option:not(:disabled)");
+                const first = ctx.optionsWrap.querySelector(".app-atomic-option:not(:disabled), .ui-select-option:not([aria-disabled='true'])");
                 if (first) first.focus({ preventScroll: true });
             } else if (event.key === "End") {
                 event.preventDefault();
-                const options = Array.from(ctx.optionsWrap.querySelectorAll(".app-atomic-option:not(:disabled)"));
+                const options = Array.from(ctx.optionsWrap.querySelectorAll(".app-atomic-option:not(:disabled), .ui-select-option:not([aria-disabled='true'])"));
                 const last = options[options.length - 1];
                 if (last) last.focus({ preventScroll: true });
             }
         });
 
-        select.addEventListener("change", function () { updateSelectControl(ctx); });
+        select.addEventListener("change", function () {
+            select.dataset.atomicTouched = "true";
+            updateSelectControl(ctx);
+        });
         select.addEventListener("invalid", function (event) {
             event.preventDefault();
+            select.dataset.atomicTouched = "true";
             validateSelect(ctx);
             trigger.focus({ preventScroll: true });
         });
@@ -3624,10 +3674,17 @@ document.addEventListener("DOMContentLoaded", function () {
             selectDate(ctx, new Date());
         });
 
-        input.addEventListener("input", function () { updateDateControl(ctx); });
-        input.addEventListener("change", function () { updateDateControl(ctx); });
+        input.addEventListener("input", function () {
+            input.dataset.atomicTouched = "true";
+            updateDateControl(ctx);
+        });
+        input.addEventListener("change", function () {
+            input.dataset.atomicTouched = "true";
+            updateDateControl(ctx);
+        });
         input.addEventListener("invalid", function (event) {
             event.preventDefault();
+            input.dataset.atomicTouched = "true";
             validateDate(ctx);
             trigger.focus({ preventScroll: true });
         });
@@ -3667,22 +3724,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.querySelectorAll("form").forEach(function (form) {
         form.addEventListener("submit", function () {
+            form.dataset.atomicSubmitted = "true";
             form.querySelectorAll("select[data-atomic-select-enhanced]").forEach(function (select) {
                 const shell = select.closest(".app-atomic-field-shell");
                 const root = shell ? shell.querySelector(".app-atomic-select") : null;
                 const trigger = root ? root.querySelector(".app-atomic-select-trigger") : null;
+                const invalid = select.willValidate && !select.validity.valid;
                 if (root && trigger) {
-                    root.classList.toggle("is-invalid", select.willValidate && !select.validity.valid);
-                    trigger.setAttribute("aria-invalid", select.willValidate && !select.validity.valid ? "true" : "false");
+                    select.dataset.atomicTouched = "true";
+                    root.classList.toggle("is-invalid", invalid);
+                    trigger.setAttribute("aria-invalid", invalid ? "true" : "false");
                 }
             });
             form.querySelectorAll('input[type="date"][data-atomic-date-enhanced]').forEach(function (input) {
                 const shell = input.closest(".app-atomic-field-shell");
                 const root = shell ? shell.querySelector(".app-atomic-date") : null;
                 const trigger = root ? root.querySelector(".app-atomic-date-trigger") : null;
+                const invalid = input.willValidate && !input.validity.valid;
                 if (root && trigger) {
-                    root.classList.toggle("is-invalid", input.willValidate && !input.validity.valid);
-                    trigger.setAttribute("aria-invalid", input.willValidate && !input.validity.valid ? "true" : "false");
+                    input.dataset.atomicTouched = "true";
+                    root.classList.toggle("is-invalid", invalid);
+                    trigger.setAttribute("aria-invalid", invalid ? "true" : "false");
                 }
             });
         }, true);
@@ -4692,7 +4754,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function validationMessage(field) {
         if (!field || !field.willValidate || field.validity.valid) return "";
-        return field.validationMessage || "Field wajib diisi dengan benar.";
+        if (field.validity.valueMissing) {
+            return field.tagName === "SELECT" ? "Pilih salah satu data." : "Bagian ini wajib diisi.";
+        }
+        if (field.validity.typeMismatch) return "Format isian belum benar.";
+        if (field.validity.patternMismatch) return "Format isian belum sesuai.";
+        if (field.validity.rangeUnderflow) return "Nilai terlalu kecil.";
+        if (field.validity.rangeOverflow) return "Nilai terlalu besar.";
+        if (field.validity.stepMismatch) return "Nilai tidak sesuai kelipatan yang diizinkan.";
+        if (field.validity.tooShort) return "Isian terlalu pendek.";
+        if (field.validity.tooLong) return "Isian terlalu panjang.";
+        if (field.validity.badInput) return "Isian belum valid.";
+        if (field.validity.customError && field.validationMessage) return field.validationMessage;
+        return "Bagian ini perlu diisi dengan benar.";
+    }
+
+    function shouldShowInvalid(field, valid) {
+        if (valid) return false;
+        return field.dataset.atomicTouched === "true" ||
+            !!(field.form && field.form.dataset.atomicSubmitted === "true");
     }
 
     function ensureAtomicFeedback(shell) {
@@ -4712,23 +4792,24 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!ctx || !ctx.input) return true;
         const input = ctx.input;
         const valid = !input.willValidate || input.validity.valid;
+        const showInvalid = shouldShowInvalid(input, valid);
         const disabled = !!(input.disabled || input.readOnly);
         const required = !!input.required;
         ctx.shell.classList.toggle("is-disabled", disabled);
         ctx.shell.classList.toggle("is-required", required);
-        ctx.shell.classList.toggle("is-invalid", !valid);
+        ctx.shell.classList.toggle("is-invalid", showInvalid);
         ctx.root.classList.toggle("is-disabled", disabled);
-        ctx.root.classList.toggle("is-invalid", !valid);
+        ctx.root.classList.toggle("is-invalid", showInvalid);
         ctx.trigger.disabled = disabled;
         ctx.trigger.setAttribute("aria-disabled", disabled ? "true" : "false");
         ctx.trigger.setAttribute("aria-required", required ? "true" : "false");
-        ctx.trigger.setAttribute("aria-invalid", valid ? "false" : "true");
+        ctx.trigger.setAttribute("aria-invalid", showInvalid ? "true" : "false");
         if (ctx.clearButton) {
             ctx.clearButton.disabled = required || disabled || !input.value;
             ctx.clearButton.hidden = required;
         }
         const feedback = ensureAtomicFeedback(ctx.shell);
-        const message = validationMessage(input);
+        const message = showInvalid ? validationMessage(input) : "";
         if (feedback) {
             feedback.textContent = message;
             feedback.hidden = !message;
@@ -5433,6 +5514,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function enhanceTable(table) {
         if (!isElement(table) || table.dataset.atomicTableReady === "true") return;
         if (!table.matches("table")) return;
+        if (table.matches(".ui-data-table, [data-ui-table]")) return;
         table.dataset.atomicTableReady = "true";
         table.classList.add("app-atomic-table");
         if (!table.querySelector("thead")) table.classList.add("app-table-no-head");
@@ -6492,13 +6574,191 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }, false);
 
+    function updatePortalOrderPreview(form) {
+        if (!form || !form.matches || !form.matches("[data-portal-order-form]")) return;
+        const dateInput = form.querySelector("[data-portal-order-date]");
+        const mealInput = form.querySelector("[data-portal-meal-type]");
+        const locationInput = form.querySelector("[data-portal-location-select]");
+        const portionInput = form.querySelector("[data-portal-portion-input]");
+        const timeInput = form.querySelector("[data-portal-time-input]");
+        const contactInput = form.querySelector("[data-portal-contact-input]");
+        const phoneInput = form.querySelector("[data-portal-phone-input]");
+        const title = form.querySelector("[data-portal-preview-title]");
+        const detail = form.querySelector("[data-portal-preview-detail]");
+        if (!title || !detail) return;
+
+        const selectedLocation = locationInput && locationInput.selectedOptions ? locationInput.selectedOptions[0] : null;
+        const locationName = selectedLocation ? cleanText(selectedLocation.textContent) : "";
+        const clientName = selectedLocation ? cleanText(selectedLocation.getAttribute("data-client-name")) : "";
+        const mandorName = selectedLocation ? cleanText(selectedLocation.getAttribute("data-mandor-name")) : "";
+        const locationDescription = selectedLocation ? cleanText(selectedLocation.getAttribute("data-location-description")) : "";
+        const orderDate = cleanText(dateInput && dateInput.value);
+        const mealType = cleanText(mealInput && mealInput.options && mealInput.selectedIndex >= 0 ? mealInput.options[mealInput.selectedIndex].textContent : mealInput && mealInput.value);
+        const portion = cleanText(portionInput && portionInput.value);
+        const deliveryTime = cleanText(timeInput && timeInput.value);
+        const contactName = cleanText(contactInput && contactInput.value);
+        const contactPhone = cleanText(phoneInput && phoneInput.value);
+
+        if (!orderDate || !locationName || !portion) {
+            title.textContent = "Pilih tanggal, lokasi, dan jumlah porsi";
+            detail.textContent = "Draft ini belum membuat produksi, pengiriman, tagihan, pembayaran, stok, atau jurnal.";
+            return;
+        }
+
+        title.textContent = portion + " porsi " + mealType + " untuk " + locationName;
+        detail.textContent = [
+            "Tanggal " + orderDate,
+            deliveryTime ? "Jam kirim " + deliveryTime : "",
+            clientName ? "Client/PT " + clientName : "",
+            mandorName ? "Mandor " + mandorName : "",
+            contactName ? "Penerima " + contactName : "",
+            contactPhone ? "HP " + contactPhone : "",
+            locationDescription ? "Catatan lokasi: " + locationDescription : ""
+        ].filter(Boolean).join(" | ");
+    }
+
+    function bindPortalOrderForm(form) {
+        if (!form || form.dataset.portalOrderReady === "true") return;
+        form.dataset.portalOrderReady = "true";
+        form.querySelectorAll("[data-portal-order-date], [data-portal-meal-type], [data-portal-location-select], [data-portal-portion-input], [data-portal-time-input], [data-portal-contact-input], [data-portal-phone-input]").forEach(function (field) {
+            field.addEventListener("change", function () { updatePortalOrderPreview(form); });
+            field.addEventListener("input", function () { updatePortalOrderPreview(form); });
+        });
+        form.addEventListener("submit", function (event) {
+            if (form.dataset.portalSubmitting === "true") {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            form.dataset.portalSubmitting = "true";
+            const button = form.querySelector("[data-portal-submit-label]");
+            if (button) {
+                button.disabled = true;
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i><span>Mengirim draft...</span>';
+            }
+            setTimeout(function () {
+                form.dataset.portalSubmitting = "false";
+                if (button) {
+                    button.disabled = false;
+                    if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+                }
+            }, 12000);
+        }, false);
+        updatePortalOrderPreview(form);
+    }
+
+    function bindPortalOrderForms(scope) {
+        if (!scope || !scope.querySelectorAll) return;
+        if (scope.matches && scope.matches("[data-portal-order-form]")) bindPortalOrderForm(scope);
+        scope.querySelectorAll("[data-portal-order-form]").forEach(bindPortalOrderForm);
+    }
+
     decorateScope(document);
+    bindPortalOrderForms(document);
     const observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             mutation.addedNodes.forEach(function (node) {
-                if (isElement(node)) decorateScope(node);
+                if (isElement(node)) {
+                    decorateScope(node);
+                    bindPortalOrderForms(node);
+                }
             });
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// Opt-in Atomic UI row action menu. Non-ui markup is never selected here.
+document.addEventListener("DOMContentLoaded", function () {
+    let activeMenu = null;
+    const narrowViewport = window.matchMedia("(max-width: 991.98px)");
+
+    document.querySelectorAll("[data-ui-table]").forEach(function (table) {
+        const codeCell = table.querySelector(".ui-table-cell--sticky-code");
+        if (!codeCell) return;
+        function syncStickyOffset() {
+            table.style.setProperty("--ui-sticky-code-offset", codeCell.getBoundingClientRect().width + "px");
+        }
+        syncStickyOffset();
+        window.addEventListener("resize", syncStickyOffset, { passive: true });
+    });
+
+    function closeMenu() {
+        if (!activeMenu) return;
+        const state = activeMenu;
+        state.menu.classList.remove("ui-action-menu-popover", "ui-scope");
+        state.menu.removeAttribute("style");
+        state.marker.parentNode.insertBefore(state.menu, state.marker);
+        state.marker.remove();
+        state.trigger.setAttribute("aria-expanded", "false");
+        activeMenu = null;
+    }
+
+    function positionMenu(trigger, menu) {
+        const margin = 12;
+        const gap = 6;
+        const triggerRect = trigger.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        const left = Math.max(margin, Math.min(window.innerWidth - menuRect.width - margin, triggerRect.right - menuRect.width));
+        const fitsBelow = triggerRect.bottom + gap + menuRect.height <= window.innerHeight - margin;
+        const top = fitsBelow
+            ? triggerRect.bottom + gap
+            : Math.max(margin, triggerRect.top - menuRect.height - gap);
+        menu.style.left = left + "px";
+        menu.style.top = top + "px";
+    }
+
+    document.querySelectorAll("[data-ui-row-actions]").forEach(function (root) {
+        const trigger = root.querySelector("[data-ui-action-menu-trigger]");
+        const menu = root.querySelector("[data-ui-action-menu]");
+        if (!trigger || !menu) return;
+
+        const triggerMarker = document.createComment("ui-action-trigger-position");
+        trigger.parentNode.insertBefore(triggerMarker, trigger);
+        function syncTrigger() {
+            closeMenu();
+            if (narrowViewport.matches) {
+                if (!trigger.isConnected) triggerMarker.parentNode.insertBefore(trigger, triggerMarker.nextSibling);
+            } else if (trigger.isConnected) {
+                trigger.remove();
+            }
+        }
+        syncTrigger();
+        narrowViewport.addEventListener("change", syncTrigger);
+
+        trigger.addEventListener("click", function (event) {
+            event.preventDefault();
+            if (activeMenu && activeMenu.trigger === trigger) {
+                closeMenu();
+                return;
+            }
+            closeMenu();
+            const marker = document.createComment("ui-action-menu-position");
+            menu.parentNode.insertBefore(marker, menu.nextSibling);
+            document.body.appendChild(menu);
+            menu.classList.add("ui-action-menu-popover", "ui-scope");
+            trigger.setAttribute("aria-expanded", "true");
+            activeMenu = { trigger: trigger, menu: menu, marker: marker };
+            positionMenu(trigger, menu);
+            const firstAction = menu.querySelector(".ui-button");
+            if (firstAction) firstAction.focus({ preventScroll: true });
+        });
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!activeMenu) return;
+        if (activeMenu.menu.contains(event.target) || activeMenu.trigger.contains(event.target)) return;
+        closeMenu();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape" || !activeMenu) return;
+        const trigger = activeMenu.trigger;
+        closeMenu();
+        trigger.focus({ preventScroll: true });
+    });
+
+    window.addEventListener("resize", closeMenu, { passive: true });
+    window.addEventListener("scroll", closeMenu, { passive: true, capture: true });
 });

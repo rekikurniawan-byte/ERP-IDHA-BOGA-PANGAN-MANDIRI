@@ -1,30 +1,19 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="purchase_index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Logistik & Stok</span>
-        <h1>Pembelian Barang</h1>
-        <p>Riwayat belanja bahan/barang. Supplier tetap hanya opsional; pembelian manual dari toko/pasar tetap dicatat dari Tempat Belanja.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Dashboard Stok
-        </a>
-        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">
-            <i class="bi bi-shop"></i>
-            Supplier Opsional
-        </a>
-        <a href="{{ url_for('logistics.create_purchase') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Pembelian
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Pembelian Barang",
+    "Riwayat belanja bahan/barang. Supplier tetap hanya opsional; pembelian manual dari toko/pasar tetap dicatat dari Tempat Belanja.",
+    eyebrow="Logistik & Stok",
+    actions=[
+        {"label": "Dashboard Stok", "url": url_for('logistics.index'), "icon": "bi-arrow-left"},
+        {"label": "Supplier Opsional", "url": url_for('master.suppliers'), "icon": "bi-shop"},
+        {"label": "Tambah Pembelian", "url": url_for('logistics.create_purchase'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 {{ global_filter_bar(filter_bar) }}
 

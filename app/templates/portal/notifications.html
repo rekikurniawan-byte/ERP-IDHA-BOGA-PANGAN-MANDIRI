@@ -1,0 +1,80 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.notifications %}
+<!-- notifications ERP existing -->
+<section class="portal-feature-page portal-service-page portal-notification-page">
+    <div class="portal-feature-hero portal-service-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+        <strong class="portal-hero-status">{{ model.totals.unread }} unread</strong>
+    </div>
+
+    <div class="portal-service-summary portal-notification-summary">
+        <article class="primary"><span>Belum Dibaca</span><strong>{{ model.totals.unread }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Butuh Aksi</span><strong>{{ model.totals.actionable }}</strong><small>Memiliki action_url</small></article>
+        <article><span>Critical</span><strong>{{ model.totals.critical }}</strong><small>Prioritas tinggi</small></article>
+        <article><span>Warning</span><strong>{{ model.totals.warning }}</strong><small>Perlu dipantau</small></article>
+        <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Semua status</small></article>
+    </div>
+
+    {% for section in model.sections %}
+        <div class="portal-section-heading">
+            <h2>{{ section.title }}</h2>
+            <span>{{ section.rows|length }} notifikasi</span>
+        </div>
+
+        <div class="portal-service-list portal-notification-list">
+            {% for notification in section.rows %}
+                <article class="portal-service-card portal-notification-card priority-{{ notification.priority|lower }}">
+                    <div class="portal-service-card-icon"><i class="bi bi-bell"></i></div>
+                    <div class="portal-service-card-main">
+                        <div class="portal-service-card-title">
+                            <h3>{{ notification.title }}</h3>
+                            <strong>{{ notification.status }}</strong>
+                        </div>
+                        <p>{{ notification.message }}</p>
+                        <div class="portal-chip-row">
+                            <span>{{ notification.notification_type }}</span>
+                            <span>{{ notification.priority }}</span>
+                            {% if notification.target_role %}<span>Role {{ notification.target_role }}</span>{% endif %}
+                            {% if notification.due_date %}<span>Due {{ notification.due_date.strftime('%d-%m-%Y') }}</span>{% endif %}
+                            {% if notification.reference_type %}<span>{{ notification.reference_type }} #{{ notification.reference_id }}</span>{% endif %}
+                        </div>
+                        <div class="portal-inline-actions">
+                            {% if notification.action_url %}
+                                <a class="portal-action-link" href="{{ notification.action_url }}">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                    <span>Buka</span>
+                                </a>
+                            {% endif %}
+                            {% if notification.status == "UNREAD" %}
+                                <form method="post" action="{{ url_for('portal.read_notification', notification_id=notification.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="portal-action-link" type="submit"><i class="bi bi-check2"></i><span>Dibaca</span></button>
+                                </form>
+                            {% endif %}
+                            {% if notification.status != "DISMISSED" %}
+                                <form method="post" action="{{ url_for('portal.dismiss_notification', notification_id=notification.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="portal-action-link secondary" type="submit"><i class="bi bi-eye-slash"></i><span>Sembunyikan</span></button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% else %}
+                <div class="portal-empty-state">
+                    <i class="bi bi-bell"></i>
+                    <strong>Tidak ada {{ section.title|lower }}</strong>
+                    <p>Notifikasi target user atau role akan tampil di sini.</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

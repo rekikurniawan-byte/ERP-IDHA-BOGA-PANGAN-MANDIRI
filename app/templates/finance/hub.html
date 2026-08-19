@@ -1,24 +1,18 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell finance-hub-page">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Finance</span>
-            <h1>Pusat Transaksi Keuangan</h1>
-            <p>Hub lintas invoice, piutang, rekap manual, buku kas/bank, dan input harian.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-primary">
-                <i class="bi bi-receipt-cutoff"></i>
-                Rekap Tagihan Mandor
-            </a>
-            <a href="{{ url_for('finance.finance_transactions') }}" class="btn app-btn-secondary">
-                <i class="bi bi-ui-checks-grid"></i>
-                Input Cepat
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Pusat Transaksi Keuangan",
+        "Hub lintas invoice, piutang, rekap manual, buku kas/bank, dan input harian.",
+        "Finance",
+        actions=[
+            {"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff", "variant": "primary"},
+            {"label": "Input Cepat", "url": url_for('finance.finance_transactions'), "icon": "bi-ui-checks-grid"},
+            {"label": "Bukti Portal", "url": url_for('finance.portal_payment_proofs'), "icon": "bi-cloud-check"},
+        ]
+    ) }}
 
     <div class="app-stat-grid">
         <div class="app-stat-card">
@@ -40,6 +34,49 @@
             <span>Sumber Belum Ditagih</span>
             <h3>{{ summary.manual_source_unbilled_total|rupiah }}</h3>
             <p>{{ summary.manual_source_unbilled_count }} sumber manual belum naik invoice</p>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kontrol Portal Terintegrasi</h5>
+                <p>Portal membaca dan mengirim data ke modul sistem pusat. Tidak ada tagihan, pembayaran, jurnal, stok, atau closing paralel.</p>
+            </div>
+            <a href="{{ url_for('finance.portal_payment_proofs') }}" class="btn btn-sm app-btn-secondary">Buka Bukti Portal</a>
+        </div>
+        <div class="finance-portal-proof-overview compact">
+            <article>
+                <span>Bukti Menunggu</span>
+                <strong>{{ portal_payment_status.counts.pending }}</strong>
+                <small>Perlu keputusan finance</small>
+            </article>
+            <article>
+                <span>Bukti Diverifikasi</span>
+                <strong>{{ portal_payment_status.counts.verified }}</strong>
+                <small>Siap dibuat payment resmi</small>
+            </article>
+            <article>
+                <span>Sudah Pembayaran</span>
+                <strong>{{ portal_payment_status.counts.payment_created }}</strong>
+                <small>Masuk tabel pembayaran ERP</small>
+            </article>
+            <article>
+                <span>Status ERP Pusat</span>
+                <strong>{{ erp_integration.status_label }}</strong>
+                <small>{{ erp_integration.totals.connected_count }} / {{ erp_integration.totals.module_count }} area terbaca</small>
+            </article>
+        </div>
+        <div class="finance-erp-integration-grid compact">
+            {% for card in erp_integration.cards %}
+                <a class="finance-erp-integration-card status-{{ card.status|lower }}" href="{{ card.href }}">
+                    <span>{{ card.owner }}</span>
+                    <strong>{{ card.title }}</strong>
+                    <small>{{ card.source }}</small>
+                    <b>{{ card.count }}</b>
+                    <em>{{ card.status_label }}</em>
+                </a>
+            {% endfor %}
         </div>
     </div>
 
@@ -105,6 +142,11 @@
             <div class="col-md-4">
                 <a href="{{ url_for('finance.cash_bank_ledger') }}" class="unified-finance-related-link">
                     <i class="bi bi-wallet2"></i><span>Buku Kas/Bank</span>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('finance.portal_payment_proofs') }}" class="unified-finance-related-link">
+                    <i class="bi bi-cloud-check"></i><span>Verifikasi Bukti Portal</span>
                 </a>
             </div>
             <div class="col-md-4">
@@ -270,3 +312,4 @@
     </div>
 </div>
 {% endblock %}
+

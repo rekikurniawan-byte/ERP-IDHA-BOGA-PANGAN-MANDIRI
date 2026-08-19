@@ -1,18 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-accounting-precision-ready="true" data-ui-finance-page="UI">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan • COA 2101 / 2102 / 2103 / 5012</span>
-            <h1>Penyusutan Aset Tetap</h1>
-            <p>Engine penyusutan bersifat opsional. Aset tanpa konfigurasi tetap valid dan tidak membuat jurnal penyusutan.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.fixed_asset_purchases') }}" class="btn app-btn-secondary">Pembelian Aset</a>
-            <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Master Aset</a>
-        </div>
-    </div>
+    {{ page_header(
+        "Penyusutan Aset Tetap",
+        "Engine penyusutan bersifat opsional. Aset tanpa konfigurasi tetap valid dan tidak membuat jurnal penyusutan.",
+        "Keuangan • COA 2101 / 2102 / 2103 / 5012",
+        actions=[
+            {"label": "Pembelian Aset", "url": url_for('finance.fixed_asset_purchases')},
+            {"label": "Master Aset", "url": url_for('master.fixed_assets')},
+        ]
+    ) }}
 
 {% set precision_key = 'depreciation' %}
 

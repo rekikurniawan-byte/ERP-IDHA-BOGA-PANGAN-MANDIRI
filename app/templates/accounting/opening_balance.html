@@ -1,16 +1,15 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-ui-accounting-page="UI">
 <!-- ACCOUNTINGUX4B_BUSINESS_LANGUAGE_MAINTENANCE -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Accounting</span>
-        <h1>Saldo Awal & Modal Pemilik</h1>
-        <p>Input saldo awal usaha agar laporan kas, bank, persediaan, hutang, dan modal lebih masuk akal.</p>
-    </div>
-
-</div>
+{{ page_header(
+    "Saldo Awal & Modal Pemilik",
+    "Input saldo awal usaha agar laporan kas, bank, persediaan, hutang, dan modal lebih masuk akal.",
+    eyebrow="Accounting",
+    actions=[]
+) }}
 
 
 <div class="alert alert-warning border-0 shadow-sm">

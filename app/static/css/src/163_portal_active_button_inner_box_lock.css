@@ -1,0 +1,138 @@
+/*
+   Portal Active Button Inner Box Lock
+   Fixes the visible lighter rectangles behind icons/text inside active portal
+   nav and CTA pills. The active button must be one solid surface; child icon
+   and label elements may not carry their own background boxes.
+*/
+
+:root {
+    --pab-orange: #ea580c;
+    --pab-orange-hover: #dc4f08;
+    --pab-text: #111827;
+    --pab-line: #e2e8f0;
+}
+
+body.portal-web-body .portal-web-nav a,
+body.portal-mobile-body .portal-web-nav a {
+    position: relative !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+}
+
+body.portal-web-body .portal-web-nav a *,
+body.portal-mobile-body .portal-web-nav a *,
+body.portal-web-body .portal-web-nav a::before,
+body.portal-mobile-body .portal-web-nav a::before,
+body.portal-web-body .portal-web-nav a::after,
+body.portal-mobile-body .portal-web-nav a::after {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-web-nav a.active,
+body.portal-mobile-body .portal-web-nav a.active,
+body.portal-web-body .portal-web-nav a[aria-current="page"],
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] {
+    background: var(--pab-orange) !important;
+    background-color: var(--pab-orange) !important;
+    background-image: none !important;
+    border-color: var(--pab-orange) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-web-nav a.active:hover,
+body.portal-mobile-body .portal-web-nav a.active:hover,
+body.portal-web-body .portal-web-nav a[aria-current="page"]:hover,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"]:hover {
+    background: var(--pab-orange-hover) !important;
+    background-color: var(--pab-orange-hover) !important;
+    border-color: var(--pab-orange-hover) !important;
+    color: #ffffff !important;
+}
+
+body.portal-web-body .portal-web-nav a.active i,
+body.portal-mobile-body .portal-web-nav a.active i,
+body.portal-web-body .portal-web-nav a.active span,
+body.portal-mobile-body .portal-web-nav a.active span,
+body.portal-web-body .portal-web-nav a.active svg,
+body.portal-mobile-body .portal-web-nav a.active svg,
+body.portal-web-body .portal-web-nav a[aria-current="page"] i,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] i,
+body.portal-web-body .portal-web-nav a[aria-current="page"] span,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] span,
+body.portal-web-body .portal-web-nav a[aria-current="page"] svg,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] svg {
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    outline: 0 !important;
+}
+
+body.portal-web-body .portal-web-nav a.active i,
+body.portal-mobile-body .portal-web-nav a.active i,
+body.portal-web-body .portal-web-nav a[aria-current="page"] i,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] i {
+    width: 18px !important;
+    height: 18px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 18px !important;
+}
+
+body.portal-web-body .portal-web-nav a.active span,
+body.portal-mobile-body .portal-web-nav a.active span,
+body.portal-web-body .portal-web-nav a[aria-current="page"] span,
+body.portal-mobile-body .portal-web-nav a[aria-current="page"] span {
+    display: inline !important;
+    flex: 0 1 auto !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+}
+
+/* CTA buttons may contain generated icon/label wrappers; keep them transparent. */
+body.portal-web-body .portal-primary-action *,
+body.portal-mobile-body .portal-primary-action *,
+body.portal-web-body .portal-home-primary *,
+body.portal-mobile-body .portal-home-primary *,
+body.portal-web-body .portal-submit-button *,
+body.portal-mobile-body .portal-submit-button *,
+body.portal-web-body .portal-web-logout-button *,
+body.portal-mobile-body .portal-web-logout-button * {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    text-shadow: none !important;
+}
+
+body.portal-web-body .portal-primary-action,
+body.portal-mobile-body .portal-primary-action,
+body.portal-web-body .portal-home-primary,
+body.portal-mobile-body .portal-home-primary,
+body.portal-web-body .portal-submit-button,
+body.portal-mobile-body .portal-submit-button,
+body.portal-web-body .portal-web-logout-button,
+body.portal-mobile-body .portal-web-logout-button {
+    background-image: none !important;
+    box-shadow: none !important;
+}

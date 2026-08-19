@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
@@ -7,7 +7,7 @@
 <div class="print-report-shell" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Keuangan · Print Ready</span>
+            <span class="eyebrow">Keuangan | Print Ready</span>
             <h1>Buku Kas/Bank</h1>
             <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
         </div>
@@ -44,14 +44,14 @@
             <div class="app-stat-card print-box"><span>Rekening</span><strong>{{ filters.bank_account }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Awal</span><strong>{{ filters.start_date.strftime('%d-%m-%Y') if filters.start_date else 'Semua' }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Akhir</span><strong>{{ filters.end_date.strftime('%d-%m-%Y') if filters.end_date else 'Semua' }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Read-only</strong></div>
+            <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
 
         <div class="print-app-stat-grid">
             <div class="app-stat-card print-box"><span>Total Uang Masuk</span><strong>{{ summary.total_in|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Total Uang Keluar</span><strong>{{ summary.total_out|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Saldo Buku Kas/Bank</span><strong>{{ summary.net|rupiah }}</strong></div>
-            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ summary.reconciled_count }} sudah · {{ summary.unreconciled_count }} belum</strong></div>
+            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ summary.reconciled_count }} sudah | {{ summary.unreconciled_count }} belum</strong></div>
             <div class="app-stat-card print-box"><span>Saldo Kas</span><strong>{{ summary.cash_net|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Saldo Bank</span><strong>{{ summary.bank_net|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Kas Masuk/Keluar</span><strong>{{ summary.cash_in|rupiah }} / {{ summary.cash_out|rupiah }}</strong></div>
@@ -60,7 +60,8 @@
 
         {% if bank_summary %}
         <h5 class="mt-4">Ringkasan per Rekening Bank</h5>
-        <table class="print-table mb-4 app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table mb-4 app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Rekening</th>
@@ -84,10 +85,12 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
         {% endif %}
 
         <h5>Detail Transaksi Buku Kas/Bank</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Tanggal</th>
@@ -122,9 +125,14 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat read-only. Angka mengikuti filter aktif saat halaman print dibuka.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat Mode pantau. Angka mengikuti filter aktif saat halaman print dibuka.</p>
     </div>
 </div>
 </div>
 {% endblock %}
+
+
+
+

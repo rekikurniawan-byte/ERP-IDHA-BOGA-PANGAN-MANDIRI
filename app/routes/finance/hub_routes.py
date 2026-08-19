@@ -13,6 +13,10 @@ def index():
         MANUAL_BILLING_SOURCE_WORKER_DEBT,
         find_manual_billing_invoice_for_source,
     )
+    from app.services.portal_erp_integration_status_service import (
+        build_finance_portal_payment_status,
+        build_portal_erp_integration_status,
+    )
 
     active_invoices = Invoice.query.filter(
         Invoice.branch_id == current_user.branch_id,
@@ -93,4 +97,6 @@ def index():
         manual_batches=manual_batches,
         pending_manual_sources=pending_manual_sources,
         recent_ledger=recent_ledger,
+        portal_payment_status=build_finance_portal_payment_status(current_user),
+        erp_integration=build_portal_erp_integration_status(current_user),
     )

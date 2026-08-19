@@ -1,14 +1,14 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Master Data</span>
-        <h1>Master Data Operasional</h1>
-        <p>Kelola data utama yang dipakai oleh order, produksi, pengiriman, finance, aset, dan warung.</p>
-    </div>
-</div>
+{{ page_header(
+    "Master Data Operasional",
+    "Kelola data utama yang dipakai oleh order, produksi, pengiriman, finance, aset, dan warung.",
+    eyebrow="Master Data",
+    actions=[]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
@@ -164,7 +164,7 @@
     <a href="{{ url_for('costing.packaging_profiles') }}" class="master-menu-card">
         <i class="bi bi-box2-heart"></i>
         <strong>Profil Kemasan</strong>
-        <span>Biaya kemasan per porsi untuk HPP read-only</span>
+        <span>Biaya kemasan per porsi untuk HPP Mode pantau</span>
     </a>
 
     <a href="{{ url_for('costing.overhead_profiles') }}" class="master-menu-card">
@@ -176,7 +176,7 @@
     <a href="{{ url_for('costing.hpp_calculator') }}" class="master-menu-card">
         <i class="bi bi-graph-up-arrow"></i>
         <strong>Kalkulator HPP</strong>
-        <span>Simulasi HPP read-only tanpa mengubah stok/jurnal</span>
+        <span>Simulasi HPP Mode pantau tanpa mengubah stok/jurnal</span>
     </a>
 
     <a href="{{ url_for('costing.order_hpp_snapshots') }}" class="master-menu-card">
@@ -207,3 +207,4 @@
 </div>
 </div>
 {% endblock %}
+

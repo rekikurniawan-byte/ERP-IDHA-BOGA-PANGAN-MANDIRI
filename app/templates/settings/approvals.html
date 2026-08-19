@@ -1,14 +1,14 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="settings-page-shell">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Settings | Maker Checker</span>
-            <h1>Approval Center</h1>
-            <p>Daftar pengajuan aksi sensitif yang perlu diperiksa checker.</p>
-        </div>
-    </div>
+    {{ page_header(
+        "Approval Center",
+        "Daftar pengajuan aksi sensitif yang perlu diperiksa checker.",
+        eyebrow="Settings | Maker Checker",
+        actions=[]
+    ) }}
 
     <form method="GET" action="{{ url_for('settings.approvals') }}" class="app-form filter-bar mb-3" data-ui-form="true">
         <select name="status" class="form-select app-input">
@@ -23,7 +23,7 @@
         </button>
     </form>
 
-    <div class="app-table-wrap">
+    <div class="app-table-wrapper">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -78,3 +78,4 @@
     </div>
 </div>
 {% endblock %}
+

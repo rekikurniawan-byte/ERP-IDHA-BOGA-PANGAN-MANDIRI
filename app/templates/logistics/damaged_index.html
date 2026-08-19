@@ -1,25 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="damaged_index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Logistik & Stok</span>
-        <h1>Barang Rusak</h1>
-        <p>Catatan bahan/barang yang rusak, bocor, basah, atau tidak layak pakai.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Dashboard Stok
-        </a>
-        <a href="{{ url_for('logistics.create_damaged') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Catat Barang Rusak
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Barang Rusak",
+    "Catatan bahan/barang yang rusak, bocor, basah, atau tidak layak pakai.",
+    eyebrow="Logistik & Stok",
+    actions=[
+        {"label": "Dashboard Stok", "url": url_for('logistics.index'), "icon": "bi-arrow-left"},
+        {"label": "Catat Barang Rusak", "url": url_for('logistics.create_damaged'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 
 

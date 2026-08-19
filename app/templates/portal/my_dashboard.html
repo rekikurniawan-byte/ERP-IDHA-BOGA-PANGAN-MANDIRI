@@ -1,37 +1,35 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <p class="page-eyebrow">Portal</p>
-            <h1>Dashboard Saya</h1>
-            <p class="page-description">Ringkasan role {{ data.active_role }} dari data ERP existing sesuai ownership mapping.</p>
-        </div>
-        <span class="status-badge neutral">{{ data.status_label }}</span>
-    </div>
+    {{ portal_page_header(
+        "Dashboard Saya",
+        "Ringkasan akun dan aktivitas yang boleh dilihat.",
+        status_label=data.status_label
+    ) }}
 
     <div class="app-stat-grid">
         <div class="app-stat-card">
             <div class="app-stat-icon stat-info"><i class="bi bi-clipboard-check"></i></div>
             <div>
-                <p>Order ERP</p>
+                <p>Pesanan</p>
                 <h3>{{ data.orders.total }}</h3>
-                <span class="app-stat-helper">{{ data.orders.pending }} pending admin</span>
+                <span class="app-stat-helper">{{ data.orders.pending }} menunggu admin</span>
             </div>
         </div>
         <div class="app-stat-card">
             <div class="app-stat-icon stat-warning"><i class="bi bi-receipt"></i></div>
             <div>
-                <p>Invoice ERP</p>
+                <p>Invoice</p>
                 <h3>{{ data.invoices.totals.invoice_count }}</h3>
-                <span class="app-stat-helper">Outstanding {{ data.invoices.totals.active_outstanding_amount|rupiah }}</span>
+                <span class="app-stat-helper">Sisa tagihan {{ data.invoices.totals.active_outstanding_amount|rupiah }}</span>
             </div>
         </div>
         <div class="app-stat-card">
             <div class="app-stat-icon stat-success"><i class="bi bi-credit-card"></i></div>
             <div>
-                <p>Pembayaran ERP</p>
+                <p>Pembayaran</p>
                 <h3>{{ data.payments.totals.payment_count }}</h3>
                 <span class="app-stat-helper">Total {{ data.payments.totals.payment_amount|rupiah }}</span>
             </div>
@@ -39,7 +37,7 @@
         <div class="app-stat-card">
             <div class="app-stat-icon kpi-muted"><i class="bi bi-wallet2"></i></div>
             <div>
-                <p>Hutang ERP</p>
+                <p>Hutang</p>
                 <h3>{{ data.debts.totals.active_debt_count }}</h3>
                 <span class="app-stat-helper">Sisa {{ data.debts.totals.active_remaining_amount|rupiah }}</span>
             </div>
@@ -50,11 +48,11 @@
         <div class="col-lg-6">
             <div class="app-card h-100">
                 <div class="card-body">
-                    <h2 class="h5 mb-3">Scope Data</h2>
+                    <h2 class="h5 mb-3">Data Akun</h2>
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="text-muted small text-uppercase fw-bold">Mode</div>
-                            <div class="fw-semibold">{{ data.scope.scope_mode }}</div>
+                            <div class="fw-semibold">{{ "Aktif" if data.scope.allowed else "Belum aktif" }}</div>
                         </div>
                         <div class="col-6">
                             <div class="text-muted small text-uppercase fw-bold">Client</div>
@@ -106,7 +104,7 @@
                             <div class="fw-semibold">{{ data.closing.totals.invoice_count }}</div>
                         </div>
                         <div class="col-6">
-                            <div class="text-muted small text-uppercase fw-bold">Payment Periode</div>
+                            <div class="text-muted small text-uppercase fw-bold">Pembayaran Periode</div>
                             <div class="fw-semibold">{{ data.closing.totals.payment_amount|rupiah }}</div>
                         </div>
                     </div>

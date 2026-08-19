@@ -1,24 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell unified-finance-page" data-unified-finance="true" data-accounting-precision-ready="true">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Keuangan • Input Cepat</span>
-            <h1>Input Cepat Finance</h1>
-            <p>Satu halaman untuk input DP, transport/BBM, dan biaya operasional. Invoice, rekap tagihan mandor, piutang, hutang supplier, dan buku kas/bank punya alur dokumen masing-masing.</p>
-        </div>
-        <div class="page-actions finance-header-actions">
-            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
-                <i class="bi bi-wallet2"></i>
-                Buku Kas/Bank
-            </a>
-            <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-secondary">
-                <i class="bi bi-journal-check"></i>
-                Jurnal
-            </a>
-        </div>
-    </div>
+    {{ page_header(
+        "Input Cepat Finance",
+        "Satu halaman untuk input DP, transport/BBM, dan biaya operasional. Invoice, rekap tagihan mandor, piutang, hutang supplier, dan buku kas/bank punya alur dokumen masing-masing.",
+        "Keuangan • Input Cepat",
+        actions=[
+            {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"},
+            {"label": "Jurnal", "url": url_for('accounting.journals'), "icon": "bi-journal-check"},
+        ]
+    ) }}
 
     {% set precision_key = 'unified_finance_transaction' %}
 

@@ -6,7 +6,7 @@ from werkzeug.datastructures import FileStorage
 
 from app.extensions import db
 from app.models.finance import Payment
-from app.models.system import DigitalAttachment
+from app.models.system import DigitalAttachment, Notification
 from app.services.digital_attachment_service import AttachmentValidationError
 from app.services.portal_mapping_service import PRINCIPAL_CLIENT, PRINCIPAL_MANDOR
 from app.services.portal_payment_proof_service import (
@@ -85,6 +85,15 @@ def test_upload_portal_payment_proof_creates_private_attachment_without_payment_
             assert invoice.paid_amount == original_paid
             assert invoice.remaining_amount == original_remaining
             assert list_pending_portal_payment_proofs(branch_id=user.branch_id)[0].id == attachment.id
+            notification = Notification.query.filter_by(
+                notification_type="PORTAL_PAYMENT_PROOF",
+                target_role="FINANCE",
+                reference_type="INVOICE",
+                reference_id=invoice.id,
+            ).first()
+            assert notification is not None
+            assert notification.branch_id == user.branch_id
+            assert notification.action_url == "/finance/portal-payment-proofs"
         finally:
             transaction.rollback()
 

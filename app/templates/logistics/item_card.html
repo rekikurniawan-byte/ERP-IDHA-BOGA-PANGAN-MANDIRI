@@ -1,21 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="item_card">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Kartu Stok</span>
-        <h1>{{ item.item_name }}</h1>
-        <p>{{ item.item_code }} | {{ item.category }} | Satuan {{ item.unit }}</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    item.item_name,
+    item.item_code ~ " | " ~ item.category ~ " | Satuan " ~ item.unit,
+    eyebrow="Kartu Stok",
+    actions=[{"label": "Kembali", "url": url_for('logistics.index'), "icon": "bi-arrow-left"}]
+) }}
 
 
 

@@ -1,24 +1,23 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="page-header" data-ui-page-header="PRODUCTION">
-    <div>
-        <span class="eyebrow">Visual QA</span>
-        <h1>Visual Sweep</h1>
-        <p>Zero Empty Panel & Broken Route Visual Sweep. Halaman ini read-only dan tidak mengubah database.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('settings.recovery_center') }}" class="btn app-btn-secondary"><i class="bi bi-life-preserver"></i> Recovery Center</a>
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary"><i class="bi bi-heart-pulse"></i> System Health</a>
-        <a href="{{ url_for('settings.final_visual_browser_qa') }}" class="btn app-btn-secondary"><i class="bi bi-browser-chrome"></i> Final QA</a>
-    </div>
-</div>
+{{ page_header(
+    "Visual Sweep",
+    "Zero Empty Panel & Broken Route Visual Sweep. Halaman ini Mode pantau dan tidak mengubah database.",
+    eyebrow="Visual QA",
+    actions=[
+        {"label": "Recovery Center", "url": url_for('settings.recovery_center'), "icon": "bi-life-preserver"},
+        {"label": "System Health", "url": url_for('settings.system_health'), "icon": "bi-heart-pulse"},
+        {"label": "Final QA", "url": url_for('settings.final_visual_browser_qa'), "icon": "bi-browser-chrome"},
+    ]
+) }}
 
 <section class="visual-sweep-hero visual-sweep-hero-{{ report.overall_status|lower|replace(' ', '-') }}">
     <div>
         <span class="eyebrow">Keputusan Visual QA</span>
         <h2>{{ report.decision }}</h2>
-        <p>Status: <strong>{{ report.overall_status }}</strong> · Version: {{ report.visual_sweep_version }} · Generated: {{ report.generated_at }}</p>
+        <p>Status: <strong>{{ report.overall_status }}</strong> | Version: {{ report.visual_sweep_version }} | Generated: {{ report.generated_at }}</p>
     </div>
     <div class="visual-sweep-status-chip">
         <span>Broken Route</span>
@@ -165,3 +164,6 @@
     </div>
 </section>
 {% endblock %}
+
+
+

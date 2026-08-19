@@ -1,35 +1,23 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell posting-status-page" data-posting-status-center="PRODUCTION">
-    <div class="page-header app-page-header">
-        <div class="page-header-main">
-            <span class="eyebrow">Akuntansi</span>
-            <h1 class="page-title">Posting Status Center</h1>
-            <p class="page-description">
-                Pantau transaksi yang sudah jadi jurnal, belum posting, tidak perlu jurnal, atau tertahan karena data belum final/mapping belum aman.
-            </p>
-        </div>
-        <div class="page-actions">
-            <a href="{{ url_for('accounting.journals') }}" class="btn app-btn-primary">
-                <i class="bi bi-journal-check"></i>
-                Jurnal Akuntansi
-            </a>
-            <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-                <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-three-dots"></i>
-                    Aksi lainnya
-                </button>
-                <div class="dropdown-menu dropdown-menu-end app-action-menu">
-                    <a href="{{ url_for('accounting.expense_drilldown') }}" class="dropdown-item"><i class="bi bi-graph-down-arrow"></i><span>Drilldown Beban</span></a>
-                    <a href="{{ url_for('accounting.coa_mapping') }}" class="dropdown-item"><i class="bi bi-diagram-2"></i><span>Peta Akun & Mapping</span></a>
-                    <a href="{{ url_for('accounting.data_health') }}" class="dropdown-item"><i class="bi bi-clipboard-pulse"></i><span>Data Health Check</span></a>
-                    <a href="{{ url_for('sop.role_sop', slug='accounting') }}" class="dropdown-item"><i class="bi bi-book"></i><span>SOP Accounting</span></a>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{ page_header(
+        "Posting Status Center",
+        "Pantau transaksi yang sudah jadi jurnal, belum posting, tidak perlu jurnal, atau tertahan karena data belum final/mapping belum aman.",
+        eyebrow="Akuntansi",
+        primary_label="Jurnal Akuntansi",
+        primary_url=url_for('accounting.journals'),
+        primary_icon="bi-journal-check",
+        more_actions=[
+            {"label": "Drilldown Beban", "url": url_for('accounting.expense_drilldown'), "icon": "bi-graph-down-arrow"},
+            {"label": "Peta Akun & Mapping", "url": url_for('accounting.coa_mapping'), "icon": "bi-diagram-2"},
+            {"label": "Data Health Check", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
+            {"label": "SOP Accounting", "url": url_for('sop.role_sop', slug='accounting'), "icon": "bi-book"},
+        ]
+    ) }}
 
     {{ global_filter_bar(filter_bar) }}
 

@@ -1,32 +1,21 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>AP Aging Hutang Supplier</h1>
-        <p>Analisis umur hutang supplier berdasarkan tanggal jatuh tempo. Halaman ini hanya membaca data supplier bill, tidak membuat transaksi.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.print_accounts_payable_aging', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or '') }}" class="btn app-btn-primary">
-            <i class="bi bi-printer"></i>
-            Cetak / Save PDF
-        </a>
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="apAgingActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi lainnya
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="apAgingActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_bills') }}"><i class="bi bi-wallet"></i> Hutang Supplier</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_payable_card') }}"><i class="bi bi-journal-text"></i> Kartu Hutang Supplier</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('finance.export_accounts_payable_aging_csv', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or '') }}"><i class="bi bi-download"></i> Download CSV</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "AP Aging Hutang Supplier",
+    "Analisis umur hutang supplier berdasarkan tanggal jatuh tempo. Halaman ini hanya membaca data supplier bill, tidak membuat transaksi.",
+    "Finance",
+    actions=[
+        {"label": "Cetak / Save PDF", "url": url_for('finance.print_accounts_payable_aging', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or ''), "icon": "bi-printer", "variant": "primary"},
+        {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Hutang Supplier", "url": url_for('finance.supplier_bills'), "icon": "bi-wallet"},
+            {"label": "Kartu Hutang Supplier", "url": url_for('finance.supplier_payable_card'), "icon": "bi-journal-text"},
+            {"label": "Download CSV", "url": url_for('finance.export_accounts_payable_aging_csv', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or ''), "icon": "bi-download"},
+        ]},
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

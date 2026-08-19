@@ -1,22 +1,23 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="recovery-center">
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Recovery Center</span>
-        <h1>Recovery Center Final</h1>
-        <p>Recovery center final: satu pusat ringkas untuk status safety, backup verified, restore dry-run, atomic guard, critical audit, dan SOP recovery.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('settings.system_health') }}" class="btn app-btn-secondary">System Health</a>
-        {% if current_user.role == "OWNER" %}<a href="{{ url_for('settings.backups') }}" class="btn app-btn-secondary">Backup</a>{% endif %}
-        <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">SOP Recovery</a>
-        <a href="{{ url_for('settings.final_visual_browser_qa') }}" class="btn app-btn-secondary"><i class="bi bi-browser-chrome"></i> Final QA</a>
-    </div>
-</div>
+{% set recovery_center_actions = [
+    {"label": "System Health", "url": url_for('settings.system_health')},
+] %}
+{% if current_user.role == "OWNER" %}
+    {% do recovery_center_actions.append({"label": "Backup", "url": url_for('settings.backups')}) %}
+{% endif %}
+{% do recovery_center_actions.append({"label": "SOP Recovery", "url": url_for('sop.disaster_recovery')}) %}
+{% do recovery_center_actions.append({"label": "Final QA", "url": url_for('settings.final_visual_browser_qa'), "icon": "bi-browser-chrome"}) %}
+{{ page_header(
+    "Recovery Center Final",
+    "Recovery center final: satu pusat ringkas untuk status safety, backup verified, restore dry-run, atomic guard, critical audit, dan SOP recovery.",
+    eyebrow="Recovery Center",
+    actions=recovery_center_actions
+) }}
 
 {% set overall = report.get("overall", {}) %}
 <div class="app-card mb-4" data-fix70-g2="recovery-center-decision">

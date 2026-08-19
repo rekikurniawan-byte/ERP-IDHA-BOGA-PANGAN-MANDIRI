@@ -27,6 +27,14 @@ PORTAL_EXTERNAL_ROLES = {
     ROLE_PORTAL_CUSTOMER,
 }
 
+PORTAL_ROLE_LANDING_ENDPOINTS = {
+    ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
+    ROLE_PORTAL_MANDOR: "portal.mandor_dashboard",
+    ROLE_PORTAL_PT: "portal.pt_dashboard",
+    ROLE_PORTAL_CLIENT: "portal.client_dashboard",
+    ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
+}
+
 ALLOWED_ROLES = [
     ROLE_OWNER,
     ROLE_ADMIN,
@@ -87,6 +95,10 @@ def get_role_label(role):
 
 def get_role_description(role):
     return ROLE_DESCRIPTIONS.get(role, "")
+
+
+def get_portal_role_landing_endpoint(role):
+    return PORTAL_ROLE_LANDING_ENDPOINTS.get(role)
 
 
 def normalize_username(username):

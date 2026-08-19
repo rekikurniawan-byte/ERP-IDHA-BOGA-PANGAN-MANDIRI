@@ -1,43 +1,24 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="accounting-page-shell" data-ui-accounting-page="UI">
 
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Laporan Akuntansi</span>
-        <h1>Laporan Akuntansi Owner</h1>
-        <p>Buku besar, neraca saldo, dan laba rugi ringkas berdasarkan jurnal yang sudah tercatat.</p>
-    </div>
-
-    <div class="page-actions accounting-header-actions">
-        <a href="{{ url_for('accounting.print_trial_balance', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary">
-            <i class="bi bi-printer"></i>
-            Neraca Saldo PDF
-        </a>
-        <a href="{{ url_for('accounting.print_general_ledger', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
-            <i class="bi bi-printer"></i>
-            Buku Besar PDF
-        </a>
-        <a href="{{ url_for('accounting.print_income_summary', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
-            <i class="bi bi-printer"></i>
-            Laba/Rugi PDF
-        </a>
-        <a href="{{ url_for('accounting.export_trial_balance_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
-            <i class="bi bi-download"></i>
-            Neraca Saldo CSV
-        </a>
-        <a href="{{ url_for('accounting.export_general_ledger_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
-            <i class="bi bi-table"></i>
-            Buku Besar CSV
-        </a>
-        <a href="{{ url_for('accounting.export_income_summary_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')) }}" class="btn app-btn-secondary">
-            <i class="bi bi-graph-up"></i>
-            Laba/Rugi CSV
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Laporan Akuntansi Owner",
+    "Buku besar, neraca saldo, dan laba rugi ringkas berdasarkan jurnal yang sudah tercatat.",
+    eyebrow="Laporan Akuntansi",
+    actions_class="accounting-header-actions",
+    actions=[
+        {"label": "Neraca Saldo PDF", "url": url_for('accounting.print_trial_balance', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-printer", "variant": "primary"},
+        {"label": "Buku Besar PDF", "url": url_for('accounting.print_general_ledger', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-printer"},
+        {"label": "Laba/Rugi PDF", "url": url_for('accounting.print_income_summary', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-printer"},
+        {"label": "Neraca Saldo CSV", "url": url_for('accounting.export_trial_balance_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-download"},
+        {"label": "Buku Besar CSV", "url": url_for('accounting.export_general_ledger_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-table"},
+        {"label": "Laba/Rugi CSV", "url": url_for('accounting.export_income_summary_csv', start_date=data.start_date.strftime('%Y-%m-%d'), end_date=data.end_date.strftime('%Y-%m-%d')), "icon": "bi-graph-up"},
+    ]
+) }}
 
 
 

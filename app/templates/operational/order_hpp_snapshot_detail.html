@@ -1,32 +1,22 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_snapshot_detail" data-logistics-hpp-page="order_hpp_snapshot_detail">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Detail Snapshot HPP</span>
-        <h1>{{ snapshot.snapshot_number }}</h1>
-        <p>{{ daily_order.order_number }} · {{ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</p>
-    </div>
-
-    <div class="page-actions">
-        {% if snapshot.stock_consumption %}
-            <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn app-btn-primary">
-                <i class="bi bi-check2-circle"></i>
-                Pemakaian Stok
-            </a>
-        {% else %}
-            <a href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn app-btn-primary">
-                <i class="bi bi-box-arrow-down"></i>
-                Dry-run / Commit Stok
-            </a>
-        {% endif %}
-        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali ke Order
-        </a>
-    </div>
-</div>
+{% if snapshot.stock_consumption %}
+    {% set snapshot_detail_primary_action = {"label": "Pemakaian Stok", "url": url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id), "icon": "bi-check2-circle", "variant": "primary"} %}
+{% else %}
+    {% set snapshot_detail_primary_action = {"label": "Dry-run / Commit Stok", "url": url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id), "icon": "bi-box-arrow-down", "variant": "primary"} %}
+{% endif %}
+{{ page_header(
+    snapshot.snapshot_number,
+    daily_order.order_number ~ " · " ~ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M'),
+    eyebrow="Detail Snapshot HPP",
+    actions=[
+        snapshot_detail_primary_action,
+        {"label": "Kembali ke Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"},
+    ]
+) }}
 
 
 

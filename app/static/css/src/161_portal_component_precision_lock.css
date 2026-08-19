@@ -1,0 +1,325 @@
+/*
+   Portal Component Precision Lock
+   Direct cleanup for screenshots: customer flow steps, small panel actions,
+   mini ledger cards, and primary actions. CSS only.
+*/
+
+:root {
+    --pcp-text: #111827;
+    --pcp-muted: #475569;
+    --pcp-line: #e5e7eb;
+    --pcp-line-strong: #cbd5e1;
+    --pcp-orange: #ea580c;
+    --pcp-orange-soft: #fff7ed;
+    --pcp-surface: #ffffff;
+    --pcp-page: #f8fafc;
+}
+
+/* Customer flow card: remove heavy orange blocks and oversized type. */
+body.portal-web-body .portal-home-flow-card,
+body.portal-mobile-body .portal-home-flow-card {
+    padding: 18px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--pcp-line) !important;
+    background: var(--pcp-surface) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04) !important;
+}
+
+body.portal-web-body .portal-home-flow-card > span,
+body.portal-mobile-body .portal-home-flow-card > span {
+    display: block !important;
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #9a3412 !important;
+    font-size: .78rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+}
+
+body.portal-web-body .portal-customer-flow,
+body.portal-mobile-body .portal-customer-flow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+    padding: 0 !important;
+}
+
+body.portal-web-body .portal-customer-flow article,
+body.portal-mobile-body .portal-customer-flow article {
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+    display: grid !important;
+    grid-template-columns: 32px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+    border: 1px solid #fed7aa !important;
+    background: #ffffff !important;
+    color: var(--pcp-text) !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-customer-flow article.done,
+body.portal-mobile-body .portal-customer-flow article.done,
+body.portal-web-body .portal-customer-flow article.active,
+body.portal-mobile-body .portal-customer-flow article.active {
+    background: var(--pcp-orange-soft) !important;
+    border-color: #fdba74 !important;
+    color: var(--pcp-text) !important;
+}
+
+body.portal-web-body .portal-customer-flow article i,
+body.portal-mobile-body .portal-customer-flow article i {
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background: #fff7ed !important;
+    border: 1px solid #fed7aa !important;
+    color: var(--pcp-orange) !important;
+    font-size: .9rem !important;
+}
+
+body.portal-web-body .portal-customer-flow article.done i,
+body.portal-mobile-body .portal-customer-flow article.done i,
+body.portal-web-body .portal-customer-flow article.active i,
+body.portal-mobile-body .portal-customer-flow article.active i {
+    background: var(--pcp-orange) !important;
+    border-color: var(--pcp-orange) !important;
+    color: #ffffff !important;
+}
+
+body.portal-web-body .portal-customer-flow article strong,
+body.portal-mobile-body .portal-customer-flow article strong {
+    margin: 0 !important;
+    color: var(--pcp-text) !important;
+    font-size: .92rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+}
+
+body.portal-web-body .portal-customer-flow article.done strong,
+body.portal-mobile-body .portal-customer-flow article.done strong,
+body.portal-web-body .portal-customer-flow article.active strong,
+body.portal-mobile-body .portal-customer-flow article.active strong {
+    color: var(--pcp-text) !important;
+}
+
+/* Panel header small actions: Buka, Retur, Detail, Lihat semua. */
+body.portal-web-body .portal-home-panel-head > a,
+body.portal-mobile-body .portal-home-panel-head > a,
+body.portal-web-body .portal-section-heading > a,
+body.portal-mobile-body .portal-section-heading > a {
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 9px !important;
+    border: 1px solid var(--pcp-line-strong) !important;
+    background: #ffffff !important;
+    color: var(--pcp-text) !important;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-home-panel-head > a:hover,
+body.portal-mobile-body .portal-home-panel-head > a:hover,
+body.portal-web-body .portal-section-heading > a:hover,
+body.portal-mobile-body .portal-section-heading > a:hover {
+    background: var(--pcp-orange-soft) !important;
+    border-color: #fdba74 !important;
+    color: #9a3412 !important;
+}
+
+/* Mini ledger cards: reduce chunky labels and align number/text. */
+body.portal-web-body .portal-home-mini-ledger,
+body.portal-mobile-body .portal-home-mini-ledger,
+body.portal-web-body .portal-home-scope-grid,
+body.portal-mobile-body .portal-home-scope-grid {
+    gap: 10px !important;
+}
+
+body.portal-web-body .portal-home-mini-ledger > div,
+body.portal-mobile-body .portal-home-mini-ledger > div,
+body.portal-web-body .portal-home-scope-grid > article,
+body.portal-mobile-body .portal-home-scope-grid > article {
+    min-height: 74px !important;
+    padding: 14px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--pcp-line) !important;
+    background: #ffffff !important;
+}
+
+body.portal-web-body .portal-home-mini-ledger span,
+body.portal-mobile-body .portal-home-mini-ledger span,
+body.portal-web-body .portal-home-scope-grid span,
+body.portal-mobile-body .portal-home-scope-grid span {
+    color: #334155 !important;
+    font-size: .76rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: .01em !important;
+    text-transform: uppercase !important;
+}
+
+body.portal-web-body .portal-home-mini-ledger strong,
+body.portal-mobile-body .portal-home-mini-ledger strong,
+body.portal-web-body .portal-home-scope-grid strong,
+body.portal-mobile-body .portal-home-scope-grid strong {
+    color: var(--pcp-text) !important;
+    font-size: 1.45rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+}
+
+/* Action cards: no oversized orange icon/card blobs. */
+body.portal-web-body .portal-home-action-grid,
+body.portal-mobile-body .portal-home-action-grid,
+body.portal-web-body .portal-home-action-band,
+body.portal-mobile-body .portal-home-action-band {
+    gap: 10px !important;
+}
+
+body.portal-web-body .portal-home-action-grid a,
+body.portal-mobile-body .portal-home-action-grid a,
+body.portal-web-body .portal-home-action-band a,
+body.portal-mobile-body .portal-home-action-band a {
+    min-height: 78px !important;
+    padding: 14px !important;
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    row-gap: 2px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    border: 1px solid var(--pcp-line) !important;
+    color: var(--pcp-text) !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-home-action-grid a i,
+body.portal-mobile-body .portal-home-action-grid a i,
+body.portal-web-body .portal-home-action-band a i,
+body.portal-mobile-body .portal-home-action-band a i {
+    grid-row: 1 / span 2 !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 9px !important;
+    background: var(--pcp-orange-soft) !important;
+    border: 1px solid #fed7aa !important;
+    color: var(--pcp-orange) !important;
+}
+
+body.portal-web-body .portal-home-action-grid a strong,
+body.portal-mobile-body .portal-home-action-grid a strong,
+body.portal-web-body .portal-home-action-band a strong,
+body.portal-mobile-body .portal-home-action-band a strong {
+    margin: 0 !important;
+    color: var(--pcp-text) !important;
+    font-size: .9rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+}
+
+body.portal-web-body .portal-home-action-grid a small,
+body.portal-mobile-body .portal-home-action-grid a small,
+body.portal-web-body .portal-home-action-band a small,
+body.portal-mobile-body .portal-home-action-band a small {
+    margin: 0 !important;
+    color: var(--pcp-muted) !important;
+    font-size: .78rem !important;
+    font-weight: 400 !important;
+    line-height: 1.25 !important;
+}
+
+/* Primary action buttons: remove white capsule inside orange blob. */
+body.portal-web-body .portal-primary-action,
+body.portal-mobile-body .portal-primary-action,
+body.portal-web-body .portal-home-primary,
+body.portal-mobile-body .portal-home-primary {
+    min-height: 38px !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    padding: 0 15px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    background: var(--pcp-orange) !important;
+    border: 1px solid var(--pcp-orange) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+}
+
+body.portal-web-body .portal-primary-action *,
+body.portal-mobile-body .portal-primary-action *,
+body.portal-web-body .portal-home-primary *,
+body.portal-mobile-body .portal-home-primary * {
+    background: transparent !important;
+    border: 0 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: .86rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+}
+
+body.portal-web-body .portal-home-secondary,
+body.portal-mobile-body .portal-home-secondary {
+    min-height: 38px !important;
+    width: fit-content !important;
+    padding: 0 15px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    border: 1px solid var(--pcp-line-strong) !important;
+    color: var(--pcp-text) !important;
+    box-shadow: none !important;
+}
+
+body.portal-web-body .portal-home-secondary *,
+body.portal-mobile-body .portal-home-secondary * {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--pcp-text) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: .86rem !important;
+    font-weight: 600 !important;
+}
+
+@media (max-width: 720px) {
+    body.portal-web-body .portal-home-action-grid a,
+    body.portal-mobile-body .portal-home-action-grid a,
+    body.portal-web-body .portal-home-action-band a,
+    body.portal-mobile-body .portal-home-action-band a {
+        min-height: 70px !important;
+        padding: 12px !important;
+    }
+
+    body.portal-web-body .portal-home-flow-card,
+    body.portal-mobile-body .portal-home-flow-card {
+        padding: 14px !important;
+    }
+}

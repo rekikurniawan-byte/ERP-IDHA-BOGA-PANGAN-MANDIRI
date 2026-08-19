@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="finance-print-shell" data-ui-finance-print="UI" data-ui-print-export="UI">
@@ -7,7 +7,7 @@
 <div class="print-report-shell" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Keuangan · Print Ready</span>
+            <span class="eyebrow">Keuangan | Siap cetak</span>
             <h1>Profit Invoice dari HPP Allocation</h1>
             <p>Halaman print-ready. Gunakan tombol Cetak / Save PDF dari browser.</p>
         </div>
@@ -44,7 +44,7 @@
             <div class="app-stat-card print-box"><span>Total HPP Allocation</span><strong>{{ totals.hpp_total|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Food Cost</span><strong>{{ totals.food_cost_total|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Packaging + Overhead</span><strong>{{ ((totals.packaging_cost_total or 0) + (totals.overhead_cost_total or 0))|rupiah }}</strong></div>
-            <div class="app-stat-card print-box"><span>Laba Kotor</span><strong>{{ totals.gross_profit_total|rupiah }} · {{ totals.gross_margin_percentage|round(2) }}%</strong></div>
+            <div class="app-stat-card print-box"><span>Laba Kotor</span><strong>{{ totals.gross_profit_total|rupiah }} | {{ totals.gross_margin_percentage|round(2) }}%</strong></div>
         </div>
 
         <div class="print-meta-grid">
@@ -55,7 +55,8 @@
         </div>
 
         <h5>Daftar Profit per Invoice</h5>
-        <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>No Invoice</th>
@@ -95,9 +96,12 @@
                 {% endfor %}
             </tbody>
         </table>
+</div>
 
         <p class="print-note">Dokumen ini membaca HPP allocation dari snapshot order. Angka tidak mengubah invoice, payment, jurnal, atau stok.</p>
     </div>
 </div>
 </div>
 {% endblock %}
+
+

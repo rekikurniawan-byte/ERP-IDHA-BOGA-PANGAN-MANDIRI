@@ -1,23 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="suppliers">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Master Supplier</span>
-        <h1>Supplier Opsional</h1>
-        <p>Kelola supplier tetap jika memang ada. Pembelian dari toko tidak tetap tetap bisa input manual tanpa memilih supplier.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('master.index') }}" class="btn app-btn-secondary">Kembali</a>
-        <a href="{{ url_for('master.create_supplier') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Tambah Supplier
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Supplier Opsional",
+    "Kelola supplier tetap jika memang ada. Pembelian dari toko tidak tetap tetap bisa input manual tanpa memilih supplier.",
+    eyebrow="Master Supplier",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Tambah Supplier", "url": url_for('master.create_supplier'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
 
 

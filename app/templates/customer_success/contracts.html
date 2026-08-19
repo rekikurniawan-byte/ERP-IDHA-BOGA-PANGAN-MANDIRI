@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <section class="page-section">
@@ -6,7 +6,7 @@
         <div>
             <span class="eyebrow">Customer Success</span>
             <h1>Kontrak Customer</h1>
-            <p>Pengelolaan kontrak customer tanpa mengubah invoice, payment, jurnal, stok, atau closing.</p>
+            <p>Kelola kontrak pelanggan tanpa mengubah invoice, pembayaran, jurnal, stok, atau closing.</p>
         </div>
         <div class="page-actions" data-page-actions>
             <form method="post" action="{{ url_for('customer_success.generate_contract_expiry_notifications_route') }}" class="app-form">
@@ -14,7 +14,7 @@
                 <input type="hidden" name="due_days" value="30">
                 <input type="hidden" name="target_role" value="FINANCE">
                 <button class="btn app-btn-secondary" type="submit">
-                    <i class="bi bi-bell"></i> Generate Reminder
+                    <i class="bi bi-bell"></i> Buat Pengingat
                 </button>
             </form>
         </div>
@@ -22,12 +22,12 @@
 
     <div class="app-card mb-4">
         <div class="card-body">
-            <form method="post" class="row g-3 app-form" data-ui-form="true">
+            <form method="post" class="row g-3 app-form" data-ui-form="true" novalidate>
                 {% include "components/csrf_token.html" %}
                 <div class="col-md-4">
-                    <label class="form-label">Client</label>
+                    <label class="form-label">Pelanggan / PT</label>
                     <select class="form-select app-input" name="client_id" required>
-                        <option value="">Pilih client</option>
+                        <option value="">Pilih pelanggan</option>
                         {% for client in data.clients %}
                             <option value="{{ client.id }}">{{ client.name }}</option>
                         {% endfor %}
@@ -65,8 +65,8 @@
                 <div class="col-md-3">
                     <label class="form-label">Status Awal</label>
                     <select class="form-select app-input" name="status">
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="ACTIVE">Aktif</option>
                     </select>
                 </div>
                 <div class="col-md-7">
@@ -87,22 +87,24 @@
             <form method="get" class="filter-bar app-form mb-3">
                 <select class="form-select app-input" name="status">
                     {% for status in data.status_options %}
-                        <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>{{ status }}</option>
+                        <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>
+                            {% if status == "ALL" %}Semua{% elif status == "ACTIVE" %}Aktif{% elif status == "DRAFT" %}Draft{% elif status == "EXPIRED" %}Kedaluwarsa{% else %}{{ status }}{% endif %}
+                        </option>
                     {% endfor %}
                 </select>
                 <button class="btn app-btn-secondary" type="submit">Filter</button>
                 <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Reset</a>
             </form>
 
-            <div class="table-responsive app-table-wrap">
+            <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle">
                     <thead>
                         <tr>
                             <th>No Kontrak</th>
-                            <th>Client</th>
+                            <th>Pelanggan / PT</th>
                             <th>Periode</th>
                             <th>Termin</th>
-                            <th class="text-end">Limit</th>
+                            <th class="text-end">Limit Kredit</th>
                             <th>Status</th>
                             <th class="text-end">Aksi</th>
                         </tr>
@@ -115,7 +117,7 @@
                                 <td>{{ contract.start_date.strftime('%d-%m-%Y') }} - {{ contract.end_date.strftime('%d-%m-%Y') }}</td>
                                 <td>{{ contract.payment_terms }}</td>
                                 <td class="text-end">{{ contract.credit_limit|rupiah }}</td>
-                                <td><span class="status-badge neutral">{{ contract.status }}</span></td>
+                                <td><span class="status-badge neutral">{% if contract.status == "ACTIVE" %}Aktif{% elif contract.status == "DRAFT" %}Draft{% elif contract.status == "EXPIRED" %}Kedaluwarsa{% else %}{{ contract.status }}{% endif %}</span></td>
                                 <td class="text-end">
                                     <div class="table-actions justify-content-end">
                                         <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.contract_detail', contract_id=contract.id) }}">Detail</a>
@@ -123,7 +125,7 @@
                                 </td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="7" class="text-muted text-center">Belum ada kontrak customer.</td></tr>
+                            <tr><td colspan="7" class="text-muted text-center">Belum ada kontrak pelanggan.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -132,3 +134,4 @@
     </div>
 </section>
 {% endblock %}
+

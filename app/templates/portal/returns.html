@@ -1,0 +1,70 @@
+{% extends "layouts/portal_mobile.html" %}
+
+{% block portal_content %}
+{% set model = data.returns %}
+<!-- customer_complaints ERP existing -->
+<section class="portal-feature-page portal-service-page portal-care-page">
+    <div class="portal-feature-hero portal-service-hero portal-care-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+        </div>
+        <strong class="portal-hero-status">Berbasis Komplain</strong>
+    </div>
+
+    <div class="portal-service-summary portal-care-summary">
+        <article class="primary"><span>Retur Aktif</span><strong>{{ model.totals.open }}</strong><small>{{ data.page_description }}</small></article>
+        <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Kategori retur</small></article>
+        <article><span>Selesai</span><strong>{{ model.totals.done }}</strong><small>Sudah ditutup</small></article>
+        <article><span>Link Tagihan</span><strong>{{ model.totals.with_invoice }}</strong><small>Terhubung tagihan</small></article>
+        <article><span>Link Pengiriman</span><strong>{{ model.totals.with_delivery }}</strong><small>Terhubung pengiriman</small></article>
+    </div>
+
+    <div class="portal-return-category-grid">
+        <article><span>Kekurangan Makanan</span><strong>{{ model.category_counts.FOOD_SHORTAGE }}</strong></article>
+        <article><span>Salah Menu</span><strong>{{ model.category_counts.WRONG_MENU }}</strong></article>
+        <article><span>Porsi Kurang</span><strong>{{ model.category_counts.PORTION_SHORTAGE }}</strong></article>
+        <article><span>Makanan Rusak</span><strong>{{ model.category_counts.DAMAGED_FOOD }}</strong></article>
+    </div>
+
+    <div class="portal-mobile-alert">
+        Retur dicatat sebagai laporan pelanggan. Koreksi tagihan, stok, atau jurnal tetap diputuskan admin melalui alur internal.
+    </div>
+
+    <div class="portal-service-list">
+        {% for item in model.rows %}
+            <article class="portal-service-card portal-return-card">
+                <div class="portal-service-card-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
+                <div class="portal-service-card-main">
+                    <div class="portal-service-card-title">
+                        <h3>{{ item.complaint_number }}</h3>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+                    <p>{{ item.title }}</p>
+                    <div class="portal-chip-row">
+                        <span>{{ item.category.replace("_", " ") }}</span>
+                        <span>{{ item.submitted_at.strftime('%d-%m-%Y') if item.submitted_at else "-" }}</span>
+                        {% if item.invoice %}<span>Tagihan {{ item.invoice.invoice_number }}</span>{% endif %}
+                        {% if item.delivery %}<span>Pengiriman {{ item.delivery.delivery_number }}</span>{% endif %}
+                    </div>
+                    <p>{{ item.description }}</p>
+                    {% if item.resolution_note %}
+                        <div class="portal-care-resolution">
+                            <strong>Resolusi</strong>
+                            <span>{{ item.resolution_note }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </article>
+        {% else %}
+            <div class="portal-empty-state">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <strong>Belum ada retur</strong>
+                <p>Retur dari komplain pelanggan akan tampil di sini.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

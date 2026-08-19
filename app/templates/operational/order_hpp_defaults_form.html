@@ -1,21 +1,14 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_defaults_form" data-logistics-hpp-page="order_hpp_defaults_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Default HPP Order</span>
-        <h1>Atur Default Menu & Profil HPP</h1>
-        <p>{{ daily_order.order_number }} · {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali ke Order
-        </a>
-    </div>
-</div>
+{{ page_header(
+    "Atur Default Menu & Profil HPP",
+    daily_order.order_number ~ " · " ~ daily_order.order_date.strftime('%d-%m-%Y'),
+    eyebrow="Default HPP Order",
+    actions=[{"label": "Kembali ke Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"}]
+) }}
 
 
 

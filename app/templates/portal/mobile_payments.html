@@ -1,50 +1,135 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
+{% set model = data.payments %}
+{% set invoice_totals = data.invoices.totals %}
+{% set is_customer = current_user.role == "PORTAL_CUSTOMER" %}
+<section class="portal-feature-page portal-ledger-page portal-finance-page">
+    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>{{ data.payments.scope_mode }}</span>
+            <span>{{ "Pembayaran awal" if is_customer else "Riwayat pembayaran" }}</span>
+        </div>
+        <strong class="portal-hero-status">{{ "Bayar dulu" if is_customer else "Aktif" if model.allowed else "Belum aktif" }}</strong>
+    </div>
+
+    <div class="portal-ledger-summary portal-finance-summary">
+        <article class="portal-ledger-total">
+            <span>{{ "Pembayaran Awal" if is_customer else "Total Pembayaran" }}</span>
+            <strong>{{ model.totals.payment_amount|rupiah }}</strong>
+            <p>{{ data.page_description }}</p>
+        </article>
+        {% if is_customer %}
+            <article><span>Bukti Bayar</span><strong>{{ invoice_totals.proof_count }}</strong><small>Bukti yang diunggah</small></article>
+            <article><span>Menunggu Cek</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Belum diperiksa</small></article>
+            <article><span>Bukti Sah</span><strong>{{ invoice_totals.verified_proof_count or 0 }}</strong><small>Siap diproses admin</small></article>
+            <article><span>Pesanan Bayar Dulu</span><strong>{{ data.orders.total }}</strong><small>Customer tidak memakai kredit</small></article>
+        {% else %}
+            <article><span>Pembayaran</span><strong>{{ model.totals.payment_count }}</strong><small>Catatan pembayaran</small></article>
+            <article><span>Tagihan</span><strong>{{ invoice_totals.invoice_count }}</strong><small>Tagihan dalam akses</small></article>
+            <article><span>Sisa Tagihan</span><strong>{{ invoice_totals.active_outstanding_amount|rupiah }}</strong><small>Sisa aktif</small></article>
+            <article><span>Bukti Portal</span><strong>{{ invoice_totals.proof_count }}</strong><small>{{ invoice_totals.pending_proof_count }} menunggu</small></article>
+        {% endif %}
+    </div>
+
+    <div class="portal-precheck-card tone-{{ 'green' if invoice_totals.active_outstanding_amount == 0 and model.allowed else 'orange' if model.allowed else 'red' }}">
+        <div>
+            <span class="portal-source-pill"><i class="bi bi-shield-check"></i> Cek Sebelum Pesan</span>
+            <h2>
+                {% if is_customer %}
+                    Bayar dulu sebelum pesanan diproses
+                {% elif model.allowed and invoice_totals.active_outstanding_amount == 0 %}
+                    Tidak ada sisa tagihan aktif
+                {% elif model.allowed %}
+                    Masih ada sisa tagihan
+                {% else %}
+                    Pembayaran belum dibuka
+                {% endif %}
+            </h2>
+            <p>
+                {% if is_customer %}
+                    Pelanggan umum tidak memiliki fasilitas kredit. Pesanan menunggu bukti pembayaran diperiksa, lalu admin memproses ke operasional.
+                {% elif model.allowed %}
+                    Pembayaran dan bukti transfer ditampilkan sesuai data yang tercatat.
+                {% else %}
+                    {{ model.reason }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="portal-precheck-grid">
+            {% if is_customer %}
+                <article><span>Bukti Menunggu</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Menunggu cek</small></article>
+                <article><span>Bukti Sah</span><strong>{{ invoice_totals.verified_proof_count or 0 }}</strong><small>Bisa diproses admin</small></article>
+                <article><span>Perlu Cek</span><strong>{{ invoice_totals.payment_mismatch_count or 0 }}</strong><small>Perlu pemeriksaan</small></article>
+                <article><span>Pesanan Aktif</span><strong>{{ data.orders.pending }}</strong><small>Menunggu admin</small></article>
+            {% else %}
+                <article><span>Bukti Menunggu</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Menunggu cek</small></article>
+                <article><span>Bisa Dibayar</span><strong>{{ invoice_totals.payable_invoice_count or 0 }}</strong><small>Tagihan bisa dibayar</small></article>
+                <article><span>Selisih</span><strong>{{ invoice_totals.payment_mismatch_count or 0 }}</strong><small>Perlu dicek</small></article>
+                <article><span>Sisa</span><strong>{{ invoice_totals.active_outstanding_amount|rupiah }}</strong><small>Total aktif</small></article>
+            {% endif %}
         </div>
     </div>
 
-    <div class="portal-feature-card primary">
-        <h2>{{ data.payments.totals.payment_amount|rupiah }}</h2>
-        <p>{{ data.page_description }}</p>
-        <div class="portal-source-pill"><i class="bi bi-credit-card"></i><span>Payment ERP existing</span></div>
-    </div>
-
-    <div class="portal-mini-metrics">
-        <div><span>Payment</span><strong>{{ data.payments.totals.payment_count }}</strong></div>
-        <div><span>Total</span><strong>{{ data.payments.totals.payment_amount|rupiah }}</strong></div>
-        <div><span>Invoice</span><strong>{{ data.invoices.totals.invoice_count }}</strong></div>
-        <div><span>Sisa</span><strong>{{ data.invoices.totals.active_outstanding_amount|rupiah }}</strong></div>
-    </div>
-
-    {% if not data.payments.allowed %}
-        <div class="portal-mobile-alert">{{ data.payments.reason }}</div>
+    {% if not model.allowed %}
+        <div class="portal-blocked-state">
+            <i class="bi bi-lock"></i>
+            <div>
+                <h2>{{ "Upload bukti bayar belum tersedia" if is_customer else "Riwayat pembayaran belum dibuka" }}</h2>
+                <p>{{ "Buat pesanan terlebih dahulu, lalu unggah bukti pembayaran awal dari detail pesanan yang tersedia." if is_customer else model.reason }}</p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Riwayat</h2>
-        <span>Read-only</span>
+        <h2>Riwayat Pembayaran</h2>
+        <span>Pembayaran</span>
     </div>
 
-    <div class="portal-card-list">
-        {% for payment in data.payments.payments %}
-            <article class="portal-mobile-card portal-payment-card">
-                <div>
-                    <h3>{{ payment.payment_number }}</h3>
-                    <p>{{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }} - {{ payment.payment_method }}</p>
-                    <p>{{ payment.invoice_number }}</p>
+    <div class="portal-ledger-list portal-payment-history-list">
+        {% for payment in model.payments %}
+            <article class="portal-ledger-card compact portal-payment-card">
+                <div class="portal-ledger-card-main">
+                    <span class="portal-record-icon"><i class="bi bi-credit-card"></i></span>
+                    <div>
+                        <h3>{{ payment.payment_number }}</h3>
+                        <p>
+                            {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }}
+                            | {{ payment.payment_method }}
+                            | {{ "Referensi" if is_customer else "Tagihan" }} {{ payment.invoice_number or payment.reference_number or "-" }}
+                        </p>
+                        <div class="portal-chip-row">
+                            <span>{{ payment.invoice_status_label or "-" }}</span>
+                            {% if payment.reference_number %}<span>Ref {{ payment.reference_number }}</span>{% endif %}
+                            {% if payment.bank_account.bank_name %}<span>{{ payment.bank_account.bank_name }}</span>{% endif %}
+                            {% if not is_customer %}<span>Sisa invoice {{ payment.invoice_remaining_amount|rupiah }}</span>{% endif %}
+                        </div>
+                    </div>
                 </div>
-                <strong>{{ payment.amount|rupiah }}</strong>
+                <div class="portal-ledger-amounts single">
+                    <div><span>Jumlah</span><strong>{{ payment.amount|rupiah }}</strong></div>
+                </div>
+                <div class="portal-finance-proof-strip compact">
+                    <div>
+                        <span>Rekening / Kas</span>
+                        <strong>{{ payment.bank_account.account_name or payment.payment_method }}</strong>
+                        <small>{{ payment.bank_account.account_number or payment.reference_number or "Tidak ada referensi tambahan" }}</small>
+                    </div>
+                    <div>
+                        <span>Catatan</span>
+                        <strong>{{ payment.notes or "-" }}</strong>
+                        <small>Pembayaran sudah tercatat.</small>
+                    </div>
+                </div>
             </article>
         {% else %}
-            <div class="portal-mobile-alert">Belum ada pembayaran dalam scope portal ini.</div>
+            <div class="portal-empty-state">
+                <i class="bi bi-credit-card"></i>
+                <strong>Belum ada pembayaran</strong>
+                <p>{{ "Bukti bayar dan pembayaran awal akan tampil di sini setelah dibuat dari pesanan pelanggan." if is_customer else "Pembayaran yang tercatat akan tampil di sini sesuai akun." }}</p>
+            </div>
         {% endfor %}
     </div>
 </section>

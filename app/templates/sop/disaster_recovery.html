@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
 
 {% block content %}
 <div class="sop-page" data-fix70-f1="disaster-recovery-sop" data-fix73b-outlier-page="sop-recovery">
@@ -6,7 +6,7 @@
         <div class="page-header-main">
             <span class="eyebrow">{{ sop.eyebrow }}</span>
             <h1 class="page-title">{{ sop.title }}</h1>
-            <p class="page-description">Panduan final saat sistem error, database bermasalah, backup perlu dipakai, atau patch besar akan dilakukan. Halaman ini read-only dan tidak melakukan restore otomatis.</p>
+            <p class="page-description">Panduan final saat sistem error, database bermasalah, backup perlu dipakai, atau patch besar akan dilakukan. Halaman ini Mode pantau dan tidak melakukan restore otomatis.</p>
         </div>
         <div class="page-actions sop-no-print">
             <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">
@@ -25,7 +25,7 @@
             <div class="app-stat-icon stat-success"><i class="bi bi-shield-check"></i></div>
             <div>
                 <p>Mode</p>
-                <h3>Read-only</h3>
+                <h3>Mode pantau</h3>
                 <span class="app-stat-helper">Tidak overwrite DB</span>
             </div>
         </div>
@@ -93,7 +93,7 @@
             {% for item in sop.incident_levels %}
                 <div class="col-lg-4">
                     <div class="detail-row h-100">
-                        <span>{{ item.level }} · {{ item.name }}</span>
+                        <span>{{ item.level }} | {{ item.name }}</span>
                         <strong><span class="status-badge {{ item.status_class }}">{{ item.name|upper }}</span></strong>
                         <ul class="small text-muted mb-2 mt-2">
                             {% for example in item.examples %}<li>{{ example }}</li>{% endfor %}
@@ -201,3 +201,5 @@
     </div>
 </div>
 {% endblock %}
+
+

@@ -1,35 +1,24 @@
 {% extends "layouts/base.html" %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Hutang Supplier / AP</h1>
-        <p>Monitoring pembelian hutang/CREDIT, aging, dan pembayaran supplier yang keluar dari kas/bank.</p>
-    </div>
-
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.accounts_payable_aging') }}" class="btn app-btn-primary">
-            <i class="bi bi-hourglass-split"></i>
-            AP Aging
-        </a>
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="supplierBillActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi lainnya
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="supplierBillActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('logistics.purchases') }}"><i class="bi bi-basket"></i> Pembelian Barang</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('master.suppliers') }}"><i class="bi bi-shop"></i> Supplier Opsional</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('finance.cash_bank_ledger') }}"><i class="bi bi-wallet2"></i> Buku Kas/Bank</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('finance.supplier_payable_card') }}"><i class="bi bi-journal-text"></i> Kartu Hutang</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('finance.export_supplier_bills_csv', filter=selected_filter) }}"><i class="bi bi-download"></i> Download CSV</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    "Hutang Supplier / AP",
+    "Monitoring pembelian hutang/CREDIT, aging, dan pembayaran supplier yang keluar dari kas/bank.",
+    "Finance",
+    actions=[
+        {"label": "AP Aging", "url": url_for('finance.accounts_payable_aging'), "icon": "bi-hourglass-split", "variant": "primary"},
+        {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Pembelian Barang", "url": url_for('logistics.purchases'), "icon": "bi-basket"},
+            {"label": "Supplier Opsional", "url": url_for('master.suppliers'), "icon": "bi-shop"},
+            {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"},
+            {"label": "Kartu Hutang", "url": url_for('finance.supplier_payable_card'), "icon": "bi-journal-text"},
+            {"label": "Download CSV", "url": url_for('finance.export_supplier_bills_csv', filter=selected_filter), "icon": "bi-download"},
+        ]},
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

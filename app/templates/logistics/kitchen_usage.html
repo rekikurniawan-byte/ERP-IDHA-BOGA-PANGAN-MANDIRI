@@ -1,28 +1,20 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="kitchen_usage">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Dapur</span>
-        <h1>Pemakaian Barang</h1>
-        <p>Riwayat barang yang sudah dipenuhi Owner dan sudah keluar dari stok.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">
-            <i class="bi bi-basket"></i>
-            Permintaan Barang
-        </a>
-
-        {% if current_user.role == "OWNER" %}
-        <a href="{{ url_for('logistics.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Dashboard Stok
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% set kitchen_usage_actions = [
+    {"label": "Permintaan Barang", "url": url_for('logistics.item_requests'), "icon": "bi-basket"},
+] %}
+{% if current_user.role == "OWNER" %}
+    {% do kitchen_usage_actions.append({"label": "Dashboard Stok", "url": url_for('logistics.index'), "icon": "bi-arrow-left"}) %}
+{% endif %}
+{{ page_header(
+    "Pemakaian Barang",
+    "Riwayat barang yang sudah dipenuhi Owner dan sudah keluar dari stok.",
+    eyebrow="Dapur",
+    actions=kitchen_usage_actions
+) }}
 
 
 

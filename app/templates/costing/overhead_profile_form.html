@@ -1,18 +1,14 @@
-{% extends "layouts/base.html" %}
+﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="overhead_profile_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">HPP Tahap 3</span>
-        <h1>{% if profile %}Edit Profil Overhead{% else %}Tambah Profil Overhead{% endif %}</h1>
-        <p>Profil overhead dipakai kalkulator HPP read-only, belum membuat jurnal biaya dan belum mengubah order lama.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('costing.overhead_profiles') }}" class="btn app-btn-secondary">Kembali</a>
-    </div>
-</div>
+{{ page_header(
+    "Edit Profil Overhead" if profile else "Tambah Profil Overhead",
+    "Profil overhead dipakai kalkulator HPP Mode pantau, belum membuat jurnal biaya dan belum mengubah order lama.",
+    eyebrow="HPP Tahap 3",
+    actions=[{"label": "Kembali", "url": url_for('costing.overhead_profiles')}]
+) }}
 
 
 
@@ -68,7 +64,7 @@
 
             <div class="col-md-12">
                 <div class="alert alert-info mb-0">
-                    Profil ini boleh berisi flat per porsi, persentase overhead, atau kombinasi keduanya. Semua masih simulasi HPP read-only.
+                    Profil ini boleh berisi flat per porsi, persentase overhead, atau kombinasi keduanya. Semua masih simulasi HPP Mode pantau.
                 </div>
             </div>
 
@@ -87,3 +83,4 @@
 </div>
 </div>
 {% endblock %}
+

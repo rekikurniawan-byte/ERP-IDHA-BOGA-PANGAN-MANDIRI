@@ -1,34 +1,22 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Pembelian Aset Tetap</h1>
-        <p>Catat pembelian aset tetap yang benar-benar mengurangi kas/bank, membuat buku kas/bank OUT, dan jurnal aset otomatis.</p>
-    </div>
-    <div class="page-actions finance-header-actions" data-finance-actions="UI">
-        <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">
-            <i class="bi bi-wallet2"></i>
-            Buku Kas/Bank
-        </a>
-        <a href="{{ url_for('finance.fixed_asset_installments') }}" class="btn app-btn-secondary">
-            <i class="bi bi-truck"></i>
-            Cicilan Aset
-        </a>
-        {% if current_user.role == 'OWNER' %}
-        <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">
-            <i class="bi bi-archive"></i>
-            Master Aset
-        </a>
-        {% endif %}
-        <a href="{{ url_for('finance.create_fixed_asset_purchase') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Beli Aset Tetap
-        </a>
-    </div>
-</div>
+{% set header_actions = [
+    {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"},
+    {"label": "Cicilan Aset", "url": url_for('finance.fixed_asset_installments'), "icon": "bi-truck"},
+] %}
+{% if current_user.role == 'OWNER' %}
+    {% do header_actions.append({"label": "Master Aset", "url": url_for('master.fixed_assets'), "icon": "bi-archive"}) %}
+{% endif %}
+{% do header_actions.append({"label": "Beli Aset Tetap", "url": url_for('finance.create_fixed_asset_purchase'), "icon": "bi-plus-circle", "variant": "primary"}) %}
+{{ page_header(
+    "Pembelian Aset Tetap",
+    "Catat pembelian aset tetap yang benar-benar mengurangi kas/bank, membuat buku kas/bank OUT, dan jurnal aset otomatis.",
+    "Finance",
+    actions=header_actions
+) }}
 
 <div class="alert alert-warning small">
     <strong>Catatan:</strong> halaman ini untuk pembelian aset baru yang langsung dibayar kas/bank. Untuk kendaraan/alat besar kredit, gunakan menu <strong>Cicilan Aset</strong> agar pokok cicilan tidak salah dicatat sebagai beban.
