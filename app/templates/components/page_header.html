@@ -5,7 +5,7 @@
    all next UI polish cleanupes.
    ================================================== #}
 
-{% macro page_header(title, description='', eyebrow='', primary_label='', primary_url='', primary_icon='bi-plus-circle', secondary_label='', secondary_url='', secondary_icon='bi-arrow-left', more_actions=[], actions=none, actions_class='') %}
+{% macro page_header(title, description='', eyebrow='', primary_label='', primary_url='', primary_icon='bi-plus-circle', secondary_label='', secondary_url='', secondary_icon='bi-arrow-left', more_actions=[], actions=none, actions_class='', collapse=true) %}
 {% if actions is not none %}
 {#- Flat action-list mode. Renders the plain <div class="page-header"> markup
    that ~175 hand-rolled templates already use (no extra app-page-header /
@@ -14,7 +14,13 @@
    {label, url, icon='', variant='secondary'} for a plain button, or
    {label, icon='', dropdown=[{label, url, icon=''}, ...]} for a grouped
    "Aksi lainnya"-style dropdown -- both patterns already exist across the
-   finance/accounting/portal templates this replaces. See Fase 2,
+   finance/accounting/portal templates this replaces.
+   `collapse` controls the extra .finance-header-actions class, which is not
+   cosmetic: main.js keys on it to fold >2 header buttons into an "Aksi
+   lainnya" dropdown, and it carries its own flex/mobile CSS. Templates whose
+   hand-rolled markup used a plain .page-actions (canteen, delivery,
+   prediction, production, customer_success) must pass collapse=false so
+   migrating stays a zero-visual-diff change. See Fase 2,
    RINCIAN_AUDIT_UI_UX_CSS_ERP_IDHA_BOGA.md. #}
 <div class="page-header">
     <div>
@@ -23,7 +29,7 @@
         {% if description %}<p>{{ description }}</p>{% endif %}
     </div>
     {% if actions %}
-    <div class="page-actions finance-header-actions{% if actions_class %} {{ actions_class }}{% endif %}" data-page-actions>
+    <div class="page-actions{% if collapse %} finance-header-actions{% endif %}{% if actions_class %} {{ actions_class }}{% endif %}" data-page-actions>
         {% for action in actions %}
             {% if action.dropdown is defined %}
                 {% set dropdown_id = "pageHeaderActionDropdown" ~ loop.index %}

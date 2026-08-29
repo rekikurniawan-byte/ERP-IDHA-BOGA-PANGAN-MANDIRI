@@ -1,26 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="canteen-page-shell" data-ui-page="debt_payment">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Pembayaran Hutang Warung</span>
-        {% if is_external %}
-            <h1>{{ debt.buyer_name }}</h1>
-            <p>Bayar sebagian atau lunasi piutang warung eksternal.</p>
-        {% else %}
-            <h1>{{ debt.worker.full_name if debt.worker else '-' }}</h1>
-            <p>Bayar sebagian atau lunasi hutang warung pekerja internal.</p>
-        {% endif %}
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('canteen.debts') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title=(debt.buyer_name if is_external else (debt.worker.full_name if debt.worker else '-')),
+    eyebrow='Pembayaran Hutang Warung',
+    description=('Bayar sebagian atau lunasi piutang warung eksternal.' if is_external else 'Bayar sebagian atau lunasi hutang warung pekerja internal.'),
+    collapse=false,
+    actions=[
+        {'label': 'Kembali', 'url': url_for('canteen.debts'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

@@ -1,24 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan - Transaksi Kas Lapangan</span>
-        <h1>Transaksi Kas Lapangan</h1>
-        <p>Pusat input, review, dokumen turunan, hubungkan, dan jejak integrasi transaksi manual lapangan.</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        <a href="{{ url_for('field_transactions.monitoring') }}" class="btn app-btn-secondary">
-            <i class="bi bi-activity"></i>
-            Monitoring
-        </a>
-        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">
-            <i class="bi bi-plus-circle"></i>
-            Buat Draft
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Transaksi Kas Lapangan',
+    eyebrow='Keuangan - Transaksi Kas Lapangan',
+    description='Pusat input, review, dokumen turunan, hubungkan, dan jejak integrasi transaksi manual lapangan.',
+    actions=[
+        {'label': 'Monitoring', 'url': url_for('field_transactions.monitoring'), 'icon': 'bi-activity'},
+        {'label': 'Buat Draft', 'url': url_for('field_transactions.create'), 'icon': 'bi-plus-circle', 'variant': 'primary'}
+    ]
+) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">

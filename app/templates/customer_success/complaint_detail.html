@@ -1,19 +1,19 @@
 ﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 {% set complaint = data.complaint %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Komplain Customer</span>
-            <h1>{{ complaint.complaint_number }}</h1>
-            <p>{{ complaint.title }}</p>
-        </div>
-        <div class="page-actions" data-page-actions>
-            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Kembali</a>
-            <a class="btn app-btn-primary" href="{{ url_for('customer_success.corrections') }}?complaint_id={{ complaint.id }}">Buat Koreksi</a>
-        </div>
-    </div>
+    {{ page_header(
+        title=complaint.complaint_number,
+        eyebrow='Komplain Customer',
+        description=complaint.title,
+        collapse=false,
+        actions=[
+            {'label': 'Kembali', 'url': url_for('customer_success.complaints')},
+            {'label': 'Buat Koreksi', 'url': url_for('customer_success.corrections') ~ '?complaint_id=' ~ complaint.id, 'variant': 'primary'}
+        ]
+    ) }}
 
     <div class="row g-3">
         <div class="col-lg-7">

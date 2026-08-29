@@ -1,18 +1,18 @@
 ﻿{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div>
-            <span class="eyebrow">Customer Success</span>
-            <h1>Koreksi Customer</h1>
-            <p>Request koreksi/return/kompensasi. Posting stok dan keuangan tetap menunggu approval dan service terpisah.</p>
-        </div>
-        <div class="page-actions" data-page-actions>
-            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Komplain</a>
-            <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Kontrak</a>
-        </div>
-    </div>
+    {{ page_header(
+        title='Koreksi Customer',
+        eyebrow='Customer Success',
+        description='Request koreksi/return/kompensasi. Posting stok dan keuangan tetap menunggu approval dan service terpisah.',
+        collapse=false,
+        actions=[
+            {'label': 'Komplain', 'url': url_for('customer_success.complaints')},
+            {'label': 'Kontrak', 'url': url_for('customer_success.contracts')}
+        ]
+    ) }}
 
     <div class="app-card mb-4">
         <div class="card-body">

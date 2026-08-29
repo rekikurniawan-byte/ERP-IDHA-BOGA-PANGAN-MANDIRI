@@ -1,26 +1,19 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="history">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Pengantar</span>
-        <h1>Riwayat Pengiriman</h1>
-        <p>Arsip delivery selesai, dibatalkan, atau delivery tanggal sebelumnya.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-secondary">
-            <i class="bi bi-truck"></i>
-            Pengiriman Hari Ini
-        </a>
-        <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
-            <i class="bi bi-clipboard-check"></i>
-            Penerimaan
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Riwayat Pengiriman',
+    eyebrow='Pengantar',
+    description='Arsip delivery selesai, dibatalkan, atau delivery tanggal sebelumnya.',
+    collapse=false,
+    actions=[
+        {'label': 'Pengiriman Hari Ini', 'url': url_for('delivery.today'), 'icon': 'bi-truck'},
+        {'label': 'Penerimaan', 'url': url_for('delivery.receiving'), 'icon': 'bi-clipboard-check'}
+    ]
+) }}
 
 
 {{ global_filter_bar(filter_bar) }}

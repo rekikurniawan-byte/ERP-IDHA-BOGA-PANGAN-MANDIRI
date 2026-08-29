@@ -1,20 +1,16 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="finance-page-shell field-transaction-form-page" data-ui-finance-page="UI">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Keuangan | Draft Transaksi Kas Lapangan</span>
-        <h1>{{ page_title }}</h1>
-        <p>{{ page_subtitle }}</p>
-    </div>
-    <div class="page-actions finance-header-actions">
-        <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Daftar Transaksi
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title=page_title,
+    eyebrow='Keuangan | Draft Transaksi Kas Lapangan',
+    description=page_subtitle,
+    actions=[
+        {'label': 'Daftar Transaksi', 'url': url_for('field_transactions.index'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 <form method="POST" action="{{ action_url }}" class="app-form app-form-long field-transaction-form-layout" data-form-kind="page" data-ui-form="true">
     {% include "components/csrf_token.html" %}

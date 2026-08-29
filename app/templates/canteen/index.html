@@ -1,49 +1,24 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
 <div class="canteen-page-shell" data-ui-page="index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Modul Warung</span>
-        <h1>Warung</h1>
-        <p>Kelola penjualan cash, QRIS, transfer, hutang pekerja internal, dan piutang buyer eksternal.</p>
-    </div>
-
-    <div class="page-actions canteen-header-actions">
-        <a href="{{ url_for('canteen.quick_sale') }}" class="btn app-btn-primary">
-            <i class="bi bi-lightning-charge"></i>
-            Transaksi Cepat
-        </a>
-
-        <div class="dropdown app-action-dropdown">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="canteenActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi Warung
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="canteenActionDropdown">
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('canteen.create_sale') }}">
-                        <i class="bi bi-plus-circle"></i>
-                        Transaksi Manual
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('canteen.debts') }}">
-                        <i class="bi bi-wallet2"></i>
-                        Hutang & Piutang Warung
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ url_for('sop.role_sop', slug='admin') }}">
-                        <i class="bi bi-journal-text"></i>
-                        SOP Warung
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
+{{ page_header(
+    title='Warung',
+    eyebrow='Modul Warung',
+    description='Kelola penjualan cash, QRIS, transfer, hutang pekerja internal, dan piutang buyer eksternal.',
+    collapse=false,
+    actions_class='canteen-header-actions',
+    actions=[
+        {'label': 'Transaksi Cepat', 'url': url_for('canteen.quick_sale'), 'icon': 'bi-lightning-charge', 'variant': 'primary'},
+        {'label': 'Aksi Warung', 'icon': 'bi-three-dots', 'dropdown': [
+            {'label': 'Transaksi Manual', 'url': url_for('canteen.create_sale'), 'icon': 'bi-plus-circle'},
+            {'label': 'Hutang & Piutang Warung', 'url': url_for('canteen.debts'), 'icon': 'bi-wallet2'},
+            {'label': 'SOP Warung', 'url': url_for('sop.role_sop', slug='admin'), 'icon': 'bi-journal-text'}
+        ]}
+    ]
+) }}
 
 {{ global_filter_bar(filter_bar) }}
 

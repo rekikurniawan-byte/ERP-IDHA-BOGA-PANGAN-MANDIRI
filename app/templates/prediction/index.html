@@ -1,23 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Prediction</span>
-        <h1>Prediksi Permintaan Catering</h1>
-        <p>Ringkasan data, status model, dan akses cepat untuk prediksi kebutuhan bahan.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('prediction.predict') }}" class="btn app-btn-primary">
-            <i class="bi bi-graph-up"></i>
-            Buat Prediksi
-        </a>
-        <a href="{{ url_for('prediction.evaluate') }}" class="btn app-btn-secondary">
-            <i class="bi bi-clipboard-data"></i>
-            Evaluasi
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Prediksi Permintaan Catering',
+    eyebrow='Prediction',
+    description='Ringkasan data, status model, dan akses cepat untuk prediksi kebutuhan bahan.',
+    collapse=false,
+    actions=[
+        {'label': 'Buat Prediksi', 'url': url_for('prediction.predict'), 'icon': 'bi-graph-up', 'variant': 'primary'},
+        {'label': 'Evaluasi', 'url': url_for('prediction.evaluate'), 'icon': 'bi-clipboard-data'}
+    ]
+) }}
 
 <div class="row g-3 mt-3">
     <div class="col-md-4">

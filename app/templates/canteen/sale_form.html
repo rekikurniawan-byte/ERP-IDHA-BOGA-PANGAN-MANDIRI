@@ -1,21 +1,17 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="canteen-page-shell" data-ui-page="sale_form">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Transaksi Warung</span>
-        <h1>Input Penjualan Warung</h1>
-        <p>Catat cash, QRIS, transfer, hutang pekerja internal, atau piutang buyer eksternal.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('canteen.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Input Penjualan Warung',
+    eyebrow='Transaksi Warung',
+    description='Catat cash, QRIS, transfer, hutang pekerja internal, atau piutang buyer eksternal.',
+    collapse=false,
+    actions=[
+        {'label': 'Kembali', 'url': url_for('canteen.index'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 <div class="app-card">
     <div class="card-header-clean">

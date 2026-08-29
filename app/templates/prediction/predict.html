@@ -1,19 +1,16 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Prediction</span>
-        <h1>Form Prediksi Catering</h1>
-        <p>Prediksi permintaan berdasarkan tanggal dan mandor/PIC aktif.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('prediction.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Form Prediksi Catering',
+    eyebrow='Prediction',
+    description='Prediksi permintaan berdasarkan tanggal dan mandor/PIC aktif.',
+    collapse=false,
+    actions=[
+        {'label': 'Kembali', 'url': url_for('prediction.index'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 <div class="app-card mt-4">
     <form method="post" class="row g-3">

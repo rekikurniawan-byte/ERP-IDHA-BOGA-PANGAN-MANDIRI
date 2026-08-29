@@ -1,22 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="index">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Modul Produksi</span>
-        <h1>Produksi Dapur</h1>
-        <p>Daftar produksi siang dan sore yang dibuat dari order harian yang sudah locked.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali ke Order
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Produksi Dapur',
+    eyebrow='Modul Produksi',
+    description='Daftar produksi siang dan sore yang dibuat dari order harian yang sudah locked.',
+    collapse=false,
+    actions=[
+        {'label': 'Kembali ke Order', 'url': url_for('operational.orders'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 {{ global_filter_bar(filter_bar) }}
 

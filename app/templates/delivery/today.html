@@ -1,25 +1,18 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="today">
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Pengantar</span>
-        <h1>Pengiriman Hari Ini</h1>
-        <p>Daftar delivery berdasarkan tanggal yang dipilih.</p>
-    </div>
-
-    <div class="page-actions">
-        <a href="{{ url_for('delivery.receiving', date=selected_date_text) }}" class="btn app-btn-secondary">
-            <i class="bi bi-clipboard-check"></i>
-            Penerimaan
-        </a>
-        <a href="{{ url_for('delivery.history') }}" class="btn app-btn-secondary">
-            <i class="bi bi-clock-history"></i>
-            Riwayat
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Pengiriman Hari Ini',
+    eyebrow='Pengantar',
+    description='Daftar delivery berdasarkan tanggal yang dipilih.',
+    collapse=false,
+    actions=[
+        {'label': 'Penerimaan', 'url': url_for('delivery.receiving', date=selected_date_text), 'icon': 'bi-clipboard-check'},
+        {'label': 'Riwayat', 'url': url_for('delivery.history'), 'icon': 'bi-clock-history'}
+    ]
+) }}
 
 
 <div class="app-card">

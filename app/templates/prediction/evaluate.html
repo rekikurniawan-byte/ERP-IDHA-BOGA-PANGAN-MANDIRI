@@ -1,19 +1,16 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <span class="eyebrow">Prediction</span>
-        <h1>Evaluasi Model Prediksi</h1>
-        <p>Ringkasan evaluasi model untuk kebutuhan analisis dan validasi.</p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('prediction.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
-        </a>
-    </div>
-</div>
+{{ page_header(
+    title='Evaluasi Model Prediksi',
+    eyebrow='Prediction',
+    description='Ringkasan evaluasi model untuk kebutuhan analisis dan validasi.',
+    collapse=false,
+    actions=[
+        {'label': 'Kembali', 'url': url_for('prediction.index'), 'icon': 'bi-arrow-left'}
+    ]
+) }}
 
 <div class="app-card mt-4">
     <form method="get" class="row g-3 align-items-end">
