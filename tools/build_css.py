@@ -30,9 +30,16 @@ FORBIDDEN_CSS_FILENAME_WORDS = ("final", "lock", "fix", "override", "repair", "c
 STATUS_TOKEN_NAMES = ("success", "warning", "danger", "info")
 VAR_REFERENCE_RE = re.compile(r"var\(\s*--([a-zA-Z0-9_-]+)(?:\s*,\s*([^)]+))?\)")
 IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"
-# 8,728 is the current literal-token count across the 92 ordered source files.
-# The previous 8,643 value counted matching lines, not individual declarations.
-IMPORTANT_BASELINE_COUNT = 8728
+# Literal-token count across the ordered source files. Ratchet DOWNWARD only:
+# lower it whenever a cleanup lands, never raise it to make a build pass.
+# 8,643 (counted matching lines, not declarations) -> 8,728 (declarations)
+# -> 6,625 after Fase 4 removed 1,874 dead !important declarations that a
+# later rule with the same selector set and at-rule context already beat
+# -> 6,618 after dropping rules keyed to legacy data-theme values that
+# base.html can no longer produce
+# -> 6,372 after dropping rules that require a class no element ever carries.
+# See tools/css_dead_declarations.py.
+IMPORTANT_BASELINE_COUNT = 6372
 
 SOURCE_ORDER = [
     "00_tokens.css",

@@ -25,100 +25,6 @@
     margin-bottom: 0;
 }
 
-.accounting-flow-panel {
-    padding: 16px;
-    border: 1px solid var(--border-soft);
-    background: var(--surface);
-    box-shadow: var(--shadow-card);
-}
-
-.accounting-flow-title {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 12px;
-}
-
-.accounting-flow-title strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 15px;
-}
-
-.accounting-flow-title small,
-.accounting-flow-step small {
-    color: var(--text-muted);
-}
-
-.accounting-flow-steps {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.accounting-flow-step {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-        "num title"
-        "num desc";
-    gap: 2px 10px;
-    align-items: center;
-    min-height: 66px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-card);
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: border-color var(--transition), background var(--transition), transform var(--transition);
-}
-
-.accounting-flow-step:hover {
-    border-color: var(--primary);
-    color: var(--text-primary);
-    transform: translateY(-1px);
-}
-
-.accounting-flow-step span {
-    grid-area: num;
-    display: inline-flex;
-    width: 34px;
-    height: 34px;
-    border-radius: var(--radius-badge);
-    align-items: center;
-    justify-content: center;
-    background: var(--surface-muted);
-    color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 700;
-    border: 1px solid var(--border-soft);
-}
-
-.accounting-flow-step strong {
-    grid-area: title;
-    color: var(--text-primary);
-    font-size: 13px;
-}
-
-.accounting-flow-step small {
-    grid-area: desc;
-    font-size: 11px;
-    line-height: 1.25;
-}
-
-.accounting-flow-step.is-active {
-    border-color: var(--primary);
-    background: var(--info-soft);
-}
-
-.accounting-flow-step.is-active span {
-    background: var(--primary);
-    color: var(--primary-text);
-    border-color: var(--primary);
-}
-
 .accounting-header-actions[data-accounting-collapsed="true"] {
     align-items: center;
 }
@@ -218,15 +124,6 @@
     justify-content: flex-end;
 }
 
-.accounting-table-meta {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-}
-
 .accounting-mobile-hint {
     display: none;
     color: var(--text-muted);
@@ -239,49 +136,17 @@
     max-width: 1180px;
 }
 
-@media (max-width: 1023.98px) {
-    .accounting-flow-steps {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
 @media (max-width: 767.98px) {
     .accounting-page-shell,
     .accounting-print-shell {
         gap: 16px;
     }
 
-    .accounting-flow-panel {
-        padding: 14px;
-    }
-
-    .accounting-flow-title {
-        display: block;
-    }
-
-    .accounting-flow-title .status-badge {
-        margin-top: 8px;
-    }
-
-    .accounting-flow-title small {
-        display: block;
-        margin-top: 4px;
-    }
-
-    .accounting-flow-steps {
-        grid-template-columns: 1fr;
-    }
-
-    .accounting-flow-step {
-        min-height: 58px;
-    }
-
     .accounting-page-shell .summary-grid,
-    .accounting-page-shell .kpi-grid,
-    .accounting-page-shell .info-grid,
-    .accounting-page-shell .detail-grid,
-    .accounting-page-shell .print-summary-grid,
-    .accounting-page-shell .print-meta-grid {
+.accounting-page-shell .kpi-grid,
+.accounting-page-shell .info-grid,
+.accounting-page-shell .detail-grid,
+.accounting-page-shell .print-meta-grid {
         grid-template-columns: 1fr !important;
     }
 

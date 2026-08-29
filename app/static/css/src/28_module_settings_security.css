@@ -81,32 +81,6 @@
    Scope: login/logout redirect UX, 403/404/500, empty/error/loading state,
    print invoice/receipt/reports, CSV/export placement. Token-only CSS.
    ================================================== */
-body[data-ui-catchup="UI"] .auth-public-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-body[data-ui-catchup="UI"] .auth-theme-pill {
-    border: 1px solid var(--border-soft);
-    background: var(--surface);
-    color: var(--text-secondary);
-    border-radius: var(--radius-badge);
-    min-height: 36px;
-    padding: 0 12px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-body[data-ui-catchup="UI"] .auth-theme-pill.is-active,
-body[data-ui-catchup="UI"] .auth-theme-pill:hover,
-body[data-ui-catchup="UI"] .auth-theme-pill:focus-visible {
-    background: var(--primary);
-    color: var(--primary-text);
-    border-color: var(--primary);
-}
 
 body[data-ui-catchup="UI"] .auth-card form[data-form-kind="auth"] .form-text {
     color: var(--text-muted);
@@ -155,21 +129,12 @@ body[data-ui-catchup="UI"] [data-ui-empty-state="UI"] h3 {
     color: var(--text-primary);
 }
 
-body[data-ui-catchup="UI"] .app-loading-state,
 body[data-ui-catchup="UI"] [data-ui-loading-state="UI"] {
     border: 1px solid var(--border-soft);
     background: var(--surface-soft);
     color: var(--text-muted);
     border-radius: var(--radius-card);
     padding: 14px 16px;
-}
-
-body[data-ui-catchup="UI"] .app-skeleton {
-    min-height: 14px;
-    border-radius: var(--radius-badge);
-    background: linear-gradient(90deg, var(--surface-muted), var(--surface-soft), var(--surface-muted));
-    background-size: 200% 100%;
-    animation: appSkeleton 1.2s ease-in-out infinite;
 }
 
 @keyframes appSkeleton {
@@ -182,7 +147,6 @@ body[data-ui-catchup="UI"] [data-submit-loading="true"] {
     pointer-events: none;
 }
 
-body[data-ui-catchup="UI"] .app-export-actions,
 body[data-ui-catchup="UI"] [data-ui-export-actions="UI"] {
     display: inline-flex;
     align-items: center;
@@ -211,17 +175,11 @@ body[data-ui-catchup="UI"] .print-table td {
 }
 
 @media (max-width: 767px) {
-    body[data-ui-catchup="UI"] .auth-public-toolbar {
-        justify-content: stretch;
-        display: grid;
-        grid-template-columns: 1fr;
-    }
 
-    body[data-ui-catchup="UI"] .auth-theme-pill,
-    body[data-ui-catchup="UI"] .app-export-actions .btn,
+
     body[data-ui-catchup="UI"] [data-ui-export-actions="UI"] .btn,
-    body[data-ui-catchup="UI"] .print-actions .btn,
-    body[data-ui-catchup="UI"] .no-print .page-actions .btn {
+body[data-ui-catchup="UI"] .print-actions .btn,
+body[data-ui-catchup="UI"] .no-print .page-actions .btn {
         width: 100%;
         justify-content: center;
         min-height: 44px;
@@ -280,7 +238,6 @@ body[data-ui-catchup="UI"] .print-table td {
 .app-topbar .sidebar-toggle,
 .app-topbar .app-sidebar-toggle,
 .app-topbar .topbar-icon-link,
-.app-topbar .theme-mode-toggle,
 .app-topbar .user-chip-button {
     display: inline-flex !important;
     align-items: center !important;
@@ -303,7 +260,6 @@ body[data-ui-catchup="UI"] .print-table td {
 .app-topbar .topbar-icon-link > i,
 .app-topbar .sidebar-toggle > i,
 .app-topbar .app-sidebar-toggle > i,
-.app-topbar .theme-mode-toggle > i,
 .app-topbar .user-chip-button > i {
     display: inline-flex !important;
     align-items: center !important;

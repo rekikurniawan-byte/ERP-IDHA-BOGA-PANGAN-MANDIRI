@@ -1,4 +1,11 @@
-/* Opt-in layout patterns composed from 30_ui_primitives.css. */
+/* Opt-in layout patterns composed from 30_ui_primitives.css.
+
+   Fase 3: same rule as 30_ui_primitives.css -- spacing, font-size,
+   font-weight and radius all come from the Fase 1 scales in 00_tokens.css.
+   Raw px survives only for line-height (no token scale yet) and for a few
+   structural minimums (table min-width, popover min-width, empty-state
+   min-height) that are layout constraints rather than rhythm.
+   See RINCIAN_AUDIT_UI_UX_CSS_ERP_IDHA_BOGA.md, Fase 3. */
 
 .ui-scope .ui-page {
     width: 100%;
@@ -9,9 +16,9 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 24px;
-    margin: 0 0 16px;
-    padding: 0 0 18px;
+    gap: var(--space-6);
+    margin: 0 0 var(--space-4);
+    padding: 0 0 var(--space-5);
     border-bottom: 1px solid var(--ui-border);
 }
 
@@ -21,10 +28,10 @@
 
 .ui-scope .ui-page-eyebrow {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: var(--space-1);
     color: var(--ui-text-muted);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--font-2xs);
+    font-weight: var(--fw-bold);
     line-height: 16px;
     text-transform: uppercase;
 }
@@ -32,17 +39,17 @@
 .ui-scope .ui-page-title {
     margin: 0;
     color: var(--ui-text);
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 34px;
+    font-size: var(--font-2xl);
+    font-weight: var(--fw-bold);
+    line-height: 32px;
     letter-spacing: 0;
 }
 
 .ui-scope .ui-page-description {
     max-width: 720px;
-    margin: 6px 0 0;
+    margin: var(--space-1) 0 0;
     color: var(--ui-text-muted);
-    font-size: 13px;
+    font-size: var(--font-sm);
     line-height: 20px;
 }
 
@@ -51,13 +58,13 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--space-2);
     flex-wrap: wrap;
 }
 
 .ui-scope .ui-filter-toolbar {
-    margin-bottom: 16px;
-    padding: 14px;
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius);
     background: var(--ui-surface);
@@ -67,7 +74,7 @@
     display: grid;
     grid-template-columns: minmax(260px, 1.6fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
     align-items: end;
-    gap: 12px;
+    gap: var(--space-3);
     width: 100%;
     min-width: 0;
 }
@@ -80,21 +87,21 @@
 }
 
 .ui-scope .ui-data-panel-header {
-    padding: 15px 18px 12px;
+    padding: var(--space-4) var(--space-4) var(--space-3);
 }
 
 .ui-scope .ui-data-panel-title {
     margin: 0;
     color: var(--ui-text);
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-lg);
+    font-weight: var(--fw-bold);
     line-height: 22px;
 }
 
 .ui-scope .ui-data-panel-description {
-    margin: 3px 0 0;
+    margin: var(--space-1) 0 0;
     color: var(--ui-text-muted);
-    font-size: 12px;
+    font-size: var(--font-xs);
     line-height: 18px;
 }
 
@@ -120,7 +127,7 @@
 
 .ui-scope .ui-table-scroll::-webkit-scrollbar-thumb {
     border: 3px solid var(--ui-surface-muted);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: color-mix(in srgb, var(--ui-neutral) 52%, transparent);
 }
 
@@ -132,7 +139,7 @@
     border-spacing: 0;
     table-layout: fixed;
     color: var(--ui-text);
-    font-size: 13px;
+    font-size: var(--font-sm);
     font-variant-numeric: tabular-nums;
     line-height: 20px;
     text-align: left;
@@ -140,7 +147,7 @@
 
 .ui-scope .ui-data-table .ui-table-head-cell,
 .ui-scope .ui-data-table .ui-table-cell {
-    padding: 12px 14px;
+    padding: var(--space-3) var(--space-4);
     border: 0;
     border-bottom: 1px solid var(--ui-border);
     vertical-align: middle;
@@ -151,8 +158,8 @@
     z-index: 1;
     background: var(--ui-surface-muted);
     color: var(--ui-text-muted);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--font-2xs);
+    font-weight: var(--fw-bold);
     line-height: 16px;
     text-transform: uppercase;
     white-space: nowrap;
@@ -185,7 +192,6 @@
 }
 
 .ui-scope .ui-table-code,
-.ui-scope .ui-table-nowrap,
 .ui-scope .ui-table-unit {
     display: block;
     max-width: 100%;
@@ -196,8 +202,8 @@
 
 .ui-scope .ui-table-code {
     color: var(--ui-text);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: var(--font-xs);
+    font-weight: var(--fw-bold);
 }
 
 .ui-scope .ui-table-name {
@@ -207,7 +213,7 @@
 
 .ui-scope .ui-table-secondary {
     color: var(--ui-text-muted);
-    font-size: 12px;
+    font-size: var(--font-xs);
     overflow-wrap: break-word;
 }
 
@@ -259,7 +265,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--space-2);
     min-width: max-content;
     white-space: nowrap;
 }
@@ -273,14 +279,16 @@
     display: none;
 }
 
+/* Moved to <body> by main.js -- see the note in 30_ui_primitives.css about
+   why the --ui-* reads here carry literal fallbacks and the :root scales do not. */
 .ui-action-menu-popover {
     position: fixed;
     z-index: 2400;
     display: grid;
     min-width: 190px;
-    max-width: min(280px, calc(100vw - 24px));
-    gap: 8px;
-    padding: 10px;
+    max-width: min(280px, calc(100vw - var(--space-6)));
+    gap: var(--space-2);
+    padding: var(--space-3);
     border: 1px solid var(--ui-border, #d7dee8);
     border-radius: var(--ui-radius, 8px);
     background: var(--ui-surface, #ffffff);
@@ -300,28 +308,28 @@
     display: grid;
     min-height: 190px;
     place-items: center;
-    padding: 28px 20px;
+    padding: var(--space-7) var(--space-5);
     color: var(--ui-text-muted);
     text-align: center;
 }
 
 .ui-scope .ui-empty-state-icon {
-    margin-bottom: 8px;
+    margin-bottom: var(--space-2);
     color: var(--ui-info);
-    font-size: 26px;
+    font-size: var(--font-2xl);
 }
 
 .ui-scope .ui-empty-state-title {
     color: var(--ui-text);
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--font-md);
+    font-weight: var(--fw-bold);
     line-height: 20px;
 }
 
 .ui-scope .ui-empty-state-copy {
     max-width: 400px;
-    margin: 4px 0 12px;
-    font-size: 12px;
+    margin: var(--space-1) 0 var(--space-3);
+    font-size: var(--font-xs);
     line-height: 18px;
 }
 
@@ -374,11 +382,11 @@
     }
 
     .ui-scope .ui-data-panel-header {
-        padding-inline: 14px;
+        padding-inline: var(--space-4);
     }
 
     .ui-scope .ui-data-table .ui-table-head-cell,
     .ui-scope .ui-data-table .ui-table-cell {
-        padding-inline: 10px;
+        padding-inline: var(--space-3);
     }
 }

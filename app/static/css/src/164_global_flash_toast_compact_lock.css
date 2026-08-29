@@ -25,23 +25,11 @@
 
 /* Runtime flash host: top-end toast stack, not a centered modal-like banner. */
 .app-flash-center-host {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 2140 !important;
-    display: flex !important;
+
     align-items: flex-start !important;
     justify-content: flex-end !important;
-    padding: 18px 22px !important;
-    pointer-events: none !important;
-}
 
-.app-flash-center-stack {
-    width: min(420px, calc(100vw - 32px)) !important;
-    max-height: min(80vh, 560px) !important;
-    display: grid !important;
-    gap: 10px !important;
-    overflow: visible !important;
-    pointer-events: auto !important;
+
 }
 
 .auth-alert-wrapper {
@@ -206,93 +194,10 @@
     margin-bottom: 0 !important;
 }
 
-/*
-   Runtime flash enhancer adds .app-flash-centered. Override that exact class
-   because it was the source of the oversized rounded banner in the login shot.
-*/
-.app-alert.app-flash-centered {
-    width: 100% !important;
-    min-height: 44px !important;
-    margin: 0 !important;
-    padding: 10px 38px 10px 42px !important;
-    display: block !important;
-    position: relative !important;
-    border-radius: 10px !important;
-    border: 1px solid var(--gft-info-line) !important;
-    border-left: 4px solid var(--gft-info-accent) !important;
-    background: var(--gft-info-bg) !important;
-    background-image: none !important;
-    color: var(--gft-info-text) !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, .06) !important;
-    font-size: .92rem !important;
-    font-weight: 600 !important;
-    line-height: 1.35 !important;
-    letter-spacing: 0 !important;
-    overflow: hidden !important;
-}
-
 .app-alert.app-flash-centered::before {
-    content: "" !important;
-    position: absolute !important;
-    inset: 0 auto 0 0 !important;
-    width: 0 !important;
+
     height: auto !important;
-    background: transparent !important;
-}
 
-.app-alert.app-flash-centered::after {
-    content: "i" !important;
-    width: 24px !important;
-    height: 24px !important;
-    position: absolute !important;
-    left: 11px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 50% !important;
-    background: rgba(37, 99, 235, .1) !important;
-    color: var(--gft-info-accent) !important;
-    font-size: .78rem !important;
-    font-weight: 700 !important;
-    line-height: 1 !important;
-}
-
-.app-alert.app-flash-centered .app-flash-message-text {
-    display: block !important;
-    min-width: 0 !important;
-    padding: 0 !important;
-    color: inherit !important;
-    font-size: inherit !important;
-    font-weight: inherit !important;
-    line-height: inherit !important;
-}
-
-.app-alert.app-flash-centered .btn-close {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    position: absolute !important;
-    top: 50% !important;
-    right: 9px !important;
-    transform: translateY(-50%) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 7px !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    opacity: .58 !important;
-}
-
-.app-alert.app-flash-centered .btn-close:hover,
-.app-alert.app-flash-centered .btn-close:focus-visible {
-    background-color: rgba(15, 23, 42, .06) !important;
-    opacity: .86 !important;
-    outline: none !important;
-    box-shadow: none !important;
 }
 
 .app-alert.app-flash-centered.alert-success {
@@ -303,7 +208,7 @@
 }
 
 .app-alert.app-flash-centered.alert-success::after {
-    content: "✓" !important;
+
     background: rgba(22, 163, 74, .12) !important;
     color: var(--gft-success-accent) !important;
 }
@@ -316,7 +221,7 @@
 }
 
 .app-alert.app-flash-centered.alert-warning::after {
-    content: "!" !important;
+
     background: rgba(217, 119, 6, .12) !important;
     color: var(--gft-warning-accent) !important;
 }
@@ -331,7 +236,7 @@
 
 .app-alert.app-flash-centered.alert-danger::after,
 .app-alert.app-flash-centered.alert-error::after {
-    content: "×" !important;
+
     background: rgba(220, 38, 38, .12) !important;
     color: var(--gft-danger-accent) !important;
 }
@@ -341,10 +246,6 @@
         align-items: flex-start !important;
         justify-content: center !important;
         padding: 12px !important;
-    }
-
-    .app-flash-center-stack {
-        width: calc(100vw - 24px) !important;
     }
 
     .auth-alert-wrapper,

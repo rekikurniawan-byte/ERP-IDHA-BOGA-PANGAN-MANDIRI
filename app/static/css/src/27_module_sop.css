@@ -1,25 +1,4 @@
-/* ==================================================
-   PRODUCTION SOURCE: 27_module_sop.css
-   CSS architecture split is cascade-preserving.
-   Original legacy line range: 6942-7264.
-   Note: Android/mobile browser global polish block.
-   Edit this source file, then run: python tools/build_css.py
-   ================================================== */
 
-/* ==================================================
-   UI Android/Mobile Browser Global polish
-   - No permanent sidebar on tablet/mobile
-   - No uncontrolled horizontal overflow
-   - Touch target minimal 44px
-   - Filter/form/actions full-width on mobile
-   - Table card/controlled scroll behavior strengthened
-   - Uses global theme tokens only; no random page color
-   ================================================== */
-
-html,
-body {
-    max-width: 100%;
-}
 
 body[data-mobile-polish="UI"] {
     min-width: 0;
@@ -29,7 +8,6 @@ body[data-mobile-polish="UI"] .app-shell,
 body[data-mobile-polish="UI"] .app-main,
 body[data-mobile-polish="UI"] .content-area,
 body[data-mobile-polish="UI"] .container-fluid,
-body[data-mobile-polish="UI"] .page-shell,
 body[data-mobile-polish="UI"] .finance-page-shell,
 body[data-mobile-polish="UI"] .accounting-page-shell,
 body[data-mobile-polish="UI"] .logistics-hpp-page-shell,
@@ -93,8 +71,8 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
         bottom: 0 !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
-        width: var(--shell-mobile-sidebar-width) !important;
-        max-width: calc(100vw - 24px) !important;
+
+
         margin: 0 !important;
         transform: translateX(-110%) !important;
     }
@@ -102,10 +80,6 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
     .app-sidebar.is-open,
     .app-sidebar.show {
         transform: translateX(0) !important;
-    }
-
-    .app-sidebar:not(.is-open):not(.show) {
-        pointer-events: none;
     }
 
     .sidebar-nav {
@@ -117,9 +91,9 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
     }
 
     .app-main {
-        width: 100% !important;
+
         max-width: 100% !important;
-        margin-left: 0 !important;
+
         overflow-x: clip;
     }
 
@@ -169,9 +143,8 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
     }
 
     body[data-mobile-polish="UI"] .page-header,
-    body[data-mobile-polish="UI"] .section-header,
-    body[data-mobile-polish="UI"] .card-header,
-    body[data-mobile-polish="UI"] .modal-header {
+body[data-mobile-polish="UI"] .section-header,
+body[data-mobile-polish="UI"] .card-header {
         gap: 10px;
     }
 
@@ -190,16 +163,15 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
     }
 
     body[data-mobile-polish="UI"] .btn,
-    body[data-mobile-polish="UI"] .app-btn-primary,
-    body[data-mobile-polish="UI"] .app-btn-secondary,
-    body[data-mobile-polish="UI"] .app-btn-ghost,
-    body[data-mobile-polish="UI"] .app-btn-danger,
-    body[data-mobile-polish="UI"] .dropdown-item,
-    body[data-mobile-polish="UI"] .sidebar-link,
-    body[data-mobile-polish="UI"] .sidebar-group-toggle,
-    body[data-mobile-polish="UI"] .form-control,
-    body[data-mobile-polish="UI"] .form-select,
-    body[data-mobile-polish="UI"] .input-group-text {
+body[data-mobile-polish="UI"] .app-btn-primary,
+body[data-mobile-polish="UI"] .app-btn-secondary,
+body[data-mobile-polish="UI"] .app-btn-ghost,
+body[data-mobile-polish="UI"] .app-btn-danger,
+body[data-mobile-polish="UI"] .dropdown-item,
+body[data-mobile-polish="UI"] .sidebar-link,
+body[data-mobile-polish="UI"] .sidebar-group-toggle,
+body[data-mobile-polish="UI"] .form-control,
+body[data-mobile-polish="UI"] .form-select {
         min-height: 44px;
     }
 
@@ -310,9 +282,7 @@ body[data-mobile-overflow-risk="true"] .mobile-overflow-warning {
         margin: 12px auto;
     }
 
-    body[data-mobile-polish="UI"] .modal-content {
-        border-radius: var(--radius-modal);
-    }
+
 }
 
 @media (max-width: 420px) {

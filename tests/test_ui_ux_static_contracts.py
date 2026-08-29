@@ -51,7 +51,7 @@ def test_css_architecture_guard_contract_is_present():
 
     assert "FORBIDDEN_CSS_FILENAME_WORDS" in build_css
     assert 'IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"' in build_css
-    assert "IMPORTANT_BASELINE_COUNT = 8728" in build_css
+    assert "IMPORTANT_BASELINE_COUNT = 6372" in build_css
     assert "LEGACY_FORBIDDEN_CSS_SOURCE_NAMES" in build_css
     assert "_important_guard" in build_css
     assert "_status_token_report" in build_css
@@ -80,7 +80,14 @@ def test_css_important_count_uses_literal_tokens_not_matching_lines():
     css = "\n".join(_read(f"app/static/css/src/{filename}") for filename in source_order)
 
     assert len(occurrences) == len(re.findall(r"!important", css))
-    assert len(occurrences) == 8728
+    # Fase 4: 8728 -> 8499 (drift predating this work) -> 6625 after removing
+    # 1,874 dead !important declarations -- ones a later rule with the same
+    # selector set and at-rule context already beat, so they could never win
+    # -> 6618 after dropping legacy-theme rules -> 6372 after dropping rules
+    # that require a class no element ever carries. Each step was verified as
+    # a no-op against a computed-style fingerprint of every element on 27
+    # pages x 2 viewports x 2 themes. Ratchet only downward.
+    assert len(occurrences) == 6372
 
 
 def test_css_forbidden_patch_names_are_legacy_only():
