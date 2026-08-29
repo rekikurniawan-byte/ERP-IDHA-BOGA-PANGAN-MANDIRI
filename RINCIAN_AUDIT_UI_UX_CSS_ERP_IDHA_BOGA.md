@@ -189,6 +189,8 @@ op-prod-delivery-flow-steps                            quick-action-grid
 
 Catatan: kelompok `app-atomic-*` sebagian dibuat dinamis oleh `main.js`; sudah diverifikasi lewat pemindaian string `main.js`, dan yang tersisa di daftar ini memang tidak direferensikan di mana pun.
 
+> **Koreksi (dikerjakan di Fase 4).** Angka 532 dan daftar di atas terlalu longgar. Pemindaian string saja tidak menangkap nama class yang dirakit saat runtime, dan tiga nama di daftar ini ternyata **hidup**: `dashboard-command-link-card-3`, `dashboard-command-link-card-4` (dirakit dari `loop.index` di template) dan `dashboard-donut-metric-success` (dirakit dari kunci metrik). Setelah ditambah dua sumber bukti — prefiks yang diikuti interpolasi, dan kehadiran nyata di DOM 27 halaman yang di-render — angka sebenarnya **404**, dan 105 class terselamatkan dari penghapusan keliru. Lihat `tools/css_dead_classes.py`.
+
 ---
 
 ## 8. Rencana Perbaikan Bertahap
@@ -222,7 +224,8 @@ Sasaran: memutus rantai "1 perubahan desain = 175 file".
 ### Fase 4 — Pembongkaran (setelah modul terakhir migrasi)
 Baru di sini file lama boleh disentuh, dan urutannya dari yang paling aman:
 1. Hapus tema mati: `azure-calm`, `dark-enterprise`, `clear-focus`, `light-clean` (~75 rule).
-2. Hapus 532 class mati.
+   > **Koreksi (sudah dikerjakan).** Yang boleh dihapus hanya **rule CSS**-nya (24 rule utuh + 6 selector-list dipangkas). Nama tema itu sendiri masih dipakai di `base.html` dan `main.js` sebagai **peta migrasi** yang mengubah nilai lama di `localStorage` pengguna jadi `light-mono`/`dark-mono` — justru peta itulah yang membuat rule CSS-nya tak terjangkau. Menghapus petanya akan membuat pengguna lama terdampar di tema tak dikenal.
+2. Hapus 532 class mati. → angka sebenarnya **404**; lihat koreksi di bagian 7.
 3. Bongkar file `_lock`/`_fix`/`_override` dari **nomor terbesar ke terkecil** (167 → 143 → …). Nomor besar = tambalan paling akhir dan paling sedikit yang bergantung padanya.
 4. Setiap file dihapus → build → visual regression → commit terpisah. Jangan gabung.
 5. Turunkan `IMPORTANT_BASELINE_COUNT` di `build_css.py` setiap kali turun, supaya angkanya tidak bisa naik lagi.
