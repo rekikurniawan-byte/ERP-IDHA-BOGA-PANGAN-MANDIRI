@@ -33,7 +33,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from visual_baseline.computed_fingerprint import (  # noqa: E402
-    BASE_URL, PAGES, PUBLIC_PAGES, THEMES, VIEWPORTS, FREEZE_CSS, _session_cookie,
+    BASE_URL, PUBLIC_PAGES, THEMES, VIEWPORTS, FREEZE_CSS,
+    _session_cookie, discover_pages,
 )
 
 # Returns [[sourceHref, ruleIndexInSheet, selectorText, property, winCount], ...]
@@ -216,6 +217,10 @@ def main() -> int:
 
     lo, hi = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) > 2 else (0, 999)
     cookie = _session_cookie()
+    pages = discover_pages()
+    print(f"analysing {len(pages)} discovered pages plus {len(PUBLIC_PAGES)} public ones "
+          f"across {len(VIEWPORTS) * len(THEMES)} viewport/theme combinations",
+          file=sys.stderr)
 
     declared: dict[str, tuple[str, str]] = {}
     win_totals: collections.Counter = collections.Counter()
@@ -224,7 +229,7 @@ def main() -> int:
         browser = playwright.chromium.launch()
         for viewport_name, width, height in VIEWPORTS:
             for theme in THEMES:
-                for authed, page_list in ((True, PAGES), (False, PUBLIC_PAGES)):
+                for authed, page_list in ((True, pages), (False, PUBLIC_PAGES)):
                     context = browser.new_context(
                         viewport={"width": width, "height": height}, color_scheme=theme)
                     if authed:

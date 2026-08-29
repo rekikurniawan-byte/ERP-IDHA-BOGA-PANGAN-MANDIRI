@@ -10,6 +10,17 @@ element that never even scrolls into view.
 
 The DOM is identical between runs, so elements are compared by document order.
 
+Pages come from the app's own url_map, not a hand-written list: every GET
+route that renders, with real ids filled in from the database, currently ~250
+of them. Coverage is the whole point. A hand-written list goes stale silently,
+and its gaps do not announce themselves -- an earlier 10-page list happened to
+omit layouts/portal_mobile.html, so five files that set the portal topbar
+height looked like dead code and were very nearly deleted.
+
+Cost follows from that: ~250 pages x 2 viewports x 2 themes is roughly 45
+minutes per capture, so a before/after pair is around an hour and a half.
+That is the price of an answer you can act on.
+
 Needs the dev server running against the real database, and requires the
 dev extras: pip install -r requirements-dev.txt && python -m playwright install chromium
 
@@ -48,11 +59,16 @@ PROPERTIES = [
     "visibility", "whiteSpace", "verticalAlign", "float", "flexGrow", "flexBasis",
 ]
 
-# One page per structural family. Breadth matters more than depth here: a
-# rule only shows up in the fingerprint if some page actually has an element
-# it matches, so whole families (auth, portal, dashboard) need a page each or
-# changes to their CSS are invisible to this check.
-PAGES = [
+# Pages are discovered from the app's url_map rather than listed by hand --
+# see discover_pages(). A hand-written list silently goes stale as routes are
+# added, and its gaps are invisible: an earlier 10-page list omitted
+# layouts/portal_mobile.html entirely, which made five files that set the
+# portal topbar height look like dead code.
+#
+# The list below is the fallback used when discovery cannot reach the
+# database, and doubles as documentation of the structural families that must
+# be covered whatever happens.
+FALLBACK_PAGES = [
     ("items", "/master/items"),
     ("finance_transactions", "/finance/transactions"),
     ("accounting_journals", "/accounting/journals"),
@@ -117,6 +133,74 @@ COLLECT_JS = """(props) => {
 FREEZE_CSS = "*,*::before,*::after{animation:none !important;transition:none !important;}"
 
 
+# Endpoints whose name or path contains any of these are never visited: they
+# transfer a file, destroy something, or end the session. Everything else in
+# this app gates its mutations behind POST and only renders on GET.
+SKIP_WORDS = ("download", "delete", "remove", "logout", "attachment",
+              "raw", "stream", "serve", "file")
+
+# One real id per common route parameter, so detail and form pages are
+# reachable instead of being skipped for want of an id.
+PARAM_TABLES = {
+    "invoice_id": "invoices", "order_id": "daily_orders", "user_id": "users",
+    "client_id": "clients", "mandor_id": "mandors", "item_id": "items",
+    "worker_id": "workers", "driver_id": "drivers", "production_id": "productions",
+    "delivery_id": "deliveries", "payroll_id": "payrolls", "journal_id": "journals",
+    "transaction_id": "field_transactions", "complaint_id": "customer_complaints",
+    "contract_id": "customer_contracts", "correction_id": "customer_corrections",
+    "debt_id": "worker_debts", "advance_id": "advances",
+    "expense_id": "operational_expenses", "asset_id": "fixed_assets",
+    "batch_id": "manual_billing_batches", "supplier_id": "suppliers",
+    "branch_id": "branches", "location_id": "delivery_locations",
+    "detail_id": "delivery_details", "period_id": "accounting_periods",
+    "draft_id": "portal_order_drafts", "receipt_id": "delivery_receipts",
+    "profile_id": "item_cost_profiles", "recipe_id": "recipes",
+}
+
+
+def discover_pages() -> list[tuple[str, str]]:
+    """Every GET route that renders a page, with real ids filled in.
+
+    Sorted by path so the page order is stable between runs.
+    """
+    import re
+
+    from app import create_app, db
+    from sqlalchemy import text as sql_text
+
+    app = create_app()
+    with app.app_context():
+        ids = {}
+        for parameter, table in PARAM_TABLES.items():
+            try:
+                row = db.session.execute(
+                    sql_text(f"SELECT id FROM {table} ORDER BY id LIMIT 1")).first()
+            except Exception:
+                continue
+            if row:
+                ids[parameter] = row[0]
+
+        found = []
+        for rule in app.url_map.iter_rules():
+            if "GET" not in rule.methods or rule.endpoint == "static":
+                continue
+            haystack = (rule.endpoint + rule.rule).lower()
+            if any(word in haystack for word in SKIP_WORDS):
+                continue
+            path = rule.rule
+            resolved = True
+            for argument in rule.arguments:
+                if argument not in ids:
+                    resolved = False
+                    break
+                path = re.sub(r"<[^<>]*%s>" % re.escape(argument), str(ids[argument]), path)
+            if not resolved or "<" in path:
+                continue
+            found.append((rule.endpoint.replace(".", "_"), path))
+
+    return sorted(set(found), key=lambda entry: entry[1])
+
+
 def _session_cookie() -> str:
     """Mint a Flask-Login cookie in-process.
 
@@ -144,11 +228,18 @@ def capture(out_path: str) -> int:
     cookie = _session_cookie()
     pages: dict[str, list] = {}
 
+    try:
+        authed_pages = discover_pages()
+        print(f"discovered {len(authed_pages)} GET pages from the url_map", file=sys.stderr)
+    except Exception as error:  # noqa: BLE001
+        print(f"route discovery failed ({error}); using the fallback list", file=sys.stderr)
+        authed_pages = FALLBACK_PAGES
+
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         for viewport_name, width, height in VIEWPORTS:
             for theme in THEMES:
-              for authenticated, page_list in ((True, PAGES), (False, PUBLIC_PAGES)):
+              for authenticated, page_list in ((True, authed_pages), (False, PUBLIC_PAGES)):
                 context = browser.new_context(viewport={"width": width, "height": height},
                                               color_scheme=theme)
                 if authenticated:
