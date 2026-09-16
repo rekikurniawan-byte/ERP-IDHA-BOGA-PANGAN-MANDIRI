@@ -201,11 +201,15 @@ def discover_pages() -> list[tuple[str, str]]:
     return sorted(set(found), key=lambda entry: entry[1])
 
 
-def _session_cookie() -> str:
-    """Mint a Flask-Login cookie in-process.
+def _session_cookie(role: str = "OWNER") -> str:
+    """Mint a Flask-Login cookie in-process for a user with the given role.
 
     Flask's default session is a signed cookie, not server-side state, so a
     cookie built here is valid against the separately running dev server.
+
+    The role matters: whole template families are reachable only by the role
+    they belong to. The portal role dashboards own all the .portal-home-*
+    markup, and an OWNER session never renders a single element of it.
     """
     from app import create_app
     from app.models import User
@@ -213,9 +217,11 @@ def _session_cookie() -> str:
     app = create_app()
     with app.app_context():
         client = app.test_client()
-        user = User.query.filter_by(role="OWNER").first() or User.query.first()
+        user = User.query.filter_by(role=role).first()
+        if user is None and role == "OWNER":
+            user = User.query.first()
         if user is None:
-            raise SystemExit("no users in the database to authenticate as")
+            raise SystemExit(f"no user with role {role!r} to authenticate as")
         with client.session_transaction() as session:
             session["_user_id"] = str(user.get_id())
             session["_fresh"] = True

@@ -20,7 +20,7 @@ markup only built by JS after an interaction, are not represented.
 
 Usage:
     python tools/css_selector_liveness.py --control ".app-card" \\
-        ".app-stat-card.highlight" ".summary-card.danger"
+        ".example-card.highlight" ".example-card.danger"
 
     python tools/css_selector_liveness.py --from-file selectors.txt \\
         --control ".app-card" --control ".btn"
@@ -62,6 +62,12 @@ def parse_args() -> argparse.Namespace:
                         help="selector known to be live; repeatable, required")
     parser.add_argument("--themes", default=",".join(THEMES),
                         help="comma-separated colour schemes to visit")
+    parser.add_argument("--role", action="append", default=[],
+                        help="authenticate as a user with this role; repeatable. "
+                             "Defaults to OWNER. Whole template families are "
+                             "role-gated -- the portal role dashboards own all "
+                             "the .portal-home-* markup and an OWNER session "
+                             "never renders any of it.")
     return parser.parse_args()
 
 
@@ -83,10 +89,10 @@ def main() -> int:
         return 2
 
     probe = selectors + args.control
-    cookie = _session_cookie()
+    roles = args.role or ["OWNER"]
     pages = discover_pages()
     print(f"probing {len(selectors)} selectors and {len(args.control)} controls "
-          f"across {len(pages)} pages", file=sys.stderr)
+          f"across {len(pages)} pages as {', '.join(roles)}", file=sys.stderr)
 
     hits: collections.Counter = collections.Counter()
     pages_seen: dict[str, set[str]] = collections.defaultdict(set)
@@ -95,34 +101,37 @@ def main() -> int:
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
-        for theme in args.themes.split(","):
-            context = browser.new_context(viewport={"width": 1440, "height": 900},
-                                          color_scheme=theme.strip())
-            context.add_cookies([{"name": "session", "value": cookie,
-                                  "domain": "127.0.0.1", "path": "/"}])
-            page = context.new_page()
-            for name, path in pages:
-                try:
-                    response = page.goto(BASE_URL + path,
-                                         wait_until="domcontentloaded", timeout=45000)
-                    if not response or response.status != 200:
-                        continue
-                    page.add_style_tag(content=FREEZE_CSS)
-                    page.wait_for_timeout(250)
-                    visited += 1
-                    for selector, count in page.evaluate(COUNT_JS, probe).items():
-                        if count < 0:
-                            invalid.add(selector)
-                        elif count:
-                            hits[selector] += count
-                            pages_seen[selector].add(name)
-                except Exception as error:  # noqa: BLE001
-                    print(f"error {path}: {str(error)[:90]}", file=sys.stderr)
-            context.close()
+        for role in roles:
+            cookie = _session_cookie(role)
+            for theme in args.themes.split(","):
+                context = browser.new_context(viewport={"width": 1440, "height": 900},
+                                              color_scheme=theme.strip())
+                context.add_cookies([{"name": "session", "value": cookie,
+                                      "domain": "127.0.0.1", "path": "/"}])
+                page = context.new_page()
+                for name, path in pages:
+                    try:
+                        response = page.goto(BASE_URL + path,
+                                             wait_until="domcontentloaded", timeout=45000)
+                        if not response or response.status != 200:
+                            continue
+                        page.add_style_tag(content=FREEZE_CSS)
+                        page.wait_for_timeout(250)
+                        visited += 1
+                        for selector, count in page.evaluate(COUNT_JS, probe).items():
+                            if count < 0:
+                                invalid.add(selector)
+                            elif count:
+                                hits[selector] += count
+                                pages_seen[selector].add(f"{role}:{name}")
+                    except Exception as error:  # noqa: BLE001
+                        print(f"error {role} {path}: {str(error)[:80]}", file=sys.stderr)
+                context.close()
         browser.close()
 
     print()
-    print(f"page visits that returned 200: {visited}")
+    print(f"page visits that returned 200: {visited} "
+          f"(roles: {', '.join(roles)})")
     print()
     print("controls:")
     dead_controls = []

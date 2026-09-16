@@ -55,12 +55,20 @@ TOKEN = re.compile(r"[A-Za-z_][\w-]*")
 ASSEMBLED_PREFIX = re.compile(r"([A-Za-z][\w-]*-)(?=\{\{|\{%|\$\{|\s*[\"']\s*[+~]|\s*[+~])")
 FUNCTIONAL_PSEUDO = re.compile(r":[a-z-]+\(")
 
+# Places a class name can legitimately come from: markup, the scripts that
+# attach classes at runtime, vendored Bootstrap's own JS, services that emit a
+# class name into a template, and tests that assert on rendered markup.
+#
+# tools/ is deliberately NOT scanned. Nothing under it renders anything -- it
+# only talks *about* selectors -- so including it lets a class name mentioned
+# in a docstring immunise itself from detection. That is not hypothetical:
+# `.summary-card` has 56 rules and appears in zero templates, and went
+# undetected purely because an example in css_selector_liveness.py named it.
 SCAN_GLOBS = [
     "app/templates/**/*.html",
     "app/static/js/**/*.js",
     "app/static/vendor/**/*.js",
     "app/**/*.py",
-    "tools/**/*.py",
     "tests/**/*.py",
 ]
 
