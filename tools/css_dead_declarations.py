@@ -231,6 +231,48 @@ def _empty_block_spans(text: str, blanked: str) -> list[tuple[int, int]]:
     return spans
 
 
+def _collapse_body_blank_lines(text: str) -> str:
+    """Drop blank lines inside declaration blocks, keeping them between rules.
+
+    Removing a declaration leaves the blank line it sat on, so a cleaned file
+    ends up with ragged holes inside otherwise short rules. CSS ignores that
+    whitespace, but a reader cannot tell a gap left by a deletion from one put
+    there deliberately, and 02_typography.css had rules reduced to a property
+    marooned between two blank lines.
+
+    Only bodies with no nested block are touched, so @media and friends keep
+    the blank lines separating the rules they contain.
+    """
+    blanked = blank_comments(text)
+    edits: list[tuple[int, int, str]] = []
+    index = 0
+    while index < len(blanked):
+        if blanked[index] != "{":
+            index += 1
+            continue
+        depth = 1
+        cursor = index + 1
+        while cursor < len(blanked) and depth:
+            if blanked[cursor] == "{":
+                depth += 1
+            elif blanked[cursor] == "}":
+                depth -= 1
+            cursor += 1
+        body_start, body_end = index + 1, cursor - 1
+        if "{" not in blanked[body_start:body_end]:
+            body = text[body_start:body_end]
+            # Match the blank lines only -- never the indentation of the line
+            # that survives, or the declaration after the gap lands in column 0.
+            collapsed = re.sub(r"\n(?:[ \t]*\n)+", "\n", body)
+            if collapsed != body:
+                edits.append((body_start, body_end, collapsed))
+        index = cursor
+
+    for start, end, replacement in reversed(edits):
+        text = text[:start] + replacement + text[end:]
+    return text
+
+
 def tidy() -> tuple[int, int]:
     removed_blocks = 0
     rewritten = 0
@@ -252,6 +294,7 @@ def tidy() -> tuple[int, int]:
             text = text[:start] + text[end:]
         removed_blocks += len(kept)
 
+        text = _collapse_body_blank_lines(text)
         text = re.sub(r"(\n[ \t]*){3,}\n", "\n\n", text)
         text = re.sub(r"\n[ \t]+\n", "\n\n", text)
         if text != original:
