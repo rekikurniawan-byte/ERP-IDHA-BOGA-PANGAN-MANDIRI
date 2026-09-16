@@ -37,9 +37,11 @@ IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"
 # later rule with the same selector set and at-rule context already beat
 # -> 6,618 after dropping rules keyed to legacy data-theme values that
 # base.html can no longer produce
-# -> 6,372 after dropping rules that require a class no element ever carries.
-# See tools/css_dead_declarations.py.
-IMPORTANT_BASELINE_COUNT = 6372
+# -> 6,372 after dropping rules that require a class no element ever carries
+# -> 6,363 after dropping the half of 157_dark_card_contrast_rescue_lock.css
+# whose selectors matched nothing across 1,984 page visits.
+# See tools/css_dead_declarations.py and tools/css_selector_liveness.py.
+IMPORTANT_BASELINE_COUNT = 6363
 
 SOURCE_ORDER = [
     "00_tokens.css",

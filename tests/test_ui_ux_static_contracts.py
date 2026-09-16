@@ -51,7 +51,7 @@ def test_css_architecture_guard_contract_is_present():
 
     assert "FORBIDDEN_CSS_FILENAME_WORDS" in build_css
     assert 'IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"' in build_css
-    assert "IMPORTANT_BASELINE_COUNT = 6372" in build_css
+    assert "IMPORTANT_BASELINE_COUNT = 6363" in build_css
     assert "LEGACY_FORBIDDEN_CSS_SOURCE_NAMES" in build_css
     assert "_important_guard" in build_css
     assert "_status_token_report" in build_css
@@ -84,10 +84,13 @@ def test_css_important_count_uses_literal_tokens_not_matching_lines():
     # 1,874 dead !important declarations -- ones a later rule with the same
     # selector set and at-rule context already beat, so they could never win
     # -> 6618 after dropping legacy-theme rules -> 6372 after dropping rules
-    # that require a class no element ever carries. Each step was verified as
+    # that require a class no element ever carries -> 6363 after dropping the
+    # half of 157_dark_card_contrast_rescue_lock.css whose selectors matched
+    # nothing across 1,984 page visits. The first three steps were verified as
     # a no-op against a computed-style fingerprint of every element on 27
-    # pages x 2 viewports x 2 themes. Ratchet only downward.
-    assert len(occurrences) == 6372
+    # pages x 2 viewports x 2 themes; the last against selector reachability
+    # as all four roles. Ratchet only downward.
+    assert len(occurrences) == 6363
 
 
 def test_css_forbidden_patch_names_are_legacy_only():

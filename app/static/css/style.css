@@ -38614,126 +38614,24 @@ body :where(
 
 /*
    Dark Card Contrast Rescue Lock
-   Fixes dark metric/status cards whose text was forced dark by global cleanup.
+   Keeps text readable on cards that carry a dark background.
    CSS only. No route, data, transaction, or ERP logic changes.
+
+   Fase 4: the original first half of this file rescued cards carrying
+   .highlight/.success/.warning/.danger/.info, plus cards with an inline
+   background, and defined --dark-card-* for them. None of that markup exists.
+   32 selectors were probed across every discoverable GET page as OWNER and as
+   all three portal roles -- 1,984 page visits -- and matched nothing, while
+   the controls for the same card families were strongly live (.app-stat-card
+   902 matches, .portal-home-metric-row > article 5,504). No template carries
+   those modifiers and no JS attaches them. A rule whose selector matches
+   nothing cannot affect rendering, so the whole first half is gone, and the
+   --dark-card-* tokens with it -- they had no reader outside it.
+
+   What is left is live and stays. Do not "simplify" the :not() chains below:
+   the classes they exclude never appear, but each :not() still contributes
+   specificity, so dropping them would change which rule wins.
 */
-
-:root {
-    --dark-card-bg: #0f4f53;
-    --dark-card-bg-2: #0b3f43;
-    --dark-card-text: #f8fafc;
-    --dark-card-muted: #dbeafe;
-}
-
-/* Known dark statistic/card variants */
-body :where(
-    .app-stat-card.highlight,
-    .app-stat-card.success,
-    .app-stat-card.warning,
-    .app-stat-card.danger,
-    .app-stat-card.info,
-    .summary-card.highlight,
-    .summary-card.success,
-    .summary-card.warning,
-    .summary-card.danger,
-    .summary-card.info,
-    .dashboard-stat-card.highlight,
-    .dashboard-stat-card.success,
-    .dashboard-stat-card.warning,
-    .dashboard-stat-card.danger,
-    .dashboard-stat-card.info,
-    .customer-success-summary-card.highlight,
-    .customer-success-summary-card.success,
-    .customer-success-summary-card.warning,
-    .customer-success-summary-card.danger,
-    .customer-success-summary-card.info,
-    .portal-home-metric-row > article.highlight,
-    .portal-home-metric-row > article.success,
-    .portal-home-metric-row > article.warning,
-    .portal-home-metric-row > article.danger,
-    .portal-home-metric-row > article.info,
-    .portal-home-alert.is-dark,
-    .portal-home-alert.highlight
-) {
-    background: var(--dark-card-bg) !important;
-    background-image: none !important;
-    border-color: var(--dark-card-bg-2) !important;
-    color: var(--dark-card-text) !important;
-}
-
-body :where(
-    .app-stat-card.highlight,
-    .app-stat-card.success,
-    .app-stat-card.warning,
-    .app-stat-card.danger,
-    .app-stat-card.info,
-    .summary-card.highlight,
-    .summary-card.success,
-    .summary-card.warning,
-    .summary-card.danger,
-    .summary-card.info,
-    .dashboard-stat-card.highlight,
-    .dashboard-stat-card.success,
-    .dashboard-stat-card.warning,
-    .dashboard-stat-card.danger,
-    .dashboard-stat-card.info,
-    .customer-success-summary-card.highlight,
-    .customer-success-summary-card.success,
-    .customer-success-summary-card.warning,
-    .customer-success-summary-card.danger,
-    .customer-success-summary-card.info,
-    .portal-home-metric-row > article.highlight,
-    .portal-home-metric-row > article.success,
-    .portal-home-metric-row > article.warning,
-    .portal-home-metric-row > article.danger,
-    .portal-home-metric-row > article.info,
-    .portal-home-alert.is-dark,
-    .portal-home-alert.highlight
-) :where(h1, h2, h3, h4, h5, h6, strong, b, span, p, small, a, div, i) {
-    color: var(--dark-card-text) !important;
-    text-shadow: none !important;
-}
-
-body :where(
-    .app-stat-card.highlight,
-    .app-stat-card.success,
-    .app-stat-card.warning,
-    .app-stat-card.danger,
-    .app-stat-card.info,
-    .summary-card.highlight,
-    .summary-card.success,
-    .summary-card.warning,
-    .summary-card.danger,
-    .summary-card.info,
-    .dashboard-stat-card.highlight,
-    .dashboard-stat-card.success,
-    .dashboard-stat-card.warning,
-    .dashboard-stat-card.danger,
-    .dashboard-stat-card.info,
-    .customer-success-summary-card.highlight,
-    .customer-success-summary-card.success,
-    .customer-success-summary-card.warning,
-    .customer-success-summary-card.danger,
-    .customer-success-summary-card.info,
-    .portal-home-metric-row > article.highlight,
-    .portal-home-metric-row > article.success,
-    .portal-home-metric-row > article.warning,
-    .portal-home-metric-row > article.danger,
-    .portal-home-metric-row > article.info,
-    .portal-home-alert.is-dark,
-    .portal-home-alert.highlight
-) :where(p, small, .small, .form-text, .text-muted, .text-secondary) {
-    color: var(--dark-card-muted) !important;
-}
-
-/* Direct background-color rescue for old cards that have no semantic class. */
-body :where(.app-stat-card, .summary-card, .dashboard-stat-card, .customer-success-summary-card, .portal-home-metric-row > article)[style*="background"] {
-    color: var(--dark-card-text) !important;
-}
-
-body :where(.app-stat-card, .summary-card, .dashboard-stat-card, .customer-success-summary-card, .portal-home-metric-row > article)[style*="background"] :where(h1, h2, h3, h4, h5, h6, strong, b, span, p, small, div, i) {
-    color: var(--dark-card-text) !important;
-}
 
 /* If a card uses old theme classes with dark cyan/teal naming, keep it readable. */
 body :where(
