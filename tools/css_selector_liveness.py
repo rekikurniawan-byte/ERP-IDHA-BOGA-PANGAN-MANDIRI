@@ -14,9 +14,22 @@ and the tool says so instead of reporting everything as dead. This exists
 because an earlier coverage gap in the fingerprint produced a confident
 "no change" for five files that in fact set the portal topbar height.
 
-Still a bounded claim: "zero matches" covers the pages the url_map exposes as
-GET and that answer 200 for this session. Pages behind a different role, or
-markup only built by JS after an interaction, are not represented.
+Zero matches is where the thinking starts, not where it ends. A probe cannot
+distinguish "no such markup exists" from "the markup exists but this data
+never renders it", so every unmatched selector is triaged into three groups:
+dependent on emptiness (:empty, empty-state siblings), referenced in a
+template or script and therefore merely conditional, or referenced nowhere.
+Only the last group is actionable.
+
+That triage is not bookkeeping. Probing the four files the effective-rules map
+scored 87-89% "idle" returned 43 unmatched selectors, of which 8 depended on
+emptiness and 35 were conditional -- and zero were real candidates. Acting on
+the raw list would have deleted the shared global filter bar, the zero-state
+component and the empty-table styling.
+
+Still bounded even then: coverage is the GET pages the url_map exposes that
+answer 200 for the roles given, and markup built by JS only after an
+interaction is never represented.
 
 Usage:
     python tools/css_selector_liveness.py --control ".app-card" \\
@@ -32,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import re
 import sys
 from pathlib import Path
 
@@ -51,6 +65,48 @@ COUNT_JS = """(selectors) => {
   }
   return out;
 }"""
+
+
+CLASS_IN_SELECTOR = re.compile(r"\.(-?[_a-zA-Z][\w-]*)")
+# Selectors that only match when something is absent: :empty, and the sibling
+# combinators used to style an empty-state block that follows a table.
+EMPTINESS_DEPENDENT = re.compile(r":empty\b|\+\s*\.|~\s*\.")
+SOURCE_GLOBS = ("app/templates/**/*.html", "app/static/js/**/*.js", "app/**/*.py")
+
+
+def triage_unmatched(selectors: list[str]):
+    """Split 'matched nothing' into why, because the why decides everything.
+
+    Measured on this codebase: of 43 selectors that matched nothing across
+    1,988 page visits, 8 depended on emptiness and 35 were rendered
+    conditionally. Zero were actually unreferenced. Reporting all 43 as dead
+    would have invited deleting live markup.
+    """
+    blobs = []
+    for pattern in SOURCE_GLOBS:
+        for path in ROOT.glob(pattern):
+            if path.is_file():
+                try:
+                    blobs.append(path.read_text(encoding="utf-8", errors="replace"))
+                except OSError:
+                    pass
+
+    empty_dependent, referenced, candidates = [], [], []
+    for selector in selectors:
+        if EMPTINESS_DEPENDENT.search(selector):
+            empty_dependent.append(selector)
+            continue
+        found = None
+        for name in CLASS_IN_SELECTOR.findall(selector):
+            pattern = re.compile(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])")
+            if any(pattern.search(blob) for blob in blobs):
+                found = name
+                break
+        if found:
+            referenced.append((selector, f"'{found}' appears in source"))
+        else:
+            candidates.append(selector)
+    return empty_dependent, referenced, candidates
 
 
 def parse_args() -> argparse.Namespace:
@@ -155,20 +211,36 @@ def main() -> int:
             print(f"  {selector}")
 
     live = [s for s in selectors if hits[s]]
-    dead = [s for s in selectors if not hits[s] and s not in invalid]
+    unmatched = [s for s in selectors if not hits[s] and s not in invalid]
     print()
     print(f"reachable ({len(live)}):")
     for selector in live:
         where = sorted(pages_seen[selector])
         shown = ", ".join(where[:3]) + (f", +{len(where) - 3} more" if len(where) > 3 else "")
         print(f"  {selector:<48} {hits[selector]:>7} on {shown}")
+
+    empty_dependent, referenced, candidates = triage_unmatched(unmatched)
+
     print()
-    print(f"matched nothing anywhere ({len(dead)}):")
-    for selector in dead:
+    print(f"matched nothing, but DEPENDS ON EMPTINESS ({len(empty_dependent)}) -- "
+          "alive, merely not triggered by seeded data:")
+    for selector in empty_dependent:
         print(f"  {selector}")
     print()
-    print("'Matched nothing' covers the GET pages this session can reach. Markup")
-    print("built by JS only after an interaction is not represented.")
+    print(f"matched nothing, but RENDERED CONDITIONALLY ({len(referenced)}) -- "
+          "the class exists in a template or script:")
+    for selector, where in referenced:
+        print(f"  {selector:<48} {where}")
+    print()
+    print(f"matched nothing and REFERENCED NOWHERE ({len(candidates)}) -- "
+          "the only real candidates:")
+    for selector in candidates:
+        print(f"  {selector}")
+    print()
+    print("Only the last group is actionable. A probe cannot tell 'no such markup'")
+    print("from 'the markup exists but this data never renders it' -- an :empty")
+    print("rule, an empty-state sibling, or anything inside a Jinja conditional")
+    print("matches nothing on a seeded database while being entirely alive.")
     return 0
 
 

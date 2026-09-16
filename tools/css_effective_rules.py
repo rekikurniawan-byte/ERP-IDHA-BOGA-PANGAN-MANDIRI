@@ -7,11 +7,20 @@ rule with a DIFFERENT selector, which needs the real cascade to settle. This
 walks the rendered pages and, for every element and property, works out which
 declaration wins, then reports per source file how much of it ever wins.
 
-Read the output as a PRIORITY MAP, not a delete list. "Never wins here" is
-evidence about the pages captured, not proof about the app: only ~31 of 260
-templates render in this harness. Anything acted on still needs its own
-before/after run of tools/visual_baseline/computed_fingerprint.py, and
-ideally on pages that were not used to produce the candidate.
+Read the output as a PRIORITY MAP, not a delete list -- and treat even the
+priority as soft. Measured: the four files this map scored 87-89% "idle" were
+then probed selector by selector across 1,988 page visits as all four roles,
+and produced ZERO removable rules. Every unmatched selector turned out to
+depend on emptiness (:empty, empty-state siblings) or to sit inside a Jinja
+conditional the seeded data never triggers. One of those files,
+102_global_filter_bar_v2.css, is the shared global filter bar used on 18
+pages.
+
+"Never wins here" therefore means "no element on the captured pages, with
+this data, in these states" -- three caveats, any of which can be the whole
+explanation. Confirm with tools/css_selector_liveness.py, which triages
+unmatched selectors rather than reporting them as dead, before touching
+anything.
 
 Specificity follows the usual (id, class, type) counting. :where() counts
 zero; :is()/:not()/:has() take the highest specificity among their arguments.
