@@ -8446,11 +8446,20 @@ body[data-ui-catchup="UI"] .no-print .page-actions .btn {
 :root {
     --font-sans: "Inter", "Manrope", "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-number: "Inter", "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --font-weight-body: 450;
-    --font-weight-medium: 620;
-    --font-weight-strong: 740;
-    --font-weight-title: 800;
-    --font-weight-number: 820;
+    /* Fase 1 capped font weights at 700, but its remap only rewrote
+       `font-weight:` declarations -- these are custom-property definitions, so
+       they slipped through and kept feeding 740/800/820 into the cascade via
+       var(). They reach the most visible text in the app: every .app-table
+       thead th, every .metric-value, the .app-stat-card figures and
+       .content-header h1. Pointed at the single scale in 00_tokens.css now,
+       so there is one place to change a weight rather than two that disagree.
+       --font-weight-body and --font-weight-medium have no callers; kept as
+       aliases so the set stays coherent if something reaches for them. */
+    --font-weight-body: var(--fw-regular);
+    --font-weight-medium: var(--fw-semibold);
+    --font-weight-strong: var(--fw-bold);
+    --font-weight-title: var(--fw-bold);
+    --font-weight-number: var(--fw-bold);
     --text-xs: 11px;
     --text-sm: 12px;
     --text-base: 14px;
