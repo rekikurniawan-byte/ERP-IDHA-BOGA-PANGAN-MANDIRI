@@ -3,11 +3,11 @@ from flask import current_app
 from flask_login import login_required, current_user
 
 from app.utils.decorators import role_required
+from app.utils.roles import effective_role
 from app.services.user_management_service import (
     ROLE_ACCOUNTING,
     ROLE_FINANCE,
     ROLE_HR,
-    ROLE_CUSTOMER_SUCCESS,
     ROLE_LOGISTICS,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
@@ -65,16 +65,15 @@ def _role_landing_endpoint(role):
     PRODUCTION keeps this redirect-only/landing behavior read-only:
     no database write, no user mutation, and no notification generation.
     """
+    # Retired roles land where their successor does. The finance, accounting,
+    # logistics and HR dashboards still exist and ADMIN can open them; they
+    # are just no longer anyone's front door.
+    role = effective_role(role)
     landing_map = {
         "OWNER": "dashboard.owner",
         "ADMIN": "dashboard.admin",
         "DAPUR": "dashboard.dapur",
         "PENGANTAR": "dashboard.pengantar",
-        ROLE_FINANCE: "dashboard.finance",
-        ROLE_ACCOUNTING: "dashboard.accounting",
-        ROLE_LOGISTICS: "dashboard.logistics",
-        ROLE_HR: "dashboard.hr",
-        ROLE_CUSTOMER_SUCCESS: "customer_success.contracts",
     }
     if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_MANDOR, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
         return "portal.my_dashboard" if current_app.config.get("PORTAL_ENABLED", False) else None

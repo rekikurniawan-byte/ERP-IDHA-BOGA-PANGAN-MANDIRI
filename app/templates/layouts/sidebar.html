@@ -67,17 +67,17 @@
 {% set is_items = endpoint in ["master.items", "master.create_item", "master.edit_item", "master.toggle_item", "master.delete_item"] %}
 
 {% set all_roles = ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"] %}
-{% set can_view_reminders = role in all_roles %}
-{% set can_view_notifications = role in all_roles %}
-{% set can_view_finance = role in ["OWNER", "ADMIN", "FINANCE"] %}
-{% set can_view_accounting = role in ["OWNER", "ACCOUNTING"] %}
-{% set can_view_logistics = role in ["OWNER", "LOGISTICS", "DAPUR"] %}
-{% set can_view_hr = role in ["OWNER", "ADMIN", "HR"] %}
-{% set can_view_master = role in ["OWNER", "ADMIN", "FINANCE", "LOGISTICS"] %}
-{% set can_view_costing = role in ["OWNER", "ADMIN"] %}
-{% set can_view_portal = (global_portal_enabled|default(false)) and role in ["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_PT", "PORTAL_MANDOR", "PORTAL_DELEGATE", "PORTAL_CUSTOMER"] %}
-{% set can_admin_portal = role in ["OWNER", "ADMIN"] %}
-{% set can_view_customer_success = role in ["OWNER", "ADMIN", "CUSTOMER_SUCCESS"] %}
+{% set can_view_reminders = has_role(all_roles) %}
+{% set can_view_notifications = has_role(all_roles) %}
+{% set can_view_finance = has_role(["OWNER", "ADMIN", "FINANCE"]) %}
+{% set can_view_accounting = has_role(["OWNER", "ACCOUNTING"]) %}
+{% set can_view_logistics = has_role(["OWNER", "LOGISTICS", "DAPUR"]) %}
+{% set can_view_hr = has_role(["OWNER", "ADMIN", "HR"]) %}
+{% set can_view_master = has_role(["OWNER", "ADMIN", "FINANCE", "LOGISTICS"]) %}
+{% set can_view_costing = has_role(["OWNER", "ADMIN"]) %}
+{% set can_view_portal = (global_portal_enabled|default(false)) and has_role(["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_PT", "PORTAL_MANDOR", "PORTAL_DELEGATE", "PORTAL_CUSTOMER"]) %}
+{% set can_admin_portal = has_role(["OWNER", "ADMIN"]) %}
+{% set can_view_customer_success = has_role(["OWNER", "ADMIN", "CUSTOMER_SUCCESS"]) %}
 
 <aside class="app-sidebar" id="appSidebar" tabindex="-1" aria-label="Navigasi utama" data-sidebar-root>
     <div class="sidebar-brand">
@@ -304,7 +304,7 @@
                 </details>
             {% endif %}
 
-            {% if role in ["OWNER", "ADMIN", "DAPUR", "PENGANTAR"] %}
+            {% if has_role(["OWNER", "ADMIN", "DAPUR", "PENGANTAR"]) %}
                 <details class="sidebar-group" {% if is_operational %}open{% endif %}>
                     <summary class="sidebar-group-toggle {{ 'active' if is_operational else '' }}">
                         <span class="sidebar-group-title">
@@ -317,7 +317,7 @@
                     <div class="sidebar-submenu">
 
 
-                        {% if role in ["OWNER", "ADMIN"] %}
+                        {% if has_role(["OWNER", "ADMIN"]) %}
                             <a href="{{ url_for('operational.orders') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_operational_order else '' }}"
                                aria-current="{{ 'page' if is_operational_order else 'false' }}">
@@ -354,7 +354,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "DAPUR"] %}
+                        {% if has_role(["OWNER", "DAPUR"]) %}
                             <a href="{{ url_for('production.index') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint.startswith('production.') else '' }}"
                                aria-current="{{ 'page' if endpoint.startswith('production.') else 'false' }}">
@@ -572,7 +572,7 @@
                     </summary>
 
                     <div class="sidebar-submenu">
-                        {% if role in ["OWNER", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "LOGISTICS"]) %}
                             <a href="{{ url_for('logistics.index') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.index' else '' }}"
                                aria-current="{{ 'page' if endpoint == 'logistics.index' else 'false' }}">
@@ -581,7 +581,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "LOGISTICS"]) %}
                             <a href="{{ url_for('logistics.stock_opening_balances') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.stock_opening_balances' else '' }}"
                                aria-current="{{ 'page' if endpoint == 'logistics.stock_opening_balances' else 'false' }}">
@@ -604,7 +604,7 @@
                             <span>Permintaan Barang</span>
                         </a>
 
-                        {% if role in ["OWNER", "LOGISTICS", "DAPUR"] %}
+                        {% if has_role(["OWNER", "LOGISTICS", "DAPUR"]) %}
                             <a href="{{ url_for('logistics.kitchen_usage') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'logistics.kitchen_usage' else '' }}"
                                aria-current="{{ 'page' if endpoint == 'logistics.kitchen_usage' else 'false' }}">
@@ -662,7 +662,7 @@
                     </summary>
 
                     <div class="sidebar-submenu">
-                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "ADMIN", "LOGISTICS"]) %}
                             <a href="{{ url_for('master.index') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'master.index' else '' }}"
                                aria-current="{{ 'page' if endpoint == 'master.index' else 'false' }}">
@@ -671,7 +671,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "FINANCE"] %}
+                        {% if has_role(["OWNER", "FINANCE"]) %}
                             <a href="{{ url_for('master.clients') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_clients else '' }}"
                                aria-current="{{ 'page' if is_clients else 'false' }}">
@@ -680,7 +680,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "ADMIN"] %}
+                        {% if has_role(["OWNER", "ADMIN"]) %}
                             <a href="{{ url_for('master.mandors') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_mandors else '' }}"
                                aria-current="{{ 'page' if is_mandors else 'false' }}">
@@ -710,7 +710,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "ADMIN", "LOGISTICS"]) %}
                             <a href="{{ url_for('master.items') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_items else '' }}"
                                aria-current="{{ 'page' if is_items else 'false' }}">
@@ -719,7 +719,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "FINANCE"] %}
+                        {% if has_role(["OWNER", "FINANCE"]) %}
                             <a href="{{ url_for('master.bank_accounts') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_bank_accounts else '' }}"
                            aria-current="{{ 'page' if is_bank_accounts else 'false' }}">
@@ -728,7 +728,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "LOGISTICS"]) %}
                             <a href="{{ url_for('master.suppliers') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_suppliers else '' }}"
                            aria-current="{{ 'page' if is_suppliers else 'false' }}">
@@ -737,7 +737,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role in ["OWNER", "ADMIN", "LOGISTICS"] %}
+                        {% if has_role(["OWNER", "ADMIN", "LOGISTICS"]) %}
                             <a href="{{ url_for('master.item_cost_profiles') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_item_costing else '' }}"
                            aria-current="{{ 'page' if is_item_costing else 'false' }}">
@@ -786,14 +786,14 @@
             <div class="sidebar-label">Sistem</div>
 
 
-            {% if role in all_roles %}
+            {% if has_role(all_roles) %}
                 <a href="{{ url_for('sop.index') }}"
                    class="sidebar-link {{ 'active' if is_sop and not (is_disaster_recovery_sop or is_backup_restore_sop) else '' }}"
                    aria-current="{{ 'page' if is_sop and not (is_disaster_recovery_sop or is_backup_restore_sop) else 'false' }}">
                     <i class="bi bi-journal-text" aria-hidden="true"></i>
                     <span>SOP Center</span>
                 </a>
-                {% if role in ["OWNER", "ADMIN"] %}
+                {% if has_role(["OWNER", "ADMIN"]) %}
                     <a href="{{ url_for('sop.disaster_recovery') }}"
                        class="sidebar-link sidebar-sublink {{ 'active' if is_disaster_recovery_sop else '' }}"
                        aria-current="{{ 'page' if is_disaster_recovery_sop else 'false' }}">
@@ -820,7 +820,7 @@
 
                 <div class="sidebar-submenu">
 
-                    {% if role in ["OWNER", "ADMIN"] %}
+                    {% if has_role(["OWNER", "ADMIN"]) %}
                         <a href="{{ url_for('settings.recovery_center') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_recovery_center else '' }}"
                            aria-current="{{ 'page' if is_recovery_center else 'false' }}">

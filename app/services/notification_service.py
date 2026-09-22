@@ -16,20 +16,25 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models.system import Notification
 from app.services.live_reminder_service import build_live_reminder_center
+from app.utils.roles import effective_role
 
 logger = logging.getLogger(__name__)
 
 NOTIFICATION_STATUSES = {"UNREAD", "READ", "DISMISSED", "RESOLVED"}
 NOTIFICATION_PRIORITIES = {"CRITICAL", "WARNING", "INFO"}
-ROLE_TARGETS = {"OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"}
+ROLE_TARGETS = {"OWNER", "ADMIN", "DAPUR", "PENGANTAR"}
 
+# Finance and stock reminders used to target FINANCE and LOGISTICS. Those
+# roles are retired and ADMIN does the work (app/utils/roles.py), so a
+# reminder addressed to them would have been stored for nobody and never
+# seen. They now go to ADMIN.
 SECTION_ROLE_TARGET = {
-    "receivable": "FINANCE",
-    "payable": "FINANCE",
-    "cash_bank": "FINANCE",
-    "digital_proof": "FINANCE",
-    "stock": "LOGISTICS",
-    "hpp_order": "LOGISTICS",
+    "receivable": "ADMIN",
+    "payable": "ADMIN",
+    "cash_bank": "ADMIN",
+    "digital_proof": "ADMIN",
+    "stock": "ADMIN",
+    "hpp_order": "ADMIN",
     "delivery": "PENGANTAR",
 }
 
@@ -51,7 +56,9 @@ def _normalize_priority(priority: Optional[str]) -> str:
 
 
 def _normalize_role(role: Optional[str]) -> Optional[str]:
-    value = str(role or "").strip().upper()
+    # A caller naming a retired role (e.g. a form posting target_role=FINANCE)
+    # is addressed to that role's successor rather than silently dropped.
+    value = effective_role(role)
     return value if value in ROLE_TARGETS else None
 
 
@@ -119,7 +126,7 @@ def can_user_access_notification(notification: Notification, user: Any) -> bool:
         return False
     if notification.branch_id != getattr(user, "branch_id", None):
         return False
-    role = str(getattr(user, "role", "") or "").upper()
+    role = effective_role(getattr(user, "role", ""))
     if role == "OWNER":
         return True
     if notification.target_user_id and notification.target_user_id == getattr(user, "id", None):
@@ -147,7 +154,7 @@ def list_notifications(
     query = Notification.query.filter(Notification.branch_id == branch_id)
 
     if user is not None:
-        role = str(getattr(user, "role", "") or "").upper()
+        role = effective_role(getattr(user, "role", ""))
         user_id = getattr(user, "id", None)
         if role != "OWNER":
             visibility = [Notification.target_role == role]

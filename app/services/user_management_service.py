@@ -35,16 +35,15 @@ PORTAL_ROLE_LANDING_ENDPOINTS = {
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
+# Roles a user can be given. FINANCE, ACCOUNTING, LOGISTICS, HR and
+# CUSTOMER_SUCCESS are retired (Blueprint V2): ADMIN does their work and
+# app/utils/roles.py maps any allowlist or stored row naming them to ADMIN.
+# Their ROLE_* constants stay because route allowlists still reference them.
 ALLOWED_ROLES = [
     ROLE_OWNER,
     ROLE_ADMIN,
-    ROLE_FINANCE,
-    ROLE_ACCOUNTING,
-    ROLE_LOGISTICS,
-    ROLE_HR,
     ROLE_DAPUR,
     ROLE_PENGANTAR,
-    ROLE_CUSTOMER_SUCCESS,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_PT,
     ROLE_PORTAL_MANDOR,
@@ -71,7 +70,7 @@ ROLE_LABELS = {
 
 ROLE_DESCRIPTIONS = {
     ROLE_OWNER: "Akses penuh, pengaturan sistem, backup, user, audit, dan semua modul.",
-    ROLE_ADMIN: "Akses operasional umum. Role lama tetap dipertahankan agar tidak memutus akses existing.",
+    ROLE_ADMIN: "Akses operasional penuh: order, keuangan, akuntansi, stok & pembelian, SDM & payroll, dan customer success.",
     ROLE_FINANCE: "Disiapkan untuk invoice, pembayaran, kas/bank, piutang, hutang supplier, dan profit invoice.",
     ROLE_ACCOUNTING: "Disiapkan untuk jurnal, laporan akuntansi, COA mapping, opening balance, dan closing/checking.",
     ROLE_LOGISTICS: "Disiapkan untuk stok, prediksi bahan, pembelian, supplier, kartu stok, dan bukti nota.",

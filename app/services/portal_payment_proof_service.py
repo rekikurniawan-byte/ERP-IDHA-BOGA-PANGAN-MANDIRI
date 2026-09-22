@@ -164,7 +164,7 @@ def _notify_finance_payment_proof_uploaded(user, invoice: dict, attachment: Digi
         notification_type="PORTAL_PAYMENT_PROOF",
         title=f"Bukti pembayaran portal masuk: {invoice['invoice_number']}",
         message=f"User portal mengupload bukti pembayaran untuk invoice {invoice['invoice_number']}. Finance perlu verifikasi.",
-        target_role="FINANCE",
+        target_role="ADMIN",
         priority="WARNING",
         reference_type=PAYMENT_PROOF_REFERENCE_TYPE,
         reference_id=invoice["invoice_id"],
@@ -189,7 +189,7 @@ def _notify_finance_draft_payment_proof_uploaded(user, draft: PortalOrderDraft, 
             f"{draft.order_date.strftime('%d-%m-%Y') if draft.order_date else '-'} "
             f"{draft.meal_type} {draft.portion_qty} porsi. Finance perlu verifikasi."
         ),
-        target_role="FINANCE",
+        target_role="ADMIN",
         priority="WARNING",
         reference_type=PORTAL_DRAFT_PAYMENT_REFERENCE_TYPE,
         reference_id=draft.id,

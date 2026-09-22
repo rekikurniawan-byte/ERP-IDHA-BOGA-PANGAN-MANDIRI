@@ -354,7 +354,9 @@ def test_portal_navigation_is_hidden_for_non_preview_role_even_when_enabled(app)
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_test_user("FINANCE")
+            # DAPUR, not FINANCE: FINANCE is retired into ADMIN, which
+            # legitimately administers the portal.
+            user = _create_test_user("DAPUR")
             with app.test_client() as client:
                 _login(client, user)
                 response = client.get("/settings/change-password")
@@ -373,7 +375,9 @@ def test_portal_enabled_rejects_unauthorized_internal_role(app):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_test_user("FINANCE")
+            # DAPUR, not FINANCE: FINANCE is retired into ADMIN, which
+            # legitimately administers the portal.
+            user = _create_test_user("DAPUR")
             with app.test_client() as client:
                 _login(client, user)
                 response = client.get("/portal/dashboard")

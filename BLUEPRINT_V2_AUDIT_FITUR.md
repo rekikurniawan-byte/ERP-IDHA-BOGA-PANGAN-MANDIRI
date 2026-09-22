@@ -121,15 +121,25 @@ Tidak ada modul yang saya tandai `TIDAK DIPAKAI`. Menghapus fitur tanpa bukti pe
 Urut dari yang paling menentukan:
 
 1. **Apakah sistem ini sudah dipakai di produksi?** Kalau ada database produksi terpisah dari `idha_boga_staging`, bukti pemakaian ada di sana. Kalau belum pernah dipakai sungguhan, risiko migrasi data hilang dan perhitungan "refactor vs rebuild" berubah.
+belum di pakai produksi semuanya data demo
 2. **Role mana yang benar-benar dipakai orang untuk login?**
+OWNER
+ADMIN
+DAPUR
+PENGANTAR
+
+PORTAL_CLIENT
+PORTAL_SUBCLIENT
+PORTAL_CUSTOMER
 3. **Akuntansi (35 route):** pembukuan dilakukan di sistem ini, atau di luar?
-4. **Stok & pembelian (25 route):** dicatat di sistem ini?
-5. **Payroll / SDM (13 route):** di sistem ini?
-6. **Finance (91 route):** sub-fitur mana yang dipakai — lihat pertanyaan di tabel.
-7. **Customer Success:** kontrak jelas bagian dari jalur kontrak; komplain/koreksi/retur?
-8. **Prediksi ML:** fitur bisnis atau komponen riset?
-9. **PORTAL_DELEGATE:** ada yang login atas nama Client/PT dengan akses lebih sempit?
-10. **Warung / hutang pekerja:** bagian dari bisnis mandor?
+ya harus di lakukan di sistem 
+4. **Stok & pembelian (25 route):** dicatat di sistem ini? ya
+5. **Payroll / SDM (13 route):** di sistem ini? ya
+6. **Finance (91 route):** sub-fitur mana yang dipakai — lihat pertanyaan di tabel. semua nya di pakai
+7. **Customer Success:** kontrak jelas bagian dari jalur kontrak; komplain/koreksi/retur? ya
+8. **Prediksi ML:** fitur bisnis atau komponen riset? itu sistem terpisah untuk sistem spk jangan di ganggu itu hanya view untuk ngintip data real untuk di olah di sistem terpisah ml prediksi
+9. **PORTAL_DELEGATE:** ada yang login atas nama Client/PT dengan akses lebih sempit? tidak
+10. **Warung / hutang pekerja:** bagian dari bisnis mandor? kok mandor itukan bisnis saya ngapain jadi bisnis mandor
 
 ---
 
@@ -140,6 +150,32 @@ Urut dari yang paling menentukan:
 3. Bentuk dua jalur transaksi di domain order: `order_type` (CONTRACT / GENERAL) dan `payment_mode` (CREDIT / CASH).
 4. Semua langkah dijaga oleh 432 test yang sudah ada.
 5. **Baru setelah itu** putuskan apakah rebuild masih diperlukan, dan kalau iya, berapa besar.
+
+---
+
+## 6. Status
+
+### Ringkasan keputusan pemilik
+
+- **Semua modul dipakai** — akuntansi, stok & pembelian, SDM & payroll, finance (91 route), customer success, warung. Tidak ada fitur yang dibuang; penyederhanaan murni di lapisan role.
+- **Warung adalah lini bisnis PT sendiri**, bukan bisnis mandor.
+- **Prediksi ML adalah sistem SPK terpisah** — hanya view untuk mengintip data; tidak disentuh.
+- **Belum produksi, semua data demo** — tidak ada risiko migrasi data sungguhan.
+- Role yang dipakai: internal **OWNER, ADMIN, DAPUR, PENGANTAR**; portal **CLIENT, SUBCLIENT, CUSTOMER**. PORTAL_DELEGATE tidak dipakai.
+
+### Tahap 1 — role internal: SELESAI
+
+FINANCE, ACCOUNTING, LOGISTICS, HR, CUSTOMER_SUCCESS → **ADMIN**.
+
+- Satu tabel peleburan di `app/utils/roles.py`; `role_required()` dan `has_role()` (sidebar) sama-sama membacanya. Allowlist 422 route tidak disentuh.
+- ADMIN: 275 → **361** route, dan sama persis dengan gabungan akses ADMIN + kelima role pensiun sebelumnya. Tidak ada role yang kehilangan akses; tidak ada role lain yang bertambah.
+- Sidebar ADMIN: 49 → **66** link (+Akuntansi, +Logistik, +Master Klien/Supplier/Rekening Bank). 0 link mengarah ke route yang tidak boleh dibuka.
+- Pengingat piutang/hutang/kas/stok yang dulu dikirim ke FINANCE/LOGISTICS kini ke ADMIN — sebelumnya akan tersimpan untuk role yang tidak dimiliki siapa pun.
+- Migrasi `96a0a1b2c3d4`: 5 user dipindah ke ADMIN; tidak ada role pensiun tersisa di DB.
+
+### Tahap 2 — portal: BELUM
+
+PORTAL_PT → PORTAL_CLIENT (dengan perilaku lingkup PT: melihat semua sub-client di bawah kontraknya), PORTAL_MANDOR → label "Sub Client / Mandor", PORTAL_DELEGATE dihapus. Lebih rawan dari Tahap 1: logika lingkup data portal bercabang pada role di 7 file, dan salah cabang berarti pelanggan melihat data pelanggan lain.
 
 ---
 

@@ -11,7 +11,7 @@ from app.services.customer_correction_service import (
     CORRECTION_STATUS_SUBMITTED,
     create_customer_correction,
 )
-from app.services.user_management_service import ALLOWED_ROLES, ROLE_CUSTOMER_SUCCESS, ROLE_LABELS
+from app.services.user_management_service import ALLOWED_ROLES, ROLE_CUSTOMER_SUCCESS
 from tests.test_portal_financial_visibility_service import _create_client_family, _create_user
 
 
@@ -53,9 +53,12 @@ def test_customer_success_sidebar_and_index_render_for_admin(app):
     assert "Operational Calendar" in html
 
 
-def test_customer_success_role_is_available_and_lands_on_customer_success(app):
-    assert ROLE_CUSTOMER_SUCCESS in ALLOWED_ROLES
-    assert ROLE_LABELS[ROLE_CUSTOMER_SUCCESS] == "Customer Success"
+def test_customer_success_role_is_retired_into_admin(app):
+    # Blueprint V2: CUSTOMER_SUCCESS is no longer assignable -- ADMIN does
+    # that work. A user row that still carries the old role is treated as
+    # ADMIN: it lands on the admin dashboard and keeps every customer
+    # success page, so nothing is lost for anyone left on it.
+    assert ROLE_CUSTOMER_SUCCESS not in ALLOWED_ROLES
 
     with app.app_context():
         user = _create_user(ROLE_CUSTOMER_SUCCESS)
@@ -70,15 +73,32 @@ def test_customer_success_role_is_available_and_lands_on_customer_success(app):
     html = page_response.get_data(as_text=True)
 
     assert dashboard_response.status_code == 302
-    assert "/customer-success/contracts" in dashboard_response.headers["Location"]
+    assert "/dashboard/admin" in dashboard_response.headers["Location"]
     assert page_response.status_code == 200
     assert "Customer Success" in html
     assert "Komplain Customer" in html
 
 
-def test_customer_success_rejects_unrelated_internal_role(app):
+def test_admin_opens_customer_success_pages(app):
     with app.app_context():
-        user = _create_user("FINANCE")
+        user = _create_user("ADMIN")
+        db.session.commit()
+        user_id = user.id
+
+    client = app.test_client()
+    _login_user_id(client, user_id)
+
+    response = client.get("/customer-success/complaints")
+
+    assert response.status_code == 200
+    assert "Komplain Customer" in response.get_data(as_text=True)
+
+
+def test_customer_success_rejects_unrelated_internal_role(app):
+    # DAPUR, not FINANCE: FINANCE is retired into ADMIN, which is allowed
+    # here, so it no longer stands for "a role unrelated to this module".
+    with app.app_context():
+        user = _create_user("DAPUR")
         db.session.commit()
         user_id = user.id
 

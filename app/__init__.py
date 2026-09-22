@@ -11,6 +11,11 @@ from app.extensions import db, migrate, login_manager, csrf, limiter
 from app.services.production_logging_service import configure_production_logging
 from app.services.slow_query_logger_service import init_slow_query_logging
 from app.services.ttl_cache_service import get_cached_value
+from app.utils.roles import role_in
+
+# The four internal roles after the Blueprint V2 consolidation. role_in() also
+# matches retired roles (FINANCE, ACCOUNTING, ...) through their successor.
+INTERNAL_ROLES = ("OWNER", "ADMIN", "DAPUR", "PENGANTAR")
 
 
 def _static_asset_fingerprint(flask_app: Flask, relative_path: str) -> str:
@@ -27,6 +32,21 @@ def _static_asset_fingerprint(flask_app: Flask, relative_path: str) -> str:
     return digest[:10]
 
 
+def _current_user_has_role(roles) -> bool:
+    """Template membership test: does the signed-in user hold any of `roles`?
+
+    Reads through app/utils/roles.py, so a list naming a retired role such as
+    ACCOUNTING also matches ADMIN. Plain membership -- unlike role_required()
+    there is no OWNER bypass, so every existing `role in [...]` check keeps
+    its exact meaning apart from the retired-role mapping.
+    """
+    from flask_login import current_user
+
+    if not current_user.is_authenticated:
+        return False
+    return role_in(current_user.role, roles)
+
+
 def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
@@ -37,6 +57,10 @@ def create_app():
     # Lets templates build conditional page_header()/macro action lists with
     # `{% do actions.append(...) %}` instead of verbose `{% set x = x + [...] %}`.
     flask_app.jinja_env.add_extension("jinja2.ext.do")
+
+    # Templates decide what to show through the same role table the routes
+    # use, so a menu can never be hidden from a role that is allowed in.
+    flask_app.jinja_env.globals["has_role"] = _current_user_has_role
 
     if flask_app.config.get("PROXY_HEADERS_ENABLED"):
         flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
@@ -144,7 +168,7 @@ def create_app():
             from flask_login import current_user
             from app.services.live_reminder_service import build_live_reminder_badge_summary
 
-            if current_user.is_authenticated and current_user.role in ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"]:
+            if current_user.is_authenticated and role_in(current_user.role, INTERNAL_ROLES):
                 return {
                     "global_live_reminder_badge": get_cached_value(
                         ("live_reminder_badge", current_user.branch_id, current_user.role),
@@ -179,7 +203,7 @@ def create_app():
             from flask_login import current_user
             from app.services.notification_service import count_unread_notifications
 
-            if current_user.is_authenticated and current_user.role in ["OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR"]:
+            if current_user.is_authenticated and role_in(current_user.role, INTERNAL_ROLES):
                 summary = get_cached_value(
                     ("persistent_notification_badge", current_user.branch_id, current_user.role, current_user.id),
                     lambda: count_unread_notifications(branch_id=current_user.branch_id, user=current_user),

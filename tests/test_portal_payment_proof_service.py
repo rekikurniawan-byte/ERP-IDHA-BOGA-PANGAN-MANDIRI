@@ -85,9 +85,10 @@ def test_upload_portal_payment_proof_creates_private_attachment_without_payment_
             assert invoice.paid_amount == original_paid
             assert invoice.remaining_amount == original_remaining
             assert list_pending_portal_payment_proofs(branch_id=user.branch_id)[0].id == attachment.id
+            # Addressed to ADMIN: FINANCE is retired and ADMIN verifies proofs.
             notification = Notification.query.filter_by(
                 notification_type="PORTAL_PAYMENT_PROOF",
-                target_role="FINANCE",
+                target_role="ADMIN",
                 reference_type="INVOICE",
                 reference_id=invoice.id,
             ).first()
