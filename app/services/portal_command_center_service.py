@@ -27,7 +27,6 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_CLIENT,
 )
 
 
@@ -61,7 +60,6 @@ def _display_integration_status(value: Any) -> str:
         "OWNERSHIP_GUARDED": "Akses Dibatasi",
         "TARGETED": "Sesuai Akun",
         "PORTAL_CLIENT_SCOPE": "Akses Client / PT",
-        "PORTAL_CLIENT_SCOPE": "Akses Perusahaan",
         "PORTAL_SUBCLIENT_SCOPE": "Akses Sub Client / Mandor",
         "PORTAL_DELEGATE_SCOPE": "Akses Delegasi",
         "PORTAL_CUSTOMER_SCOPE": "Akses Pelanggan",
@@ -219,7 +217,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
             enabled=True,
         )
     )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         actions.append(
             _action(
                 "Hutang",
@@ -330,7 +328,7 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
         },
     ]
 
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         kpis.append(
             {
                 "label": "Hutang",

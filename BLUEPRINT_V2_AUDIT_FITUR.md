@@ -173,9 +173,31 @@ FINANCE, ACCOUNTING, LOGISTICS, HR, CUSTOMER_SUCCESS → **ADMIN**.
 - Pengingat piutang/hutang/kas/stok yang dulu dikirim ke FINANCE/LOGISTICS kini ke ADMIN — sebelumnya akan tersimpan untuk role yang tidak dimiliki siapa pun.
 - Migrasi `96a0a1b2c3d4`: 5 user dipindah ke ADMIN; tidak ada role pensiun tersisa di DB.
 
-### Tahap 2 — portal: BELUM
+### Tahap 2 — portal: SELESAI
 
-PORTAL_PT → PORTAL_CLIENT (dengan perilaku lingkup PT: melihat semua sub-client di bawah kontraknya), PORTAL_MANDOR → label "Sub Client / Mandor", PORTAL_DELEGATE dihapus. Lebih rawan dari Tahap 1: logika lingkup data portal bercabang pada role di 7 file, dan salah cabang berarti pelanggan melihat data pelanggan lain.
+Role akhir: **OWNER, ADMIN, DAPUR, PENGANTAR** + **PORTAL_CLIENT, PORTAL_SUBCLIENT, PORTAL_CUSTOMER**.
+
+| Langkah | Hasil |
+|---|---|
+| 2a `PORTAL_MANDOR` → `PORTAL_SUBCLIENT` | Rename murni. Entitas Mandor, tabel `mandors`, dan URL `/portal/mandor/*` tidak berubah. |
+| 2b `PORTAL_PT` → `PORTAL_CLIENT` | Keduanya memang sudah menghasilkan id lingkup yang sama; role gabungan memakai pengalaman PT. |
+| 2c `PORTAL_DELEGATE` dipensiunkan | Tidak dipetakan ke penerus — delegate lebih sempit dari client, jadi mempromosikannya berarti melebarkan akses. 2 akun demo dipindah ke PORTAL_CLIENT **dan dinonaktifkan**. |
+
+**Bukti isolasi data**: untuk seluruh 19 akun portal, sebelum dan sesudah tiap langkah, direkam halaman yang menjawab 200 **dan** id client/mandor/PIC/lokasi yang membatasi datanya. **Tidak ada satu akun pun yang lingkup datanya melebar.**
+
+Satu konsekuensi yang perlu diketahui: role Client/PT gabungan **tidak memakai form order pribadi** — aturan itu sudah ada untuk PT, karena pesanan berasal dari sub-client, bukan dari perusahaan.
+
+### Kompatibilitas client tanpa sub-client — BELUM
+
+Saat ini **tidak bisa**. `daily_order_details.mandor_id`, `delivery_locations.mandor_id`, dan `workers.mandor_id` semuanya `NOT NULL`, dan `mandors.client_id` juga `NOT NULL` — jadi rantai order selalu lewat mandor. Sisi penagihan sudah siap (`invoices.mandor_id` nullable).
+
+Dua pilihan: (a) buat satu mandor yang mewakili client itu sendiri — jalan tanpa ubah kode, tapi kotor secara konsep; (b) jadikan baris order menunjuk client **atau** sub-client — `mandor_id` nullable + `client_id`, menyentuh ~100 file, tepat dikerjakan saat merancang domain V2.
+
+Keputusan bisnis yang menentukan: client tanpa mandor itu **client kontrak yang pesan langsung (kredit)** atau **customer umum (bayar di muka)**?
+
+### Sisa pekerjaan
+
+- Kode jalur PORTAL_DELEGATE (39 referensi) masih ada meski role-nya tak bisa diberikan lagi — pembersihan lanjutan.
 
 ---
 

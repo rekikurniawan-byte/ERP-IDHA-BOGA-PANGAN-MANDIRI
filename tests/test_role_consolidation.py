@@ -71,6 +71,21 @@ def test_successor_table_covers_exactly_the_retired_roles():
         assert RETIRED_ROLE_SUCCESSOR[role] == "ADMIN"
 
 
+def test_portal_is_left_with_three_roles():
+    portal_roles = [role for role in ALLOWED_ROLES if role.startswith("PORTAL_")]
+    assert sorted(portal_roles) == ["PORTAL_CLIENT", "PORTAL_CUSTOMER", "PORTAL_SUBCLIENT"]
+
+
+def test_pt_merges_into_client_but_delegate_is_not_promoted():
+    # PT and CLIENT always resolved to the same ids, so merging them widens
+    # nothing. DELEGATE was a NARROWER view, so it gets no successor: an
+    # account still holding it is denied rather than quietly promoted.
+    assert effective_role("PORTAL_PT") == "PORTAL_CLIENT"
+    assert effective_role("PORTAL_DELEGATE") == "PORTAL_DELEGATE"
+    assert "PORTAL_DELEGATE" not in RETIRED_ROLE_SUCCESSOR
+    assert "PORTAL_DELEGATE" not in ALLOWED_ROLES
+
+
 def test_mandor_portal_role_is_renamed_to_sub_client():
     # A rename, not a merge: the sub client keeps its own scope and pages.
     # The domain entity stays Mandor and the /portal/mandor/* URLs are

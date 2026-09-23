@@ -16,7 +16,6 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_CLIENT,
 )
 
 
@@ -59,7 +58,7 @@ def _direct_delegate_mandor_ids(user) -> set[int]:
 def _mandor_ids_for_worker_debt_scope(user, scope) -> set[int]:
     role = getattr(user, "role", None)
 
-    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT}:
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT}:
         return set(scope.mandor_ids)
 
     if role == ROLE_PORTAL_DELEGATE:

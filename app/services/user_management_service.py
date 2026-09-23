@@ -36,10 +36,19 @@ PORTAL_ROLE_LANDING_ENDPOINTS = {
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
-# Roles a user can be given. FINANCE, ACCOUNTING, LOGISTICS, HR and
-# CUSTOMER_SUCCESS are retired (Blueprint V2): ADMIN does their work and
-# app/utils/roles.py maps any allowlist or stored row naming them to ADMIN.
-# Their ROLE_* constants stay because route allowlists still reference them.
+# Roles a user can be given. Blueprint V2 leaves four internal roles and
+# three portal roles.
+#
+# FINANCE, ACCOUNTING, LOGISTICS, HR and CUSTOMER_SUCCESS are retired: ADMIN
+# does their work, and app/utils/roles.py maps any allowlist or stored row
+# naming them to ADMIN. Their ROLE_* constants stay because route allowlists
+# still reference them.
+#
+# PORTAL_DELEGATE is retired too, but deliberately NOT mapped to a successor:
+# the owner confirmed nobody logs in as a delegate, and a delegate was a
+# narrower view than a client, so quietly promoting one would widen access.
+# It simply stops being assignable; any row still holding it gets no portal
+# scope. Its code paths are still present and are a follow-up cleanup.
 ALLOWED_ROLES = [
     ROLE_OWNER,
     ROLE_ADMIN,
@@ -47,7 +56,6 @@ ALLOWED_ROLES = [
     ROLE_PENGANTAR,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 ]
 
