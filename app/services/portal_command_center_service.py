@@ -26,7 +26,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_PT,
 )
 
@@ -62,7 +62,7 @@ def _display_integration_status(value: Any) -> str:
         "TARGETED": "Sesuai Akun",
         "PORTAL_PT_SCOPE": "Akses PT",
         "PORTAL_CLIENT_SCOPE": "Akses Perusahaan",
-        "PORTAL_MANDOR_SCOPE": "Akses Mandor",
+        "PORTAL_SUBCLIENT_SCOPE": "Akses Sub Client / Mandor",
         "PORTAL_DELEGATE_SCOPE": "Akses Delegasi",
         "PORTAL_CUSTOMER_SCOPE": "Akses Pelanggan",
         "PORTAL_CUSTOMER_PENDING_SCOPE": "Akses Pelanggan",
@@ -113,7 +113,7 @@ def _role_family(role: str | None) -> str:
     role = _status_key(role)
     if role == ROLE_PORTAL_CUSTOMER:
         return "customer"
-    if role == ROLE_PORTAL_MANDOR:
+    if role == ROLE_PORTAL_SUBCLIENT:
         return "mandor"
     if role == ROLE_PORTAL_PT:
         return "pt"
@@ -127,7 +127,7 @@ def _role_family(role: str | None) -> str:
 def _home_endpoint(role: str | None) -> str:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
-        ROLE_PORTAL_MANDOR: "portal.mandor_dashboard",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
         ROLE_PORTAL_PT: "portal.pt_dashboard",
         ROLE_PORTAL_CLIENT: "portal.client_dashboard",
         ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
@@ -137,7 +137,7 @@ def _home_endpoint(role: str | None) -> str:
 def _primary_order_endpoint(role: str | None) -> str | None:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_order",
-        ROLE_PORTAL_MANDOR: "portal.mandor_order",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_order",
         ROLE_PORTAL_PT: "portal.pt_order",
     }.get(role)
 
@@ -145,7 +145,7 @@ def _primary_order_endpoint(role: str | None) -> str | None:
 def _invoice_endpoint(role: str | None) -> str:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_invoices",
-        ROLE_PORTAL_MANDOR: "portal.mandor_invoices",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_invoices",
         ROLE_PORTAL_PT: "portal.pt_invoices",
     }.get(role, "portal.invoices")
 
@@ -153,12 +153,12 @@ def _invoice_endpoint(role: str | None) -> str:
 def _payment_endpoint(role: str | None) -> str:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_payments",
-        ROLE_PORTAL_MANDOR: "portal.mandor_payments",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_payments",
     }.get(role, "portal.payments")
 
 
 def _debt_endpoint(role: str | None) -> str:
-    if role == ROLE_PORTAL_MANDOR:
+    if role == ROLE_PORTAL_SUBCLIENT:
         return "portal.mandor_canteen_debts"
     return "portal.debts"
 
@@ -169,7 +169,7 @@ def _contract_endpoint(role: str | None) -> str | None:
 
 def _subscription_endpoint(role: str | None) -> str | None:
     return {
-        ROLE_PORTAL_MANDOR: "portal.mandor_subscriptions",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_subscriptions",
         ROLE_PORTAL_PT: "portal.pt_subscriptions",
     }.get(role)
 
@@ -222,7 +222,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
             enabled=True,
         )
     )
-    if role in {ROLE_PORTAL_MANDOR, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         actions.append(
             _action(
                 "Hutang",
@@ -244,7 +244,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
                 enabled=True,
             )
         )
-    if role in {ROLE_PORTAL_MANDOR, ROLE_PORTAL_PT}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT}:
         actions.append(
             _action(
                 "Langganan",
@@ -333,7 +333,7 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
         },
     ]
 
-    if role in {ROLE_PORTAL_MANDOR, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         kpis.append(
             {
                 "label": "Hutang",
@@ -454,7 +454,7 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
             ),
         ]
 
-    if role == ROLE_PORTAL_MANDOR:
+    if role == ROLE_PORTAL_SUBCLIENT:
         return [
             _focus_card(
                 "Order Mandor",
@@ -830,7 +830,7 @@ def _build_role_narrative(role: str | None) -> dict:
             "guard": "Bayar dulu aktif. Pesanan belum masuk produksi sebelum pembayaran diverifikasi.",
             "integration": "Komplain, retur, dan bukti pembayaran tersimpan dalam satu data perusahaan.",
         },
-        ROLE_PORTAL_MANDOR: {
+        ROLE_PORTAL_SUBCLIENT: {
             "headline": "Mandor mengelola order, pekerja, hutang warung, tagihan, dan pembayaran dalam akses mandor.",
             "guard": "Pesanan tetap menunggu admin sebelum masuk produksi dan pengiriman.",
             "integration": "Pesanan, pekerja, hutang, invoice, dan pembayaran tetap memakai data perusahaan yang sama.",

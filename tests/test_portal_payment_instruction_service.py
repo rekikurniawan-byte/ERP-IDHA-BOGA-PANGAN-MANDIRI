@@ -6,7 +6,7 @@ from app.extensions import db
 from app.models.master import BranchSetting
 from app.services.portal_mapping_service import PRINCIPAL_CLIENT, PRINCIPAL_MANDOR
 from app.services.portal_payment_instruction_service import build_portal_payment_instruction
-from app.services.user_management_service import ROLE_PORTAL_CLIENT, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_MANDOR
+from app.services.user_management_service import ROLE_PORTAL_CLIENT, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT
 from tests.test_portal_financial_visibility_service import (
     _create_client_family,
     _create_invoice,
@@ -71,7 +71,7 @@ def test_portal_payment_instruction_rejects_invoice_outside_user_ownership(app):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             client, _, owned_mandor, _ = _create_client_family(user.branch, "OWNMANDOR")
             _, _, other_mandor, _ = _create_client_family(user.branch, "OTHMANDOR")
             _create_mapping(user, PRINCIPAL_MANDOR, mandor=owned_mandor)

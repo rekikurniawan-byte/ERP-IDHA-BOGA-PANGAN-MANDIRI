@@ -14,7 +14,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
 )
 
 
@@ -179,7 +179,7 @@ def test_portal_mandor_worker_debt_read_model_does_not_show_sibling_mandor_debt(
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             client, owned_mandor, _ = _create_client_and_mandor(user.branch, "MANDOR")
             sibling_mandor = Mandor(
                 branch_id=user.branch_id,
@@ -254,7 +254,7 @@ def test_paid_worker_debt_is_visible_but_excluded_from_active_remaining(app):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             _, mandor, _ = _create_client_and_mandor(user.branch, "PAID")
             _create_mapping(user, PRINCIPAL_MANDOR, mandor=mandor)
 

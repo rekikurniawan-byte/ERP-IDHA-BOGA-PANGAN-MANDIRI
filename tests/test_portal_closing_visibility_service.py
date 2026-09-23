@@ -11,7 +11,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
 )
 from tests.test_portal_debt_visibility_service import _create_worker_debt
 from tests.test_portal_financial_visibility_service import (
@@ -89,7 +89,7 @@ def test_portal_mandor_closing_visibility_does_not_summarize_sibling_mandor(app)
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             client, _, mandor, _ = _create_client_family(user.branch, "CLOSEMANDOR")
             sibling_mandor = Mandor(
                 branch_id=user.branch_id,

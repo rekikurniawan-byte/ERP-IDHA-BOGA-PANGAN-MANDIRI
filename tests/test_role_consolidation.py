@@ -27,7 +27,7 @@ def test_every_retired_internal_role_maps_to_admin(role):
 
 
 @pytest.mark.parametrize("role", ["OWNER", "ADMIN", "DAPUR", "PENGANTAR",
-                                  "PORTAL_CLIENT", "PORTAL_MANDOR", "PORTAL_CUSTOMER"])
+                                  "PORTAL_CLIENT", "PORTAL_SUBCLIENT", "PORTAL_CUSTOMER"])
 def test_surviving_roles_map_to_themselves(role):
     assert effective_role(role) == role
 
@@ -65,9 +65,21 @@ def test_template_membership_has_no_owner_bypass():
     assert role_in("FINANCE", ["ADMIN"])
 
 
-def test_successor_table_only_retires_internal_roles():
-    assert set(RETIRED_ROLE_SUCCESSOR) == set(RETIRED)
-    assert set(RETIRED_ROLE_SUCCESSOR.values()) == {"ADMIN"}
+def test_successor_table_covers_exactly_the_retired_roles():
+    assert set(RETIRED_ROLE_SUCCESSOR) == set(RETIRED) | {"PORTAL_MANDOR"}
+    for role in RETIRED:
+        assert RETIRED_ROLE_SUCCESSOR[role] == "ADMIN"
+
+
+def test_mandor_portal_role_is_renamed_to_sub_client():
+    # A rename, not a merge: the sub client keeps its own scope and pages.
+    # The domain entity stays Mandor and the /portal/mandor/* URLs are
+    # unchanged, so only the role name moves.
+    assert effective_role("PORTAL_MANDOR") == "PORTAL_SUBCLIENT"
+    assert "PORTAL_SUBCLIENT" in ALLOWED_ROLES
+    assert "PORTAL_MANDOR" not in ALLOWED_ROLES
+    assert not role_in("PORTAL_SUBCLIENT", ["PORTAL_CLIENT"])
+    assert not role_in("PORTAL_SUBCLIENT", ["PORTAL_CUSTOMER"])
 
 
 def test_sidebar_has_no_parallel_role_lists():

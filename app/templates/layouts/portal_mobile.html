@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
 <body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
-    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_MANDOR" else "PT" if current_user.role == "PORTAL_PT" else "Client" if current_user.role == "PORTAL_CLIENT" else "Delegasi" if current_user.role == "PORTAL_DELEGATE" else "Portal" %}
+    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_SUBCLIENT" else "PT" if current_user.role == "PORTAL_PT" else "Client" if current_user.role == "PORTAL_CLIENT" else "Delegasi" if current_user.role == "PORTAL_DELEGATE" else "Portal" %}
     <header class="portal-mobile-topbar portal-web-topbar">
         <div class="portal-web-topbar-inner">
             <a href="{{ url_for('portal.my_dashboard') }}" class="portal-web-brand" aria-label="Portal Idha Boga">
@@ -63,7 +63,7 @@
                     <i class="bi bi-arrow-counterclockwise"></i>
                     <span>Retur</span>
                 </a>
-            {% elif current_user.role == "PORTAL_MANDOR" %}
+            {% elif current_user.role == "PORTAL_SUBCLIENT" %}
                 <a href="{{ url_for('portal.mandor_order') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_order' else '' }}">
                     <i class="bi bi-bag-plus"></i>
                     <span>Pesan</span>
@@ -131,7 +131,7 @@
                     <span>Profil</span>
                 </a>
             {% endif %}
-            {% if current_user.role not in ["PORTAL_CUSTOMER", "PORTAL_MANDOR", "PORTAL_PT"] %}
+            {% if current_user.role not in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT", "PORTAL_PT"] %}
                 <a href="{{ url_for('portal.notifications') }}" class="{{ 'active' if request.endpoint == 'portal.notifications' else '' }}">
                     <i class="bi bi-bell"></i>
                     <span>Notif</span>

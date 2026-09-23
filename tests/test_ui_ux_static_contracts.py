@@ -33,7 +33,7 @@ def test_portal_command_center_uses_real_portal_roles():
     assert "PORTkL" not in template
     assert "MkNDOR" not in template
     assert 'current_user.role == "PORTAL_CUSTOMER"' in template
-    assert 'current_user.role == "PORTAL_MANDOR"' in template
+    assert 'current_user.role == "PORTAL_SUBCLIENT"' in template
     assert 'current_user.role == "PORTAL_PT"' in template
 
 

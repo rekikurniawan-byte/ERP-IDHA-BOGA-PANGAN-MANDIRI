@@ -30,7 +30,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_PT,
     validate_user_payload,
 )
@@ -530,14 +530,14 @@ def test_user_management_accepts_portal_roles_on_existing_auth(app):
                 {
                     "full_name": "Portal Mandor User",
                     "username": f"portal-mandor-{uuid4().hex[:8]}",
-                    "role": ROLE_PORTAL_MANDOR,
+                    "role": ROLE_PORTAL_SUBCLIENT,
                     "branch_id": str(owner.branch_id),
                     "is_active": "on",
                 }
             )
 
             assert error is None
-            assert payload["role"] == ROLE_PORTAL_MANDOR
+            assert payload["role"] == ROLE_PORTAL_SUBCLIENT
             assert payload["branch_id"] == owner.branch_id
 
             pt_payload, pt_error = validate_user_payload(
@@ -561,7 +561,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_test_user(ROLE_PORTAL_MANDOR)
+            user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
             client_obj, client_pic, mandor, location = _create_scope_master_data(user)
             sibling_mandor, sibling_location = _create_extra_mandor_location(user, client_obj, "BBB Same Client")
             _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
@@ -571,7 +571,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             access_scope = build_portal_access_scope(user)
 
             assert scope.allowed is True
-            assert scope.scope_mode == "PORTAL_MANDOR_SCOPE"
+            assert scope.scope_mode == "PORTAL_SUBCLIENT_SCOPE"
             assert scope.client_ids == {client_obj.id}
             assert scope.mandor_ids == {mandor.id}
             assert scope.delivery_location_ids == {location.id}
@@ -603,7 +603,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             assert mandors_response.status_code == 302
             assert locations_response.status_code == 302
             assert status_response.status_code == 302
-            assert "PORTAL_MANDOR_SCOPE" in dashboard_html
+            assert "PORTAL_SUBCLIENT_SCOPE" in dashboard_html
             assert "AAA Test Portal Client" not in dashboard_html
             assert "AAA Test Portal Mandor" not in dashboard_html
             assert "BBB Same Client Mandor" not in dashboard_html
@@ -725,7 +725,7 @@ def test_unmapped_portal_external_user_does_not_receive_master_data(app):
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_test_user(ROLE_PORTAL_MANDOR)
+            user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
             _create_scope_master_data(user)
 
             access_scope = build_portal_access_scope(user)
@@ -751,7 +751,7 @@ def test_portal_draft_order_requires_draft_order_mapping(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         _client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
         _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
         db.session.commit()
@@ -784,7 +784,7 @@ def test_portal_draft_order_submit_is_idempotent_and_does_not_create_operational
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         _client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
         _create_portal_mapping(
             user,
@@ -843,7 +843,7 @@ def test_portal_draft_order_rejects_location_outside_scope(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
         _other_branch, _other_client, _other_mandor, other_location = _create_other_branch_scope_data()
         _create_portal_mapping(
@@ -879,7 +879,7 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        portal_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         admin = _create_user_for_branch("ADMIN", portal_user.branch)
         portal_username = portal_user.username
         admin_username = admin.username
@@ -1003,8 +1003,8 @@ def test_portal_order_tracking_reads_converted_order_production_and_delivery(app
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
-        other_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        portal_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
+        other_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         admin = _create_user_for_branch("ADMIN", portal_user.branch)
         portal_username = portal_user.username
         other_username = other_user.username
@@ -1126,8 +1126,8 @@ def test_portal_order_status_shows_only_current_user_drafts(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        first_user = _create_test_user(ROLE_PORTAL_MANDOR)
-        second_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        first_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
+        second_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         first_username = first_user.username
         first_client, _first_pic, first_mandor, first_location = _create_scope_master_data(first_user)
         second_client, _second_pic, second_mandor, second_location = _create_scope_master_data(second_user)
@@ -1182,7 +1182,7 @@ def test_admin_confirmation_bridge_rejects_other_branch_admin(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        portal_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         other_admin = _create_test_user("ADMIN")
         portal_username = portal_user.username
         other_admin_username = other_admin.username
@@ -1238,7 +1238,7 @@ def test_admin_confirmation_bridge_reject_action_does_not_create_daily_order(app
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        portal_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        portal_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         admin = _create_user_for_branch("ADMIN", portal_user.branch)
         portal_username = portal_user.username
         admin_username = admin.username
@@ -1342,7 +1342,7 @@ def test_portal_external_mandor_role_can_render_role_dashboard_pages(app):
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         username = user.username
         _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
         _create_portal_mapping(
@@ -1359,7 +1359,7 @@ def test_portal_external_mandor_role_can_render_role_dashboard_pages(app):
         _login(client, user)
 
     page_expectations = {
-        "/portal/my-dashboard": ["Dashboard Mandor", "PORTAL_MANDOR_SCOPE", "portal-mobile-shell"],
+        "/portal/my-dashboard": ["Dashboard Mandor", "PORTAL_SUBCLIENT_SCOPE", "portal-mobile-shell"],
         "/portal/invoices": ["Invoice Portal", "Belum ada invoice dalam scope portal"],
         "/portal/payments": ["Riwayat Pembayaran", "Belum ada pembayaran dalam scope portal"],
         "/portal/debts": ["Hutang Pekerja", "Belum ada hutang pekerja dalam scope portal"],
@@ -1383,7 +1383,7 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
 
     role_cases = [
         (ROLE_PORTAL_CUSTOMER, None, None, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
-        (ROLE_PORTAL_MANDOR, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
+        (ROLE_PORTAL_SUBCLIENT, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
         (ROLE_PORTAL_PT, PRINCIPAL_CLIENT, "client", "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
         (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/client", 'data-endpoint="portal.client_dashboard"'),
         (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
@@ -1432,7 +1432,7 @@ def test_portal_login_routes_each_external_role_to_its_own_page(app):
 
     role_cases = [
         (ROLE_PORTAL_CUSTOMER, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
-        (ROLE_PORTAL_MANDOR, "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
+        (ROLE_PORTAL_SUBCLIENT, "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
         (ROLE_PORTAL_PT, "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
         (ROLE_PORTAL_CLIENT, "/portal/client", 'data-endpoint="portal.client_dashboard"'),
         (ROLE_PORTAL_DELEGATE, "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
@@ -1491,7 +1491,7 @@ def test_portal_internal_configuration_pages_are_not_external_portal_pages(app):
 
     with app.app_context():
         admin = _create_test_user("ADMIN")
-        external = _create_test_user(ROLE_PORTAL_MANDOR)
+        external = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         _client_obj, _client_pic, mandor, _location = _create_scope_master_data(external)
         _create_portal_mapping(external, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
         db.session.commit()
@@ -1517,7 +1517,7 @@ def test_portal_role_dashboard_pages_reject_other_portal_roles(app):
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
-        mandor_user = _create_test_user(ROLE_PORTAL_MANDOR)
+        mandor_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         client_obj, _client_pic, mandor, _location = _create_scope_master_data(mandor_user)
         _create_portal_mapping(mandor_user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
         pt_user = _create_test_user(ROLE_PORTAL_PT)
@@ -1590,7 +1590,7 @@ def test_portal_mandor_feature_foundation_pages_render(app):
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         username = user.username
         _client_obj, _client_pic, mandor, _location = _create_scope_master_data(user)
         _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
@@ -1757,7 +1757,7 @@ def test_portal_integrated_foundation_pages_read_existing_tables(app, tmp_path):
     (tmp_path / "portal-proof.pdf").write_bytes(b"%PDF-1.4\nportal proof\n%%EOF")
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_MANDOR)
+        user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         customer = _create_user_for_branch(ROLE_PORTAL_CUSTOMER, user.branch)
         client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
         _create_portal_mapping(user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)

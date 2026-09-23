@@ -31,6 +31,10 @@ RETIRED_ROLE_SUCCESSOR = {
     "LOGISTICS": "ADMIN",
     "HR": "ADMIN",
     "CUSTOMER_SUCCESS": "ADMIN",
+    # The portal role is now named for what it is in the contract hierarchy --
+    # a sub client. The domain entity it maps to is still Mandor, and the
+    # /portal/mandor/* URLs are unchanged, so existing links keep working.
+    "PORTAL_MANDOR": "PORTAL_SUBCLIENT",
 }
 
 

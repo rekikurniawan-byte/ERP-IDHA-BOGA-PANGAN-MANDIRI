@@ -4,8 +4,8 @@
 {% set orders = data.orders %}
 {% set persona = data.persona if data.persona is defined else {} %}
 {% set role = current_user.role %}
-{% set can_order = role in ["PORTAL_CUSTOMER", "PORTAL_MANDOR"] %}
-{% set order_endpoint = "portal.mandor_order" if role == "PORTAL_MANDOR" else "portal.customer_order" %}
+{% set can_order = role in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT"] %}
+{% set order_endpoint = "portal.mandor_order" if role == "PORTAL_SUBCLIENT" else "portal.customer_order" %}
 <section class="portal-feature-page portal-tracking-page">
     <div class="portal-feature-hero portal-tracking-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>

@@ -15,21 +15,21 @@ ROLE_PENGANTAR = "PENGANTAR"
 ROLE_CUSTOMER_SUCCESS = "CUSTOMER_SUCCESS"
 ROLE_PORTAL_CLIENT = "PORTAL_CLIENT"
 ROLE_PORTAL_PT = "PORTAL_PT"
-ROLE_PORTAL_MANDOR = "PORTAL_MANDOR"
+ROLE_PORTAL_SUBCLIENT = "PORTAL_SUBCLIENT"
 ROLE_PORTAL_DELEGATE = "PORTAL_DELEGATE"
 ROLE_PORTAL_CUSTOMER = "PORTAL_CUSTOMER"
 
 PORTAL_EXTERNAL_ROLES = {
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_PT,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 }
 
 PORTAL_ROLE_LANDING_ENDPOINTS = {
     ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
-    ROLE_PORTAL_MANDOR: "portal.mandor_dashboard",
+    ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
     ROLE_PORTAL_PT: "portal.pt_dashboard",
     ROLE_PORTAL_CLIENT: "portal.client_dashboard",
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
@@ -46,7 +46,7 @@ ALLOWED_ROLES = [
     ROLE_PENGANTAR,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_PT,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 ]
@@ -63,7 +63,7 @@ ROLE_LABELS = {
     ROLE_CUSTOMER_SUCCESS: "Customer Success",
     ROLE_PORTAL_CLIENT: "Portal Client",
     ROLE_PORTAL_PT: "Portal PT",
-    ROLE_PORTAL_MANDOR: "Portal Mandor",
+    ROLE_PORTAL_SUBCLIENT: "Portal Sub Client / Mandor",
     ROLE_PORTAL_DELEGATE: "Portal Delegasi",
     ROLE_PORTAL_CUSTOMER: "Portal Pelanggan Umum",
 }
@@ -80,7 +80,7 @@ ROLE_DESCRIPTIONS = {
     ROLE_CUSTOMER_SUCCESS: "Akses kontrak customer, komplain, koreksi, bukti pendukung, dan koordinasi tindak lanjut tanpa posting langsung ke finance/stok.",
     ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PIC berdasarkan mapping eksplisit.",
     ROLE_PORTAL_PT: "Akses portal read-only untuk PT/perusahaan berdasarkan mapping client eksplisit.",
-    ROLE_PORTAL_MANDOR: "Akses portal read-only untuk Mandor berdasarkan mapping eksplisit.",
+    ROLE_PORTAL_SUBCLIENT: "Akses portal read-only untuk Sub Client / Mandor berdasarkan mapping eksplisit.",
     ROLE_PORTAL_DELEGATE: "Akses portal read-only terbatas untuk delegasi Client/PIC/lokasi.",
     ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",
 }

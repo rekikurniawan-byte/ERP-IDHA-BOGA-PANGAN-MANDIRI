@@ -77,7 +77,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_PT,
     list_active_branches,
 )
@@ -89,7 +89,7 @@ PORTAL_READONLY_ROLES = (
     "ADMIN",
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_PT,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 )
@@ -97,7 +97,7 @@ PORTAL_INTERNAL_ROLES = ("ADMIN",)
 
 PORTAL_ROLE_DASHBOARD_ENDPOINTS = {
     ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
-    ROLE_PORTAL_MANDOR: "portal.mandor_dashboard",
+    ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
     ROLE_PORTAL_PT: "portal.pt_dashboard",
     ROLE_PORTAL_CLIENT: "portal.client_dashboard",
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
@@ -158,7 +158,7 @@ def dashboard():
     portal_roles = [
         ROLE_PORTAL_CLIENT,
         ROLE_PORTAL_PT,
-        ROLE_PORTAL_MANDOR,
+        ROLE_PORTAL_SUBCLIENT,
         ROLE_PORTAL_DELEGATE,
         ROLE_PORTAL_CUSTOMER,
     ]
@@ -307,7 +307,7 @@ def _pt_persona():
 def _current_portal_persona():
     if current_user.role == ROLE_PORTAL_PT:
         return _pt_persona()
-    if current_user.role == ROLE_PORTAL_MANDOR:
+    if current_user.role == ROLE_PORTAL_SUBCLIENT:
         return _mandor_persona()
     if current_user.role == ROLE_PORTAL_CUSTOMER:
         return _customer_persona()
@@ -339,7 +339,7 @@ def _current_portal_persona():
 def _redirect_by_portal_role(*, customer=None, mandor=None, pt=None, client=None, delegate=None, fallback="portal.my_dashboard"):
     endpoint = {
         ROLE_PORTAL_CUSTOMER: customer,
-        ROLE_PORTAL_MANDOR: mandor,
+        ROLE_PORTAL_SUBCLIENT: mandor,
         ROLE_PORTAL_PT: pt,
         ROLE_PORTAL_CLIENT: client,
         ROLE_PORTAL_DELEGATE: delegate,
@@ -478,7 +478,7 @@ def customer_returns():
 
 
 @portal_bp.route("/mandor")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_dashboard():
     return render_template(
         "portal/role_dashboard.html",
@@ -487,7 +487,7 @@ def mandor_dashboard():
 
 
 @portal_bp.route("/mandor/order")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_order():
     return render_template(
         "portal/draft_order.html",
@@ -501,7 +501,7 @@ def mandor_order():
 
 
 @portal_bp.route("/mandor/workers")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_workers():
     return render_template(
         "portal/mobile_workers.html",
@@ -513,7 +513,7 @@ def mandor_workers():
 
 
 @portal_bp.route("/mandor/catering-debts")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_catering_debts():
     return render_template(
         "portal/mobile_invoices.html",
@@ -527,7 +527,7 @@ def mandor_catering_debts():
 
 
 @portal_bp.route("/mandor/canteen-debts")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_canteen_debts():
     return render_template(
         "portal/mobile_debts.html",
@@ -541,7 +541,7 @@ def mandor_canteen_debts():
 
 
 @portal_bp.route("/mandor/installments")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_installments():
     return render_template(
         "portal/mobile_debts.html",
@@ -555,7 +555,7 @@ def mandor_installments():
 
 
 @portal_bp.route("/mandor/invoices")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_invoices():
     return render_template(
         "portal/mobile_invoices.html",
@@ -569,7 +569,7 @@ def mandor_invoices():
 
 
 @portal_bp.route("/mandor/payments")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_payments():
     return render_template(
         "portal/mobile_payments.html",
@@ -582,7 +582,7 @@ def mandor_payments():
 
 
 @portal_bp.route("/mandor/subscriptions")
-@role_required(ROLE_PORTAL_MANDOR)
+@role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_subscriptions():
     return render_template(
         "portal/subscriptions.html",
@@ -719,7 +719,7 @@ def invoice_payment_instruction(invoice_id):
             _pt_persona()
             if current_user.role == ROLE_PORTAL_PT
             else _mandor_persona()
-            if current_user.role == ROLE_PORTAL_MANDOR
+            if current_user.role == ROLE_PORTAL_SUBCLIENT
             else _customer_persona()
             if current_user.role == ROLE_PORTAL_CUSTOMER
             else {
@@ -844,7 +844,7 @@ def notifications():
         _pt_persona()
         if current_user.role == ROLE_PORTAL_PT
         else _mandor_persona()
-        if current_user.role == ROLE_PORTAL_MANDOR
+        if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
     )
     return render_template(
@@ -865,7 +865,7 @@ def documents():
         _pt_persona()
         if current_user.role == ROLE_PORTAL_PT
         else _mandor_persona()
-        if current_user.role == ROLE_PORTAL_MANDOR
+        if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
     )
     return render_template(
@@ -932,7 +932,7 @@ def approvals():
         _pt_persona()
         if current_user.role == ROLE_PORTAL_PT
         else _mandor_persona()
-        if current_user.role == ROLE_PORTAL_MANDOR
+        if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
     )
     return render_template(
@@ -975,7 +975,7 @@ def calendar():
         _pt_persona()
         if current_user.role == ROLE_PORTAL_PT
         else _mandor_persona()
-        if current_user.role == ROLE_PORTAL_MANDOR
+        if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
     )
     return render_template(
@@ -1101,7 +1101,7 @@ def order_status():
             _pt_persona()
             if current_user.role == ROLE_PORTAL_PT
             else _mandor_persona()
-            if current_user.role == ROLE_PORTAL_MANDOR
+            if current_user.role == ROLE_PORTAL_SUBCLIENT
             else _customer_persona()
             if current_user.role == ROLE_PORTAL_CUSTOMER
             else {

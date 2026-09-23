@@ -22,7 +22,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
 )
 
 
@@ -201,7 +201,7 @@ def test_portal_mandor_invoice_read_model_does_not_show_client_level_invoice(app
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             owned_client, _, owned_mandor, _ = _create_client_family(user.branch, "MANDOR")
             _create_mapping(user, PRINCIPAL_MANDOR, mandor=owned_mandor)
 
@@ -357,7 +357,7 @@ def test_portal_mandor_payment_history_does_not_return_client_level_payments(app
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_MANDOR)
+            user = _create_user(ROLE_PORTAL_SUBCLIENT)
             client, _, mandor, _ = _create_client_family(user.branch, "PAYMANDOR")
             _create_mapping(user, PRINCIPAL_MANDOR, mandor=mandor)
 

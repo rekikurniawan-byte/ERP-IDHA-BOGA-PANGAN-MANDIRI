@@ -12,7 +12,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
-    ROLE_PORTAL_MANDOR,
+    ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_PT,
 )
 from app.services.dashboard_service import (
@@ -75,7 +75,7 @@ def _role_landing_endpoint(role):
         "DAPUR": "dashboard.dapur",
         "PENGANTAR": "dashboard.pengantar",
     }
-    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_MANDOR, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_DELEGATE, ROLE_PORTAL_CUSTOMER}:
         return "portal.my_dashboard" if current_app.config.get("PORTAL_ENABLED", False) else None
     return landing_map.get(role)
 

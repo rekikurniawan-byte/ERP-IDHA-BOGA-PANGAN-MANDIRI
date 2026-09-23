@@ -17,7 +17,7 @@ from app.services.approval_service import ensure_action_has_approval, has_approv
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
-from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_MANDOR, ROLE_PORTAL_PT
+from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT
 from app.services.operational_service import generate_order_number
 
 
@@ -298,7 +298,7 @@ def _active_outstanding_for_scope(branch_id, client_id, mandor_id=None):
 
 def _credit_gate_for_draft(draft):
     role = getattr(draft.user, "role", None) if draft.user else None
-    if role not in {ROLE_PORTAL_MANDOR, ROLE_PORTAL_PT}:
+    if role not in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT}:
         return {
             "key": "CREDIT",
             "title": "Kredit",
@@ -316,7 +316,7 @@ def _credit_gate_for_draft(draft):
     outstanding = _active_outstanding_for_scope(
         draft.branch_id,
         draft.client_id,
-        draft.mandor_id if role == ROLE_PORTAL_MANDOR else None,
+        draft.mandor_id if role == ROLE_PORTAL_SUBCLIENT else None,
     )
     limit_amount = _money(getattr(contract, "credit_limit", 0))
     over_limit = bool(contract and limit_amount > 0 and outstanding > limit_amount)
