@@ -13,15 +13,15 @@ ROLE_HR = "HR"
 ROLE_DAPUR = "DAPUR"
 ROLE_PENGANTAR = "PENGANTAR"
 ROLE_CUSTOMER_SUCCESS = "CUSTOMER_SUCCESS"
+# Client and PT are one role: a client IS the company, and it sees every sub
+# client under its contract. PORTAL_PT is retired into this one.
 ROLE_PORTAL_CLIENT = "PORTAL_CLIENT"
-ROLE_PORTAL_PT = "PORTAL_PT"
 ROLE_PORTAL_SUBCLIENT = "PORTAL_SUBCLIENT"
 ROLE_PORTAL_DELEGATE = "PORTAL_DELEGATE"
 ROLE_PORTAL_CUSTOMER = "PORTAL_CUSTOMER"
 
 PORTAL_EXTERNAL_ROLES = {
     ROLE_PORTAL_CLIENT,
-    ROLE_PORTAL_PT,
     ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
@@ -30,8 +30,9 @@ PORTAL_EXTERNAL_ROLES = {
 PORTAL_ROLE_LANDING_ENDPOINTS = {
     ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
     ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
-    ROLE_PORTAL_PT: "portal.pt_dashboard",
-    ROLE_PORTAL_CLIENT: "portal.client_dashboard",
+    # The merged role lands on the PT home -- the company view over every sub
+    # client. client_dashboard is the narrower page and is no longer a landing.
+    ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
@@ -45,7 +46,6 @@ ALLOWED_ROLES = [
     ROLE_DAPUR,
     ROLE_PENGANTAR,
     ROLE_PORTAL_CLIENT,
-    ROLE_PORTAL_PT,
     ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
@@ -61,8 +61,7 @@ ROLE_LABELS = {
     ROLE_DAPUR: "Dapur / Produksi",
     ROLE_PENGANTAR: "Pengantar / Delivery",
     ROLE_CUSTOMER_SUCCESS: "Customer Success",
-    ROLE_PORTAL_CLIENT: "Portal Client",
-    ROLE_PORTAL_PT: "Portal PT",
+    ROLE_PORTAL_CLIENT: "Portal Client / PT",
     ROLE_PORTAL_SUBCLIENT: "Portal Sub Client / Mandor",
     ROLE_PORTAL_DELEGATE: "Portal Delegasi",
     ROLE_PORTAL_CUSTOMER: "Portal Pelanggan Umum",
@@ -78,8 +77,7 @@ ROLE_DESCRIPTIONS = {
     ROLE_DAPUR: "Akses produksi dapur, permintaan bahan, dan pemakaian dapur.",
     ROLE_PENGANTAR: "Akses pengiriman, penerimaan, riwayat delivery, dan bukti digital delivery.",
     ROLE_CUSTOMER_SUCCESS: "Akses kontrak customer, komplain, koreksi, bukti pendukung, dan koordinasi tindak lanjut tanpa posting langsung ke finance/stok.",
-    ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PIC berdasarkan mapping eksplisit.",
-    ROLE_PORTAL_PT: "Akses portal read-only untuk PT/perusahaan berdasarkan mapping client eksplisit.",
+    ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PT: seluruh sub client, invoice, piutang, pembayaran, dan kontrak perusahaannya.",
     ROLE_PORTAL_SUBCLIENT: "Akses portal read-only untuk Sub Client / Mandor berdasarkan mapping eksplisit.",
     ROLE_PORTAL_DELEGATE: "Akses portal read-only terbatas untuk delegasi Client/PIC/lokasi.",
     ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",

@@ -78,7 +78,6 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_PT,
     list_active_branches,
 )
 from app.utils.decorators import role_required
@@ -88,7 +87,6 @@ portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 PORTAL_READONLY_ROLES = (
     "ADMIN",
     ROLE_PORTAL_CLIENT,
-    ROLE_PORTAL_PT,
     ROLE_PORTAL_SUBCLIENT,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
@@ -98,8 +96,10 @@ PORTAL_INTERNAL_ROLES = ("ADMIN",)
 PORTAL_ROLE_DASHBOARD_ENDPOINTS = {
     ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
     ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
-    ROLE_PORTAL_PT: "portal.pt_dashboard",
-    ROLE_PORTAL_CLIENT: "portal.client_dashboard",
+    # CLIENT and PT are one role now and it gets the PT home: the company
+    # view over every sub client under the contract. The narrower
+    # client_dashboard page still exists and still renders.
+    ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
     ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
@@ -157,7 +157,6 @@ def index():
 def dashboard():
     portal_roles = [
         ROLE_PORTAL_CLIENT,
-        ROLE_PORTAL_PT,
         ROLE_PORTAL_SUBCLIENT,
         ROLE_PORTAL_DELEGATE,
         ROLE_PORTAL_CUSTOMER,
@@ -305,20 +304,12 @@ def _pt_persona():
 
 
 def _current_portal_persona():
-    if current_user.role == ROLE_PORTAL_PT:
+    if current_user.role == ROLE_PORTAL_CLIENT:
         return _pt_persona()
     if current_user.role == ROLE_PORTAL_SUBCLIENT:
         return _mandor_persona()
     if current_user.role == ROLE_PORTAL_CUSTOMER:
         return _customer_persona()
-    if current_user.role == ROLE_PORTAL_CLIENT:
-        return {
-            "eyebrow": "Portal Client",
-            "title": "Beranda Client",
-            "description": "Ringkasan client/PIC berdasarkan akses ke master client .",
-            "scope_label": "Akses client",
-            "primary_note": "Client hanya melihat data yang menjadi haknya.",
-        }
     if current_user.role == ROLE_PORTAL_DELEGATE:
         return {
             "eyebrow": "Portal Delegasi",
@@ -340,8 +331,7 @@ def _redirect_by_portal_role(*, customer=None, mandor=None, pt=None, client=None
     endpoint = {
         ROLE_PORTAL_CUSTOMER: customer,
         ROLE_PORTAL_SUBCLIENT: mandor,
-        ROLE_PORTAL_PT: pt,
-        ROLE_PORTAL_CLIENT: client,
+        ROLE_PORTAL_CLIENT: pt,
         ROLE_PORTAL_DELEGATE: delegate,
     }.get(current_user.role)
     return redirect(url_for(endpoint or fallback))
@@ -596,7 +586,7 @@ def mandor_subscriptions():
 
 
 @portal_bp.route("/pt")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_dashboard():
     return render_template(
         "portal/role_dashboard.html",
@@ -605,14 +595,14 @@ def pt_dashboard():
 
 
 @portal_bp.route("/pt/order")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_order():
     flash("Portal PT difokuskan untuk rekap mandor, invoice, piutang, dan kontrak. Order dibuat oleh mandor/customer sesuai akses masing-masing.", "info")
     return redirect(url_for("portal.pt_dashboard"))
 
 
 @portal_bp.route("/pt/mandors")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_mandors():
     return render_template(
         "portal/mobile_mandors.html",
@@ -624,7 +614,7 @@ def pt_mandors():
 
 
 @portal_bp.route("/pt/invoices")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_invoices():
     return render_template(
         "portal/mobile_invoices.html",
@@ -638,7 +628,7 @@ def pt_invoices():
 
 
 @portal_bp.route("/pt/receivables")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_receivables():
     return render_template(
         "portal/mobile_invoices.html",
@@ -652,7 +642,7 @@ def pt_receivables():
 
 
 @portal_bp.route("/pt/payments")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_payments():
     return render_template(
         "portal/mobile_payments.html",
@@ -665,7 +655,7 @@ def pt_payments():
 
 
 @portal_bp.route("/pt/contracts")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_contracts():
     return render_template(
         "portal/contracts.html",
@@ -679,7 +669,7 @@ def pt_contracts():
 
 
 @portal_bp.route("/pt/subscriptions")
-@role_required(ROLE_PORTAL_PT)
+@role_required(ROLE_PORTAL_CLIENT)
 def pt_subscriptions():
     return render_template(
         "portal/subscriptions.html",
@@ -717,7 +707,7 @@ def invoice_payment_instruction(invoice_id):
     data = {
         **_role_dashboard_data(
             _pt_persona()
-            if current_user.role == ROLE_PORTAL_PT
+            if current_user.role == ROLE_PORTAL_CLIENT
             else _mandor_persona()
             if current_user.role == ROLE_PORTAL_SUBCLIENT
             else _customer_persona()
@@ -842,7 +832,7 @@ def closing():
 def notifications():
     persona = (
         _pt_persona()
-        if current_user.role == ROLE_PORTAL_PT
+        if current_user.role == ROLE_PORTAL_CLIENT
         else _mandor_persona()
         if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
@@ -863,7 +853,7 @@ def notifications():
 def documents():
     persona = (
         _pt_persona()
-        if current_user.role == ROLE_PORTAL_PT
+        if current_user.role == ROLE_PORTAL_CLIENT
         else _mandor_persona()
         if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
@@ -930,7 +920,7 @@ def download_document(attachment_id):
 def approvals():
     persona = (
         _pt_persona()
-        if current_user.role == ROLE_PORTAL_PT
+        if current_user.role == ROLE_PORTAL_CLIENT
         else _mandor_persona()
         if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
@@ -973,7 +963,7 @@ def dismiss_notification(notification_id):
 def calendar():
     persona = (
         _pt_persona()
-        if current_user.role == ROLE_PORTAL_PT
+        if current_user.role == ROLE_PORTAL_CLIENT
         else _mandor_persona()
         if current_user.role == ROLE_PORTAL_SUBCLIENT
         else _customer_persona()
@@ -1042,8 +1032,12 @@ def locations():
 @portal_bp.route("/orders/draft", methods=["GET", "POST"])
 @role_required(*PORTAL_READONLY_ROLES)
 def draft_order():
-    if current_user.role == ROLE_PORTAL_PT:
-        flash("Portal PT tidak memakai form order pribadi. Gunakan menu Mandor, Piutang, Invoice, dan Kontrak.", "info")
+    if current_user.role == ROLE_PORTAL_CLIENT:
+        # Orders originate at the sub client, not at the company: the
+        # Client/PT portal watches every sub client rather than ordering
+        # itself. A client with no sub client therefore cannot order here --
+        # see BLUEPRINT_V2_AUDIT_FITUR.md.
+        flash("Portal Client/PT tidak memakai form order pribadi. Pesanan dibuat oleh Sub Client / Mandor. Gunakan menu Sub Client, Piutang, Invoice, dan Kontrak.", "info")
         return redirect(url_for("portal.pt_dashboard"))
     if request.method == "POST":
         draft, created, error = create_portal_order_draft(current_user, request.form)
@@ -1099,7 +1093,7 @@ def order_status():
     data = {
         **_role_dashboard_data(
             _pt_persona()
-            if current_user.role == ROLE_PORTAL_PT
+            if current_user.role == ROLE_PORTAL_CLIENT
             else _mandor_persona()
             if current_user.role == ROLE_PORTAL_SUBCLIENT
             else _customer_persona()

@@ -31,7 +31,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_PT,
+    ROLE_PORTAL_CLIENT,
     validate_user_payload,
 )
 
@@ -247,7 +247,7 @@ def test_portal_external_login_redirects_to_portal_dashboard(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_PT)
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
         username = user.username
         db.session.commit()
 
@@ -544,13 +544,13 @@ def test_user_management_accepts_portal_roles_on_existing_auth(app):
                 {
                     "full_name": "Portal PT User",
                     "username": f"portal-pt-{uuid4().hex[:8]}",
-                    "role": ROLE_PORTAL_PT,
+                    "role": ROLE_PORTAL_CLIENT,
                     "branch_id": str(owner.branch_id),
                     "is_active": "on",
                 }
             )
             assert pt_error is None
-            assert pt_payload["role"] == ROLE_PORTAL_PT
+            assert pt_payload["role"] == ROLE_PORTAL_CLIENT
         finally:
             transaction.rollback()
 
@@ -957,7 +957,7 @@ def test_portal_pt_cannot_submit_draft_order_or_create_operational_data(app):
     app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_PT)
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
         username = user.username
         client_obj, _client_pic, _mandor, location = _create_scope_master_data(user)
         _create_portal_mapping(
@@ -1384,8 +1384,9 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
     role_cases = [
         (ROLE_PORTAL_CUSTOMER, None, None, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
         (ROLE_PORTAL_SUBCLIENT, PRINCIPAL_MANDOR, "mandor", "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
-        (ROLE_PORTAL_PT, PRINCIPAL_CLIENT, "client", "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
-        (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/client", 'data-endpoint="portal.client_dashboard"'),
+        # Client and PT are one role now and land on the PT home; the
+        # narrower client_dashboard page still renders when visited.
+        (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
         (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
     ]
 
@@ -1433,8 +1434,9 @@ def test_portal_login_routes_each_external_role_to_its_own_page(app):
     role_cases = [
         (ROLE_PORTAL_CUSTOMER, "/portal/customer", 'data-endpoint="portal.customer_dashboard"'),
         (ROLE_PORTAL_SUBCLIENT, "/portal/mandor", 'data-endpoint="portal.mandor_dashboard"'),
-        (ROLE_PORTAL_PT, "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
-        (ROLE_PORTAL_CLIENT, "/portal/client", 'data-endpoint="portal.client_dashboard"'),
+        # Client and PT are one role now and land on the PT home; the
+        # narrower client_dashboard page still renders when visited.
+        (ROLE_PORTAL_CLIENT, "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
         (ROLE_PORTAL_DELEGATE, "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
     ]
 
@@ -1520,7 +1522,7 @@ def test_portal_role_dashboard_pages_reject_other_portal_roles(app):
         mandor_user = _create_test_user(ROLE_PORTAL_SUBCLIENT)
         client_obj, _client_pic, mandor, _location = _create_scope_master_data(mandor_user)
         _create_portal_mapping(mandor_user, principal_type=PRINCIPAL_MANDOR, mandor=mandor)
-        pt_user = _create_test_user(ROLE_PORTAL_PT)
+        pt_user = _create_test_user(ROLE_PORTAL_CLIENT)
         _create_portal_mapping(pt_user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
         db.session.commit()
         mandor_username = mandor_user.username
@@ -1631,7 +1633,7 @@ def test_portal_pt_feature_foundation_pages_render(app):
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_PT)
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
         username = user.username
         client_obj, _client_pic, _mandor, _location = _create_scope_master_data(user)
         _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
@@ -1714,7 +1716,7 @@ def test_portal_pt_contract_page_reads_existing_customer_contracts(app):
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
-        user = _create_test_user(ROLE_PORTAL_PT)
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
         client_obj, client_pic, _mandor, _location = _create_scope_master_data(user)
         _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
         contract = CustomerContract(

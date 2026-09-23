@@ -34,7 +34,7 @@ def test_portal_command_center_uses_real_portal_roles():
     assert "MkNDOR" not in template
     assert 'current_user.role == "PORTAL_CUSTOMER"' in template
     assert 'current_user.role == "PORTAL_SUBCLIENT"' in template
-    assert 'current_user.role == "PORTAL_PT"' in template
+    assert 'current_user.role == "PORTAL_CLIENT"' in template
 
 
 def test_portal_desktop_dashboard_density_contract_is_present():

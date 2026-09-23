@@ -17,7 +17,7 @@ from app.services.approval_service import ensure_action_has_approval, has_approv
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
-from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT
+from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT
 from app.services.operational_service import generate_order_number
 
 
@@ -238,7 +238,7 @@ def _portal_payment_precheck(user, scope):
         "rejected_count": totals.get("rejected_proof_count", 0),
         "payable_invoice_count": payable,
         "outstanding_amount": outstanding,
-        "action_endpoint": "portal.mandor_payments" if role != "PORTAL_PT" else "portal.pt_receivables",
+        "action_endpoint": "portal.mandor_payments" if role != "PORTAL_CLIENT" else "portal.pt_receivables",
         "action_label": "Lihat Pembayaran",
     }
 
@@ -298,7 +298,7 @@ def _active_outstanding_for_scope(branch_id, client_id, mandor_id=None):
 
 def _credit_gate_for_draft(draft):
     role = getattr(draft.user, "role", None) if draft.user else None
-    if role not in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT}:
+    if role not in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
         return {
             "key": "CREDIT",
             "title": "Kredit",

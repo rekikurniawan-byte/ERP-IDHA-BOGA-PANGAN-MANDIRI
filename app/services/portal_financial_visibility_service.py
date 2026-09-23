@@ -18,7 +18,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_PT,
+    ROLE_PORTAL_CLIENT,
 )
 
 
@@ -216,7 +216,7 @@ def _direct_delegate_filters(user):
 def _ownership_filter_for_scope(user, scope):
     role = getattr(user, "role", None)
 
-    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_PT}:
+    if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT}:
         if not scope.client_ids:
             return false()
         return Invoice.client_id.in_(sorted(scope.client_ids))

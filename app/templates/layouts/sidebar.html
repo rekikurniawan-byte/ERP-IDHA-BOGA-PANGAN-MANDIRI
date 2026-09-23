@@ -75,7 +75,7 @@
 {% set can_view_hr = has_role(["OWNER", "ADMIN", "HR"]) %}
 {% set can_view_master = has_role(["OWNER", "ADMIN", "FINANCE", "LOGISTICS"]) %}
 {% set can_view_costing = has_role(["OWNER", "ADMIN"]) %}
-{% set can_view_portal = (global_portal_enabled|default(false)) and has_role(["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_PT", "PORTAL_SUBCLIENT", "PORTAL_DELEGATE", "PORTAL_CUSTOMER"]) %}
+{% set can_view_portal = (global_portal_enabled|default(false)) and has_role(["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_CLIENT", "PORTAL_SUBCLIENT", "PORTAL_DELEGATE", "PORTAL_CUSTOMER"]) %}
 {% set can_admin_portal = has_role(["OWNER", "ADMIN"]) %}
 {% set can_view_customer_success = has_role(["OWNER", "ADMIN", "CUSTOMER_SUCCESS"]) %}
 
@@ -207,7 +207,7 @@
                             </a>
                         {% endif %}
 
-                        {% if role == "PORTAL_PT" %}
+                        {% if role == "PORTAL_CLIENT" %}
                             <a href="{{ url_for('portal.pt_mandors') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_mandors' else '' }}">
                                 <i class="bi bi-diagram-3"></i>

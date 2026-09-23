@@ -5,7 +5,7 @@
     {% include "portal/_dashboard_customer.html" %}
 {% elif current_user.role == "PORTAL_SUBCLIENT" %}
     {% include "portal/_dashboard_mandor.html" %}
-{% elif current_user.role == "PORTAL_PT" %}
+{% elif current_user.role == "PORTAL_CLIENT" %}
     {% include "portal/_dashboard_pt.html" %}
 {% else %}
 <section class="portal-command-center portal-command-{{ center.role_family }}">
@@ -421,7 +421,7 @@
         </div>
     {% endif %}
 
-    {% if center.role == "PORTAL_PT" %}
+    {% if center.role == "PORTAL_CLIENT" %}
         <div class="portal-command-grid">
             <section class="portal-command-panel">
                 <div class="portal-command-panel-head">

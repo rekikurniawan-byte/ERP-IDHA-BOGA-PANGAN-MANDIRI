@@ -35,6 +35,11 @@ RETIRED_ROLE_SUCCESSOR = {
     # a sub client. The domain entity it maps to is still Mandor, and the
     # /portal/mandor/* URLs are unchanged, so existing links keep working.
     "PORTAL_MANDOR": "PORTAL_SUBCLIENT",
+    # A client IS the company, so the separate PT role was a distinction
+    # without a difference: both resolved to the same client scope and the
+    # same ids. The merged role keeps the PT experience -- the company view
+    # over every sub client under the contract.
+    "PORTAL_PT": "PORTAL_CLIENT",
 }
 
 

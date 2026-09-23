@@ -27,7 +27,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_PT,
+    ROLE_PORTAL_CLIENT,
 )
 
 
@@ -60,7 +60,7 @@ def _display_integration_status(value: Any) -> str:
         "READ_EXISTING": "Terhubung",
         "OWNERSHIP_GUARDED": "Akses Dibatasi",
         "TARGETED": "Sesuai Akun",
-        "PORTAL_PT_SCOPE": "Akses PT",
+        "PORTAL_CLIENT_SCOPE": "Akses Client / PT",
         "PORTAL_CLIENT_SCOPE": "Akses Perusahaan",
         "PORTAL_SUBCLIENT_SCOPE": "Akses Sub Client / Mandor",
         "PORTAL_DELEGATE_SCOPE": "Akses Delegasi",
@@ -115,10 +115,8 @@ def _role_family(role: str | None) -> str:
         return "customer"
     if role == ROLE_PORTAL_SUBCLIENT:
         return "mandor"
-    if role == ROLE_PORTAL_PT:
-        return "pt"
     if role == ROLE_PORTAL_CLIENT:
-        return "client"
+        return "pt"
     if role == ROLE_PORTAL_DELEGATE:
         return "delegate"
     return "internal"
@@ -128,8 +126,7 @@ def _home_endpoint(role: str | None) -> str:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
         ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
-        ROLE_PORTAL_PT: "portal.pt_dashboard",
-        ROLE_PORTAL_CLIENT: "portal.client_dashboard",
+        ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
         ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
     }.get(role, "portal.my_dashboard")
 
@@ -138,7 +135,7 @@ def _primary_order_endpoint(role: str | None) -> str | None:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_order",
         ROLE_PORTAL_SUBCLIENT: "portal.mandor_order",
-        ROLE_PORTAL_PT: "portal.pt_order",
+        ROLE_PORTAL_CLIENT: "portal.pt_order",
     }.get(role)
 
 
@@ -146,7 +143,7 @@ def _invoice_endpoint(role: str | None) -> str:
     return {
         ROLE_PORTAL_CUSTOMER: "portal.customer_invoices",
         ROLE_PORTAL_SUBCLIENT: "portal.mandor_invoices",
-        ROLE_PORTAL_PT: "portal.pt_invoices",
+        ROLE_PORTAL_CLIENT: "portal.pt_invoices",
     }.get(role, "portal.invoices")
 
 
@@ -164,13 +161,13 @@ def _debt_endpoint(role: str | None) -> str:
 
 
 def _contract_endpoint(role: str | None) -> str | None:
-    return "portal.pt_contracts" if role == ROLE_PORTAL_PT else None
+    return "portal.pt_contracts" if role == ROLE_PORTAL_CLIENT else None
 
 
 def _subscription_endpoint(role: str | None) -> str | None:
     return {
         ROLE_PORTAL_SUBCLIENT: "portal.mandor_subscriptions",
-        ROLE_PORTAL_PT: "portal.pt_subscriptions",
+        ROLE_PORTAL_CLIENT: "portal.pt_subscriptions",
     }.get(role)
 
 
@@ -222,7 +219,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
             enabled=True,
         )
     )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         actions.append(
             _action(
                 "Hutang",
@@ -233,7 +230,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
                 enabled=role != ROLE_PORTAL_CUSTOMER,
             )
         )
-    if role == ROLE_PORTAL_PT:
+    if role == ROLE_PORTAL_CLIENT:
         actions.append(
             _action(
                 "Kontrak",
@@ -244,7 +241,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
                 enabled=True,
             )
         )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
         actions.append(
             _action(
                 "Langganan",
@@ -333,7 +330,7 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
         },
     ]
 
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_PT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
         kpis.append(
             {
                 "label": "Hutang",
@@ -344,7 +341,7 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
                 "money_caption": True,
             }
         )
-    if role == ROLE_PORTAL_PT:
+    if role == ROLE_PORTAL_CLIENT:
         kpis.append(
             {
                 "label": "Kontrak",
@@ -490,7 +487,7 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
             ),
         ]
 
-    if role == ROLE_PORTAL_PT:
+    if role == ROLE_PORTAL_CLIENT:
         return [
             _focus_card(
                 "Akses Mandor",
@@ -628,7 +625,7 @@ def _build_alerts(role: str | None, scope, models: dict) -> list[dict]:
                 "endpoint": "portal.approvals",
             }
         )
-    if role == ROLE_PORTAL_PT and _as_int(contracts.get("active_count")) == 0:
+    if role == ROLE_PORTAL_CLIENT and _as_int(contracts.get("active_count")) == 0:
         alerts.append(
             {
                 "level": "warning",
@@ -835,15 +832,10 @@ def _build_role_narrative(role: str | None) -> dict:
             "guard": "Pesanan tetap menunggu admin sebelum masuk produksi dan pengiriman.",
             "integration": "Pesanan, pekerja, hutang, invoice, dan pembayaran tetap memakai data perusahaan yang sama.",
         },
-        ROLE_PORTAL_PT: {
+        ROLE_PORTAL_CLIENT: {
             "headline": "PT melihat seluruh mandor, invoice, piutang, kontrak, closing, dan langganan perusahaan.",
             "guard": "PT melihat dan membayar tagihan tanpa mengubah data keuangan secara langsung.",
             "integration": "Kontrak, invoice, mandor, dan lokasi tetap memakai data perusahaan yang sama.",
-        },
-        ROLE_PORTAL_CLIENT: {
-            "headline": "Client/PIC melihat tagihan, pembayaran, dan dokumen yang terhubung ke akunnya.",
-            "guard": "Akses dibatasi sesuai perusahaan yang tersambung.",
-            "integration": "Data keuangan tetap satu dengan sistem utama.",
         },
         ROLE_PORTAL_DELEGATE: {
             "headline": "Delegasi hanya melihat data yang didelegasikan secara eksplisit.",

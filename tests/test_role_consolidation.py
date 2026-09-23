@@ -66,7 +66,7 @@ def test_template_membership_has_no_owner_bypass():
 
 
 def test_successor_table_covers_exactly_the_retired_roles():
-    assert set(RETIRED_ROLE_SUCCESSOR) == set(RETIRED) | {"PORTAL_MANDOR"}
+    assert set(RETIRED_ROLE_SUCCESSOR) == set(RETIRED) | {"PORTAL_MANDOR", "PORTAL_PT"}
     for role in RETIRED:
         assert RETIRED_ROLE_SUCCESSOR[role] == "ADMIN"
 
