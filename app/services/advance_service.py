@@ -41,13 +41,20 @@ def _run_in_transaction(action):
 CLIENT_DP_RECEIVED = "CLIENT_DP_RECEIVED"
 SUPPLIER_ADVANCE_PAID = "SUPPLIER_ADVANCE_PAID"
 MANDOR_OPERATIONAL_ADVANCE = "MANDOR_OPERATIONAL_ADVANCE"
+MANDOR_SECURITY_DEPOSIT = "MANDOR_SECURITY_DEPOSIT"
 
+# Setiap jenis punya akunnya sendiri. Sebelumnya semua jenis memakai 1008 Uang
+# Muka / DP, yang di COA berjenis ASET -- jadi DP yang DITERIMA dari client
+# (seharusnya kewajiban) dan uang muka yang DIBAYAR ke supplier saling menutupi
+# di satu akun. Uang yang diterima sekarang dicatat di akun kewajiban.
 ADVANCE_TYPES = {
     CLIENT_DP_RECEIVED: {
         "label": "DP Client Diterima",
         "party_type": "CLIENT",
         "cash_direction": "IN",
         "journal_direction": "CREDIT_ADVANCE",
+        "account_code": "2008",
+        "account_label": "2008 Uang Muka Pelanggan",
         "description": "Uang muka/DP diterima dari client sebelum invoice final.",
     },
     SUPPLIER_ADVANCE_PAID: {
@@ -55,6 +62,8 @@ ADVANCE_TYPES = {
         "party_type": "SUPPLIER",
         "cash_direction": "OUT",
         "journal_direction": "DEBIT_ADVANCE",
+        "account_code": "1008",
+        "account_label": "1008 Uang Muka / DP",
         "description": "Uang muka dibayar ke supplier sebelum tagihan final.",
     },
     MANDOR_OPERATIONAL_ADVANCE: {
@@ -62,15 +71,45 @@ ADVANCE_TYPES = {
         "party_type": "MANDOR",
         "cash_direction": "OUT",
         "journal_direction": "DEBIT_ADVANCE",
+        "account_code": "1008",
+        "account_label": "1008 Uang Muka / DP",
         "description": "Panjar operasional ke mandor/PIC lapangan. Bukan payroll.",
     },
+    MANDOR_SECURITY_DEPOSIT: {
+        "label": "Deposit Jaminan Mandor",
+        "party_type": "MANDOR",
+        "cash_direction": "IN",
+        "journal_direction": "CREDIT_ADVANCE",
+        "account_code": "2007",
+        "account_label": "2007 Deposit Jaminan Mandor",
+        "description": (
+            "Jaminan dari mandor yang ditagih langsung. Ditahan selama kerja sama, "
+            "tidak dipotong ke tiap invoice: dipakai menutup hutang kalau mandor "
+            "macet, atau dikembalikan kalau kerja sama selesai dan lunas."
+        ),
+    },
 }
+
+# Memotong deposit dan mengembalikannya adalah keputusan OWNER.
+DEPOSIT_TO_INVOICE = "DEPOSIT_TO_INVOICE"
+DEPOSIT_REFUND = "DEPOSIT_REFUND"
+OWNER_ONLY_SETTLEMENT_TYPES = {DEPOSIT_TO_INVOICE, DEPOSIT_REFUND}
 
 SETTLEMENT_TYPES = {
     "CLIENT_INVOICE": {
         "advance_type": CLIENT_DP_RECEIVED,
         "reference_type": "INVOICE",
         "description": "Pemakaian DP client untuk mengurangi piutang invoice.",
+    },
+    DEPOSIT_TO_INVOICE: {
+        "advance_type": MANDOR_SECURITY_DEPOSIT,
+        "reference_type": "INVOICE",
+        "description": "Deposit jaminan dipotong untuk menutup hutang invoice mandor itu sendiri.",
+    },
+    DEPOSIT_REFUND: {
+        "advance_type": MANDOR_SECURITY_DEPOSIT,
+        "reference_type": "DEPOSIT_REFUND",
+        "description": "Deposit jaminan dikembalikan ke mandor setelah kerja sama selesai dan lunas.",
     },
     "SUPPLIER_BILL": {
         "advance_type": SUPPLIER_ADVANCE_PAID,
@@ -84,46 +123,55 @@ SETTLEMENT_TYPES = {
     },
 }
 
+# Kunci = kode akun yang diposting. Kode dan nama mengikuti COA di database
+# (keputusan owner 2026-09-25). Versi sebelumnya memposting Gas ke 5006 (Beban
+# Air), Perawatan ke 5007 (Beban Gas LPG), dan BBM ke 5011 (Beban Perawatan
+# Kendaraan). Transport dan BBM digabung karena COA menggabungnya di 5003.
 MANDOR_EXPENSE_PROOF_ACCOUNT_CHOICES = {
     "5002": {
         "label": "Operasional Dapur",
-        "account_label": "5002 Biaya Operasional Dapur",
+        "account_label": "5002 Beban Operasional Dapur",
         "description": "Pertanggungjawaban panjar untuk kebutuhan operasional dapur.",
     },
     "5003": {
-        "label": "Transportasi",
-        "account_label": "5003 Biaya Transportasi",
-        "description": "Pertanggungjawaban panjar untuk ongkos jalan, kirim, atau logistik.",
+        "label": "Transport / BBM",
+        "account_label": "5003 Beban Transport / BBM",
+        "description": "Pertanggungjawaban panjar untuk ongkos jalan, kirim, logistik, atau bahan bakar.",
     },
     "5005": {
-        "label": "Listrik & Air",
-        "account_label": "5005 Biaya Listrik & Air",
-        "description": "Pertanggungjawaban panjar untuk utilitas lokasi kerja.",
+        "label": "Listrik",
+        "account_label": "5005 Beban Listrik",
+        "description": "Pertanggungjawaban panjar untuk listrik lokasi kerja.",
     },
     "5006": {
-        "label": "Gas / LPG",
-        "account_label": "5006 Biaya Gas",
-        "description": "Pertanggungjawaban panjar untuk gas atau LPG.",
+        "label": "Air",
+        "account_label": "5006 Beban Air",
+        "description": "Pertanggungjawaban panjar untuk air bersih lokasi kerja.",
     },
     "5007": {
-        "label": "Perawatan",
-        "account_label": "5007 Biaya Perawatan",
-        "description": "Pertanggungjawaban panjar untuk maintenance/perbaikan kecil.",
+        "label": "Gas / LPG",
+        "account_label": "5007 Beban Gas LPG",
+        "description": "Pertanggungjawaban panjar untuk gas atau LPG.",
     },
     "5008": {
         "label": "Administrasi Site",
-        "account_label": "5008 Biaya Administrasi",
+        "account_label": "5008 Beban Administrasi / Bunga",
         "description": "Pertanggungjawaban panjar untuk pembelian operasional umum/site.",
+    },
+    "5009": {
+        "label": "Perawatan / Lain-lain",
+        "account_label": "5009 Beban Lain-Lain",
+        "description": "Pertanggungjawaban panjar untuk perbaikan kecil dan pengeluaran lain di luar kategori ini.",
     },
     "5010": {
         "label": "Kemasan",
-        "account_label": "5010 Biaya Kemasan",
+        "account_label": "5010 Beban Kemasan",
         "description": "Pertanggungjawaban panjar untuk box, plastik, atau perlengkapan packing.",
     },
     "5011": {
-        "label": "BBM",
-        "account_label": "5011 Biaya BBM Kendaraan",
-        "description": "Pertanggungjawaban panjar untuk bahan bakar kendaraan operasional.",
+        "label": "Perawatan Kendaraan",
+        "account_label": "5011 Beban Perawatan Kendaraan",
+        "description": "Pertanggungjawaban panjar untuk servis dan perbaikan kendaraan operasional.",
     },
 }
 
@@ -154,13 +202,43 @@ def get_account_by_code(code):
     return Account.query.filter_by(account_code=code, is_active=True).first()
 
 
-def resolve_cash_account_code(account_type):
+def resolve_cash_account_code(account_type, bank_account_id=None):
+    """Akun kas/bank yang benar untuk transaksi ini.
+
+    Dulu BANK selalu 1002 (Bank 1), apa pun rekening yang dipilih, jadi uang
+    yang masuk ke Bank 2 terjurnal ke Bank 1. Sekarang memakai COA milik
+    rekening itu lewat resolver yang sama dengan transaksi lapangan, dan baru
+    jatuh ke 1002 kalau rekening belum dipetakan.
+    """
+    from app.services.field_transaction_policy_service import resolve_cash_bank_coa_code
+
     account_type = _normalize(account_type)
     if account_type == "CASH":
         return "1001"
     if account_type == "BANK":
-        return "1002"
+        bank_account = db.session.get(BankAccount, bank_account_id) if bank_account_id else None
+        return resolve_cash_bank_coa_code(
+            payment_method="TRANSFER", bank_account=bank_account, fallback_bank_code="1002"
+        )
     raise Exception("Akun kas/bank harus CASH atau BANK.")
+
+
+def _advance_account(advance_type):
+    rule = ADVANCE_TYPES.get(_normalize(advance_type)) or {}
+    code = rule.get("account_code")
+    account = get_account_by_code(code) if code else None
+    if not account:
+        raise Exception(f"Akun {rule.get('account_label') or code or '-'} belum tersedia atau tidak aktif.")
+    return account
+
+
+def _require_owner(user_id, action_label):
+    from app.models.master import User
+    from app.utils.roles import effective_role
+
+    user = db.session.get(User, user_id) if user_id else None
+    if user is None or effective_role(user.role) != "OWNER":
+        raise Exception(f"{action_label} hanya boleh dilakukan OWNER.")
 
 
 def generate_advance_number(advance_date):
@@ -317,14 +395,15 @@ def create_advance_transaction(
     )
     account_type, bank_account_id = validate_cash_bank(branch_id, payment_method, bank_account_id)
 
-    acc_advance = get_account_by_code("1008")
-    acc_cash_bank = get_account_by_code(resolve_cash_account_code(account_type))
+    cash_bank_code = resolve_cash_account_code(account_type, bank_account_id)
+    acc_advance = get_account_by_code(rule["account_code"])
+    acc_cash_bank = get_account_by_code(cash_bank_code)
 
     missing = []
     if not acc_advance:
-        missing.append("1008 Uang Muka / DP")
+        missing.append(rule["account_label"])
     if not acc_cash_bank:
-        missing.append(resolve_cash_account_code(account_type))
+        missing.append(cash_bank_code)
     if missing:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing))
 
@@ -380,10 +459,10 @@ def create_advance_transaction(
     db.session.flush()
 
     if rule["journal_direction"] == "CREDIT_ADVANCE":
-        # Client DP received: Dr Kas/Bank, Cr 1008.
+        # Uang diterima (DP client, deposit mandor): Dr Kas/Bank, Cr kewajiban.
         debit_account, credit_account = acc_cash_bank, acc_advance
     else:
-        # Supplier advance / mandor panjar: Dr 1008, Cr Kas/Bank.
+        # Uang dibayar (uang muka supplier, panjar mandor): Dr 1008, Cr Kas/Bank.
         debit_account, credit_account = acc_advance, acc_cash_bank
 
     db.session.add(JournalDetail(journal_id=journal.id, account_id=debit_account.id, debit=amount, credit=0))
@@ -428,9 +507,9 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
     if not rule:
         raise Exception("Tipe settlement advance tidak valid.")
 
-    if settlement_type == "CLIENT_INVOICE":
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE}:
         if not reference_id:
-            raise Exception("Settlement DP client wajib memilih invoice.")
+            raise Exception("Pemakaian DP/deposit wajib memilih invoice.")
         invoice = Invoice.query.filter_by(id=reference_id, branch_id=branch_id).first()
         if not invoice:
             raise Exception("Invoice settlement tidak ditemukan.")
@@ -455,7 +534,27 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
         # Expense-account posting is deliberately deferred to PRODUCTION mapping.
         return rule, None
 
+    if settlement_type == DEPOSIT_REFUND:
+        return rule, None
+
     raise Exception("Tipe settlement belum dikenali.")
+
+
+def invoice_has_journal(invoice_id):
+    """Piutang invoice ini sudah dijurnal (Dr 1004) oleh accounting_service?"""
+    return Journal.query.filter_by(reference_type="INVOICE", reference_id=invoice_id).first() is not None
+
+
+def mandor_unpaid_invoice_total(branch_id, mandor_id):
+    """Sisa hutang invoice mandor ini. Deposit tidak boleh dikembalikan selama > 0."""
+    total = 0.0
+    for (remaining,) in Invoice.query.filter(
+        Invoice.branch_id == branch_id,
+        Invoice.mandor_id == mandor_id,
+        Invoice.status.notin_(["CANCELLED", "CANCELED", "PAID", "CLOSED"]),
+    ).with_entities(Invoice.remaining_amount).all():
+        total += float(remaining or 0)
+    return total
 
 
 def create_advance_settlement(
@@ -468,6 +567,8 @@ def create_advance_settlement(
     expense_account_code=None,
     notes=None,
     commit=False,
+    payment_method=None,
+    bank_account_id=None,
 ):
     if not is_advance_schema_ready():
         raise Exception("Tabel advance belum tersedia. Jalankan migration PRODUCTION terlebih dahulu.")
@@ -475,7 +576,26 @@ def create_advance_settlement(
         raise Exception("Advance tidak ditemukan.")
 
     settlement_type = _normalize(settlement_type)
+    if settlement_type in OWNER_ONLY_SETTLEMENT_TYPES:
+        _require_owner(created_by, "Memotong atau mengembalikan deposit jaminan")
     rule, reference_obj = resolve_settlement_reference(advance.branch_id, settlement_type, reference_id)
+
+    if settlement_type == DEPOSIT_TO_INVOICE and getattr(reference_obj, "mandor_id", None) != advance.mandor_id:
+        # Deposit mandor A tidak boleh menutup hutang mandor B.
+        raise Exception("Deposit hanya boleh dipotong ke invoice milik mandor yang sama.")
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and not invoice_has_journal(getattr(reference_obj, "id", None)):
+        # Settlement mengkredit 1004 Piutang Usaha. Kalau piutang invoice ini
+        # belum pernah didebit (jurnal invoice belum diposting), 1004 minus.
+        raise Exception(
+            f"Invoice {reference_obj.invoice_number} belum dijurnal. Posting jurnal invoice dulu."
+        )
+    if settlement_type == DEPOSIT_REFUND:
+        unpaid = mandor_unpaid_invoice_total(advance.branch_id, advance.mandor_id)
+        if unpaid > 0:
+            raise Exception(
+                f"Deposit belum boleh dikembalikan: mandor masih punya hutang {_money(unpaid)}. "
+                "Lunasi atau potong deposit ke invoice-nya dulu."
+            )
     expense_account_code = _normalize(expense_account_code)
     expense_proof_rule = None
 
@@ -490,7 +610,7 @@ def create_advance_settlement(
         raise Exception("Nominal settlement harus lebih dari 0.")
     if amount > float(advance.remaining_amount or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa advance.")
-    if settlement_type == "CLIENT_INVOICE" and amount > float(getattr(reference_obj, "remaining_amount", 0) or 0):
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and amount > float(getattr(reference_obj, "remaining_amount", 0) or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa piutang invoice.")
     if settlement_type == "SUPPLIER_BILL" and amount > float(getattr(reference_obj, "remaining_amount", 0) or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa hutang supplier bill.")
@@ -499,9 +619,7 @@ def create_advance_settlement(
     if settlement_date > date.today():
         raise Exception("Tanggal settlement tidak boleh lebih dari hari ini.")
 
-    acc_advance = get_account_by_code("1008")
-    if not acc_advance:
-        raise Exception("Akun 1008 Uang Muka / DP belum tersedia.")
+    acc_advance = _advance_account(advance.advance_type)
     if settlement_type == "MANDOR_EXPENSE_PROOF":
         expense_proof_rule = MANDOR_EXPENSE_PROOF_ACCOUNT_CHOICES.get(expense_account_code)
         if not expense_proof_rule:
@@ -524,23 +642,59 @@ def create_advance_settlement(
 
     journal = None
 
-    if settlement_type == "CLIENT_INVOICE":
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE}:
         acc_piutang = get_account_by_code("1004")
         if not acc_piutang:
             raise Exception("Akun 1004 Piutang Usaha belum tersedia.")
+        source_label = "deposit jaminan mandor" if settlement_type == DEPOSIT_TO_INVOICE else "DP client"
         journal = Journal(
             journal_number=generate_journal_number(settlement_date),
             journal_date=settlement_date,
             reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
             reference_id=settlement.id,
-            description=f"Settlement DP client {advance.advance_number} ke invoice {getattr(reference_obj, 'invoice_number', reference_id)}",
+            description=f"Settlement {source_label} {advance.advance_number} ke invoice {getattr(reference_obj, 'invoice_number', reference_id)}",
             created_by=created_by,
         )
         db.session.add(journal)
         db.session.flush()
         # Invoice journal records full receivable; settlement reduces receivable.
+        # Dr kewajiban (2008 DP / 2007 deposit), Cr 1004 Piutang Usaha.
         db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_advance.id, debit=amount, credit=0))
         db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_piutang.id, debit=0, credit=amount))
+
+    elif settlement_type == DEPOSIT_REFUND:
+        # Uang benar-benar keluar, jadi -- beda dengan settlement lain -- ada
+        # mutasi kas/bank sendiri. Dr 2007 Deposit Jaminan, Cr Kas/Bank.
+        account_type, bank_account_id = validate_cash_bank(advance.branch_id, payment_method, bank_account_id)
+        cash_bank_code = resolve_cash_account_code(account_type, bank_account_id)
+        acc_cash_bank = get_account_by_code(cash_bank_code)
+        if not acc_cash_bank:
+            raise Exception(f"Akun kas/bank {cash_bank_code} belum tersedia.")
+        refund_transaction = CashBankTransaction(
+            branch_id=advance.branch_id,
+            transaction_date=settlement_date,
+            account_type=account_type,
+            bank_account_id=bank_account_id,
+            transaction_type="OUT",
+            amount=amount,
+            description=f"Pengembalian deposit jaminan {advance.advance_number} sebesar {_money(amount)}",
+            reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
+            reference_id=settlement.id,
+            created_by=created_by,
+        )
+        db.session.add(refund_transaction)
+        journal = Journal(
+            journal_number=generate_journal_number(settlement_date),
+            journal_date=settlement_date,
+            reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
+            reference_id=settlement.id,
+            description=f"Pengembalian deposit jaminan mandor {advance.advance_number}",
+            created_by=created_by,
+        )
+        db.session.add(journal)
+        db.session.flush()
+        db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_advance.id, debit=amount, credit=0))
+        db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_cash_bank.id, debit=0, credit=amount))
 
     elif settlement_type == "SUPPLIER_BILL":
         acc_ap = get_account_by_code("2002")
@@ -586,7 +740,7 @@ def create_advance_settlement(
 
     # Update operational outstanding without creating a duplicate cash/bank entry.
     # The cash movement happened at advance creation; settlement only applies that advance.
-    if settlement_type == "CLIENT_INVOICE" and reference_obj:
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and reference_obj:
         new_paid = float(reference_obj.paid_amount or 0) + amount
         new_remaining_invoice = float(reference_obj.total_amount or 0) - new_paid
         if new_remaining_invoice <= 0:

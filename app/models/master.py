@@ -82,6 +82,16 @@ class Mandor(BaseModel):
     phone = db.Column(db.String(30), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
+    # Identitas. Wajib untuk mandor yang ditagih langsung: tanpa ini, mandor
+    # yang diblokir bisa mendaftar lagi besok sebagai baris baru dengan nama
+    # sedikit berbeda dan sistem tidak akan tahu. Nullable supaya mandor lama
+    # yang ditagih lewat PT tidak ikut terhambat.
+    id_number = db.Column(db.String(32), nullable=True, index=True)
+    address = db.Column(db.Text, nullable=True)
+    guarantor_name = db.Column(db.String(150), nullable=True)
+    guarantor_phone = db.Column(db.String(30), nullable=True)
+    guarantor_id_number = db.Column(db.String(32), nullable=True)
+
     delivery_locations = db.relationship("DeliveryLocation", backref="mandor", lazy=True)
     workers = db.relationship("Worker", backref="mandor", lazy=True)
 

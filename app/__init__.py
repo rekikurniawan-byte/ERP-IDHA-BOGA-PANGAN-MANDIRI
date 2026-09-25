@@ -93,6 +93,7 @@ def create_app():
     from app.routes.field_transaction_routes import field_transaction_bp
     from app.routes.prediction_routes import prediction_bp
     from app.routes.customer_success_routes import customer_success_bp
+    from app.routes.credit_routes import credit_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -113,12 +114,53 @@ def create_app():
     flask_app.register_blueprint(field_transaction_bp)
     flask_app.register_blueprint(prediction_bp)
     flask_app.register_blueprint(customer_success_bp)
+    flask_app.register_blueprint(credit_bp)
 
 
     @flask_app.before_request
     def attach_request_id():
         incoming_request_id = str(request.headers.get("X-Request-ID") or "").strip()
         g.request_id = incoming_request_id[:128] if incoming_request_id else uuid4().hex
+
+
+    @flask_app.before_request
+    def run_daily_credit_sweep():
+        """Penyapu kredit harian, dipicu permintaan internal pertama tiap hari.
+
+        Aplikasi ini tidak punya penjadwal. Gerbang order tidak bergantung
+        pada penyapu (gerbang selalu menghitung ulang), jadi kalau langkah ini
+        gagal, order tetap aman -- yang tertunda hanya catatan status dan
+        notifikasinya. Karena itu kegagalan dicatat di log, tidak menggagalkan
+        permintaan pengguna. Server juga bisa menjalankan `flask credit-sweep`.
+        """
+        if flask_app.config.get("TESTING") or request.endpoint in (None, "static"):
+            return
+        try:
+            from datetime import date as _date
+
+            from flask_login import current_user
+            from app.services.credit_account_service import run_daily_sweep_if_due
+
+            if not current_user.is_authenticated or not role_in(current_user.role, INTERNAL_ROLES):
+                return
+            branch_id = current_user.branch_id
+            get_cached_value(
+                ("credit_daily_sweep", branch_id, _date.today().isoformat()),
+                lambda: run_daily_sweep_if_due(branch_id) or {},
+                ttl_seconds=3600,
+            )
+        except Exception:
+            # run_daily_sweep_if_due sudah me-rollback transaksinya sendiri.
+            flask_app.logger.exception("Penyapu kredit harian gagal; gerbang order tetap aktif.")
+
+
+    @flask_app.cli.command("credit-sweep")
+    def credit_sweep_command():
+        """Jalankan penyapu kredit untuk semua cabang (untuk penjadwal server)."""
+        from app.services.credit_account_service import sweep_all_branches
+
+        for branch_id, result in sweep_all_branches().items():
+            print(f"Cabang {branch_id}: {result['checked']} akun diperiksa, {len(result['escalated'])} naik status.")
 
 
     @flask_app.after_request

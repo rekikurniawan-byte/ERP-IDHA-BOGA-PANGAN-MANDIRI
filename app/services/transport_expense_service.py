@@ -28,22 +28,35 @@ def _run_in_transaction(action):
 
 
 VEHICLE_FUEL = "VEHICLE_FUEL"
+VEHICLE_MAINTENANCE = "VEHICLE_MAINTENANCE"
 TRANSPORT = "TRANSPORT"
 
+# Kode dan nama akun mengikuti COA di database (keputusan owner 2026-09-25).
+# Versi sebelumnya memposting BBM ke 5011, yang di COA bernama Beban
+# Perawatan Kendaraan. COA menggabung transport dan BBM di 5003.
 TRANSPORT_EXPENSE_TYPES = {
     VEHICLE_FUEL: {
         "label": "BBM Kendaraan",
-        "account_code": "5011",
-        "account_label": "5011 Biaya BBM Kendaraan",
+        "account_code": "5003",
+        "account_label": "5003 Beban Transport / BBM",
         "description": "Biaya BBM kendaraan operasional yang terkait armada/delivery.",
+    },
+    VEHICLE_MAINTENANCE: {
+        "label": "Perawatan Kendaraan",
+        "account_code": "5011",
+        "account_label": "5011 Beban Perawatan Kendaraan",
+        "description": "Servis, ganti oli, ban, dan perbaikan kendaraan operasional.",
     },
     TRANSPORT: {
         "label": "Biaya Transportasi",
         "account_code": "5003",
-        "account_label": "5003 Biaya Transportasi",
+        "account_label": "5003 Beban Transport / BBM",
         "description": "Biaya transport umum/logistik/non-BBM.",
     },
 }
+
+# Jenis yang wajib menyebut kendaraan, sopir, atau pengiriman terkait.
+VEHICLE_BOUND_TYPES = {VEHICLE_FUEL, VEHICLE_MAINTENANCE}
 
 
 def _normalize(value):
@@ -79,13 +92,12 @@ def get_account_by_code(code):
     return Account.query.filter_by(account_code=code, is_active=True).first()
 
 
-def resolve_cash_account_code(account_type):
-    account_type = _normalize(account_type)
-    if account_type == "CASH":
-        return "1001"
-    if account_type == "BANK":
-        return "1002"
-    raise Exception("Akun kas/bank harus CASH atau BANK.")
+def resolve_cash_account_code(account_type, bank_account_id=None):
+    # Dulu BANK selalu 1002 (Bank 1), apa pun rekening yang dipilih. Satu
+    # resolver untuk semua mesin kas/bank: COA milik rekening, lalu 1002.
+    from app.services.advance_service import resolve_cash_account_code as resolve_shared
+
+    return resolve_shared(account_type, bank_account_id)
 
 
 def validate_cash_bank(branch_id, payment_method, bank_account_id=None):
@@ -208,17 +220,20 @@ def create_transport_vehicle_expense(
     driver_id = validate_driver(branch_id, driver_id)
     delivery_id = validate_delivery(branch_id, delivery_id, driver_id=driver_id)
 
-    # Precision guard: fuel expenses should identify vehicle/driver/delivery whenever possible.
-    if expense_type == VEHICLE_FUEL and not (vehicle_label or driver_id or delivery_id):
-        raise Exception("Biaya BBM wajib mengisi minimal kendaraan, driver, atau delivery supaya traceable.")
+    # Precision guard: vehicle expenses should identify vehicle/driver/delivery whenever possible.
+    if expense_type in VEHICLE_BOUND_TYPES and not (vehicle_label or driver_id or delivery_id):
+        raise Exception(
+            f"{rule['label']} wajib mengisi minimal kendaraan, driver, atau delivery supaya traceable."
+        )
 
     acc_expense = get_account_by_code(rule["account_code"])
-    acc_cash_bank = get_account_by_code(resolve_cash_account_code(account_type))
+    cash_bank_code = resolve_cash_account_code(account_type, bank_account_id)
+    acc_cash_bank = get_account_by_code(cash_bank_code)
     missing = []
     if not acc_expense:
         missing.append(rule["account_label"])
     if not acc_cash_bank:
-        missing.append(resolve_cash_account_code(account_type))
+        missing.append(cash_bank_code)
     if missing:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing))
 

@@ -15,9 +15,35 @@ APPROVAL_STATUS_APPROVED = "APPROVED"
 APPROVAL_STATUS_REJECTED = "REJECTED"
 APPROVAL_TERMINAL_STATUSES = {APPROVAL_STATUS_APPROVED, APPROVAL_STATUS_REJECTED}
 
+# Aksi yang hanya boleh disetujui OWNER. Route persetujuan terbuka untuk OWNER
+# dan ADMIN, dan sejak lima role internal dilebur ke ADMIN, tanpa daftar ini
+# seorang ADMIN bisa menyetujui penahanan kredit yang diajukan ADMIN lain.
+# Menolak tetap terbuka untuk ADMIN: penolakan hanya membuat order tetap
+# tertahan, jadi tidak pernah melonggarkan apa pun.
+OWNER_ONLY_APPROVAL_ACTIONS = {
+    "PORTAL_ORDER_CREDIT_OVERRIDE",
+}
+
 
 class ApprovalError(ValueError):
     """Raised when a maker-checker approval rule is violated."""
+
+
+def _is_owner_decision(request_row: ApprovalRequest, reviewed_by: int) -> bool:
+    """True kalau aksi ini khusus OWNER dan yang memutuskan memang OWNER.
+
+    Melempar ApprovalError kalau aksinya khusus OWNER tapi pemeriksanya bukan.
+    """
+    if _normalize_key(getattr(request_row, "action_key", "")) not in OWNER_ONLY_APPROVAL_ACTIONS:
+        return False
+
+    from app.models.master import User
+    from app.utils.roles import effective_role
+
+    reviewer = db.session.get(User, reviewed_by)
+    if reviewer is None or effective_role(reviewer.role) != "OWNER":
+        raise ApprovalError("Hanya OWNER yang boleh menyetujui order yang ditahan karena kredit.")
+    return True
 
 
 def _normalize_key(value: str) -> str:
@@ -110,7 +136,12 @@ def create_approval_request(
 def approve_request(request_row: ApprovalRequest, *, reviewed_by: int, review_note: str = "", commit: bool = True) -> ApprovalRequest:
     if request_row.status in APPROVAL_TERMINAL_STATUSES:
         raise ApprovalError("Approval request sudah final.")
-    if request_row.requested_by == reviewed_by:
+    owner_decision = _is_owner_decision(request_row, reviewed_by)
+    # Untuk aksi khusus OWNER, keputusan OWNER sendiri sudah merupakan
+    # persetujuannya. Tanpa pengecualian ini, perusahaan dengan satu OWNER
+    # tidak akan pernah bisa melepas order yang dikonfirmasi OWNER sendiri:
+    # tidak ada OWNER kedua yang boleh jadi checker.
+    if request_row.requested_by == reviewed_by and not owner_decision:
         raise ApprovalError("Maker dan checker tidak boleh user yang sama.")
 
     request_row.status = APPROVAL_STATUS_APPROVED

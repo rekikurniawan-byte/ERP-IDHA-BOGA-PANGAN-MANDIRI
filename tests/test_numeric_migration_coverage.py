@@ -21,6 +21,9 @@ customer_contracts_93 = importlib.import_module(
 customer_corrections_95 = importlib.import_module(
     "migrations.versions.95a0a1b2c3d4_customer_corrections"
 )
+credit_control_a0 = importlib.import_module(
+    "migrations.versions.a0b1c2d3e4f5_add_credit_control"
+)
 
 
 def _migration_columns(module):
@@ -54,6 +57,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(numeric_wave_86),
         **_migration_columns(customer_contracts_93),
         **_migration_columns(customer_corrections_95),
+        **_migration_columns(credit_control_a0),
     }
 
     assert migration_columns

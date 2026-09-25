@@ -1,0 +1,26 @@
+{# Ringkasan kredit mandor yang ditagih langsung. Sengaja hanya angka yang
+   mendorong bayar; alasan dan keputusan OWNER tidak ditampilkan di portal. #}
+{% for credit in credit_summaries %}
+<section class="portal-home-panel portal-credit-panel">
+    <div class="portal-home-panel-head">
+        <div>
+            <span>Kredit {{ credit.mandor_name }}</span>
+            <h2>
+                {% if credit.can_order %}Sisa limit {{ credit.available|rupiah }}
+                {% else %}Order baru sedang ditahan{% endif %}
+            </h2>
+        </div>
+        <i class="bi {{ 'bi-shield-check' if credit.status == 'AKTIF' else 'bi-shield-exclamation' }}"></i>
+    </div>
+    <p class="mb-1">Status: <strong>{{ credit.status_label }}</strong></p>
+    <p class="mb-1">Hutang berjalan {{ credit.used|rupiah }} dari limit {{ credit.credit_limit|rupiah }} · deposit {{ credit.deposit|rupiah }}</p>
+    {% if credit.next_due_date %}
+        <p class="mb-1">Jatuh tempo terdekat <strong>{{ credit.next_due_date.strftime('%d-%m-%Y') }}</strong>: {{ credit.next_due_amount|rupiah }}</p>
+    {% endif %}
+    {% if credit.oldest_days_overdue %}
+        <p class="mb-0 text-danger">Ada tagihan terlambat {{ credit.oldest_days_overdue }} hari. Segera lunasi agar order tidak diblokir.</p>
+    {% elif not credit.can_order %}
+        <p class="mb-0 text-danger">Hubungi admin untuk membuka kembali order.</p>
+    {% endif %}
+</section>
+{% endfor %}

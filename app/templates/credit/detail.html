@@ -1,0 +1,248 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+{% from "credit/_status_badge.html" import credit_status_badge %}
+
+{% block content %}
+{% set d = detail.decision %}
+{% set account = detail.account %}
+{% set header_actions = [{"label": "Kontrol Kredit", "url": url_for('credit.overview'), "icon": "bi-arrow-left"}] %}
+{% if is_owner and detail.mandor %}
+    {% do header_actions.append({"label": "Ubah Syarat Kredit", "url": url_for('credit.mandor_settings', mandor_id=detail.mandor.id), "icon": "bi-sliders"}) %}
+{% endif %}
+
+<div class="finance-page-shell" data-ui-finance-page="UI">
+{{ page_header(detail.name, detail.mode_label, "Keuangan • Kredit", actions=header_actions) }}
+
+<div class="app-card mt-4">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+        {{ credit_status_badge(d.status, detail.status_label) }}
+        <span>{{ d.message }}</span>
+    </div>
+    {% if account.release_until %}
+        <p class="mt-2 mb-0 small">Dilepas sementara oleh OWNER sampai <strong>{{ account.release_until.strftime('%d-%m-%Y') }}</strong>.</p>
+    {% endif %}
+</div>
+
+<div class="app-stat-grid mt-4">
+    <div class="app-stat-card"><span>Exposure</span><h3>{{ d.exposure|rupiah }}</h3><p>Yang hilang kalau kabur hari ini</p></div>
+    <div class="app-stat-card"><span>Limit</span><h3>{{ d.credit_limit|rupiah }}</h3><p>Sisa {{ d.available|rupiah }}</p></div>
+    <div class="app-stat-card"><span>Deposit Ditahan</span><h3>{{ d.deposit_amount|rupiah }}</h3><p>Syarat {{ d.required_deposit|rupiah }}</p></div>
+    <div class="app-stat-card"><span>Telat Tertua</span><h3>{{ d.oldest_days_overdue }} hari</h3><p>Janji meleset {{ d.broken_promises }}×</p></div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean"><div><h5>Rincian Exposure</h5></div></div>
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <tbody>
+                <tr><td>Invoice belum lunas</td><td class="text-end">{{ d.outstanding_invoiced|rupiah }}</td></tr>
+                <tr><td>Order sudah jalan, belum ditagih</td><td class="text-end">{{ d.unbilled_delivered|rupiah }}</td></tr>
+                <tr><td>Dikurangi deposit ditahan</td><td class="text-end">− {{ d.deposit_amount|rupiah }}</td></tr>
+                <tr><td><strong>Exposure</strong></td><td class="text-end"><strong>{{ d.exposure|rupiah }}</strong></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="small mb-0">
+        Umur tunggakan:
+        belum jatuh tempo {{ d.aging.get("belum_jatuh_tempo", 0)|rupiah }} ·
+        1–7 hari {{ d.aging.get("1_7", 0)|rupiah }} ·
+        8–21 hari {{ d.aging.get("8_21", 0)|rupiah }} ·
+        22–60 hari {{ d.aging.get("22_60", 0)|rupiah }} ·
+        &gt;60 hari {{ d.aging.get("60_plus", 0)|rupiah }}
+    </p>
+</div>
+
+{% if detail.mandor %}
+{% set unpaid = detail.invoices|selectattr("unpaid")|list %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Deposit Jaminan</h5>
+            <p>Setiap penerimaan, pemotongan, dan pengembalian otomatis membuat mutasi kas/bank dan jurnal (akun 2007).</p>
+        </div>
+    </div>
+
+    {% if detail.deposits %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead><tr><th>No</th><th>Tanggal</th><th>Nominal</th><th>Terpakai / Dikembalikan</th><th>Sisa</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for dep in detail.deposits %}
+                <tr>
+                    <td>{{ dep.advance_number }}</td>
+                    <td>{{ dep.advance_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ dep.amount|rupiah }}</td>
+                    <td>{{ dep.settled_amount|rupiah }}</td>
+                    <td><strong>{{ dep.remaining_amount|rupiah }}</strong></td>
+                    <td>{{ dep.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-4">
+            <h6>Terima Deposit</h6>
+            <form method="POST" action="{{ url_for('credit.deposit_receive', account_id=account.id) }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="date" name="deposit_date" class="form-control mb-2" value="{{ today.isoformat() }}" required>
+                <input type="text" name="amount" class="form-control mb-2" placeholder="Nominal" required>
+                <select name="payment_method" class="form-select mb-2" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer Bank</option>
+                </select>
+                <select name="bank_account_id" class="form-select mb-2">
+                    <option value="">Rekening (kalau transfer)</option>
+                    {% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+                </select>
+                <input type="text" name="reference_number" class="form-control mb-2" placeholder="No referensi / bukti">
+                <button type="submit" class="btn app-btn-primary btn-sm">Terima & Jurnal</button>
+            </form>
+        </div>
+
+        {% if is_owner %}
+        <div class="col-lg-4">
+            <h6>Potong Deposit ke Invoice</h6>
+            <form method="POST" action="{{ url_for('credit.deposit_apply', account_id=account.id) }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <select name="invoice_id" class="form-select mb-2" required>
+                    <option value="">Pilih invoice</option>
+                    {% for row in unpaid %}<option value="{{ row.invoice.id }}">{{ row.invoice.invoice_number }} — sisa {{ row.invoice.remaining_amount|rupiah }}</option>{% endfor %}
+                </select>
+                <input type="text" name="amount" class="form-control mb-2" placeholder="Nominal (kosong = sisa invoice)">
+                <input type="text" name="notes" class="form-control mb-2" placeholder="Catatan">
+                <button type="submit" class="btn app-btn-secondary btn-sm">Potong & Jurnal</button>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <h6>Kembalikan Deposit</h6>
+            <p class="small">Hanya bisa kalau mandor tidak punya hutang invoice lagi.</p>
+            <form method="POST" action="{{ url_for('credit.deposit_refund', account_id=account.id) }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="text" name="amount" class="form-control mb-2" placeholder="Nominal (kosong = semua)">
+                <select name="payment_method" class="form-select mb-2" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer Bank</option>
+                </select>
+                <select name="bank_account_id" class="form-select mb-2">
+                    <option value="">Rekening (kalau transfer)</option>
+                    {% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn app-btn-secondary btn-sm">Kembalikan & Jurnal</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if is_owner %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Keputusan OWNER</h5>
+            <p>Status tidak pernah turun sendiri. Kalau tunggakan masih tua tapi Bapak memberi kesempatan (misalnya ada komitmen bayar tertulis), isi "Lepas sampai" — setelah tanggal itu hitungan otomatis berlaku lagi.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('credit.status_change', account_id=account.id) }}" class="row g-3 app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select" required>
+                {% for key, label in detail.manual_statuses %}<option value="{{ key }}" {% if account.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Lepas sampai (opsional)</label>
+            <input type="date" name="release_until" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Alasan (wajib)</label>
+            <input type="text" name="reason" class="form-control" placeholder="Contoh: sudah bayar Rp 5.000.000 tgl 20-09 / komitmen tertulis lunas 30-09" required>
+        </div>
+        <div class="col-12"><button type="submit" class="btn app-btn-primary btn-sm">Simpan Keputusan</button></div>
+    </form>
+
+    {% if detail.can_write_off %}
+    <hr>
+    <h6 class="text-danger">Hapus Buku</h6>
+    <p class="small">Deposit dipotong dulu ke invoice tertua, sisanya dijurnal ke 5013 Beban Piutang Tak Tertagih, invoice ditutup, mandor dinonaktifkan, dan NIK-nya masuk daftar cekal. Tidak bisa dibatalkan dari layar.</p>
+    <form method="POST" action="{{ url_for('credit.write_off', account_id=account.id) }}" class="row g-3 app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-9"><input type="text" name="reason" class="form-control" placeholder="Alasan hapus buku (wajib)" required></div>
+        <div class="col-md-3"><button type="submit" class="btn btn-danger btn-sm w-100">Hapus Buku</button></div>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if detail.mandor %}
+<div class="app-card mt-4">
+    <div class="card-header-clean"><div><h5>Invoice</h5></div></div>
+    {% if detail.invoices %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead><tr><th>No</th><th>Tanggal</th><th>Jatuh Tempo</th><th>Total</th><th>Sisa</th><th>Telat</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for row in detail.invoices %}
+                <tr>
+                    <td><a href="{{ url_for('finance.invoice_detail', invoice_id=row.invoice.id) }}">{{ row.invoice.invoice_number }}</a></td>
+                    <td>{{ row.invoice.invoice_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.invoice.due_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.invoice.total_amount|rupiah }}</td>
+                    <td>{{ row.invoice.remaining_amount|rupiah }}</td>
+                    <td>{% if row.unpaid and row.days_overdue %}<span class="text-danger">{{ row.days_overdue }} hari</span>{% else %}-{% endif %}</td>
+                    <td>{{ row.invoice.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="mb-0">Belum ada invoice.</p>
+    {% endif %}
+</div>
+
+<div class="row g-4 mt-0">
+    <div class="col-lg-6">
+        <div class="app-card mt-4">
+            <div class="card-header-clean"><div><h5>Janji Bayar</h5></div></div>
+            {% for log in detail.promises %}
+                <p class="mb-1 small">Janji {{ log.promise_date.strftime('%d-%m-%Y') }} (dicatat {{ log.follow_up_date.strftime('%d-%m-%Y') }}) — {{ log.response_note or "-" }}</p>
+            {% else %}
+                <p class="mb-0 small">Belum ada janji bayar tercatat.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="app-card mt-4">
+            <div class="card-header-clean"><div><h5>Pembayaran</h5></div></div>
+            {% for payment in detail.payments %}
+                <p class="mb-1 small">{{ payment.payment_date.strftime('%d-%m-%Y') }} — {{ payment.amount|rupiah }} ({{ payment.payment_method }})</p>
+            {% else %}
+                <p class="mb-0 small">Belum ada pembayaran.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean"><div><h5>Riwayat Status</h5><p>Tanggal dan angka dibekukan saat status berpindah.</p></div></div>
+    {% for event in detail.events %}
+        <p class="mb-1 small">
+            <strong>{{ event.changed_at.strftime('%d-%m-%Y %H:%M') }}</strong>
+            {{ event.from_status or "-" }} → {{ event.to_status }}
+            ({{ "otomatis" if event.trigger == "SWEEP" else event.trigger|lower }})
+            — {{ event.reason }}
+            {% if event.exposure_amount is not none %}· exposure {{ event.exposure_amount|rupiah }}{% endif %}
+        </p>
+    {% else %}
+        <p class="mb-0 small">Belum ada perpindahan status.</p>
+    {% endfor %}
+</div>
+</div>
+{% endblock %}

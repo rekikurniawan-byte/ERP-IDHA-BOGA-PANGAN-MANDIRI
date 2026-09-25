@@ -4,6 +4,7 @@
     {% if current_user.role == "PORTAL_CUSTOMER" %}
         {% include "portal/_dashboard_customer.html" %}
     {% elif current_user.role == "PORTAL_SUBCLIENT" %}
+        {% if credit_summaries %}{% include "portal/_credit_summary.html" %}{% endif %}
         {% include "portal/_dashboard_mandor.html" %}
     {% elif current_user.role == "PORTAL_CLIENT" %}
         {% include "portal/_dashboard_pt.html" %}

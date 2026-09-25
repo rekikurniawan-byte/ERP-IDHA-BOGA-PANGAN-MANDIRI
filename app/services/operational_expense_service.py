@@ -26,41 +26,52 @@ def _run_in_transaction(action):
         raise
 
 
-ELECTRIC_WATER = "ELECTRIC_WATER"
+ELECTRICITY = "ELECTRICITY"
+WATER = "WATER"
 GAS_LPG = "GAS_LPG"
 MAINTENANCE = "MAINTENANCE"
 ADMINISTRATION = "ADMINISTRATION"
 PACKAGING = "PACKAGING"
 
+# Kode dan nama akun mengikuti COA di database (keputusan owner 2026-09-25).
+# Versi sebelumnya ditulis untuk daftar akun lain: Gas masuk ke 5006 yang di
+# COA bernama Beban Air, dan Perawatan masuk ke 5007 yang bernama Beban Gas
+# LPG. Listrik dan air dipecah karena COA memisahkan 5005 dan 5006.
 OPERATIONAL_EXPENSE_CATEGORIES = {
-    ELECTRIC_WATER: {
-        "label": "Listrik & Air",
+    ELECTRICITY: {
+        "label": "Listrik",
         "account_code": "5005",
-        "account_label": "5005 Biaya Listrik & Air",
-        "description": "Biaya listrik, air, dan utilitas dapur/catering.",
+        "account_label": "5005 Beban Listrik",
+        "description": "Biaya listrik dapur/catering.",
+    },
+    WATER: {
+        "label": "Air",
+        "account_code": "5006",
+        "account_label": "5006 Beban Air",
+        "description": "Biaya air bersih dapur/catering.",
     },
     GAS_LPG: {
         "label": "Gas / LPG",
-        "account_code": "5006",
-        "account_label": "5006 Biaya Gas",
+        "account_code": "5007",
+        "account_label": "5007 Beban Gas LPG",
         "description": "Biaya gas LPG untuk produksi dapur.",
     },
     MAINTENANCE: {
         "label": "Perawatan",
-        "account_code": "5007",
-        "account_label": "5007 Biaya Perawatan",
-        "description": "Biaya perawatan alat, dapur, dan fasilitas operasional.",
+        "account_code": "5009",
+        "account_label": "5009 Beban Lain-Lain",
+        "description": "Biaya perawatan alat, dapur, dan fasilitas operasional. COA belum punya akun perawatan umum, jadi masuk Beban Lain-Lain.",
     },
     ADMINISTRATION: {
         "label": "Administrasi",
         "account_code": "5008",
-        "account_label": "5008 Biaya Administrasi",
+        "account_label": "5008 Beban Administrasi / Bunga",
         "description": "Biaya administrasi operasional non-pajak dan non-payroll.",
     },
     PACKAGING: {
         "label": "Kemasan",
         "account_code": "5010",
-        "account_label": "5010 Biaya Kemasan",
+        "account_label": "5010 Beban Kemasan",
         "description": "Biaya kemasan, kertas nasi, box, plastik, dan perlengkapan packing.",
     },
 }
@@ -99,13 +110,12 @@ def get_account_by_code(code):
     return Account.query.filter_by(account_code=code, is_active=True).first()
 
 
-def resolve_cash_account_code(account_type):
-    account_type = _normalize(account_type)
-    if account_type == "CASH":
-        return "1001"
-    if account_type == "BANK":
-        return "1002"
-    raise Exception("Akun kas/bank harus CASH atau BANK.")
+def resolve_cash_account_code(account_type, bank_account_id=None):
+    # Dulu BANK selalu 1002 (Bank 1), apa pun rekening yang dipilih. Satu
+    # resolver untuk semua mesin kas/bank: COA milik rekening, lalu 1002.
+    from app.services.advance_service import resolve_cash_account_code as resolve_shared
+
+    return resolve_shared(account_type, bank_account_id)
 
 
 def validate_cash_bank(branch_id, payment_method, bank_account_id=None):
@@ -170,7 +180,7 @@ def get_operational_expense_status_summary(branch_id):
     return {
         "count": len(rows),
         "total": sum(float(row.amount or 0) for row in rows),
-        "electric_water_total": sum(float(row.amount or 0) for row in rows if _normalize(row.expense_category) == ELECTRIC_WATER),
+        "electric_water_total": sum(float(row.amount or 0) for row in rows if _normalize(row.expense_category) in (ELECTRICITY, WATER)),
         "gas_total": sum(float(row.amount or 0) for row in rows if _normalize(row.expense_category) == GAS_LPG),
         "maintenance_total": sum(float(row.amount or 0) for row in rows if _normalize(row.expense_category) == MAINTENANCE),
         "administration_total": sum(float(row.amount or 0) for row in rows if _normalize(row.expense_category) == ADMINISTRATION),
@@ -216,12 +226,13 @@ def create_operational_expense(
     supplier_id = validate_supplier(branch_id, supplier_id)
 
     acc_expense = get_account_by_code(rule["account_code"])
-    acc_cash_bank = get_account_by_code(resolve_cash_account_code(account_type))
+    cash_bank_code = resolve_cash_account_code(account_type, bank_account_id)
+    acc_cash_bank = get_account_by_code(cash_bank_code)
     missing = []
     if not acc_expense:
         missing.append(rule["account_label"])
     if not acc_cash_bank:
-        missing.append(resolve_cash_account_code(account_type))
+        missing.append(cash_bank_code)
     if missing:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing))
 

@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
+from decimal import Decimal
 
 from app.extensions import db
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderRevision, OrderSnapshot
+from app.services.credit_control_service import check_internal_order_credit
 
 
 def _commit_or_rollback():
@@ -56,7 +58,8 @@ def add_or_update_order_detail(
     price_per_portion,
     lunch_qty,
     dinner_qty,
-    notes=None
+    notes=None,
+    actor_role=None,
 ):
     existing_detail = DailyOrderDetail.query.filter_by(
         daily_order_id=daily_order.id,
@@ -68,6 +71,15 @@ def add_or_update_order_detail(
         return False, "Mandor dan lokasi ini sudah ada di order. Gunakan revisi jika ingin mengubah jumlah porsi.", existing_detail
 
     total_qty = int(lunch_qty or 0) + int(dinner_qty or 0)
+
+    credit_ok, credit_message, _ = check_internal_order_credit(
+        branch_id=getattr(daily_order, "branch_id", None),
+        mandor_id=mandor_id,
+        amount=Decimal(str(price_per_portion or 0)) * total_qty,
+        actor_role=actor_role,
+    )
+    if not credit_ok:
+        return False, credit_message, None
 
     detail = DailyOrderDetail(
         daily_order_id=daily_order.id,
@@ -83,7 +95,10 @@ def add_or_update_order_detail(
     db.session.add(detail)
     db.session.commit()
 
-    return True, "Detail order berhasil disimpan.", detail
+    message = "Detail order berhasil disimpan."
+    if credit_message:
+        message = f"{message} Perhatian kredit: {credit_message}"
+    return True, message, detail
 
 
 def create_order_snapshot(daily_order, created_by, commit=True):
@@ -206,7 +221,8 @@ def add_increase_after_lock(
     lunch_qty,
     dinner_qty,
     reason,
-    created_by
+    created_by,
+    actor_role=None,
 ):
     if not daily_order.is_locked:
         return False, "Order belum LOCKED. Gunakan input detail biasa.", None
@@ -225,6 +241,16 @@ def add_increase_after_lock(
 
     if lunch_qty == 0 and dinner_qty == 0:
         return False, "Minimal salah satu jumlah tambahan harus lebih dari 0.", None
+
+    # Tambahan setelah lock tetap menambah hutang, jadi lewat gerbang yang sama.
+    credit_ok, credit_message, _ = check_internal_order_credit(
+        branch_id=getattr(daily_order, "branch_id", None),
+        mandor_id=mandor_id,
+        amount=Decimal(str(price_per_portion)) * (lunch_qty + dinner_qty),
+        actor_role=actor_role,
+    )
+    if not credit_ok:
+        return False, credit_message, None
 
     existing_detail = DailyOrderDetail.query.filter_by(
         daily_order_id=daily_order.id,

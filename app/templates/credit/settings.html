@@ -1,0 +1,115 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+{# Isian: yang baru dikirim (kalau ada error) > akun tersimpan > usulan sistem. #}
+{% macro value(name, stored, fallback="") -%}
+{%- if form is not none and name in form -%}{{ form.get(name) }}
+{%- elif stored is not none -%}{{ stored }}
+{%- else -%}{{ fallback }}{%- endif -%}
+{%- endmacro %}
+{% set mode = form.get("billing_mode") if form is not none else (account.billing_mode if account else "VIA_CLIENT") %}
+
+<div class="finance-page-shell" data-ui-finance-page="UI">
+{{ page_header(
+    "Setel Kredit: " ~ mandor.name,
+    "Hanya OWNER. Mandor yang ditagih langsung wajib punya limit, termin, NIK, dan alamat. Kredit baru menyala setelah deposit yang disyaratkan benar-benar diterima.",
+    "Keuangan • Kredit",
+    actions=[{"label": "Kontrol Kredit", "url": url_for('credit.overview'), "icon": "bi-arrow-left"}]
+) }}
+
+<form method="POST" class="app-form" data-ui-form="true">
+    {% include "components/csrf_token.html" %}
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Mode Penagihan</h5>
+                <p>Menentukan siapa yang ditagih dan apakah boleh berhutang.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Mode</label>
+                <select name="billing_mode" class="form-select" required>
+                    {% for key, label in billing_modes %}
+                        <option value="{{ key }}" {% if mode == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Limit, Termin, Deposit</h5>
+                <p>
+                    Usulan limit dari order 30 hari terakhir × (termin + 7 hari cadangan):
+                    <strong>{{ defaults.suggested_limit|rupiah if defaults.suggested_limit else "belum ada riwayat order berharga" }}</strong>.
+                    Mandor baru sebaiknya mulai dari limit kecil, lalu dinaikkan setelah 2–3 siklus bayar tepat waktu.
+                </p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Limit Kredit (Rp)</label>
+                <input type="text" name="credit_limit" class="form-control"
+                       value="{{ value('credit_limit', account.credit_limit|int if account and account.credit_limit else none, defaults.suggested_limit|int if defaults.suggested_limit else '') }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Termin (hari)</label>
+                <input type="number" min="0" name="payment_terms_days" class="form-control"
+                       value="{{ value('payment_terms_days', account.payment_terms_days if account and account.payment_terms_days else none, defaults.payment_terms_days) }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Syarat Deposit (% dari limit)</label>
+                <input type="text" name="deposit_percent" class="form-control"
+                       value="{{ value('deposit_percent', account.deposit_percent|int if account else none, defaults.deposit_percent) }}">
+                <div class="form-text">Deposit yang sudah diterima dihitung dari jurnal, bukan diketik di sini.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Identitas & Penjamin</h5>
+                <p>NIK dipakai sebagai daftar cekal: mandor yang pernah diblokir atau dihapus buku tidak bisa dapat kredit langsung lagi dengan NIK yang sama.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">NIK</label>
+                <input type="text" name="id_number" class="form-control" value="{{ value('id_number', mandor.id_number) }}">
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Alamat</label>
+                <input type="text" name="address" class="form-control" value="{{ value('address', mandor.address) }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nama Penjamin</label>
+                <input type="text" name="guarantor_name" class="form-control" value="{{ value('guarantor_name', mandor.guarantor_name) }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">HP Penjamin</label>
+                <input type="text" name="guarantor_phone" class="form-control" value="{{ value('guarantor_phone', mandor.guarantor_phone) }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">NIK Penjamin</label>
+                <input type="text" name="guarantor_id_number" class="form-control" value="{{ value('guarantor_id_number', mandor.guarantor_id_number) }}">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Catatan</label>
+                <textarea name="notes" class="form-control" rows="2">{{ value('notes', account.notes if account else none) }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn app-btn-primary">Simpan Syarat Kredit</button>
+        <a href="{{ url_for('credit.overview') }}" class="btn app-btn-secondary">Batal</a>
+    </div>
+</form>
+</div>
+{% endblock %}

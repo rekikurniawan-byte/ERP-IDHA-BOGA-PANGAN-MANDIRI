@@ -101,6 +101,11 @@ from app.models.contract import (
     CustomerContract,
 )
 
+from app.models.credit import (
+    CreditAccount,
+    CreditStatusEvent,
+)
+
 from app.models.complaint import (
     CustomerComplaint,
 )

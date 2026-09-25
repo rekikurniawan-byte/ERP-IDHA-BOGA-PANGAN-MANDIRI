@@ -14,6 +14,11 @@ from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.production import Production
 from app.models.system import DigitalAttachment, PortalOrderDraft
 from app.services.approval_service import ensure_action_has_approval, has_approved_request
+from app.services.credit_control_service import (
+    credit_gate_from_decision,
+    estimate_order_amount,
+    evaluate_credit,
+)
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
@@ -311,6 +316,27 @@ def _credit_gate_for_draft(draft):
             "amount": Decimal("0"),
             "limit": Decimal("0"),
         }
+
+    # Pihak yang kreditnya sudah disetel owner dinilai oleh penilai bersama --
+    # yang sama dengan jalur order internal. Pihak lain tetap memakai aturan
+    # kontrak lama di bawah, tanpa perubahan.
+    estimated_amount = estimate_order_amount(
+        draft.branch_id, draft.mandor_id, draft.portion_qty, draft.delivery_location_id
+    )
+    decision = evaluate_credit(
+        draft.branch_id,
+        client_id=draft.client_id,
+        mandor_id=draft.mandor_id,
+        pending_amount=estimated_amount,
+    )
+    if decision.enforced:
+        approved = has_approved_request(
+            branch_id=draft.branch_id,
+            action_key=PORTAL_CREDIT_APPROVAL_ACTION,
+            reference_type="PORTAL_ORDER_DRAFT",
+            reference_id=draft.id,
+        )
+        return credit_gate_from_decision(decision, approved=approved)
 
     contract = _active_contract_for_client(draft.branch_id, draft.client_id)
     outstanding = _active_outstanding_for_scope(

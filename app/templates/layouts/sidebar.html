@@ -442,6 +442,15 @@
                             <span>Piutang Client</span>
                         </a>
 
+                        {% if has_role(["OWNER", "ADMIN"]) %}
+                        <a href="{{ url_for('credit.overview') }}"
+                           class="sidebar-link sidebar-sublink {{ 'active' if endpoint and endpoint.startswith('credit.') else '' }}"
+                           aria-current="{{ 'page' if endpoint and endpoint.startswith('credit.') else 'false' }}">
+                            <i class="bi bi-shield-exclamation"></i>
+                            <span>Kontrol Kredit</span>
+                        </a>
+                        {% endif %}
+
                         <a href="{{ url_for('finance.supplier_bills') }}"
                            class="sidebar-link sidebar-sublink {{ 'active' if is_finance_payable else '' }}"
                            aria-current="{{ 'page' if is_finance_payable else 'false' }}">

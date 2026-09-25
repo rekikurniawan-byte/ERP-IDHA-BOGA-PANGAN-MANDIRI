@@ -473,7 +473,34 @@ def mandor_dashboard():
     return render_template(
         "portal/role_dashboard.html",
         data=_role_dashboard_data(_mandor_persona(), include_center=True),
+        credit_summaries=_mandor_credit_summaries(),
     )
+
+
+def _mandor_credit_summaries():
+    """Ringkasan kredit untuk mandor dalam akses pengguna ini yang ditagih langsung.
+
+    Mandor yang ditagih lewat PT tidak mendapat kartu: dia tidak punya hutang
+    pribadi yang perlu dipantau. Kegagalan di sini tidak boleh menjatuhkan
+    dashboard, jadi dicatat di log dan kartunya disembunyikan.
+    """
+    try:
+        from app.models.master import Mandor
+        from app.services.credit_account_service import portal_credit_summary
+        from app.services.portal_mapping_service import build_portal_external_scope
+
+        scope = build_portal_external_scope(current_user)
+        if not scope.allowed or not scope.mandor_ids:
+            return []
+        summaries = []
+        for mandor in Mandor.query.filter(Mandor.id.in_(sorted(scope.mandor_ids))).all():
+            summary = portal_credit_summary(mandor)
+            if summary:
+                summaries.append({"mandor_name": mandor.name, **summary})
+        return summaries
+    except Exception:
+        current_app.logger.exception("Ringkasan kredit portal gagal dimuat.")
+        return []
 
 
 @portal_bp.route("/mandor/order")
@@ -487,6 +514,7 @@ def mandor_order():
             "context": build_portal_draft_order_context(current_user),
             "idempotency_key": uuid4().hex,
         },
+        credit_summaries=_mandor_credit_summaries(),
     )
 
 

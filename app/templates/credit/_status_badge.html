@@ -1,0 +1,10 @@
+{% macro credit_status_badge(status, label) -%}
+{%- set tone = {
+    "AKTIF": "status-done",
+    "PANTAU": "status-progress",
+    "TAHAN": "status-danger",
+    "BLOKIR": "status-danger",
+    "HAPUS_BUKU": "status-cancelled",
+}.get(status, "status-draft") -%}
+<span class="status-badge {{ tone }}">{{ label }}</span>
+{%- endmacro %}

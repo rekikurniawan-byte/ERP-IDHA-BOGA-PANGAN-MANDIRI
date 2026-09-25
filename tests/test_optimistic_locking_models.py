@@ -31,6 +31,9 @@ customer_complaint_migration = importlib.import_module(
 customer_correction_migration = importlib.import_module(
     "migrations.versions.95a0a1b2c3d4_customer_corrections"
 )
+credit_control_migration = importlib.import_module(
+    "migrations.versions.a0b1c2d3e4f5_add_credit_control"
+)
 
 
 def _versioned_model_tables():
@@ -60,6 +63,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(customer_contract_migration.VERSIONED_TABLES)
     migration_tables.update(customer_complaint_migration.VERSIONED_TABLES)
     migration_tables.update(customer_correction_migration.VERSIONED_TABLES)
+    migration_tables.update(credit_control_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

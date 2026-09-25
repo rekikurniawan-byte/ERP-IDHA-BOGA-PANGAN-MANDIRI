@@ -56,6 +56,35 @@ def get_required_client_pic(client_id, client_pic_id=None):
     return pic, None
 
 
+def invoice_contact_snapshot(client, mandor, client_pic_id, bill_to_type):
+    """Kontak yang dicetak di invoice, sebagai kolom snapshot siap pakai.
+
+    Invoice untuk mandor yang ditagih langsung ditujukan ke mandor itu sendiri
+    -- PT pemilik proyek tidak menjamin pembayarannya -- jadi kontaknya mandor,
+    bukan PIC client, dan PIC client tidak diwajibkan. Invoice lain tetap
+    wajib memakai PIC resmi client seperti sebelumnya.
+    """
+    if bill_to_type == "MANDOR" and mandor is not None:
+        return {
+            "client_pic_id": None,
+            "client_pic_name_snapshot": mandor.name,
+            "client_pic_position_snapshot": "Mandor (ditagih langsung)",
+            "client_pic_phone_snapshot": getattr(mandor, "phone", None),
+            "client_pic_email_snapshot": None,
+        }, None
+
+    pic, error = get_required_client_pic(getattr(client, "id", None), client_pic_id)
+    if error:
+        return None, error
+    return {
+        "client_pic_id": pic.id,
+        "client_pic_name_snapshot": pic.name,
+        "client_pic_position_snapshot": getattr(pic, "position", None),
+        "client_pic_phone_snapshot": getattr(pic, "phone", None),
+        "client_pic_email_snapshot": getattr(pic, "email", None),
+    }, None
+
+
 def build_company_bank_snapshot(branch_id):
     settings = get_company_settings(branch_id)
     return {

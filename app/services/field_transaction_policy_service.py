@@ -114,7 +114,9 @@ FIELD_EVENT_POLICIES = {
         "needs_payment_method": True,
         "allowed_payment_methods": {"CASH", "TRANSFER"},
         "supports_auto_post": True,
-        "expense_account_code": "5011",
+        # COA menggabung transport dan BBM di 5003; 5011 adalah Beban
+        # Perawatan Kendaraan (keputusan owner 2026-09-25).
+        "expense_account_code": "5003",
     },
     "UNFORMAL_VENDOR_PAYABLE": {
         "label": "Hutang Vendor Nonformal",

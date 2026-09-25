@@ -2,6 +2,8 @@ import os
 from datetime import date
 from types import SimpleNamespace
 
+import pytest
+
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://localhost/test_db")
 os.environ.setdefault("APP_ENV", "testing")
@@ -169,7 +171,8 @@ def test_create_advance_settlement_creates_field_trace_for_linked_mandor_advance
     assert advance.remaining_amount == 0
     assert trace_calls[0]["business_event_type"] == "MANDOR_ADVANCE_SETTLEMENT"
     assert trace_calls[0]["payment_status"] == "PAID"
-    assert settlement.notes.startswith("[5008 Biaya Administrasi]")
+    # Label mengikuti nama akun di COA database (keputusan owner 2026-09-25).
+    assert settlement.notes.startswith("[5008 Beban Administrasi / Bunga]")
 
 
 def test_create_advance_settlement_skips_field_trace_for_non_mandor_advance(monkeypatch):
@@ -196,6 +199,8 @@ def test_create_advance_settlement_skips_field_trace_for_non_mandor_advance(monk
         ),
     )
     monkeypatch.setattr(target, "get_account_by_code", lambda code: SimpleNamespace(id=100, account_code=code))
+    # Piutang invoice sudah dijurnal; tanpa itu settlement DP ditolak.
+    monkeypatch.setattr(target, "invoice_has_journal", lambda invoice_id: True)
     monkeypatch.setattr(target, "generate_settlement_number", lambda settlement_date: "ADVS-TEST-002")
     monkeypatch.setattr(target, "generate_journal_number", lambda journal_date: "JRN-TEST-001")
     monkeypatch.setattr(
@@ -246,3 +251,30 @@ def test_create_advance_settlement_skips_field_trace_for_non_mandor_advance(monk
     assert advance.remaining_amount == 100000
     assert invoice.status == "PARTIAL"
     assert trace_calls == []
+
+
+def test_dp_client_tidak_boleh_dipakai_ke_invoice_yang_belum_dijurnal(monkeypatch):
+    # Settlement mengkredit 1004 Piutang Usaha. Kalau piutang invoice belum
+    # pernah didebit, 1004 jadi minus -- jadi settlement ditolak.
+    invoice = SimpleNamespace(id=77, remaining_amount=200000, total_amount=200000,
+                              paid_amount=0, status="OPEN", invoice_number="INV-TEST-003")
+    monkeypatch.setattr(target, "is_advance_schema_ready", lambda: True)
+    monkeypatch.setattr(
+        target, "resolve_settlement_reference",
+        lambda branch_id, settlement_type, reference_id: (
+            {"advance_type": target.CLIENT_DP_RECEIVED, "reference_type": "INVOICE"}, invoice,
+        ),
+    )
+    monkeypatch.setattr(target, "invoice_has_journal", lambda invoice_id: False)
+    advance = SimpleNamespace(
+        id=43, branch_id=1, advance_type=target.CLIENT_DP_RECEIVED, status="OPEN",
+        remaining_amount=200000, amount=200000, settled_amount=0,
+        advance_date=date(2026, 7, 1), advance_number="ADV-TEST-003", mandor_id=None,
+    )
+
+    with pytest.raises(Exception, match="belum dijurnal"):
+        target.create_advance_settlement(
+            advance, settlement_date=date(2026, 7, 3), settlement_type="CLIENT_INVOICE",
+            amount=100000, created_by=7, reference_id=77,
+        )
+    assert invoice.status == "OPEN"

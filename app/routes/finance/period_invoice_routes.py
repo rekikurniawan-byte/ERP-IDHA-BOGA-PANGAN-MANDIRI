@@ -583,8 +583,17 @@ def generate_period_invoice_save():
         flash(client_error, "danger")
         return redirect(url_for("finance.generate_period_invoice_preview"))
 
-    client_pic_id = request.form.get("client_pic_id", type=int)
-    client_pic, client_pic_error = get_required_client_pic(client.id, client_pic_id)
+    from app.services.credit_control_service import invoice_billing_terms
+    from app.services.invoice_identity_service import invoice_contact_snapshot
+
+    invoice_date = date.today()
+    # Jatuh tempo dari termin (akun kredit, lalu kontrak), dan mandor yang
+    # ditagih langsung mendapat invoice atas namanya sendiri -- dengan dirinya
+    # sebagai kontak, tanpa mewajibkan PIC client.
+    billing = invoice_billing_terms(invoice_date, current_user.branch_id, client, mandor)
+    contact, client_pic_error = invoice_contact_snapshot(
+        client, mandor, request.form.get("client_pic_id", type=int), billing["bill_to_type"]
+    )
     if client_pic_error:
         flash(client_pic_error, "warning")
         return redirect(url_for("finance.generate_period_invoice_preview", mandor_id=mandor_id, period_start=period_start, period_end=period_end))
@@ -614,8 +623,7 @@ def generate_period_invoice_save():
         flash("Tidak ada item valid untuk disimpan menjadi invoice periode.", "warning")
         return redirect(url_for("finance.generate_period_invoice_preview"))
 
-    invoice_date = date.today()
-    due_date = invoice_date + timedelta(days=7)
+    due_date = billing["due_date"]
 
     invoice = Invoice(
         branch_id=current_user.branch_id,
@@ -624,24 +632,20 @@ def generate_period_invoice_save():
         due_date=due_date,
         period_start=period_start,
         period_end=period_end,
-        bill_to_type="CLIENT",
+        bill_to_type=billing["bill_to_type"],
         client_id=client.id,
         mandor_id=mandor_id,
-        client_pic_id=client_pic.id,
+        **contact,
         **build_company_bank_snapshot(current_user.branch_id),
-        client_name_snapshot=client.name,
+        client_name_snapshot=billing["bill_to_name"],
         client_code_snapshot=getattr(client, "client_code", None),
-        client_pic_name_snapshot=client_pic.name,
-        client_pic_position_snapshot=getattr(client_pic, "position", None),
-        client_pic_phone_snapshot=getattr(client_pic, "phone", None),
-        client_pic_email_snapshot=getattr(client_pic, "email", None),
         expected_payment_percent=100,
         total_amount=total_amount,
         paid_amount=0,
         remaining_amount=total_amount,
         status="DRAFT",
         notes=(
-            f"Invoice periode resmi ke client {client.name} "
+            f"Invoice periode resmi ke {billing['bill_to_name']} "
             f"({period_start.strftime('%d-%m-%Y')} s/d {period_end.strftime('%d-%m-%Y')}). "
             f"PIC lapangan: {mandor.name}. "
             f"Isi: catering locked, revisi tambah setelah lock, dan hutang warung belum lunas. "

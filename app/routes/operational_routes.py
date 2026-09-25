@@ -279,7 +279,8 @@ def create_order():
             price_per_portion=price_per_portion,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
-            notes=notes
+            notes=notes,
+            actor_role=current_user.role,
         )
 
         flash(message, "success" if success else "warning")
@@ -331,7 +332,8 @@ def add_order_detail(order_id):
             price_per_portion=price_per_portion,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
-            notes=notes
+            notes=notes,
+            actor_role=current_user.role,
         )
 
         flash(message, "success" if success else "warning")
@@ -381,7 +383,8 @@ def add_increase_after_lock_route(order_id):
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             reason=notes,
-            created_by=current_user.id
+            created_by=current_user.id,
+            actor_role=current_user.role,
         )
 
         if success:
