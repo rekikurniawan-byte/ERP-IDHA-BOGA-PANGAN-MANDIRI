@@ -6,15 +6,10 @@ from sqlalchemy import false
 
 from app.models.canteen import WorkerDebt
 from app.models.master import Worker
-from app.services.portal_mapping_service import (
-    PRINCIPAL_DELEGATE,
-    build_portal_external_scope,
-    list_active_portal_mappings,
-)
+from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -43,26 +38,11 @@ def _remaining_amount(worker_debt: WorkerDebt) -> Decimal:
     return max(remaining, Decimal("0"))
 
 
-def _direct_delegate_mandor_ids(user) -> set[int]:
-    mandor_ids = set()
-    for mapping in list_active_portal_mappings(user):
-        if mapping.principal_type != PRINCIPAL_DELEGATE:
-            continue
-        if mapping.mandor_id:
-            mandor_ids.add(mapping.mandor_id)
-        if mapping.delivery_location and mapping.delivery_location.mandor_id:
-            mandor_ids.add(mapping.delivery_location.mandor_id)
-    return mandor_ids
-
-
 def _mandor_ids_for_worker_debt_scope(user, scope) -> set[int]:
     role = getattr(user, "role", None)
 
     if role in {ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT}:
         return set(scope.mandor_ids)
-
-    if role == ROLE_PORTAL_DELEGATE:
-        return _direct_delegate_mandor_ids(user)
 
     return set()
 

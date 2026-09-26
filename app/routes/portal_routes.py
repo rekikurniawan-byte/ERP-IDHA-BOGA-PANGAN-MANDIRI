@@ -76,7 +76,6 @@ from app.services.notification_service import (
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
     list_active_branches,
 )
@@ -88,7 +87,6 @@ PORTAL_READONLY_ROLES = (
     "ADMIN",
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 )
 PORTAL_INTERNAL_ROLES = ("ADMIN",)
@@ -100,7 +98,6 @@ PORTAL_ROLE_DASHBOARD_ENDPOINTS = {
     # view over every sub client under the contract. The narrower
     # client_dashboard page still exists and still renders.
     ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
-    ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
 
@@ -158,7 +155,6 @@ def dashboard():
     portal_roles = [
         ROLE_PORTAL_CLIENT,
         ROLE_PORTAL_SUBCLIENT,
-        ROLE_PORTAL_DELEGATE,
         ROLE_PORTAL_CUSTOMER,
     ]
     user_query = User.query.filter(User.role.in_(portal_roles))
@@ -310,14 +306,6 @@ def _current_portal_persona():
         return _mandor_persona()
     if current_user.role == ROLE_PORTAL_CUSTOMER:
         return _customer_persona()
-    if current_user.role == ROLE_PORTAL_DELEGATE:
-        return {
-            "eyebrow": "Portal Delegasi",
-            "title": "Beranda Delegasi",
-            "description": "Ringkasan delegasi/PIC/lokasi terbatas berdasarkan akses eksplisit.",
-            "scope_label": "Akses delegasi",
-            "primary_note": "Delegasi hanya melihat data yang didelegasikan secara eksplisit.",
-        }
     return {
         "eyebrow": "Portal",
         "title": "Beranda Portal",
@@ -325,16 +313,6 @@ def _current_portal_persona():
         "scope_label": "Akses portal",
         "primary_note": "Akses mengikuti role dan data yang ditentukan admin.",
     }
-
-
-def _redirect_by_portal_role(*, customer=None, mandor=None, pt=None, client=None, delegate=None, fallback="portal.my_dashboard"):
-    endpoint = {
-        ROLE_PORTAL_CUSTOMER: customer,
-        ROLE_PORTAL_SUBCLIENT: mandor,
-        ROLE_PORTAL_CLIENT: pt,
-        ROLE_PORTAL_DELEGATE: delegate,
-    }.get(current_user.role)
-    return redirect(url_for(endpoint or fallback))
 
 
 @portal_bp.route("/customer")
@@ -784,24 +762,6 @@ def client_dashboard():
                 "description": "Ringkasan client/PIC berdasarkan akses client atau delegasi .",
                 "scope_label": "Akses client",
                 "primary_note": "Role ini dipertahankan untuk kompatibilitas data client .",
-            },
-            include_center=True,
-        ),
-    )
-
-
-@portal_bp.route("/delegate")
-@role_required(ROLE_PORTAL_DELEGATE)
-def delegate_dashboard():
-    return render_template(
-        "portal/role_dashboard.html",
-        data=_role_dashboard_data(
-            {
-                "eyebrow": "Portal Delegasi",
-                "title": "Beranda Delegasi",
-                "description": "Ringkasan delegasi/PIC/lokasi terbatas berdasarkan akses eksplisit.",
-                "scope_label": "Akses delegasi",
-                "primary_note": "Delegasi hanya melihat data yang didelegasikan secara eksplisit.",
             },
             include_center=True,
         ),

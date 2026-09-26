@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
 <body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
-    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_SUBCLIENT" else "PT" if current_user.role == "PORTAL_CLIENT" else "Client" if current_user.role == "PORTAL_CLIENT" else "Delegasi" if current_user.role == "PORTAL_DELEGATE" else "Portal" %}
+    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_SUBCLIENT" else "PT" if current_user.role == "PORTAL_CLIENT" else "Portal" %}
     <header class="portal-mobile-topbar portal-web-topbar">
         <div class="portal-web-topbar-inner">
             <a href="{{ url_for('portal.my_dashboard') }}" class="portal-web-brand" aria-label="Portal Idha Boga">
@@ -34,7 +34,7 @@
                 </span>
             </a>
             <nav class="portal-web-nav" aria-label="Navigasi portal">
-            <a href="{{ url_for('portal.my_dashboard') }}" class="{{ 'active' if request.endpoint in ['portal.my_dashboard', 'portal.customer_dashboard', 'portal.mandor_dashboard', 'portal.pt_dashboard', 'portal.client_dashboard', 'portal.delegate_dashboard'] else '' }}">
+            <a href="{{ url_for('portal.my_dashboard') }}" class="{{ 'active' if request.endpoint in ['portal.my_dashboard', 'portal.customer_dashboard', 'portal.mandor_dashboard', 'portal.pt_dashboard', 'portal.client_dashboard'] else '' }}">
                 <i class="bi bi-house-door"></i>
                 <span>Beranda</span>
             </a>

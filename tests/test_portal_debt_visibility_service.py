@@ -13,7 +13,6 @@ from app.services.portal_mapping_service import PRINCIPAL_CLIENT, PRINCIPAL_DELE
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -203,30 +202,20 @@ def test_portal_mandor_worker_debt_read_model_does_not_show_sibling_mandor_debt(
             transaction.rollback()
 
 
-def test_portal_delegate_location_worker_debt_scope_stays_on_delegated_mandor(app):
+def test_retired_portal_delegate_role_sees_no_worker_debts(app):
+    # PORTAL_DELEGATE dipensiunkan tanpa penerus: walaupun punya pemetaan
+    # akses, akun yang masih memegangnya tidak melihat hutang siapa pun.
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_DELEGATE)
-            client, delegated_mandor, delegated_location = _create_client_and_mandor(user.branch, "DELEGATED")
-            sibling_mandor = Mandor(
-                branch_id=user.branch_id,
-                client_id=client.id,
-                name="Sibling Delegate Debt Mandor",
-                phone="0800000098",
-                is_active=True,
-            )
-            db.session.add(sibling_mandor)
-            db.session.flush()
-            _create_mapping(user, PRINCIPAL_DELEGATE, location=delegated_location)
-
-            delegated_debt = _create_worker_debt(user, delegated_mandor)
-            sibling_debt = _create_worker_debt(user, sibling_mandor)
+            user = _create_user("PORTAL_DELEGATE")
+            _client, mandor, location = _create_client_and_mandor(user.branch, "RETIRED")
+            _create_mapping(user, PRINCIPAL_DELEGATE, location=location)
+            _create_worker_debt(user, mandor)
 
             read_model = build_portal_worker_debt_read_model(user)
 
-            assert _debt_ids(read_model["debts"]) == {delegated_debt.id}
-            assert sibling_debt.id not in _debt_ids(read_model["debts"])
+            assert _debt_ids(read_model["debts"]) == set()
         finally:
             transaction.rollback()
 

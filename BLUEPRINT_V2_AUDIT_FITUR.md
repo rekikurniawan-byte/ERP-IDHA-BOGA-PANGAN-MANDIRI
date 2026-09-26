@@ -220,9 +220,30 @@ portal, akses portal PT-nya juga harus berizin **Draft Order** (diatur di
 pemetaan akses portal, seperti sub-client) — aktivasi sengaja tidak menaikkan
 izin akses secara otomatis.
 
+### Pembersihan PORTAL_DELEGATE — SELESAI
+
+Kode jalur role PORTAL_DELEGATE dibuang dari 10 file: konstanta dan label
+role, cabang lingkup akses, visibilitas invoice/hutang, command center,
+persona, dan halaman `/portal/delegate` (sekarang 404). Akun yang masih
+memegang role itu bukan role portal lagi: tidak dapat lingkup, halaman, atau
+data — ditolak, tidak dipromosikan.
+
+**Yang sengaja dipertahankan:** jenis pemetaan akses `DELEGATE`. Namanya
+mirip tapi itu hal lain dan masih hidup — setiap pelanggan umum yang daftar
+sendiri mendapat pemetaan jenis ini.
+
+Bukti: lingkup akses (id client, mandor, PIC, lokasi, dan level akses) ke-19
+akun portal di staging direkam sebelum dan sesudah — **identik**.
+
 ### Sisa pekerjaan
 
-- Kode jalur PORTAL_DELEGATE (39 referensi) masih ada meski role-nya tak bisa diberikan lagi — pembersihan lanjutan.
+- **Istilah bisa diatur** (keputusan owner 2026-09-26): sistem dipakai untuk
+  pelanggan katering di luar proyek — sekolah, kantor, rumah sakit, event.
+  "PT"/"Mandor" di tampilan diganti istilah umum "Client"/"Sub Client" yang
+  bisa diubah OWNER dari Pengaturan Perusahaan; nama di kode dan database
+  tetap.
+- **Modul pekerja dan hutang warung jadi opsional** — khas proyek, mungkin
+  tidak relevan untuk sekolah/kantor. Tahap setelah istilah.
 
 ---
 

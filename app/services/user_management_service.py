@@ -17,13 +17,11 @@ ROLE_CUSTOMER_SUCCESS = "CUSTOMER_SUCCESS"
 # client under its contract. PORTAL_PT is retired into this one.
 ROLE_PORTAL_CLIENT = "PORTAL_CLIENT"
 ROLE_PORTAL_SUBCLIENT = "PORTAL_SUBCLIENT"
-ROLE_PORTAL_DELEGATE = "PORTAL_DELEGATE"
 ROLE_PORTAL_CUSTOMER = "PORTAL_CUSTOMER"
 
 PORTAL_EXTERNAL_ROLES = {
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_CUSTOMER,
 }
 
@@ -33,7 +31,6 @@ PORTAL_ROLE_LANDING_ENDPOINTS = {
     # The merged role lands on the PT home -- the company view over every sub
     # client. client_dashboard is the narrower page and is no longer a landing.
     ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
-    ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
 }
 
 # Roles a user can be given. Blueprint V2 leaves four internal roles and
@@ -44,11 +41,13 @@ PORTAL_ROLE_LANDING_ENDPOINTS = {
 # naming them to ADMIN. Their ROLE_* constants stay because route allowlists
 # still reference them.
 #
-# PORTAL_DELEGATE is retired too, but deliberately NOT mapped to a successor:
+# PORTAL_DELEGATE is retired too, and deliberately NOT mapped to a successor:
 # the owner confirmed nobody logs in as a delegate, and a delegate was a
 # narrower view than a client, so quietly promoting one would widen access.
-# It simply stops being assignable; any row still holding it gets no portal
-# scope. Its code paths are still present and are a follow-up cleanup.
+# Its code paths are gone; a row still holding it is not a portal role and
+# gets no portal scope and no landing page. The DELEGATE *mapping* principal
+# in portal_mapping_service is a different thing and is still live: every
+# self-registered portal customer gets one.
 ALLOWED_ROLES = [
     ROLE_OWNER,
     ROLE_ADMIN,
@@ -71,7 +70,6 @@ ROLE_LABELS = {
     ROLE_CUSTOMER_SUCCESS: "Customer Success",
     ROLE_PORTAL_CLIENT: "Portal Client / PT",
     ROLE_PORTAL_SUBCLIENT: "Portal Sub Client / Mandor",
-    ROLE_PORTAL_DELEGATE: "Portal Delegasi",
     ROLE_PORTAL_CUSTOMER: "Portal Pelanggan Umum",
 }
 
@@ -87,7 +85,6 @@ ROLE_DESCRIPTIONS = {
     ROLE_CUSTOMER_SUCCESS: "Akses kontrak customer, komplain, koreksi, bukti pendukung, dan koordinasi tindak lanjut tanpa posting langsung ke finance/stok.",
     ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PT: seluruh sub client, invoice, piutang, pembayaran, dan kontrak perusahaannya.",
     ROLE_PORTAL_SUBCLIENT: "Akses portal read-only untuk Sub Client / Mandor berdasarkan mapping eksplisit.",
-    ROLE_PORTAL_DELEGATE: "Akses portal read-only terbatas untuk delegasi Client/PIC/lokasi.",
     ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",
 }
 

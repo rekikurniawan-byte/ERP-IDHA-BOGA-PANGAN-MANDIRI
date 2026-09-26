@@ -25,7 +25,6 @@ from app.services.portal_order_draft_service import build_portal_order_status_co
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -61,7 +60,6 @@ def _display_integration_status(value: Any) -> str:
         "TARGETED": "Sesuai Akun",
         "PORTAL_CLIENT_SCOPE": "Akses Client / PT",
         "PORTAL_SUBCLIENT_SCOPE": "Akses Sub Client / Mandor",
-        "PORTAL_DELEGATE_SCOPE": "Akses Delegasi",
         "PORTAL_CUSTOMER_SCOPE": "Akses Pelanggan",
         "PORTAL_CUSTOMER_PENDING_SCOPE": "Akses Pelanggan",
         "NO_ACTIVE_PORTAL_MAPPING": "Belum Terhubung",
@@ -115,8 +113,6 @@ def _role_family(role: str | None) -> str:
         return "mandor"
     if role == ROLE_PORTAL_CLIENT:
         return "pt"
-    if role == ROLE_PORTAL_DELEGATE:
-        return "delegate"
     return "internal"
 
 
@@ -125,7 +121,6 @@ def _home_endpoint(role: str | None) -> str:
         ROLE_PORTAL_CUSTOMER: "portal.customer_dashboard",
         ROLE_PORTAL_SUBCLIENT: "portal.mandor_dashboard",
         ROLE_PORTAL_CLIENT: "portal.pt_dashboard",
-        ROLE_PORTAL_DELEGATE: "portal.delegate_dashboard",
     }.get(role, "portal.my_dashboard")
 
 
@@ -217,7 +212,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
             enabled=True,
         )
     )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
         actions.append(
             _action(
                 "Hutang",
@@ -328,7 +323,7 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
         },
     ]
 
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT, ROLE_PORTAL_DELEGATE}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
         kpis.append(
             {
                 "label": "Hutang",
@@ -834,11 +829,6 @@ def _build_role_narrative(role: str | None) -> dict:
             "headline": "PT melihat seluruh mandor, invoice, piutang, kontrak, closing, dan langganan perusahaan.",
             "guard": "PT melihat dan membayar tagihan tanpa mengubah data keuangan secara langsung.",
             "integration": "Kontrak, invoice, mandor, dan lokasi tetap memakai data perusahaan yang sama.",
-        },
-        ROLE_PORTAL_DELEGATE: {
-            "headline": "Delegasi hanya melihat data yang didelegasikan secara eksplisit.",
-            "guard": "Tidak ada akses melebar ke perusahaan lain.",
-            "integration": "Batas akses mengikuti pengaturan admin.",
         },
     }
     return narratives.get(

@@ -14,14 +14,12 @@ from app.services.portal_financial_visibility_service import (
 )
 from app.services.portal_mapping_service import (
     PRINCIPAL_CLIENT,
-    PRINCIPAL_CLIENT_PIC,
     PRINCIPAL_DELEGATE,
     PRINCIPAL_MANDOR,
 )
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -216,51 +214,21 @@ def test_portal_mandor_invoice_read_model_does_not_show_client_level_invoice(app
             transaction.rollback()
 
 
-def test_portal_delegate_location_scope_does_not_expand_to_all_client_invoices(app):
+def test_retired_portal_delegate_role_sees_no_invoices(app):
+    # PORTAL_DELEGATE dipensiunkan tanpa penerus. Akun yang (seandainya)
+    # masih memegangnya bukan role portal lagi: walaupun punya pemetaan
+    # akses, tidak ada satu invoice pun yang terlihat.
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_DELEGATE)
-            client, _, delegated_mandor, delegated_location = _create_client_family(user.branch, "DELEGATED")
-            sibling_mandor = Mandor(
-                branch_id=user.branch_id,
-                client_id=client.id,
-                name=f"Sibling Mandor {_suffix()}",
-                phone="0800000099",
-                is_active=True,
-            )
-            db.session.add(sibling_mandor)
-            db.session.flush()
-            _create_mapping(user, PRINCIPAL_DELEGATE, location=delegated_location)
-
-            delegated_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=delegated_mandor)
-            sibling_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=sibling_mandor)
-            client_level_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=None)
+            user = _create_user("PORTAL_DELEGATE")
+            client, _, mandor, location = _create_client_family(user.branch, "RETIRED")
+            _create_mapping(user, PRINCIPAL_DELEGATE, location=location)
+            _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=mandor)
 
             read_model = build_portal_invoice_read_model(user)
 
-            assert _numbers(read_model["invoices"]) == {delegated_invoice.invoice_number}
-            assert sibling_invoice.invoice_number not in _numbers(read_model["invoices"])
-            assert client_level_invoice.invoice_number not in _numbers(read_model["invoices"])
-        finally:
-            transaction.rollback()
-
-
-def test_portal_delegate_client_pic_scope_only_returns_pic_invoices(app):
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_user(ROLE_PORTAL_DELEGATE)
-            client, pic, mandor, _ = _create_client_family(user.branch, "PIC")
-            _create_mapping(user, PRINCIPAL_CLIENT_PIC, client_pic=pic)
-
-            pic_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=mandor, client_pic=pic)
-            no_pic_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=mandor, client_pic=None)
-
-            read_model = build_portal_invoice_read_model(user)
-
-            assert _numbers(read_model["invoices"]) == {pic_invoice.invoice_number}
-            assert no_pic_invoice.invoice_number not in _numbers(read_model["invoices"])
+            assert _numbers(read_model["invoices"]) == set()
         finally:
             transaction.rollback()
 
@@ -369,35 +337,6 @@ def test_portal_mandor_payment_history_does_not_return_client_level_payments(app
 
             assert invoice_numbers == {mandor_invoice.invoice_number}
             assert client_level_invoice.invoice_number not in invoice_numbers
-        finally:
-            transaction.rollback()
-
-
-def test_portal_delegate_location_payment_history_stays_on_delegated_mandor(app):
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_user(ROLE_PORTAL_DELEGATE)
-            client, _, delegated_mandor, delegated_location = _create_client_family(user.branch, "PAYDELEGATE")
-            sibling_mandor = Mandor(
-                branch_id=user.branch_id,
-                client_id=client.id,
-                name=f"Sibling Payment Mandor {_suffix()}",
-                phone="0800000099",
-                is_active=True,
-            )
-            db.session.add(sibling_mandor)
-            db.session.flush()
-            _create_mapping(user, PRINCIPAL_DELEGATE, location=delegated_location)
-
-            delegated_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=delegated_mandor)
-            sibling_invoice = _create_invoice(user, invoice_number=f"T-PFV-INV-{_suffix()}", client=client, mandor=sibling_mandor)
-
-            read_model = build_portal_payment_history_read_model(user)
-            invoice_numbers = {row["invoice_number"] for row in read_model["payments"]}
-
-            assert invoice_numbers == {delegated_invoice.invoice_number}
-            assert sibling_invoice.invoice_number not in invoice_numbers
         finally:
             transaction.rollback()
 

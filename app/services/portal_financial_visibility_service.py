@@ -3,20 +3,14 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import false, or_
+from sqlalchemy import false
 
 from app.models.finance import Invoice, Payment
 from app.models.system import DigitalAttachment
-from app.services.portal_mapping_service import (
-    PRINCIPAL_CLIENT_PIC,
-    PRINCIPAL_DELEGATE,
-    build_portal_external_scope,
-    list_active_portal_mappings,
-)
+from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -170,48 +164,6 @@ def _payment_sum(invoice: Invoice) -> Decimal:
     return sum((_money(payment.amount) for payment in invoice.payments), Decimal("0"))
 
 
-def _direct_delegate_filters(user):
-    """Build only explicitly delegated financial ownership filters.
-
-    The portal scope resolver intentionally expands location/mandor mappings into
-    client identity for directory/profile context. Financial visibility is
-    stricter: a location delegate must not automatically see every client-level
-    invoice under the same client.
-    """
-    direct_client_ids = set()
-    direct_mandor_ids = set()
-    direct_client_pic_ids = set()
-
-    for mapping in list_active_portal_mappings(user):
-        if mapping.principal_type == PRINCIPAL_CLIENT_PIC and mapping.client_pic_id:
-            direct_client_pic_ids.add(mapping.client_pic_id)
-            continue
-
-        if mapping.principal_type != PRINCIPAL_DELEGATE:
-            continue
-
-        if mapping.client_id and not mapping.mandor_id and not mapping.delivery_location_id:
-            direct_client_ids.add(mapping.client_id)
-
-        if mapping.mandor_id:
-            direct_mandor_ids.add(mapping.mandor_id)
-
-        if mapping.delivery_location and mapping.delivery_location.mandor_id:
-            direct_mandor_ids.add(mapping.delivery_location.mandor_id)
-
-        if mapping.client_pic_id:
-            direct_client_pic_ids.add(mapping.client_pic_id)
-
-    filters = []
-    if direct_client_ids:
-        filters.append(Invoice.client_id.in_(sorted(direct_client_ids)))
-    if direct_mandor_ids:
-        filters.append(Invoice.mandor_id.in_(sorted(direct_mandor_ids)))
-    if direct_client_pic_ids:
-        filters.append(Invoice.client_pic_id.in_(sorted(direct_client_pic_ids)))
-    return filters
-
-
 def _ownership_filter_for_scope(user, scope):
     role = getattr(user, "role", None)
 
@@ -224,10 +176,6 @@ def _ownership_filter_for_scope(user, scope):
         if not scope.mandor_ids:
             return false()
         return Invoice.mandor_id.in_(sorted(scope.mandor_ids))
-
-    if role == ROLE_PORTAL_DELEGATE:
-        filters = _direct_delegate_filters(user)
-        return or_(*filters) if filters else false()
 
     return false()
 

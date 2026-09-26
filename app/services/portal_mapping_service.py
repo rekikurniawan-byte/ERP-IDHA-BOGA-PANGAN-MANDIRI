@@ -6,7 +6,6 @@ from app.services.user_management_service import (
     PORTAL_EXTERNAL_ROLES,
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 
@@ -14,6 +13,9 @@ from app.services.user_management_service import (
 PRINCIPAL_CLIENT = "CLIENT"
 PRINCIPAL_MANDOR = "MANDOR"
 PRINCIPAL_CLIENT_PIC = "CLIENT_PIC"
+# Jenis pemetaan, bukan role. Masih hidup: setiap pelanggan umum yang daftar
+# sendiri mendapat satu, dan client/sub client juga menerimanya. Role
+# PORTAL_DELEGATE yang sudah pensiun adalah hal yang berbeda.
 PRINCIPAL_DELEGATE = "DELEGATE"
 
 ACCESS_READ_ONLY = "READ_ONLY"
@@ -151,9 +153,6 @@ def build_portal_external_scope(user):
     elif role == ROLE_PORTAL_SUBCLIENT:
         expected_principals = {PRINCIPAL_MANDOR, PRINCIPAL_DELEGATE}
         scope_mode = "PORTAL_SUBCLIENT_SCOPE"
-    elif role == ROLE_PORTAL_DELEGATE:
-        expected_principals = {PRINCIPAL_CLIENT_PIC, PRINCIPAL_DELEGATE}
-        scope_mode = "PORTAL_DELEGATE_SCOPE"
     elif role == ROLE_PORTAL_CUSTOMER:
         expected_principals = {PRINCIPAL_DELEGATE}
         scope_mode = "PORTAL_CUSTOMER_SCOPE"

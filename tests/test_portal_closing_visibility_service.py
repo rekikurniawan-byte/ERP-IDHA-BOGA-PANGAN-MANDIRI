@@ -10,7 +10,6 @@ from app.services.portal_mapping_service import PRINCIPAL_CLIENT, PRINCIPAL_DELE
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
 )
 from tests.test_portal_debt_visibility_service import _create_worker_debt
@@ -115,31 +114,22 @@ def test_portal_mandor_closing_visibility_does_not_summarize_sibling_mandor(app)
             transaction.rollback()
 
 
-def test_portal_delegate_closing_visibility_stays_on_delegated_location_mandor(app):
+def test_retired_portal_delegate_role_sees_no_closing_data(app):
+    # PORTAL_DELEGATE dipensiunkan tanpa penerus: walaupun punya pemetaan
+    # akses, akun yang masih memegangnya tidak melihat data closing apa pun.
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_user(ROLE_PORTAL_DELEGATE)
-            client, _, mandor, location = _create_client_family(user.branch, "CLOSEDEL")
-            sibling_mandor = Mandor(
-                branch_id=user.branch_id,
-                client_id=client.id,
-                name="Closing Delegate Sibling",
-                phone="0800000888",
-                is_active=True,
-            )
-            db.session.add(sibling_mandor)
-            db.session.flush()
+            user = _create_user("PORTAL_DELEGATE")
+            client, _, mandor, location = _create_client_family(user.branch, "CLOSERET")
             _create_mapping(user, PRINCIPAL_DELEGATE, location=location)
             _create_invoice(user, invoice_number=f"T-PCV-INV-{uuid4().hex[:10]}", client=client, mandor=mandor)
-            _create_invoice(user, invoice_number=f"T-PCV-INV-{uuid4().hex[:10]}", client=client, mandor=sibling_mandor)
             _create_worker_debt(user, mandor, sale_date=date(2099, 1, 15))
-            _create_worker_debt(user, sibling_mandor, sale_date=date(2099, 1, 15))
 
             visibility = build_portal_closing_visibility(user, year=2099, month=1)
 
-            assert visibility["totals"]["invoice_count"] == 1
-            assert visibility["totals"]["worker_debt_count"] == 1
+            assert visibility["totals"]["invoice_count"] == 0
+            assert visibility["totals"]["worker_debt_count"] == 0
         finally:
             transaction.rollback()
 

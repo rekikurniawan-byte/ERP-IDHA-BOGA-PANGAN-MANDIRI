@@ -29,9 +29,7 @@ from app.services.portal_mapping_service import (
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
     ROLE_PORTAL_CUSTOMER,
-    ROLE_PORTAL_DELEGATE,
     ROLE_PORTAL_SUBCLIENT,
-    ROLE_PORTAL_CLIENT,
     validate_user_payload,
 )
 
@@ -659,62 +657,31 @@ def test_portal_client_scope_covers_client_family_without_other_client(app):
             transaction.rollback()
 
 
-def test_portal_delegate_location_scope_is_limited_to_mapped_location(app):
+def test_retired_portal_delegate_role_gets_no_portal_scope_or_page(app):
+    # PORTAL_DELEGATE dipensiunkan tanpa penerus: delegate lebih sempit dari
+    # client, jadi mempromosikannya berarti melebarkan akses. Akun yang
+    # (seandainya) masih memegangnya ditolak, bukan dipromosikan -- walaupun
+    # punya pemetaan akses. Halamannya pun sudah tidak ada.
     app.config["PORTAL_ENABLED"] = True
 
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
-            user = _create_test_user(ROLE_PORTAL_DELEGATE)
-            client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
-            sibling_location = DeliveryLocation(
-                mandor_id=mandor.id,
-                location_name="BBB Same Mandor Other Location",
-                description="Should stay hidden",
-                is_active=True,
-            )
-            db.session.add(sibling_location)
-            _create_extra_mandor_location(user, client_obj, "CCC Same Client Other")
-            db.session.flush()
+            user = _create_test_user("PORTAL_DELEGATE")
+            _client_obj, _client_pic, _mandor, location = _create_scope_master_data(user)
             _create_portal_mapping(user, principal_type=PRINCIPAL_DELEGATE, location=location)
 
             scope = build_portal_external_scope(user)
-            directory = build_portal_location_directory(user)
-            mandor_directory = build_portal_mandor_directory(user)
 
-            assert scope.allowed is True
-            assert scope.scope_mode == "PORTAL_DELEGATE_SCOPE"
-            assert scope.client_ids == {client_obj.id}
-            assert scope.mandor_ids == {mandor.id}
-            assert scope.delivery_location_ids == {location.id}
-            assert sibling_location.id not in scope.delivery_location_ids
-            assert directory["allowed"] is True
-            assert len(directory["rows"]) == 1
-            assert directory["rows"][0]["name"] == "AAA Test Portal Location"
-            assert mandor_directory["allowed"] is True
-            assert {row["name"] for row in mandor_directory["rows"]} == {"AAA Test Portal Mandor"}
+            assert scope.allowed is False
+            assert scope.scope_mode == "NOT_PORTAL_EXTERNAL_ROLE"
+            assert not scope.delivery_location_ids
 
             with app.test_client() as client:
                 _login(client, user)
-                profile_response = client.get("/portal/profile")
-                mandors_response = client.get("/portal/mandors")
-                locations_response = client.get("/portal/locations")
+                delegate_page = client.get("/portal/delegate")
 
-            profile_html = profile_response.get_data(as_text=True)
-            mandors_html = mandors_response.get_data(as_text=True)
-            locations_html = locations_response.get_data(as_text=True)
-
-            assert profile_response.status_code == 200
-            assert mandors_response.status_code == 302
-            assert locations_response.status_code == 302
-            assert "PORTAL_DELEGATE_SCOPE" in profile_html
-            assert "AAA Test Portal Location" in profile_html
-            assert "BBB Same Mandor Other Location" not in profile_html
-            assert "AAA Test Portal Mandor" not in mandors_html
-            assert "CCC Same Client Other Mandor" not in mandors_html
-            assert "AAA Test Portal Location" not in locations_html
-            assert "BBB Same Mandor Other Location" not in locations_html
-            assert "CCC Same Client Other Location" not in locations_html
+            assert delegate_page.status_code == 404
         finally:
             transaction.rollback()
 
@@ -1432,7 +1399,6 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
         # Client and PT are one role now and land on the PT home; the
         # narrower client_dashboard page still renders when visited.
         (ROLE_PORTAL_CLIENT, PRINCIPAL_CLIENT, "client", "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
-        (ROLE_PORTAL_DELEGATE, PRINCIPAL_DELEGATE, "location", "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
     ]
 
     for role, principal_type, principal_key, expected_path, expected_endpoint in role_cases:
@@ -1482,7 +1448,6 @@ def test_portal_login_routes_each_external_role_to_its_own_page(app):
         # Client and PT are one role now and land on the PT home; the
         # narrower client_dashboard page still renders when visited.
         (ROLE_PORTAL_CLIENT, "/portal/pt", 'data-endpoint="portal.pt_dashboard"'),
-        (ROLE_PORTAL_DELEGATE, "/portal/delegate", 'data-endpoint="portal.delegate_dashboard"'),
     ]
 
     for role, expected_path, expected_endpoint in role_cases:
