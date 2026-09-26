@@ -208,11 +208,15 @@ def _mandors(count):
     rows = Mandor.query.order_by(Mandor.id.asc()).limit(count).all()
     if len(rows) < count:
         pytest.skip("mandor di database uji kurang")
+    from app.extensions import db
+
     for row in rows:
+        # Riwayat status merujuk akun, jadi dihapus dulu. Semua di-rollback.
         existing = get_credit_account(row.branch_id, PARTY_MANDOR, row.id)
         if existing is not None:
-            from app.extensions import db
+            CreditStatusEvent.query.filter_by(credit_account_id=existing.id).delete()
             db.session.delete(existing)
+    db.session.flush()
     return rows
 
 

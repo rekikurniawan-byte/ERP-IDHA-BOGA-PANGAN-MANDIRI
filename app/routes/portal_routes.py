@@ -616,16 +616,33 @@ def mandor_subscriptions():
 @portal_bp.route("/pt")
 @role_required(ROLE_PORTAL_CLIENT)
 def pt_dashboard():
+    from app.services.portal_mapping_service import build_portal_external_scope
+    from app.services.portal_order_draft_service import orderable_location_ids
+
     return render_template(
         "portal/role_dashboard.html",
         data=_role_dashboard_data(_pt_persona(), include_center=True),
+        direct_ordering_enabled=bool(
+            orderable_location_ids(current_user, build_portal_external_scope(current_user))
+        ),
     )
 
 
 @portal_bp.route("/pt/order")
 @role_required(ROLE_PORTAL_CLIENT)
 def pt_order():
-    flash("Portal PT difokuskan untuk rekap mandor, invoice, piutang, dan kontrak. Order dibuat oleh mandor/customer sesuai akses masing-masing.", "info")
+    # PT dengan unit order langsung memakai form order yang sama dengan sub
+    # client. PT tanpa unit langsung kembali ke berandanya, seperti dulu.
+    from app.services.portal_mapping_service import build_portal_external_scope
+    from app.services.portal_order_draft_service import orderable_location_ids
+
+    if orderable_location_ids(current_user, build_portal_external_scope(current_user)):
+        return redirect(url_for("portal.draft_order"))
+    flash(
+        "Portal Client/PT memantau pesanan sub client. Untuk memesan sendiri, "
+        "minta admin mengaktifkan Order Langsung dan menambahkan lokasi antarnya.",
+        "info",
+    )
     return redirect(url_for("portal.pt_dashboard"))
 
 
@@ -1061,12 +1078,19 @@ def locations():
 @role_required(*PORTAL_READONLY_ROLES)
 def draft_order():
     if current_user.role == ROLE_PORTAL_CLIENT:
-        # Orders originate at the sub client, not at the company: the
-        # Client/PT portal watches every sub client rather than ordering
-        # itself. A client with no sub client therefore cannot order here --
-        # see BLUEPRINT_V2_AUDIT_FITUR.md.
-        flash("Portal Client/PT tidak memakai form order pribadi. Pesanan dibuat oleh Sub Client / Mandor. Gunakan menu Sub Client, Piutang, Invoice, dan Kontrak.", "info")
-        return redirect(url_for("portal.pt_dashboard"))
+        # Order untuk mandor tetap dibuat mandor itu sendiri; PT hanya memesan
+        # untuk unit order langsungnya ("PT X — Langsung"), dan hanya kalau
+        # admin sudah mengaktifkannya di Master Client.
+        from app.services.portal_mapping_service import build_portal_external_scope
+        from app.services.portal_order_draft_service import orderable_location_ids
+
+        if not orderable_location_ids(current_user, build_portal_external_scope(current_user)):
+            flash(
+                "Portal Client/PT memantau pesanan sub client. Untuk memesan sendiri, "
+                "minta admin mengaktifkan Order Langsung dan menambahkan lokasi antarnya.",
+                "info",
+            )
+            return redirect(url_for("portal.pt_dashboard"))
     if request.method == "POST":
         draft, created, error = create_portal_order_draft(current_user, request.form)
         if error:

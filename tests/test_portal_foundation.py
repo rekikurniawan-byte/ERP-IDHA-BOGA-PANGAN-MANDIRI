@@ -998,6 +998,51 @@ def test_portal_pt_cannot_submit_draft_order_or_create_operational_data(app):
     assert operational_count_after == operational_count_before
 
 
+def test_portal_pt_with_direct_unit_orders_only_for_that_unit(app):
+    # Pasangan tes di atas. Client kontrak yang memesan sendiri mendapat unit
+    # "PT X — Langsung" (keputusan owner 2026-09-25): PT boleh memesan untuk
+    # unit itu, tapi tetap tidak untuk lokasi mandornya.
+    from app.models.master import DeliveryLocation
+    from app.services.client_direct_order_service import activate_direct_ordering
+
+    app.config["PORTAL_ENABLED"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    with app.app_context():
+        user = _create_test_user(ROLE_PORTAL_CLIENT)
+        username = user.username
+        client_obj, _client_pic, _mandor, mandor_location = _create_scope_master_data(user)
+        unit, _ = activate_direct_ordering(client_obj, user.branch_id)
+        unit_location = DeliveryLocation(mandor_id=unit.id, location_name="Kantor PT Langsung", is_active=True)
+        db.session.add(unit_location)
+        _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj, access_level="DRAFT_ORDER")
+        db.session.commit()
+        user_id, unit_id = user.id, unit.id
+        unit_location_id, mandor_location_id = unit_location.id, mandor_location.id
+
+    client = app.test_client()
+    _login_with_password(client, username)
+    page_response = client.get("/portal/pt/order", follow_redirects=False)
+    rejected = client.post("/portal/orders/draft", data={
+        "order_date": "2099-04-01", "meal_type": "LUNCH", "portion_qty": "25",
+        "delivery_location_id": str(mandor_location_id), "idempotency_key": f"pt-mandor-{uuid4().hex}",
+    }, follow_redirects=False)
+    accepted = client.post("/portal/orders/draft", data={
+        "order_date": "2099-04-01", "meal_type": "LUNCH", "portion_qty": "25",
+        "delivery_location_id": str(unit_location_id), "idempotency_key": f"pt-unit-{uuid4().hex}",
+    }, follow_redirects=False)
+
+    with app.app_context():
+        drafts = PortalOrderDraft.query.filter_by(user_id=user_id).all()
+
+    assert page_response.status_code == 302
+    assert page_response.headers["Location"].endswith("/portal/orders/draft")
+    assert rejected.status_code == 400
+    assert "unit order langsungnya" in rejected.get_data(as_text=True)
+    assert accepted.status_code == 302
+    assert [(draft.mandor_id, draft.delivery_location_id) for draft in drafts] == [(unit_id, unit_location_id)]
+
+
 def test_portal_order_tracking_reads_converted_order_production_and_delivery(app):
     app.config["PORTAL_ENABLED"] = True
     app.config["WTF_CSRF_ENABLED"] = False

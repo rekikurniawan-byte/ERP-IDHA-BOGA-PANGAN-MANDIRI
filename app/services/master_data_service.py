@@ -127,6 +127,21 @@ def create_mandor_record(*, branch_id, client_id, name, phone, is_active):
     return mandor
 
 
+def create_direct_unit_record(*, branch_id, client_id, name, phone):
+    """Sub client khusus yang mewakili client itu sendiri (order langsung)."""
+    mandor = Mandor(
+        branch_id=branch_id,
+        client_id=client_id,
+        name=name,
+        phone=phone,
+        is_active=True,
+        is_direct_unit=True,
+    )
+    db.session.add(mandor)
+    _commit_or_rollback()
+    return mandor
+
+
 def update_mandor_record(mandor, *, client_id, name, phone, is_active):
     mandor.client_id = client_id
     mandor.name = name

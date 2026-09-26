@@ -239,6 +239,12 @@ def save_credit_settings(mandor, form, actor):
     billing_mode = str(form.get("billing_mode") or "").strip().upper()
     if billing_mode not in BILLING_MODES:
         raise CreditActionError("Mode penagihan tidak valid.")
+    if getattr(mandor, "is_direct_unit", False) and billing_mode != BILLING_VIA_CLIENT:
+        # Unit order langsung adalah client itu sendiri: tagihannya ke PT,
+        # dan remnya limit kontrak client.
+        raise CreditActionError(
+            "Unit order langsung ditagih ke client-nya sendiri. Atur kreditnya lewat limit kontrak client."
+        )
 
     credit_limit = parse_money(form.get("credit_limit"))
     terms_days = parse_int(form.get("payment_terms_days"), "Termin")

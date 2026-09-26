@@ -5,7 +5,7 @@
 {% set scope = context.scope %}
 {% set summary = context.draft_summary %}
 {% set precheck = context.payment_precheck %}
-{% if current_user.role == "PORTAL_CLIENT" %}
+{% if current_user.role == "PORTAL_CLIENT" and not context.direct_ordering_enabled %}
 <section class="portal-feature-page portal-workflow-page portal-order-page portal-pt-no-order-page">
     <div class="portal-feature-hero portal-workflow-hero portal-order-hero">
         <a class="portal-back-link" href="{{ url_for('portal.pt_dashboard') }}"><i class="bi bi-arrow-left"></i></a>

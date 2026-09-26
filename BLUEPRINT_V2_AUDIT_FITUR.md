@@ -185,15 +185,40 @@ Role akhir: **OWNER, ADMIN, DAPUR, PENGANTAR** + **PORTAL_CLIENT, PORTAL_SUBCLIE
 
 **Bukti isolasi data**: untuk seluruh 19 akun portal, sebelum dan sesudah tiap langkah, direkam halaman yang menjawab 200 **dan** id client/mandor/PIC/lokasi yang membatasi datanya. **Tidak ada satu akun pun yang lingkup datanya melebar.**
 
-Satu konsekuensi yang perlu diketahui: role Client/PT gabungan **tidak memakai form order pribadi** — aturan itu sudah ada untuk PT, karena pesanan berasal dari sub-client, bukan dari perusahaan.
+Satu konsekuensi yang perlu diketahui: role Client/PT gabungan **tidak memesan untuk sub-client-nya** — pesanan mandor tetap dibuat mandor itu sendiri. PT hanya memesan untuk unit order langsungnya (lihat bagian berikut).
 
-### Kompatibilitas client tanpa sub-client — BELUM
+### Kompatibilitas client tanpa sub-client — SELESAI
 
-Saat ini **tidak bisa**. `daily_order_details.mandor_id`, `delivery_locations.mandor_id`, dan `workers.mandor_id` semuanya `NOT NULL`, dan `mandors.client_id` juga `NOT NULL` — jadi rantai order selalu lewat mandor. Sisi penagihan sudah siap (`invoices.mandor_id` nullable).
+Jawaban owner: client tanpa mandor adalah **client kontrak yang pesan langsung (kredit)**.
 
-Dua pilihan: (a) buat satu mandor yang mewakili client itu sendiri — jalan tanpa ubah kode, tapi kotor secara konsep; (b) jadikan baris order menunjuk client **atau** sub-client — `mandor_id` nullable + `client_id`, menyentuh ~100 file, tepat dikerjakan saat merancang domain V2.
+Masalahnya: `mandor_id` wajib di 6 tabel (detail order, detail pengiriman, lokasi antar, pekerja, draft portal, alokasi HPP) dan dipakai 507 kali di 62 file, jadi client tanpa sub-client tidak bisa order sama sekali.
 
-Keputusan bisnis yang menentukan: client tanpa mandor itu **client kontrak yang pesan langsung (kredit)** atau **customer umum (bayar di muka)**?
+Keputusan owner 2026-09-25 (semua sesuai saran):
+
+1. **Unit order langsung**, bukan membongkar `mandor_id`. Client yang pesan
+   sendiri mendapat satu sub-client khusus **"PT X — Langsung"**
+   (`mandors.is_direct_unit`, maksimal satu per client per cabang — dijaga
+   index unik di database). Order, produksi, pengiriman, invoice, piutang,
+   kontrol kredit, dan portal langsung berlaku tanpa diubah. Migrasi
+   `a1b2c3d4e5f6`.
+2. **Dari portal, PT hanya memesan untuk unit langsungnya sendiri.** PT tetap
+   memantau semua sub-client-nya, tapi lokasi mandor tidak muncul di form
+   order PT dan ditolak kalau dikirim paksa.
+3. **Rem kredit PT = limit kontrak, sekarang juga di jalur admin.** Dulu limit
+   kontrak hanya dicek di draft portal; order yang diinput admin untuk client
+   tidak direm sama sekali. Sekarang lewat limit kontrak = hanya OWNER yang
+   bisa menginput order untuk client itu. Exposure yang dihitung lengkap
+   (invoice belum lunas + order sudah jalan tapi belum ditagih). Berlaku untuk
+   semua order yang ditagih ke client, termasuk lewat mandornya.
+4. **Client boleh punya unit langsung dan sub-client biasa sekaligus.**
+5. Unit langsung **tidak bisa** disetel "ditagih langsung ke mandor" di
+   Kontrol Kredit — itu client sendiri, tagihannya ke PT.
+
+Cara pakai: Master Client → edit client → **Aktifkan Order Langsung** →
+tambah lokasi antar (unitnya sudah terpilih). Agar PT bisa memesan dari
+portal, akses portal PT-nya juga harus berizin **Draft Order** (diatur di
+pemetaan akses portal, seperti sub-client) — aktivasi sengaja tidak menaikkan
+izin akses secara otomatis.
 
 ### Sisa pekerjaan
 

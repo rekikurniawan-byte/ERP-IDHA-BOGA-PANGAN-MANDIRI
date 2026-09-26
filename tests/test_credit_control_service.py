@@ -178,9 +178,13 @@ def mandor(app):
         row = Mandor.query.order_by(Mandor.id.asc()).first()
         if row is None:
             pytest.skip("tidak ada mandor di database uji")
-        # Mulai dari keadaan tanpa akun, apa pun yang ditinggal run lain.
+        # Mulai dari keadaan tanpa akun, apa pun yang ditinggal run lain
+        # (riwayat statusnya dulu, karena merujuk akun). Di-rollback di akhir.
         existing = get_credit_account(row.branch_id, PARTY_MANDOR, row.id)
         if existing is not None:
+            from app.models.credit import CreditStatusEvent
+
+            CreditStatusEvent.query.filter_by(credit_account_id=existing.id).delete()
             db.session.delete(existing)
             db.session.flush()
         try:
@@ -552,8 +556,52 @@ def test_gerbang_pantau_muncul_sebagai_peringatan(mandor, numbers):
 
 # --- jalur order internal ---------------------------------------------------
 
-def test_jalur_internal_tanpa_akun_tidak_berubah(mandor, numbers):
+def test_jalur_internal_tanpa_akun_tidak_berubah(mandor, numbers, monkeypatch):
+    # Tanpa akun kredit dan tanpa limit kontrak: tidak ada rem apa pun.
+    monkeypatch.setattr(credit_control_service, "active_contract_limit", lambda *a: d(0))
     numbers(outstanding=5_000_000, oldest_days=90)
+    ok, message, _ = check_internal_order_credit(
+        branch_id=mandor.branch_id, mandor_id=mandor.id, amount=d(100), actor_role="ADMIN",
+    )
+    assert ok
+    assert message is None
+
+
+# --- limit kontrak di jalur admin (keputusan owner 2026-09-25) -------------
+
+def test_jalur_admin_lewat_limit_kontrak_hanya_owner(mandor, numbers, monkeypatch):
+    # Dulu limit kontrak hanya dicek di portal; order yang diinput admin untuk
+    # client tidak direm sama sekali.
+    monkeypatch.setattr(credit_control_service, "active_contract_limit", lambda *a: d(1000))
+    numbers(outstanding=950)
+
+    ok, message, _ = check_internal_order_credit(
+        branch_id=mandor.branch_id, mandor_id=mandor.id, amount=d(100), actor_role="ADMIN",
+    )
+    assert not ok
+    assert "limit kontrak" in message and "OWNER" in message
+
+    ok, message, _ = check_internal_order_credit(
+        branch_id=mandor.branch_id, mandor_id=mandor.id, amount=d(100), actor_role="OWNER",
+    )
+    assert ok
+    assert "keputusan OWNER" in message
+
+
+def test_jalur_admin_limit_kontrak_ikut_menghitung_order_belum_ditagih(mandor, numbers, monkeypatch):
+    # Invoice periode terbit belakangan; tanpa ini client bisa menumpuk satu
+    # periode penuh di atas limit kontraknya.
+    monkeypatch.setattr(credit_control_service, "active_contract_limit", lambda *a: d(1000))
+    numbers(outstanding=0, unbilled=950)
+    ok, _, _ = check_internal_order_credit(
+        branch_id=mandor.branch_id, mandor_id=mandor.id, amount=d(100), actor_role="ADMIN",
+    )
+    assert not ok
+
+
+def test_jalur_admin_di_bawah_limit_kontrak_jalan(mandor, numbers, monkeypatch):
+    monkeypatch.setattr(credit_control_service, "active_contract_limit", lambda *a: d(1000))
+    numbers(outstanding=500)
     ok, message, _ = check_internal_order_credit(
         branch_id=mandor.branch_id, mandor_id=mandor.id, amount=d(100), actor_role="ADMIN",
     )

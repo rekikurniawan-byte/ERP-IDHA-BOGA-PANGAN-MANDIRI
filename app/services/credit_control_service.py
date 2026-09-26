@@ -808,7 +808,7 @@ def check_internal_order_credit(*, branch_id, mandor_id, amount, actor_role=None
     )
 
     if not decision.enforced:
-        return True, None, decision
+        return _contract_limit_check(branch_id, decision, effective_role(actor_role) == "OWNER")
 
     if not decision.allowed:
         return False, decision.message, decision
@@ -826,6 +826,32 @@ def check_internal_order_credit(*, branch_id, mandor_id, amount, actor_role=None
     if decision.warning:
         return True, decision.message, decision
     return True, None, decision
+
+
+def _contract_limit_check(branch_id, decision, is_owner):
+    """Rem limit kontrak untuk order yang ditagih ke client, di jalur internal.
+
+    Keputusan owner 2026-09-25. Sebelumnya limit kontrak hanya dicek di draft
+    portal; order yang diinput admin untuk client (lewat mandornya atau unit
+    order langsungnya) tidak direm sama sekali. Aturannya sama dengan portal:
+    lewat limit berarti keputusan OWNER. Di sini exposure-nya lengkap --
+    invoice belum lunas ditambah order sudah jalan tapi belum ditagih --
+    karena invoice periode terbit belakangan. Client tanpa kontrak atau
+    tanpa limit tidak direm, seperti di portal.
+    """
+    if decision.party_type != PARTY_CLIENT:
+        return True, None, decision
+    contract_limit = active_contract_limit(branch_id, decision.party_id)
+    if contract_limit <= ZERO or decision.exposure <= contract_limit:
+        return True, None, decision
+
+    message = (
+        f"Tagihan client ini {_rupiah(decision.exposure)} (termasuk order ini) "
+        f"melewati limit kontrak {_rupiah(contract_limit)}."
+    )
+    if is_owner:
+        return True, f"{message} Order diteruskan atas keputusan OWNER.", decision
+    return False, f"{message} Hanya OWNER yang bisa menginput order untuk client ini.", decision
 
 
 def resolve_due_date(invoice_date, branch_id=None, client_id=None, mandor_id=None,
@@ -853,13 +879,13 @@ def resolve_due_date(invoice_date, branch_id=None, client_id=None, mandor_id=Non
     return invoice_date + timedelta(days=days)
 
 
-def active_contract_terms(branch_id, client_id):
-    """Termin (teks) kontrak aktif client ini, atau None."""
+def active_contract(branch_id, client_id):
+    """Kontrak aktif client ini di cabang ini, atau None."""
     if not branch_id or not client_id:
         return None
     from app.models.contract import CustomerContract
 
-    contract = (
+    return (
         CustomerContract.query.filter(
             CustomerContract.branch_id == branch_id,
             CustomerContract.client_id == client_id,
@@ -868,7 +894,16 @@ def active_contract_terms(branch_id, client_id):
         .order_by(CustomerContract.end_date.desc(), CustomerContract.id.desc())
         .first()
     )
-    return getattr(contract, "payment_terms", None)
+
+
+def active_contract_terms(branch_id, client_id):
+    """Termin (teks) kontrak aktif client ini, atau None."""
+    return getattr(active_contract(branch_id, client_id), "payment_terms", None)
+
+
+def active_contract_limit(branch_id, client_id):
+    """Limit kredit kontrak aktif client ini; 0 kalau tidak ada kontrak/limit."""
+    return _money(getattr(active_contract(branch_id, client_id), "credit_limit", 0))
 
 
 def invoice_billing_terms(invoice_date, branch_id, client, mandor):

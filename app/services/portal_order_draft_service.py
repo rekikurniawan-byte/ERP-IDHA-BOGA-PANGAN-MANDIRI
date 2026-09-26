@@ -110,13 +110,41 @@ def _commit_or_rollback():
         raise
 
 
-def _allowed_location_options(scope):
+def orderable_location_ids(user, scope):
+    """Lokasi yang boleh dipesan akun portal ini.
+
+    Client/PT melihat semua sub client-nya, tapi hanya boleh memesan untuk
+    unit order langsungnya sendiri ("PT X — Langsung"); order untuk mandor
+    tetap dibuat mandor itu sendiri (keputusan owner 2026-09-25). Role lain
+    memesan untuk seluruh lokasi dalam aksesnya, seperti sebelumnya.
+    """
+    if not scope.allowed or not scope.delivery_location_ids:
+        return set()
+    if getattr(user, "role", None) != ROLE_PORTAL_CLIENT:
+        return set(scope.delivery_location_ids)
+
+    from app.services.client_direct_order_service import direct_unit_ids
+
+    units = direct_unit_ids(scope.mandor_ids)
+    if not units:
+        return set()
+    return {
+        row.id
+        for row in DeliveryLocation.query.filter(
+            DeliveryLocation.id.in_(sorted(scope.delivery_location_ids)),
+            DeliveryLocation.mandor_id.in_(sorted(units)),
+        ).with_entities(DeliveryLocation.id).all()
+    }
+
+
+def _allowed_location_options(scope, location_ids=None):
     if not scope.allowed:
         return []
-    if not scope.delivery_location_ids:
+    location_ids = scope.delivery_location_ids if location_ids is None else location_ids
+    if not location_ids:
         return []
     return (
-        DeliveryLocation.query.filter(DeliveryLocation.id.in_(sorted(scope.delivery_location_ids)))
+        DeliveryLocation.query.filter(DeliveryLocation.id.in_(sorted(location_ids)))
         .order_by(DeliveryLocation.location_name.asc())
         .all()
     )
@@ -688,10 +716,14 @@ def build_portal_draft_order_context(user):
     scope = build_portal_external_scope(user)
     drafts = list_portal_order_drafts(user)
     precheck = _portal_payment_precheck(user, scope)
-    locations = _allowed_location_options(scope)
+    location_ids = orderable_location_ids(user, scope)
+    locations = _allowed_location_options(scope, location_ids)
     is_customer = getattr(user, "role", None) == ROLE_PORTAL_CUSTOMER
     return {
         "allowed": scope.allowed and ACCESS_DRAFT_ORDER in scope.access_levels,
+        # Untuk PT: True kalau client-nya punya unit order langsung yang
+        # bisa dipesan. Tanpa itu PT tetap hanya memantau.
+        "direct_ordering_enabled": bool(location_ids) if getattr(user, "role", None) == ROLE_PORTAL_CLIENT else None,
         "scope": scope,
         "reason": scope.reason if scope.allowed else scope.reason,
         "location_options": locations,
@@ -853,6 +885,10 @@ def _validate_draft_payload(user, form):
     delivery_location_id = _parse_positive_int(form.get("delivery_location_id"))
     if not delivery_location_id or delivery_location_id not in scope.delivery_location_ids:
         return None, "Lokasi tidak termasuk akses portal user."
+    if delivery_location_id not in orderable_location_ids(user, scope):
+        # Lokasi mandor ada dalam akses PT (untuk dipantau), tapi PT hanya
+        # boleh memesan untuk unit order langsungnya.
+        return None, "Client/PT hanya bisa memesan untuk lokasi unit order langsungnya sendiri."
 
     location = DeliveryLocation.query.get(delivery_location_id)
     if not location or not location.mandor:

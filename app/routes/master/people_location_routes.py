@@ -192,7 +192,13 @@ def create_location():
         flash("Lokasi mandor berhasil ditambahkan.", "success")
         return redirect(url_for("master.locations"))
 
-    return render_template("master/location_form.html", mandors=mandors, location=None)
+    # Dipakai tombol "Aktifkan Order Langsung": unit barunya langsung terpilih.
+    return render_template(
+        "master/location_form.html",
+        mandors=mandors,
+        location=None,
+        selected_mandor_id=request.args.get("mandor_id", type=int),
+    )
 
 
 @master_bp.route("/locations/<int:location_id>/edit", methods=["GET", "POST"])

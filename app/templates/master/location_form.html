@@ -19,7 +19,7 @@
                 <select name="mandor_id" class="form-select app-input" required>
                     <option value="">- Pilih mandor -</option>
                     {% for mandor in mandors %}
-                    <option value="{{ mandor.id }}" {% if location and location.mandor_id == mandor.id %}selected{% endif %}>
+                    <option value="{{ mandor.id }}" {% if (location and location.mandor_id == mandor.id) or (not location and selected_mandor_id == mandor.id) %}selected{% endif %}>
                         {{ mandor.name }}
                     </option>
                     {% endfor %}

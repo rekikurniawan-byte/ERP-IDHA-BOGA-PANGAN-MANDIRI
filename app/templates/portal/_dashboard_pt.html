@@ -14,6 +14,12 @@
             <h1>Rekap mandor, invoice, piutang, dan kontrak perusahaan.</h1>
             <p>PT melihat rangkuman perusahaan, bukan pesanan pribadi satu mandor.</p>
             <div class="portal-home-cta-row">
+                {% if direct_ordering_enabled %}
+                <a class="portal-home-primary" href="{{ url_for('portal.draft_order') }}">
+                    <i class="bi bi-bag-check"></i>
+                    <span>Pesan Catering</span>
+                </a>
+                {% endif %}
                 <a class="portal-home-primary" href="{{ url_for('portal.pt_receivables') }}">
                     <i class="bi bi-cash-stack"></i>
                     <span>Cek Piutang</span>

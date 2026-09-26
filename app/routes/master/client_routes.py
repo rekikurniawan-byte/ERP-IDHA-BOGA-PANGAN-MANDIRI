@@ -176,7 +176,33 @@ def edit_client(client_id):
         flash("Client berhasil diperbarui.", "success")
         return redirect(url_for("master.clients"))
 
-    return render_template("master/client_form.html", client=client)
+    from app.services.client_direct_order_service import get_direct_unit
+
+    return render_template(
+        "master/client_form.html",
+        client=client,
+        direct_unit=get_direct_unit(current_user.branch_id, client.id),
+    )
+
+
+@master_bp.route("/clients/<int:client_id>/direct-ordering", methods=["POST"])
+@role_required("ADMIN")
+def activate_client_direct_ordering(client_id):
+    """Aktifkan order langsung: buat unit "PT X — Langsung", lalu minta lokasinya."""
+    from app.services.client_direct_order_service import DirectOrderError, activate_direct_ordering
+
+    client = Client.query.get_or_404(client_id)
+    try:
+        unit, created = activate_direct_ordering(client, current_user.branch_id)
+    except DirectOrderError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("master.edit_client", client_id=client.id))
+
+    if created:
+        flash(f"Order langsung aktif lewat unit '{unit.name}'. Tambahkan lokasi antarnya.", "success")
+    else:
+        flash(f"Order langsung sudah aktif lewat unit '{unit.name}'.", "info")
+    return redirect(url_for("master.create_location", mandor_id=unit.id))
 
 
 @master_bp.route("/clients/<int:client_id>/toggle", methods=["POST"])

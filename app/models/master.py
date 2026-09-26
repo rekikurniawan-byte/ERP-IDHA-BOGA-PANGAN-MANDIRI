@@ -92,6 +92,13 @@ class Mandor(BaseModel):
     guarantor_phone = db.Column(db.String(30), nullable=True)
     guarantor_id_number = db.Column(db.String(32), nullable=True)
 
+    # Unit order langsung: sub client yang mewakili client itu sendiri, untuk
+    # client kontrak yang memesan tanpa mandor. Seluruh alur order, produksi,
+    # pengiriman, dan invoice terikat ke sub client, jadi client tanpa sub
+    # client mendapat satu unit ini alih-alih membongkar kewajiban mandor di
+    # enam tabel. Maksimal satu per client per cabang (index unik parsial).
+    is_direct_unit = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
+
     delivery_locations = db.relationship("DeliveryLocation", backref="mandor", lazy=True)
     workers = db.relationship("Worker", backref="mandor", lazy=True)
 

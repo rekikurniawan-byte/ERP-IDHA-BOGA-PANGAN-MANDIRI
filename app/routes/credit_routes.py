@@ -54,8 +54,14 @@ def _is_owner():
 @role_required("ADMIN")
 def overview():
     rows = list_credit_overview(current_user.branch_id)
+    # Unit order langsung ("PT X — Langsung") tidak ditawarkan: itu client
+    # sendiri, remnya limit kontrak, bukan kredit mandor.
     unconfigured = (
-        Mandor.query.filter(Mandor.branch_id == current_user.branch_id, Mandor.is_active.is_(True))
+        Mandor.query.filter(
+            Mandor.branch_id == current_user.branch_id,
+            Mandor.is_active.is_(True),
+            Mandor.is_direct_unit.is_(False),
+        )
         .order_by(Mandor.name.asc())
         .all()
     )
