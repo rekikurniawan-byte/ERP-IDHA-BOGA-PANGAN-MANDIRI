@@ -107,6 +107,8 @@ from app.models.credit import (
 )
 
 from app.models.pricing import (
+    DeliveryFee,
+    DeliveryZone,
     PortionPrice,
 )
 

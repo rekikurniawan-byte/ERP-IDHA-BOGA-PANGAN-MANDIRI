@@ -154,11 +154,13 @@ def build_invoice_print_operational_data(invoice):
         "catering": [],
         "revision": [],
         "warung": [],
+        "ongkir": [],
         "other": [],
         "totals": {
             "catering": 0,
             "revision": 0,
             "warung": 0,
+            "ongkir": 0,
             "other": 0,
             "grand": _invoice_print_float(invoice.total_amount),
             "paid": _invoice_print_float(invoice.paid_amount),
@@ -241,6 +243,10 @@ def build_invoice_print_operational_data(invoice):
 
             data["warung"].append(row)
             data["totals"]["warung"] += subtotal
+
+        elif item_type == "ONGKIR":
+            data["ongkir"].append(dict(base_row))
+            data["totals"]["ongkir"] += subtotal
 
         else:
             row = dict(base_row)

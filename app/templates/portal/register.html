@@ -59,6 +59,17 @@
                         <span>Nama lokasi</span>
                         <input class="app-input" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, proyek, atau acara">
                     </label>
+                    {% if data.zones %}
+                    <label>
+                        <span>Zona pengiriman</span>
+                        <select class="app-input" name="delivery_zone_id" required>
+                            <option value="">Pilih zona</option>
+                            {% for branch, zone in data.zones %}
+                                <option value="{{ zone.id }}" {% if form.get('delivery_zone_id')|string == zone.id|string %}selected{% endif %}>{{ zone.name }}{% if data.branches|length > 1 %} ({{ branch.name }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {% endif %}
                     <label class="wide">
                         <span>Alamat lengkap</span>
                         <textarea class="app-input" name="address" rows="4" required data-no-textarea-footer>{{ form.get('address', '') }}</textarea>

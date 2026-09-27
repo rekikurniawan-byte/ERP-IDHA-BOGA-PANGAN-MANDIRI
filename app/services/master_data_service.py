@@ -161,23 +161,30 @@ def toggle_mandor_active(mandor):
     return mandor
 
 
-def create_location_record(*, mandor_id, location_name, description, is_active):
+def create_location_record(*, mandor_id, location_name, description, is_active, delivery_zone_id=None):
     location = DeliveryLocation(
         mandor_id=mandor_id,
         location_name=location_name,
         description=description,
         is_active=is_active,
+        delivery_zone_id=delivery_zone_id,
     )
     db.session.add(location)
     _commit_or_rollback()
     return location
 
 
-def update_location_record(location, *, mandor_id, location_name, description, is_active):
+_KEEP_ZONE = object()
+
+
+def update_location_record(location, *, mandor_id, location_name, description, is_active, delivery_zone_id=_KEEP_ZONE):
     location.mandor_id = mandor_id
     location.location_name = location_name
     location.description = description
     location.is_active = is_active
+    # Zona ongkir hanya diubah kalau pemanggil mengirimnya (None = kosongkan).
+    if delivery_zone_id is not _KEEP_ZONE:
+        location.delivery_zone_id = delivery_zone_id
     _commit_or_rollback()
     return location
 

@@ -100,6 +100,14 @@
         <p>Hutang {{ term('worker', lower=True) }} dalam periode</p>
     </div>
 
+    {% if total_delivery %}
+    <div class="app-stat-card">
+        <span>Ongkos Kirim</span>
+        <h3>{{ total_delivery|rupiah }}</h3>
+        <p>Pengiriman berbayar dalam periode</p>
+    </div>
+    {% endif %}
+
     <div class="app-stat-card">
         <span>Grand Total</span>
         <h3>{{ grand_total|rupiah }}</h3>

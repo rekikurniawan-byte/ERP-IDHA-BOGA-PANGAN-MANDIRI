@@ -2,6 +2,7 @@
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.services.mandor_invoice_helper_service import (
     calculate_realtime_locked_base_quantities,
+    delivery_fee_invoice_lines,
     finance_safe_label,
     get_client_for_mandor_invoice,
     is_after_lock_increase_revision,
@@ -69,6 +70,11 @@ def _build_catering_invoice_lines(order, mandor_id):
                 "source_type": "ORDER_REVISION",
                 "source_id": revision.id
             })
+
+    # Ongkir per pengiriman, sesuai tarif yang dikunci di baris order.
+    for detail in order.details:
+        if int(detail.mandor_id) == int(mandor_id):
+            lines.extend(delivery_fee_invoice_lines(order, detail))
 
     return lines
 

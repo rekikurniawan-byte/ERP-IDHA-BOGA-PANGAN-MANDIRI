@@ -358,3 +358,280 @@ def client_price_overview(branch_id, on_date=None):
             "scheduled": scheduled_prices(branch_id, client.id, on_date),
         })
     return overview
+
+
+# --- ongkir ---------------------------------------------------------------
+# Kontrak: termasuk harga porsi, kecuali kontraknya punya tarif ongkir sendiri.
+# Umum: tarif zona lokasi, per pengiriman, gratis kalau porsi pengiriman itu
+# mencapai ambang cabang. Tarif dikunci ke pengiriman saat pesanan dibuat.
+
+FEE_SOURCE_CONTRACT = "KONTRAK"
+FEE_SOURCE_INCLUDED = "TERMASUK"
+FEE_SOURCE_ZONE = "ZONA"
+FEE_SOURCE_FREE = "GRATIS"
+FREE_DELIVERY_SETTING = "free_delivery_min_portions"
+ZERO_FEE = Decimal("0.00")
+
+
+def _fee_amount(value):
+    try:
+        amount = Decimal(str(value).strip().replace(",", ""))
+    except (InvalidOperation, AttributeError):
+        raise PricingError("Tarif ongkir harus berupa angka.")
+    if amount < 0:
+        raise PricingError("Tarif ongkir tidak boleh minus.")
+    return amount.quantize(Decimal("0.01"))
+
+
+def _fee_rows(branch_id, zone_id=None, client_id=None):
+    from app.models.pricing import DeliveryFee
+
+    query = DeliveryFee.query.filter(DeliveryFee.branch_id == branch_id)
+    if zone_id:
+        return query.filter(DeliveryFee.zone_id == zone_id)
+    return query.filter(DeliveryFee.client_id == client_id)
+
+
+def fee_in_effect(branch_id, zone_id=None, client_id=None, on_date=None):
+    from app.models.pricing import DeliveryFee
+
+    on_date = on_date or date.today()
+    return (
+        _fee_rows(branch_id, zone_id, client_id)
+        .filter(DeliveryFee.effective_from <= on_date)
+        .order_by(DeliveryFee.effective_from.desc(), DeliveryFee.id.desc())
+        .first()
+    )
+
+
+def scheduled_fees(branch_id, zone_id=None, client_id=None, after_date=None):
+    from app.models.pricing import DeliveryFee
+
+    after_date = after_date or date.today()
+    return (
+        _fee_rows(branch_id, zone_id, client_id)
+        .filter(DeliveryFee.effective_from > after_date)
+        .order_by(DeliveryFee.effective_from.asc(), DeliveryFee.id.asc())
+        .all()
+    )
+
+
+def active_zones(branch_id):
+    from app.models.pricing import DeliveryZone
+
+    return (
+        DeliveryZone.query.filter(DeliveryZone.branch_id == branch_id, DeliveryZone.is_active.is_(True))
+        .order_by(DeliveryZone.name.asc())
+        .all()
+    )
+
+
+def zone_overview(branch_id, on_date=None):
+    from app.models.pricing import DeliveryZone
+
+    on_date = on_date or date.today()
+    return [
+        {
+            "zone": zone,
+            "current": fee_in_effect(branch_id, zone_id=zone.id, on_date=on_date),
+            "scheduled": scheduled_fees(branch_id, zone_id=zone.id, after_date=on_date),
+        }
+        for zone in DeliveryZone.query.filter_by(branch_id=branch_id).order_by(DeliveryZone.name.asc()).all()
+    ]
+
+
+def client_fee_overview(branch_id, on_date=None):
+    from app.models.pricing import DeliveryFee
+
+    on_date = on_date or date.today()
+    client_ids = [
+        row.client_id
+        for row in db.session.query(DeliveryFee.client_id)
+        .filter(DeliveryFee.branch_id == branch_id, DeliveryFee.client_id.isnot(None))
+        .distinct()
+    ]
+    if not client_ids:
+        return []
+    return [
+        {
+            "client": client,
+            "current": fee_in_effect(branch_id, client_id=client.id, on_date=on_date),
+            "scheduled": scheduled_fees(branch_id, client_id=client.id, after_date=on_date),
+        }
+        for client in Client.query.filter(Client.id.in_(client_ids)).order_by(Client.name.asc()).all()
+    ]
+
+
+def _commit():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def create_delivery_zone(branch_id, name, created_by):
+    from app.models.pricing import DeliveryZone
+    from app.services.audit_log_service import record_audit_log
+
+    name = (name or "").strip()
+    if not name:
+        raise PricingError("Nama zona wajib diisi.")
+    duplicate = DeliveryZone.query.filter(
+        DeliveryZone.branch_id == branch_id,
+        db.func.lower(DeliveryZone.name) == name.lower(),
+    ).first()
+    if duplicate:
+        raise PricingError(f"Zona {name} sudah ada.")
+    zone = DeliveryZone(branch_id=branch_id, name=name, is_active=True)
+    db.session.add(zone)
+    db.session.flush()
+    record_audit_log(
+        module="PRICING",
+        event_type="DELIVERY_ZONE_CREATED",
+        action="CREATE",
+        table_name="delivery_zones",
+        record_id=zone.id,
+        description=f"Zona ongkir {name} dibuat.",
+        user_id=created_by,
+        branch_id=branch_id,
+        commit=False,
+    )
+    _commit()
+    return zone
+
+
+def set_delivery_fee(*, branch_id, zone_id=None, client_id=None, fee, effective_from, created_by, notes=None):
+    """Tarif baru untuk satu zona atau satu client kontrak (baris lama tidak diubah)."""
+    from app.models.pricing import DeliveryFee, DeliveryZone
+    from app.services.audit_log_service import record_audit_log
+
+    if bool(zone_id) == bool(client_id):
+        raise PricingError("Pilih zona atau client kontrak.")
+    amount = _fee_amount(fee)
+    if not isinstance(effective_from, date):
+        raise PricingError("Tanggal berlaku wajib diisi.")
+    if zone_id:
+        zone = DeliveryZone.query.get(zone_id)
+        if not zone or zone.branch_id != branch_id:
+            raise PricingError("Zona tidak ditemukan di cabang ini.")
+        target = f"zona {zone.name}"
+    else:
+        client = Client.query.get(client_id)
+        if not client:
+            raise PricingError("Client tidak ditemukan.")
+        target = f"kontrak {client.name}"
+
+    previous = fee_in_effect(branch_id, zone_id, client_id, effective_from)
+    row = DeliveryFee(
+        branch_id=branch_id,
+        zone_id=zone_id or None,
+        client_id=client_id or None,
+        fee=amount,
+        effective_from=effective_from,
+        notes=(notes or "").strip() or None,
+        created_by=created_by,
+    )
+    db.session.add(row)
+    db.session.flush()
+    previous_note = f" (sebelumnya Rp {Decimal(previous.fee):,.0f})." if previous else "."
+    record_audit_log(
+        module="PRICING",
+        event_type="DELIVERY_FEE_SET",
+        action="CREATE",
+        table_name="delivery_fees",
+        record_id=row.id,
+        description=(
+            f"Ongkir {target}: Rp {amount:,.0f}/pengiriman berlaku mulai "
+            f"{effective_from.strftime('%d-%m-%Y')}{previous_note}"
+        ),
+        old_value={"fee": str(previous.fee)} if previous else None,
+        new_value={"fee": str(amount), "effective_from": effective_from.isoformat()},
+        metadata={"zone_id": zone_id, "client_id": client_id},
+        user_id=created_by,
+        branch_id=branch_id,
+        commit=False,
+    )
+    _commit()
+    return row
+
+
+def free_delivery_min_portions(branch_id):
+    """Ambang gratis ongkir pelanggan umum per pengiriman. 0 = tidak ada gratis ongkir."""
+    row = BranchSetting.query.filter_by(branch_id=branch_id, setting_key=FREE_DELIVERY_SETTING).first()
+    try:
+        value = int(str(getattr(row, "setting_value", "") or "").strip())
+    except ValueError:
+        value = 0
+    return max(value, 0)
+
+
+def _portions_label(value):
+    return f"{value} porsi" if value else "tidak ada"
+
+
+def set_free_delivery_min_portions(branch_id, value, updated_by):
+    from app.services.audit_log_service import record_audit_log
+
+    try:
+        portions = int(str(value).strip() or "0")
+    except (TypeError, ValueError):
+        raise PricingError("Ambang gratis ongkir harus angka bulat.")
+    if portions < 0:
+        raise PricingError("Ambang gratis ongkir tidak boleh minus.")
+    before = free_delivery_min_portions(branch_id)
+    row = BranchSetting.query.filter_by(branch_id=branch_id, setting_key=FREE_DELIVERY_SETTING).first()
+    if row:
+        row.setting_value = str(portions)
+    else:
+        db.session.add(BranchSetting(branch_id=branch_id, setting_key=FREE_DELIVERY_SETTING, setting_value=str(portions)))
+    record_audit_log(
+        module="PRICING",
+        event_type="FREE_DELIVERY_THRESHOLD_SET",
+        action="UPDATE",
+        table_name="branch_settings",
+        record_id=branch_id,
+        description=(
+            f"Gratis ongkir mulai: {_portions_label(before)} → {_portions_label(portions)} per pengiriman."
+        ),
+        user_id=updated_by,
+        branch_id=branch_id,
+        commit=False,
+    )
+    _commit()
+    return portions
+
+
+def quote_trip_fee(branch_id, client, location, qty, on_date=None):
+    """Ongkir satu pengiriman: (tarif, asal, pesan_error)."""
+    if int(qty or 0) <= 0:
+        return ZERO_FEE, None, None
+    client_id = getattr(client, "id", None)
+    contract_fee = fee_in_effect(branch_id, client_id=client_id, on_date=on_date) if client_id else None
+    if contract_fee:
+        return Decimal(contract_fee.fee), FEE_SOURCE_CONTRACT, None
+    if not is_general_client(client):
+        return ZERO_FEE, FEE_SOURCE_INCLUDED, None
+
+    zone_id = getattr(location, "delivery_zone_id", None)
+    if not zone_id:
+        name = getattr(location, "location_name", "ini")
+        return None, None, f"Lokasi {name} belum punya zona ongkir. Admin perlu memilih zonanya di data lokasi."
+    zone_fee = fee_in_effect(branch_id, zone_id=zone_id, on_date=on_date)
+    if not zone_fee:
+        return None, None, "Tarif ongkir zona lokasi ini belum diatur. OWNER perlu mengisinya di Harga & Ongkir."
+    threshold = free_delivery_min_portions(branch_id)
+    if threshold and int(qty) >= threshold:
+        return ZERO_FEE, FEE_SOURCE_FREE, None
+    return Decimal(zone_fee.fee), FEE_SOURCE_ZONE, None
+
+
+def order_trip_fees(branch_id, client, location, lunch_qty, dinner_qty, on_date=None):
+    """Ongkir kiriman siang dan malam untuk satu baris order: (siang, malam, pesan_error)."""
+    lunch_fee, _, error = quote_trip_fee(branch_id, client, location, lunch_qty, on_date)
+    if error:
+        return None, None, error
+    dinner_fee, _, error = quote_trip_fee(branch_id, client, location, dinner_qty, on_date)
+    if error:
+        return None, None, error
+    return lunch_fee, dinner_fee, None

@@ -691,6 +691,39 @@
         {% endif %}
     </div>
 
+    {% if print_data.ongkir %}
+    <div class="box">
+        <div class="box-title">Ongkos Kirim</div>
+
+        <div class="app-table-wrapper print-table-wrapper">
+<table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
+            <thead>
+                <tr>
+                    <th>Deskripsi</th>
+                    <th class="text-right">Pengiriman</th>
+                    <th class="text-right">Tarif</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in print_data.ongkir %}
+                <tr>
+                    <td>{{ row.description }}</td>
+                    <td class="text-right">{{ row.qty|int }}</td>
+                    <td class="text-right">{{ row.unit_price|rupiah }}</td>
+                    <td class="text-right"><strong>{{ row.subtotal|rupiah }}</strong></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="3" class="text-right"><strong>Total Ongkos Kirim</strong></td>
+                    <td class="text-right"><strong>{{ print_data.totals.ongkir|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+</div>
+    </div>
+    {% endif %}
+
     {% if print_data.other %}
     <div class="box">
         <div class="box-title">Rincian Lainnya</div>
@@ -741,6 +774,13 @@
             <span>Total Hutang Warung</span>
             <span>{{ print_data.totals.warung|rupiah }}</span>
         </div>
+
+        {% if print_data.totals.ongkir > 0 %}
+        <div class="summary-row">
+            <span>Total Ongkos Kirim</span>
+            <span>{{ print_data.totals.ongkir|rupiah }}</span>
+        </div>
+        {% endif %}
 
         {% if print_data.totals.other > 0 %}
         <div class="summary-row">

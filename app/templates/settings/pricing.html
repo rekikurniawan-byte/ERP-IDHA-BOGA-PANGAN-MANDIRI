@@ -145,6 +145,145 @@
     </form>
 </div>
 
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Ongkir Pelanggan Umum per Zona</h3>
+            <p>Dikenakan per pengiriman: kiriman siang dan kiriman malam dihitung dua kali jalan. Setiap {{ term('location', lower=True) }} pelanggan umum harus punya zona.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive mb-3">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>Zona</th><th>Tarif sekarang</th><th>Terjadwal</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for item in zones %}
+                <tr>
+                    <td><strong>{{ item.zone.name }}</strong></td>
+                    <td>
+                        {% if item.current %}{{ item.current.fee|rupiah }} <span class="small text-muted">sejak {{ item.current.effective_from.strftime('%d-%m-%Y') }}</span>
+                        {% else %}<span class="text-danger">Belum diatur</span>{% endif %}
+                    </td>
+                    <td>
+                        {% for row in item.scheduled %}{{ row.fee|rupiah }} mulai {{ row.effective_from.strftime('%d-%m-%Y') }}{{ "; " if not loop.last }}{% else %}-{% endfor %}
+                    </td>
+                    <td>{{ "Aktif" if item.zone.is_active else "Nonaktif" }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted">Belum ada zona. Buat zona dulu, misalnya "Dalam Kota".</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <form method="POST" action="{{ url_for('settings.pricing_create_zone') }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <label class="form-label">Zona baru</label>
+                <div class="d-flex gap-2">
+                    <input type="text" name="name" class="form-control app-input" maxlength="120" placeholder="Contoh: Dalam Kota" required>
+                    <button type="submit" class="btn app-btn-secondary">Tambah</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-8">
+            <form method="POST" action="{{ url_for('settings.pricing_set_delivery_fee') }}" class="row g-2 app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-4">
+                    <label class="form-label">Zona</label>
+                    <select name="zone_id" class="form-select app-input" required>
+                        <option value="">Pilih zona</option>
+                        {% for item in zones if item.zone.is_active %}
+                            <option value="{{ item.zone.id }}">{{ item.zone.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tarif/pengiriman</label>
+                    <input type="number" name="fee" class="form-control app-input" min="0" step="1" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Berlaku mulai</label>
+                    <input type="date" name="effective_from" class="form-control app-input" value="{{ today.isoformat() }}" min="{{ today.isoformat() }}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn app-btn-primary w-100">Simpan</button>
+                </div>
+                <div class="col-12">
+                    <input type="text" name="notes" class="form-control app-input" placeholder="Catatan, contoh: BBM naik">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <hr>
+
+    <form method="POST" action="{{ url_for('settings.pricing_set_free_delivery') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-4">
+            <label class="form-label">Gratis ongkir kalau satu pengiriman minimal</label>
+            <input type="number" name="free_delivery_min_portions" class="form-control app-input" min="0" step="1" value="{{ free_delivery_min }}">
+            <div class="form-text">Isi 0 kalau tidak ada gratis ongkir.</div>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan</button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Ongkir di Kontrak</h3>
+            <p>Bawaannya ongkir {{ term('client', lower=True) }} kontrak sudah termasuk harga porsi. Isi di sini hanya kalau kontraknya menyepakati ongkir per pengiriman.</p>
+        </div>
+    </div>
+    <div class="table-responsive mb-3">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>{{ term('client') }}</th><th>Tarif sekarang</th><th>Terjadwal</th></tr>
+            </thead>
+            <tbody>
+                {% for item in client_fees %}
+                <tr>
+                    <td><strong>{{ item.client.name }}</strong></td>
+                    <td>{% if item.current %}{{ item.current.fee|rupiah }} <span class="small text-muted">sejak {{ item.current.effective_from.strftime('%d-%m-%Y') }}</span>{% else %}<span class="text-muted">Belum berlaku</span>{% endif %}</td>
+                    <td>{% for row in item.scheduled %}{{ row.fee|rupiah }} mulai {{ row.effective_from.strftime('%d-%m-%Y') }}{{ "; " if not loop.last }}{% else %}-{% endfor %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-muted">Tidak ada. Ongkir semua kontrak termasuk harga porsi.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('settings.pricing_set_delivery_fee') }}" class="row g-2 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-4">
+            <label class="form-label">{{ term('client') }}</label>
+            <select name="client_id" class="form-select app-input" required>
+                <option value="">Pilih {{ term('client', lower=True) }}</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Tarif/pengiriman</label>
+            <input type="number" name="fee" class="form-control app-input" min="0" step="1" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Berlaku mulai</label>
+            <input type="date" name="effective_from" class="form-control app-input" value="{{ today.isoformat() }}" min="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn app-btn-primary w-100">Simpan</button>
+        </div>
+    </form>
+</div>
+
 <div class="app-card">
     <div class="section-title">
         <div>

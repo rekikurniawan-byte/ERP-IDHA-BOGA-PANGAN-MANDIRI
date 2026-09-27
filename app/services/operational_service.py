@@ -62,6 +62,8 @@ def add_or_update_order_detail(
     notes=None,
     actor_role=None,
     price_source=None,
+    lunch_delivery_fee=0,
+    dinner_delivery_fee=0,
 ):
     existing_detail = DailyOrderDetail.query.filter_by(
         daily_order_id=daily_order.id,
@@ -73,11 +75,12 @@ def add_or_update_order_detail(
         return False, f"{T.sub_client} dan lokasi ini sudah ada di order. Gunakan revisi jika ingin mengubah jumlah porsi.", existing_detail
 
     total_qty = int(lunch_qty or 0) + int(dinner_qty or 0)
+    delivery_total = Decimal(str(lunch_delivery_fee or 0)) + Decimal(str(dinner_delivery_fee or 0))
 
     credit_ok, credit_message, _ = check_internal_order_credit(
         branch_id=getattr(daily_order, "branch_id", None),
         mandor_id=mandor_id,
-        amount=Decimal(str(price_per_portion or 0)) * total_qty,
+        amount=Decimal(str(price_per_portion or 0)) * total_qty + delivery_total,
         actor_role=actor_role,
     )
     if not credit_ok:
@@ -92,6 +95,8 @@ def add_or_update_order_detail(
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=total_qty,
+        lunch_delivery_fee=lunch_delivery_fee or 0,
+        dinner_delivery_fee=dinner_delivery_fee or 0,
         notes=notes
     )
 
@@ -187,11 +192,22 @@ def revise_order_detail(
         detail.dinner_qty -= dinner_qty_change
 
     elif revision_direction == "INCREASE":
+        new_trip_fees, fee_error = _new_trip_fees(detail, lunch_qty_change, dinner_qty_change)
+        if fee_error:
+            return False, fee_error
         detail.lunch_qty += lunch_qty_change
         detail.dinner_qty += dinner_qty_change
+        for field, fee in new_trip_fees.items():
+            setattr(detail, field, fee)
 
     else:
         return False, "Arah revisi tidak valid."
+
+    # Pengiriman yang porsinya habis tidak lagi dikenai ongkir.
+    if detail.lunch_qty == 0:
+        detail.lunch_delivery_fee = 0
+    if detail.dinner_qty == 0:
+        detail.dinner_delivery_fee = 0
 
     detail.total_qty = detail.lunch_qty + detail.dinner_qty
 
@@ -216,6 +232,31 @@ def revise_order_detail(
     return True, "Revisi order berhasil disimpan."
 
 
+def _new_trip_fees(detail, lunch_change, dinner_change):
+    """Ongkir untuk pengiriman yang baru muncul lewat revisi tambah.
+
+    Ongkir pengiriman yang sudah ada tetap seperti saat dikunci; hanya siang
+    atau malam yang sebelumnya 0 porsi yang dihitung sekarang.
+    """
+    from app.services.pricing_service import quote_trip_fee
+
+    fees = {}
+    mandor = getattr(detail, "mandor", None)
+    branch_id = getattr(getattr(detail, "daily_order", None), "branch_id", None)
+    for field, before, change in (
+        ("lunch_delivery_fee", detail.lunch_qty, lunch_change),
+        ("dinner_delivery_fee", detail.dinner_qty, dinner_change),
+    ):
+        if int(before or 0) == 0 and int(change or 0) > 0:
+            fee, _, error = quote_trip_fee(
+                branch_id, getattr(mandor, "client", None), getattr(detail, "delivery_location", None), change
+            )
+            if error:
+                return None, error
+            fees[field] = fee
+    return fees, None
+
+
 def add_increase_after_lock(
     daily_order,
     mandor_id,
@@ -227,6 +268,8 @@ def add_increase_after_lock(
     created_by,
     actor_role=None,
     price_source=None,
+    lunch_delivery_fee=0,
+    dinner_delivery_fee=0,
 ):
     if not daily_order.is_locked:
         return False, "Order belum LOCKED. Gunakan input detail biasa.", None
@@ -250,7 +293,11 @@ def add_increase_after_lock(
     credit_ok, credit_message, _ = check_internal_order_credit(
         branch_id=getattr(daily_order, "branch_id", None),
         mandor_id=mandor_id,
-        amount=Decimal(str(price_per_portion)) * (lunch_qty + dinner_qty),
+        amount=(
+            Decimal(str(price_per_portion)) * (lunch_qty + dinner_qty)
+            + Decimal(str(lunch_delivery_fee or 0))
+            + Decimal(str(dinner_delivery_fee or 0))
+        ),
         actor_role=actor_role,
     )
     if not credit_ok:
@@ -299,6 +346,8 @@ def add_increase_after_lock(
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=lunch_qty + dinner_qty,
+        lunch_delivery_fee=lunch_delivery_fee or 0,
+        dinner_delivery_fee=dinner_delivery_fee or 0,
         notes=reason or "Detail tambahan setelah lock"
     )
 

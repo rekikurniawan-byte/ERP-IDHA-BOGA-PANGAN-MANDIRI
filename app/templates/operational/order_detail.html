@@ -382,6 +382,9 @@
                     <td>
                         {{ detail.price_per_portion|rupiah }}
                         {% if detail.price_source %}<div class="muted-small">{{ {'KONTRAK': 'Harga kontrak', 'STANDAR': 'Harga standar', 'OWNER': 'Diubah OWNER'}.get(detail.price_source, detail.price_source) }}</div>{% endif %}
+                        {% if detail.lunch_delivery_fee or detail.dinner_delivery_fee %}
+                            <div class="muted-small">Ongkir{% if detail.lunch_delivery_fee %} siang {{ detail.lunch_delivery_fee|rupiah }}{% endif %}{% if detail.dinner_delivery_fee %} malam {{ detail.dinner_delivery_fee|rupiah }}{% endif %}</div>
+                        {% endif %}
                         {% if detail.revisions %}
                             <div class="muted-small">Harga revisi lihat riwayat</div>
                         {% endif %}

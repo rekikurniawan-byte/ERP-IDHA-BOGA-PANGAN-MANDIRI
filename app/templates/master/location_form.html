@@ -36,6 +36,17 @@
                 <input type="text" name="description" class="form-control app-input" value="{{ location.description if location else '' }}" placeholder="Keterangan lokasi">
             </div>
 
+            <div class="col-md-4">
+                <label class="form-label">Zona Ongkir</label>
+                <select name="delivery_zone_id" class="form-select app-input">
+                    <option value="">Belum diatur</option>
+                    {% for zone in zones %}
+                        <option value="{{ zone.id }}" {% if location and location.delivery_zone_id == zone.id %}selected{% endif %}>{{ zone.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Wajib untuk pelanggan umum; tarifnya diatur OWNER di Harga &amp; Ongkir.</div>
+            </div>
+
             <div class="col-md-12">
                 <label class="checkbox-clean">
                     <input type="checkbox" name="is_active" {% if not location or location.is_active %}checked{% endif %}>

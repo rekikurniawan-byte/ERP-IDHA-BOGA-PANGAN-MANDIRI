@@ -103,28 +103,41 @@ def get_form_master_data():
     return mandors, locations
 
 
-def _detail_price(mandor_id, lunch_qty, dinner_qty):
-    """Harga yang dikunci ke baris order baru + cek minimal porsi pelanggan umum.
+def _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty):
+    """Harga dan ongkir yang dikunci ke baris order baru, plus cek minimal porsi.
 
-    Mengembalikan (harga, asal, pesan_error). Admin tidak mengetik harga;
-    OWNER boleh mengisi harga lain untuk pesanan ini.
+    Mengembalikan dict berisi price, price_source, lunch_delivery_fee,
+    dinner_delivery_fee -- atau (None, pesan_error). Admin tidak mengetik
+    harga; OWNER boleh mengisi harga lain untuk pesanan ini.
     """
-    from app.services.pricing_service import min_portion_error, resolve_order_price
+    from app.services.pricing_service import min_portion_error, order_trip_fees, resolve_order_price
 
     mandor = Mandor.query.get(mandor_id)
+    client = getattr(mandor, "client", None)
     minimum_error = min_portion_error(
-        current_user.branch_id,
-        getattr(mandor, "client", None),
-        [("siang", lunch_qty), ("malam", dinner_qty)],
+        current_user.branch_id, client, [("siang", lunch_qty), ("malam", dinner_qty)]
     )
     if minimum_error:
-        return None, None, minimum_error
-    return resolve_order_price(
+        return None, minimum_error
+    price, source, error = resolve_order_price(
         branch_id=current_user.branch_id,
         mandor_id=mandor_id,
         actor_role=current_user.role,
         requested_price=request.form.get("price_per_portion"),
     )
+    if error:
+        return None, error
+    lunch_fee, dinner_fee, error = order_trip_fees(
+        current_user.branch_id, client, DeliveryLocation.query.get(delivery_location_id), lunch_qty, dinner_qty
+    )
+    if error:
+        return None, error
+    return {
+        "price_per_portion": price,
+        "price_source": source,
+        "lunch_delivery_fee": lunch_fee,
+        "dinner_delivery_fee": dinner_fee,
+    }, None
 
 
 def _after_detail_saved(daily_order, detail, price, source):
@@ -304,7 +317,7 @@ def create_order():
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.create_order"))
 
-        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.create_order"))
@@ -332,17 +345,16 @@ def create_order():
             daily_order=daily_order,
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
-            price_per_portion=price_per_portion,
-            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             notes=notes,
             actor_role=current_user.role,
+            **pricing,
         )
 
         flash(message, "success" if success else "warning")
         if success:
-            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
+            _after_detail_saved(daily_order, detail, pricing["price_per_portion"], pricing["price_source"])
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
@@ -384,7 +396,7 @@ def add_order_detail(order_id):
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
-        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
@@ -393,17 +405,16 @@ def add_order_detail(order_id):
             daily_order=daily_order,
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
-            price_per_portion=price_per_portion,
-            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             notes=notes,
             actor_role=current_user.role,
+            **pricing,
         )
 
         flash(message, "success" if success else "warning")
         if success:
-            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
+            _after_detail_saved(daily_order, detail, pricing["price_per_portion"], pricing["price_source"])
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
@@ -442,7 +453,7 @@ def add_increase_after_lock_route(order_id):
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
 
-        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
@@ -451,17 +462,16 @@ def add_increase_after_lock_route(order_id):
             daily_order=daily_order,
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
-            price_per_portion=price_per_portion,
-            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             reason=notes,
             created_by=current_user.id,
             actor_role=current_user.role,
+            **pricing,
         )
 
         if success:
-            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
+            _after_detail_saved(daily_order, detail, pricing["price_per_portion"], pricing["price_source"])
             production_success, production_message = generate_production_from_order(
                 daily_order,
                 current_user.id

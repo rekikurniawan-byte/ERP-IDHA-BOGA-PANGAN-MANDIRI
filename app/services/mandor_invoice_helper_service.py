@@ -69,3 +69,34 @@ def calculate_realtime_locked_base_quantities(detail, revision_predicate):
         dinner_qty -= int(getattr(revision, "dinner_qty_change", 0) or 0)
 
     return max(lunch_qty, 0), max(dinner_qty, 0)
+
+
+DELIVERY_FEE_ITEM_TYPE = "ONGKIR"
+DELIVERY_FEE_SOURCES = (
+    ("DELIVERY_FEE_LUNCH", "lunch_delivery_fee", "siang"),
+    ("DELIVERY_FEE_DINNER", "dinner_delivery_fee", "malam"),
+)
+
+
+def delivery_fee_invoice_lines(order, detail):
+    """Baris invoice ongkir untuk satu baris order: satu per pengiriman berbayar.
+
+    Tarifnya sudah dikunci di baris order saat pesanan dibuat. Pengiriman gratis
+    atau yang ongkirnya termasuk harga kontrak (0) tidak menghasilkan baris.
+    """
+    location_name = finance_safe_label(getattr(detail, "delivery_location", None))
+    lines = []
+    for source_type, field, label in DELIVERY_FEE_SOURCES:
+        fee = float(getattr(detail, field, 0) or 0)
+        if fee <= 0:
+            continue
+        lines.append({
+            "item_type": DELIVERY_FEE_ITEM_TYPE,
+            "description": f"{order.order_number} | Ongkos kirim {label} | {location_name}",
+            "qty": 1,
+            "unit_price": fee,
+            "subtotal": fee,
+            "source_type": source_type,
+            "source_id": detail.id,
+        })
+    return lines

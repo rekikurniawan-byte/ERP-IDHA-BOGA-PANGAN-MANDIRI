@@ -188,6 +188,7 @@ class PortalOrderDraft(BaseModel):
     # Harga dikunci saat pesanan dikirim: pelanggan membayar angka yang ia lihat.
     price_per_portion = db.Column(db.Numeric(18, 2), nullable=True)
     price_source = db.Column(db.String(20), nullable=True)
+    delivery_fee = db.Column(db.Numeric(18, 2), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(40), nullable=False, default="PENDING_ADMIN_CONFIRMATION", index=True)
     idempotency_key = db.Column(db.String(120), nullable=False, index=True)

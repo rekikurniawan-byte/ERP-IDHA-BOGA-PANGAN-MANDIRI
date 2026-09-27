@@ -1,6 +1,7 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.services.mandor_invoice_helper_service import (
+    delivery_fee_invoice_lines,
     calculate_realtime_locked_base_quantities,
     get_client_for_mandor_invoice,
 )
@@ -152,6 +153,7 @@ def generate_period_invoice_preview():
     total_catering = 0
     total_revision = 0
     total_warung = 0
+    total_delivery = 0
     grand_total = 0
     selected_mandor = None
     selected_client = None
@@ -297,6 +299,22 @@ def generate_period_invoice_preview():
                             total_revision += revision_subtotal
                             grand_total += revision_subtotal
 
+                    for fee_line in delivery_fee_invoice_lines(order, detail):
+                        fee_blocked = None
+                        if old_order_invoice:
+                            fee_blocked = f"Sudah ada invoice order {old_order_invoice.invoice_number}"
+                        elif _period_invoice_item_exists(fee_line["source_type"], detail.id):
+                            fee_blocked = "Sudah pernah masuk invoice periode"
+                        lines.append({
+                            **fee_line,
+                            "date": order.order_date,
+                            "included": fee_blocked is None,
+                            "blocked_reason": fee_blocked,
+                        })
+                        if fee_blocked is None:
+                            total_delivery += fee_line["subtotal"]
+                            grand_total += fee_line["subtotal"]
+
             debts = WorkerDebt.query.filter_by(
                 branch_id=current_user.branch_id
             ).order_by(
@@ -374,6 +392,7 @@ def generate_period_invoice_preview():
         total_catering=total_catering,
         total_revision=total_revision,
         total_warung=total_warung,
+        total_delivery=total_delivery,
         grand_total=grand_total,
         preview_ready=preview_ready
     )
@@ -486,6 +505,11 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
                         "source_type": "ORDER_REVISION",
                         "source_id": revision.id,
                     })
+
+            if not old_order_invoice:
+                for fee_line in delivery_fee_invoice_lines(order, detail):
+                    if not _period_invoice_item_exists(fee_line["source_type"], detail.id):
+                        lines.append(fee_line)
 
     debts = WorkerDebt.query.filter_by(
         branch_id=branch_id

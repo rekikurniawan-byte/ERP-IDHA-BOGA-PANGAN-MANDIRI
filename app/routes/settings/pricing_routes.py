@@ -8,14 +8,20 @@ from app.routes.settings_routes import *  # noqa: F401,F403
 from app.models.master import Client
 from app.services.pricing_service import (
     PricingError,
+    client_fee_overview,
     client_price_overview,
+    create_delivery_zone,
+    free_delivery_min_portions,
     general_min_portions,
     menus_priced_below_hpp,
     price_history,
     price_in_effect,
     scheduled_prices,
+    set_delivery_fee,
+    set_free_delivery_min_portions,
     set_general_min_portions,
     set_portion_price,
+    zone_overview,
 )
 
 
@@ -50,6 +56,9 @@ def pricing():
         client_prices=client_price_overview(branch_id),
         clients=Client.query.filter(Client.is_active.is_(True)).order_by(Client.name.asc()).all(),
         min_portions=general_min_portions(branch_id),
+        zones=zone_overview(branch_id),
+        client_fees=client_fee_overview(branch_id),
+        free_delivery_min=free_delivery_min_portions(branch_id),
         today=date.today(),
     )
 
@@ -86,4 +95,52 @@ def pricing_set_min_portions():
         flash(str(error), "warning")
         return redirect(url_for("settings.pricing"))
     flash(f"Minimal pesan pelanggan umum: {portions} porsi per pengiriman.", "success")
+    return redirect(url_for("settings.pricing"))
+
+
+@settings_bp.route("/pricing/zones", methods=["POST"])
+@role_required("OWNER")
+def pricing_create_zone():
+    try:
+        zone = create_delivery_zone(current_user.branch_id, request.form.get("name"), current_user.id)
+    except PricingError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("settings.pricing"))
+    flash(f"Zona {zone.name} dibuat. Isi tarif ongkirnya di bawah.", "success")
+    return redirect(url_for("settings.pricing"))
+
+
+@settings_bp.route("/pricing/delivery-fee", methods=["POST"])
+@role_required("OWNER")
+def pricing_set_delivery_fee():
+    try:
+        row = set_delivery_fee(
+            branch_id=current_user.branch_id,
+            zone_id=request.form.get("zone_id", type=int),
+            client_id=request.form.get("client_id", type=int),
+            fee=request.form.get("fee"),
+            effective_from=_effective_date(request.form.get("effective_from")),
+            created_by=current_user.id,
+            notes=request.form.get("notes"),
+        )
+    except PricingError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("settings.pricing"))
+    target = f"zona {row.zone.name}" if row.zone else f"kontrak {row.client.name}"
+    flash(f"Ongkir {target} Rp {row.fee:,.0f}/pengiriman berlaku mulai {row.effective_from.strftime('%d-%m-%Y')}.", "success")
+    return redirect(url_for("settings.pricing"))
+
+
+@settings_bp.route("/pricing/free-delivery", methods=["POST"])
+@role_required("OWNER")
+def pricing_set_free_delivery():
+    try:
+        portions = set_free_delivery_min_portions(
+            current_user.branch_id, request.form.get("free_delivery_min_portions"), current_user.id
+        )
+    except PricingError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("settings.pricing"))
+    message = f"Gratis ongkir untuk pengiriman minimal {portions} porsi." if portions else "Gratis ongkir dimatikan."
+    flash(message, "success")
     return redirect(url_for("settings.pricing"))

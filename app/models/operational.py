@@ -39,6 +39,10 @@ class DailyOrderDetail(BaseModel):
     lunch_qty = db.Column(db.Integer, nullable=False, default=0)
     dinner_qty = db.Column(db.Integer, nullable=False, default=0)
     total_qty = db.Column(db.Integer, nullable=False, default=0)
+    # Ongkir per pengiriman yang dikunci saat pengiriman itu dibuat (siang dan
+    # malam = dua kali jalan). 0 = gratis / termasuk harga kontrak.
+    lunch_delivery_fee = db.Column(db.Numeric(18, 2), nullable=False, default=0, server_default="0")
+    dinner_delivery_fee = db.Column(db.Numeric(18, 2), nullable=False, default=0, server_default="0")
     notes = db.Column(db.Text, nullable=True)
 
     mandor = db.relationship("Mandor", lazy=True)

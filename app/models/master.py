@@ -114,6 +114,10 @@ class DeliveryLocation(BaseModel):
     location_name = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    # Zona ongkir pelanggan UMUM. Kosong = belum diatur; pesanan umum ke lokasi
+    # ini ditolak sampai admin memilih zona.
+    delivery_zone_id = db.Column(db.Integer, db.ForeignKey("delivery_zones.id"), nullable=True)
+    delivery_zone = db.relationship("DeliveryZone", foreign_keys=[delivery_zone_id], lazy="joined")
 
     __table_args__ = (
         db.UniqueConstraint("mandor_id", "location_name", name="uq_delivery_location_mandor_location"),

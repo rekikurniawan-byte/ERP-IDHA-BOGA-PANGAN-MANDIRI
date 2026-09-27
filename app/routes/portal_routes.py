@@ -133,11 +133,14 @@ def register():
 
 
 def _customer_register_page_data():
+    from app.services.pricing_service import active_zones
+
     branches = list_active_branches()
     data = {
         "title": "Daftar Pelanggan",
         "description": "Buat akun pelanggan umum untuk memesan catering.",
         "branches": branches,
+        "zones": [(branch, zone) for branch in branches for zone in active_zones(branch.id)],
         "form": {},
         "login_url": url_for("auth.login"),
     }

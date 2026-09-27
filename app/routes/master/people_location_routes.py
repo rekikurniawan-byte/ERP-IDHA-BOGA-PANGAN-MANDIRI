@@ -4,6 +4,7 @@ Route functions moved out of app.routes.master_routes without changing URL rules
 """
 from app.routes.master_routes import *  # noqa: F401,F403
 from app.services.branch_module_service import WORKER_DEBT
+from app.services.pricing_service import active_zones
 from app.utils.decorators import module_required
 from app.utils.terms import T
 
@@ -163,6 +164,12 @@ def locations():
     )
 
 
+def _requested_zone_id():
+    """Zona ongkir dari form, hanya kalau zona itu milik cabang pengguna."""
+    zone_id = request.form.get("delivery_zone_id", type=int)
+    return zone_id if zone_id in {zone.id for zone in active_zones(current_user.branch_id)} else None
+
+
 @master_bp.route("/locations/create", methods=["GET", "POST"])
 @role_required("ADMIN")
 def create_location():
@@ -187,6 +194,7 @@ def create_location():
                 location_name=location_name,
                 description=description,
                 is_active=is_active,
+                delivery_zone_id=_requested_zone_id(),
             )
         except IntegrityError:
             flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
@@ -201,6 +209,7 @@ def create_location():
         mandors=mandors,
         location=None,
         selected_mandor_id=request.args.get("mandor_id", type=int),
+        zones=active_zones(current_user.branch_id),
     )
 
 
@@ -235,6 +244,7 @@ def edit_location(location_id):
                 location_name=location_name,
                 description=description,
                 is_active=is_active,
+                delivery_zone_id=_requested_zone_id(),
             )
         except IntegrityError:
             flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
@@ -243,7 +253,9 @@ def edit_location(location_id):
         flash("Lokasi berhasil diperbarui.", "success")
         return redirect(url_for("master.locations"))
 
-    return render_template("master/location_form.html", mandors=mandors, location=location)
+    return render_template(
+        "master/location_form.html", mandors=mandors, location=location, zones=active_zones(current_user.branch_id)
+    )
 
 
 @master_bp.route("/locations/<int:location_id>/toggle", methods=["POST"])

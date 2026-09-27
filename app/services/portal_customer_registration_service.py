@@ -7,7 +7,7 @@ from app.extensions import db
 from app.models.master import Branch, Client, DeliveryLocation, Mandor, User
 from app.models.system import PortalUserMapping
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, PRINCIPAL_DELEGATE
-from app.services.pricing_service import PATH_GENERAL
+from app.services.pricing_service import PATH_GENERAL, active_zones
 from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     normalize_username,
@@ -25,6 +25,13 @@ def _require(value, message):
     if not cleaned:
         raise ValueError(message)
     return cleaned
+
+
+def _to_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _get_active_branch(branch_id_raw):
@@ -83,6 +90,13 @@ def validate_customer_registration_form(form):
     if not valid_password:
         raise ValueError(password_error)
 
+    # Zona ongkir dipilih pelanggan sendiri; kalau cabang punya zona, wajib
+    # dipilih supaya pesanan pertamanya langsung bisa dihitung ongkirnya.
+    zones = {zone.id: zone for zone in active_zones(branch.id)}
+    zone_id = _to_int(form.get("delivery_zone_id"))
+    if zones and zone_id not in zones:
+        raise ValueError("Pilih zona pengiriman yang sesuai alamat Anda.")
+
     return {
         "full_name": full_name,
         "username": username,
@@ -92,6 +106,7 @@ def validate_customer_registration_form(form):
         "notes": _clean(form.get("notes")),
         "password": form.get("password") or "",
         "branch": branch,
+        "delivery_zone_id": zone_id if zone_id in zones else None,
     }
 
 
@@ -125,6 +140,7 @@ def register_portal_customer(form):
     )
     location = DeliveryLocation(
         mandor=mandor,
+        delivery_zone_id=payload["delivery_zone_id"],
         location_name=payload["location_name"],
         description=payload["address"] if not payload["notes"] else f"{payload['address']} | {payload['notes']}",
         is_active=True,

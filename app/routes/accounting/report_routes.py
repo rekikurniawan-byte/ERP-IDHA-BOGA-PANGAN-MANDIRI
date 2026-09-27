@@ -408,10 +408,10 @@ def _build_accounting2b_coa_mapping_data():
         {
             "stage": "SUDAH BERJALAN",
             "module": "Finance",
-            "event": "Invoice catering kontrak/harian + warung",
+            "event": "Invoice catering kontrak/harian + warung + ongkir",
             "debit_codes": ["1004"],
-            "credit_codes": ["4001", "4002", "4003", "4004"],
-            "note": "PRODUCTION: invoice periode masuk 4001, invoice order harian masuk 4002. Piutang bertambah, pendapatan diakui.",
+            "credit_codes": ["4001", "4002", "4003", "4004", "4005"],
+            "note": "PRODUCTION: invoice periode masuk 4001, invoice order harian masuk 4002, ongkos kirim masuk 4005. Piutang bertambah, pendapatan diakui.",
             "risk": "LOCKED",
         },
         {

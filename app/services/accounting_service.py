@@ -48,6 +48,9 @@ CATERING_REVENUE_DAILY_CODE = "4002"
 SUPPORTED_INVOICE_JOURNAL_SOURCES = {"PERIOD_INVOICE", "DAILY_ORDER", "MANUAL_BILLING_RECAP"}
 CATERING_ITEM_TYPES = {"CATERING", "REVISION_INCREASE"}
 WARUNG_ITEM_TYPES = {"WARUNG_DEBT", "WARUNG"}
+# Ongkir punya akun sendiri supaya bisa dibandingkan dengan 5003 Beban Transport / BBM.
+DELIVERY_FEE_ITEM_TYPES = {"ONGKIR"}
+DELIVERY_FEE_REVENUE_CODE = "4005"
 
 
 def _normalize_code(value):
@@ -118,6 +121,7 @@ def build_invoice_journal_amounts(invoice):
     unresolved_catering_total = 0
     warung_total = 0
     warung_transfer_total = 0
+    delivery_fee_total = 0
     other_total = 0
 
     items = InvoiceItem.query.filter_by(
@@ -149,6 +153,8 @@ def build_invoice_journal_amounts(invoice):
                 warung_transfer_total += subtotal
             else:
                 warung_total += subtotal
+        elif item_type in DELIVERY_FEE_ITEM_TYPES:
+            delivery_fee_total += subtotal
         else:
             other_total += subtotal
 
@@ -161,8 +167,12 @@ def build_invoice_journal_amounts(invoice):
         "unresolved_catering_total": unresolved_catering_total,
         "warung_total": warung_total,
         "warung_transfer_total": warung_transfer_total,
+        "delivery_fee_total": delivery_fee_total,
         "other_total": other_total,
-        "total_credit": catering_total + unresolved_catering_total + warung_total + warung_transfer_total + other_total,
+        "total_credit": (
+            catering_total + unresolved_catering_total + warung_total + warung_transfer_total
+            + delivery_fee_total + other_total
+        ),
         "total_debit": float(invoice.total_amount or 0),
         "revenue_rule": revenue_rule,
     }
@@ -212,6 +222,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
     acc_warung = get_active_account_by_code("4003")
     acc_piutang_karyawan = get_active_account_by_code("1005")
     acc_lain = get_active_account_by_code("4004")
+    acc_delivery = get_active_account_by_code(DELIVERY_FEE_REVENUE_CODE)
 
     missing_accounts = []
 
@@ -227,6 +238,8 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
         missing_accounts.append("4004 Pendapatan Lain-Lain")
     if float(amounts.get("warung_transfer_total", 0) or 0) > 0 and not acc_piutang_karyawan:
         missing_accounts.append("1005 Piutang Karyawan")
+    if not acc_delivery and amounts.get("delivery_fee_total", 0) > 0:
+        missing_accounts.append("4005 Pendapatan Ongkos Kirim")
 
     if missing_accounts:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
@@ -285,6 +298,14 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
             credit=amounts["warung_transfer_total"]
         ))
 
+    if amounts.get("delivery_fee_total", 0) > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_delivery.id,
+            debit=0,
+            credit=amounts["delivery_fee_total"]
+        ))
+
     if amounts["other_total"] > 0:
         db.session.add(JournalDetail(
             journal_id=journal.id,
@@ -308,6 +329,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
                 "classification": revenue_rule.get("classification"),
                 "project_catering_4001": amounts["catering_project_total"],
                 "daily_catering_4002": amounts["catering_daily_total"],
+                "delivery_fee_4005": amounts.get("delivery_fee_total", 0),
             },
         },
         user_id=created_by,

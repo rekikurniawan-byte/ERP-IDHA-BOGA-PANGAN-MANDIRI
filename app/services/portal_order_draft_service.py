@@ -151,6 +151,20 @@ def _allowed_location_options(scope, location_ids=None):
     )
 
 
+def _delivery_fee_label(branch_id, client, location):
+    """Ongkir yang akan dikenakan ke lokasi ini, untuk ditampilkan sebelum memesan."""
+    from app.services.pricing_service import FEE_SOURCE_INCLUDED, free_delivery_min_portions, quote_trip_fee
+
+    fee, source, error = quote_trip_fee(branch_id, client, location, 1)
+    if error:
+        return "ongkir belum tersedia"
+    if source == FEE_SOURCE_INCLUDED or not fee:
+        return "ongkir termasuk"
+    threshold = free_delivery_min_portions(branch_id)
+    free_note = f" (gratis mulai {threshold} porsi)" if threshold else ""
+    return f"ongkir Rp {fee:,.0f}/pengiriman{free_note}".replace(",", ".")
+
+
 def _location_option_cards(locations):
     from app.services.pricing_service import general_min_portions, is_general_client, quote_price
 
@@ -163,6 +177,7 @@ def _location_option_cards(locations):
             {
                 "price_per_portion": quote.price if quote else None,
                 "price_label": quote.source_label if quote else None,
+                "delivery_fee_label": _delivery_fee_label(mandor.branch_id, client, location) if mandor else None,
                 "min_portions": general_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
                 "id": location.id,
                 "name": location.location_name,
@@ -336,6 +351,19 @@ def _active_outstanding_for_scope(branch_id, client_id, mandor_id=None):
     return total
 
 
+def draft_total_amount(draft):
+    """Total yang harus dibayar untuk draft ini: harga terkunci × porsi + ongkir.
+
+    None kalau draft belum punya harga terkunci (draft lama).
+    """
+    if not getattr(draft, "price_per_portion", None):
+        return None
+    return (
+        Decimal(str(draft.price_per_portion)) * int(draft.portion_qty or 0)
+        + Decimal(str(draft.delivery_fee or 0))
+    )
+
+
 def _credit_gate_for_draft(draft):
     role = getattr(draft.user, "role", None) if draft.user else None
     if role not in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
@@ -355,9 +383,13 @@ def _credit_gate_for_draft(draft):
     # Pihak yang kreditnya sudah disetel owner dinilai oleh penilai bersama --
     # yang sama dengan jalur order internal. Pihak lain tetap memakai aturan
     # kontrak lama di bawah, tanpa perubahan.
-    estimated_amount = estimate_order_amount(
-        draft.branch_id, draft.mandor_id, draft.portion_qty, draft.delivery_location_id
-    )
+    # Draft yang sudah punya harga terkunci dinilai dengan total sebenarnya;
+    # draft lama (sebelum daftar harga) tetap memakai perkiraan.
+    estimated_amount = draft_total_amount(draft)
+    if estimated_amount is None:
+        estimated_amount = estimate_order_amount(
+            draft.branch_id, draft.mandor_id, draft.portion_qty, draft.delivery_location_id
+        )
     decision = evaluate_credit(
         draft.branch_id,
         client_id=draft.client_id,
@@ -904,7 +936,7 @@ def _validate_draft_payload(user, form):
     if location.mandor_id not in scope.mandor_ids:
         return None, f"{T.sub_client} lokasi tidak termasuk akses portal user."
 
-    from app.services.pricing_service import min_portion_error, quote_price
+    from app.services.pricing_service import min_portion_error, quote_price, quote_trip_fee
 
     branch_id = location.mandor.branch_id
     client = location.mandor.client
@@ -915,6 +947,9 @@ def _validate_draft_payload(user, form):
     quote = quote_price(branch_id, getattr(client, "id", None))
     if not quote:
         return None, "Harga pesanan belum tersedia. Hubungi admin untuk mengatur harga."
+    delivery_fee, _, fee_error = quote_trip_fee(branch_id, client, location, portion_qty)
+    if fee_error:
+        return None, fee_error
 
     idempotency_key = _clean_text(form.get("idempotency_key"))
     if not idempotency_key:
@@ -944,6 +979,7 @@ def _validate_draft_payload(user, form):
         "portion_qty": portion_qty,
         "price_per_portion": quote.price,
         "price_source": quote.source,
+        "delivery_fee": delivery_fee,
         "notes": "\n".join(note_parts) or None,
         "idempotency_key": idempotency_key,
     }, None
@@ -1211,6 +1247,16 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
             )
         price_per_portion, price_source = quote.price, quote.source
 
+    delivery_fee = draft.delivery_fee
+    if delivery_fee is None:
+        from app.services.pricing_service import quote_trip_fee
+
+        delivery_fee, _, fee_error = quote_trip_fee(
+            draft.branch_id, draft.client, draft.delivery_location, draft.portion_qty
+        )
+        if fee_error:
+            return draft, False, fee_error
+
     lunch_qty = draft.portion_qty if draft.meal_type == "LUNCH" else 0
     dinner_qty = draft.portion_qty if draft.meal_type == "DINNER" else 0
     detail = DailyOrderDetail(
@@ -1222,6 +1268,8 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=draft.portion_qty,
+        lunch_delivery_fee=delivery_fee if lunch_qty else 0,
+        dinner_delivery_fee=delivery_fee if dinner_qty else 0,
         notes=f"Konfirmasi portal draft #{draft.id}. {draft.notes or ''}".strip(),
     )
     db.session.add(detail)

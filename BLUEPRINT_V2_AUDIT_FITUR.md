@@ -341,8 +341,8 @@ Keputusan owner (2026-09-27):
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Jalur di client, halaman Harga & Ongkir, harga otomatis di order dan pesanan portal, harga kontrak, minimal porsi, peringatan HPP | **Selesai** |
-| 2 | Zona ongkir, tarif per pengiriman, gratis di atas N porsi, baris ongkir di invoice, akun 4005 | Berikutnya |
-| 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | — |
+| 2 | Zona ongkir, tarif per pengiriman, gratis di atas N porsi, baris ongkir di invoice, akun 4005 | **Selesai** |
+| 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | Berikutnya |
 | 4 | Laporan dipisah per jalur | — |
 
 Catatan tahap 1: client yang terdaftar lewat portal pelanggan umum ditandai
@@ -352,9 +352,19 @@ pelanggan (data demo di staging) tetap KONTRAK. Setelah rilis, OWNER perlu
 mengisi harga standar di Pengaturan → Harga & Ongkir; sebelum itu pesanan baru
 ditolak dengan pesan yang menjelaskannya.
 
+Catatan tahap 2: ongkir dikunci per pengiriman di baris order
+(`lunch_delivery_fee`, `dinner_delivery_fee`). Revisi yang memunculkan
+pengiriman baru (mis. menambah porsi malam yang tadinya 0) mengenakan tarif
+saat itu; pengiriman yang porsinya jadi 0 tidak lagi dikenai ongkir; perubahan
+jumlah porsi pada pengiriman yang sudah ada tidak mengubah ongkirnya. Invoice
+realtime dan periode memuat baris `ONGKIR` per pengiriman berbayar (tidak bisa
+tertagih dua kali), dijurnal ke 4005. Paparan kredit ikut menghitung ongkir.
+Lokasi pelanggan umum wajib punya zona: dipilih pelanggan saat mendaftar, dan
+bisa dikoreksi admin di data lokasi.
+
 ### Sisa pekerjaan
 
-- Dua jalur transaksi tahap 2–4 (lihat di atas).
+- Dua jalur transaksi tahap 3–4 (lihat di atas).
 
 ---
 

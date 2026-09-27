@@ -278,6 +278,8 @@ def unbilled_delivered(branch_id, party_type, party_id):
             DailyOrder.order_date,
             DailyOrderDetail.price_per_portion,
             DailyOrderDetail.total_qty,
+            DailyOrderDetail.lunch_delivery_fee,
+            DailyOrderDetail.dinner_delivery_fee,
         )
         .join(DailyOrder, DailyOrder.id == DailyOrderDetail.daily_order_id)
         .filter(
@@ -289,10 +291,11 @@ def unbilled_delivered(branch_id, party_type, party_id):
     )
 
     total = ZERO
-    for order_id, order_date, price, qty in rows:
+    for order_id, order_date, price, qty, lunch_fee, dinner_fee in rows:
         if is_billed(order_id, order_date, billed_ranges, billed_order_ids):
             continue
-        total += _money(price) * Decimal(int(qty or 0))
+        # Ongkir ikut ditagihkan bersama order, jadi ikut dihitung sebagai hutang.
+        total += _money(price) * Decimal(int(qty or 0)) + _money(lunch_fee) + _money(dinner_fee)
     return total
 
 
