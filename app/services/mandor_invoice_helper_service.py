@@ -2,6 +2,7 @@
 
 from app.models.master import Client
 from app.utils.terms import T
+from app.utils.money import money
 
 
 def finance_safe_label(obj):
@@ -87,7 +88,7 @@ def delivery_fee_invoice_lines(order, detail):
     location_name = finance_safe_label(getattr(detail, "delivery_location", None))
     lines = []
     for source_type, field, label in DELIVERY_FEE_SOURCES:
-        fee = float(getattr(detail, field, 0) or 0)
+        fee = money(getattr(detail, field, 0) or 0)
         if fee <= 0:
             continue
         lines.append({

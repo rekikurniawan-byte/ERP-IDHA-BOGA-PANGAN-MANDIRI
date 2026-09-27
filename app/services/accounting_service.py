@@ -4,6 +4,7 @@ from app.models.accounting import Account, Journal, JournalDetail
 from app.models.finance import InvoiceItem, Invoice, Payment, SupplierBill
 from datetime import date
 from app.services.audit_log_service import record_audit_log
+from app.utils.money import money
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,7 @@ def build_invoice_journal_amounts(invoice):
 
     for item in items:
         item_type = _normalize_code(getattr(item, "item_type", None))
-        subtotal = float(item.subtotal or 0)
+        subtotal = money(item.subtotal or 0)
 
         if item_type in CATERING_ITEM_TYPES:
             if catering_revenue_code == CATERING_REVENUE_DAILY_CODE:
@@ -192,7 +193,7 @@ def build_invoice_journal_amounts(invoice):
             catering_total + unresolved_catering_total + warung_total + warung_transfer_total
             + delivery_fee_total + other_total
         ),
-        "total_debit": float(invoice.total_amount or 0),
+        "total_debit": money(invoice.total_amount or 0),
         "revenue_rule": revenue_rule,
     }
 
@@ -255,7 +256,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
         missing_accounts.append("4003 Pendapatan Warung")
     if amounts["other_total"] > 0 and not acc_lain:
         missing_accounts.append("4004 Pendapatan Lain-Lain")
-    if float(amounts.get("warung_transfer_total", 0) or 0) > 0 and not acc_piutang_karyawan:
+    if money(amounts.get("warung_transfer_total", 0) or 0) > 0 and not acc_piutang_karyawan:
         missing_accounts.append("1005 Piutang Karyawan")
     if not acc_delivery and amounts.get("delivery_fee_total", 0) > 0:
         missing_accounts.append("4005 Pendapatan Ongkos Kirim")
@@ -309,7 +310,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
             credit=amounts["warung_total"]
         ))
 
-    if float(amounts.get("warung_transfer_total", 0) or 0) > 0:
+    if money(amounts.get("warung_transfer_total", 0) or 0) > 0:
         db.session.add(JournalDetail(
             journal_id=journal.id,
             account_id=acc_piutang_karyawan.id,
@@ -406,7 +407,7 @@ def create_payment_journal_for_payment(payment, created_by, commit=False):
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
 
     method = str(payment.payment_method or "").upper()
-    amount = float(payment.amount or 0)
+    amount = money(payment.amount or 0)
 
     if amount <= 0:
         raise Exception(f"Nominal payment {payment.payment_number} tidak valid.")
@@ -540,16 +541,16 @@ def generate_payment_journals_batch(*, created_by):
     }
 
 
-def _accounting2e_float(value):
+def _accounting2e_money(value):
     try:
-        return float(value or 0)
+        return money(value or 0)
     except Exception:
         logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:502")
         return 0
 
 
 def _accounting2e_procurement_amount(procurement):
-    amount = _accounting2e_float(getattr(procurement, "total_amount", 0))
+    amount = _accounting2e_money(getattr(procurement, "total_amount", 0))
 
     if amount > 0:
         return amount
@@ -557,7 +558,7 @@ def _accounting2e_procurement_amount(procurement):
     total = 0
 
     for item in getattr(procurement, "items", []) or []:
-        total += _accounting2e_float(getattr(item, "subtotal", 0))
+        total += _accounting2e_money(getattr(item, "subtotal", 0))
 
     return total
 
@@ -725,9 +726,9 @@ def legacy_cutover_id(kind):
 
 
 
-def _accounting9d_float(value):
+def _accounting9d_money(value):
     try:
-        return float(value or 0)
+        return money(value or 0)
     except Exception:
         logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:676")
         return 0
@@ -767,7 +768,7 @@ def create_warung_cash_sale_journal(sale, created_by, commit=False):
     if existing:
         return False, "Jurnal cash sale warung sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(sale, "total_amount", 0))
+    amount = _accounting9d_money(getattr(sale, "total_amount", 0))
 
     if amount <= 0:
         raise Exception("Nominal cash sale warung tidak valid.")
@@ -840,7 +841,7 @@ def create_warung_debt_accrual_journal(worker_debt, created_by, commit=False):
     if existing:
         return False, "Jurnal accrual hutang warung sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(worker_debt, "debt_amount", 0))
+    amount = _accounting9d_money(getattr(worker_debt, "debt_amount", 0))
 
     if amount <= 0:
         raise Exception("Nominal hutang warung tidak valid.")
@@ -933,7 +934,7 @@ def create_warung_debt_payment_journal(debt_payment, created_by, commit=False):
     if existing:
         return False, "Jurnal payment warung sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(debt_payment, "amount", 0))
+    amount = _accounting9d_money(getattr(debt_payment, "amount", 0))
 
     if amount <= 0:
         raise Exception("Nominal pembayaran hutang warung tidak valid.")
@@ -1010,7 +1011,7 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
     if str(payroll.status or "").upper() not in ["FINAL", "POSTED"]:
         return False, "Payroll harus FINAL/POSTED sebelum dijurnal.", None
 
-    total_salary = sum(float(detail.final_salary or 0) for detail in payroll.details)
+    total_salary = sum(money(detail.final_salary or 0) for detail in payroll.details)
 
     if total_salary <= 0:
         return False, "Total payroll masih 0.", None
@@ -1078,8 +1079,8 @@ def _sdm5d_get_account_balance(account_code):
     account = get_active_account_by_code(account_code)
 
     details = JournalDetail.query.filter_by(account_id=account.id).all()
-    debit = sum(float(detail.debit or 0) for detail in details)
-    credit = sum(float(detail.credit or 0) for detail in details)
+    debit = sum(money(detail.debit or 0) for detail in details)
+    credit = sum(money(detail.credit or 0) for detail in details)
 
     # Akun asset dan beban normal debit.
     # Akun hutang, modal, dan pendapatan normal kredit.
@@ -1103,7 +1104,7 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
     if payroll.status != "POSTED":
         return False, "Payroll harus berstatus POSTED sebelum dibayar.", None
 
-    total = sum(float(detail.final_salary or 0) for detail in payroll.details)
+    total = sum(money(detail.final_salary or 0) for detail in payroll.details)
 
     if total <= 0:
         return False, "Total payroll tidak valid untuk dibayar.", None
@@ -1122,7 +1123,7 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
     payable_account = get_active_account_by_code("2003")
     payment_account, available_balance = _sdm5d_get_account_balance(payment_account_code)
 
-    if float(available_balance or 0) < float(total or 0):
+    if money(available_balance or 0) < money(total or 0):
         return (
             False,
             (
@@ -1159,8 +1160,8 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
         credit=total,
     ))
 
-    debit_total = sum(float(detail.debit or 0) for detail in journal.details)
-    credit_total = sum(float(detail.credit or 0) for detail in journal.details)
+    debit_total = sum(money(detail.debit or 0) for detail in journal.details)
+    credit_total = sum(money(detail.credit or 0) for detail in journal.details)
 
     if round(debit_total, 2) != round(credit_total, 2):
         raise Exception("Jurnal pembayaran payroll tidak seimbang.")
@@ -1220,7 +1221,7 @@ def create_supplier_payment_journal_for_payment(supplier_payment, created_by, co
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
 
     method = str(supplier_payment.payment_method or "").upper()
-    amount = float(supplier_payment.amount or 0)
+    amount = money(supplier_payment.amount or 0)
 
     if amount <= 0:
         raise Exception(f"Nominal pembayaran supplier {supplier_payment.payment_number} tidak valid.")
@@ -1305,7 +1306,7 @@ def create_warung_direct_sale_journal(sale, created_by, commit=False):
     if existing:
         return False, "Jurnal penjualan warung sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(sale, "total_amount", 0))
+    amount = _accounting9d_money(getattr(sale, "total_amount", 0))
     if amount <= 0:
         raise Exception("Nominal penjualan warung tidak valid.")
 
@@ -1357,7 +1358,7 @@ def create_warung_external_debt_accrual_journal(external_receivable, created_by,
     if existing:
         return False, "Jurnal accrual piutang warung eksternal sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(external_receivable, "receivable_amount", 0))
+    amount = _accounting9d_money(getattr(external_receivable, "receivable_amount", 0))
     if amount <= 0:
         raise Exception("Nominal piutang warung eksternal tidak valid.")
 
@@ -1411,7 +1412,7 @@ def create_warung_external_receivable_payment_journal(external_payment, created_
     if existing:
         return False, "Jurnal pembayaran piutang warung eksternal sudah ada.", existing
 
-    amount = _accounting9d_float(getattr(external_payment, "amount", 0))
+    amount = _accounting9d_money(getattr(external_payment, "amount", 0))
     if amount <= 0:
         raise Exception("Nominal pembayaran piutang warung eksternal tidak valid.")
 

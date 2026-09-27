@@ -19,6 +19,7 @@ from app.services.mandor_invoice_helper_service import (
     is_after_lock_increase_revision,
 )
 from app.utils.terms import T
+from app.utils.money import money
 
 
 class OrderInvoiceError(ValueError):
@@ -40,7 +41,7 @@ def build_order_invoice_lines(order, mandor_id):
             is_after_lock_increase_revision,
         )
         total_qty = lunch_qty + dinner_qty
-        price = float(getattr(detail, "price_per_portion", 0) or 0)
+        price = money(getattr(detail, "price_per_portion", 0) or 0)
 
         if total_qty > 0 and price >= 0:
             lines.append({
@@ -72,7 +73,7 @@ def build_order_invoice_lines(order, mandor_id):
             if revision_price is None:
                 revision_price = price
 
-            revision_price = float(revision_price or 0)
+            revision_price = money(revision_price or 0)
 
             lines.append({
                 "item_type": "REVISION_INCREASE",

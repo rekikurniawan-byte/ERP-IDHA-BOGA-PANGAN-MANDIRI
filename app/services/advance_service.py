@@ -22,6 +22,7 @@ from app.services.field_transaction_service import (
 )
 from app.utils.terms import T
 from app.utils.terms import L
+from app.utils.money import money
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +303,7 @@ def get_advance_status_summary(branch_id):
         "total": len(rows),
         "open": len([row for row in rows if _normalize(row.status) in {"OPEN", "PARTIAL"}]),
         "settled": len([row for row in rows if _normalize(row.status) == "SETTLED"]),
-        "remaining": sum(float(row.remaining_amount or 0) for row in rows if _normalize(row.status) in {"OPEN", "PARTIAL"}),
+        "remaining": sum(money(row.remaining_amount or 0) for row in rows if _normalize(row.status) in {"OPEN", "PARTIAL"}),
     }
 
 
@@ -393,7 +394,7 @@ def create_advance_transaction(
     if not rule:
         raise Exception("Tipe uang muka tidak valid.")
 
-    amount = float(amount or 0)
+    amount = money(amount or 0)
     if amount <= 0:
         raise Exception("Nominal DP/uang muka harus lebih dari 0.")
 
@@ -529,7 +530,7 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
             raise Exception("Invoice settlement tidak ditemukan.")
         if _normalize(invoice.status) in {"CANCELLED", "CANCELED"}:
             raise Exception("Invoice cancelled tidak boleh dipakai settlement DP.")
-        if float(invoice.remaining_amount or 0) <= 0:
+        if money(invoice.remaining_amount or 0) <= 0:
             raise Exception("Invoice ini sudah tidak punya sisa piutang.")
         return rule, invoice
 
@@ -539,7 +540,7 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
         bill = SupplierBill.query.filter_by(id=reference_id, branch_id=branch_id).first()
         if not bill:
             raise Exception("Supplier bill settlement tidak ditemukan.")
-        if float(bill.remaining_amount or 0) <= 0:
+        if money(bill.remaining_amount or 0) <= 0:
             raise Exception("Supplier bill ini sudah tidak punya sisa hutang.")
         return rule, bill
 
@@ -567,7 +568,7 @@ def mandor_unpaid_invoice_total(branch_id, mandor_id):
         Invoice.mandor_id == mandor_id,
         Invoice.status.notin_(["CANCELLED", "CANCELED", "PAID", "CLOSED"]),
     ).with_entities(Invoice.remaining_amount).all():
-        total += float(remaining or 0)
+        total += money(remaining or 0)
     return total
 
 
@@ -616,17 +617,17 @@ def create_advance_settlement(
     if rule["advance_type"] != _normalize(advance.advance_type):
         raise Exception("Tipe settlement tidak sesuai dengan tipe advance.")
 
-    if _normalize(advance.status) == "SETTLED" or float(advance.remaining_amount or 0) <= 0:
+    if _normalize(advance.status) == "SETTLED" or money(advance.remaining_amount or 0) <= 0:
         raise Exception("Advance ini sudah selesai/settled.")
 
-    amount = float(amount or 0)
+    amount = money(amount or 0)
     if amount <= 0:
         raise Exception("Nominal settlement harus lebih dari 0.")
-    if amount > float(advance.remaining_amount or 0):
+    if amount > money(advance.remaining_amount or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa advance.")
-    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and amount > float(getattr(reference_obj, "remaining_amount", 0) or 0):
+    if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and amount > money(getattr(reference_obj, "remaining_amount", 0) or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa piutang invoice.")
-    if settlement_type == "SUPPLIER_BILL" and amount > float(getattr(reference_obj, "remaining_amount", 0) or 0):
+    if settlement_type == "SUPPLIER_BILL" and amount > money(getattr(reference_obj, "remaining_amount", 0) or 0):
         raise Exception("Nominal settlement tidak boleh lebih dari sisa hutang supplier bill.")
     if settlement_date < advance.advance_date:
         raise Exception("Tanggal settlement tidak boleh lebih awal dari tanggal advance.")
@@ -760,8 +761,8 @@ def create_advance_settlement(
     # Update operational outstanding without creating a duplicate cash/bank entry.
     # The cash movement happened at advance creation; settlement only applies that advance.
     if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and reference_obj:
-        new_paid = float(reference_obj.paid_amount or 0) + amount
-        new_remaining_invoice = float(reference_obj.total_amount or 0) - new_paid
+        new_paid = money(reference_obj.paid_amount or 0) + amount
+        new_remaining_invoice = money(reference_obj.total_amount or 0) - new_paid
         if new_remaining_invoice <= 0:
             new_remaining_invoice = 0
             reference_obj.status = "PAID"
@@ -771,8 +772,8 @@ def create_advance_settlement(
         reference_obj.remaining_amount = new_remaining_invoice
 
     if settlement_type == "SUPPLIER_BILL" and reference_obj:
-        new_paid = float(reference_obj.paid_amount or 0) + amount
-        new_remaining_bill = float(reference_obj.total_amount or 0) - new_paid
+        new_paid = money(reference_obj.paid_amount or 0) + amount
+        new_remaining_bill = money(reference_obj.total_amount or 0) - new_paid
         if new_remaining_bill <= 0:
             new_remaining_bill = 0
             reference_obj.status = "PAID"
@@ -781,8 +782,8 @@ def create_advance_settlement(
         reference_obj.paid_amount = new_paid
         reference_obj.remaining_amount = new_remaining_bill
 
-    new_settled = float(advance.settled_amount or 0) + amount
-    new_remaining = float(advance.amount or 0) - new_settled
+    new_settled = money(advance.settled_amount or 0) + amount
+    new_remaining = money(advance.amount or 0) - new_settled
     if new_remaining <= 0:
         new_remaining = 0
         advance.status = "SETTLED"

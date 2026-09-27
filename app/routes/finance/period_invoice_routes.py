@@ -6,6 +6,7 @@ from app.services.mandor_invoice_helper_service import (
     get_client_for_mandor_invoice,
 )
 from app.utils.terms import T
+from app.utils.money import money
 
 def _period_parse_date(value):
     from datetime import datetime
@@ -218,7 +219,7 @@ def generate_period_invoice_preview():
                         _period_is_after_lock_increase,
                     )
                     total_qty = lunch_qty + dinner_qty
-                    price = float(getattr(detail, "price_per_portion", 0) or 0)
+                    price = money(getattr(detail, "price_per_portion", 0) or 0)
                     subtotal = total_qty * price
 
                     blocked_reason = None
@@ -267,7 +268,7 @@ def generate_period_invoice_preview():
                         if revision_price is None:
                             revision_price = price
 
-                        revision_price = float(revision_price or 0)
+                        revision_price = money(revision_price or 0)
                         revision_subtotal = qty_change * revision_price
 
                         blocked_reason = None
@@ -342,12 +343,12 @@ def generate_period_invoice_preview():
                 if sale_date < period_start or sale_date > period_end:
                     continue
 
-                remaining = float(get_debt_remaining_amount(debt) or 0)
+                remaining = money(get_debt_remaining_amount(debt) or 0)
 
                 if remaining <= 0:
                     continue
 
-                paid = float(get_debt_paid_amount(debt) or 0)
+                paid = money(get_debt_paid_amount(debt) or 0)
 
                 blocked_reason = None
 
@@ -455,7 +456,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
                 _period_is_after_lock_increase,
             )
             total_qty = lunch_qty + dinner_qty
-            price = float(getattr(detail, "price_per_portion", 0) or 0)
+            price = money(getattr(detail, "price_per_portion", 0) or 0)
             subtotal = total_qty * price
 
             if total_qty > 0 and subtotal >= 0:
@@ -489,7 +490,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
                 if revision_price is None:
                     revision_price = price
 
-                revision_price = float(revision_price or 0)
+                revision_price = money(revision_price or 0)
                 revision_subtotal = qty_change * revision_price
 
                 if not old_order_invoice and not _period_invoice_item_exists("ORDER_REVISION", revision.id):
@@ -538,7 +539,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
         if sale_date < period_start or sale_date > period_end:
             continue
 
-        remaining = float(get_debt_remaining_amount(debt) or 0)
+        remaining = money(get_debt_remaining_amount(debt) or 0)
 
         if remaining <= 0:
             continue
@@ -546,7 +547,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
         if _period_invoice_item_exists("WORKER_DEBT", debt.id):
             continue
 
-        paid = float(get_debt_paid_amount(debt) or 0)
+        paid = money(get_debt_paid_amount(debt) or 0)
 
         lines.append({
             "item_type": "WARUNG_DEBT",
@@ -642,7 +643,7 @@ def generate_period_invoice_save():
         branch_id=current_user.branch_id
     )
 
-    total_amount = sum(float(line["subtotal"] or 0) for line in lines)
+    total_amount = sum(money(line["subtotal"] or 0) for line in lines)
 
     if not lines or total_amount <= 0:
         flash("Tidak ada item valid untuk disimpan menjadi invoice periode.", "warning")
