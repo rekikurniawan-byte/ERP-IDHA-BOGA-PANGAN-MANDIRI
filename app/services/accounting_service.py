@@ -542,11 +542,8 @@ def generate_payment_journals_batch(*, created_by):
 
 
 def _accounting2e_money(value):
-    try:
-        return money(value or 0)
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:502")
-        return 0
+    # Nominal tak terbaca ditolak (ValueError), tidak diam-diam menjadi 0.
+    return money(value)
 
 
 def _accounting2e_procurement_amount(procurement):
@@ -727,11 +724,8 @@ def legacy_cutover_id(kind):
 
 
 def _accounting9d_money(value):
-    try:
-        return money(value or 0)
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/accounting_service.py:676")
-        return 0
+    # Nominal tak terbaca ditolak (ValueError), tidak diam-diam menjadi 0.
+    return money(value)
 
 
 def _accounting9d_existing_journal(reference_types, reference_id):
