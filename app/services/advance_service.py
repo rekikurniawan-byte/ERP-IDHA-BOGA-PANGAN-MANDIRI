@@ -97,7 +97,12 @@ ADVANCE_TYPES = {
 # Memotong deposit dan mengembalikannya adalah keputusan OWNER.
 DEPOSIT_TO_INVOICE = "DEPOSIT_TO_INVOICE"
 DEPOSIT_REFUND = "DEPOSIT_REFUND"
-OWNER_ONLY_SETTLEMENT_TYPES = {DEPOSIT_TO_INVOICE, DEPOSIT_REFUND}
+# Uang muka pesanan pelanggan umum dikembalikan (pesanan ditolak/dibatalkan
+# setelah dibayar). Keputusan owner 2026-09-27: hanya OWNER.
+CLIENT_DP_REFUND = "CLIENT_DP_REFUND"
+OWNER_ONLY_SETTLEMENT_TYPES = {DEPOSIT_TO_INVOICE, DEPOSIT_REFUND, CLIENT_DP_REFUND}
+# Pengembalian = uang benar-benar keluar dari kas/bank.
+REFUND_SETTLEMENT_TYPES = {DEPOSIT_REFUND, CLIENT_DP_REFUND}
 
 SETTLEMENT_TYPES = {
     "CLIENT_INVOICE": {
@@ -109,6 +114,11 @@ SETTLEMENT_TYPES = {
         "advance_type": MANDOR_SECURITY_DEPOSIT,
         "reference_type": "INVOICE",
         "description": L("Deposit jaminan dipotong untuk menutup hutang invoice {sub_client_lower} itu sendiri."),
+    },
+    CLIENT_DP_REFUND: {
+        "advance_type": CLIENT_DP_RECEIVED,
+        "reference_type": "DP_REFUND",
+        "description": L("Uang muka {client_lower} dikembalikan karena pesanannya ditolak atau dibatalkan."),
     },
     DEPOSIT_REFUND: {
         "advance_type": MANDOR_SECURITY_DEPOSIT,
@@ -538,7 +548,7 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
         # Expense-account posting is deliberately deferred to PRODUCTION mapping.
         return rule, None
 
-    if settlement_type == DEPOSIT_REFUND:
+    if settlement_type in REFUND_SETTLEMENT_TYPES:
         return rule, None
 
     raise Exception("Tipe settlement belum dikenali.")
@@ -666,9 +676,14 @@ def create_advance_settlement(
         db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_advance.id, debit=amount, credit=0))
         db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_piutang.id, debit=0, credit=amount))
 
-    elif settlement_type == DEPOSIT_REFUND:
+    elif settlement_type in REFUND_SETTLEMENT_TYPES:
         # Uang benar-benar keluar, jadi -- beda dengan settlement lain -- ada
-        # mutasi kas/bank sendiri. Dr 2007 Deposit Jaminan, Cr Kas/Bank.
+        # mutasi kas/bank sendiri. Dr 2007 Deposit Jaminan / 2008 Uang Muka
+        # Pelanggan, Cr Kas/Bank.
+        refund_label = (
+            f"uang muka {T.client_lower}" if settlement_type == CLIENT_DP_REFUND
+            else f"deposit jaminan {T.sub_client_lower}"
+        )
         account_type, bank_account_id = validate_cash_bank(advance.branch_id, payment_method, bank_account_id)
         cash_bank_code = resolve_cash_account_code(account_type, bank_account_id)
         acc_cash_bank = get_account_by_code(cash_bank_code)
@@ -681,7 +696,7 @@ def create_advance_settlement(
             bank_account_id=bank_account_id,
             transaction_type="OUT",
             amount=amount,
-            description=f"Pengembalian deposit jaminan {advance.advance_number} sebesar {_money(amount)}",
+            description=f"Pengembalian {refund_label} {advance.advance_number} sebesar {_money(amount)}",
             reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
             reference_id=settlement.id,
             created_by=created_by,
@@ -692,7 +707,7 @@ def create_advance_settlement(
             journal_date=settlement_date,
             reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
             reference_id=settlement.id,
-            description=f"Pengembalian deposit jaminan {T.sub_client_lower} {advance.advance_number}",
+            description=f"Pengembalian {refund_label} {advance.advance_number}",
             created_by=created_by,
         )
         db.session.add(journal)

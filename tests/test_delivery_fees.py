@@ -284,12 +284,19 @@ def test_rute_order_mengunci_ongkir_pelanggan_umum(app, ctx):
         session["_user_id"] = str(admin.id)
         session["_fresh"] = True
 
+    # Pelanggan umum bayar di muka saat diinput admin (tahap 3):
+    # 22 porsi × 25.000 + ongkir siang 15.000 + malam 15.000.
+    from tests.test_prepaid_orders import _ensure_accounts
+
+    _ensure_accounts(ctx)
     client.post("/operational/orders/create", data={
         "order_date": (TODAY + timedelta(days=30)).isoformat(),
         "mandor_id": s.mandor.id,
         "delivery_location_id": s.location.id,
         "lunch_qty": 12,
         "dinner_qty": 10,
+        "prepayment_amount": "580000",
+        "prepayment_method": "CASH",
     })
 
     detail = DailyOrderDetail.query.filter_by(mandor_id=s.mandor.id).one()

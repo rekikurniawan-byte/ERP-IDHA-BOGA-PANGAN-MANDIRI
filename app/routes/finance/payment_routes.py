@@ -488,6 +488,43 @@ def decide_portal_payment_proof(attachment_id):
     return redirect(url_for("finance.portal_payment_proofs", status=next_status))
 
 
+@finance_bp.route("/portal-payment-proofs/<int:attachment_id>/record-prepayment", methods=["POST"])
+@role_required("OWNER", "ADMIN", "FINANCE")
+def record_prepayment_from_portal_proof(attachment_id):
+    from datetime import datetime
+
+    from app.services.portal_payment_creation_service import (
+        PortalPaymentCreationError,
+        create_prepayment_from_verified_draft_proof,
+    )
+
+    try:
+        payment_date = datetime.strptime((request.form.get("payment_date") or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        flash("Tanggal pembayaran tidak valid.", "warning")
+        return redirect(url_for("finance.portal_payment_proofs", status="VERIFIED"))
+    try:
+        result = create_prepayment_from_verified_draft_proof(
+            current_user,
+            attachment_id=attachment_id,
+            payment_date=payment_date,
+            amount=(request.form.get("amount") or "").strip(),
+            payment_method=request.form.get("payment_method"),
+            bank_account_id=request.form.get("bank_account_id", type=int),
+            reference_number=request.form.get("reference_number"),
+            notes=request.form.get("notes"),
+            idempotency_key=request.form.get("idempotency_key"),
+        )
+    except PortalPaymentCreationError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("finance.portal_payment_proofs", status="VERIFIED"))
+    flash(
+        f"Uang muka {result['advance_number']} dicatat untuk draft #{result['draft_id']}; jurnal 2008 dibuat otomatis.",
+        "success",
+    )
+    return redirect(url_for("finance.portal_payment_proofs", status="PAYMENT_CREATED"))
+
+
 @finance_bp.route("/portal-payment-proofs/<int:attachment_id>/create-payment", methods=["POST"])
 @role_required("OWNER", "ADMIN", "FINANCE")
 def create_payment_from_portal_proof(attachment_id):

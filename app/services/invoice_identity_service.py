@@ -74,6 +74,16 @@ def invoice_contact_snapshot(client, mandor, client_pic_id, bill_to_type):
             "client_pic_email_snapshot": None,
         }, None
 
+    # Pelanggan umum (jalur UMUM) adalah orangnya sendiri, tanpa PIC resmi.
+    if getattr(client, "customer_path", None) == "UMUM":
+        return {
+            "client_pic_id": None,
+            "client_pic_name_snapshot": client.name,
+            "client_pic_position_snapshot": "Pelanggan umum",
+            "client_pic_phone_snapshot": getattr(client, "phone", None),
+            "client_pic_email_snapshot": None,
+        }, None
+
     pic, error = get_required_client_pic(getattr(client, "id", None), client_pic_id)
     if error:
         return None, error

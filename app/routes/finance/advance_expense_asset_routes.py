@@ -172,8 +172,13 @@ def advance_detail(advance_id):
         for settlement in settlements
     }
 
+    from app.models.finance import BankAccount
+
     return render_template(
         "finance/advance_detail.html",
+        bank_accounts=BankAccount.query.filter_by(branch_id=current_user.branch_id, is_active=True)
+        .order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc())
+        .all(),
         advance=advance,
         settlements=settlements,
         rule=ADVANCE_TYPES.get(advance.advance_type, {}),
@@ -239,6 +244,9 @@ def advance_settle(advance_id):
             reference_id=reference_id,
             expense_account_code=expense_account_code,
             notes=notes,
+            # Dipakai pengembalian (uang keluar dari kas/bank).
+            payment_method=(request.form.get("payment_method") or "").strip().upper() or None,
+            bank_account_id=request.form.get("bank_account_id", type=int),
         )
         flash(message, "success")
     except Exception as exc:

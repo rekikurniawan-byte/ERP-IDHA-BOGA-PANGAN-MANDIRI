@@ -397,6 +397,10 @@ class AdvanceTransaction(BaseModel):
     cash_bank_transaction_id = db.Column(db.Integer, db.ForeignKey("cash_bank_transactions.id"), nullable=True)
     journal_id = db.Column(db.Integer, db.ForeignKey("journals.id"), nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
+    # Uang muka pesanan pelanggan umum: untuk draft portal, lalu baris order
+    # yang terbentuk darinya (atau langsung baris order yang diinput admin).
+    portal_order_draft_id = db.Column(db.Integer, db.ForeignKey("portal_order_drafts.id"), nullable=True, index=True)
+    daily_order_detail_id = db.Column(db.Integer, db.ForeignKey("daily_order_details.id"), nullable=True, index=True)
 
     client = db.relationship("Client", foreign_keys=[client_id], lazy=True)
     supplier = db.relationship("Supplier", foreign_keys=[supplier_id], lazy=True)

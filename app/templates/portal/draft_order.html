@@ -345,8 +345,21 @@
                                 {% endfor %}
                             </div>
                             {% if row.needs_payment %}
+                                {% if row.amount_due %}
+                                    {% set company = global_company_settings or {} %}
+                                    <p class="portal-pay-instruction">
+                                        <strong>Bayar {{ row.amount_due|rupiah }}</strong>
+                                        {% if row.paid_amount %}(sudah tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}){% endif %}
+                                        {% if company.payment_account_number %}ke {{ company.payment_bank_name }} {{ company.payment_account_number }} a.n. {{ company.payment_account_name }}{% endif %}{% if company.payment_qris_label %} atau QRIS {{ company.payment_qris_label }}{% endif %}.
+                                        Pesanan diproses setelah pembayaran diterima.
+                                    </p>
+                                {% endif %}
                                 <form method="post" enctype="multipart/form-data" action="{{ url_for('portal.upload_draft_payment_proof', draft_id=draft.id) }}" class="portal-draft-proof-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <label>
+                                        <span>Nominal yang dibayar</span>
+                                        <input type="number" name="paid_amount" min="1" step="1" value="{{ row.amount_due|int if row.amount_due else '' }}" required>
+                                    </label>
                                     <label>
                                         <span>Unggah bukti pembayaran awal</span>
                                         <input type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>

@@ -308,6 +308,19 @@ def receive(detail_id):
                     flash(f"Penerimaan tersimpan, tapi bukti digital gagal diunggah: {exc}", "danger")
 
         flash(message, "success" if success else "warning")
+
+        if success:
+            # Jalur UMUM: begitu semua pengiriman pesanan diterima, invoice dibuat
+            # otomatis dan langsung dipotong uang mukanya. Tanda terima tetap
+            # tersimpan walau langkah ini gagal.
+            from app.services.prepaid_order_service import invoice_after_delivery_receipt
+
+            invoice, invoice_error = invoice_after_delivery_receipt(delivery_detail, current_user.id)
+            if invoice_error:
+                flash(invoice_error, "warning")
+            elif invoice is not None:
+                status_note = "lunas dari uang muka" if invoice.status == "PAID" else f"sisa tagihan Rp {float(invoice.remaining_amount or 0):,.0f}"
+                flash(f"Invoice {invoice.invoice_number} dibuat otomatis, {status_note}.", "success")
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
     delivery_detail_sla = calculate_delivery_detail_sla(delivery_detail)

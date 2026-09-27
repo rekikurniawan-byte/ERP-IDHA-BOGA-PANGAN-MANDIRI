@@ -342,8 +342,8 @@ Keputusan owner (2026-09-27):
 |---|---|---|
 | 1 | Jalur di client, halaman Harga & Ongkir, harga otomatis di order dan pesanan portal, harga kontrak, minimal porsi, peringatan HPP | **Selesai** |
 | 2 | Zona ongkir, tarif per pengiriman, gratis di atas N porsi, baris ongkir di invoice, akun 4005 | **Selesai** |
-| 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | Berikutnya |
-| 4 | Laporan dipisah per jalur | — |
+| 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | **Selesai** |
+| 4 | Laporan dipisah per jalur | Berikutnya |
 
 Catatan tahap 1: client yang terdaftar lewat portal pelanggan umum ditandai
 UMUM oleh migrasi `c4d5e6f7a8b9` hanya kalau **semua** akun portal yang
@@ -362,9 +362,38 @@ tertagih dua kali), dijurnal ke 4005. Paparan kredit ikut menghitung ongkir.
 Lokasi pelanggan umum wajib punya zona: dipilih pelanggan saat mendaftar, dan
 bisa dikoreksi admin di data lokasi.
 
+Catatan tahap 3 (semua jurnal lewat layanan yang sudah ada — tidak ada jurnal
+baru yang ditulis tangan):
+
+| Kejadian | Jurnal |
+|---|---|
+| Finance mencatat uang muka dari bukti bayar (nominal & rekening yang benar-benar diterima) | Dr Kas/Bank, Cr 2008 Uang Muka Pelanggan |
+| Semua pengiriman pesanan umum diterima → invoice otomatis | Dr 1004, Cr 4002 (+ 4005 ongkir) |
+| Invoice itu langsung dipotong uang muka | Dr 2008, Cr 1004 → invoice LUNAS |
+| Pesanan ditolak/batal setelah dibayar → OWNER mengembalikan | Dr 2008, Cr Kas/Bank |
+
+- Pelanggan melihat "Bayar Rp X" + rekening/QRIS perusahaan di pesanannya dan
+  mengunggah bukti dengan nominal. Nominal pelanggan hanya keterangan; yang
+  dijurnal adalah nominal yang dicatat Finance.
+- Gerbang dapur: draft jalur UMUM (atau akun pelanggan umum) tertahan sampai
+  uang muka tercatat ≥ total. Bukti yang baru diunggah **tidak** meloloskan
+  (dulu cukup "ada bukti"). OWNER boleh meloloskan dengan alasan wajib; audit
+  log `PREPAYMENT_OVERRIDE`. Sisa yang belum dibayar tetap tertagih sebagai
+  piutang di invoice otomatis.
+- Pesanan umum yang diinput admin: baris order dan pembayarannya disimpan
+  dalam satu transaksi; kurang bayar ditolak kecuali OWNER. Tambah porsi
+  pesanan umum (revisi / tambah setelah lock) hanya OWNER.
+- Invoice otomatis dibuat saat tanda terima terakhir pesanan itu disimpan;
+  kalau gagal, tanda terima tetap tersimpan dan Finance diberi tahu untuk
+  membuat invoice manual. Pembuatan invoice realtime dipindah ke
+  `order_invoice_service` supaya tombol Finance dan jalur otomatis memakai
+  aturan yang sama; invoice yang jurnalnya gagal kini dibatalkan utuh.
+- Invoice untuk pelanggan umum tidak lagi mewajibkan PIC client: kontaknya
+  pelanggan itu sendiri.
+
 ### Sisa pekerjaan
 
-- Dua jalur transaksi tahap 3–4 (lihat di atas).
+- Dua jalur transaksi tahap 4: laporan dipisah per jalur.
 
 ---
 

@@ -537,9 +537,16 @@ def _closing_gate_for_draft(draft):
     }
 
 
-def _payment_gate_for_draft(draft):
-    role = getattr(draft.user, "role", None) if draft.user else None
-    if role != ROLE_PORTAL_CUSTOMER:
+def _payment_gate_for_draft(draft, owner_override=False):
+    """Pesanan jalur UMUM baru boleh diproses kalau uang mukanya menutup total.
+
+    Uang muka = pembayaran yang sudah diverifikasi Finance dan dicatat sebagai
+    Uang Muka Pelanggan (2008), bukan sekadar bukti yang diunggah. OWNER boleh
+    meloloskan (owner_override); keputusannya dicatat saat konfirmasi.
+    """
+    from app.services.prepaid_order_service import rupiah, draft_prepaid_amount, draft_requires_prepayment
+
+    if not draft_requires_prepayment(draft):
         return {
             "key": "PAYMENT",
             "title": "Pembayaran Awal",
@@ -551,37 +558,44 @@ def _payment_gate_for_draft(draft):
             "proof": {"total": 0, "pending": 0, "verified": 0, "rejected": 0},
         }
     proof = _draft_payment_proof_counts(draft)
-    if proof["verified"]:
+    total = draft_total_amount(draft)
+    paid = draft_prepaid_amount(draft)
+    base = {"key": "PAYMENT", "title": "Pembayaran Awal", "proof": proof, "total_amount": total, "paid_amount": paid}
+    if total is not None and paid >= total:
         return {
-            "key": "PAYMENT",
-            "title": "Pembayaran Awal",
+            **base,
             "status": "OK",
-            "label": "Terverifikasi",
+            "label": "Lunas di muka",
             "tone": "green",
-            "message": "Bukti pembayaran awal sudah diverifikasi Finance.",
+            "message": f"Uang muka {rupiah(paid)} sudah tercatat, menutup total {rupiah(total)}.",
             "needs_payment": False,
-            "proof": proof,
         }
-    if proof["pending"]:
+    due_note = f"Total {rupiah(total)}, sudah dibayar {rupiah(paid)}." if total is not None else "Total belum bisa dihitung."
+    if owner_override:
         return {
-            "key": "PAYMENT",
-            "title": "Pembayaran Awal",
-            "status": "WAITING_FINANCE",
+            **base,
+            "status": "OVERRIDE",
+            "label": "Diloloskan OWNER",
+            "tone": "orange",
+            "message": f"OWNER meloloskan pesanan sebelum lunas. {due_note}",
+            "needs_payment": False,
+        }
+    if proof["pending"] or proof["verified"]:
+        return {
+            **base,
+            "status": "BLOCKED",
             "label": "Menunggu Finance",
             "tone": "orange",
-            "message": "Bukti pembayaran sudah diunggah dan menunggu verifikasi Finance.",
+            "message": f"Bukti pembayaran menunggu Finance mencatat uang mukanya. {due_note}",
             "needs_payment": True,
-            "proof": proof,
         }
     return {
-        "key": "PAYMENT",
-        "title": "Pembayaran Awal",
+        **base,
         "status": "BLOCKED",
         "label": "Wajib Bayar Dulu",
         "tone": "red",
-        "message": "Pelanggan umum wajib memiliki pembayaran terverifikasi sebelum order diproses.",
+        "message": f"Pelanggan umum wajib membayar di muka sebelum pesanan diproses. {due_note}",
         "needs_payment": True,
-        "proof": proof,
     }
 
 
@@ -625,10 +639,18 @@ def _duplicate_gate_for_draft(draft, daily_order=None):
     }
 
 
-def evaluate_portal_order_draft_gate(draft, *, daily_order=None, request_approval=False, requested_by=None):
+def _only_payment_blocks(gate):
+    blocked = [item for item in gate["gates"] if item["status"] == "BLOCKED"]
+    approvals = [item for item in gate["gates"] if item.get("needs_approval")]
+    return bool(blocked) and not approvals and all(item["key"] == "PAYMENT" for item in blocked)
+
+
+def evaluate_portal_order_draft_gate(
+    draft, *, daily_order=None, request_approval=False, requested_by=None, owner_override=False
+):
     daily_order, existing_detail, duplicate_gate = _duplicate_gate_for_draft(draft, daily_order=daily_order)
     gates = [
-        _payment_gate_for_draft(draft),
+        _payment_gate_for_draft(draft, owner_override=owner_override),
         _credit_gate_for_draft(draft),
         _cutoff_gate_for_draft(draft),
         _closing_gate_for_draft(draft),
@@ -734,11 +756,18 @@ def _latest_scope_drafts(user, scope, limit=10):
 
 
 def _draft_history_rows(drafts):
+    from app.services.prepaid_order_service import draft_prepaid_amount, draft_requires_prepayment
+
     rows = []
     for draft in drafts:
         gate = evaluate_portal_order_draft_gate(draft) if draft.status == DRAFT_STATUS_PENDING else None
+        total = draft_total_amount(draft) if draft_requires_prepayment(draft) else None
+        paid = draft_prepaid_amount(draft) if total is not None else None
         rows.append(
             {
+                "total_amount": total,
+                "paid_amount": paid,
+                "amount_due": max(total - paid, 0) if total is not None else None,
                 "draft": draft,
                 "status_label": _label_status(draft.status),
                 "meal_type_label": _meal_label(draft.meal_type),
@@ -1128,6 +1157,8 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
                 "review_status": gate["review_status"],
                 "review_status_label": gate["review_status_label"],
                 "can_confirm": gate["can_confirm"],
+                # Satu-satunya penghalang adalah pembayaran di muka: OWNER boleh meloloskan.
+                "payment_override_available": _only_payment_blocks(gate),
                 "client_name": draft.client.name if draft.client else "-",
                 "mandor_name": draft.mandor.name if draft.mandor else "-",
                 "location_name": draft.delivery_location.location_name if draft.delivery_location else "-",
@@ -1179,7 +1210,7 @@ def get_portal_order_draft_or_404(draft_id):
     return PortalOrderDraft.query.get_or_404(draft_id)
 
 
-def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
+def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepayment_override=False):
     draft = (
         PortalOrderDraft.query.filter(PortalOrderDraft.id == draft_id)
         .options(lazyload("*"))
@@ -1203,11 +1234,17 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
         order_date=draft.order_date,
     ).first()
 
+    # Hanya OWNER yang boleh meloloskan pesanan umum yang belum lunas di muka,
+    # dan wajib menulis alasannya.
+    owner_override = bool(prepayment_override) and getattr(admin_user, "role", None) == "OWNER"
+    if owner_override and not _clean_text(review_note):
+        return draft, False, "Tulis alasan kenapa pesanan diloloskan sebelum lunas."
     gate = evaluate_portal_order_draft_gate(
         draft,
         daily_order=daily_order,
         request_approval=True,
         requested_by=getattr(admin_user, "id", None),
+        owner_override=owner_override,
     )
     if not gate["can_confirm"]:
         return draft, False, " ".join(gate["blockers"] or gate["warnings"]) or "Draft order perlu review manual."
@@ -1273,6 +1310,32 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
         notes=f"Konfirmasi portal draft #{draft.id}. {draft.notes or ''}".strip(),
     )
     db.session.add(detail)
+    db.session.flush()
+
+    # Uang muka yang dibayar untuk draft ini ikut ke baris order, supaya invoice
+    # otomatis setelah pengiriman bisa langsung dilunasi darinya.
+    from app.services.prepaid_order_service import link_draft_prepayments_to_detail
+
+    link_draft_prepayments_to_detail(draft, detail)
+    payment_gate = next((item for item in gate["gates"] if item["key"] == "PAYMENT"), {})
+    if payment_gate.get("status") == "OVERRIDE":
+        from app.services.audit_log_service import record_audit_log
+
+        record_audit_log(
+            module="PORTAL",
+            event_type="PREPAYMENT_OVERRIDE",
+            action="UPDATE",
+            table_name="portal_order_drafts",
+            record_id=draft.id,
+            description=f"OWNER meloloskan draft #{draft.id} sebelum lunas di muka. {payment_gate.get('message')} Alasan: {_clean_text(review_note)}",
+            metadata={
+                "total_amount": str(payment_gate.get("total_amount")),
+                "paid_amount": str(payment_gate.get("paid_amount")),
+            },
+            user_id=getattr(admin_user, "id", None),
+            branch_id=draft.branch_id,
+            commit=False,
+        )
 
     draft.status = DRAFT_STATUS_CONFIRMED
     draft.converted_daily_order_id = daily_order.id

@@ -1095,11 +1095,17 @@ def draft_order():
 @role_required(*PORTAL_READONLY_ROLES)
 def upload_draft_payment_proof(draft_id):
     try:
+        # Nominal dari pelanggan hanya keterangan untuk Finance; yang dijurnal
+        # adalah nominal yang Finance catat saat memverifikasi.
+        paid_amount = (request.form.get("paid_amount") or "").strip()
+        notes = (request.form.get("notes") or "").strip()
+        if paid_amount:
+            notes = f"Nominal dibayar pelanggan: Rp {paid_amount}. {notes}".strip()
         result = upload_portal_order_draft_payment_proof(
             current_user,
             draft_id=draft_id,
             file_storage=request.files.get("proof_file"),
-            notes=request.form.get("notes"),
+            notes=notes or None,
         )
     except (PortalPaymentProofError, AttachmentValidationError) as exc:
         flash(str(exc), "danger")
@@ -1161,6 +1167,7 @@ def confirm_order_draft(draft_id):
         draft_id,
         current_user,
         review_note=request.form.get("review_note"),
+        prepayment_override=request.form.get("prepayment_override") == "1",
     )
     if error:
         flash(error, "warning")
@@ -1183,6 +1190,18 @@ def reject_order_draft(draft_id):
         flash(error, "warning")
     elif rejected:
         flash("Draft order portal ditolak.", "success")
+        # Kalau pelanggan sudah membayar, uangnya harus dikembalikan (keputusan OWNER).
+        from app.services.prepaid_order_service import draft_prepayments, rupiah
+
+        paid = [advance for advance in draft_prepayments(_draft) if float(advance.remaining_amount or 0) > 0]
+        if paid:
+            numbers = ", ".join(advance.advance_number for advance in paid)
+            total = sum(float(advance.remaining_amount or 0) for advance in paid)
+            flash(
+                f"Pelanggan sudah membayar {rupiah(total)} untuk draft ini ({numbers}). "
+                "OWNER perlu mengembalikannya di Finance → Uang Muka.",
+                "warning",
+            )
     return redirect(url_for("portal.admin_order_drafts"))
 
 

@@ -29,11 +29,16 @@ from app.services.idempotency_service import (
 )
 from app.services.manual_backfill_billing_service import sync_manual_backfill_batch_status_from_invoice
 from app.services.notification_service import create_or_update_notification
-from app.services.portal_payment_proof_service import PAYMENT_PROOF_REFERENCE_TYPE, PORTAL_PAYMENT_MODULE
+from app.services.portal_payment_proof_service import (
+    PAYMENT_PROOF_REFERENCE_TYPE,
+    PORTAL_DRAFT_PAYMENT_REFERENCE_TYPE,
+    PORTAL_PAYMENT_MODULE,
+)
 from app.services.portal_payment_verification_queue_service import PAYMENT_PROOF_VERIFIED_TYPE
 
 
 PAYMENT_PROOF_PAYMENT_CREATED_TYPE = "PAYMENT_PROOF_PAYMENT_CREATED"
+PORTAL_DRAFT_PREPAYMENT_SCOPE = "PORTAL_DRAFT_PREPAYMENT_CREATE"
 PORTAL_PAYMENT_CREATE_SCOPE = "PORTAL_VERIFIED_PROOF_PAYMENT_CREATE"
 
 
@@ -203,6 +208,116 @@ def create_payment_from_verified_proof(
     return _payment_result(payment, invoice, attachment, idempotent_replay=False)
 
 
+def create_prepayment_from_verified_draft_proof(
+    finance_user,
+    *,
+    attachment_id: int,
+    payment_date: date,
+    amount,
+    payment_method: str,
+    bank_account_id: int | None = None,
+    reference_number: str | None = None,
+    notes: str | None = None,
+    idempotency_key: str,
+) -> dict:
+    """Bukti bayar draft yang sudah diverifikasi menjadi Uang Muka Pelanggan (2008).
+
+    Jalur UMUM (keputusan owner 2026-09-27): nominal dan rekening diisi Finance
+    sesuai uang yang benar-benar diterima; jurnalnya dibuat advance_service.
+    """
+    from app.models.system import PortalOrderDraft
+    from app.services.prepaid_order_service import PrepaymentError, record_draft_prepayment
+
+    if not idempotency_key:
+        raise PortalPaymentCreationError("Idempotency key wajib untuk mencatat uang muka dari bukti portal.")
+    attachment = _get_proof_attachment_for_branch(
+        attachment_id, getattr(finance_user, "branch_id", None), reference_type=PORTAL_DRAFT_PAYMENT_REFERENCE_TYPE
+    )
+    draft = PortalOrderDraft.query.filter_by(id=attachment.reference_id, branch_id=attachment.branch_id).first()
+    if not draft:
+        raise PortalPaymentCreationError("Draft pesanan untuk bukti ini tidak ditemukan.")
+    payment_date = _normalize_payment_date(payment_date)
+    try:
+        assert_not_future_date(payment_date, date.today(), label="Tanggal pembayaran")
+    except BusinessRuleError as error:
+        raise PortalPaymentCreationError(str(error)) from error
+
+    try:
+        idempotency_record, reserved = reserve_idempotency_key(
+            scope=PORTAL_DRAFT_PREPAYMENT_SCOPE,
+            key=idempotency_key,
+            branch_id=draft.branch_id,
+            user_id=getattr(finance_user, "id", None),
+            request_payload={
+                "attachment_id": attachment.id,
+                "draft_id": draft.id,
+                "payment_date": payment_date.isoformat(),
+                "amount": str(amount),
+                "payment_method": payment_method,
+                "bank_account_id": bank_account_id,
+            },
+        )
+    except IdempotencyConflictError as error:
+        raise PortalPaymentCreationError(str(error)) from error
+    if not reserved:
+        raise PortalPaymentCreationError("Uang muka dari bukti ini sedang atau pernah diproses.")
+    if attachment.attachment_type != PAYMENT_PROOF_VERIFIED_TYPE:
+        raise PortalPaymentCreationError("Bukti pembayaran harus verified sebelum uang muka dicatat.")
+
+    with atomic_business_action(
+        module="FINANCE",
+        action="PORTAL_DRAFT_PREPAYMENT_CREATE",
+        description=f"Catat uang muka pesanan portal #{draft.id} dari bukti terverifikasi.",
+        reference_type="ADVANCE_TRANSACTION",
+        user_id=getattr(finance_user, "id", None),
+        branch_id=draft.branch_id,
+        severity="HIGH",
+        metadata={"attachment_id": attachment.id, "draft_id": draft.id, "amount": str(amount)},
+    ):
+        try:
+            advance = record_draft_prepayment(
+                draft=draft,
+                amount=amount,
+                payment_method=payment_method,
+                created_by=getattr(finance_user, "id", None),
+                payment_date=payment_date,
+                bank_account_id=bank_account_id,
+                reference_number=str(reference_number or "").strip() or None,
+                notes=str(notes or "").strip() or None,
+            )
+        except PrepaymentError as error:
+            raise PortalPaymentCreationError(str(error)) from error
+
+        attachment.attachment_type = PAYMENT_PROOF_PAYMENT_CREATED_TYPE
+        attachment.notes = _append_payment_created_note(attachment.notes, advance.advance_number)
+        response_payload = {
+            "advance_id": advance.id,
+            "advance_number": advance.advance_number,
+            "draft_id": draft.id,
+            "attachment_id": attachment.id,
+        }
+        mark_idempotency_completed(
+            idempotency_record,
+            reference_type="ADVANCE_TRANSACTION",
+            reference_id=advance.id,
+            response_payload=response_payload,
+            commit=False,
+        )
+        record_audit_log(
+            module="FINANCE",
+            event_type="PORTAL_DRAFT_PREPAYMENT_CREATED",
+            action="CREATE",
+            table_name="advance_transactions",
+            record_id=advance.id,
+            description=f"Uang muka {advance.advance_number} dicatat dari bukti draft #{draft.id}.",
+            metadata=response_payload,
+            user_id=getattr(finance_user, "id", None),
+            branch_id=draft.branch_id,
+            commit=False,
+        )
+    return {**response_payload, "amount": advance.amount}
+
+
 def _get_invoice_for_branch(invoice_id: int, branch_id: int | None) -> Invoice:
     invoice = Invoice.query.filter(Invoice.id == invoice_id, Invoice.branch_id == branch_id).first()
     if not invoice:
@@ -217,12 +332,14 @@ def _assert_invoice_payable(invoice: Invoice) -> None:
         raise PortalPaymentCreationError("Invoice ini sudah lunas.")
 
 
-def _get_proof_attachment_for_branch(attachment_id: int, branch_id: int | None) -> DigitalAttachment:
+def _get_proof_attachment_for_branch(
+    attachment_id: int, branch_id: int | None, reference_type: str = PAYMENT_PROOF_REFERENCE_TYPE
+) -> DigitalAttachment:
     attachment = DigitalAttachment.query.filter(
         DigitalAttachment.id == attachment_id,
         DigitalAttachment.branch_id == branch_id,
         DigitalAttachment.module == PORTAL_PAYMENT_MODULE,
-        DigitalAttachment.reference_type == PAYMENT_PROOF_REFERENCE_TYPE,
+        DigitalAttachment.reference_type == reference_type,
         DigitalAttachment.is_deleted.is_(False),
     ).first()
     if not attachment:

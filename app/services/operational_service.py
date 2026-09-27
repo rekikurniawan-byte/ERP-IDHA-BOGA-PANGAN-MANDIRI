@@ -64,6 +64,7 @@ def add_or_update_order_detail(
     price_source=None,
     lunch_delivery_fee=0,
     dinner_delivery_fee=0,
+    commit=True,
 ):
     existing_detail = DailyOrderDetail.query.filter_by(
         daily_order_id=daily_order.id,
@@ -101,7 +102,10 @@ def add_or_update_order_detail(
     )
 
     db.session.add(detail)
-    db.session.commit()
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
 
     message = "Detail order berhasil disimpan."
     if credit_message:

@@ -67,6 +67,45 @@
             <p>Settlement mengurangi outstanding DP. Untuk panjar {{ term('sub_client', lower=True) }}, pilih kategori biaya agar jurnal beban langsung terbentuk.</p>
         </div>
     </div>
+    {% if advance.advance_type == 'CLIENT_DP_RECEIVED' and advance.remaining_amount > 0 and current_user.role == 'OWNER' %}
+    <form method="POST" action="{{ url_for('finance.advance_settle', advance_id=advance.id) }}" class="row g-3 app-form mb-4 border rounded p-3" data-ui-form="true" data-app-confirm="Kembalikan sisa uang muka ini ke pelanggan? Kas/bank berkurang dan jurnal dibuat otomatis.">
+        {% include "components/csrf_token.html" %}
+        <input type="hidden" name="settlement_type" value="CLIENT_DP_REFUND">
+        <div class="col-12"><strong>Kembalikan uang muka ke pelanggan</strong> <span class="text-muted small">— khusus OWNER, untuk pesanan yang ditolak/dibatalkan setelah dibayar.</span></div>
+        <div class="col-md-2">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="settlement_date" class="form-control" value="{{ today_date }}" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Nominal</label>
+            <input type="text" name="amount" class="form-control" value="{{ advance.remaining_amount|int }}" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Dari</label>
+            <select name="payment_method" class="form-select" required>
+                <option value="TRANSFER">Transfer</option>
+                <option value="CASH">Tunai</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Rekening</label>
+            <select name="bank_account_id" class="form-select">
+                <option value="">Pilih jika transfer</option>
+                {% for account in bank_accounts %}
+                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Alasan</label>
+            <input type="text" name="notes" class="form-control" placeholder="Contoh: pesanan ditolak" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn app-btn-danger">Kembalikan Uang Muka</button>
+        </div>
+    </form>
+    {% endif %}
+
     <form method="POST" action="{{ url_for('finance.advance_settle', advance_id=advance.id) }}" class="row g-3 app-form" data-ui-form="true">
         {% include "components/csrf_token.html" %}
         <div class="col-md-3">

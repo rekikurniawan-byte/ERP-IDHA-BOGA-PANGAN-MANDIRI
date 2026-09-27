@@ -201,6 +201,14 @@ def _build_queue_item(attachment: DigitalAttachment) -> dict:
     )
     is_invoice = attachment.reference_type == PAYMENT_PROOF_REFERENCE_TYPE
     source_label = source.invoice_number if is_invoice else f"Draft Order #{source.id}"
+    draft_total = draft_outstanding = None
+    if not is_invoice:
+        from app.services.portal_order_draft_service import draft_total_amount
+        from app.services.prepaid_order_service import draft_prepaid_amount
+
+        draft_total = draft_total_amount(source)
+        if draft_total is not None:
+            draft_outstanding = max(draft_total - draft_prepaid_amount(source), 0)
     return {
         "attachment_id": attachment.id,
         "attachment_type": attachment.attachment_type,
@@ -220,6 +228,8 @@ def _build_queue_item(attachment: DigitalAttachment) -> dict:
         "draft_date": None if is_invoice else source.order_date,
         "draft_meal_type": None if is_invoice else source.meal_type,
         "draft_portion_qty": None if is_invoice else source.portion_qty,
+        "draft_total": draft_total,
+        "draft_outstanding": draft_outstanding,
         "original_filename": attachment.original_filename,
         "uploaded_by": attachment.uploaded_by,
         "created_at": attachment.created_at,

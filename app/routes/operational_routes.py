@@ -161,10 +161,125 @@ def _after_detail_saved(daily_order, detail, price, source):
         flash(warning, "warning")
 
 
+def _prepayment_plan(mandor_id, pricing, lunch_qty, dinner_qty):
+    """Pelanggan UMUM wajib bayar saat pesanan diinput admin.
+
+    Mengembalikan (rencana, pesan_error). Rencana None = bukan pelanggan umum.
+    OWNER boleh meloloskan tanpa pembayaran lunas; itu dicatat di audit log.
+    """
+    from decimal import Decimal, InvalidOperation
+
+    from app.services.pricing_service import is_general_client
+
+    mandor = Mandor.query.get(mandor_id)
+    if not is_general_client(getattr(mandor, "client", None)):
+        return None, None
+    total = (
+        Decimal(str(pricing["price_per_portion"])) * (int(lunch_qty or 0) + int(dinner_qty or 0))
+        + Decimal(str(pricing["lunch_delivery_fee"] or 0))
+        + Decimal(str(pricing["dinner_delivery_fee"] or 0))
+    )
+    raw_amount = (request.form.get("prepayment_amount") or "").strip()
+    try:
+        amount = Decimal(raw_amount.replace(",", "")) if raw_amount else Decimal("0")
+    except InvalidOperation:
+        return None, "Nominal pembayaran tidak valid."
+    if amount > total:
+        return None, f"Nominal pembayaran melebihi total pesanan Rp {total:,.0f}."
+    override = False
+    if amount < total:
+        if current_user.role != "OWNER":
+            return None, (
+                f"Pelanggan umum wajib bayar di muka: total Rp {total:,.0f}, dibayar Rp {amount:,.0f}. "
+                "Isi pembayaran lengkap, atau minta OWNER meloloskan."
+            )
+        override = True
+    return {
+        "total": total,
+        "amount": amount,
+        "override": override,
+        "payment_method": request.form.get("prepayment_method"),
+        "bank_account_id": request.form.get("prepayment_bank_account_id", type=int),
+        "reference_number": (request.form.get("prepayment_reference") or "").strip() or None,
+    }, None
+
+
+def _save_detail_with_prepayment(daily_order, plan, **detail_kwargs):
+    """Baris order + pembayarannya dalam satu transaksi: gagal satu, gagal semua."""
+    from app.services.atomic_transaction_service import atomic_business_action
+    from app.services.prepaid_order_service import PrepaymentError, record_detail_prepayment
+
+    try:
+        with atomic_business_action(
+            module="OPERATIONAL",
+            action="GENERAL_ORDER_WITH_PREPAYMENT",
+            description=f"Pesanan pelanggan umum + pembayaran di muka, order {daily_order.order_number}.",
+            reference_type="daily_order_details",
+            user_id=current_user.id,
+            branch_id=current_user.branch_id,
+            metadata={"total": str(plan["total"]), "amount": str(plan["amount"]), "override": plan["override"]},
+        ):
+            success, message, detail = add_or_update_order_detail(daily_order=daily_order, commit=False, **detail_kwargs)
+            if not success:
+                raise PrepaymentError(message)
+            if plan["amount"] > 0:
+                record_detail_prepayment(
+                    detail=detail,
+                    amount=plan["amount"],
+                    payment_method=plan["payment_method"],
+                    created_by=current_user.id,
+                    bank_account_id=plan["bank_account_id"],
+                    reference_number=plan["reference_number"],
+                )
+            if plan["override"]:
+                record_audit_log(
+                    module="OPERATIONAL",
+                    event_type="PREPAYMENT_OVERRIDE",
+                    action="CREATE",
+                    table_name="daily_order_details",
+                    record_id=detail.id,
+                    description=(
+                        f"OWNER meloloskan pesanan pelanggan umum di order {daily_order.order_number} "
+                        f"sebelum lunas: total Rp {plan['total']:,.0f}, dibayar Rp {plan['amount']:,.0f}."
+                    ),
+                    commit=False,
+                )
+    except PrepaymentError as error:
+        return False, str(error), None
+    return True, f"{message} Pembayaran di muka Rp {plan['amount']:,.0f} dicatat sebagai uang muka.", detail
+
+
+def _general_increase_error(mandor_id):
+    """Tambah porsi pesanan pelanggan umum belum dibayar di muka: hanya OWNER.
+
+    Tambahan yang diloloskan OWNER tetap tertagih di invoice otomatis sebagai
+    sisa tagihan, jadi tidak ada porsi yang lolos tanpa ditagih.
+    """
+    from app.services.pricing_service import is_general_client
+
+    mandor = Mandor.query.get(mandor_id)
+    if is_general_client(getattr(mandor, "client", None)) and current_user.role != "OWNER":
+        return (
+            "Tambah porsi pesanan pelanggan umum harus dibayar di muka. "
+            "Buat pesanan baru dengan pembayaran, atau minta OWNER."
+        )
+    return None
+
+
 def _price_quotes(mandors):
     from app.services.pricing_service import price_quotes_by_mandor
 
     return price_quotes_by_mandor(current_user.branch_id, mandors)
+
+
+def _bank_accounts():
+    from app.models.finance import BankAccount
+
+    return (
+        BankAccount.query.filter_by(branch_id=current_user.branch_id, is_active=True)
+        .order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc())
+        .all()
+    )
 
 
 def validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
@@ -318,6 +433,8 @@ def create_order():
             return redirect(url_for("operational.create_order"))
 
         pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
+        if not price_error:
+            prepayment, price_error = _prepayment_plan(mandor_id, pricing, lunch_qty, dinner_qty)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.create_order"))
@@ -341,8 +458,7 @@ def create_order():
             flash(defaults_message, "warning")
             return redirect(url_for("operational.create_order"))
 
-        success, message, detail = add_or_update_order_detail(
-            daily_order=daily_order,
+        detail_kwargs = dict(
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
             lunch_qty=lunch_qty,
@@ -351,6 +467,10 @@ def create_order():
             actor_role=current_user.role,
             **pricing,
         )
+        if prepayment is None:
+            success, message, detail = add_or_update_order_detail(daily_order=daily_order, **detail_kwargs)
+        else:
+            success, message, detail = _save_detail_with_prepayment(daily_order, prepayment, **detail_kwargs)
 
         flash(message, "success" if success else "warning")
         if success:
@@ -361,6 +481,7 @@ def create_order():
         "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
+        bank_accounts=_bank_accounts(),
         locations=locations,
         daily_order=None,
         form_action=url_for("operational.create_order"),
@@ -397,12 +518,13 @@ def add_order_detail(order_id):
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
         pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
+        if not price_error:
+            prepayment, price_error = _prepayment_plan(mandor_id, pricing, lunch_qty, dinner_qty)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
-        success, message, detail = add_or_update_order_detail(
-            daily_order=daily_order,
+        detail_kwargs = dict(
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
             lunch_qty=lunch_qty,
@@ -411,6 +533,10 @@ def add_order_detail(order_id):
             actor_role=current_user.role,
             **pricing,
         )
+        if prepayment is None:
+            success, message, detail = add_or_update_order_detail(daily_order=daily_order, **detail_kwargs)
+        else:
+            success, message, detail = _save_detail_with_prepayment(daily_order, prepayment, **detail_kwargs)
 
         flash(message, "success" if success else "warning")
         if success:
@@ -421,6 +547,7 @@ def add_order_detail(order_id):
         "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
+        bank_accounts=_bank_accounts(),
         locations=locations,
         daily_order=daily_order,
         form_action=url_for("operational.add_order_detail", order_id=daily_order.id)
@@ -454,6 +581,8 @@ def add_increase_after_lock_route(order_id):
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
 
         pricing, price_error = _detail_price(mandor_id, delivery_location_id, lunch_qty, dinner_qty)
+        if not price_error:
+            price_error = _general_increase_error(mandor_id)
         if price_error:
             flash(price_error, "warning")
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
@@ -490,6 +619,7 @@ def add_increase_after_lock_route(order_id):
         "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
+        bank_accounts=_bank_accounts(),
         locations=locations,
         daily_order=daily_order,
         form_action=url_for("operational.add_increase_after_lock_route", order_id=daily_order.id),
@@ -649,6 +779,12 @@ def create_revision(detail_id):
         lunch_qty_change = request.form.get("lunch_qty_change")
         dinner_qty_change = request.form.get("dinner_qty_change")
         reason = request.form.get("reason")
+
+        if (revision_direction or "").upper() == "INCREASE":
+            increase_error = _general_increase_error(detail.mandor_id)
+            if increase_error:
+                flash(increase_error, "warning")
+                return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
         success, message = revise_order_detail(
             detail=detail,

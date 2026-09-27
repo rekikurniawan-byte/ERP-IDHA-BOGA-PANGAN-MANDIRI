@@ -188,11 +188,38 @@
                                             <button class="btn btn-sm app-btn-primary" type="submit">Buat Pembayaran Resmi</button>
                                         </form>
                                     {% elif status == "VERIFIED" and row.is_draft_source %}
-                                        <div class="finance-proof-draft-action">
-                                            <span class="status-badge status-success">Bukti awal terverifikasi</span>
-                                            <small>Admin dapat memproses draft ini dari antrean konfirmasi portal.</small>
-                                            <a class="btn btn-sm app-btn-secondary" href="{{ url_for('portal.admin_order_drafts') }}">Buka Antrean Draft</a>
-                                        </div>
+                                        <form method="POST" action="{{ url_for('finance.record_prepayment_from_portal_proof', attachment_id=row.attachment_id) }}" class="app-form finance-proof-payment-form" data-ui-form="true" data-app-confirm="Catat uang muka dari bukti ini? Jurnal 2008 dibuat otomatis.">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="idempotency_key" value="{{ row.idempotency_key }}">
+                                            <small>Total pesanan {{ row.draft_total|rupiah if row.draft_total is not none else '-' }}, sisa bayar {{ row.draft_outstanding|rupiah if row.draft_outstanding is not none else '-' }}. Isi nominal yang benar-benar diterima.</small>
+                                            <label>
+                                                <span>Tanggal</span>
+                                                <input type="date" name="payment_date" class="form-control form-control-sm" value="{{ today.isoformat() }}" required>
+                                            </label>
+                                            <label>
+                                                <span>Nominal diterima</span>
+                                                <input type="number" min="1" step="0.01" name="amount" class="form-control form-control-sm" value="{{ row.draft_outstanding or '' }}" required>
+                                            </label>
+                                            <label>
+                                                <span>Metode</span>
+                                                <select name="payment_method" class="form-select form-select-sm" required>
+                                                    {% for method in ['TRANSFER', 'QRIS', 'CASH'] %}
+                                                        <option value="{{ method }}">{{ method }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Rekening Bank</span>
+                                                <select name="bank_account_id" class="form-select form-select-sm">
+                                                    <option value="">Pilih jika transfer/QRIS</option>
+                                                    {% for account in bank_accounts %}
+                                                        <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} ({{ account.account_number }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <input type="text" name="reference_number" class="form-control form-control-sm" placeholder="Nomor referensi transfer">
+                                            <button class="btn btn-sm app-btn-primary" type="submit">Catat Uang Muka</button>
+                                        </form>
                                     {% elif status == "PAYMENT_CREATED" %}
                                         <span class="status-badge status-success">Sudah masuk Pembayaran ERP</span>
                                     {% else %}

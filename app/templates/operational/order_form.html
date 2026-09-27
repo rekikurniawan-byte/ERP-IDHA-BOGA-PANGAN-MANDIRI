@@ -76,6 +76,42 @@
                 {% endif %}
             </div>
 
+            {% if not is_after_lock %}
+            <div class="col-md-12">
+                <div class="border rounded p-3">
+                    <strong>Pembayaran di muka</strong>
+                    <span class="text-muted small">— wajib untuk pelanggan umum (total = harga × porsi + ongkir). {{ term('client') }} kontrak kosongkan saja.</span>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-3">
+                            <label class="form-label">Nominal diterima</label>
+                            <input type="number" name="prepayment_amount" class="form-control app-input" min="0" step="0.01">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Metode</label>
+                            <select name="prepayment_method" class="form-select app-input">
+                                <option value="CASH">Tunai</option>
+                                <option value="TRANSFER">Transfer</option>
+                                <option value="QRIS">QRIS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Rekening</label>
+                            <select name="prepayment_bank_account_id" class="form-select app-input">
+                                <option value="">Pilih jika transfer/QRIS</option>
+                                {% for account in bank_accounts or [] %}
+                                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">No. referensi</label>
+                            <input type="text" name="prepayment_reference" class="form-control app-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="col-md-4">
                 <label class="form-label">Porsi Siang</label>
                 <input type="number" name="lunch_qty" class="form-control app-input" value="0" min="0" required>
