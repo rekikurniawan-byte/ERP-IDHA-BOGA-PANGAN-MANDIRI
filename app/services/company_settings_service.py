@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.models.master import Branch, BranchSetting
 from app.services.ttl_cache_service import clear_cache
+from app.utils.terms import L
 
 
 COMPANY_SETTINGS_SECTIONS = [
@@ -55,6 +56,33 @@ COMPANY_SETTINGS_SECTIONS = [
         ],
     },
     {
+        "title": "Modul",
+        "description": (
+            "Nyalakan hanya fitur yang dipakai cabang ini. Modul yang mati hilang dari menu "
+            "dan halamannya tidak bisa dibuka, tapi datanya tetap tersimpan. Modul tidak bisa "
+            "dimatikan selama masih ada hutang/piutang terbuka di dalamnya."
+        ),
+        "fields": [
+            {
+                "key": "module_warung",
+                "label": "Warung",
+                "help": "Penjualan kantin tunai/QRIS/transfer, piutang pembeli luar, tutup kas harian warung.",
+                "type": "checkbox",
+                "required": False,
+            },
+            {
+                "key": "module_worker_debt",
+                "label": L("Hutang {worker}"),
+                "help": L(
+                    "Daftar {worker_lower} per {sub_client_lower}, {worker_lower} ngutang di warung, "
+                    "hutangnya ditagihkan lewat invoice {sub_client_lower}. Butuh modul Warung."
+                ),
+                "type": "checkbox",
+                "required": False,
+            },
+        ],
+    },
+    {
         "title": "Prefix Nomor Dokumen",
         "description": "Catatan prefix untuk standar penomoran dokumen. Belum mengubah logic generate nomor transaksi.",
         "fields": [
@@ -104,6 +132,10 @@ DEFAULT_SETTINGS = {
     "term_sub_client": "",
     "term_location": "",
     "term_worker": "",
+    # Modul kosong = mati, supaya cabang baru mulai tanpa fitur proyek.
+    # Cabang yang sudah ada dinyalakan migrasi b3c4d5e6f7a8.
+    "module_warung": "",
+    "module_worker_debt": "",
 }
 
 
@@ -147,6 +179,14 @@ def save_company_settings(branch_id, form_data):
     This function only writes company setting keys. It does not touch users,
     transactions, invoice/payment/journal logic, or master operational data.
     """
+    from app.services.branch_module_service import ModuleChangeError, module_change_errors
+
+    # Diperiksa sebelum menulis apa pun: modul yang masih punya hutang
+    # terbuka tidak boleh mati, dan penolakan tidak menyimpan setengah form.
+    module_errors = module_change_errors(branch_id, form_data)
+    if module_errors:
+        raise ModuleChangeError(module_errors)
+
     saved_keys = []
 
     for key in SETTING_KEYS:

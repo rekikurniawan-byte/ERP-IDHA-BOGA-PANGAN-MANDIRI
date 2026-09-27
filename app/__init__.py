@@ -68,6 +68,12 @@ def create_app():
 
     flask_app.jinja_env.globals["term"] = term
 
+    # Modul per cabang (Warung, Hutang Pekerja): menu hanya tampil kalau
+    # modulnya nyala, sama dengan penjaga module_required di rutenya.
+    from app.services.branch_module_service import module_enabled
+
+    flask_app.jinja_env.globals["module_enabled"] = module_enabled
+
     if flask_app.config.get("PROXY_HEADERS_ENABLED"):
         flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 

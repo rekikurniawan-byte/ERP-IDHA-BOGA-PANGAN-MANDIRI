@@ -2,17 +2,19 @@
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
+{% set worker_debt_on = module_enabled('worker_debt') %}
 <div class="canteen-page-shell" data-ui-page="debts">
 {{ page_header(
-    title='Hutang Warung',
+    title=('Hutang Warung' if worker_debt_on else 'Piutang Warung'),
     eyebrow='Hutang & Piutang Warung',
-    description=('Hutang ' ~ term('worker', lower=True) ~ ' internal dipisahkan dari piutang buyer eksternal/non-master.'),
+    description=(('Hutang ' ~ term('worker', lower=True) ~ ' internal dipisahkan dari piutang buyer eksternal/non-master.') if worker_debt_on else 'Piutang pembeli luar yang belum lunas.'),
     collapse=false,
     actions=[
         {'label': 'Warung', 'url': url_for('canteen.index'), 'icon': 'bi-arrow-left'}
     ]
 ) }}
 
+{% if worker_debt_on %}
 <div class="app-card">
     <div class="card-header-clean">
         <div>
@@ -89,8 +91,9 @@
         </table>
     </div>
 </div>
+{% endif %}
 
-<div class="app-card mt-4">
+<div class="app-card{{ ' mt-4' if worker_debt_on }}">
     <div class="card-header-clean">
         <div>
             <h5>Piutang Warung Eksternal</h5>

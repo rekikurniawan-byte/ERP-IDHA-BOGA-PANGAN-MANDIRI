@@ -2,11 +2,12 @@
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
+{% set worker_debt_on = module_enabled('worker_debt') %}
 <div class="canteen-page-shell" data-ui-page="sale_form">
 {{ page_header(
     title='Input Penjualan Warung',
     eyebrow='Transaksi Warung',
-    description=('Catat cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, atau piutang buyer eksternal.'),
+    description=(('Catat cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, atau piutang buyer eksternal.') if worker_debt_on else 'Catat cash, QRIS, transfer, atau piutang buyer eksternal.'),
     collapse=false,
     actions=[
         {'label': 'Kembali', 'url': url_for('canteen.index'), 'icon': 'bi-arrow-left'}
@@ -43,13 +44,16 @@
                 <label class="form-label">Tipe Pembeli</label>
                 <select name="buyer_type" id="buyerType" class="form-select app-input" required>
                     <option value="GENERAL_BUYER">Pembeli Umum</option>
+                    {% if worker_debt_on %}
                     <option value="REGISTERED_WORKER">{{ term('worker') }} Internal Terdaftar</option>
+                    {% endif %}
                     <option value="EXTERNAL_COMPANY_WORKER">{{ term('worker') }} Luar / Vendor / Perusahaan Lain</option>
                     <option value="GUEST">Tamu / Guest</option>
                 </select>
             </div>
 
-            <div class="col-md-3">
+            {# Tetap dirender (dipakai skrip), disembunyikan kalau modul Hutang Pekerja mati. #}
+            <div class="col-md-3{{ ' d-none' if not worker_debt_on }}">
                 <label class="form-label">{{ term('worker') }} Internal</label>
                 <select name="worker_id" id="workerSelect" class="form-select app-input">
                     <option value="">- Pilih jika hutang {{ term('worker', lower=True) }} -</option>
@@ -172,7 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         if (paymentMethod.value === "DEBT" && buyerType.value === "REGISTERED_WORKER" && !workerSelect.value) {
             event.preventDefault();
-            alert("Hutang pekerja internal wajib memilih pekerja.");
+            alert({{ ("Hutang " ~ term('worker', lower=True) ~ " internal wajib memilih " ~ term('worker', lower=True) ~ ".")|tojson }});
             return;
         }
         if (paymentMethod.value === "DEBT" && buyerType.value !== "REGISTERED_WORKER" && !buyerName.value.trim()) {

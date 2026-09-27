@@ -4,7 +4,8 @@ import json
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
-from app.utils.decorators import role_required
+from app.utils.decorators import module_required, role_required
+from app.services.branch_module_service import WARUNG, WORKER_DEBT, module_enabled
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
 from app.extensions import db
 from app.models.canteen import CanteenSale, WorkerDebt, CanteenExternalReceivable
@@ -103,6 +104,7 @@ def _sale_buyer_label(sale):
 
 @canteen_bp.route("/")
 @role_required("ADMIN")
+@module_required(WARUNG)
 def index():
     date_filter = resolve_date_filter(request.args, default_preset="this_month")
     payment_filter = (request.args.get("payment_method") or "ALL").upper().strip()
@@ -179,9 +181,10 @@ def index():
 
 @canteen_bp.route("/quick", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WARUNG)
 def quick_sale():
     items = get_quick_canteen_items()
-    workers = get_branch_workers()
+    workers = get_branch_workers() if module_enabled(WORKER_DEBT) else []
     bank_accounts = _active_bank_accounts()
 
     if request.method == "POST":
@@ -270,9 +273,10 @@ def quick_sale():
 
 @canteen_bp.route("/sales/create", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WARUNG)
 def create_sale():
     items = get_canteen_items()
-    workers = get_branch_workers()
+    workers = get_branch_workers() if module_enabled(WORKER_DEBT) else []
     bank_accounts = _active_bank_accounts()
 
     if request.method == "POST":
@@ -336,13 +340,14 @@ def create_sale():
 
 @canteen_bp.route("/debts")
 @role_required("ADMIN")
+@module_required(WARUNG)
 def debts():
     debts = WorkerDebt.query.filter_by(
         branch_id=current_user.branch_id
     ).order_by(
         WorkerDebt.status.asc(),
         WorkerDebt.id.desc()
-    ).all()
+    ).all() if module_enabled(WORKER_DEBT) else []
 
     external_receivables = CanteenExternalReceivable.query.filter_by(
         branch_id=current_user.branch_id
@@ -371,6 +376,7 @@ def debts():
 
 @canteen_bp.route("/debts/<int:debt_id>/payment", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def debt_payment(debt_id):
     worker_debt = WorkerDebt.query.get_or_404(debt_id)
 
@@ -425,6 +431,7 @@ def debt_payment(debt_id):
 
 @canteen_bp.route("/external-receivables/<int:receivable_id>/payment", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WARUNG)
 def external_receivable_payment(receivable_id):
     receivable = CanteenExternalReceivable.query.get_or_404(receivable_id)
 

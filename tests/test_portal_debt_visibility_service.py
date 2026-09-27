@@ -8,6 +8,7 @@ from app.extensions import db
 from app.models.canteen import CanteenSale, DebtPayment, WorkerDebt
 from app.models.master import Branch, Client, DeliveryLocation, Mandor, User, Worker
 from app.models.system import PortalUserMapping
+from app.services.branch_module_service import WARUNG, WORKER_DEBT, enable_modules_for_branch
 from app.services.portal_debt_visibility_service import build_portal_worker_debt_read_model
 from app.services.portal_mapping_service import PRINCIPAL_CLIENT, PRINCIPAL_DELEGATE, PRINCIPAL_MANDOR
 from app.services.user_management_service import (
@@ -94,6 +95,8 @@ def _create_mapping(user, principal_type, *, client=None, mandor=None, location=
 
 
 def _create_worker_debt(user, mandor, *, amount="20000", paid="5000", status="PARTIAL", sale_date=date(2099, 2, 1)):
+    # Cabang yang punya hutang pekerja = cabang proyek; cabang baru mati bawaannya.
+    enable_modules_for_branch(user.branch_id, [WARUNG, WORKER_DEBT])
     suffix = _suffix()
     worker = Worker(
         mandor_id=mandor.id,

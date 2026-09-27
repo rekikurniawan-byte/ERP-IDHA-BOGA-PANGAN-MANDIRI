@@ -8,6 +8,7 @@ from app.models.finance import Invoice, Payment
 from app.models.logistics import StockMovement
 from app.models.operational import DailyOrder
 from app.models.production import Production
+from app.services.branch_module_service import WARUNG, module_enabled
 from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
@@ -646,12 +647,13 @@ def get_daily_closing_report(branch_id, selected_date_value=None):
             "Pembayaran invoice yang masuk pada tanggal closing.",
             _payment_rows(branch_id, target_date),
         ),
-        _section(
+        # Cabang tanpa modul Warung tidak diperiksa bagian warungnya.
+        *([_section(
             "canteen",
             f"Warung / Canteen Cash & Hutang {T.worker}",
             f"Penjualan warung, hutang {T.worker_lower}, pembayaran hutang, dan kas harian.",
             _canteen_rows(branch_id, target_date),
-        ),
+        )] if module_enabled(WARUNG, branch_id) else []),
         _section(
             "stock",
             "Stock Movement",

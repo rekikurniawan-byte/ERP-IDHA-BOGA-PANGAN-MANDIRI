@@ -3,11 +3,12 @@
 {% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
+{% set worker_debt_on = module_enabled('worker_debt') %}
 <div class="canteen-page-shell" data-ui-page="index">
 {{ page_header(
     title='Warung',
     eyebrow='Modul Warung',
-    description=('Kelola penjualan cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, dan piutang buyer eksternal.'),
+    description=(('Kelola penjualan cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, dan piutang buyer eksternal.') if worker_debt_on else 'Kelola penjualan cash, QRIS, transfer, dan piutang buyer eksternal.'),
     collapse=false,
     actions_class='canteen-header-actions',
     actions=[
@@ -59,6 +60,7 @@
         </div>
     </div>
 
+    {% if worker_debt_on %}
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-person-exclamation"></i></div>
         <div>
@@ -67,6 +69,7 @@
             <span class="app-stat-helper">Worker debt belum lunas</span>
         </div>
     </div>
+    {% endif %}
 
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-building-exclamation"></i></div>
@@ -82,13 +85,13 @@
     <div class="card-header-clean">
         <div>
             <h5>Aturan Pembayaran Warung</h5>
-            <p>Cash/QRIS/transfer langsung lunas. Hutang {{ term('worker', lower=True) }} masuk piutang karyawan. Hutang buyer luar masuk piutang warung eksternal.</p>
+            <p>Cash/QRIS/transfer langsung lunas.{% if worker_debt_on %} Hutang {{ term('worker', lower=True) }} masuk piutang karyawan.{% endif %} Hutang buyer luar masuk piutang warung eksternal.</p>
         </div>
     </div>
     <div class="canteen-rule-grid">
         <div><strong>CASH</strong><span>Dr Kas / Cr Pendapatan Warung</span></div>
         <div><strong>QRIS/TRANSFER</strong><span>Dr Bank / Cr Pendapatan Warung</span></div>
-        <div><strong>DEBT {{ term('worker') }}</strong><span>Dr Piutang Karyawan / Cr Pendapatan Warung</span></div>
+        {% if worker_debt_on %}<div><strong>DEBT {{ term('worker') }}</strong><span>Dr Piutang Karyawan / Cr Pendapatan Warung</span></div>{% endif %}
         <div><strong>DEBT Eksternal</strong><span>Dr Piutang Usaha / Cr Pendapatan Warung</span></div>
     </div>
 </div>

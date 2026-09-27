@@ -9,6 +9,13 @@ from flask import current_app
 from werkzeug.utils import secure_filename
 
 from app.routes.settings_routes import *  # noqa: F401,F403
+from app.services.branch_module_service import (
+    MODULES,
+    ModuleChangeError,
+    build_module_status,
+    module_change_errors,
+    module_changes,
+)
 
 
 ALLOWED_COMPANY_LOGO_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
@@ -46,6 +53,15 @@ def company_settings():
             return redirect(url_for("settings.company_settings"))
 
         form_payload = request.form.to_dict()
+        # Sebelum logo diunggah: kalau modul ditolak, tidak ada file yatim.
+        module_errors = module_change_errors(current_user.branch_id, form_payload)
+        if module_errors:
+            for message in module_errors:
+                flash(message, "danger")
+            flash("Pengaturan tidak disimpan.", "warning")
+            return redirect(url_for("settings.company_settings"))
+        changed_modules = module_changes(current_user.branch_id, form_payload)
+
         logo_url, logo_error = _save_company_logo_upload(request.files.get("company_logo_file"))
         if logo_error:
             flash(logo_error, "warning")
@@ -56,15 +72,25 @@ def company_settings():
         elif form_payload.get("remove_company_logo") == "1":
             form_payload["company_logo_url"] = ""
 
-        save_company_settings(current_user.branch_id, form_payload)
+        try:
+            save_company_settings(current_user.branch_id, form_payload)
+        except ModuleChangeError as error:
+            for message in error.errors:
+                flash(message, "danger")
+            return redirect(url_for("settings.company_settings"))
+        module_note = "".join(f" Modul {key}: {old} → {new}." for key, (old, new) in changed_modules.items())
         record_critical_audit_log(
             module="SETTINGS",
             event_type="COMPANY_SETTING_UPDATED",
             action="UPDATE",
             table_name="branch_settings",
             record_id=current_user.branch_id,
-            description="Pengaturan perusahaan/cabang diperbarui.",
-            metadata={"branch_id": current_user.branch_id, "sensitive_guard": guard_meta},
+            description=f"Pengaturan perusahaan/cabang diperbarui.{module_note}",
+            metadata={
+                "branch_id": current_user.branch_id,
+                "sensitive_guard": guard_meta,
+                "module_changes": changed_modules,
+            },
         )
         flash("Pengaturan perusahaan berhasil disimpan.", "success")
         return redirect(url_for("settings.company_settings"))
@@ -76,6 +102,7 @@ def company_settings():
         "settings/company_settings.html",
         settings=settings,
         sections=sections,
+        module_status={MODULES[name]["key"]: status for name, status in build_module_status(current_user.branch_id).items()},
     )
 
 @settings_bp.route("/users")

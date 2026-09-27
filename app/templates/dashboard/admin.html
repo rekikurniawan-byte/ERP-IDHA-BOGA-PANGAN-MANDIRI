@@ -22,7 +22,9 @@
             <div class="dropdown-menu dropdown-menu-end app-action-menu">
                 <a class="dropdown-item" href="{{ url_for('production.index') }}"><i class="bi bi-egg-fried"></i> Produksi</a>
                 <a class="dropdown-item" href="{{ url_for('delivery.index') }}"><i class="bi bi-truck"></i> Pengiriman</a>
+                {% if module_enabled('warung') %}
                 <a class="dropdown-item" href="{{ url_for('canteen.quick_sale') }}"><i class="bi bi-lightning-charge"></i> Warung Cepat</a>
+                {% endif %}
                 <a class="dropdown-item" href="{{ url_for('logistics.index') }}"><i class="bi bi-box-seam"></i> Stok</a>
                 <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Reminder Live</a>
             </div>

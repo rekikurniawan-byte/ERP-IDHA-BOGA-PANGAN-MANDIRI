@@ -175,16 +175,19 @@
                                 <i class="bi bi-plus-square"></i>
                                 <span>Order Catering</span>
                             </a>
+                            {% if module_enabled('worker_debt') %}
                             <a href="{{ url_for('portal.mandor_workers') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_workers' else '' }}">
                                 <i class="bi bi-people"></i>
                                 <span>Data {{ term('worker') }}</span>
                             </a>
+                            {% endif %}
                             <a href="{{ url_for('portal.mandor_catering_debts') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_catering_debts' else '' }}">
                                 <i class="bi bi-cash-stack"></i>
                                 <span>Hutang Catering</span>
                             </a>
+                            {% if module_enabled('worker_debt') %}
                             <a href="{{ url_for('portal.mandor_canteen_debts') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_canteen_debts' else '' }}">
                                 <i class="bi bi-wallet2"></i>
@@ -195,6 +198,7 @@
                                 <i class="bi bi-calendar2-week"></i>
                                 <span>Cicilan</span>
                             </a>
+                            {% endif %}
                             <a href="{{ url_for('portal.mandor_invoices') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_invoices' else '' }}">
                                 <i class="bi bi-receipt"></i>
@@ -346,12 +350,14 @@
                                 <span>Pengiriman</span>
                             </a>
 
+                            {% if module_enabled('warung') %}
                             <a href="{{ url_for('canteen.index') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint.startswith('canteen.') else '' }}"
                                aria-current="{{ 'page' if endpoint.startswith('canteen.') else 'false' }}">
                                 <i class="bi bi-shop"></i>
-                                <span>Warung {{ term('worker') }}</span>
+                                <span>Warung</span>
                             </a>
+                            {% endif %}
                         {% endif %}
 
                         {% if has_role(["OWNER", "DAPUR"]) %}
@@ -704,12 +710,14 @@
                                 <span>{{ term('location') }}</span>
                             </a>
 
+                            {% if module_enabled('worker_debt') %}
                             <a href="{{ url_for('master.workers') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_workers else '' }}"
                                aria-current="{{ 'page' if is_workers else 'false' }}">
                                 <i class="bi bi-people"></i>
                                 <span>{{ term('worker') }}</span>
                             </a>
+                            {% endif %}
 
                             <a href="{{ url_for('master.drivers') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_drivers else '' }}"

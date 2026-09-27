@@ -20,7 +20,9 @@
                 <div class="dropdown-menu dropdown-menu-end app-action-menu">
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.invoice_endpoint) }}"><i class="bi bi-receipt"></i> Invoice Catering</a>
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.payment_endpoint) }}"><i class="bi bi-cash-coin"></i> Pembayaran Masuk</a>
+                    {% if module_enabled('warung') %}
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.canteen_endpoint) }}"><i class="bi bi-shop"></i> Transaksi Warung</a>
+                    {% endif %}
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.receivable_endpoint) }}"><i class="bi bi-hourglass-split"></i> Piutang {{ term('client') }}</a>
                 </div>
             </div>

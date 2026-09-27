@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 
 from typing import Any, Dict, Iterable, List, Optional
+from app.services.branch_module_service import WARUNG, WORKER_DEBT, module_enabled
 from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
@@ -257,7 +258,9 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
             "delivery.index",
             "bi-truck-front",
         ))
-    if _int(data.get("unpaid_worker_debt")):
+    warung_on = module_enabled(WARUNG)
+    worker_debt_on = module_enabled(WORKER_DEBT)
+    if worker_debt_on and _int(data.get("unpaid_worker_debt")):
         reminders.append(_reminder(
             f"Hutang {T.worker_lower} belum lunas",
             f"{_int(data.get('unpaid_worker_debt'))} catatan hutang {T.worker_lower} perlu dipantau.",
@@ -286,7 +289,7 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         _kpi("Order Hari Ini", _int(data.get("today_orders")), "Order cabang sesuai tanggal sistem", "bi-calendar-check", "info"),
         _kpi("Produksi Hari Ini", _int(data.get("today_productions")), "Batch produksi tanggal sistem", "bi-egg-fried", "success"),
         _kpi("Delivery Aktif", active_delivery, f"{_int(data.get('preparing_delivery'))} preparing · {_int(data.get('on_the_way_delivery'))} on the way", "bi-truck", "warning" if active_delivery else "success"),
-        _kpi("Warung Hari Ini", _money(data.get("today_cash_sales")), "Cash sale cabang hari ini", "bi-shop", "success"),
+        *([_kpi("Warung Hari Ini", _money(data.get("today_cash_sales")), "Cash sale cabang hari ini", "bi-shop", "success")] if warung_on else []),
         _kpi("Stok Kritis", low_stock_count, "Item di/minimum stok", "bi-box-seam", "warning" if low_stock_count else "success"),
         _kpi("Backup", backup.get("label"), backup.get("message"), "bi-database-check", "success" if backup.get("verified_count") else "warning"),
     ]
@@ -295,7 +298,12 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         _link("Input Order Harian", "Input dan cek order cabang.", "operational.orders", "bi-journal-text"),
         _link("Produksi", "Pantau produksi dapur dan realisasi.", "production.index", "bi-egg-fried"),
         _link("Pengiriman", "Monitoring delivery dan penerimaan.", "delivery.index", "bi-truck"),
-        _link("Warung Cepat", f"Input transaksi warung/cash/hutang {T.worker_lower}.", "canteen.quick_sale", "bi-lightning-charge"),
+        *([_link(
+            "Warung Cepat",
+            f"Input transaksi warung/cash/hutang {T.worker_lower}." if worker_debt_on else "Input transaksi warung.",
+            "canteen.quick_sale",
+            "bi-lightning-charge",
+        )] if warung_on else []),
         _link("Stok", "Pantau stok kritis dan pembelian.", "logistics.index", "bi-box-seam"),
         _link("Reminder Live", "Cek reminder operasional tanpa menyimpan notifikasi.", "settings.live_reminders", "bi-bell"),
     ]

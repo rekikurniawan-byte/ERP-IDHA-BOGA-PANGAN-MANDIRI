@@ -5,20 +5,26 @@
 {% set debts = models.debts.totals %}
 {% set payments = models.payments.totals %}
 {% set scope = models.scope %}
+{% set worker_debt_on = module_enabled('worker_debt') %}
 
 <!-- Dashboard Mandor {{ data.scope.scope_mode }} -->
 <section class="portal-home portal-home-mandor">
     <div class="portal-home-hero mandor">
         <div class="portal-home-hero-copy">
             <span class="portal-home-kicker">Portal {{ term('sub_client') }}</span>
+            {% if worker_debt_on %}
             <h1>Dashboard keuangan {{ term('sub_client', lower=True) }} dan {{ term('worker', lower=True) }}.</h1>
             <p>{{ term('sub_client') }} melihat pesanan, hutang catering, hutang warung, cicilan, invoice, pembayaran, dan sisa tagihan dalam satu halaman.</p>
+            {% else %}
+            <h1>Dashboard keuangan {{ term('sub_client', lower=True) }}.</h1>
+            <p>{{ term('sub_client') }} melihat pesanan, invoice, pembayaran, dan sisa tagihan dalam satu halaman.</p>
+            {% endif %}
             <div class="portal-home-cta-row">
                 <a class="portal-home-primary" href="{{ url_for('portal.mandor_order') }}">
                     <i class="bi bi-bag-plus"></i>
                     <span>Pesan Catering</span>
                 </a>
-                <a class="portal-home-secondary" href="{{ url_for('portal.mandor_canteen_debts') }}">
+                <a class="portal-home-secondary" href="{{ url_for('portal.mandor_canteen_debts') if worker_debt_on else url_for('portal.mandor_catering_debts') }}">
                     <i class="bi bi-wallet2"></i>
                     <span>Cek Hutang</span>
                 </a>
@@ -26,8 +32,13 @@
         </div>
         <div class="portal-home-balance-card">
             <span>Total Tanggung Jawab</span>
+            {% if worker_debt_on %}
             <strong>{{ (invoices.active_outstanding_amount + debts.active_remaining_amount)|rupiah }}</strong>
             <small>Gabungan sisa tagihan catering dan hutang warung {{ term('worker', lower=True) }}.</small>
+            {% else %}
+            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
+            <small>Sisa tagihan catering.</small>
+            {% endif %}
         </div>
     </div>
 
@@ -51,11 +62,13 @@
             <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
             <small>{{ invoices.active_invoice_count or invoices.invoice_count }} invoice aktif</small>
         </article>
+        {% if worker_debt_on %}
         <article>
             <span>Hutang Warung</span>
             <strong>{{ debts.active_remaining_amount|rupiah }}</strong>
             <small>{{ debts.active_debt_count }} hutang aktif</small>
         </article>
+        {% endif %}
         <article>
             <span>Sudah Dibayar</span>
             <strong>{{ payments.payment_amount|rupiah }}</strong>
@@ -71,15 +84,20 @@
     <div class="portal-home-action-band mandor">
         <a href="{{ url_for('portal.mandor_order') }}"><i class="bi bi-plus-square"></i><strong>Pesan</strong><small>Menunggu admin</small></a>
         <a href="{{ url_for('portal.order_status') }}"><i class="bi bi-list-check"></i><strong>Status</strong><small>Riwayat order</small></a>
+        {% if worker_debt_on %}
         <a href="{{ url_for('portal.mandor_workers') }}"><i class="bi bi-people"></i><strong>{{ term('worker') }}</strong><small>Data {{ term('worker', lower=True) }}</small></a>
+        {% endif %}
         <a href="{{ url_for('portal.mandor_catering_debts') }}"><i class="bi bi-receipt-cutoff"></i><strong>Hutang Catering</strong><small>Tagihan makan</small></a>
+        {% if worker_debt_on %}
         <a href="{{ url_for('portal.mandor_canteen_debts') }}"><i class="bi bi-shop"></i><strong>Hutang Warung</strong><small>{{ term('worker') }}</small></a>
         <a href="{{ url_for('portal.mandor_installments') }}"><i class="bi bi-cash-coin"></i><strong>Cicilan</strong><small>Riwayat bayar</small></a>
+        {% endif %}
         <a href="{{ url_for('portal.mandor_invoices') }}"><i class="bi bi-file-earmark-text"></i><strong>Invoice</strong><small>Status tagihan</small></a>
         <a href="{{ url_for('portal.mandor_payments') }}"><i class="bi bi-credit-card"></i><strong>Pembayaran</strong><small>Riwayat bayar</small></a>
     </div>
 
-    <div class="portal-home-grid two">
+    <div class="portal-home-grid{{ ' two' if worker_debt_on }}">
+        {% if worker_debt_on %}
         <section class="portal-home-panel">
             <div class="portal-home-panel-head">
                 <div>
@@ -103,6 +121,7 @@
                 {% endfor %}
             </div>
         </section>
+        {% endif %}
 
         <section class="portal-home-panel">
             <div class="portal-home-panel-head">

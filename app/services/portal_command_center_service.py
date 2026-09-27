@@ -5,6 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
+from app.services.branch_module_service import WORKER_DEBT, module_enabled
 from app.services.portal_closing_visibility_service import build_portal_closing_visibility
 from app.services.portal_debt_visibility_service import build_portal_worker_debt_read_model
 from app.services.portal_experience_service import build_portal_complaint_model, build_portal_contract_model
@@ -176,7 +177,7 @@ def _action(label: str, endpoint: str | None, icon: str, tone: str, caption: str
     }
 
 
-def _build_quick_actions(role: str | None, scope) -> list[dict]:
+def _build_quick_actions(role: str | None, scope, worker_debt_on: bool = True) -> list[dict]:
     actions = []
     order_endpoint = _primary_order_endpoint(role)
     order_enabled = bool(scope.allowed and ACCESS_DRAFT_ORDER in getattr(scope, "access_levels", set()))
@@ -213,7 +214,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
             enabled=True,
         )
     )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
+    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT} and worker_debt_on:
         actions.append(
             _action(
                 "Hutang",
@@ -398,7 +399,7 @@ def _focus_card(label: str, value: Any, caption: str, icon: str, tone: str, endp
     }
 
 
-def _build_role_focus(role: str | None, models: dict) -> list[dict]:
+def _build_role_focus(role: str | None, models: dict, worker_debt_on: bool = True) -> list[dict]:
     orders = models["orders"]
     invoices = models["invoices"]["totals"]
     payments = models["payments"]["totals"]
@@ -446,7 +447,7 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
         ]
 
     if role == ROLE_PORTAL_SUBCLIENT:
-        return [
+        cards = [
             _focus_card(
                 f"Order {T.sub_client}",
                 orders.get("total", 0),
@@ -480,6 +481,9 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
                 "portal.mandor_payments",
             ),
         ]
+        if not worker_debt_on:
+            cards = [card for card in cards if card["endpoint"] != "portal.mandor_canteen_debts"]
+        return cards
 
     if role == ROLE_PORTAL_CLIENT:
         return [
@@ -851,6 +855,7 @@ def build_portal_command_center(user) -> dict:
     """
     role = getattr(user, "role", None)
     scope = build_portal_external_scope(user)
+    worker_debt_on = module_enabled(WORKER_DEBT, getattr(user, "branch_id", None))
     models = {
         "scope": scope,
         "orders": build_portal_order_status_context(user, limit=25),
@@ -875,9 +880,9 @@ def build_portal_command_center(user) -> dict:
         "scope_allowed": bool(scope.allowed),
         "scope_reason": scope.reason,
         "narrative": _build_role_narrative(role),
-        "quick_actions": _build_quick_actions(role, scope),
+        "quick_actions": _build_quick_actions(role, scope, worker_debt_on),
         "kpis": _build_kpis(role, models),
-        "role_focus": _build_role_focus(role, models),
+        "role_focus": _build_role_focus(role, models, worker_debt_on),
         "alerts": _build_alerts(role, scope, models),
         "timeline": _build_timeline(models),
         "status_distribution": _status_distribution(models["orders"], models["invoices"], models["debts"]),

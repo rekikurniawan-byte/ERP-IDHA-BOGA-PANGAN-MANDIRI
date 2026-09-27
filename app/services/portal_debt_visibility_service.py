@@ -6,6 +6,7 @@ from sqlalchemy import false
 
 from app.models.canteen import WorkerDebt
 from app.models.master import Worker
+from app.services.branch_module_service import WORKER_DEBT, module_enabled, module_off_message
 from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.user_management_service import (
     ROLE_PORTAL_CLIENT,
@@ -92,6 +93,15 @@ def build_portal_worker_debt_read_model(user, *, limit: int = 100) -> dict:
             "allowed": False,
             "scope_mode": scope.scope_mode,
             "reason": scope.reason,
+            "debts": [],
+            "totals": _empty_totals(),
+        }
+
+    if not module_enabled(WORKER_DEBT, getattr(user, "branch_id", None)):
+        return {
+            "allowed": False,
+            "scope_mode": "WORKER_DEBT_MODULE_OFF",
+            "reason": module_off_message(WORKER_DEBT),
             "debts": [],
             "totals": _empty_totals(),
         }

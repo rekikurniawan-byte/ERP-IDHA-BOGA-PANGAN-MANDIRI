@@ -3,6 +3,8 @@
 from datetime import date, datetime
 
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.services.branch_module_service import WARUNG
+from app.utils.decorators import module_required
 from app.services.daily_cash_service import (
     build_reference_totals,
     get_daily_cash,
@@ -14,6 +16,7 @@ from app.services.daily_cash_service import (
 
 @finance_bp.route("/daily-cash", methods=["GET", "POST"])
 @role_required("OWNER", "ADMIN", "FINANCE")
+@module_required(WARUNG)
 def daily_cash():
     today = date.today()
     selected_date = today
@@ -55,6 +58,7 @@ def daily_cash():
 
 @finance_bp.route("/daily-cash/<int:cash_id>")
 @role_required("OWNER", "ADMIN", "FINANCE")
+@module_required(WARUNG)
 def daily_cash_detail(cash_id):
     record = get_daily_cash(current_user.branch_id, cash_id)
     if not record:

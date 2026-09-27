@@ -79,7 +79,8 @@ from app.services.user_management_service import (
     ROLE_PORTAL_SUBCLIENT,
     list_active_branches,
 )
-from app.utils.decorators import role_required
+from app.utils.decorators import module_required, role_required
+from app.services.branch_module_service import WORKER_DEBT
 from app.utils.terms import T
 
 
@@ -499,6 +500,7 @@ def mandor_order():
 
 @portal_bp.route("/mandor/workers")
 @role_required(ROLE_PORTAL_SUBCLIENT)
+@module_required(WORKER_DEBT)
 def mandor_workers():
     return render_template(
         "portal/mobile_workers.html",
@@ -525,6 +527,7 @@ def mandor_catering_debts():
 
 @portal_bp.route("/mandor/canteen-debts")
 @role_required(ROLE_PORTAL_SUBCLIENT)
+@module_required(WORKER_DEBT)
 def mandor_canteen_debts():
     return render_template(
         "portal/mobile_debts.html",
@@ -539,6 +542,7 @@ def mandor_canteen_debts():
 
 @portal_bp.route("/mandor/installments")
 @role_required(ROLE_PORTAL_SUBCLIENT)
+@module_required(WORKER_DEBT)
 def mandor_installments():
     return render_template(
         "portal/mobile_debts.html",
@@ -801,6 +805,7 @@ def payments():
 
 @portal_bp.route("/debts")
 @role_required(*PORTAL_READONLY_ROLES)
+@module_required(WORKER_DEBT)
 def debts():
     if current_user.role == ROLE_PORTAL_CUSTOMER:
         return redirect(url_for("portal.customer_dashboard"))

@@ -29,6 +29,7 @@
         </div>
     </div>
 
+    {% if module_enabled('worker_debt') %}
     <div class="app-stat-card">
         <div class="app-stat-icon stat-success"><i class="bi bi-people"></i></div>
         <div>
@@ -37,6 +38,7 @@
             <span class="app-stat-helper">{{ term('worker') }} terdaftar</span>
         </div>
     </div>
+    {% endif %}
 
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-box-seam"></i></div>
@@ -127,15 +129,17 @@
 
     <a href="{{ url_for('master.locations') }}" class="master-menu-card">
         <i class="bi bi-geo-alt"></i>
-        <strong>Lokasi {{ term('sub_client') }}</strong>
-        <span>Mess, Workshop, Forestry, dan lokasi kerja</span>
+        <strong>{{ term('location') }}</strong>
+        <span>Tempat pengantaran makanan per {{ term('sub_client', lower=True) }}</span>
     </a>
 
+    {% if module_enabled('worker_debt') %}
     <a href="{{ url_for('master.workers') }}" class="master-menu-card">
         <i class="bi bi-people"></i>
         <strong>{{ term('worker') }}</strong>
         <span>Data {{ term('worker', lower=True) }} di bawah {{ term('sub_client', lower=True) }}</span>
     </a>
+    {% endif %}
 
     <a href="{{ url_for('master.drivers') }}" class="master-menu-card">
         <i class="bi bi-truck"></i>

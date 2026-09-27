@@ -10,6 +10,7 @@ from app.models.canteen import (
 from app.models.finance import BankAccount, CashBankTransaction
 from app.models.master import Item
 from app.services.atomic_transaction_service import atomic_business_action
+from app.services.branch_module_service import WARUNG, WORKER_DEBT, module_enabled, module_off_message
 from app.services.master_data_service import generate_item_code
 from app.utils.terms import T
 
@@ -181,6 +182,11 @@ def create_canteen_sale(
     payment_method = _normalize_choice(payment_method or sale_type, PAYMENT_METHODS, "CASH")
     buyer_type = _normalize_choice(buyer_type, BUYER_TYPES, "GENERAL_BUYER")
     sale_type = "DEBT" if payment_method == "DEBT" else "CASH"
+
+    if not module_enabled(WARUNG, branch_id):
+        return False, module_off_message(WARUNG), None
+    if buyer_type == "REGISTERED_WORKER" and not module_enabled(WORKER_DEBT, branch_id):
+        return False, module_off_message(WORKER_DEBT), None
 
     if payment_method in ["QRIS", "TRANSFER"]:
         bank = _require_active_bank_account(branch_id, cash_bank_account_id)

@@ -271,10 +271,45 @@ istilah penanda (KLIENKU/SUBKU/LOKASIKU/PEKERJAKU) di staging; sisa kata lama
 yang terlihat hanya **data** (nama akun demo seperti "Mandor Portal Demo",
 riwayat audit log) dan label pengaturan istilah itu sendiri.
 
+### Modul per cabang: Warung dan Hutang Pekerja — SELESAI
+
+Keputusan owner (2026-09-27): warung masih berguna di luar proyek (kantin
+sekolah/kantor), tapi pekerja yang ngutang di warung lalu ditagihkan ke sub
+client-nya khas proyek. Jadi dua saklar terpisah per cabang, di Pengaturan
+Perusahaan → **Modul**, hanya OWNER:
+
+| Saklar | Isinya | Syarat |
+|---|---|---|
+| **Warung** | Penjualan kantin, piutang pembeli luar, tutup kas harian warung | — |
+| **Hutang Pekerja** | Master pekerja, pekerja ngutang di warung, hutang ditagihkan lewat invoice sub client; menu portal Pekerja / Hutang Warung / Cicilan | Warung nyala |
+
+1. **Cabang baru = mati** (pengaturan tidak ada berarti mati). Cabang yang
+   sudah ada **dinyalakan** oleh migrasi `b3c4d5e6f7a8`, jadi tidak ada yang
+   berubah bagi mereka.
+2. **Modul mati:** menunya hilang (sidebar, master, portal, dashboard, pusat
+   komando, tutup harian), halamannya ditolak dengan pesan "Modul … tidak
+   aktif di cabang ini" termasuk lewat link langsung, dan layanan penjualan
+   warung menolak transaksinya. Berlaku juga untuk OWNER — ini pilihan bisnis
+   cabang, bukan hak akses.
+3. **Data tidak pernah dihapus.** Jurnal lama tetap di buku besar;
+   menyalakan lagi mengembalikan semuanya.
+4. **Pengaman uang** — saklar ditolak (dan seluruh form tidak disimpan)
+   selama masih ada:
+   - Hutang Pekerja: hutang pekerja yang belum lunas **dan** belum masuk
+     invoice yang aktif (hutang yang sudah ditagihkan tetap berstatus UNPAID,
+     tagihannya pindah ke invoice yang tetap terlihat di Finance; invoice
+     yang dibatalkan tidak dihitung menagih);
+   - Warung: piutang pembeli luar yang belum lunas, atau kas harian berstatus
+     OPEN.
+
+   Halaman pengaturan menampilkan penahannya sebelum OWNER mencoba. Laporan
+   Cek Kesehatan Data tetap memeriksa hutang pekerja yang belum masuk
+   invoice, apa pun status modulnya.
+5. Setiap perubahan saklar tercatat di audit log (lama → baru).
+
 ### Sisa pekerjaan
 
-- **Modul pekerja dan hutang warung jadi opsional** — khas proyek, mungkin
-  tidak relevan untuk sekolah/kantor. Tahap setelah istilah.
+- Tidak ada yang tertunda dari keputusan owner sejauh ini.
 
 ---
 

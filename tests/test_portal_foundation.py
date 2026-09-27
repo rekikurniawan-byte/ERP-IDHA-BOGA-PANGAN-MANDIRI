@@ -13,6 +13,7 @@ from app.models.operational import DailyOrder
 from app.models.production import Production
 from app.models.system import ApprovalRequest, DigitalAttachment, Notification, PortalOrderDraft
 from app.models.system import PortalUserMapping
+from app.services.branch_module_service import WARUNG, WORKER_DEBT, enable_modules_for_branch
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_location_directory,
@@ -54,6 +55,8 @@ def _create_test_user(role="OWNER"):
     db.session.add(branch)
     db.session.add(user)
     db.session.flush()
+    # Cabang proyek: halaman pekerja/hutang warung portal ikut diuji di sini.
+    enable_modules_for_branch(branch.id, [WARUNG, WORKER_DEBT])
     return user
 
 

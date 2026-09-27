@@ -3,6 +3,8 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.services.branch_module_service import WORKER_DEBT
+from app.utils.decorators import module_required
 from app.utils.terms import T
 
 
@@ -265,6 +267,7 @@ def toggle_location(location_id):
 
 @master_bp.route("/workers")
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def workers():
     q = (request.args.get("q") or "").strip()
     status = request.args.get("status") or "ALL"
@@ -299,6 +302,7 @@ def workers():
 
 @master_bp.route("/workers/create", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def create_worker():
     mandors = Mandor.query.filter_by(
         branch_id=current_user.branch_id,
@@ -338,6 +342,7 @@ def create_worker():
 
 @master_bp.route("/workers/<int:worker_id>/edit", methods=["GET", "POST"])
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def edit_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 
@@ -384,6 +389,7 @@ def edit_worker(worker_id):
 
 @master_bp.route("/workers/<int:worker_id>/toggle", methods=["POST"])
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def toggle_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 
@@ -398,6 +404,7 @@ def toggle_worker(worker_id):
 
 @master_bp.route("/workers/<int:worker_id>/delete", methods=["POST"])
 @role_required("ADMIN")
+@module_required(WORKER_DEBT)
 def delete_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 

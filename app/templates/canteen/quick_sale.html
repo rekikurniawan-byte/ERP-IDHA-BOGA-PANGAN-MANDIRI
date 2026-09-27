@@ -1,6 +1,7 @@
 ﻿{% extends "layouts/base.html" %}
 
 {% block content %}
+{% set worker_debt_on = module_enabled('worker_debt') %}
 <div class="canteen-page-shell" data-ui-page="quick_sale">
 <div class="page-header">
     <div>
@@ -42,13 +43,16 @@
                     <label class="form-label">Tipe Pembeli</label>
                     <select name="buyer_type" id="buyerTypeInput" class="form-select app-input">
                         <option value="GENERAL_BUYER">Pembeli Umum</option>
+                        {% if worker_debt_on %}
                         <option value="REGISTERED_WORKER">{{ term('worker') }} Internal Terdaftar</option>
+                        {% endif %}
                         <option value="EXTERNAL_COMPANY_WORKER">{{ term('worker') }} Luar / Vendor / Perusahaan Lain</option>
                         <option value="GUEST">Tamu / Guest</option>
                     </select>
                 </div>
 
-                <div class="col-md-12 canteen-worker-panel" id="workerPanel">
+                {# Panel tetap dirender (dipakai skrip), disembunyikan kalau modul Hutang Pekerja mati. #}
+                <div class="col-md-12 canteen-worker-panel{{ ' d-none' if not worker_debt_on }}" id="workerPanel">
                     <label class="form-label">Cari {{ term('worker') }} Internal</label>
                     <input type="text" id="workerSearchInput" class="form-control app-input" placeholder="Ketik nama {{ term('worker', lower=True) }} / {{ term('sub_client', lower=True) }}...">
 
@@ -105,7 +109,7 @@
 
             <div class="quick-note mt-3">
                 <i class="bi bi-info-circle"></i>
-                Hutang {{ term('worker', lower=True) }} internal wajib pilih {{ term('worker', lower=True) }}. Hutang eksternal wajib isi nama pembeli/PIC.
+                {% if worker_debt_on %}Hutang {{ term('worker', lower=True) }} internal wajib pilih {{ term('worker', lower=True) }}. {% endif %}Hutang eksternal wajib isi nama pembeli/PIC.
             </div>
         </div>
 
@@ -403,7 +407,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 alert("QRIS/Transfer wajib memilih rekening."); return;
             }
             if (method === "DEBT" && buyerType === "REGISTERED_WORKER" && !workerIdInput.value) {
-                alert("Hutang pekerja internal wajib pilih pekerja."); return;
+                alert({{ ("Hutang " ~ term('worker', lower=True) ~ " internal wajib pilih " ~ term('worker', lower=True) ~ ".")|tojson }}); return;
             }
             if (method === "DEBT" && buyerType !== "REGISTERED_WORKER" && !buyerNameInput.value.trim()) {
                 alert("Hutang buyer eksternal wajib isi nama pembeli/PIC."); return;

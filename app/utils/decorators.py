@@ -23,3 +23,28 @@ def role_required(*allowed_roles):
         return wrapper
 
     return decorator
+
+
+def module_required(module_name):
+    """Halaman milik modul cabang (Warung / Hutang Pekerja).
+
+    Pasang di bawah role_required, supaya pengguna sudah pasti login. Modul
+    mati = halaman ditolak dengan pesan, termasuk untuk OWNER: ini pilihan
+    bisnis cabang, bukan hak akses.
+    """
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            from app.services.branch_module_service import module_enabled, module_off_message
+
+            if not module_enabled(module_name):
+                flash(module_off_message(module_name), "warning")
+                if str(current_user.role or "").startswith("PORTAL_"):
+                    return redirect(url_for("portal.my_dashboard"))
+                return redirect(url_for("dashboard.index"))
+
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

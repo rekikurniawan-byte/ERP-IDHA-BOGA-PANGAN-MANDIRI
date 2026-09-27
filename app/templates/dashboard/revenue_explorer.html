@@ -14,9 +14,9 @@
     "Kembali Dashboard",
     url_for('dashboard.owner' if current_user.role == 'OWNER' else 'dashboard.admin'),
     "bi-arrow-left",
-    [
-        {"label": "Pembayaran Masuk", "url": url_for('finance.payment_history'), "icon": "bi-cash-coin"},
-        {"label": "Warung", "url": url_for('canteen.index'), "icon": "bi-shop"},
+    [{"label": "Pembayaran Masuk", "url": url_for('finance.payment_history'), "icon": "bi-cash-coin"}]
+    + ([{"label": "Warung", "url": url_for('canteen.index'), "icon": "bi-shop"}] if module_enabled('warung') else [])
+    + [
         {"label": "Piutang", "url": url_for('finance.receivables'), "icon": "bi-hourglass-split"},
         {"label": "SOP Finance", "url": url_for('sop.role_sop', slug='finance'), "icon": "bi-book"},
     ]

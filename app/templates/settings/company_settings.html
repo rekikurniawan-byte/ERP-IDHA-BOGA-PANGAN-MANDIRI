@@ -59,6 +59,18 @@
             {% for field in section.fields %}
                 {% if field.type == 'hidden' %}
                     {# Stored by the dedicated logo uploader above. #}
+                {% elif field.type == 'checkbox' %}
+                {% set status = module_status.get(field.key, {}) %}
+                <div class="col-md-6">
+                    <label class="form-check">
+                        <input type="checkbox" class="form-check-input" name="{{ field.key }}" value="1" {% if settings[field.key] == '1' %}checked{% endif %}>
+                        <span class="form-check-label fw-semibold">{{ field.label }}</span>
+                    </label>
+                    <div class="small text-muted">{{ field.help }}</div>
+                    {% for reason in status.get('blockers', []) %}
+                        <div class="small text-warning mt-1"><i class="bi bi-lock"></i> Belum bisa dimatikan: {{ reason }}</div>
+                    {% endfor %}
+                </div>
                 {% else %}
                 <div class="col-md-{% if field.type == 'textarea' %}12{% else %}6{% endif %}">
                     <label class="form-label">
