@@ -1,5 +1,6 @@
 from app.extensions import db
 from app.models.finance import InvoiceCollectionLog
+from app.utils.terms import T
 
 
 def _commit_or_rollback():
@@ -85,7 +86,7 @@ def create_receivables_statement_logs(
                 contact_person=contact_person,
                 response_note=response_note_factory(invoice),
                 promise_date=None,
-                next_action="Menunggu konfirmasi jadwal pelunasan dari client.",
+                next_action=f"Menunggu konfirmasi jadwal pelunasan dari {T.client_lower}.",
                 collection_status="STATEMENT_SENT",
                 created_by=created_by,
             )

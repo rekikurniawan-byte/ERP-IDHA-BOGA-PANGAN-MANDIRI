@@ -36,18 +36,18 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Client</label>
+                    <label class="form-label">{{ term('client') }}</label>
                     <select class="form-select app-input" name="client_id">
-                        <option value="">Tanpa client</option>
+                        <option value="">Tanpa {{ term('client', lower=True) }}</option>
                         {% for client in data.clients %}
                             <option value="{{ client.id }}">{{ client.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Mandor</label>
+                    <label class="form-label">{{ term('sub_client') }}</label>
                     <select class="form-select app-input" name="mandor_id">
-                        <option value="">Tanpa mandor</option>
+                        <option value="">Tanpa {{ term('sub_client', lower=True) }}</option>
                         {% for mandor in data.mandors %}
                             <option value="{{ mandor.id }}">{{ mandor.name }}</option>
                         {% endfor %}

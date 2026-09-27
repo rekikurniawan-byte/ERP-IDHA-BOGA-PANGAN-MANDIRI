@@ -62,6 +62,12 @@ def create_app():
     # use, so a menu can never be hidden from a role that is allowed in.
     flask_app.jinja_env.globals["has_role"] = _current_user_has_role
 
+    # Istilah bisnis per cabang ("Client", "Sub Client", ...), diatur OWNER di
+    # Pengaturan Perusahaan. Lihat app/utils/terms.py.
+    from app.utils.terms import term
+
+    flask_app.jinja_env.globals["term"] = term
+
     if flask_app.config.get("PROXY_HEADERS_ENABLED"):
         flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 

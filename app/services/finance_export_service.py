@@ -25,6 +25,7 @@ from app.models.finance import (
 from app.models.logistics import Procurement
 from app.models.master import Client, Mandor, Supplier
 from app.services.digital_attachment_service import count_reference_attachments
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -214,8 +215,8 @@ def build_payment_history_export_response(branch_id: int) -> Response:
             "Tanggal Bayar",
             "Nomor Payment",
             "Nomor Invoice",
-            "Client",
-            "Mandor/PIC",
+            T.client,
+            f"{T.sub_client}/PIC",
             "Metode",
             "Kas/Rekening",
             "Nomor Referensi",
@@ -707,7 +708,7 @@ def build_receivables_statement_export_response(branch_id: int, args: Mapping[st
 
     rows: List[List[Any]] = []
     for invoice in invoices:
-        client_name = _safe_name(client_map.get(invoice.client_id)) if invoice.client_id else "Tanpa Client / Mandor"
+        client_name = _safe_name(client_map.get(invoice.client_id)) if invoice.client_id else f"Tanpa {T.client} / {T.sub_client}"
         client = client_map.get(invoice.client_id) if invoice.client_id else None
         mandor_name = _safe_name(mandor_map.get(invoice.mandor_id)) if invoice.mandor_id else "-"
         payment = latest_payment_map.get(invoice.id)
@@ -738,13 +739,13 @@ def build_receivables_statement_export_response(branch_id: int, args: Mapping[st
     return make_csv_response(
         filename=f"finance_receivables_statement_{_today_suffix()}.csv",
         headers=[
-            "Client",
-            "Alamat Client",
-            "Telepon Client",
+            T.client,
+            f"Alamat {T.client}",
+            f"Telepon {T.client}",
             "Nomor Invoice",
             "Tanggal Invoice",
             "Jatuh Tempo",
-            "Mandor/PIC",
+            f"{T.sub_client}/PIC",
             "Total Tagihan",
             "Sudah Dibayar",
             "Sisa Piutang",

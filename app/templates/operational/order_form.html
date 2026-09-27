@@ -7,8 +7,8 @@
     {% set order_form_title = "Tambah Revisi Setelah Lock" %}
     {% set order_form_description = "Order tanggal ini sudah locked. Input ini akan dicatat sebagai revisi tambah, bukan order baru." %}
 {% elif daily_order %}
-    {% set order_form_title = "Tambah Lokasi/Mandor" %}
-    {% set order_form_description = "Tambahkan mandor atau lokasi baru sebelum order dikunci." %}
+    {% set order_form_title = ("Tambah Lokasi/" ~ term('sub_client')) %}
+    {% set order_form_description = ("Tambahkan " ~ term('sub_client', lower=True) ~ " atau lokasi baru sebelum order dikunci.") %}
 {% else %}
     {% set order_form_title = "Input Order Harian" %}
     {% set order_form_description = "Buat order baru atau tambah detail pada order tanggal yang masih draft." %}
@@ -24,7 +24,7 @@
 <div class="app-card">
     {% if not mandors or not locations %}
         <div class="alert alert-warning">
-            Data mandor atau lokasi pengiriman belum tersedia. Jalankan seed master operasional dulu sebelum input order.
+            Data {{ term('sub_client', lower=True) }} atau lokasi pengiriman belum tersedia. Jalankan seed master operasional dulu sebelum input order.
         </div>
     {% endif %}
 
@@ -42,9 +42,9 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Mandor</label>
+                <label class="form-label">{{ term('sub_client') }}</label>
                 <select name="mandor_id" class="form-select app-input" required>
-                    <option value="">Pilih Mandor</option>
+                    <option value="">Pilih {{ term('sub_client') }}</option>
                     {% for mandor in mandors %}
                         <option value="{{ mandor.id }}">{{ mandor.name }}</option>
                     {% endfor %}
@@ -52,7 +52,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Lokasi Antar</label>
+                <label class="form-label">{{ term('location') }}</label>
                 <select name="delivery_location_id" class="form-select app-input" required>
                     <option value="">Pilih Lokasi</option>
                     {% for location in locations %}
@@ -61,7 +61,7 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-muted">Pastikan lokasi sesuai mandor.</small>
+                <small class="text-muted">Pastikan lokasi sesuai {{ term('sub_client', lower=True) }}.</small>
             </div>
 
             <div class="col-md-4">
@@ -138,7 +138,7 @@
             <button type="submit" class="btn app-btn-primary">
                 <i class="bi bi-save"></i>
                 {% if daily_order %}
-                    Simpan Mandor
+                    Simpan {{ term('sub_client') }}
                 {% else %}
                     Simpan Order
                 {% endif %}

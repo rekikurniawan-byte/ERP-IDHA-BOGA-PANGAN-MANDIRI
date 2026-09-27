@@ -4,9 +4,9 @@
 {% block content %}
 <div class="finance-page-shell">
     {{ page_header(
-        "Rekap Tagihan Mandor",
+        ("Rekap Tagihan " ~ term('sub_client')),
         "Ubah sumber yang sudah tercatat di sistem menjadi invoice piutang formal. Ini bukan input buku/manual belakangan.",
-        "Keuangan | Rekap Tagihan Mandor",
+        ("Keuangan | Rekap Tagihan " ~ term('sub_client')),
         actions=[
             {"label": "Input Rekap dari Buku", "url": url_for('finance.manual_billing_backfill_form'), "icon": "bi-journal-plus", "variant": "primary"},
             {"label": "Daftar Rekap Buku", "url": url_for('finance.manual_billing_batches_list'), "icon": "bi-list-check"},
@@ -19,16 +19,16 @@
         <div class="card-header-clean">
             <div>
                 <h5>Filter Sumber Realtime yang Sudah Ada</h5>
-                <p>Pilih PIC lapangan/mandor dan periode sumber Realtime yang sudah ada di sistem.</p>
+                <p>Pilih PIC lapangan/{{ term('sub_client', lower=True) }} dan periode sumber Realtime yang sudah ada di sistem.</p>
             </div>
         </div>
         <form method="POST" action="{{ url_for('finance.manual_billing') }}" class="app-form" data-ui-form="true">
             {% include "components/csrf_token.html" %}
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label">Mandor / PIC Lapangan</label>
+                    <label class="form-label">{{ term('sub_client') }} / PIC Lapangan</label>
                     <select name="mandor_id" class="form-select" required>
-                        <option value="">Pilih mandor</option>
+                        <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
                         {% for mandor in mandors %}
                             <option value="{{ mandor.id }}" {% if selected_mandor_id|string == mandor.id|string %}selected{% endif %}>
                                 {{ mandor.name }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
@@ -122,7 +122,7 @@
     {% if preview_ready %}
     <div class="app-card soft-warning-card mt-4">
         <strong>Sumber Input: Realtime</strong>
-        <p>Data pada halaman ini diambil dari piutang manual lapangan dan hutang warung pekerja yang sudah ada di sistem. Fitur input belakangan dari buku manual disiapkan sebagai jalur tambahan terpisah pada tahap berikutnya.</p>
+        <p>Data pada halaman ini diambil dari piutang manual lapangan dan hutang warung {{ term('worker', lower=True) }} yang sudah ada di sistem. Fitur input belakangan dari buku manual disiapkan sebagai jalur tambahan terpisah pada tahap berikutnya.</p>
     </div>
 
     <div class="app-stat-grid mt-4">
@@ -139,7 +139,7 @@
         <div class="app-stat-card">
             <span>Hutang Warung</span>
             <h3>{{ preview.warung_total|rupiah }}</h3>
-            <p>Sumber hutang warung pekerja</p>
+            <p>Sumber hutang warung {{ term('worker', lower=True) }}</p>
         </div>
     </div>
 
@@ -147,7 +147,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Sumber Siap Ditagihkan</h5>
-                <p>Item di bawah akan dikunci ke rekap tagihan mandor dan tidak bisa masuk invoice lain.</p>
+                <p>Item di bawah akan dikunci ke rekap tagihan {{ term('sub_client', lower=True) }} dan tidak bisa masuk invoice lain.</p>
             </div>
         </div>
         <div class="table-responsive">
@@ -226,7 +226,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Buat Invoice Resmi</h5>
-                <p>Invoice akan ditagihkan ke pihak/perusahaan mandor, dengan PIC resmi client sebagai snapshot.</p>
+                <p>Invoice akan ditagihkan ke pihak/perusahaan {{ term('sub_client', lower=True) }}, dengan PIC resmi {{ term('client', lower=True) }} sebagai snapshot.</p>
             </div>
         </div>
         <form method="POST"

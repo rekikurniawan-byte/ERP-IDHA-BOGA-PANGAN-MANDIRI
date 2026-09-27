@@ -442,7 +442,7 @@
 
     {% if official_identity and official_identity.missing %}
     <div class="box official-print-warning">
-        <strong>PERINGATAN DOKUMEN RESMI:</strong> Data belum lengkap: {{ official_identity.missing|join(', ') }}. Lengkapi sebelum invoice dikirim ke client.
+        <strong>PERINGATAN DOKUMEN RESMI:</strong> Data belum lengkap: {{ official_identity.missing|join(', ') }}. Lengkapi sebelum invoice dikirim ke {{ term('client', lower=True) }}.
     </div>
     {% endif %}
 
@@ -456,7 +456,7 @@
             </div>
 
             <div class="row">
-                <span>Kode Client</span>
+                <span>Kode {{ term('client') }}</span>
                 <strong>{{ official_identity.client_code if official_identity and official_identity.client_code else '-' }}</strong>
             </div>
 
@@ -501,7 +501,7 @@
                     {% elif invoice.source_type == "DAILY_ORDER" %}
                         Invoice Order
                     {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                        Invoice Rekap Tagihan Mandor
+                        Invoice Rekap Tagihan {{ term('sub_client') }}
                     {% else %}
                         {{ invoice.source_type or "-" }}
                     {% endif %}
@@ -550,7 +550,7 @@
             <thead>
                 <tr>
                     <th style="width: 16%;">No Order</th>
-                    <th style="width: 13%;">Mandor</th>
+                    <th style="width: 13%;">{{ term('sub_client') }}</th>
                     <th style="width: 13%;">Lokasi</th>
                     <th class="text-right" style="width: 7%;">Sarapan</th>
                     <th class="text-right" style="width: 7%;">Lunch</th>
@@ -604,7 +604,7 @@
             <thead>
                 <tr>
                     <th style="width: 16%;">No Order</th>
-                    <th style="width: 13%;">Mandor</th>
+                    <th style="width: 13%;">{{ term('sub_client') }}</th>
                     <th style="width: 13%;">Lokasi</th>
                     <th class="text-right" style="width: 7%;">Sarapan +</th>
                     <th class="text-right" style="width: 7%;">Lunch +</th>
@@ -650,14 +650,14 @@
     </div>
 
     <div class="box">
-        <div class="box-title">Rincian Hutang Warung Pekerja</div>
+        <div class="box-title">Rincian Hutang Warung {{ term('worker') }}</div>
 
         {% if print_data.warung %}
         <div class="app-table-wrapper print-table-wrapper">
 <table class="app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Nama Pekerja</th>
+                    <th style="width: 25%;">Nama {{ term('worker') }}</th>
                     <th style="width: 35%;">Keterangan</th>
                     <th class="text-right" style="width: 13%;">Total Hutang</th>
                     <th class="text-right" style="width: 13%;">Sudah Dibayar</th>
@@ -687,7 +687,7 @@
         </table>
 </div>
         {% else %}
-        <p class="small-muted">Tidak ada hutang warung pekerja pada invoice ini.</p>
+        <p class="small-muted">Tidak ada hutang warung {{ term('worker', lower=True) }} pada invoice ini.</p>
         {% endif %}
     </div>
 
@@ -767,7 +767,7 @@
 
     {% if official_identity and (official_identity.bank_name or official_identity.bank_account_number or official_identity.bank_account_name) %}
     <div class="box payment-box">
-        <div class="box-title">Informasi Pembayaran PT</div>
+        <div class="box-title">Informasi Pembayaran Perusahaan</div>
         {% if official_identity.bank_name %}
         <div class="row">
             <span>Bank</span>
@@ -789,7 +789,7 @@
     </div>
     {% else %}
     <div class="box official-print-warning">
-        <strong>Rekening pembayaran PT belum diisi.</strong> Lengkapi di Settings â†’ Identitas Perusahaan sebelum invoice resmi dikirim.
+        <strong>Rekening pembayaran perusahaan belum diisi.</strong> Lengkapi di Settings â†’ Identitas Perusahaan sebelum invoice resmi dikirim.
     </div>
     {% endif %}
 

@@ -7,7 +7,7 @@
         <span class="eyebrow">Penerimaan Pengiriman</span>
         <h1>{{ delivery_detail.delivery.delivery_number }}</h1>
         <p>
-            Mandor: <strong>{{ delivery_detail.mandor.name }}</strong> |
+            {{ term('sub_client') }}: <strong>{{ delivery_detail.mandor.name }}</strong> |
             Lokasi: <strong>{{ delivery_detail.delivery_location.location_name }}</strong>
         </p>
     </div>
@@ -143,7 +143,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Bukti Digital Penerimaan</h5>
-            <p>Lampiran bukti terima untuk mandor/lokasi ini. File disimpan sebagai lampiran digital dan tercatat di audit log.</p>
+            <p>Lampiran bukti terima untuk {{ term('sub_client', lower=True) }}/lokasi ini. File disimpan sebagai lampiran digital dan tercatat di audit log.</p>
         </div>
     </div>
 

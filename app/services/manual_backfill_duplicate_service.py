@@ -8,6 +8,7 @@ from app.services.manual_backfill_bill_to_service import (
     _infer_bill_to_type,
     _normalize_party_name,
 )
+from app.utils.terms import T
 
 
 def _root_attr(name, fallback):
@@ -314,13 +315,13 @@ def get_manual_backfill_bill_to_context(batch):
 
     master_context = "-"
     if bill_to_type == BILL_TO_MANDOR_EXISTING:
-        master_context = _clean_text(getattr(mandor, "name", "")) or f"Mandor ID {getattr(batch, 'mandor_id', '-')}"
+        master_context = _clean_text(getattr(mandor, "name", "")) or f"{T.sub_client} ID {getattr(batch, 'mandor_id', '-')}"
         if client:
             master_context = f"{master_context} / {getattr(client, 'name', '-')}"
     elif bill_to_type == BILL_TO_CLIENT_EXISTING:
-        master_context = _clean_text(getattr(client, "name", "")) or f"Client ID {getattr(batch, 'client_id', '-')}"
+        master_context = _clean_text(getattr(client, "name", "")) or f"{T.client} ID {getattr(batch, 'client_id', '-')}"
     else:
-        master_context = "Pihak bebas tanpa master mandor/client"
+        master_context = f"Pihak bebas tanpa master {T.sub_client_lower}/{T.client_lower}"
 
     return {
         "type": bill_to_type,

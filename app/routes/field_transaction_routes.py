@@ -60,6 +60,7 @@ from app.services.manual_billing_service import (
     find_manual_billing_invoice_for_source,
 )
 from app.utils.decorators import role_required
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -164,9 +165,9 @@ def _build_detail_state(transaction, manual_receivable=None, manual_payable=None
     if event_type in {"TRANSPORT_TRIP_EXPENSE", "FUEL_EXPENSE"} and "TRANSPORT_EXPENSE" not in link_roles and posting_status != "POSTED":
         next_actions.append("Bila biaya ini perlu masuk ke flow transport legacy, jalankan bridge ke Transport Expense.")
     if event_type == "MANDOR_OPERATIONAL_ADVANCE" and "ADVANCE_TRANSACTION" not in link_roles and posting_status != "POSTED":
-        next_actions.append("Hubungkan ke advance mandor jika panjar ini perlu ikut lifecycle settlement legacy.")
+        next_actions.append(f"Hubungkan ke advance {T.sub_client_lower} jika panjar ini perlu ikut lifecycle settlement legacy.")
     if event_type == "MANDOR_ADVANCE_SETTLEMENT" and posting_status != "POSTED":
-        next_actions.append("Cek detail advance untuk memastikan settlement panjar mandor sudah punya jurnal beban dan trace field transaction.")
+        next_actions.append(f"Cek detail advance untuk memastikan settlement panjar {T.sub_client_lower} sudah punya jurnal beban dan trace field transaction.")
     if event_type in {"OWNER_CASH_INJECTION", "OWNER_DRAWING"} and review_status == "WAITING_APPROVAL":
         next_actions.append("Lanjutkan approval owner/finance sebelum transaksi ekuitas ini diposting ke ledger dan jurnal.")
     if event_type not in {
@@ -1076,5 +1077,5 @@ def bridge_advance(transaction_id):
         flash(str(exc), "warning")
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/field_transaction_routes.py:1038")
-        flash(f"Gagal bridge ke advance mandor: {exc}", "danger")
+        flash(f"Gagal bridge ke advance {T.sub_client_lower}: {exc}", "danger")
     return redirect(url_for("field_transactions.detail", transaction_id=transaction.id))

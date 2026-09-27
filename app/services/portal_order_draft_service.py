@@ -24,6 +24,7 @@ from app.services.portal_financial_visibility_service import build_portal_invoic
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
 from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT
 from app.services.operational_service import generate_order_number
+from app.utils.terms import T
 
 
 DRAFT_STATUS_PENDING = "PENDING_ADMIN_CONFIRMATION"
@@ -264,7 +265,7 @@ def _portal_payment_precheck(user, scope):
         "allowed_to_process": bool(scope.allowed),
         "status": "Tempo/Kredit Sesuai Mapping",
         "tone": "green" if scope.allowed else "red",
-        "message": "Mandor/PT mengikuti aturan tempo atau kredit yang sudah disetujui. Pembayaran tetap dicatat oleh bagian keuangan.",
+        "message": f"{T.sub_client}/{T.client_lower} mengikuti aturan tempo atau kredit yang sudah disetujui. Pembayaran tetap dicatat oleh bagian keuangan.",
         "proof_count": totals.get("proof_count", 0),
         "pending_count": totals.get("pending_proof_count", 0),
         "verified_count": totals.get("verified_proof_count", 0),
@@ -507,7 +508,7 @@ def _payment_gate_for_draft(draft):
             "status": "NOT_REQUIRED",
             "label": "Tempo/Kredit",
             "tone": "green",
-            "message": "Mandor/PT mengikuti aturan kredit dan pembayaran perusahaan.",
+            "message": f"{T.sub_client}/{T.client_lower} mengikuti aturan kredit dan pembayaran perusahaan.",
             "needs_payment": False,
             "proof": {"total": 0, "pending": 0, "verified": 0, "rejected": 0},
         }
@@ -574,7 +575,7 @@ def _duplicate_gate_for_draft(draft, daily_order=None):
             "status": "BLOCKED",
             "label": "Sudah Ada",
             "tone": "red",
-            "message": "Detail mandor/lokasi sudah ada pada order harian tanggal ini.",
+            "message": f"Detail {T.sub_client_lower}/lokasi sudah ada pada order harian tanggal ini.",
         }
     return daily_order, existing_detail, {
         "key": "DUPLICATE",
@@ -582,7 +583,7 @@ def _duplicate_gate_for_draft(draft, daily_order=None):
         "status": "OK",
         "label": "Aman",
         "tone": "green",
-        "message": "Belum ada detail mandor/lokasi yang bentrok.",
+        "message": f"Belum ada detail {T.sub_client_lower}/lokasi yang bentrok.",
     }
 
 
@@ -888,14 +889,14 @@ def _validate_draft_payload(user, form):
     if delivery_location_id not in orderable_location_ids(user, scope):
         # Lokasi mandor ada dalam akses PT (untuk dipantau), tapi PT hanya
         # boleh memesan untuk unit order langsungnya.
-        return None, "Client/PT hanya bisa memesan untuk lokasi unit order langsungnya sendiri."
+        return None, f"{T.client} hanya bisa memesan untuk lokasi unit order langsungnya sendiri."
 
     location = DeliveryLocation.query.get(delivery_location_id)
     if not location or not location.mandor:
         return None, "Lokasi tidak valid."
 
     if location.mandor_id not in scope.mandor_ids:
-        return None, "Mandor lokasi tidak termasuk akses portal user."
+        return None, f"{T.sub_client} lokasi tidak termasuk akses portal user."
 
     idempotency_key = _clean_text(form.get("idempotency_key"))
     if not idempotency_key:
@@ -1174,7 +1175,7 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
         delivery_location_id=draft.delivery_location_id,
     ).first()
     if existing_detail:
-        return draft, False, "Detail mandor/lokasi sudah ada di order harian. Review manual diperlukan."
+        return draft, False, f"Detail {T.sub_client_lower}/lokasi sudah ada di order harian. Review manual diperlukan."
 
     lunch_qty = draft.portion_qty if draft.meal_type == "LUNCH" else 0
     dinner_qty = draft.portion_qty if draft.meal_type == "DINNER" else 0

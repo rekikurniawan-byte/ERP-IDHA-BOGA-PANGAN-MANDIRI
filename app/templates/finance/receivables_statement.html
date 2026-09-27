@@ -89,7 +89,7 @@
     <div>
         <span class="eyebrow">Finance</span>
         <h1>Statement of Account</h1>
-        <p>Rekap resmi piutang aktif client berdasarkan invoice yang belum lunas dan tidak berstatus cancelled.</p>
+        <p>Rekap resmi piutang aktif {{ term('client', lower=True) }} berdasarkan invoice yang belum lunas dan tidak berstatus cancelled.</p>
     </div>
 
     <div class="page-actions finance-header-actions" data-finance-actions="UI">
@@ -105,7 +105,7 @@
 
         <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
             <i class="bi bi-arrow-left"></i>
-            Piutang Client
+            Piutang {{ term('client') }}
         </a>
     </div>
 </div>
@@ -115,8 +115,8 @@
 <div class="app-card statement-filter mb-4">
     <div class="card-header-clean">
         <div>
-            <h5>Filter Client</h5>
-            <p>Pilih client tertentu jika ingin mencetak rekap piutang per perusahaan.</p>
+            <h5>Filter {{ term('client') }}</h5>
+            <p>Pilih {{ term('client', lower=True) }} tertentu jika ingin mencetak rekap piutang per {{ term('client', lower=True) }}.</p>
         </div>
     </div>
     <form method="GET" action="{{ url_for('finance.receivables_statement') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
@@ -124,9 +124,9 @@
         <input type="hidden" name="start_date" value="{{ filter_bar.start_value }}">
         <input type="hidden" name="end_date" value="{{ filter_bar.end_value }}">
         <div class="col-md-8">
-            <label class="form-label">Client</label>
+            <label class="form-label">{{ term('client') }}</label>
             <select name="client_id" class="form-select app-input">
-                <option value="">Semua Client</option>
+                <option value="">Semua {{ term('client') }}</option>
                 {% for client in client_options %}
                 <option value="{{ client.value }}" {% if selected_client_id == client.value %}selected{% endif %}>
                     {{ client.label }} - {{ client.invoice_count }} invoice - {{ client.remaining_total|rupiah }}
@@ -135,7 +135,7 @@
             </select>
         </div>
         <div class="col-md-4 d-flex gap-2">
-            <button type="submit" class="btn app-btn-primary">Terapkan Client</button>
+            <button type="submit" class="btn app-btn-primary">Terapkan {{ term('client') }}</button>
             <a href="{{ url_for('finance.receivables_statement') }}" class="btn app-btn-secondary">Reset</a>
         </div>
     </form>
@@ -151,15 +151,15 @@
         {% if selected_client_name %}
             <span class="status-badge status-progress">{{ selected_client_name }}</span>
         {% else %}
-            <span class="status-badge status-progress">Semua Client</span>
+            <span class="status-badge status-progress">Semua {{ term('client') }}</span>
         {% endif %}
     </div>
 
     <div class="app-stat-grid">
         <div class="app-stat-card">
-            <span>Client</span>
+            <span>{{ term('client') }}</span>
             <h3>{{ summary.client_count }}</h3>
-            <p>Client dengan piutang aktif</p>
+            <p>{{ term('client') }} dengan piutang aktif</p>
         </div>
 
         <div class="app-stat-card">
@@ -293,7 +293,7 @@
             <thead>
                 <tr>
                     <th>No Invoice</th>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Tanggal</th>
                     <th>Jatuh Tempo</th>
                     <th>Total</th>

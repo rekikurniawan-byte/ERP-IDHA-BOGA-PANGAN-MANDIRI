@@ -4,12 +4,12 @@
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 {{ page_header(
-    "Data Client",
-    "Client digunakan untuk mengelompokkan mandor dan kebutuhan proyek.",
-    eyebrow="Master Client",
+    ("Data " ~ term('client')),
+    (term('client') ~ " digunakan untuk mengelompokkan " ~ term('sub_client', lower=True) ~ " dan tagihannya."),
+    eyebrow=("Master " ~ term('client')),
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
-        {"label": "Tambah Client", "url": url_for('master.create_client'), "icon": "bi-plus-circle", "variant": "primary"},
+        {"label": ("Tambah " ~ term('client')), "url": url_for('master.create_client'), "icon": "bi-plus-circle", "variant": "primary"},
     ]
 ) }}
 
@@ -34,7 +34,7 @@
             <thead>
                 <tr>
                     <th>Kode</th>
-                    <th>Nama Client</th>
+                    <th>Nama {{ term('client') }}</th>
                     <th>Telepon</th>
                     <th>Alamat</th>
                     <th>Status</th>
@@ -75,7 +75,7 @@
                     <td colspan="6">
                         <div class="empty-state">
                             <i class="bi bi-building"></i>
-                            <p>Belum ada data client.</p>
+                            <p>Belum ada data {{ term('client', lower=True) }}.</p>
                         </div>
                     </td>
                 </tr>

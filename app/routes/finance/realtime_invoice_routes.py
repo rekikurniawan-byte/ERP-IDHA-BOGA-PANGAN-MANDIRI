@@ -6,6 +6,7 @@ from app.services.mandor_invoice_helper_service import (
     get_client_for_mandor_invoice,
     is_after_lock_increase_revision,
 )
+from app.utils.terms import T
 
 def _build_catering_invoice_lines(order, mandor_id):
     lines = []
@@ -129,7 +130,7 @@ def generate_order_invoices():
             mandor_name = "-"
             client_name = "-"
             client_ready = False
-            client_error = "Mandor/PIC lapangan belum terhubung ke client/perusahaan."
+            client_error = f"{T.sub_client}/PIC lapangan belum terhubung ke {T.client_lower}."
 
             for detail in order.details:
                 if detail.mandor_id == mandor_id:
@@ -146,7 +147,7 @@ def generate_order_invoices():
                 client_code = getattr(client, "client_code", "") or ""
                 client_pics = get_active_client_pics(client.id)
                 client_ready = bool(client_pics)
-                client_error = None if client_ready else "Client belum punya PIC resmi aktif."
+                client_error = None if client_ready else f"{T.client} belum punya PIC resmi aktif."
             elif client_error_result:
                 client_error = client_error_result
 
@@ -191,7 +192,7 @@ def generate_order_invoice(order_id, mandor_id):
     mandor = Mandor.query.get(mandor_id)
 
     if not mandor or int(getattr(mandor, "branch_id", 0) or 0) != int(current_user.branch_id):
-        flash("Mandor/PIC lapangan tidak valid untuk cabang user.", "danger")
+        flash(f"{T.sub_client}/PIC lapangan tidak valid untuk cabang user.", "danger")
         return redirect(url_for("finance.generate_order_invoices"))
 
     client, client_error = get_client_for_mandor_invoice(mandor)
@@ -223,14 +224,14 @@ def generate_order_invoice(order_id, mandor_id):
     ).first()
 
     if existing_invoice:
-        flash("Invoice untuk order dan mandor ini sudah pernah dibuat.", "warning")
+        flash(f"Invoice untuk order dan {T.sub_client_lower} ini sudah pernah dibuat.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=existing_invoice.id))
 
     lines = _build_catering_invoice_lines(order, mandor_id)
     total_amount = sum(line["subtotal"] for line in lines)
 
     if not lines or total_amount <= 0:
-        flash("Tidak ada item invoice yang valid untuk order dan mandor ini.", "warning")
+        flash(f"Tidak ada item invoice yang valid untuk order dan {T.sub_client_lower} ini.", "warning")
         return redirect(url_for("finance.generate_order_invoices"))
 
     due_date = billing["due_date"]

@@ -5,7 +5,7 @@
 <div class="op-prod-delivery-page-shell" data-ui-page="revision_form">
 {{ page_header(
     daily_order.order_number,
-    "Mandor: " ~ detail.mandor.name ~ " | Lokasi: " ~ detail.delivery_location.location_name,
+    (term('sub_client') ~ ": ") ~ detail.mandor.name ~ " | Lokasi: " ~ detail.delivery_location.location_name,
     eyebrow="Revisi Order",
     actions=[{"label": "Kembali", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"}]
 ) }}
@@ -106,7 +106,7 @@
 
             <div class="col-md-12">
                 <label class="form-label">Alasan / Catatan Revisi</label>
-                <textarea name="reason" class="form-control app-input" rows="3" placeholder="Contoh: Mandor meminta tambahan porsi melalui WhatsApp"></textarea>
+                <textarea name="reason" class="form-control app-input" rows="3" placeholder="Contoh: {{ term('sub_client') }} meminta tambahan porsi melalui WhatsApp"></textarea>
             </div>
         </div>
 

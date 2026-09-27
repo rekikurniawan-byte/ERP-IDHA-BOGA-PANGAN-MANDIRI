@@ -4,6 +4,7 @@ from app.services.mandor_invoice_helper_service import (
     calculate_realtime_locked_base_quantities,
     get_client_for_mandor_invoice,
 )
+from app.utils.terms import T
 
 def _period_parse_date(value):
     from datetime import datetime
@@ -167,7 +168,7 @@ def generate_period_invoice_preview():
         period_end = _period_parse_date(period_end_value)
 
         if not selected_mandor_id:
-            flash("Pilih mandor terlebih dahulu.", "warning")
+            flash(f"Pilih {T.sub_client_lower} terlebih dahulu.", "warning")
         elif not period_start or not period_end:
             flash("Tanggal mulai dan tanggal selesai wajib diisi dengan benar.", "warning")
         elif period_start > period_end:
@@ -182,7 +183,7 @@ def generate_period_invoice_preview():
             else:
                 selected_client_pics = get_active_client_pics(selected_client.id) if selected_client else []
                 if not selected_client_pics:
-                    flash("Client belum punya PIC resmi aktif. Lihat data tetap tampil, tapi invoice belum bisa disimpan.", "warning")
+                    flash(f"{T.client} belum punya PIC resmi aktif. Lihat data tetap tampil, tapi invoice belum bisa disimpan.", "warning")
                 preview_ready = True
 
             orders = DailyOrder.query.filter(
@@ -555,7 +556,7 @@ def generate_period_invoice_save():
     period_end = _period_parse_date(period_end_value)
 
     if not mandor_id:
-        flash("Mandor wajib dipilih.", "warning")
+        flash(f"{T.sub_client} wajib dipilih.", "warning")
         return redirect(url_for("finance.generate_period_invoice_preview"))
 
     if not period_start or not period_end:
@@ -570,11 +571,11 @@ def generate_period_invoice_save():
     mandor = Mandor.query.get(mandor_id)
 
     if not mandor:
-        flash("Data mandor tidak ditemukan.", "danger")
+        flash(f"Data {T.sub_client_lower} tidak ditemukan.", "danger")
         return redirect(url_for("finance.generate_period_invoice_preview"))
 
     if int(getattr(mandor, "branch_id", 0) or 0) != int(current_user.branch_id):
-        flash("Mandor/PIC lapangan tidak sesuai cabang user.", "danger")
+        flash(f"{T.sub_client}/PIC lapangan tidak sesuai cabang user.", "danger")
         return redirect(url_for("finance.generate_period_invoice_preview"))
 
     client, client_error = get_client_for_mandor_invoice(mandor)
@@ -607,7 +608,7 @@ def generate_period_invoice_save():
     ).first()
 
     if existing_period_invoice:
-        flash("Invoice periode untuk mandor dan rentang tanggal ini sudah pernah dibuat.", "warning")
+        flash(f"Invoice periode untuk {T.sub_client_lower} dan rentang tanggal ini sudah pernah dibuat.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=existing_period_invoice.id))
 
     lines = _build_period_invoice_lines_for_save(
@@ -704,7 +705,7 @@ def generate_period_invoice_save():
             description=f"Invoice periode dibuat: {invoice.invoice_number}.",
             metadata={"invoice_number": invoice.invoice_number, "source_type": invoice.source_type, "input_source": invoice.input_source, "total_amount": invoice.total_amount},
         )
-        flash("Invoice periode resmi ke client berhasil dibuat dan jurnal otomatis dicatat.", "success")
+        flash(f"Invoice periode resmi ke {T.client_lower} berhasil dibuat dan jurnal otomatis dicatat.", "success")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
     except Exception as error:

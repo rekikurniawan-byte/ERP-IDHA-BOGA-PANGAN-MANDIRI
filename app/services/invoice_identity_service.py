@@ -1,6 +1,7 @@
 from app.models.master import Client, ClientPic, Mandor
 from app.extensions import db
 from app.services.company_settings_service import get_company_settings
+from app.utils.terms import T
 
 
 def clean_text(value):
@@ -36,7 +37,7 @@ def pick_default_client_pic(client_id):
 
 def get_required_client_pic(client_id, client_pic_id=None):
     if not client_id:
-        return None, "Client invoice belum valid."
+        return None, f"{T.client} invoice belum valid."
 
     pic = None
     if client_pic_id:
@@ -46,12 +47,12 @@ def get_required_client_pic(client_id, client_pic_id=None):
             is_active=True,
         ).first()
         if not pic:
-            return None, "PIC client tidak valid / tidak aktif untuk client ini."
+            return None, f"PIC {T.client_lower} tidak valid / tidak aktif untuk {T.client_lower} ini."
     else:
         pic = pick_default_client_pic(client_id)
 
     if not pic:
-        return None, "Client belum punya PIC resmi aktif. Tambahkan PIC client dulu di Master Client."
+        return None, f"{T.client} belum punya PIC resmi aktif. Tambahkan PIC {T.client_lower} dulu di Master {T.client}."
 
     return pic, None
 
@@ -68,7 +69,7 @@ def invoice_contact_snapshot(client, mandor, client_pic_id, bill_to_type):
         return {
             "client_pic_id": None,
             "client_pic_name_snapshot": mandor.name,
-            "client_pic_position_snapshot": "Mandor (ditagih langsung)",
+            "client_pic_position_snapshot": f"{T.sub_client} (ditagih langsung)",
             "client_pic_phone_snapshot": getattr(mandor, "phone", None),
             "client_pic_email_snapshot": None,
         }, None
@@ -166,9 +167,9 @@ def get_invoice_official_identity(invoice):
     missing = []
     if bill_to_type == "CLIENT":
         if not client_code:
-            missing.append("Kode client")
+            missing.append(f"Kode {T.client_lower}")
         if not pic_name:
-            missing.append("PIC resmi client")
+            missing.append(f"PIC resmi {T.client_lower}")
     elif bill_to_type == "MANDOR":
         if not client_name:
             missing.append("Nama pihak ditagih")
@@ -177,7 +178,7 @@ def get_invoice_official_identity(invoice):
             missing.append("Nama pihak ditagih")
 
     if not bank_name or not bank_number or not bank_account_name:
-        missing.append("rekening pembayaran PT")
+        missing.append("rekening pembayaran perusahaan")
 
     return {
         "client_name": client_name,

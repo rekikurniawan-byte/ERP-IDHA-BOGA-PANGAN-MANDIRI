@@ -22,6 +22,7 @@ from app.services.dashboard_service import (
 )
 from app.services.dashboard_analytics_service import get_revenue_explorer_data
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context
+from app.utils.terms import T
 
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -95,9 +96,9 @@ def _role_landing_payload(role, branch_id=None):
             "description": "Landing khusus finance untuk invoice, pembayaran, kas/bank, piutang, dan hutang supplier.",
             "badge_label": "FINANCE",
             "cards": [
-                _landing_card("Invoice", "Pantau dan kelola invoice client/perusahaan.", "finance.invoices", "bi-receipt"),
+                _landing_card("Invoice", f"Pantau dan kelola invoice {T.client_lower}.", "finance.invoices", "bi-receipt"),
                 _landing_card("Pembayaran Customer", "Riwayat pembayaran masuk dan bukti transfer invoice.", "finance.payment_history", "bi-credit-card"),
-                _landing_card("Piutang Client", "Follow-up tagihan dan sisa piutang client.", "finance.receivables", "bi-cash-coin"),
+                _landing_card(f"Piutang {T.client}", f"Follow-up tagihan dan sisa piutang {T.client_lower}.", "finance.receivables", "bi-cash-coin"),
                 _landing_card("Profit Invoice", "Baca margin invoice dari alokasi HPP.", "finance.invoice_profit_report", "bi-graph-up-arrow"),
                 _landing_card("Hutang Supplier", "Kelola supplier bill dan pembayaran hutang.", "finance.supplier_bills", "bi-wallet"),
                 _landing_card("AP Aging", "Lihat umur hutang supplier secara read-only.", "finance.accounts_payable_aging", "bi-hourglass-split"),
@@ -144,7 +145,7 @@ def _role_landing_payload(role, branch_id=None):
         ROLE_HR: {
             "eyebrow": "Dashboard HR",
             "title": "SDM & Payroll",
-            "description": "Landing khusus HR untuk karyawan internal dan payroll. Mandor tetap bukan employee/payroll.",
+            "description": f"Landing khusus HR untuk karyawan internal dan payroll. {T.sub_client} tetap bukan employee/payroll.",
             "badge_label": "HR",
             "cards": [
                 _landing_card("Dashboard SDM", "Ringkasan karyawan internal dan payroll.", "hr.index", "bi-people"),
@@ -173,7 +174,7 @@ def index():
         data = {
             "title": "PT Idha Boga Pangan Mandiri",
             "subtitle": "Portal pemesanan catering dan sistem operasional terintegrasi.",
-            "description": "Pelanggan umum membuat pesanan dan membayar di awal. Mandor mengelola pesanan, pekerja, hutang, tagihan, dan pembayaran. PT memantau seluruh mandor, invoice, piutang, pembayaran, dan kontrak dalam satu ERP.",
+            "description": f"Pelanggan umum membuat pesanan dan membayar di awal. {T.sub_client} mengelola pesanan, {T.worker_lower}, hutang, tagihan, dan pembayaran. {T.client} memantau seluruh {T.sub_client_lower}, invoice, piutang, pembayaran, dan kontrak dalam satu ERP.",
             "primary_url": url_for("auth.login"),
             "secondary_url": url_for("portal.register") if current_app.config.get("PORTAL_ENABLED", False) else url_for("auth.login"),
             "portal_enabled": bool(current_app.config.get("PORTAL_ENABLED", False)),
@@ -185,23 +186,23 @@ def index():
                     "steps": ["Pesan", "Bayar", "Diverifikasi", "Diproses"],
                 },
                 {
-                    "title": "Mandor",
-                    "description": "Kelola order, pekerja, hutang catering, hutang warung, cicilan, invoice, dan pembayaran.",
+                    "title": T.sub_client,
+                    "description": f"Kelola order, {T.worker_lower}, hutang catering, hutang warung, cicilan, invoice, dan pembayaran.",
                     "icon": "bi-people",
-                    "steps": ["Order", "Pekerja", "Hutang", "Bayar"],
+                    "steps": ["Order", T.worker, "Hutang", "Bayar"],
                 },
                 {
-                    "title": "PT",
-                    "description": "Pantau seluruh mandor, total hutang, invoice diterbitkan, invoice belum lunas, riwayat pembayaran, dan rekap tagihan.",
+                    "title": T.client,
+                    "description": f"Pantau seluruh {T.sub_client_lower}, total hutang, invoice diterbitkan, invoice belum lunas, riwayat pembayaran, dan rekap tagihan.",
                     "icon": "bi-building-check",
-                    "steps": ["Mandor", "Piutang", "Invoice", "Kontrak"],
+                    "steps": [T.sub_client, "Piutang", "Invoice", "Kontrak"],
                 },
             ],
             "rules": [
                 "ERP tetap menjadi satu sumber data.",
                 "Akun portal terhubung ke data perusahaan yang sama.",
                 "Customer umum bayar dulu sebelum pesanan diproses.",
-                "Mandor dan PT mengikuti aturan tempo/kredit yang sudah disetujui.",
+                f"{T.sub_client} dan {T.client_lower} mengikuti aturan tempo/kredit yang sudah disetujui.",
             ],
         }
         return render_template("public/landing.html", data=data)
@@ -258,7 +259,7 @@ def revenue_explorer():
         action_url=url_for("dashboard.revenue_explorer"),
         reset_url=url_for("dashboard.revenue_explorer"),
         title="Filter Revenue Explorer",
-        description="Custom tanggal untuk omzet, kas masuk, invoice, warung, client, dan mandor.",
+        description=f"Custom tanggal untuk omzet, kas masuk, invoice, warung, {T.client_lower}, dan {T.sub_client_lower}.",
         start_name="revenue_start_date",
         end_name="revenue_end_date",
         preset_name="revenue_period",
@@ -327,7 +328,7 @@ def module_placeholder(module_name):
         "kas-harian": "Kas Harian",
         "invoice": "Invoice",
         "pembayaran": "Pembayaran",
-        "mandor-pekerja": "Mandor & Pekerja",
+        "mandor-pekerja": f"{T.sub_client} & {T.worker}",
         "permintaan-barang": "Permintaan Barang",
         "pemakaian-barang": "Pemakaian Barang",
         "penerimaan": "Penerimaan Pengiriman",

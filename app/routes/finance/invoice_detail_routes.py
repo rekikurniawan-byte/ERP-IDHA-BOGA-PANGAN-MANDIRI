@@ -1,6 +1,7 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.routes.finance.invoice_communication_routes import build_invoice_whatsapp_context
+from app.utils.terms import T
 
 @finance_bp.route("/invoices/<int:invoice_id>")
 @role_required("OWNER", "ADMIN", "FINANCE")
@@ -37,7 +38,7 @@ def invoice_detail(invoice_id):
 
     if invoice.client_id:
         client = Client.query.get(invoice.client_id)
-        client_name = client.name if client else f"Client ID {invoice.client_id}"
+        client_name = client.name if client else f"{T.client} ID {invoice.client_id}"
 
         client_pics = ClientPic.query.filter_by(
             client_id=invoice.client_id,
@@ -48,7 +49,7 @@ def invoice_detail(invoice_id):
 
     if invoice.mandor_id:
         mandor = Mandor.query.get(invoice.mandor_id)
-        mandor_name = mandor.name if mandor else f"Mandor ID {invoice.mandor_id}"
+        mandor_name = mandor.name if mandor else f"{T.sub_client} ID {invoice.mandor_id}"
 
     official_identity = get_invoice_official_identity(invoice)
     whatsapp = build_invoice_whatsapp_context(invoice)

@@ -258,11 +258,11 @@
                         <div class="receipt-value">{{ receipt.received_from }}</div>
                     </div>
                     <div class="receipt-row">
-                        <div class="receipt-label">Client</div>
+                        <div class="receipt-label">{{ term('client') }}</div>
                         <div class="receipt-value">{{ client.name if client else '-' }}</div>
                     </div>
                     <div class="receipt-row">
-                        <div class="receipt-label">Mandor</div>
+                        <div class="receipt-label">{{ term('sub_client') }}</div>
                         <div class="receipt-value">{{ mandor.name if mandor else '-' }}</div>
                     </div>
                     <div class="receipt-row">
@@ -335,7 +335,7 @@
 
         {% if client_pics %}
         <div class="receipt-section">
-            <h5>PIC Client</h5>
+            <h5>PIC {{ term('client') }}</h5>
             {% for pic in client_pics %}
             <div class="receipt-row">
                 <div class="receipt-label">{{ pic.position or 'PIC' }}</div>
@@ -375,7 +375,7 @@
                 {% if receipt.invoice_authorized_position %}<div class="text-muted small">{{ receipt.invoice_authorized_position }}</div>{% endif %}
             </div>
             <div class="signature-box">
-                <div>Pembayar / Client</div>
+                <div>Pembayar / {{ term('client') }}</div>
                 <div class="signature-line">{{ receipt.received_from }}</div>
             </div>
         </div>

@@ -20,6 +20,7 @@ from app.models.field_transaction import (
 from app.models.finance import BankAccount
 from app.models.master import Mandor
 from app.models.system import DigitalAttachment
+from app.utils.terms import T
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.business_logic_guard_service import BusinessRuleError, assert_positive_amount
@@ -320,7 +321,7 @@ def create_field_counterparty(
             for existing in active_counterparties:
                 if int(getattr(existing, "linked_mandor_id", 0) or 0) == int(matched_mandor.id):
                     raise FieldTransactionValidationError(
-                        f"Mandor {matched_mandor.name} sudah punya pihak transaksi lapangan aktif "
+                        f"{T.sub_client} {matched_mandor.name} sudah punya pihak transaksi lapangan aktif "
                         f"(ID {existing.id}). Pilih pihak existing itu agar histori tetap menyatu."
                     )
 

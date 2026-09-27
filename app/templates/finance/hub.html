@@ -8,7 +8,7 @@
         "Hub lintas invoice, piutang, rekap manual, buku kas/bank, dan input harian.",
         "Finance",
         actions=[
-            {"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff", "variant": "primary"},
+            {"label": ("Rekap Tagihan " ~ term('sub_client')), "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff", "variant": "primary"},
             {"label": "Input Cepat", "url": url_for('finance.finance_transactions'), "icon": "bi-ui-checks-grid"},
             {"label": "Bukti Portal", "url": url_for('finance.portal_payment_proofs'), "icon": "bi-cloud-check"},
         ]
@@ -26,7 +26,7 @@
             <p>{{ summary.manual_receivable_count }} dokumen manual</p>
         </div>
         <div class="app-stat-card">
-            <span>Rekap Tagihan Mandor</span>
+            <span>Rekap Tagihan {{ term('sub_client') }}</span>
             <h3>{{ summary.manual_batch_count }}</h3>
             <p>batch rekap tercatat</p>
         </div>
@@ -105,7 +105,7 @@
             </div>
             <div class="finance-hub-status-card finance-hub-status-action">
                 <span>Tindak Lanjut</span>
-                <strong>Rekap Tagihan Mandor</strong>
+                <strong>Rekap Tagihan {{ term('sub_client') }}</strong>
                 <a href="{{ url_for('finance.manual_billing') }}" class="btn btn-sm app-btn-secondary">Buka Rekap</a>
             </div>
         </div>
@@ -121,7 +121,7 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <a href="{{ url_for('finance.manual_billing') }}" class="unified-finance-related-link">
-                    <i class="bi bi-receipt-cutoff"></i><span>Rekap Tagihan Mandor</span>
+                    <i class="bi bi-receipt-cutoff"></i><span>Rekap Tagihan {{ term('sub_client') }}</span>
                 </a>
             </div>
             <div class="col-md-4">
@@ -136,7 +136,7 @@
             </div>
             <div class="col-md-4">
                 <a href="{{ url_for('finance.receivables') }}" class="unified-finance-related-link">
-                    <i class="bi bi-cash-coin"></i><span>Piutang Client</span>
+                    <i class="bi bi-cash-coin"></i><span>Piutang {{ term('client') }}</span>
                 </a>
             </div>
             <div class="col-md-4">
@@ -160,7 +160,7 @@
     <div class="app-card mt-4">
         <div class="card-header-clean">
             <div>
-                <h5>Rekap Tagihan Mandor Terbaru</h5>
+                <h5>Rekap Tagihan {{ term('sub_client') }} Terbaru</h5>
                 <p>Batch rekap yang menjadi jembatan dari sumber manual ke invoice resmi.</p>
             </div>
         </div>
@@ -170,7 +170,7 @@
                     <tr>
                         <th>No Rekap</th>
                         <th>Periode</th>
-                        <th>Mandor</th>
+                        <th>{{ term('sub_client') }}</th>
                         <th>Total</th>
                         <th>Status</th>
                         <th>Invoice</th>
@@ -197,7 +197,7 @@
                         <td colspan="6">
                             <div class="empty-state">
                                 <i class="bi bi-receipt-cutoff"></i>
-                                <p>Belum ada rekap tagihan mandor.</p>
+                                <p>Belum ada rekap tagihan {{ term('sub_client', lower=True) }}.</p>
                             </div>
                         </td>
                     </tr>

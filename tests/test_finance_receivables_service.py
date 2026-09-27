@@ -41,7 +41,7 @@ def test_invoice_party_context_keeps_legacy_mandor_invoice_compatible():
     party = invoice_party_context(invoice, client_map={3: client}, mandor_map={7: mandor})
 
     assert party["type"] == "MANDOR_EXISTING"
-    assert party["type_label"] == "Mandor"
+    assert party["type_label"] == "Sub Client"
     assert party["name"] == "Pak Tarom"
     assert party["client_name"] == "PT APG"
     assert party["input_source_label"] == "Realtime"

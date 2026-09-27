@@ -6,7 +6,7 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 {{ page_header(
     "Kontrol Kredit",
-    "Mandor yang ditagih langsung, diurutkan dari yang paling berisiko. Status naik otomatis tiap hari; hanya OWNER yang bisa menurunkannya.",
+    (term('sub_client') ~ " yang ditagih langsung, diurutkan dari yang paling berisiko. Status naik otomatis tiap hari; hanya OWNER yang bisa menurunkannya."),
     "Keuangan • Kredit"
 ) }}
 
@@ -74,7 +74,7 @@
     <div class="empty-state">
         <i class="bi bi-shield-check"></i>
         <h5>Belum ada akun kredit</h5>
-        <p>Semua mandor masih ditagih lewat PT pemilik proyek. Setel kredit mandor yang ditagih langsung di bawah.</p>
+        <p>Semua {{ term('sub_client', lower=True) }} masih ditagih lewat {{ term('client', lower=True) }}-nya. Setel kredit {{ term('sub_client', lower=True) }} yang ditagih langsung di bawah.</p>
     </div>
     {% endif %}
 </div>
@@ -83,8 +83,8 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Mandor Belum Disetel</h5>
-            <p>Ditagih lewat PT pemilik proyek. Setel kalau pembayarannya tidak dijamin PT dan harus ditagih langsung ke mandor.</p>
+            <h5>{{ term('sub_client') }} Belum Disetel</h5>
+            <p>Ditagih lewat {{ term('client', lower=True) }}-nya. Setel kalau pembayarannya tidak dijamin {{ term('client') }} dan harus ditagih langsung ke {{ term('sub_client', lower=True) }}.</p>
         </div>
     </div>
     <div class="table-responsive" data-mobile-table="scroll">

@@ -31,6 +31,7 @@ from app.services.credit_account_service import (
 from app.services.credit_control_service import get_credit_account
 from app.utils.decorators import role_required
 from app.utils.roles import effective_role
+from app.utils.terms import T
 
 
 credit_bp = Blueprint("credit", __name__, url_prefix="/credit")
@@ -90,7 +91,7 @@ def sweep():
     return redirect(url_for("credit.overview"))
 
 
-@credit_bp.route("/mandor/<int:mandor_id>/settings", methods=["GET", "POST"])
+@credit_bp.route(f"/{T.sub_client_lower}/<int:mandor_id>/settings", methods=["GET", "POST"])
 @role_required("OWNER")
 def mandor_settings(mandor_id):
     mandor = _own_branch_or_404(db.session.get(Mandor, mandor_id))
@@ -139,7 +140,7 @@ def _account_action(account_id, action, success_message):
 
 def _mandor_of(account):
     if account.party_type != PARTY_MANDOR:
-        raise CreditActionError("Deposit hanya untuk akun mandor.")
+        raise CreditActionError(f"Deposit hanya untuk akun {T.sub_client_lower}.")
     return db.session.get(Mandor, account.party_id)
 
 
@@ -189,5 +190,5 @@ def write_off(account_id):
     return _account_action(
         account_id,
         lambda account: confirm_write_off(account, request.form, current_user),
-        lambda result: "Hutang dihapus buku dan dijurnal. Mandor dinonaktifkan.",
+        lambda result: f"Hutang dihapus buku dan dijurnal. {T.sub_client} dinonaktifkan.",
     )

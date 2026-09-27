@@ -7,6 +7,7 @@ from app.services.portal_access_service import build_portal_mandor_directory
 from app.services.portal_debt_visibility_service import build_portal_worker_debt_read_model
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
 from app.services.portal_mapping_service import build_portal_external_scope
+from app.utils.terms import T
 
 
 def build_portal_mobile_worker_cards(user, *, limit: int = 100) -> dict:
@@ -43,7 +44,7 @@ def build_portal_mobile_worker_cards(user, *, limit: int = 100) -> dict:
     return {
         "allowed": True,
         "scope_mode": scope.scope_mode,
-        "reason": "Pekerja dibatasi oleh ownership mandor portal.",
+        "reason": f"{T.worker} dibatasi oleh ownership {T.sub_client_lower} portal.",
         "workers": rows,
         "totals": {
             "worker_count": len(rows),
@@ -95,7 +96,7 @@ def build_portal_mobile_mandor_cards(user, *, limit: int = 100) -> dict:
     return {
         "allowed": True,
         "scope_mode": directory.get("scope_mode"),
-        "reason": "Mandor dan lokasi dibatasi oleh client/PT ownership mapping.",
+        "reason": f"{T.sub_client} dan lokasi dibatasi oleh {T.client_lower} ownership mapping.",
         "mandors": rows,
         "totals": {
             "mandor_count": len(rows),

@@ -17,7 +17,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Jenis Advance</h5>
-                <p>Pilih event bisnis yang benar. Client, supplier, dan mandor punya perlakuan berbeda.</p>
+                <p>Pilih event bisnis yang benar. {{ term('client') }}, supplier, dan {{ term('sub_client', lower=True) }} punya perlakuan berbeda.</p>
             </div>
         </div>
         <div class="row g-3">
@@ -51,9 +51,9 @@
         </div>
         <div class="row g-3">
             <div class="col-md-4 advance-party-field" data-party-field="CLIENT">
-                <label class="form-label">Client</label>
+                <label class="form-label">{{ term('client') }}</label>
                 <select name="client_id" class="form-select">
-                    <option value="">Pilih client</option>
+                    <option value="">Pilih {{ term('client', lower=True) }}</option>
                     {% for client in clients %}
                         <option value="{{ client.id }}">{{ client.name }}</option>
                     {% endfor %}
@@ -69,9 +69,9 @@
                 </select>
             </div>
             <div class="col-md-4 advance-party-field" data-party-field="MANDOR">
-                <label class="form-label">Mandor / PIC Lapangan</label>
+                <label class="form-label">{{ term('sub_client') }} / PIC Lapangan</label>
                 <select name="mandor_id" class="form-select">
-                    <option value="">Pilih mandor</option>
+                    <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
                     {% for mandor in mandors %}
                         <option value="{{ mandor.id }}">{{ mandor.name }}</option>
                     {% endfor %}
@@ -84,7 +84,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Kas / Bank</h5>
-                <p>Client DP = kas/bank masuk. Supplier/mandor advance = kas/bank keluar.</p>
+                <p>{{ term('client') }} DP = kas/bank masuk. Supplier/{{ term('sub_client', lower=True) }} advance = kas/bank keluar.</p>
             </div>
         </div>
         <div class="row g-3">

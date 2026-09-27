@@ -5,7 +5,7 @@
 <section class="page-section">
     {{ portal_page_header(
         "Ownership Portal",
-        "Cek hubungan akun dengan data perusahaan, mandor, dan lokasi.",
+        ("Cek hubungan akun dengan data perusahaan, " ~ term('sub_client', lower=True) ~ ", dan lokasi."),
         status_label=data.status_label,
         link_label="Dashboard Saya",
         link_url=url_for('portal.my_dashboard')
@@ -19,11 +19,11 @@
                     <div class="fw-semibold">Aktif</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Client/PT</div>
+                    <div class="text-muted small text-uppercase fw-bold">{{ term('client') }}</div>
                     <div class="fw-semibold">{{ data.ownership.summary.clients }}</div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Mandor</div>
+                    <div class="text-muted small text-uppercase fw-bold">{{ term('sub_client') }}</div>
                     <div class="fw-semibold">{{ data.ownership.summary.mandors }}</div>
                 </div>
                 <div class="col-12 col-md-3">
@@ -35,14 +35,14 @@
             <div class="row g-3">
                 <div class="col-12 col-md-6">
                     <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-bold">Client tanpa mandor</div>
+                        <div class="text-muted small text-uppercase fw-bold">{{ term('client') }} tanpa {{ term('sub_client', lower=True) }}</div>
                         <div class="fs-5 fw-bold mt-2">{{ data.ownership.summary.clients_without_mandor }}</div>
-                        <p class="text-muted mb-0 mt-2">Perlu dicek sebelum memberi akses PT/client ke data mandor.</p>
+                        <p class="text-muted mb-0 mt-2">Perlu dicek sebelum memberi akses {{ term('client') }} ke data {{ term('sub_client', lower=True) }}.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6">
                     <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-bold">Mandor tanpa lokasi</div>
+                        <div class="text-muted small text-uppercase fw-bold">{{ term('sub_client') }} tanpa lokasi</div>
                         <div class="fs-5 fw-bold mt-2">{{ data.ownership.summary.mandors_without_location }}</div>
                         <p class="text-muted mb-0 mt-2">Order portal butuh lokasi valid sebelum boleh dibuat.</p>
                     </div>

@@ -21,7 +21,7 @@
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.invoice_endpoint) }}"><i class="bi bi-receipt"></i> Invoice Catering</a>
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.payment_endpoint) }}"><i class="bi bi-cash-coin"></i> Pembayaran Masuk</a>
                     <a class="dropdown-item" href="{{ url_for(explorer.drilldown.canteen_endpoint) }}"><i class="bi bi-shop"></i> Transaksi Warung</a>
-                    <a class="dropdown-item" href="{{ url_for(explorer.drilldown.receivable_endpoint) }}"><i class="bi bi-hourglass-split"></i> Piutang Client</a>
+                    <a class="dropdown-item" href="{{ url_for(explorer.drilldown.receivable_endpoint) }}"><i class="bi bi-hourglass-split"></i> Piutang {{ term('client') }}</a>
                 </div>
             </div>
         </div>
@@ -72,18 +72,18 @@
             </div>
         {% endif %}
         <div class="dashboard-filter-field">
-            <label for="revenueClient">Client</label>
+            <label for="revenueClient">{{ term('client') }}</label>
             <select id="revenueClient" name="revenue_client_id" class="form-select form-select-sm dashboard-filter-select">
-                <option value="">Semua client</option>
+                <option value="">Semua {{ term('client', lower=True) }}</option>
                 {% for option in explorer.options.clients %}
                     <option value="{{ option.value }}" {% if option.value == explorer.filters.client_id %}selected{% endif %}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="dashboard-filter-field">
-            <label for="revenueMandor">Mandor</label>
+            <label for="revenueMandor">{{ term('sub_client') }}</label>
             <select id="revenueMandor" name="revenue_mandor_id" class="form-select form-select-sm dashboard-filter-select">
-                <option value="">Semua mandor</option>
+                <option value="">Semua {{ term('sub_client', lower=True) }}</option>
                 {% for option in explorer.options.mandors %}
                     <option value="{{ option.value }}" {% if option.value == explorer.filters.mandor_id %}selected{% endif %}>{{ option.label }}</option>
                 {% endfor %}

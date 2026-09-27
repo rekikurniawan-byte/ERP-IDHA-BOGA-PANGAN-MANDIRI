@@ -4,18 +4,18 @@
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 {{ page_header(
-    "Data Pekerja",
-    "Pekerja dipakai untuk transaksi hutang warung. Kode pekerja dibuat otomatis oleh sistem.",
-    eyebrow="Master Pekerja",
+    ("Data " ~ term('worker')),
+    (term('worker') ~ " dipakai untuk transaksi hutang warung. Kode " ~ term('worker', lower=True) ~ " dibuat otomatis oleh sistem."),
+    eyebrow=("Master " ~ term('worker')),
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
-        {"label": "Tambah Pekerja", "url": url_for('master.create_worker'), "icon": "bi-plus-circle", "variant": "primary"},
+        {"label": ("Tambah " ~ term('worker')), "url": url_for('master.create_worker'), "icon": "bi-plus-circle", "variant": "primary"},
     ]
 ) }}
 
 <div class="app-card">
     <form method="GET" action="{{ url_for('master.workers') }}" class="filter-bar app-form" data-ui-form="true">
-        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari nama / kode / mandor / telepon">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari nama / kode / {{ term('sub_client', lower=True) }} / telepon">
 
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
@@ -35,8 +35,8 @@
             <thead>
                 <tr>
                     <th>Kode</th>
-                    <th>Nama Pekerja</th>
-                    <th>Mandor</th>
+                    <th>Nama {{ term('worker') }}</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Telepon</th>
                     <th>Status</th>
                     <th>Catatan</th>
@@ -86,7 +86,7 @@
                     <td colspan="7">
                         <div class="empty-state">
                             <i class="bi bi-people"></i>
-                            <p>Belum ada data pekerja.</p>
+                            <p>Belum ada data {{ term('worker', lower=True) }}.</p>
                         </div>
                     </td>
                 </tr>

@@ -2,6 +2,7 @@
 import sys
 
 from app.services.manual_backfill_billing_service import *  # noqa: F401,F403
+from app.utils.terms import T
 
 
 def _root_attr(name, fallback):
@@ -55,11 +56,11 @@ def _legacy_invoice_bill_to_type(value):
 
 def _bill_to_display_label(value):
     mapping = {
-        BILL_TO_MANDOR_EXISTING: "Mandor existing",
-        BILL_TO_CLIENT_EXISTING: "Client existing",
+        BILL_TO_MANDOR_EXISTING: f"{T.sub_client} existing",
+        BILL_TO_CLIENT_EXISTING: f"{T.client} existing",
         BILL_TO_KELOMPOK: "Kelompok",
         BILL_TO_PERORANGAN: "Perorangan",
-        BILL_TO_CLIENT_LAIN: "Client lain",
+        BILL_TO_CLIENT_LAIN: f"{T.client} lain",
     }
     return mapping.get(_clean_text(value).upper(), _clean_text(value) or "-")
 
@@ -84,10 +85,10 @@ def _resolve_manual_backfill_bill_to(
         try:
             mandor_id = int(mandor_id)
         except (TypeError, ValueError):
-            raise ManualBackfillBillingError("Mandor existing wajib dipilih.")
+            raise ManualBackfillBillingError(f"{T.sub_client} existing wajib dipilih.")
         mandor = MandorModel.query.filter_by(id=mandor_id, branch_id=branch_id, is_active=True).first()
         if not mandor:
-            raise ManualBackfillBillingError("Mandor/PIC lapangan tidak ditemukan atau nonaktif.")
+            raise ManualBackfillBillingError(f"{T.sub_client}/PIC lapangan tidak ditemukan atau nonaktif.")
         client = getattr(mandor, "client", None)
         return {
             "bill_to_type": bill_to_type,
@@ -106,10 +107,10 @@ def _resolve_manual_backfill_bill_to(
         try:
             client_id = int(client_id)
         except (TypeError, ValueError):
-            raise ManualBackfillBillingError("Client existing wajib dipilih.")
+            raise ManualBackfillBillingError(f"{T.client} existing wajib dipilih.")
         client = ClientModel.query.filter_by(id=client_id, is_active=True).first()
         if not client:
-            raise ManualBackfillBillingError("Client tidak ditemukan atau nonaktif.")
+            raise ManualBackfillBillingError(f"{T.client} tidak ditemukan atau nonaktif.")
         return {
             "bill_to_type": bill_to_type,
             "mandor": None,

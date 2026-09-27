@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
 <body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
-    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else "Mandor" if current_user.role == "PORTAL_SUBCLIENT" else "PT" if current_user.role == "PORTAL_CLIENT" else "Portal" %}
+    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else term('sub_client') if current_user.role == "PORTAL_SUBCLIENT" else term('client') if current_user.role == "PORTAL_CLIENT" else "Portal" %}
     <header class="portal-mobile-topbar portal-web-topbar">
         <div class="portal-web-topbar-inner">
             <a href="{{ url_for('portal.my_dashboard') }}" class="portal-web-brand" aria-label="Portal Idha Boga">
@@ -74,7 +74,7 @@
                 </a>
                 <a href="{{ url_for('portal.mandor_workers') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_workers' else '' }}">
                     <i class="bi bi-people"></i>
-                    <span>Pekerja</span>
+                    <span>{{ term('worker') }}</span>
                 </a>
                 <a href="{{ url_for('portal.mandor_canteen_debts') }}" class="{{ 'active' if request.endpoint in ['portal.mandor_canteen_debts', 'portal.mandor_catering_debts', 'portal.mandor_installments'] else '' }}">
                     <i class="bi bi-wallet2"></i>
@@ -99,7 +99,7 @@
             {% elif current_user.role == "PORTAL_CLIENT" %}
                 <a href="{{ url_for('portal.pt_mandors') }}" class="{{ 'active' if request.endpoint == 'portal.pt_mandors' else '' }}">
                     <i class="bi bi-diagram-3"></i>
-                    <span>Seluruh Mandor</span>
+                    <span>Seluruh {{ term('sub_client') }}</span>
                 </a>
                 <a href="{{ url_for('portal.pt_invoices') }}" class="{{ 'active' if request.endpoint == 'portal.pt_invoices' else '' }}">
                     <i class="bi bi-receipt"></i>

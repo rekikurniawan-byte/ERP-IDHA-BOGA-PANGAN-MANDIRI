@@ -10,6 +10,7 @@ from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.operational_expense_service import create_operational_expense
 from app.services.transport_expense_service import create_transport_vehicle_expense
+from app.utils.terms import T
 
 
 class FieldTransactionBridgeError(Exception):
@@ -120,7 +121,7 @@ def _resolve_mandor(branch_id, mandor_id):
         return None
     mandor = Mandor.query.filter_by(id=mandor_id, branch_id=branch_id, is_active=True).first()
     if not mandor:
-        raise FieldTransactionBridgeError("Mandor bridge tidak valid atau tidak aktif.")
+        raise FieldTransactionBridgeError(f"{T.sub_client} bridge tidak valid atau tidak aktif.")
     return mandor
 
 
@@ -296,14 +297,14 @@ def bridge_to_advance_transaction(
     if not field_transaction:
         raise FieldTransactionBridgeError("Transaksi lapangan tidak ditemukan.")
     if _normalize(field_transaction.business_event_type) != "MANDOR_OPERATIONAL_ADVANCE":
-        raise FieldTransactionBridgeError("Bridge advance hanya berlaku untuk event panjar operasional mandor.")
+        raise FieldTransactionBridgeError(f"Bridge advance hanya berlaku untuk event panjar operasional {T.sub_client_lower}.")
     _ensure_not_already_posted_or_bridged(field_transaction, "ADVANCE_TRANSACTION")
 
     linked_mandor_id = mandor_id or getattr(getattr(field_transaction, "counterparty", None), "linked_mandor_id", None)
     mandor = _resolve_mandor(field_transaction.branch_id, linked_mandor_id)
     if not mandor:
         raise FieldTransactionBridgeError(
-            "Bridge panjar mandor membutuhkan mandor master yang valid. Hubungkan pihak transaksi lapangan ke mandor atau pilih mandor saat bridge."
+            f"Bridge panjar {T.sub_client_lower} membutuhkan {T.sub_client_lower} master yang valid. Hubungkan pihak transaksi lapangan ke {T.sub_client_lower} atau pilih {T.sub_client_lower} saat bridge."
         )
 
     with atomic_business_action(
@@ -360,4 +361,4 @@ def bridge_to_advance_transaction(
 
     if commit:
         db.session.commit()
-    return True, "Transaksi lapangan berhasil dijembatani ke advance mandor.", advance
+    return True, f"Transaksi lapangan berhasil dijembatani ke advance {T.sub_client_lower}.", advance

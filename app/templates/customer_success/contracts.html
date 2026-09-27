@@ -25,7 +25,7 @@
             <form method="post" class="row g-3 app-form" data-ui-form="true" novalidate>
                 {% include "components/csrf_token.html" %}
                 <div class="col-md-4">
-                    <label class="form-label">Pelanggan / PT</label>
+                    <label class="form-label">Pelanggan / {{ term('client') }}</label>
                     <select class="form-select app-input" name="client_id" required>
                         <option value="">Pilih pelanggan</option>
                         {% for client in data.clients %}
@@ -101,7 +101,7 @@
                     <thead>
                         <tr>
                             <th>No Kontrak</th>
-                            <th>Pelanggan / PT</th>
+                            <th>Pelanggan / {{ term('client') }}</th>
                             <th>Periode</th>
                             <th>Termin</th>
                             <th class="text-end">Limit Kredit</th>

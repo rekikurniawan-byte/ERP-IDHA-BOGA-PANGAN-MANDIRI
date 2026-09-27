@@ -83,9 +83,9 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Filter Client Existing</label>
+            <label class="form-label">Filter {{ term('client') }} Existing</label>
             <select name="client_id" class="form-select app-input">
-                <option value="">Semua Client/Pihak</option>
+                <option value="">Semua {{ term('client') }}/Pihak</option>
                 {% for client in client_options %}
                 <option value="{{ client.value }}" {% if selected_client_id == client.value %}selected{% endif %}>
                     {{ client.label }} - {{ client.invoice_count }} invoice - {{ client.remaining_total|rupiah }}
@@ -163,7 +163,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Rekap Piutang per Pihak Ditagih</h5>
-                <p>Gabungan mandor, client, kelompok, perorangan, dan client lain.</p>
+                <p>Gabungan {{ term('sub_client', lower=True) }}, {{ term('client', lower=True) }}, kelompok, perorangan, dan {{ term('client', lower=True) }} lain.</p>
             </div>
         </div>
 
@@ -277,7 +277,7 @@
 
                     <td>
                         <strong>{{ row.party_name }}</strong>
-                        <div class="text-muted small receivables-party-meta">Client: {{ row.client_name }} | Mandor: {{ row.mandor_name }}</div>
+                        <div class="text-muted small receivables-party-meta">{{ term('client') }}: {{ row.client_name }} | {{ term('sub_client') }}: {{ row.mandor_name }}</div>
                     </td>
                     <td><span class="status-badge receivables-party-type-badge">{{ row.bill_to_type_label }}</span></td>
                     <td>

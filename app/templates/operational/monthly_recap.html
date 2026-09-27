@@ -26,7 +26,7 @@
         <div class="app-stat-card">
             <p>Total Porsi</p>
             <h3>{{ report.summary.total_qty|qty }}</h3>
-            <span class="app-stat-helper">{{ report.summary.mandor_count }} mandor · {{ report.summary.location_count }} lokasi</span>
+            <span class="app-stat-helper">{{ report.summary.mandor_count }} {{ term('sub_client', lower=True) }} · {{ report.summary.location_count }} lokasi</span>
         </div>
         <div class="app-stat-card">
             <p>Nilai Catering</p>
@@ -43,7 +43,7 @@
     <div class="app-card">
         <div class="card-header-clean">
             <div>
-                <h5>Ringkasan per Mandor</h5>
+                <h5>Ringkasan per {{ term('sub_client') }}</h5>
                 <p>Gunakan tombol preview untuk lanjut ke halaman invoice periode tanpa membuat data invoice otomatis dari halaman ini.</p>
             </div>
         </div>
@@ -52,7 +52,7 @@
             <table class="table app-table align-middle">
                 <thead>
                     <tr>
-                        <th>Mandor / PIC</th>
+                        <th>{{ term('sub_client') }} / PIC</th>
                         <th class="text-end">Total Porsi</th>
                         <th class="text-end">Kandidat Invoice</th>
                         <th>Status</th>
@@ -111,7 +111,7 @@
             <table class="table app-table align-middle">
                 <thead>
                     <tr>
-                        <th>Mandor / PIC</th>
+                        <th>{{ term('sub_client') }} / PIC</th>
                         <th>Lokasi</th>
                         <th class="text-end">Order</th>
                         <th class="text-end">Siang</th>

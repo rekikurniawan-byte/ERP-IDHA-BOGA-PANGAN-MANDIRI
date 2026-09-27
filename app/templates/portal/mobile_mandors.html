@@ -6,14 +6,14 @@
     <div class="portal-feature-hero portal-directory-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p>Portal PT</p>
-            <h1>Seluruh Mandor</h1>
+            <p>Portal {{ term('client') }}</p>
+            <h1>Seluruh {{ term('sub_client') }}</h1>
             <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
     </div>
 
     <div class="portal-directory-summary">
-        <article><span>Mandor</span><strong>{{ model.totals.mandor_count }}</strong><small>Master Mandor</small></article>
+        <article><span>{{ term('sub_client') }}</span><strong>{{ model.totals.mandor_count }}</strong><small>Master {{ term('sub_client') }}</small></article>
         <article><span>Lokasi</span><strong>{{ model.totals.location_count }}</strong><small>Lokasi Pengiriman</small></article>
         <article><span>Tagihan</span><strong>{{ data.invoices.totals.invoice_count }}</strong><small>Akses finance</small></article>
         <article><span>Pembayaran</span><strong>{{ data.payments.totals.payment_count }}</strong><small>Riwayat bayar</small></article>
@@ -23,14 +23,14 @@
         <div class="portal-blocked-state">
             <i class="bi bi-lock"></i>
             <div>
-                <h2>Mandor belum dibuka</h2>
+                <h2>{{ term('sub_client') }} belum dibuka</h2>
                 <p>{{ model.reason }}</p>
             </div>
         </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Mandor & Lokasi</h2>
+        <h2>{{ term('sub_client') }} & Lokasi</h2>
         <span>Master </span>
     </div>
 
@@ -57,8 +57,8 @@
         {% else %}
             <div class="portal-empty-state">
                 <i class="bi bi-diagram-3"></i>
-                <strong>Belum ada mandor</strong>
-                <p>Mandor akan tampil jika client/PT akses memiliki mandor .</p>
+                <strong>Belum ada {{ term('sub_client', lower=True) }}</strong>
+                <p>{{ term('sub_client') }} akan tampil jika {{ term('client', lower=True) }} akses memiliki {{ term('sub_client', lower=True) }} .</p>
             </div>
         {% endfor %}
     </div>

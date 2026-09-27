@@ -20,6 +20,8 @@ from app.services.field_transaction_service import (
     create_system_linked_field_transaction,
     find_field_transaction_linked_source,
 )
+from app.utils.terms import T
+from app.utils.terms import L
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +51,13 @@ MANDOR_SECURITY_DEPOSIT = "MANDOR_SECURITY_DEPOSIT"
 # di satu akun. Uang yang diterima sekarang dicatat di akun kewajiban.
 ADVANCE_TYPES = {
     CLIENT_DP_RECEIVED: {
-        "label": "DP Client Diterima",
+        "label": L("DP {client} Diterima"),
         "party_type": "CLIENT",
         "cash_direction": "IN",
         "journal_direction": "CREDIT_ADVANCE",
         "account_code": "2008",
         "account_label": "2008 Uang Muka Pelanggan",
-        "description": "Uang muka/DP diterima dari client sebelum invoice final.",
+        "description": L("Uang muka/DP diterima dari {client_lower} sebelum invoice final."),
     },
     SUPPLIER_ADVANCE_PAID: {
         "label": "Uang Muka Supplier Dibayar",
@@ -67,24 +69,26 @@ ADVANCE_TYPES = {
         "description": "Uang muka dibayar ke supplier sebelum tagihan final.",
     },
     MANDOR_OPERATIONAL_ADVANCE: {
-        "label": "Panjar Operasional Mandor",
+        "label": L("Panjar Operasional {sub_client}"),
         "party_type": "MANDOR",
         "cash_direction": "OUT",
         "journal_direction": "DEBIT_ADVANCE",
         "account_code": "1008",
         "account_label": "1008 Uang Muka / DP",
-        "description": "Panjar operasional ke mandor/PIC lapangan. Bukan payroll.",
+        "description": L("Panjar operasional ke {sub_client_lower} atau PIC-nya. Bukan payroll."),
     },
     MANDOR_SECURITY_DEPOSIT: {
-        "label": "Deposit Jaminan Mandor",
+        "label": L("Deposit Jaminan {sub_client}"),
         "party_type": "MANDOR",
         "cash_direction": "IN",
         "journal_direction": "CREDIT_ADVANCE",
         "account_code": "2007",
-        "account_label": "2007 Deposit Jaminan Mandor",
-        "description": (
-            "Jaminan dari mandor yang ditagih langsung. Ditahan selama kerja sama, "
-            "tidak dipotong ke tiap invoice: dipakai menutup hutang kalau mandor "
+        # Nama akun COA sengaja baku, tidak ikut istilah cabang: buku besar
+        # harus bernama sama di semua cabang dan laporan.
+        "account_label": "2007 Deposit Jaminan Pelanggan",
+        "description": L(
+            "Jaminan dari {sub_client_lower} yang ditagih langsung. Ditahan selama kerja sama, "
+            "tidak dipotong ke tiap invoice: dipakai menutup hutang kalau {sub_client_lower} "
             "macet, atau dikembalikan kalau kerja sama selesai dan lunas."
         ),
     },
@@ -99,17 +103,17 @@ SETTLEMENT_TYPES = {
     "CLIENT_INVOICE": {
         "advance_type": CLIENT_DP_RECEIVED,
         "reference_type": "INVOICE",
-        "description": "Pemakaian DP client untuk mengurangi piutang invoice.",
+        "description": L("Pemakaian DP {client_lower} untuk mengurangi piutang invoice."),
     },
     DEPOSIT_TO_INVOICE: {
         "advance_type": MANDOR_SECURITY_DEPOSIT,
         "reference_type": "INVOICE",
-        "description": "Deposit jaminan dipotong untuk menutup hutang invoice mandor itu sendiri.",
+        "description": L("Deposit jaminan dipotong untuk menutup hutang invoice {sub_client_lower} itu sendiri."),
     },
     DEPOSIT_REFUND: {
         "advance_type": MANDOR_SECURITY_DEPOSIT,
         "reference_type": "DEPOSIT_REFUND",
-        "description": "Deposit jaminan dikembalikan ke mandor setelah kerja sama selesai dan lunas.",
+        "description": L("Deposit jaminan dikembalikan ke {sub_client_lower} setelah kerja sama selesai dan lunas."),
     },
     "SUPPLIER_BILL": {
         "advance_type": SUPPLIER_ADVANCE_PAID,
@@ -119,7 +123,7 @@ SETTLEMENT_TYPES = {
     "MANDOR_EXPENSE_PROOF": {
         "advance_type": MANDOR_OPERATIONAL_ADVANCE,
         "reference_type": "MANDOR_EXPENSE_PROOF",
-        "description": "Pertanggungjawaban panjar mandor. Jurnal final menunggu PRODUCTION expense mapping.",
+        "description": L("Pertanggungjawaban panjar {sub_client_lower}. Jurnal final menunggu PRODUCTION expense mapping."),
     },
 }
 
@@ -296,11 +300,11 @@ def get_party_label(advance):
     if not advance:
         return "-"
     if advance.party_type == "CLIENT":
-        return advance.client.name if advance.client else f"Client ID {advance.client_id or '-'}"
+        return advance.client.name if advance.client else f"{T.client} ID {advance.client_id or '-'}"
     if advance.party_type == "SUPPLIER":
         return advance.supplier.supplier_name if advance.supplier else f"Supplier ID {advance.supplier_id or '-'}"
     if advance.party_type == "MANDOR":
-        return advance.mandor.name if advance.mandor else f"Mandor ID {advance.mandor_id or '-'}"
+        return advance.mandor.name if advance.mandor else f"{T.sub_client} ID {advance.mandor_id or '-'}"
     return "-"
 
 
@@ -313,10 +317,10 @@ def validate_party(branch_id, advance_type, client_id=None, supplier_id=None, ma
 
     if expected_party_type == "CLIENT":
         if not client_id:
-            raise Exception("DP client wajib memilih client.")
+            raise Exception(f"DP {T.client_lower} wajib memilih {T.client_lower}.")
         party = Client.query.filter_by(id=client_id, is_active=True).first()
         if not party:
-            raise Exception("Client tidak valid atau tidak aktif.")
+            raise Exception(f"{T.client} tidak valid atau tidak aktif.")
         return "CLIENT", party.id, None, None
 
     if expected_party_type == "SUPPLIER":
@@ -329,10 +333,10 @@ def validate_party(branch_id, advance_type, client_id=None, supplier_id=None, ma
 
     if expected_party_type == "MANDOR":
         if not mandor_id:
-            raise Exception("Panjar mandor wajib memilih mandor/PIC lapangan.")
+            raise Exception(f"Panjar {T.sub_client_lower} wajib memilih {T.sub_client_lower}/PIC lapangan.")
         party = Mandor.query.filter_by(id=mandor_id, branch_id=branch_id, is_active=True).first()
         if not party:
-            raise Exception("Mandor tidak valid atau tidak aktif.")
+            raise Exception(f"{T.sub_client} tidak valid atau tidak aktif.")
         return "MANDOR", None, None, party.id
 
     raise Exception("Party type advance belum dikenali.")
@@ -582,7 +586,7 @@ def create_advance_settlement(
 
     if settlement_type == DEPOSIT_TO_INVOICE and getattr(reference_obj, "mandor_id", None) != advance.mandor_id:
         # Deposit mandor A tidak boleh menutup hutang mandor B.
-        raise Exception("Deposit hanya boleh dipotong ke invoice milik mandor yang sama.")
+        raise Exception(f"Deposit hanya boleh dipotong ke invoice milik {T.sub_client_lower} yang sama.")
     if settlement_type in {"CLIENT_INVOICE", DEPOSIT_TO_INVOICE} and not invoice_has_journal(getattr(reference_obj, "id", None)):
         # Settlement mengkredit 1004 Piutang Usaha. Kalau piutang invoice ini
         # belum pernah didebit (jurnal invoice belum diposting), 1004 minus.
@@ -593,7 +597,7 @@ def create_advance_settlement(
         unpaid = mandor_unpaid_invoice_total(advance.branch_id, advance.mandor_id)
         if unpaid > 0:
             raise Exception(
-                f"Deposit belum boleh dikembalikan: mandor masih punya hutang {_money(unpaid)}. "
+                f"Deposit belum boleh dikembalikan: {T.sub_client_lower} masih punya hutang {_money(unpaid)}. "
                 "Lunasi atau potong deposit ke invoice-nya dulu."
             )
     expense_account_code = _normalize(expense_account_code)
@@ -623,7 +627,7 @@ def create_advance_settlement(
     if settlement_type == "MANDOR_EXPENSE_PROOF":
         expense_proof_rule = MANDOR_EXPENSE_PROOF_ACCOUNT_CHOICES.get(expense_account_code)
         if not expense_proof_rule:
-            raise Exception("Pilih kategori biaya pertanggungjawaban panjar mandor terlebih dahulu.")
+            raise Exception(f"Pilih kategori biaya pertanggungjawaban panjar {T.sub_client_lower} terlebih dahulu.")
 
     settlement = AdvanceSettlement(
         branch_id=advance.branch_id,
@@ -646,7 +650,7 @@ def create_advance_settlement(
         acc_piutang = get_account_by_code("1004")
         if not acc_piutang:
             raise Exception("Akun 1004 Piutang Usaha belum tersedia.")
-        source_label = "deposit jaminan mandor" if settlement_type == DEPOSIT_TO_INVOICE else "DP client"
+        source_label = f"deposit jaminan {T.sub_client_lower}" if settlement_type == DEPOSIT_TO_INVOICE else f"DP {T.client_lower}"
         journal = Journal(
             journal_number=generate_journal_number(settlement_date),
             journal_date=settlement_date,
@@ -688,7 +692,7 @@ def create_advance_settlement(
             journal_date=settlement_date,
             reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
             reference_id=settlement.id,
-            description=f"Pengembalian deposit jaminan mandor {advance.advance_number}",
+            description=f"Pengembalian deposit jaminan {T.sub_client_lower} {advance.advance_number}",
             created_by=created_by,
         )
         db.session.add(journal)
@@ -723,7 +727,7 @@ def create_advance_settlement(
             reference_type=ADVANCE_SETTLEMENT_REFERENCE_TYPE,
             reference_id=settlement.id,
             description=(
-                f"Settlement panjar mandor {advance.advance_number} "
+                f"Settlement panjar {T.sub_client_lower} {advance.advance_number} "
                 f"ke {expense_proof_rule['account_label']}"
             ),
             created_by=created_by,

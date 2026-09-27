@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.accounting_routes without changing URL rules or endpoint names.
 """
 from app.routes.accounting_routes import *  # noqa: F401,F403
+from app.utils.terms import T
 
 
 def _accounting1b_parse_date(value, default_value):
@@ -407,7 +408,7 @@ def _build_accounting2b_coa_mapping_data():
         {
             "stage": "SUDAH BERJALAN",
             "module": "Finance",
-            "event": "Invoice catering proyek/harian + warung",
+            "event": "Invoice catering kontrak/harian + warung",
             "debit_codes": ["1004"],
             "credit_codes": ["4001", "4002", "4003", "4004"],
             "note": "PRODUCTION: invoice periode masuk 4001, invoice order harian masuk 4002. Piutang bertambah, pendapatan diakui.",
@@ -461,7 +462,7 @@ def _build_accounting2b_coa_mapping_data():
         {
             "stage": "TAHAP BERIKUTNYA",
             "module": "Warung",
-            "event": "Hutang pekerja warung",
+            "event": f"Hutang {T.worker_lower} warung",
             "debit_codes": ["1005"],
             "credit_codes": ["4003"],
             "note": "Piutang karyawan bertambah, pendapatan warung diakui.",
@@ -470,7 +471,7 @@ def _build_accounting2b_coa_mapping_data():
         {
             "stage": "TAHAP BERIKUTNYA",
             "module": "Warung",
-            "event": "Pembayaran hutang pekerja",
+            "event": f"Pembayaran hutang {T.worker_lower}",
             "debit_codes": ["1001"],
             "credit_codes": ["1005"],
             "note": "Kas bertambah, piutang karyawan berkurang.",

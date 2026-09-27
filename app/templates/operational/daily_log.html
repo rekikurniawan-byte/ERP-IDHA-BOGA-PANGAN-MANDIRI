@@ -5,7 +5,7 @@
 <div class="op-prod-delivery-page-shell" data-operational-page="daily-catering-log">
     {{ page_header(
         "Log Catering Harian",
-        "Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per mandor/lokasi.",
+        ("Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per " ~ term('sub_client', lower=True) ~ "/lokasi."),
         eyebrow="Operasional Catering",
         actions=[
             {"label": "Input Order", "url": url_for('operational.create_order'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -68,7 +68,7 @@
                 <thead>
                     <tr>
                         <th>No Order</th>
-                        <th>Mandor / PIC</th>
+                        <th>{{ term('sub_client') }} / PIC</th>
                         <th>Lokasi</th>
                         <th class="text-end">Siang</th>
                         <th class="text-end">Sore</th>

@@ -4,8 +4,8 @@
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 {{ page_header(
-    "Lokasi Mandor",
-    "Satu mandor bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja.",
+    ("Lokasi " ~ term('sub_client')),
+    ("Satu " ~ term('sub_client', lower=True) ~ " bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja."),
     eyebrow="Master Lokasi",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
@@ -15,7 +15,7 @@
 
 <div class="app-card">
     <form method="GET" action="{{ url_for('master.locations') }}" class="filter-bar app-form" data-ui-form="true">
-        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari lokasi / mandor / deskripsi">
+        <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari lokasi / {{ term('sub_client', lower=True) }} / deskripsi">
 
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
@@ -33,7 +33,7 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Deskripsi</th>
                     <th>Status</th>
@@ -73,7 +73,7 @@
                     <td colspan="5">
                         <div class="empty-state">
                             <i class="bi bi-geo-alt"></i>
-                            <p>Belum ada lokasi mandor.</p>
+                            <p>Belum ada lokasi {{ term('sub_client', lower=True) }}.</p>
                         </div>
                     </td>
                 </tr>

@@ -34,6 +34,7 @@ from app.models.credit import (
 from app.models.finance import Invoice, InvoiceCollectionLog, Payment
 from app.models.master import BranchSetting
 from app.models.operational import DailyOrder, DailyOrderDetail
+from app.utils.terms import T
 
 
 ZERO = Decimal("0")
@@ -846,12 +847,12 @@ def _contract_limit_check(branch_id, decision, is_owner):
         return True, None, decision
 
     message = (
-        f"Tagihan client ini {_rupiah(decision.exposure)} (termasuk order ini) "
+        f"Tagihan {T.client_lower} ini {_rupiah(decision.exposure)} (termasuk order ini) "
         f"melewati limit kontrak {_rupiah(contract_limit)}."
     )
     if is_owner:
         return True, f"{message} Order diteruskan atas keputusan OWNER.", decision
-    return False, f"{message} Hanya OWNER yang bisa menginput order untuk client ini.", decision
+    return False, f"{message} Hanya OWNER yang bisa menginput order untuk {T.client_lower} ini.", decision
 
 
 def resolve_due_date(invoice_date, branch_id=None, client_id=None, mandor_id=None,

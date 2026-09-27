@@ -10,6 +10,7 @@ from app.services.audit_log_service import record_audit_log
 from app.services.canteen_service import get_debt_paid_amount, get_debt_remaining_amount
 from app.services.invoice_identity_service import build_company_bank_snapshot, get_required_client_pic
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ def collect_manual_billing_candidates(branch_id, mandor_id, period_start, period
         if invoice_item_source_exists(source_type, receivable.id):
             blocked_reason = "Sudah masuk invoice formal."
         elif manual_billing_source_exists(source_type, receivable.id):
-            blocked_reason = "Sudah masuk rekap tagihan mandor."
+            blocked_reason = f"Sudah masuk rekap tagihan {T.sub_client_lower}."
 
         row = {
             "date": receivable_date,
@@ -176,7 +177,7 @@ def collect_manual_billing_candidates(branch_id, mandor_id, period_start, period
         if invoice_item_source_exists(source_type, debt.id):
             blocked_reason = "Sudah masuk invoice formal."
         elif manual_billing_source_exists(source_type, debt.id):
-            blocked_reason = "Sudah masuk rekap tagihan mandor."
+            blocked_reason = f"Sudah masuk rekap tagihan {T.sub_client_lower}."
 
         paid = _to_float(get_debt_paid_amount(debt))
         row = {
@@ -210,12 +211,12 @@ def collect_manual_billing_candidates(branch_id, mandor_id, period_start, period
 
 def _get_client_for_mandor(mandor):
     if not mandor:
-        raise ManualBillingError("Mandor/PIC lapangan tidak ditemukan.")
+        raise ManualBillingError(f"{T.sub_client}/PIC lapangan tidak ditemukan.")
     client = getattr(mandor, "client", None)
     if not client:
-        raise ManualBillingError("Mandor/PIC lapangan belum terhubung ke client/perusahaan.")
+        raise ManualBillingError(f"{T.sub_client}/PIC lapangan belum terhubung ke {T.client_lower}.")
     if hasattr(client, "is_active") and not client.is_active:
-        raise ManualBillingError("Client/perusahaan mandor sedang nonaktif.")
+        raise ManualBillingError(f"{T.client} {T.sub_client_lower} sedang nonaktif.")
     return client
 
 
@@ -231,7 +232,7 @@ def create_manual_billing_invoice(branch_id, mandor_id, period_start, period_end
     rows = candidates["rows"]
     total_amount = _to_float(candidates["total_amount"])
     if not rows or total_amount <= 0:
-        raise ManualBillingError("Tidak ada sumber manual yang valid untuk dibuat rekap tagihan mandor.")
+        raise ManualBillingError(f"Tidak ada sumber manual yang valid untuk dibuat rekap tagihan {T.sub_client_lower}.")
 
     invoice_date = date.today()
     due_date = invoice_date + timedelta(days=7)
@@ -279,10 +280,10 @@ def create_manual_billing_invoice(branch_id, mandor_id, period_start, period_end
         remaining_amount=total_amount,
         status="DRAFT",
         notes=(
-            f"Invoice dari rekap tagihan mandor {batch.batch_number}. "
+            f"Invoice dari rekap tagihan {T.sub_client_lower} {batch.batch_number}. "
             f"Periode {period_start.strftime('%d-%m-%Y')} s/d {period_end.strftime('%d-%m-%Y')}. "
             f"PIC lapangan: {mandor.name}. "
-            "Sumber: piutang manual lapangan dan hutang warung pekerja yang belum tertagih."
+            f"Sumber: piutang manual lapangan dan hutang warung {T.worker_lower} yang belum tertagih."
         ),
         source_type=MANUAL_BILLING_INVOICE_SOURCE,
         source_order_id=batch.id,

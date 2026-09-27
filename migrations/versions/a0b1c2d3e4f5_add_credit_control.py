@@ -38,6 +38,7 @@ depends_on = None
 # DITERIMA, jadi kewajiban -- bukan 1008 yang berjenis aset. Hapus buku piutang
 # butuh akun beban sendiri.
 NEW_ACCOUNTS = (
+    # Diganti menjadi "Deposit Jaminan Pelanggan" oleh migrasi a2b3c4d5e6f7.
     ("2007", "Deposit Jaminan Mandor", "LIABILITY"),
     ("2008", "Uang Muka Pelanggan", "LIABILITY"),
     ("5013", "Beban Piutang Tak Tertagih", "EXPENSE"),

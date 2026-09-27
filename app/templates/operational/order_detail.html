@@ -34,7 +34,7 @@
                     <li>
                         <a class="dropdown-item" href="{{ url_for('operational.add_order_detail', order_id=daily_order.id) }}">
                             <i class="bi bi-plus-circle"></i>
-                            Tambah Lokasi/Mandor
+                            Tambah Lokasi/{{ term('sub_client') }}
                         </a>
                     </li>
                 </ul>
@@ -291,9 +291,9 @@
             <i class="bi bi-people"></i>
         </div>
         <div>
-            <p>Mandor Unik</p>
+            <p>{{ term('sub_client') }} Unik</p>
             <h3>{{ unique_mandors }}</h3>
-            <span class="app-stat-helper">Jumlah mandor berbeda</span>
+            <span class="app-stat-helper">Jumlah {{ term('sub_client', lower=True) }} berbeda</span>
         </div>
     </div>
 
@@ -304,7 +304,7 @@
         <div>
             <p>Total Lokasi</p>
             <h3>{{ total_locations }}</h3>
-            <span class="app-stat-helper">Detail mandor/lokasi</span>
+            <span class="app-stat-helper">Detail {{ term('sub_client', lower=True) }}/lokasi</span>
         </div>
     </div>
 
@@ -355,8 +355,8 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Detail Mandor & Lokasi</h5>
-            <p>Rincian total porsi operasional per mandor/lokasi. Harga di tabel ini adalah harga awal saat lock. Jika ada harga berbeda setelah lock, lihat Riwayat Revisi.</p>
+            <h5>Detail {{ term('sub_client') }} & Lokasi</h5>
+            <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat lock. Jika ada harga berbeda setelah lock, lihat Riwayat Revisi.</p>
         </div>
     </div>
 
@@ -364,7 +364,7 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Harga Awal/Porsi</th>
                     <th>Siang</th>
@@ -491,7 +491,7 @@
             <thead>
                 <tr>
                     <th>Waktu</th>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Jenis</th>
                     <th>Masuk/Keluar</th>

@@ -13,6 +13,7 @@ from app.models.finance import CashBankTransaction, Invoice, ManualBillingBatch,
 from app.services.billing_input_source_service import INPUT_SOURCE_MANUAL_BACKFILL, INPUT_SOURCE_REALTIME
 from app.services.cash_bank_service import CUSTOMER_PAYMENT_REFERENCE_TYPE
 from app.services.manual_billing_service import MANUAL_BILLING_INVOICE_SOURCE
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +180,7 @@ def _invoice_source_label(invoice, batch=None):
     if source_type == "PERIOD_INVOICE":
         return "Rekap Catering Bulanan Realtime"
     if source_type == MANUAL_BILLING_INVOICE_SOURCE and batch:
-        return "Rekap Tagihan Mandor"
+        return f"Rekap Tagihan {T.sub_client}"
     return source_type or "Sumber Invoice"
 
 

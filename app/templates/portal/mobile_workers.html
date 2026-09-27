@@ -6,16 +6,16 @@
     <div class="portal-feature-hero portal-directory-hero">
         <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p>Portal Mandor</p>
-            <h1>Data Pekerja</h1>
+            <p>Portal {{ term('sub_client') }}</p>
+            <h1>Data {{ term('worker') }}</h1>
             <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
     </div>
 
     <div class="portal-directory-summary">
-        <article><span>Total Pekerja</span><strong>{{ model.totals.worker_count }}</strong><small>Worker </small></article>
+        <article><span>Total {{ term('worker') }}</span><strong>{{ model.totals.worker_count }}</strong><small>Worker </small></article>
         <article><span>Aktif</span><strong>{{ model.totals.active_count }}</strong><small>Status aktif</small></article>
-        <article><span>Akses Mandor</span><strong>{{ data.scope.counts.mandors }}</strong><small>Akses portal</small></article>
+        <article><span>Akses {{ term('sub_client') }}</span><strong>{{ data.scope.counts.mandors }}</strong><small>Akses portal</small></article>
         <article><span>Lokasi</span><strong>{{ data.scope.counts.locations }}</strong><small>Lokasi Pengiriman</small></article>
     </div>
 
@@ -23,14 +23,14 @@
         <div class="portal-blocked-state">
             <i class="bi bi-lock"></i>
             <div>
-                <h2>Data pekerja belum dibuka</h2>
+                <h2>Data {{ term('worker', lower=True) }} belum dibuka</h2>
                 <p>{{ model.reason }}</p>
             </div>
         </div>
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Pekerja Dalam Akses</h2>
+        <h2>{{ term('worker') }} Dalam Akses</h2>
         <span>Hanya dilihat</span>
     </div>
 
@@ -51,8 +51,8 @@
         {% else %}
             <div class="portal-empty-state">
                 <i class="bi bi-people"></i>
-                <strong>Belum ada pekerja</strong>
-                <p>Pekerja akan tampil jika master Worker tersambung ke mandor dalam akses portal.</p>
+                <strong>Belum ada {{ term('worker', lower=True) }}</strong>
+                <p>{{ term('worker') }} akan tampil jika master Worker tersambung ke {{ term('sub_client', lower=True) }} dalam akses portal.</p>
             </div>
         {% endfor %}
     </div>

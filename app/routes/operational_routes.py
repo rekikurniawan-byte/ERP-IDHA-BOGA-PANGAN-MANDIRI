@@ -44,6 +44,7 @@ from app.services.global_filter_service import (
     build_filter_bar_context,
     resolve_date_filter,
 )
+from app.utils.terms import T
 
 
 operational_bp = Blueprint("operational", __name__, url_prefix="/operational")
@@ -177,11 +178,11 @@ def monthly_catering_recap():
         except (TypeError, ValueError):
             mandor_id = None
             selected_mandor_id = ""
-            flash("Filter mandor tidak valid. Filter mandor diabaikan.", "warning")
+            flash(f"Filter {T.sub_client_lower} tidak valid. Filter {T.sub_client_lower} diabaikan.", "warning")
 
     mandors = get_active_mandors(current_user.branch_id)
     if mandor_id and all(int(mandor.id) != mandor_id for mandor in mandors):
-        flash("Mandor/PIC lapangan tidak sesuai cabang user. Filter mandor diabaikan.", "warning")
+        flash(f"{T.sub_client}/PIC lapangan tidak sesuai cabang user. Filter {T.sub_client_lower} diabaikan.", "warning")
         mandor_id = None
         selected_mandor_id = ""
 
@@ -194,7 +195,7 @@ def monthly_catering_recap():
         end_date=date_filter.end_date,
     )
 
-    mandor_options = [{"value": "", "label": "Semua mandor"}] + [
+    mandor_options = [{"value": "", "label": f"Semua {T.sub_client_lower}"}] + [
         {"value": str(mandor.id), "label": mandor.name}
         for mandor in mandors
     ]
@@ -203,13 +204,13 @@ def monthly_catering_recap():
         action_url=url_for("operational.monthly_catering_recap"),
         reset_url=url_for("operational.monthly_catering_recap"),
         title="Filter Rekap Catering",
-        description="Pilih preset atau tanggal custom untuk rekap catering, lalu filter mandor/PIC jika dibutuhkan.",
+        description=f"Pilih preset atau tanggal custom untuk rekap catering, lalu filter {T.sub_client_lower}/PIC jika dibutuhkan.",
         preset_name="period_preset",
         start_name="start_date",
         end_name="end_date",
         extra_selects=[{
             "name": "mandor_id",
-            "label": "Mandor / PIC",
+            "label": f"{T.sub_client} / PIC",
             "value": str(mandor_id or ""),
             "options": mandor_options,
         }],
@@ -250,7 +251,7 @@ def create_order():
         notes = request.form.get("notes")
 
         if not validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
-            flash("Lokasi antar tidak sesuai dengan mandor yang dipilih.", "warning")
+            flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.create_order"))
 
         daily_order = get_or_create_daily_order(
@@ -308,7 +309,7 @@ def add_order_detail(order_id):
         return redirect(url_for("operational.orders"))
 
     if daily_order.is_locked:
-        flash("Order sudah LOCKED. Tambah lokasi/mandor biasa tidak bisa dilakukan. Gunakan revisi tambah jika diperlukan.", "warning")
+        flash(f"Order sudah LOCKED. Tambah lokasi/{T.sub_client_lower} biasa tidak bisa dilakukan. Gunakan revisi tambah jika diperlukan.", "warning")
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     mandors, locations = get_form_master_data()
@@ -322,7 +323,7 @@ def add_order_detail(order_id):
         notes = request.form.get("notes")
 
         if not validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
-            flash("Lokasi antar tidak sesuai dengan mandor yang dipilih.", "warning")
+            flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
         success, message, detail = add_or_update_order_detail(
@@ -358,7 +359,7 @@ def add_increase_after_lock_route(order_id):
         return redirect(url_for("operational.orders"))
 
     if not daily_order.is_locked:
-        flash("Order belum LOCKED. Gunakan tambah lokasi/mandor biasa.", "warning")
+        flash(f"Order belum LOCKED. Gunakan tambah lokasi/{T.sub_client_lower} biasa.", "warning")
         return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
     mandors, locations = get_form_master_data()
@@ -372,7 +373,7 @@ def add_increase_after_lock_route(order_id):
         notes = request.form.get("notes") or "Penambahan order setelah lock"
 
         if not validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
-            flash("Lokasi antar tidak sesuai dengan mandor yang dipilih.", "warning")
+            flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
 
         success, message, detail = add_increase_after_lock(

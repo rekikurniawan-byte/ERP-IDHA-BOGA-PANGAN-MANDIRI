@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.terms import T
 
 def _finance_ar_money(value):
     try:
@@ -106,7 +107,7 @@ def build_invoice_ar_warning(invoice):
             "stage_label": "Janji Bayar",
             "level": "PANTAU",
             "badge_class": "status-progress",
-            "message": f"Client sudah ada janji bayar tanggal {promise}.",
+            "message": f"{T.client} sudah ada janji bayar tanggal {promise}.",
             "action": "Pantau sesuai tanggal janji bayar."
         })
         return base
@@ -135,7 +136,7 @@ def build_invoice_ar_warning(invoice):
                 "level": "WARNING",
                 "badge_class": "status-cancelled",
                 "message": f"Invoice telat {overdue_days} hari dan belum lunas.",
-                "action": "Follow up overdue ke PIC client."
+                "action": f"Follow up overdue ke PIC {T.client_lower}."
             })
             return base
 
@@ -178,7 +179,7 @@ def build_invoice_ar_warning(invoice):
             "level": "REMINDER",
             "badge_class": "status-draft",
             "message": f"Jatuh tempo dalam {days_to_due} hari.",
-            "action": "Kirim reminder jatuh tempo ke PIC client."
+            "action": f"Kirim reminder jatuh tempo ke PIC {T.client_lower}."
         })
         return base
 
@@ -384,10 +385,10 @@ def _build_receivables_dashboard_context(args):
 
         if invoice.client_id:
             client_key = str(invoice.client_id)
-            client_name = party.get("client_name") or f"Client ID {invoice.client_id}"
+            client_name = party.get("client_name") or f"{T.client} ID {invoice.client_id}"
         else:
             client_key = "NO_CLIENT"
-            client_name = "Tanpa Client / Pihak Bebas"
+            client_name = f"Tanpa {T.client} / Pihak Bebas"
 
         remaining = float(invoice.remaining_amount or 0)
 

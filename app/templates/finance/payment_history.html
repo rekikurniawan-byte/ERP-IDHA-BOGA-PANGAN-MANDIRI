@@ -7,12 +7,12 @@
 
 {{ page_header(
     "Riwayat Pembayaran Invoice",
-    "Pantau pembayaran client, bukti digital, status invoice, buku kas/bank, dan nomor jurnal dalam satu halaman.",
+    ("Pantau pembayaran " ~ term('client', lower=True) ~ ", bukti digital, status invoice, buku kas/bank, dan nomor jurnal dalam satu halaman."),
     "Finance",
     actions=[
         {"label": "Download CSV", "url": url_for('finance.export_payment_history_csv'), "icon": "bi-download"},
         {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"},
-        {"label": "Piutang Client", "url": url_for('finance.receivables')},
+        {"label": ("Piutang " ~ term('client')), "url": url_for('finance.receivables')},
         {"label": "Statement Tagihan", "url": url_for('finance.receivables_statement')},
         {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger')},
     ]
@@ -81,8 +81,8 @@
                             <th>Tanggal Bayar</th>
                             <th>Nomor Pembayaran</th>
                             <th class="invoice-col">Nomor Invoice</th>
-                            <th>Client</th>
-                            <th>Mandor</th>
+                            <th>{{ term('client') }}</th>
+                            <th>{{ term('sub_client') }}</th>
                             <th>Metode</th>
                             <th>Rekening / Kas</th>
                             <th>Referensi</th>

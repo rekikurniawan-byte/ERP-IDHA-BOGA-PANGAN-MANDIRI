@@ -11,6 +11,7 @@ from app.routes.finance_routes import (
     _supplier_payment_attachment_or_404,
     _supplier_payment_or_404,
 )
+from app.utils.terms import T
 
 
 @finance_bp.route("/receivables")
@@ -89,7 +90,7 @@ def receivables_statement():
         lines.append("")
         lines.append("Berikut kami sampaikan Statement of Account / rekap piutang aktif PT Idha Boga Pangan Mandiri.")
         lines.append("")
-        lines.append("Client: " + client_name)
+        lines.append(f"{T.client}: " + client_name)
         lines.append("Tanggal Rekap: " + _soa_date(date.today()))
         lines.append("")
         lines.append("Ringkasan Piutang:")
@@ -118,7 +119,7 @@ def receivables_statement():
                 )
 
         lines.append("")
-        lines.append("Mohon konfirmasi jadwal pelunasan atau informasi proses pembayaran dari pihak client.")
+        lines.append(f"Mohon konfirmasi jadwal pelunasan atau informasi proses pembayaran dari pihak {T.client_lower}.")
         lines.append("")
         lines.append("Terima kasih.")
 
@@ -145,10 +146,10 @@ def receivables_statement():
         if invoice.client_id:
             client = Client.query.get(invoice.client_id)
             client_key = str(invoice.client_id)
-            client_name = client.name if client else f"Client ID {invoice.client_id}"
+            client_name = client.name if client else f"{T.client} ID {invoice.client_id}"
         else:
             client_key = "NO_CLIENT"
-            client_name = "Tanpa Client / Mandor"
+            client_name = f"Tanpa {T.client} / {T.sub_client}"
 
         if client_key not in client_stats:
             client_stats[client_key] = {
@@ -182,7 +183,7 @@ def receivables_statement():
     if selected_client_id:
         if selected_client_id == "NO_CLIENT":
             statement_query = statement_query.filter(Invoice.client_id.is_(None))
-            selected_client_name = "Tanpa Client / Mandor"
+            selected_client_name = f"Tanpa {T.client} / {T.sub_client}"
         else:
             try:
                 selected_client_int = int(selected_client_id)
@@ -191,13 +192,13 @@ def receivables_statement():
                 selected_client_int = None
 
             if not selected_client_int:
-                flash("Filter client tidak valid.", "warning")
+                flash(f"Filter {T.client_lower} tidak valid.", "warning")
                 return redirect(url_for("finance.receivables_statement"))
 
             statement_query = statement_query.filter(Invoice.client_id == selected_client_int)
 
             selected_client = Client.query.get(selected_client_int)
-            selected_client_name = selected_client.name if selected_client else f"Client ID {selected_client_int}"
+            selected_client_name = selected_client.name if selected_client else f"{T.client} ID {selected_client_int}"
 
     invoices = statement_query.order_by(
         Invoice.client_id.asc(),
@@ -213,7 +214,7 @@ def receivables_statement():
 
         if client:
             client_key = str(client.id)
-            client_name = client.name or f"Client ID {client.id}"
+            client_name = client.name or f"{T.client} ID {client.id}"
             client_address = client.address or "-"
             client_phone = client.phone or "-"
             pics = ClientPic.query.filter_by(
@@ -224,7 +225,7 @@ def receivables_statement():
             ).all()
         else:
             client_key = "NO_CLIENT"
-            client_name = "Tanpa Client / Mandor"
+            client_name = f"Tanpa {T.client} / {T.sub_client}"
             client_address = "-"
             client_phone = "-"
             pics = []
@@ -343,7 +344,7 @@ def receivables_statement():
             action_url=url_for("finance.receivables_statement"),
             reset_url=url_for("finance.receivables_statement"),
             title="Filter Statement Piutang",
-            description="Custom tanggal jatuh tempo invoice dan client yang ingin ditagih.",
+            description=f"Custom tanggal jatuh tempo invoice dan {T.client_lower} yang ingin ditagih.",
             hidden_fields={"client_id": selected_client_id},
         )
     )
@@ -392,7 +393,7 @@ def receivables_statement_send():
     selected_client_id = (request.args.get("client_id") or "").strip()
 
     if not selected_client_id:
-        flash("Pilih client terlebih dahulu sebelum mengirim Statement of Account.", "warning")
+        flash(f"Pilih {T.client_lower} terlebih dahulu sebelum mengirim Statement of Account.", "warning")
         return redirect(url_for("finance.receivables_statement"))
 
     query = Invoice.query.filter(
@@ -402,7 +403,7 @@ def receivables_statement_send():
     )
 
     client = None
-    client_name = "Tanpa Client / Mandor"
+    client_name = f"Tanpa {T.client} / {T.sub_client}"
     client_phone = ""
 
     if selected_client_id == "NO_CLIENT":
@@ -412,16 +413,16 @@ def receivables_statement_send():
             client_id_int = int(selected_client_id)
         except Exception:
             logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:3477")
-            flash("Filter client tidak valid.", "warning")
+            flash(f"Filter {T.client_lower} tidak valid.", "warning")
             return redirect(url_for("finance.receivables_statement"))
 
         client = Client.query.get(client_id_int)
 
         if not client:
-            flash("Data client tidak ditemukan.", "warning")
+            flash(f"Data {T.client_lower} tidak ditemukan.", "warning")
             return redirect(url_for("finance.receivables_statement"))
 
-        client_name = client.name or f"Client ID {client.id}"
+        client_name = client.name or f"{T.client} ID {client.id}"
         client_phone = client.phone or ""
 
         query = query.filter(Invoice.client_id == client.id)
@@ -432,7 +433,7 @@ def receivables_statement_send():
     ).all()
 
     if not invoices:
-        flash("Tidak ada invoice piutang aktif untuk client tersebut.", "info")
+        flash(f"Tidak ada invoice piutang aktif untuk {T.client_lower} tersebut.", "info")
         return redirect(url_for("finance.receivables_statement", client_id=selected_client_id))
 
     pics = []
@@ -466,7 +467,7 @@ def receivables_statement_send():
     wa_number = _soa_normalize_whatsapp(target_phone)
 
     if not wa_number:
-        flash("Nomor WhatsApp tujuan belum tersedia untuk client ini.", "warning")
+        flash(f"Nomor WhatsApp tujuan belum tersedia untuk {T.client_lower} ini.", "warning")
         return redirect(url_for("finance.receivables_statement", client_id=selected_client_id))
 
     rows = []
@@ -503,7 +504,7 @@ def receivables_statement_send():
     lines.append("")
     lines.append("Berikut kami sampaikan Statement of Account / rekap piutang aktif PT Idha Boga Pangan Mandiri.")
     lines.append("")
-    lines.append("Client: " + client_name)
+    lines.append(f"{T.client}: " + client_name)
     lines.append("Tanggal Rekap: " + _soa_date(date.today()))
     lines.append("")
     lines.append("Ringkasan Piutang:")
@@ -532,7 +533,7 @@ def receivables_statement_send():
             )
 
     lines.append("")
-    lines.append("Mohon konfirmasi jadwal pelunasan atau informasi proses pembayaran dari pihak client.")
+    lines.append(f"Mohon konfirmasi jadwal pelunasan atau informasi proses pembayaran dari pihak {T.client_lower}.")
     lines.append("")
     lines.append("Terima kasih.")
 
@@ -550,7 +551,7 @@ def receivables_statement_send():
             follow_up_date=today,
             contact_person=target_name,
             response_note_factory=lambda invoice: (
-                f"Statement of Account / rekap piutang aktif client {client_name} "
+                f"Statement of Account / rekap piutang aktif {T.client_lower} {client_name} "
                 f"dikirim melalui WhatsApp ke {target_name} ({target_phone}). "
                 f"Target menggunakan {target_source}. "
                 f"Total tagihan { _soa_money(total_amount) }, sudah dibayar { _soa_money(paid_amount) }, "
@@ -566,7 +567,7 @@ def receivables_statement_send():
                 action="CREATE",
                 table_name="invoice_collection_logs",
                 record_id=None,
-                description=f"Statement of Account dicatat untuk {created_count} invoice client {client_name}.",
+                description=f"Statement of Account dicatat untuk {created_count} invoice {T.client_lower} {client_name}.",
                 metadata={"client_id": selected_client_id, "client_name": client_name, "created_count": created_count, "skipped_count": skipped_count},
             )
             flash(f"Log Statement of Account berhasil dicatat untuk {created_count} invoice.", "success")

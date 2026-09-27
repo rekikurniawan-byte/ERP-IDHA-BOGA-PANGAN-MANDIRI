@@ -27,6 +27,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_SUBCLIENT,
 )
+from app.utils.terms import T
 
 
 MONEY_ZERO = Decimal("0")
@@ -58,8 +59,8 @@ def _display_integration_status(value: Any) -> str:
         "READ_EXISTING": "Terhubung",
         "OWNERSHIP_GUARDED": "Akses Dibatasi",
         "TARGETED": "Sesuai Akun",
-        "PORTAL_CLIENT_SCOPE": "Akses Client / PT",
-        "PORTAL_SUBCLIENT_SCOPE": "Akses Sub Client / Mandor",
+        "PORTAL_CLIENT_SCOPE": f"Akses {T.client}",
+        "PORTAL_SUBCLIENT_SCOPE": f"Akses {T.sub_client}",
         "PORTAL_CUSTOMER_SCOPE": "Akses Pelanggan",
         "PORTAL_CUSTOMER_PENDING_SCOPE": "Akses Pelanggan",
         "NO_ACTIVE_PORTAL_MAPPING": "Belum Terhubung",
@@ -219,7 +220,7 @@ def _build_quick_actions(role: str | None, scope) -> list[dict]:
                 _debt_endpoint(role),
                 "bi-wallet2",
                 "purple",
-                "Hutang pekerja sesuai data mandor.",
+                f"Hutang {T.worker_lower} sesuai data {T.sub_client_lower}.",
                 enabled=role != ROLE_PORTAL_CUSTOMER,
             )
         )
@@ -447,7 +448,7 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
     if role == ROLE_PORTAL_SUBCLIENT:
         return [
             _focus_card(
-                "Order Mandor",
+                f"Order {T.sub_client}",
                 orders.get("total", 0),
                 f"{orders.get('confirmed', 0)} sudah dikonfirmasi, {orders.get('rejected', 0)} ditolak.",
                 "bi-bag-plus",
@@ -463,7 +464,7 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
                 "portal.mandor_invoices",
             ),
             _focus_card(
-                "Hutang Pekerja",
+                f"Hutang {T.worker}",
                 debts.get("active_debt_count", 0),
                 f"Sisa {debts.get('active_remaining_amount', MONEY_ZERO)}",
                 "bi-wallet2",
@@ -483,9 +484,9 @@ def _build_role_focus(role: str | None, models: dict) -> list[dict]:
     if role == ROLE_PORTAL_CLIENT:
         return [
             _focus_card(
-                "Akses Mandor",
+                f"Akses {T.sub_client}",
                 len(getattr(scope, "mandor_ids", [])),
-                "Mandor yang terhubung ke perusahaan.",
+                f"{T.sub_client} yang terhubung ke perusahaan.",
                 "bi-diagram-3",
                 "green",
                 "portal.pt_mandors",
@@ -623,7 +624,7 @@ def _build_alerts(role: str | None, scope, models: dict) -> list[dict]:
             {
                 "level": "warning",
                 "title": "Belum ada kontrak aktif",
-                "message": "PT belum memiliki kontrak aktif dalam akses portal ini.",
+                "message": f"{T.client} belum memiliki kontrak aktif dalam akses portal ini.",
                 "icon": "bi-file-earmark-text",
                 "endpoint": "portal.pt_contracts",
             }
@@ -821,14 +822,14 @@ def _build_role_narrative(role: str | None) -> dict:
             "integration": "Komplain, retur, dan bukti pembayaran tersimpan dalam satu data perusahaan.",
         },
         ROLE_PORTAL_SUBCLIENT: {
-            "headline": "Mandor mengelola order, pekerja, hutang warung, tagihan, dan pembayaran dalam akses mandor.",
+            "headline": f"{T.sub_client} mengelola order, {T.worker_lower}, hutang warung, tagihan, dan pembayaran dalam akses {T.sub_client_lower}.",
             "guard": "Pesanan tetap menunggu admin sebelum masuk produksi dan pengiriman.",
-            "integration": "Pesanan, pekerja, hutang, invoice, dan pembayaran tetap memakai data perusahaan yang sama.",
+            "integration": f"Pesanan, {T.worker_lower}, hutang, invoice, dan pembayaran tetap memakai data perusahaan yang sama.",
         },
         ROLE_PORTAL_CLIENT: {
-            "headline": "PT melihat seluruh mandor, invoice, piutang, kontrak, closing, dan langganan perusahaan.",
-            "guard": "PT melihat dan membayar tagihan tanpa mengubah data keuangan secara langsung.",
-            "integration": "Kontrak, invoice, mandor, dan lokasi tetap memakai data perusahaan yang sama.",
+            "headline": f"{T.client} melihat seluruh {T.sub_client_lower}, invoice, piutang, kontrak, closing, dan langganan.",
+            "guard": f"{T.client} melihat dan membayar tagihan tanpa mengubah data keuangan secara langsung.",
+            "integration": f"Kontrak, invoice, {T.sub_client_lower}, dan lokasi tetap memakai data perusahaan yang sama.",
         },
     }
     return narratives.get(

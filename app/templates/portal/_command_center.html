@@ -381,8 +381,8 @@
             <section class="portal-command-panel">
                 <div class="portal-command-panel-head">
                     <div>
-                        <span>Mandor</span>
-                        <h3>Hutang Pekerja</h3>
+                        <span>{{ term('sub_client') }}</span>
+                        <h3>Hutang {{ term('worker') }}</h3>
                     </div>
                     <i class="bi bi-wallet2"></i>
                 </div>
@@ -394,7 +394,7 @@
                             <b>{{ debt.status }}</b>
                         </article>
                     {% else %}
-                        <div class="portal-command-soft-empty">Belum ada hutang pekerja dalam akses mandor.</div>
+                        <div class="portal-command-soft-empty">Belum ada hutang {{ term('worker', lower=True) }} dalam akses {{ term('sub_client', lower=True) }}.</div>
                     {% endfor %}
                 </div>
             </section>
@@ -426,7 +426,7 @@
             <section class="portal-command-panel">
                 <div class="portal-command-panel-head">
                     <div>
-                        <span>Kontrak PT</span>
+                        <span>Kontrak {{ term('client') }}</span>
                         <h3>Kontrak Pelanggan</h3>
                     </div>
                     <i class="bi bi-file-earmark-text"></i>
@@ -439,7 +439,7 @@
                             <b>{{ contract.status|replace("_", " ")|title }}</b>
                         </article>
                     {% else %}
-                        <div class="portal-command-soft-empty">Belum ada kontrak PT dalam akses ini.</div>
+                        <div class="portal-command-soft-empty">Belum ada kontrak {{ term('client') }} dalam akses ini.</div>
                     {% endfor %}
                 </div>
             </section>
@@ -447,7 +447,7 @@
                 <div class="portal-command-panel-head">
                     <div>
                         <span>Piutang</span>
-                        <h3>Sisa Tagihan Client</h3>
+                        <h3>Sisa Tagihan {{ term('client') }}</h3>
                     </div>
                     <i class="bi bi-cash-stack"></i>
                 </div>

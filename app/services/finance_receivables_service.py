@@ -3,12 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Mapping, Optional
 
+from app.utils.terms import L, T
+
 BILL_TO_TYPE_CHOICES = [
-    {"value": "MANDOR_EXISTING", "label": "Mandor"},
-    {"value": "CLIENT_EXISTING", "label": "Client"},
+    {"value": "MANDOR_EXISTING", "label": L("{sub_client}")},
+    {"value": "CLIENT_EXISTING", "label": L("{client}")},
     {"value": "KELOMPOK", "label": "Kelompok"},
     {"value": "PERORANGAN", "label": "Perorangan"},
-    {"value": "CLIENT_LAIN", "label": "Client Lain"},
+    {"value": "CLIENT_LAIN", "label": L("{client} Lain")},
 ]
 
 BILL_TO_TYPE_LABELS = {choice["value"]: choice["label"] for choice in BILL_TO_TYPE_CHOICES}
@@ -128,12 +130,12 @@ def invoice_party_context(invoice: Any, client_map: Optional[Mapping[int, Any]] 
             bill_to_type = "CLIENT_EXISTING"
 
     if bill_to_type == "MANDOR_EXISTING":
-        party_name = _safe_name(mandor) or snapshot_name or (f"Mandor ID {mandor_id}" if mandor_id else "Tanpa Mandor")
+        party_name = _safe_name(mandor) or snapshot_name or (f"{T.sub_client} ID {mandor_id}" if mandor_id else f"Tanpa {T.sub_client}")
         party_key = f"MANDOR:{mandor_id}" if mandor_id else f"MANDOR_SNAPSHOT:{party_name.upper()}"
         client_name = _safe_name(client) or "-"
         mandor_name = party_name
     elif bill_to_type == "CLIENT_EXISTING":
-        party_name = snapshot_name or _safe_name(client) or (f"Client ID {client_id}" if client_id else "Tanpa Client")
+        party_name = snapshot_name or _safe_name(client) or (f"{T.client} ID {client_id}" if client_id else f"Tanpa {T.client}")
         party_key = f"CLIENT:{client_id}" if client_id else f"CLIENT_SNAPSHOT:{party_name.upper()}"
         client_name = party_name
         mandor_name = _safe_name(mandor) or "-"

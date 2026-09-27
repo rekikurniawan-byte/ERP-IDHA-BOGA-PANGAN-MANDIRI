@@ -14,6 +14,7 @@ from app.models.operational import (
     OrderHppSnapshot,
     OrderHppSnapshotAllocation,
 )
+from app.utils.terms import T
 
 
 def _safe_float(value):
@@ -90,7 +91,7 @@ def _allocations_for_order_detail(detail_id, branch_id):
 
 def _allocations_for_daily_order_invoice(invoice):
     if not getattr(invoice, "source_order_id", None) or not getattr(invoice, "mandor_id", None):
-        return [], None, "Invoice order belum punya source order atau PIC mandor."
+        return [], None, f"Invoice order belum punya source order atau PIC {T.sub_client_lower}."
 
     latest_snapshot = _latest_snapshot_for_order(invoice.source_order_id, invoice.branch_id)
 
@@ -107,7 +108,7 @@ def _allocations_for_daily_order_invoice(invoice):
     ).all()
 
     if not allocations:
-        return [], latest_snapshot, "Snapshot HPP terbaru belum punya alokasi untuk PIC/mandor invoice ini."
+        return [], latest_snapshot, f"Snapshot HPP terbaru belum punya alokasi untuk PIC/{T.sub_client_lower} invoice ini."
 
     return allocations, latest_snapshot, None
 

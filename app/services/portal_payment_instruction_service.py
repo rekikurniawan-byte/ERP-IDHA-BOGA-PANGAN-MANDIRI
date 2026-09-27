@@ -146,7 +146,7 @@ def _empty_bank_instruction() -> dict:
         "bank_name": "",
         "account_number": "",
         "account_name": "",
-        "missing": ["rekening pembayaran PT"],
+        "missing": ["rekening pembayaran perusahaan"],
     }
 
 

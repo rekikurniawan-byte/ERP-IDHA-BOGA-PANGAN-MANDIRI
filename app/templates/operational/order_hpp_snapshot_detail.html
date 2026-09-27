@@ -148,7 +148,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Alokasi HPP per Mandor / Lokasi</h5>
+            <h5>Alokasi HPP per {{ term('sub_client') }} / Lokasi</h5>
             <p>Biaya snapshot dialokasikan proporsional per detail order dan waktu makan. Ini disiapkan untuk laporan profit/invoice berikutnya, tanpa mengubah invoice lama.</p>
         </div>
     </div>
@@ -158,7 +158,7 @@
             <thead>
                 <tr>
                     <th>Waktu</th>
-                    <th>PIC / Mandor</th>
+                    <th>PIC / {{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Porsi</th>
                     <th>Revenue</th>
@@ -198,7 +198,7 @@
                         <div class="empty-state">
                             <i class="bi bi-diagram-3"></i>
                             <p>Belum ada alokasi HPP per detail order.</p>
-                            <span>Snapshot lama sebelum modul alokasi HPP final bisa belum punya alokasi. Buat snapshot baru untuk membekukan alokasi per mandor/lokasi.</span>
+                            <span>Snapshot lama sebelum modul alokasi HPP final bisa belum punya alokasi. Buat snapshot baru untuk membekukan alokasi per {{ term('sub_client', lower=True) }}/lokasi.</span>
                         </div>
                     </td>
                 </tr>

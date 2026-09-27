@@ -4,7 +4,7 @@
 <div class="finance-page-shell">
     <div class="page-header">
         <div>
-            <span class="eyebrow">Keuangan | Rekap Tagihan Mandor</span>
+            <span class="eyebrow">Keuangan | Rekap Tagihan {{ term('sub_client') }}</span>
             <h1>Detail Rekap Tagihan</h1>
             <p>Audit data sumber sebelum dikunci dan dipromosikan ke invoice/piutang.</p>
         </div>
@@ -15,7 +15,7 @@
             </a>
             <a href="{{ url_for('finance.manual_billing') }}" class="btn app-btn-secondary">
                 <i class="bi bi-journal-text"></i>
-                Rekap Tagihan Mandor
+                Rekap Tagihan {{ term('sub_client') }}
             </a>
             <a href="{{ url_for('finance.print_manual_billing_batch', batch_id=batch.id) }}" class="btn app-btn-secondary">
                 <i class="bi bi-printer"></i>
@@ -95,7 +95,7 @@
         <div class="app-stat-card">
             <span>Total Warung/Kasbon</span>
             <h3>{{ warung_total|rupiah }}</h3>
-            <p>Data pekerja dari buku/manual</p>
+            <p>Data {{ term('worker', lower=True) }} dari buku/manual</p>
         </div>
         {% if other_total %}
         <div class="app-stat-card">

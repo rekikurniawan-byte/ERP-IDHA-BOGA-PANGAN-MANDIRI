@@ -14,7 +14,7 @@
             {% elif invoice.source_type == "DAILY_ORDER" %}
                 - Invoice Order
             {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                - Invoice Rekap Tagihan Mandor
+                - Invoice Rekap Tagihan {{ term('sub_client') }}
             {% endif %}
         </p>
     </div>
@@ -182,11 +182,11 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Rekap Tagihan Mandor</h5>
+            <h5>Rekap Tagihan {{ term('sub_client') }}</h5>
             {% if manual_billing_batch.input_source == 'MANUAL_BACKFILL' %}
             <p>Invoice ini dibuat dari Input Rekap Manual dari Buku. Status rekap ikut berubah saat invoice dibayar sebagian atau lunas.</p>
             {% else %}
-            <p>Invoice ini dibuat dari batch rekap tagihan mandor yang sumber datanya sudah tercatat di sistem.</p>
+            <p>Invoice ini dibuat dari batch rekap tagihan {{ term('sub_client', lower=True) }} yang sumber datanya sudah tercatat di sistem.</p>
             {% endif %}
         </div>
         <span class="status-badge status-progress">{{ manual_billing_batch.status }}</span>
@@ -244,7 +244,7 @@
                 {% elif invoice.source_type == "DAILY_ORDER" %}
                     Invoice Order Harian
                 {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                    Invoice Rekap Tagihan Mandor
+                    Invoice Rekap Tagihan {{ term('sub_client') }}
                 {% else %}
                     {{ invoice.source_type or "-" }}
                 {% endif %}
@@ -325,9 +325,9 @@
         <div>
             <h5>Identitas Resmi Invoice</h5>
             {% if invoice.bill_to_type == 'MANDOR' %}
-            <p>Invoice ini ditagihkan langsung ke mandor/kelompok. PT/PIC client hanya konteks opsional, bukan syarat invoice.</p>
+            <p>Invoice ini ditagihkan langsung ke {{ term('sub_client', lower=True) }}/kelompok. {{ term('client') }}/PIC {{ term('client', lower=True) }} hanya konteks opsional, bukan syarat invoice.</p>
             {% else %}
-            <p>Client/perusahaan adalah pihak tagihan utama. Mandor hanya PIC lapangan. Data di bawah dikunci sebagai snapshot invoice resmi.</p>
+            <p>{{ term('client') }} adalah pihak tagihan utama. {{ term('sub_client') }} hanya PIC lapangan. Data di bawah dikunci sebagai snapshot invoice resmi.</p>
             {% endif %}
         </div>
         {% if official_identity and official_identity.is_complete %}
@@ -350,7 +350,7 @@
         </div>
         {% if invoice.bill_to_type == 'CLIENT' %}
         <div>
-            <span>Kode Client</span>
+            <span>Kode {{ term('client') }}</span>
             <strong>{{ official_identity.client_code if official_identity and official_identity.client_code else '-' }}</strong>
         </div>
         <div>
@@ -366,19 +366,19 @@
         {% else %}
         <div>
             <span>Tipe Tagihan</span>
-            <strong>Mandor / Kelompok</strong>
+            <strong>{{ term('sub_client') }} / Kelompok</strong>
         </div>
         <div>
-            <span>Kontak Mandor</span>
+            <span>Kontak {{ term('sub_client') }}</span>
             <strong>{{ official_identity.pic_phone if official_identity and official_identity.pic_phone else '-' }}</strong>
         </div>
         <div>
-            <span>Konteks Client/PT</span>
+            <span>Konteks {{ term('client') }}</span>
             <strong>{{ client_name if client_name else '-' }}</strong>
         </div>
         {% endif %}
         <div>
-            <span>Rekening Pembayaran PT</span>
+            <span>Rekening Pembayaran Perusahaan</span>
             <strong>{{ official_identity.bank_name if official_identity and official_identity.bank_name else '-' }}</strong>
             {% if official_identity and official_identity.bank_account_number %}<small class="d-block text-muted">{{ official_identity.bank_account_number }} a.n. {{ official_identity.bank_account_name }}</small>{% endif %}
         </div>
@@ -401,7 +401,7 @@
                     </option>
                     {% endfor %}
                 </select>
-                {% if not client_pics %}<div class="form-text text-danger">Client belum punya PIC aktif.</div>{% endif %}
+                {% if not client_pics %}<div class="form-text text-danger">{{ term('client') }} belum punya PIC aktif.</div>{% endif %}
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn app-btn-secondary" {% if not client_pics %}disabled{% endif %}>
@@ -572,7 +572,7 @@
             </div>
             <div class="form-group mt-2">
                 <label>Catatan Bukti</label>
-                <input type="text" name="proof_notes" class="form-control" placeholder="Opsional, contoh: screenshot transfer dari client">
+                <input type="text" name="proof_notes" class="form-control" placeholder="Opsional, contoh: screenshot transfer dari {{ term('client', lower=True) }}">
             </div>
         </div>
 
@@ -788,7 +788,7 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
     <div class="section-title">
         <div>
             <h3>Riwayat Penagihan / Collection History</h3>
-            <p>Catat setiap follow up agar owner tahu perkembangan tagihan client.</p>
+            <p>Catat setiap follow up agar owner tahu perkembangan tagihan {{ term('client', lower=True) }}.</p>
         </div>
     </div>
 
@@ -817,7 +817,7 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
                 <input list="client_pic_options" type="text" name="contact_person" class="form-control app-input" placeholder="Contoh: PIC Finance">
                 <datalist id="client_pic_options">
                     {% for pic in client_pics %}
-                    <option value="{{ pic.name }}">{{ pic.position if pic.position else 'PIC Client' }}</option>
+                    <option value="{{ pic.name }}">{{ pic.position if pic.position else ('PIC ' ~ term('client')) }}</option>
                     {% endfor %}
                 </datalist>
             </div>
@@ -851,7 +851,7 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
             </div>
 
             <div class="col-md-12">
-                <label class="form-label">Catatan Respon Client</label>
+                <label class="form-label">Catatan Respon {{ term('client') }}</label>
                 <textarea name="response_note" class="form-control app-input" rows="3" placeholder="Contoh: PIC sudah menerima invoice dan akan proses pembayaran minggu depan." required></textarea>
             </div>
         </div>

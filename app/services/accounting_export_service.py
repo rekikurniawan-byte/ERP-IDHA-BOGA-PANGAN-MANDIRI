@@ -7,6 +7,7 @@ from flask import Response
 
 from app.models.accounting import Account, Journal, JournalDetail
 from app.services.finance_export_service import make_csv_response
+from app.utils.terms import T
 
 
 def _today_suffix() -> str:
@@ -369,7 +370,7 @@ def build_order_to_cash_trace_export_response(report: Mapping[str, Any]) -> Resp
         rows.append([
             "ORDER DETAIL",
             f"Detail #{detail.get('id')}",
-            f"Client: {detail.get('client_name')} | PIC: {detail.get('mandor_name')} | Lokasi: {detail.get('location_name')}",
+            f"{T.client}: {detail.get('client_name')} | PIC: {detail.get('mandor_name')} | Lokasi: {detail.get('location_name')}",
             f"Lunch {detail.get('lunch_qty')} | Dinner {detail.get('dinner_qty')} | Total {detail.get('total_qty')} | Subtotal {detail.get('subtotal')}",
         ])
 

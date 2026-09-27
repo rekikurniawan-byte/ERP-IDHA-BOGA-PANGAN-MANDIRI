@@ -4,9 +4,9 @@
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 {{ page_header(
-    "Edit Pekerja" if worker else "Input Pekerja",
-    "Kode pekerja dibuat otomatis oleh sistem dan tidak perlu diisi manual.",
-    eyebrow="Edit Pekerja" if worker else "Tambah Pekerja",
+    ("Edit " ~ term('worker')) if worker else ("Input " ~ term('worker')),
+    ("Kode " ~ term('worker', lower=True) ~ " dibuat otomatis oleh sistem dan tidak perlu diisi manual."),
+    eyebrow=("Edit " ~ term('worker')) if worker else ("Tambah " ~ term('worker')),
     actions=[{"label": "Kembali", "url": url_for('master.workers')}]
 ) }}
 
@@ -16,15 +16,15 @@
         <div class="row g-3">
             {% if worker %}
             <div class="col-md-4">
-                <label class="form-label">Kode Pekerja</label>
+                <label class="form-label">Kode {{ term('worker') }}</label>
                 <input type="text" class="form-control app-input" value="{{ worker.worker_code }}" readonly>
             </div>
             {% endif %}
 
             <div class="col-md-4">
-                <label class="form-label">Mandor</label>
+                <label class="form-label">{{ term('sub_client') }}</label>
                 <select name="mandor_id" class="form-select app-input" required>
-                    <option value="">- Pilih mandor -</option>
+                    <option value="">- Pilih {{ term('sub_client', lower=True) }} -</option>
                     {% for mandor in mandors %}
                     <option value="{{ mandor.id }}" {% if worker and worker.mandor_id == mandor.id %}selected{% endif %}>
                         {{ mandor.name }}
@@ -34,7 +34,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Nama Pekerja</label>
+                <label class="form-label">Nama {{ term('worker') }}</label>
                 <input type="text" name="full_name" class="form-control app-input" value="{{ worker.full_name if worker else '' }}" required>
             </div>
 
@@ -60,7 +60,7 @@
 
         <div class="form-actions mt-4">
             <button type="submit" class="btn app-btn-primary">
-                {% if worker %}Simpan Perubahan{% else %}Simpan Pekerja{% endif %}
+                {% if worker %}Simpan Perubahan{% else %}Simpan {{ term('worker') }}{% endif %}
             </button>
         </div>
     </form>

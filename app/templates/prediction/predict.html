@@ -5,7 +5,7 @@
 {{ page_header(
     title='Form Prediksi Catering',
     eyebrow='Prediction',
-    description='Prediksi permintaan berdasarkan tanggal dan mandor/PIC aktif.',
+    description=('Prediksi permintaan berdasarkan tanggal dan ' ~ term('sub_client', lower=True) ~ '/PIC aktif.'),
     collapse=false,
     actions=[
         {'label': 'Kembali', 'url': url_for('prediction.index'), 'icon': 'bi-arrow-left'}
@@ -20,9 +20,9 @@
             <input type="date" name="prediction_date" value="{{ prediction_date or '' }}" class="form-control">
         </div>
         <div class="col-md-8">
-            <label class="form-label">Mandor/PIC</label>
+            <label class="form-label">{{ term('sub_client') }}/PIC</label>
             <select name="mandor_ids" class="form-select" multiple>
-                <option value="all" selected>Semua mandor aktif</option>
+                <option value="all" selected>Semua {{ term('sub_client', lower=True) }} aktif</option>
                 {% for mandor in mandors %}
                     <option value="{{ mandor.id }}" {{ "selected" if selected_mandor_ids and mandor.id in selected_mandor_ids else "" }}>
                         {{ mandor.name }}

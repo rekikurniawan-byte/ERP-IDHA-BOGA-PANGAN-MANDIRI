@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.utils.terms import T
 
 
 @master_bp.route("/")
@@ -110,15 +111,15 @@ def create_client():
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not name:
-            flash("Nama client wajib diisi.", "warning")
+            flash(f"Nama {T.client_lower} wajib diisi.", "warning")
             return redirect(url_for("master.create_client"))
 
         if client_name_is_used(name, current_user.branch_id):
-            flash("Nama client sudah ada. Data client tidak disimpan agar tidak duplikat.", "warning")
+            flash(f"Nama {T.client_lower} sudah ada. Data {T.client_lower} tidak disimpan agar tidak duplikat.", "warning")
             return redirect(url_for("master.create_client"))
 
         if _client_code_is_used(client_code):
-            flash("Kode client sudah digunakan. Gunakan kode client lain.", "warning")
+            flash(f"Kode {T.client_lower} sudah digunakan. Gunakan kode {T.client_lower} lain.", "warning")
             return redirect(url_for("master.create_client"))
 
         create_client_record(
@@ -130,7 +131,7 @@ def create_client():
             is_active=is_active,
         )
 
-        flash("Client berhasil ditambahkan.", "success")
+        flash(f"{T.client} berhasil ditambahkan.", "success")
         return redirect(url_for("master.clients"))
 
     return render_template("master/client_form.html", client=None)
@@ -142,7 +143,7 @@ def edit_client(client_id):
     client = Client.query.get_or_404(client_id)
 
     if hasattr(Client, "branch_id") and client.branch_id != current_user.branch_id:
-        flash("Data client tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.clients"))
 
     if request.method == "POST":
@@ -153,15 +154,15 @@ def edit_client(client_id):
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not name:
-            flash("Nama client wajib diisi.", "warning")
+            flash(f"Nama {T.client_lower} wajib diisi.", "warning")
             return redirect(url_for("master.edit_client", client_id=client.id))
 
         if client_name_is_used(name, current_user.branch_id, exclude_id=client.id):
-            flash("Nama client sudah digunakan oleh data lain. Perubahan tidak disimpan.", "warning")
+            flash(f"Nama {T.client_lower} sudah digunakan oleh data lain. Perubahan tidak disimpan.", "warning")
             return redirect(url_for("master.edit_client", client_id=client.id))
 
         if _client_code_is_used(client_code, exclude_id=client.id):
-            flash("Kode client sudah digunakan oleh client lain. Perubahan tidak disimpan.", "warning")
+            flash(f"Kode {T.client_lower} sudah digunakan oleh {T.client_lower} lain. Perubahan tidak disimpan.", "warning")
             return redirect(url_for("master.edit_client", client_id=client.id))
 
         update_client_record(
@@ -173,7 +174,7 @@ def edit_client(client_id):
             is_active=is_active,
         )
 
-        flash("Client berhasil diperbarui.", "success")
+        flash(f"{T.client} berhasil diperbarui.", "success")
         return redirect(url_for("master.clients"))
 
     from app.services.client_direct_order_service import get_direct_unit
@@ -211,14 +212,14 @@ def toggle_client(client_id):
     client = Client.query.get_or_404(client_id)
 
     if hasattr(Client, "branch_id") and client.branch_id != current_user.branch_id:
-        flash("Data client tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.clients"))
 
     if hasattr(Client, "is_active"):
         toggle_client_active(client)
-        flash("Status client berhasil diubah.", "success")
+        flash(f"Status {T.client_lower} berhasil diubah.", "success")
     else:
-        flash("Model client belum memiliki kolom is_active.", "warning")
+        flash(f"Model {T.client_lower} belum memiliki kolom is_active.", "warning")
 
     return redirect(url_for("master.clients"))
 
@@ -229,7 +230,7 @@ def create_client_pic(client_id):
     client = Client.query.get_or_404(client_id)
 
     if hasattr(Client, "branch_id") and client.branch_id != current_user.branch_id:
-        flash("Data client tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.clients"))
 
     name = (request.form.get("pic_name") or "").strip()
@@ -250,7 +251,7 @@ def create_client_pic(client_id):
         is_active=True
     )
 
-    flash("PIC client berhasil ditambahkan.", "success")
+    flash(f"PIC {T.client_lower} berhasil ditambahkan.", "success")
     return redirect(url_for("master.edit_client", client_id=client.id))
 
 
@@ -260,16 +261,16 @@ def toggle_client_pic(client_id, pic_id):
     client = Client.query.get_or_404(client_id)
 
     if hasattr(Client, "branch_id") and client.branch_id != current_user.branch_id:
-        flash("Data client tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.clients"))
 
     pic = ClientPic.query.get_or_404(pic_id)
 
     if pic.client_id != client.id:
-        flash("PIC tidak sesuai dengan client.", "danger")
+        flash(f"PIC tidak sesuai dengan {T.client_lower}.", "danger")
         return redirect(url_for("master.edit_client", client_id=client.id))
 
     toggle_client_pic_active(pic)
 
-    flash("Status PIC client berhasil diubah.", "success")
+    flash(f"Status PIC {T.client_lower} berhasil diubah.", "success")
     return redirect(url_for("master.edit_client", client_id=client.id))

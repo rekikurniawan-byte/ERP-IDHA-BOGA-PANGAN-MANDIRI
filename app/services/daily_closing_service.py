@@ -8,6 +8,7 @@ from app.models.finance import Invoice, Payment
 from app.models.logistics import StockMovement
 from app.models.operational import DailyOrder
 from app.models.production import Production
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -460,8 +461,8 @@ def _canteen_rows(branch_id, target_date):
             expected=f"Subtotal item {_money(item_total)}",
             actual=f"Total sale {_money(sale.total_amount)}",
             note=(
-                f"Hutang pekerja {_money(debt.debt_amount)} status {debt.status}."
-                if debt else "Cash sale / tidak ada hutang pekerja."
+                f"Hutang {T.worker_lower} {_money(debt.debt_amount)} status {debt.status}."
+                if debt else f"Cash sale / tidak ada hutang {T.worker_lower}."
             ),
         ))
 
@@ -481,11 +482,11 @@ def _canteen_rows(branch_id, target_date):
         worker_name = _safe_label(getattr(debt, "worker", None), "full_name", "name")
         rows.append(_row(
             status="AMAN",
-            check="Pembayaran hutang pekerja",
+            check=f"Pembayaran hutang {T.worker_lower}",
             item=f"Debt #{debt.id} | {worker_name}",
             expected="Pembayaran hutang tercatat",
             actual=_money(payment.amount),
-            note=payment.notes or "Pembayaran hutang pekerja masuk.",
+            note=payment.notes or f"Pembayaran hutang {T.worker_lower} masuk.",
         ))
 
     cash_daily = CashDaily.query.filter_by(
@@ -647,8 +648,8 @@ def get_daily_closing_report(branch_id, selected_date_value=None):
         ),
         _section(
             "canteen",
-            "Warung / Canteen Cash & Hutang Pekerja",
-            "Penjualan warung, hutang pekerja, pembayaran hutang, dan kas harian.",
+            f"Warung / Canteen Cash & Hutang {T.worker}",
+            f"Penjualan warung, hutang {T.worker_lower}, pembayaran hutang, dan kas harian.",
             _canteen_rows(branch_id, target_date),
         ),
         _section(

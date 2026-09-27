@@ -11,6 +11,7 @@ from app.models.finance import BankAccount, CashBankTransaction
 from app.models.master import Item
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.master_data_service import generate_item_code
+from app.utils.terms import T
 
 PAYMENT_METHODS = ["CASH", "QRIS", "TRANSFER", "DEBT"]
 PAID_PAYMENT_METHODS = ["CASH", "QRIS", "TRANSFER"]
@@ -190,7 +191,7 @@ def create_canteen_sale(
         cash_bank_account_id = None
 
     if payment_method == "DEBT" and buyer_type == "REGISTERED_WORKER" and not worker_id:
-        return False, "Hutang pekerja internal wajib memilih pekerja.", None
+        return False, f"Hutang {T.worker_lower} internal wajib memilih {T.worker_lower}.", None
 
     if payment_method == "DEBT" and buyer_type in EXTERNAL_DEBT_BUYER_TYPES and not _clean(buyer_name):
         return False, "Hutang buyer eksternal wajib mengisi nama pembeli.", None

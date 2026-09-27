@@ -5,22 +5,22 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
 {{ page_header(
-    "Buat Invoice Catering Client",
-    "Buat invoice resmi ke client/perusahaan dari Order LOCKED + Revisi AFTER_LOCK INCREASE. Mandor tetap dicatat sebagai PIC lapangan.",
+    ("Buat Invoice Catering " ~ term('client')),
+    ("Buat invoice resmi ke " ~ term('client', lower=True) ~ " dari Order LOCKED + Revisi AFTER_LOCK INCREASE. " ~ term('sub_client') ~ " tetap dicatat sebagai PIC lapangan."),
     "Finance",
     actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"}]
 ) }}
 
 <div class="app-card soft-warning-card">
     <strong>Aturan Invoice Catering</strong>
-    <p>Invoice ditagihkan ke client/perusahaan. Mandor hanya menjadi PIC lapangan. Invoice dibuat dari order yang sudah LOCKED. Revisi yang dihitung hanya revisi setelah lock dengan arah INCREASE. Warung belum digabung pada step ini.</p>
+    <p>Invoice ditagihkan ke {{ term('client', lower=True) }}. {{ term('sub_client') }} hanya menjadi PIC lapangan. Invoice dibuat dari order yang sudah LOCKED. Revisi yang dihitung hanya revisi setelah lock dengan arah INCREASE. Warung belum digabung pada step ini.</p>
 </div>
 
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
             <h5>Order Locked Siap Invoice</h5>
-            <p>Setiap order dapat menghasilkan invoice per PIC lapangan, tetapi bill-to tetap client/perusahaan.</p>
+            <p>Setiap order dapat menghasilkan invoice per PIC lapangan, tetapi bill-to tetap {{ term('client', lower=True) }}.</p>
         </div>
     </div>
 
@@ -86,7 +86,7 @@
                                     </button>
                                 </form>
                             {% else %}
-                                <button type="button" class="btn btn-sm app-btn-secondary" disabled>Client belum siap</button>
+                                <button type="button" class="btn btn-sm app-btn-secondary" disabled>{{ term('client') }} belum siap</button>
                             {% endif %}
                         {% endif %}
                     </td>

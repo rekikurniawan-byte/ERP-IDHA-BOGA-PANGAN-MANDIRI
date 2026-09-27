@@ -235,13 +235,44 @@ sendiri mendapat pemetaan jenis ini.
 Bukti: lingkup akses (id client, mandor, PIC, lokasi, dan level akses) ke-19
 akun portal di staging direkam sebelum dan sesudah — **identik**.
 
+### Istilah bisa diatur — SELESAI
+
+Keputusan owner (2026-09-26): sistem dipakai juga untuk pelanggan katering di
+luar proyek — sekolah, kantor, rumah sakit, event. Kata "PT" dan "Mandor"
+tidak lagi tertulis mati di tampilan.
+
+1. **Empat istilah**, per cabang, hanya OWNER yang mengubah — Pengaturan
+   Perusahaan → **Istilah**:
+
+   | Istilah | Bawaan | Contoh proyek | Contoh sekolah |
+   |---|---|---|---|
+   | Client | Client | PT | Yayasan |
+   | Sub Client | Sub Client | Mandor | Kelas / Unit |
+   | Lokasi Antar | Lokasi Antar | Lokasi Proyek | Gedung |
+   | Pekerja | Pekerja | Pekerja | Siswa |
+
+   Dikosongkan = pakai bawaan. **Cabang yang sudah berjalan sekarang tampil
+   "Client"/"Sub Client"**; isi "PT"/"Mandor" di cabang itu kalau ingin
+   tampilan lama.
+2. **Nama di kode dan database tidak berubah** (`clients`, `mandors`,
+   `PORTAL_SUBCLIENT`, dst.) — hanya teks tampilan. Satu sumber:
+   `app/utils/terms.py` (`term()` di template, `T.xxx` di f-string Python,
+   `L("…{sub_client}…")` untuk label tingkat modul).
+3. **Yang sengaja tidak ikut istilah:** nama akun COA (buku besar harus
+   bernama sama di semua cabang). Akun 2007 diganti nama baku menjadi
+   **"Deposit Jaminan Pelanggan"** (migrasi `a2b3c4d5e6f7`). "PT" yang berarti
+   perusahaan kita sendiri (rekening pembayaran, Pengaturan PT) menjadi
+   "Perusahaan".
+4. Cakupan: 90 template dan ±70 file Python; menu portal, judul, label
+   form, pesan flash, keterangan jurnal, dan halaman SOP.
+
+Bukti: semua halaman GET dirender sebagai OWNER dan tiga role portal dengan
+istilah penanda (KLIENKU/SUBKU/LOKASIKU/PEKERJAKU) di staging; sisa kata lama
+yang terlihat hanya **data** (nama akun demo seperti "Mandor Portal Demo",
+riwayat audit log) dan label pengaturan istilah itu sendiri.
+
 ### Sisa pekerjaan
 
-- **Istilah bisa diatur** (keputusan owner 2026-09-26): sistem dipakai untuk
-  pelanggan katering di luar proyek — sekolah, kantor, rumah sakit, event.
-  "PT"/"Mandor" di tampilan diganti istilah umum "Client"/"Sub Client" yang
-  bisa diubah OWNER dari Pengaturan Perusahaan; nama di kode dan database
-  tetap.
 - **Modul pekerja dan hutang warung jadi opsional** — khas proyek, mungkin
   tidak relevan untuk sekolah/kantor. Tahap setelah istilah.
 

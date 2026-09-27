@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 
 from typing import Any, Dict, Iterable, List, Optional
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -258,8 +259,8 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         ))
     if _int(data.get("unpaid_worker_debt")):
         reminders.append(_reminder(
-            "Hutang pekerja belum lunas",
-            f"{_int(data.get('unpaid_worker_debt'))} catatan hutang pekerja perlu dipantau.",
+            f"Hutang {T.worker_lower} belum lunas",
+            f"{_int(data.get('unpaid_worker_debt'))} catatan hutang {T.worker_lower} perlu dipantau.",
             "warning",
             "master.workers",
             "bi-people",
@@ -294,7 +295,7 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         _link("Input Order Harian", "Input dan cek order cabang.", "operational.orders", "bi-journal-text"),
         _link("Produksi", "Pantau produksi dapur dan realisasi.", "production.index", "bi-egg-fried"),
         _link("Pengiriman", "Monitoring delivery dan penerimaan.", "delivery.index", "bi-truck"),
-        _link("Warung Cepat", "Input transaksi warung/cash/hutang pekerja.", "canteen.quick_sale", "bi-lightning-charge"),
+        _link("Warung Cepat", f"Input transaksi warung/cash/hutang {T.worker_lower}.", "canteen.quick_sale", "bi-lightning-charge"),
         _link("Stok", "Pantau stok kritis dan pembelian.", "logistics.index", "bi-box-seam"),
         _link("Reminder Live", "Cek reminder operasional tanpa menyimpan notifikasi.", "settings.live_reminders", "bi-bell"),
     ]

@@ -22,6 +22,7 @@ from app.services.portal_payment_verification_queue_service import (
     PAYMENT_PROOF_REJECTED_TYPE,
     PAYMENT_PROOF_VERIFIED_TYPE,
 )
+from app.utils.terms import T
 
 
 logger = logging.getLogger(__name__)
@@ -312,7 +313,7 @@ def _master_data_card(branch_id):
         owner="Master Data",
         source="clients + mandors + delivery_locations",
         count=QueryResult(total),
-        detail=f"{_value_or_zero(clients)} client, {_value_or_zero(mandors)} mandor, {_value_or_zero(locations)} lokasi.",
+        detail=f"{_value_or_zero(clients)} {T.client_lower}, {_value_or_zero(mandors)} {T.sub_client_lower}, {_value_or_zero(locations)} lokasi.",
         href="/master/",
         status="OK" if total else "EMPTY",
     )
@@ -340,7 +341,7 @@ def _contract_card(branch_id):
     active = _count(query.filter(CustomerContract.status == "ACTIVE"))
     return _card(
         key="contracts",
-        title="Kontrak PT",
+        title=f"Kontrak {T.client}",
         owner="Contract Management",
         source="customer_contracts",
         count=total,

@@ -20,7 +20,7 @@
     actions=[
         {"label": "Download CSV", "url": url_for('finance.export_invoices_csv'), "icon": "bi-download"},
         {"label": "Buat Invoice Periode", "url": url_for('finance.generate_period_invoice_preview'), "icon": "bi-plus-circle", "variant": "primary"},
-        {"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff"},
+        {"label": ("Rekap Tagihan " ~ term('sub_client')), "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff"},
     ]
 ) }}
 
@@ -52,7 +52,7 @@
 
 <div class="app-card soft-warning-card mt-4">
     <strong>Catatan Masuk/Keluar Final</strong>
-    <p>Invoice final dibuat per periode berdasarkan mandor, berisi catering locked, revisi tambah setelah lock, dan hutang warung pekerja yang belum lunas.</p>
+    <p>Invoice final dibuat per periode berdasarkan {{ term('sub_client', lower=True) }}, berisi catering locked, revisi tambah setelah lock, dan hutang warung {{ term('worker', lower=True) }} yang belum lunas.</p>
 </div>
 
 <div class="app-card mt-4">

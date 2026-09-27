@@ -48,6 +48,8 @@ from app.services.credit_control_service import (
     suggest_credit_limit,
 )
 from app.utils.roles import effective_role
+from app.utils.terms import T
+from app.utils.terms import L
 
 
 class CreditActionError(ValueError):
@@ -57,8 +59,8 @@ class CreditActionError(ValueError):
 OWNER = "OWNER"
 BILLING_MODES = (BILLING_VIA_CLIENT, BILLING_DIRECT, BILLING_CASH)
 BILLING_MODE_LABELS = {
-    BILLING_VIA_CLIENT: "Ditagih lewat PT pemilik proyek",
-    BILLING_DIRECT: "Ditagih langsung ke mandor (kredit)",
+    BILLING_VIA_CLIENT: L("Ditagih lewat {client_lower}-nya"),
+    BILLING_DIRECT: L("Ditagih langsung ke {sub_client_lower} (kredit)"),
     BILLING_CASH: "Bayar di muka",
 }
 # Status yang boleh disetel OWNER lewat tombol. HAPUS BUKU tidak ada di sini:
@@ -177,11 +179,11 @@ def _record_event(account, from_status, to_status, trigger, reason, decision=Non
 def party_name(account):
     if account.party_type == PARTY_MANDOR:
         mandor = db.session.get(Mandor, account.party_id)
-        return mandor.name if mandor else f"Mandor #{account.party_id}"
+        return mandor.name if mandor else f"{T.sub_client} #{account.party_id}"
     from app.models.master import Client
 
     client = db.session.get(Client, account.party_id)
-    return client.name if client else f"Client #{account.party_id}"
+    return client.name if client else f"{T.client} #{account.party_id}"
 
 
 def _in_transaction(action):
@@ -243,7 +245,7 @@ def save_credit_settings(mandor, form, actor):
         # Unit order langsung adalah client itu sendiri: tagihannya ke PT,
         # dan remnya limit kontrak client.
         raise CreditActionError(
-            "Unit order langsung ditagih ke client-nya sendiri. Atur kreditnya lewat limit kontrak client."
+            f"Unit order langsung ditagih ke client-nya sendiri. Atur kreditnya lewat limit kontrak {T.client_lower}."
         )
 
     credit_limit = parse_money(form.get("credit_limit"))
@@ -272,7 +274,7 @@ def save_credit_settings(mandor, form, actor):
             missing.append("alamat")
         if missing:
             raise CreditActionError(
-                "Mandor yang ditagih langsung wajib punya: " + ", ".join(missing) + "."
+                f"{T.sub_client} yang ditagih langsung wajib punya: " + ", ".join(missing) + "."
             )
         blocked = find_blacklisted_identity(identity["id_number"], exclude_mandor_id=mandor.id)
         if blocked:
@@ -281,7 +283,7 @@ def save_credit_settings(mandor, form, actor):
                 for row_mandor, row_account in blocked
             )
             raise CreditActionError(
-                f"NIK ini milik mandor yang sudah diblokir/dihapus buku: {names}. "
+                f"NIK ini milik {T.sub_client_lower} yang sudah diblokir/dihapus buku: {names}. "
                 "Kredit langsung tidak bisa diberikan."
             )
 
@@ -360,7 +362,7 @@ def receive_deposit(mandor, form, actor, today=None):
     _require_internal(actor)
     account = _mandor_account(mandor)
     if account is None or account.billing_mode != BILLING_DIRECT:
-        raise CreditActionError("Setel mandor ini ke 'Ditagih langsung' dulu sebelum menerima deposit.")
+        raise CreditActionError(f"Setel {T.sub_client_lower} ini ke 'Ditagih langsung' dulu sebelum menerima deposit.")
 
     amount = parse_money(form.get("amount"))
     if amount <= 0:
@@ -447,7 +449,7 @@ def apply_deposit_to_invoice(mandor, form, actor, today=None):
         id=_int_or_none(form.get("invoice_id")), branch_id=mandor.branch_id, mandor_id=mandor.id,
     ).first()
     if invoice is None:
-        raise CreditActionError("Invoice tidak ditemukan untuk mandor ini.")
+        raise CreditActionError(f"Invoice tidak ditemukan untuk {T.sub_client_lower} ini.")
     _require_invoice_journal(invoice)
     amount = parse_money(form.get("amount")) or _money(invoice.remaining_amount)
 
@@ -486,7 +488,7 @@ def refund_deposit(mandor, form, actor, today=None):
                 settlement_type=DEPOSIT_REFUND,
                 amount=float(part),
                 created_by=actor.id,
-                notes=_clean(form.get("notes")) or "Deposit dikembalikan ke mandor.",
+                notes=_clean(form.get("notes")) or f"Deposit dikembalikan ke {T.sub_client_lower}.",
                 commit=False,
                 payment_method=form.get("payment_method"),
                 bank_account_id=_int_or_none(form.get("bank_account_id")),
@@ -562,7 +564,7 @@ def confirm_write_off(account, form, actor, today=None):
     _require_owner(actor)
     today = today or date.today()
     if account.party_type != PARTY_MANDOR:
-        raise CreditActionError("Hapus buku lewat kontrol kredit hanya untuk mandor.")
+        raise CreditActionError(f"Hapus buku lewat kontrol kredit hanya untuk {T.sub_client_lower}.")
     decision = evaluate_party(account.branch_id, account.party_type, account.party_id, account, today=today)
     if decision.derived_status != STATUS_WRITE_OFF and account.status != STATUS_WRITE_OFF:
         limit_days = get_thresholds(account.branch_id)["credit.write_off_days_overdue"]

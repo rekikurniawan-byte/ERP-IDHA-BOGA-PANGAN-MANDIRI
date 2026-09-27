@@ -13,6 +13,7 @@ from app.models.logistics import Procurement
 from app.models.operational import DailyOrder
 from app.services.digital_attachment_service import count_reference_attachments
 from app.services.stock_service import get_stock_summary
+from app.utils.terms import L
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ SEVERITY_META = {
 
 
 SECTION_LABELS = OrderedDict([
-    ("receivable", {"title": "Invoice & Piutang", "icon": "bi-receipt", "description": "Reminder tagihan client/perusahaan yang perlu difollow up."}),
+    ("receivable", {"title": "Invoice & Piutang", "icon": "bi-receipt", "description": L("Reminder tagihan {client_lower} yang perlu difollow up.")}),
     ("payable", {"title": "Hutang Supplier", "icon": "bi-truck", "description": "Reminder supplier bill yang akan jatuh tempo atau sudah overdue."}),
     ("stock", {"title": "Stok & Bahan", "icon": "bi-box-seam", "description": "Reminder stok kritis dan stok habis."}),
     ("hpp_order", {"title": "Order & HPP", "icon": "bi-clipboard-data", "description": "Reminder order locked yang belum lengkap HPP/snapshot/stok produksi."}),

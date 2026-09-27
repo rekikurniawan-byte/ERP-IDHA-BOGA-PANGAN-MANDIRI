@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.terms import T
 
 def _normalize_whatsapp_number(phone):
     import re
@@ -206,7 +207,7 @@ def create_invoice_collection_log(invoice_id):
     next_action = (request.form.get("next_action") or "").strip()
 
     if not response_note:
-        flash("Catatan respon client wajib diisi agar riwayat follow up jelas.", "warning")
+        flash(f"Catatan respon {T.client_lower} wajib diisi agar riwayat follow up jelas.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
     log = create_invoice_collection_log_record(
@@ -286,11 +287,11 @@ def invoice_whatsapp_send(invoice_id):
         )
 
         if target_source == "PIC_CLIENT":
-            note += " Target menggunakan PIC aktif client."
+            note += f" Target menggunakan PIC aktif {T.client_lower}."
         elif target_source == "CLIENT_PHONE_FALLBACK":
-            note += " Target menggunakan nomor umum client karena PIC aktif belum tersedia."
+            note += f" Target menggunakan nomor umum {T.client_lower} karena PIC aktif belum tersedia."
         elif target_source == "MANDOR":
-            note += " Target menggunakan nomor mandor."
+            note += f" Target menggunakan nomor {T.sub_client_lower}."
 
         log = create_invoice_collection_log_record(
             branch_id=current_user.branch_id,

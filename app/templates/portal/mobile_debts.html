@@ -36,7 +36,7 @@
     {% endif %}
 
     <div class="portal-section-heading">
-        <h2>Daftar Hutang Pekerja</h2>
+        <h2>Daftar Hutang {{ term('worker') }}</h2>
         <span>WorkerDebt </span>
     </div>
 
@@ -65,7 +65,7 @@
             <div class="portal-empty-state">
                 <i class="bi bi-wallet2"></i>
                 <strong>Belum ada hutang</strong>
-                <p>Hutang pekerja dari warung/canteen akan tampil sesuai akses mandor atau PT.</p>
+                <p>Hutang {{ term('worker', lower=True) }} dari warung/canteen akan tampil sesuai akses {{ term('sub_client', lower=True) }} atau {{ term('client') }}.</p>
             </div>
         {% endfor %}
     </div>

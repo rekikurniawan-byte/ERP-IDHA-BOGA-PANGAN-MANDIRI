@@ -6,7 +6,7 @@
 {{ page_header(
     title=(debt.buyer_name if is_external else (debt.worker.full_name if debt.worker else '-')),
     eyebrow='Pembayaran Hutang Warung',
-    description=('Bayar sebagian atau lunasi piutang warung eksternal.' if is_external else 'Bayar sebagian atau lunasi hutang warung pekerja internal.'),
+    description=('Bayar sebagian atau lunasi piutang warung eksternal.' if is_external else ('Bayar sebagian atau lunasi hutang warung ' ~ term('worker', lower=True) ~ ' internal.')),
     collapse=false,
     actions=[
         {'label': 'Kembali', 'url': url_for('canteen.debts'), 'icon': 'bi-arrow-left'}

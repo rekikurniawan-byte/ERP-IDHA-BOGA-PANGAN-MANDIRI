@@ -12,6 +12,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_SUBCLIENT,
 )
+from app.utils.terms import T
 
 
 INACTIVE_DEBT_STATUSES = {"PAID", "CANCELLED", "VOID", "VOIDED"}
@@ -113,7 +114,7 @@ def build_portal_worker_debt_read_model(user, *, limit: int = 100) -> dict:
     return {
         "allowed": True,
         "scope_mode": scope.scope_mode,
-        "reason": "Worker debt read model dibatasi oleh mandor ownership mapping.",
+        "reason": f"Worker debt read model dibatasi oleh {T.sub_client_lower} ownership mapping.",
         "debts": rows,
         "totals": _build_totals(rows),
     }

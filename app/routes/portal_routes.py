@@ -80,6 +80,7 @@ from app.services.user_management_service import (
     list_active_branches,
 )
 from app.utils.decorators import role_required
+from app.utils.terms import T
 
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
@@ -179,7 +180,7 @@ def dashboard():
             {
                 "title": "Mapping Aktif",
                 "value": mapping_query.filter(PortalUserMapping.is_active.is_(True)).count(),
-                "caption": "Penghubung akun ke perusahaan, mandor, dan lokasi.",
+                "caption": f"Penghubung akun ke perusahaan, {T.sub_client_lower}, dan lokasi.",
             },
             {
                 "title": "Draft Pending",
@@ -194,9 +195,9 @@ def dashboard():
                 "rule": "Semua akun masuk dari halaman login yang sama.",
             },
             {
-                "area": "Client, mandor, lokasi",
+                "area": f"{T.client}, {T.sub_client_lower}, lokasi",
                 "erp_source": "clients, mandors, delivery_locations",
-                "rule": "Perusahaan, mandor, dan lokasi tetap dikelola dari Master Data.",
+                "rule": f"Perusahaan, {T.sub_client_lower}, dan lokasi tetap dikelola dari Master Data.",
             },
             {
                 "area": "Draft order",
@@ -275,27 +276,27 @@ def _customer_persona():
         "title": "Beranda Pelanggan",
         "description": "Ringkasan akses pelanggan umum. Order dan pembayaran aktual tetap mengikuti workflow data utama.",
         "scope_label": "Akses pribadi",
-        "primary_note": "Prepayment tetap wajib. Pelanggan umum belum membuka piutang/hutang pekerja.",
+        "primary_note": f"Prepayment tetap wajib. Pelanggan umum belum membuka piutang/hutang {T.worker_lower}.",
     }
 
 
 def _mandor_persona():
     return {
-        "eyebrow": "Portal Mandor",
-        "title": "Beranda Mandor",
-        "description": "Ringkasan mandor berdasarkan akses ke mandor dan lokasi .",
-        "scope_label": "Akses mandor",
-        "primary_note": "Mandor hanya melihat order, invoice, hutang pekerja, dan pembayaran miliknya.",
+        "eyebrow": f"Portal {T.sub_client}",
+        "title": f"Beranda {T.sub_client}",
+        "description": f"Ringkasan {T.sub_client_lower} berdasarkan akses ke {T.sub_client_lower} dan lokasi .",
+        "scope_label": f"Akses {T.sub_client_lower}",
+        "primary_note": f"{T.sub_client} hanya melihat order, invoice, hutang {T.worker_lower}, dan pembayaran miliknya.",
     }
 
 
 def _pt_persona():
     return {
-        "eyebrow": "Portal PT",
-        "title": "Beranda PT",
-        "description": "Ringkasan PT/perusahaan berdasarkan akses client .",
-        "scope_label": "Akses client/PT",
-        "primary_note": "PT melihat mandor, lokasi, invoice, pembayaran, dan closing milik perusahaannya.",
+        "eyebrow": f"Portal {T.client}",
+        "title": f"Beranda {T.client}",
+        "description": f"Ringkasan {T.client_lower} berdasarkan akses {T.client_lower}.",
+        "scope_label": f"Akses {T.client_lower}",
+        "primary_note": f"{T.client} melihat {T.sub_client_lower}, lokasi, invoice, pembayaran, dan closing miliknya.",
     }
 
 
@@ -530,7 +531,7 @@ def mandor_canteen_debts():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Hutang Warung",
-            "page_description": "Hutang pekerja dari WorkerDebt data utama.",
+            "page_description": f"Hutang {T.worker_lower} dari WorkerDebt data utama.",
             "debt_model": build_portal_mobile_debt_cards(current_user),
         },
     )
@@ -558,7 +559,7 @@ def mandor_invoices():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Tagihan",
-            "page_description": "Tagihan mandor sesuai akses kepemilikan.",
+            "page_description": f"Tagihan {T.sub_client_lower} sesuai akses kepemilikan.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
         },
     )
@@ -572,7 +573,7 @@ def mandor_payments():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Riwayat Pembayaran",
-            "page_description": "Pembayaran mandor dari data payment data utama.",
+            "page_description": f"Pembayaran {T.sub_client_lower} dari data payment data utama.",
         },
     )
 
@@ -617,8 +618,8 @@ def pt_order():
     if orderable_location_ids(current_user, build_portal_external_scope(current_user)):
         return redirect(url_for("portal.draft_order"))
     flash(
-        "Portal Client/PT memantau pesanan sub client. Untuk memesan sendiri, "
-        "minta admin mengaktifkan Order Langsung dan menambahkan lokasi antarnya.",
+        f"Portal {T.client} memantau pesanan {T.sub_client_lower}. Untuk memesan sendiri, "
+        f"minta admin mengaktifkan Order Langsung dan menambahkan {T.location_lower}.",
         "info",
     )
     return redirect(url_for("portal.pt_dashboard"))
@@ -644,7 +645,7 @@ def pt_invoices():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Seluruh Tagihan",
-            "page_description": "Tagihan PT dari invoice data utama.",
+            "page_description": f"Tagihan {T.client_lower} dari invoice data utama.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
         },
     )
@@ -671,8 +672,8 @@ def pt_payments():
         "portal/mobile_payments.html",
         data={
             **_role_dashboard_data(_pt_persona()),
-            "page_title": "Riwayat Pembayaran PT",
-            "page_description": "Riwayat pembayaran PT sesuai perusahaan.",
+            "page_title": f"Riwayat Pembayaran {T.client}",
+            "page_description": f"Riwayat pembayaran {T.client_lower} sesuai aksesnya.",
         },
     )
 
@@ -685,7 +686,7 @@ def pt_contracts():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Seluruh Kontrak",
-            "page_description": "Kontrak PT dibaca dari Kontrak data utama sesuai akses client/PT.",
+            "page_description": f"Kontrak {T.client_lower} dibaca dari Kontrak data utama sesuai akses {T.client_lower}.",
             "contracts": build_portal_contract_model(current_user),
         },
     )
@@ -699,7 +700,7 @@ def pt_subscriptions():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Pesanan Berulang",
-            "page_description": "Pola order berulang PT dibaca dari draft order portal. Aktivasi otomatis perlu approval terpisah.",
+            "page_description": f"Pola order berulang {T.client_lower} dibaca dari draft order portal. Aktivasi otomatis perlu approval terpisah.",
             "subscriptions": build_portal_subscription_model(current_user),
         },
     )
@@ -757,11 +758,11 @@ def client_dashboard():
         "portal/role_dashboard.html",
         data=_role_dashboard_data(
             {
-                "eyebrow": "Portal Client",
-                "title": "Beranda Client",
-                "description": "Ringkasan client/PIC berdasarkan akses client atau delegasi .",
-                "scope_label": "Akses client",
-                "primary_note": "Role ini dipertahankan untuk kompatibilitas data client .",
+                "eyebrow": f"Portal {T.client}",
+                "title": f"Beranda {T.client}",
+                "description": f"Ringkasan {T.client_lower}/PIC berdasarkan akses {T.client_lower} atau delegasi .",
+                "scope_label": f"Akses {T.client_lower}",
+                "primary_note": f"Role ini dipertahankan untuk kompatibilitas data {T.client_lower} .",
             },
             include_center=True,
         ),
@@ -1046,8 +1047,8 @@ def draft_order():
 
         if not orderable_location_ids(current_user, build_portal_external_scope(current_user)):
             flash(
-                "Portal Client/PT memantau pesanan sub client. Untuk memesan sendiri, "
-                "minta admin mengaktifkan Order Langsung dan menambahkan lokasi antarnya.",
+                f"Portal {T.client} memantau pesanan {T.sub_client_lower}. Untuk memesan sendiri, "
+                f"minta admin mengaktifkan Order Langsung dan menambahkan {T.location_lower}.",
                 "info",
             )
             return redirect(url_for("portal.pt_dashboard"))

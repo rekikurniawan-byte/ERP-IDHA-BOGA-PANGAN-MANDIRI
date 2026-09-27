@@ -21,6 +21,7 @@ from flask import current_app, has_app_context
 from sqlalchemy import text
 
 from app.extensions import db
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -605,7 +606,7 @@ def restore_dry_run(dump_file_path: str | Path) -> Dict[str, object]:
             "verified_at": _now_iso(),
         }
     except FileNotFoundError:
-        return {"status": "FAIL", "error": "pg_restore tidak ditemukan di PATH. Install PostgreSQL client tools."}
+        return {"status": "FAIL", "error": f"pg_restore tidak ditemukan di PATH. Install PostgreSQL {T.client_lower} tools."}
     except subprocess.TimeoutExpired:
         return {"status": "FAIL", "error": "pg_restore --list timeout (file mungkin corrupt atau terlalu besar)."}
     except Exception as exc:

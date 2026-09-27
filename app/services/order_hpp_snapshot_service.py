@@ -9,6 +9,7 @@ from app.models.operational import (
     OrderHppSnapshotAllocation,
 )
 from app.services.hpp_service import calculate_menu_hpp
+from app.utils.terms import T
 
 
 MEAL_LABELS = {
@@ -294,7 +295,7 @@ def _create_snapshot_allocations(snapshot, daily_order):
                 hpp_per_portion_snapshot=_to_float(line.hpp_per_portion),
                 gross_margin_amount=gross_margin_amount,
                 gross_margin_percentage=gross_margin_percentage,
-                notes="Alokasi HPP snapshot per detail order/mandor untuk dasar profit invoice/report. Tidak mengubah invoice.",
+                notes=f"Alokasi HPP snapshot per detail order/{T.sub_client_lower} untuk dasar profit invoice/report. Tidak mengubah invoice.",
             )
             db.session.add(allocation)
 
@@ -437,4 +438,4 @@ def create_order_hpp_snapshot(daily_order, form_data, created_by):
     _create_snapshot_allocations(snapshot, daily_order)
 
     db.session.commit()
-    return True, "Snapshot HPP order berhasil disimpan. Stok, jurnal, invoice tidak berubah. Alokasi HPP per detail order/mandor ikut dibekukan.", snapshot
+    return True, f"Snapshot HPP order berhasil disimpan. Stok, jurnal, invoice tidak berubah. Alokasi HPP per detail order/{T.sub_client_lower} ikut dibekukan.", snapshot

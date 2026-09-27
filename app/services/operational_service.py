@@ -5,6 +5,7 @@ from decimal import Decimal
 from app.extensions import db
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderRevision, OrderSnapshot
 from app.services.credit_control_service import check_internal_order_credit
+from app.utils.terms import T
 
 
 def _commit_or_rollback():
@@ -68,7 +69,7 @@ def add_or_update_order_detail(
     ).first()
 
     if existing_detail:
-        return False, "Mandor dan lokasi ini sudah ada di order. Gunakan revisi jika ingin mengubah jumlah porsi.", existing_detail
+        return False, f"{T.sub_client} dan lokasi ini sudah ada di order. Gunakan revisi jika ingin mengubah jumlah porsi.", existing_detail
 
     total_qty = int(lunch_qty or 0) + int(dinner_qty or 0)
 
@@ -136,7 +137,7 @@ def lock_daily_order(daily_order, locked_by):
         return False, "Order sudah dalam status LOCKED."
 
     if not daily_order.details:
-        return False, "Order belum memiliki detail mandor/lokasi."
+        return False, f"Order belum memiliki detail {T.sub_client_lower}/lokasi."
 
     daily_order.status = "LOCKED"
     daily_order.is_locked = True
@@ -308,14 +309,14 @@ def add_increase_after_lock(
         lunch_qty_change=lunch_qty,
         dinner_qty_change=dinner_qty,
         price_per_portion=price_per_portion,
-        reason=reason or "Penambahan mandor/lokasi setelah lock",
+        reason=reason or f"Penambahan {T.sub_client_lower}/lokasi setelah lock",
         created_by=created_by
     )
 
     db.session.add(revision)
     _commit_or_rollback()
 
-    return True, "Tambahan mandor/lokasi baru setelah lock berhasil disimpan.", detail
+    return True, f"Tambahan {T.sub_client_lower}/lokasi baru setelah lock berhasil disimpan.", detail
 
 
 def _to_optional_int(value):

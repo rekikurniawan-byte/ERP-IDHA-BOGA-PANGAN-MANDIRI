@@ -2,6 +2,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, User
+from app.utils.terms import L
 
 
 ROLE_OWNER = "OWNER"
@@ -68,8 +69,8 @@ ROLE_LABELS = {
     ROLE_DAPUR: "Dapur / Produksi",
     ROLE_PENGANTAR: "Pengantar / Delivery",
     ROLE_CUSTOMER_SUCCESS: "Customer Success",
-    ROLE_PORTAL_CLIENT: "Portal Client / PT",
-    ROLE_PORTAL_SUBCLIENT: "Portal Sub Client / Mandor",
+    ROLE_PORTAL_CLIENT: L("Portal {client}"),
+    ROLE_PORTAL_SUBCLIENT: L("Portal {sub_client}"),
     ROLE_PORTAL_CUSTOMER: "Portal Pelanggan Umum",
 }
 
@@ -79,12 +80,12 @@ ROLE_DESCRIPTIONS = {
     ROLE_FINANCE: "Disiapkan untuk invoice, pembayaran, kas/bank, piutang, hutang supplier, dan profit invoice.",
     ROLE_ACCOUNTING: "Disiapkan untuk jurnal, laporan akuntansi, COA mapping, opening balance, dan closing/checking.",
     ROLE_LOGISTICS: "Disiapkan untuk stok, prediksi bahan, pembelian, supplier, kartu stok, dan bukti nota.",
-    ROLE_HR: "Disiapkan untuk karyawan internal dan payroll. Mandor tetap bukan employee/payroll.",
+    ROLE_HR: L("Disiapkan untuk karyawan internal dan payroll. {sub_client} tetap bukan employee/payroll."),
     ROLE_DAPUR: "Akses produksi dapur, permintaan bahan, dan pemakaian dapur.",
     ROLE_PENGANTAR: "Akses pengiriman, penerimaan, riwayat delivery, dan bukti digital delivery.",
     ROLE_CUSTOMER_SUCCESS: "Akses kontrak customer, komplain, koreksi, bukti pendukung, dan koordinasi tindak lanjut tanpa posting langsung ke finance/stok.",
-    ROLE_PORTAL_CLIENT: "Akses portal read-only untuk Client/PT: seluruh sub client, invoice, piutang, pembayaran, dan kontrak perusahaannya.",
-    ROLE_PORTAL_SUBCLIENT: "Akses portal read-only untuk Sub Client / Mandor berdasarkan mapping eksplisit.",
+    ROLE_PORTAL_CLIENT: L("Akses portal read-only untuk {client}: seluruh {sub_client_lower}, invoice, piutang, pembayaran, dan kontrak perusahaannya."),
+    ROLE_PORTAL_SUBCLIENT: L("Akses portal read-only untuk {sub_client} berdasarkan mapping eksplisit."),
     ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",
 }
 

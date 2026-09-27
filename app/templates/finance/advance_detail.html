@@ -64,7 +64,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Settlement Advance</h5>
-            <p>Settlement mengurangi outstanding DP. Untuk panjar mandor, pilih kategori biaya agar jurnal beban langsung terbentuk.</p>
+            <p>Settlement mengurangi outstanding DP. Untuk panjar {{ term('sub_client', lower=True) }}, pilih kategori biaya agar jurnal beban langsung terbentuk.</p>
         </div>
     </div>
     <form method="POST" action="{{ url_for('finance.advance_settle', advance_id=advance.id) }}" class="row g-3 app-form" data-ui-form="true">
@@ -77,11 +77,11 @@
             <label class="form-label">Tipe Settlement</label>
             <select name="settlement_type" class="form-select" required>
                 {% if advance.advance_type == 'CLIENT_DP_RECEIVED' %}
-                    <option value="CLIENT_INVOICE">Ke Invoice Client</option>
+                    <option value="CLIENT_INVOICE">Ke Invoice {{ term('client') }}</option>
                 {% elif advance.advance_type == 'SUPPLIER_ADVANCE_PAID' %}
                     <option value="SUPPLIER_BILL">Ke Supplier Bill</option>
                 {% elif advance.advance_type == 'MANDOR_OPERATIONAL_ADVANCE' %}
-                    <option value="MANDOR_EXPENSE_PROOF">Bukti Panjar Mandor</option>
+                    <option value="MANDOR_EXPENSE_PROOF">Bukti Panjar {{ term('sub_client') }}</option>
                 {% endif %}
             </select>
         </div>

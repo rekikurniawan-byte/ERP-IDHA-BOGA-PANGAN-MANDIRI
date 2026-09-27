@@ -14,9 +14,9 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-info"><i class="bi bi-person-badge"></i></div>
         <div>
-            <p>Mandor</p>
+            <p>{{ term('sub_client') }}</p>
             <h3>{{ mandor_count }}</h3>
-            <span class="app-stat-helper">Data mandor</span>
+            <span class="app-stat-helper">Data {{ term('sub_client', lower=True) }}</span>
         </div>
     </div>
 
@@ -32,9 +32,9 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-success"><i class="bi bi-people"></i></div>
         <div>
-            <p>Pekerja</p>
+            <p>{{ term('worker') }}</p>
             <h3>{{ worker_count }}</h3>
-            <span class="app-stat-helper">Pekerja proyek</span>
+            <span class="app-stat-helper">{{ term('worker') }} terdaftar</span>
         </div>
     </div>
 
@@ -115,26 +115,26 @@
     {% if current_user.role == "OWNER" %}
         <a href="{{ url_for('master.clients') }}" class="master-menu-card">
             <i class="bi bi-building"></i>
-            <strong>Client</strong>
-            <span>Kelola data client perusahaan/proyek</span>
+            <strong>{{ term('client') }}</strong>
+            <span>Kelola data {{ term('client', lower=True) }}</span>
         </a>
     {% endif %}
     <a href="{{ url_for('master.mandors') }}" class="master-menu-card">
         <i class="bi bi-person-badge"></i>
-        <strong>Mandor</strong>
-        <span>Kelola data mandor proyek</span>
+        <strong>{{ term('sub_client') }}</strong>
+        <span>Kelola data {{ term('sub_client', lower=True) }}</span>
     </a>
 
     <a href="{{ url_for('master.locations') }}" class="master-menu-card">
         <i class="bi bi-geo-alt"></i>
-        <strong>Lokasi Mandor</strong>
+        <strong>Lokasi {{ term('sub_client') }}</strong>
         <span>Mess, Workshop, Forestry, dan lokasi kerja</span>
     </a>
 
     <a href="{{ url_for('master.workers') }}" class="master-menu-card">
         <i class="bi bi-people"></i>
-        <strong>Pekerja</strong>
-        <span>Data pekerja di bawah mandor</span>
+        <strong>{{ term('worker') }}</strong>
+        <span>Data {{ term('worker', lower=True) }} di bawah {{ term('sub_client', lower=True) }}</span>
     </a>
 
     <a href="{{ url_for('master.drivers') }}" class="master-menu-card">
@@ -189,7 +189,7 @@
         <a href="{{ url_for('master.bank_accounts') }}" class="master-menu-card">
             <i class="bi bi-bank"></i>
             <strong>Rekening Bank</strong>
-            <span>Data rekening pembayaran resmi PT/cabang</span>
+            <span>Data rekening pembayaran resmi perusahaan/cabang</span>
         </a>
 
         <a href="{{ url_for('master.suppliers') }}" class="master-menu-card">

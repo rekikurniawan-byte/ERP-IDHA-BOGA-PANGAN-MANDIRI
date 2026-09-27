@@ -1,6 +1,7 @@
 """Shared helpers for client-billed mandor invoice flows."""
 
 from app.models.master import Client
+from app.utils.terms import T
 
 
 def finance_safe_label(obj):
@@ -21,12 +22,12 @@ def get_client_for_mandor_invoice(mandor):
     Mandor is kept as field PIC, but the invoice bill-to must be the client/company.
     """
     if not mandor:
-        return None, "Data mandor/PIC lapangan tidak ditemukan."
+        return None, f"Data {T.sub_client_lower}/PIC lapangan tidak ditemukan."
 
     client_id = getattr(mandor, "client_id", None)
 
     if not client_id:
-        return None, "Mandor/PIC lapangan belum terhubung ke client/perusahaan."
+        return None, f"{T.sub_client}/PIC lapangan belum terhubung ke {T.client_lower}."
 
     client = getattr(mandor, "client", None)
 
@@ -34,10 +35,10 @@ def get_client_for_mandor_invoice(mandor):
         client = Client.query.get(client_id)
 
     if not client:
-        return None, "Client/perusahaan untuk mandor/PIC lapangan ini tidak ditemukan."
+        return None, f"{T.client} untuk {T.sub_client_lower}/PIC lapangan ini tidak ditemukan."
 
     if hasattr(client, "is_active") and not client.is_active:
-        return None, "Client/perusahaan untuk mandor/PIC lapangan ini sedang nonaktif."
+        return None, f"{T.client} untuk {T.sub_client_lower}/PIC lapangan ini sedang nonaktif."
 
     return client, None
 

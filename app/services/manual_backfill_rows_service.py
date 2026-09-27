@@ -2,6 +2,7 @@
 from app.services.manual_backfill_billing_service import *  # noqa: F401,F403
 from app.services.manual_backfill_billing_service import _to_float
 from app.services.manual_backfill_bill_to_service import _clean_text
+from app.utils.terms import T
 
 def _parse_date(value):
     if isinstance(value, date):
@@ -102,7 +103,7 @@ def build_warung_backfill_rows(worker_names, debt_amounts, notes=None):
         if not worker_name and amount <= 0 and not note:
             continue
         if not worker_name:
-            raise ManualBackfillBillingError(f"Nama pekerja warung/kasbon baris {index + 1} wajib diisi.")
+            raise ManualBackfillBillingError(f"Nama {T.worker_lower} warung/kasbon baris {index + 1} wajib diisi.")
         if amount <= 0:
             raise ManualBackfillBillingError(f"Nominal warung/kasbon baris {index + 1} wajib lebih dari 0.")
 

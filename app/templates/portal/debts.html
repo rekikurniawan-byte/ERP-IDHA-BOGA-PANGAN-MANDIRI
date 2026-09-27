@@ -5,8 +5,8 @@
 <!-- Belum ada hutang pekerja dalam scope portal -->
 <section class="page-section">
     {{ portal_page_header(
-        "Hutang Pekerja",
-        "Hutang catering dan warung pekerja sesuai akses mandor.",
+        ("Hutang " ~ term('worker')),
+        ("Hutang catering dan warung " ~ term('worker', lower=True) ~ " sesuai akses " ~ term('sub_client', lower=True) ~ "."),
         status_label=data.status_label,
         link_label="Dashboard Saya",
         link_url=url_for('portal.my_dashboard')
@@ -27,8 +27,8 @@
                     <table class="table app-table align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Pekerja</th>
-                                <th>Mandor</th>
+                                <th>{{ term('worker') }}</th>
+                                <th>{{ term('sub_client') }}</th>
                                 <th>Tanggal</th>
                                 <th>Status</th>
                                 <th class="text-end">Hutang</th>
@@ -48,7 +48,7 @@
                                     <td class="text-end">{{ debt.remaining_amount|rupiah }}</td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="7" class="text-muted text-center">Belum ada hutang pekerja dalam akses portal.</td></tr>
+                                <tr><td colspan="7" class="text-muted text-center">Belum ada hutang {{ term('worker', lower=True) }} dalam akses portal.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

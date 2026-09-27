@@ -6,7 +6,7 @@
 {{ page_header(
     title='Hutang Warung',
     eyebrow='Hutang & Piutang Warung',
-    description='Hutang pekerja internal dipisahkan dari piutang buyer eksternal/non-master.',
+    description=('Hutang ' ~ term('worker', lower=True) ~ ' internal dipisahkan dari piutang buyer eksternal/non-master.'),
     collapse=false,
     actions=[
         {'label': 'Warung', 'url': url_for('canteen.index'), 'icon': 'bi-arrow-left'}
@@ -16,7 +16,7 @@
 <div class="app-card">
     <div class="card-header-clean">
         <div>
-            <h5>Hutang Pekerja Internal</h5>
+            <h5>Hutang {{ term('worker') }} Internal</h5>
             <p>Pembayaran bisa dilakukan sebagian sampai status menjadi lunas.</p>
         </div>
     </div>
@@ -25,8 +25,8 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>Pekerja</th>
-                    <th>Mandor</th>
+                    <th>{{ term('worker') }}</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Total Hutang</th>
                     <th>Terbayar</th>
                     <th>Sisa</th>
@@ -79,8 +79,8 @@
                     <td colspan="7">
                         <div class="empty-state">
                             <i class="bi bi-wallet2"></i>
-                            <h6>Belum ada hutang pekerja.</h6>
-                            <p>Hutang pekerja internal dibuat dari transaksi warung metode DEBT dengan tipe pekerja internal.</p>
+                            <h6>Belum ada hutang {{ term('worker', lower=True) }}.</h6>
+                            <p>Hutang {{ term('worker', lower=True) }} internal dibuat dari transaksi warung metode DEBT dengan tipe {{ term('worker', lower=True) }} internal.</p>
                         </div>
                     </td>
                 </tr>

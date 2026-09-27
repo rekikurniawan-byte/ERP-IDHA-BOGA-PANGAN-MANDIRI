@@ -9,6 +9,7 @@ from app.models.master import Client, ClientPic
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.business_logic_guard_service import decimal_money
+from app.utils.terms import T
 
 
 CONTRACT_STATUS_DRAFT = "DRAFT"
@@ -254,11 +255,11 @@ def _get_contract_or_raise(contract_id: int, branch_id: int) -> CustomerContract
 def _assert_client_scope(branch_id: int, client_id: int, client_pic_id: int | None) -> None:
     client = Client.query.filter_by(id=client_id).first()
     if not client:
-        raise CustomerContractError("Client kontrak tidak ditemukan.")
+        raise CustomerContractError(f"{T.client} kontrak tidak ditemukan.")
     if client_pic_id:
         pic = ClientPic.query.filter_by(id=client_pic_id, client_id=client_id).first()
         if not pic:
-            raise CustomerContractError("PIC kontrak tidak sesuai client.")
+            raise CustomerContractError(f"PIC kontrak tidak sesuai {T.client_lower}.")
     if branch_id is None:
         raise CustomerContractError("Branch kontrak wajib diisi.")
 

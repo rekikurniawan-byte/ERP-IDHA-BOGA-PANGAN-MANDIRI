@@ -11,6 +11,7 @@ from app.models.master import Item
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderRevision
 from app.models.production import Production
 from app.services.stock_service import get_item_stock, get_stock_items
+from app.utils.terms import T
 
 
 CANCELLED_STATUSES = {"CANCELLED", "CANCELED"}
@@ -303,7 +304,7 @@ def _canteen_rows(branch_id):
         worker_name = getattr(getattr(debt, "worker", None), "full_name", f"Worker #{debt.worker_id}")
         rows.append(_row(
             status=row_status,
-            check="Hutang pekerja warung",
+            check=f"Hutang {T.worker_lower} warung",
             item=f"Debt #{debt.id} | {worker_name}",
             expected=f"{_money(remaining)} | {expected_status}",
             actual=f"{_money(remaining)} | {debt.status}",
@@ -713,7 +714,7 @@ def _coverage_rows(branch_id):
                 status="WARNING",
                 check="Worker debt -> invoice coverage",
                 item=f"Debt #{debt.id} | {worker_name}",
-                expected="Sisa hutang masuk invoice aktif jika ditagih ke client/mandor",
+                expected=f"Sisa hutang masuk invoice aktif jika ditagih ke {T.client_lower}/{T.sub_client_lower}",
                 actual="Belum masuk invoice",
                 difference="-",
                 note=f"Sisa hutang {_money(remaining)} belum punya coverage invoice.",
@@ -752,8 +753,8 @@ def get_data_health_report(branch_id):
         ),
         _section(
             "canteen",
-            "Warung dan Hutang Pekerja",
-            "Validasi transaksi warung, hutang pekerja, pembayaran hutang, dan status hutang.",
+            f"Warung dan Hutang {T.worker}",
+            f"Validasi transaksi warung, hutang {T.worker_lower}, pembayaran hutang, dan status hutang.",
             _canteen_rows(branch_id),
         ),
         _section(

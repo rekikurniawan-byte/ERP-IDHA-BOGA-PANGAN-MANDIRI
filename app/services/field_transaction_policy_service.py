@@ -1,3 +1,4 @@
+from app.utils.terms import L
 FIELD_EVENT_POLICIES = {
     "CATERING_DAILY_CASH_SALE": {
         "label": "Pembayaran Catering Masuk Tunai",
@@ -145,7 +146,7 @@ FIELD_EVENT_POLICIES = {
         "payable_account_code": "2002",
     },
     "MANDOR_OPERATIONAL_ADVANCE": {
-        "label": "Panjar Operasional Mandor",
+        "label": L("Panjar Operasional {sub_client}"),
         "direction": "OUT",
         "cash_flow": "DIRECT",
         "payment_status": "PAID",
@@ -158,7 +159,7 @@ FIELD_EVENT_POLICIES = {
         "advance_account_code": "1008",
     },
     "MANDOR_ADVANCE_SETTLEMENT": {
-        "label": "Settlement Panjar Mandor",
+        "label": L("Settlement Panjar {sub_client}"),
         "direction": "OUT",
         "cash_flow": "NON_CASH",
         "payment_status": "PARTIAL",

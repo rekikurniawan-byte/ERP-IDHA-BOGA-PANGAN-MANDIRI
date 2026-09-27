@@ -441,8 +441,8 @@ def test_portal_readonly_directories_are_branch_scoped_for_admin(app):
             assert customers_response.status_code == 200
             assert mandors_response.status_code == 200
             assert locations_response.status_code == 200
-            assert "Client/PT Read-only" in customers_html
-            assert "Mandor Read-only" in mandors_html
+            assert "Client Read-only" in customers_html
+            assert "Sub Client Read-only" in mandors_html
             assert "Lokasi Read-only" in locations_html
             assert "AAA Test Portal Client" in customers_html
             assert "AAA Test Portal Mandor" in mandors_html
@@ -475,7 +475,7 @@ def test_portal_status_shell_is_read_only_and_shows_approval_gates(app):
             assert status["approval_required_count"] >= 1
             assert response.status_code == 200
             assert "Status Portal Read-only" in html
-            assert "Akun eksternal Client/PT/Mandor" in html
+            assert "Akun eksternal Client/Sub Client" in html
             assert "Draft order portal" in html
             assert "Invoice/payment portal" in html
             assert 'action="/portal' not in html.lower()
@@ -1654,7 +1654,7 @@ def test_portal_pt_feature_foundation_pages_render(app):
         _login(client, User.query.filter_by(username=username).first())
 
     pages = {
-        "/portal/pt/mandors": "Seluruh Mandor",
+        "/portal/pt/mandors": "Seluruh Sub Client",
         "/portal/pt/invoices": "Seluruh Invoice",
         "/portal/pt/receivables": "Seluruh Piutang",
         "/portal/pt/contracts": "Seluruh Kontrak",

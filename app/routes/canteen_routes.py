@@ -27,6 +27,7 @@ from app.services.manual_billing_service import (
     MANUAL_BILLING_SOURCE_WORKER_DEBT,
     find_manual_billing_invoice_for_source,
 )
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ def _sale_buyer_label(sale):
     if buyer_type == "GUEST":
         return "Tamu/guest"
     if buyer_type == "EXTERNAL_COMPANY_WORKER":
-        return "Pekerja luar PT"
+        return f"{T.worker} perusahaan luar"
     return "-"
 
 

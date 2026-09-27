@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.models.production import Production, ProductionDetail
 from app.models.master import Item
+from app.utils.terms import T
 
 
 PRODUCTION_ITEM_CODE = "PROD-CATERING-PORSI"
@@ -118,7 +119,7 @@ def generate_production_from_order(daily_order, created_by):
         return False, "Produksi hanya bisa dibuat dari order yang sudah LOCKED."
 
     if not daily_order.details:
-        return False, "Order belum memiliki detail mandor/lokasi."
+        return False, f"Order belum memiliki detail {T.sub_client_lower}/lokasi."
 
     lunch_total, dinner_total = calculate_order_total(daily_order)
 

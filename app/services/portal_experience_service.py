@@ -15,6 +15,7 @@ from app.services.customer_complaint_service import (
 from app.services.customer_complaint_attachment_service import list_customer_complaint_evidence
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_mapping_service import build_portal_external_scope, list_active_portal_mappings
+from app.utils.terms import T
 
 
 def _clean_text(value):
@@ -244,7 +245,7 @@ def build_portal_contract_model(user, *, limit: int = 100) -> dict:
 
     return {
         "allowed": scope.allowed and bool(scope.client_ids),
-        "reason": "Kontrak dibaca sesuai akses perusahaan/PT.",
+        "reason": f"Kontrak dibaca sesuai akses {T.client_lower}.",
         "scope_mode": scope.scope_mode,
         "rows": rows,
         "health_rows": health_rows,

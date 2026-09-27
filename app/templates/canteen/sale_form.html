@@ -6,7 +6,7 @@
 {{ page_header(
     title='Input Penjualan Warung',
     eyebrow='Transaksi Warung',
-    description='Catat cash, QRIS, transfer, hutang pekerja internal, atau piutang buyer eksternal.',
+    description=('Catat cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, atau piutang buyer eksternal.'),
     collapse=false,
     actions=[
         {'label': 'Kembali', 'url': url_for('canteen.index'), 'icon': 'bi-arrow-left'}
@@ -43,23 +43,23 @@
                 <label class="form-label">Tipe Pembeli</label>
                 <select name="buyer_type" id="buyerType" class="form-select app-input" required>
                     <option value="GENERAL_BUYER">Pembeli Umum</option>
-                    <option value="REGISTERED_WORKER">Pekerja Internal Terdaftar</option>
-                    <option value="EXTERNAL_COMPANY_WORKER">Pekerja Luar / Vendor / PT Lain</option>
+                    <option value="REGISTERED_WORKER">{{ term('worker') }} Internal Terdaftar</option>
+                    <option value="EXTERNAL_COMPANY_WORKER">{{ term('worker') }} Luar / Vendor / Perusahaan Lain</option>
                     <option value="GUEST">Tamu / Guest</option>
                 </select>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Pekerja Internal</label>
+                <label class="form-label">{{ term('worker') }} Internal</label>
                 <select name="worker_id" id="workerSelect" class="form-select app-input">
-                    <option value="">- Pilih jika hutang pekerja -</option>
+                    <option value="">- Pilih jika hutang {{ term('worker', lower=True) }} -</option>
                     {% for worker in workers %}
                     <option value="{{ worker.id }}">
                         {{ worker.full_name }} - {{ worker.mandor.name if worker.mandor else '-' }}
                     </option>
                     {% endfor %}
                 </select>
-                <small class="text-muted">Wajib hanya untuk DEBT pekerja internal.</small>
+                <small class="text-muted">Wajib hanya untuk DEBT {{ term('worker', lower=True) }} internal.</small>
             </div>
 
             <div class="col-md-4">
@@ -142,7 +142,7 @@
 
         <div class="mt-4">
             <label class="form-label">Catatan</label>
-            <textarea name="notes" class="form-control app-input" rows="3" placeholder="Contoh: pembelian mie dan kopi oleh pekerja"></textarea>
+            <textarea name="notes" class="form-control app-input" rows="3" placeholder="Contoh: pembelian mie dan kopi oleh {{ term('worker', lower=True) }}"></textarea>
         </div>
 
         <div class="form-actions mt-4">

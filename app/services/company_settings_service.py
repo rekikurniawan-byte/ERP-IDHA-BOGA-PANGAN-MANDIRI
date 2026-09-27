@@ -40,6 +40,21 @@ COMPANY_SETTINGS_SECTIONS = [
         ],
     },
     {
+        "title": "Istilah",
+        "description": (
+            "Kata yang dipakai di seluruh layar, portal, dan dokumen cabang ini. "
+            "Sesuaikan dengan jenis pelanggan: proyek (Perusahaan / Mandor), sekolah "
+            "(Yayasan / Kelas), kantor (Perusahaan / Divisi), rumah sakit (Rumah Sakit / "
+            "Bangsal). Kosongkan untuk memakai istilah bawaan."
+        ),
+        "fields": [
+            {"key": "term_client", "label": "Istilah untuk Client (bawaan: Client)", "type": "text", "required": False},
+            {"key": "term_sub_client", "label": "Istilah untuk Sub Client (bawaan: Sub Client)", "type": "text", "required": False},
+            {"key": "term_location", "label": "Istilah untuk Lokasi Antar (bawaan: Lokasi Antar)", "type": "text", "required": False},
+            {"key": "term_worker", "label": "Istilah untuk Pekerja (bawaan: Pekerja)", "type": "text", "required": False},
+        ],
+    },
+    {
         "title": "Prefix Nomor Dokumen",
         "description": "Catatan prefix untuk standar penomoran dokumen. Belum mengubah logic generate nomor transaksi.",
         "fields": [
@@ -83,6 +98,12 @@ DEFAULT_SETTINGS = {
     "document_prefix_order": "ORD",
     "document_prefix_delivery": "DLV",
     "document_prefix_journal": "JRN",
+    # Istilah kosong = memakai bawaan di app/utils/terms.py. Sengaja tidak
+    # diisi di sini supaya bawaannya tetap satu sumber.
+    "term_client": "",
+    "term_sub_client": "",
+    "term_location": "",
+    "term_worker": "",
 }
 
 

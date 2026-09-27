@@ -4,8 +4,8 @@
 {% block content %}
 <section class="page-section">
     {{ portal_page_header(
-        "Mandor Read-only",
-        "Pratinjau mandor dan jumlah lokasi sesuai akses portal aktif.",
+        (term('sub_client') ~ " Read-only"),
+        ("Pratinjau " ~ term('sub_client', lower=True) ~ " dan jumlah lokasi sesuai akses portal aktif."),
         status_label=data.status_label,
         link_label="Dashboard Saya",
         link_url=url_for('portal.my_dashboard')
@@ -32,8 +32,8 @@
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Mandor</th>
-                            <th>Client/PT</th>
+                            <th>{{ term('sub_client') }}</th>
+                            <th>{{ term('client') }}</th>
                             <th>Telepon</th>
                             <th>Branch</th>
                             <th>Lokasi</th>
@@ -52,7 +52,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-muted">Belum ada mandor dalam akses portal.</td>
+                                <td colspan="6" class="text-muted">Belum ada {{ term('sub_client', lower=True) }} dalam akses portal.</td>
                             </tr>
                         {% endfor %}
                     </tbody>

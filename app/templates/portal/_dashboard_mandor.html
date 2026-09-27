@@ -10,9 +10,9 @@
 <section class="portal-home portal-home-mandor">
     <div class="portal-home-hero mandor">
         <div class="portal-home-hero-copy">
-            <span class="portal-home-kicker">Portal Mandor</span>
-            <h1>Dashboard keuangan mandor dan pekerja.</h1>
-            <p>Mandor melihat pesanan, hutang catering, hutang warung, cicilan, invoice, pembayaran, dan sisa tagihan dalam satu halaman.</p>
+            <span class="portal-home-kicker">Portal {{ term('sub_client') }}</span>
+            <h1>Dashboard keuangan {{ term('sub_client', lower=True) }} dan {{ term('worker', lower=True) }}.</h1>
+            <p>{{ term('sub_client') }} melihat pesanan, hutang catering, hutang warung, cicilan, invoice, pembayaran, dan sisa tagihan dalam satu halaman.</p>
             <div class="portal-home-cta-row">
                 <a class="portal-home-primary" href="{{ url_for('portal.mandor_order') }}">
                     <i class="bi bi-bag-plus"></i>
@@ -27,7 +27,7 @@
         <div class="portal-home-balance-card">
             <span>Total Tanggung Jawab</span>
             <strong>{{ (invoices.active_outstanding_amount + debts.active_remaining_amount)|rupiah }}</strong>
-            <small>Gabungan sisa tagihan catering dan hutang warung pekerja.</small>
+            <small>Gabungan sisa tagihan catering dan hutang warung {{ term('worker', lower=True) }}.</small>
         </div>
     </div>
 
@@ -71,9 +71,9 @@
     <div class="portal-home-action-band mandor">
         <a href="{{ url_for('portal.mandor_order') }}"><i class="bi bi-plus-square"></i><strong>Pesan</strong><small>Menunggu admin</small></a>
         <a href="{{ url_for('portal.order_status') }}"><i class="bi bi-list-check"></i><strong>Status</strong><small>Riwayat order</small></a>
-        <a href="{{ url_for('portal.mandor_workers') }}"><i class="bi bi-people"></i><strong>Pekerja</strong><small>Data pekerja</small></a>
+        <a href="{{ url_for('portal.mandor_workers') }}"><i class="bi bi-people"></i><strong>{{ term('worker') }}</strong><small>Data {{ term('worker', lower=True) }}</small></a>
         <a href="{{ url_for('portal.mandor_catering_debts') }}"><i class="bi bi-receipt-cutoff"></i><strong>Hutang Catering</strong><small>Tagihan makan</small></a>
-        <a href="{{ url_for('portal.mandor_canteen_debts') }}"><i class="bi bi-shop"></i><strong>Hutang Warung</strong><small>Pekerja</small></a>
+        <a href="{{ url_for('portal.mandor_canteen_debts') }}"><i class="bi bi-shop"></i><strong>Hutang Warung</strong><small>{{ term('worker') }}</small></a>
         <a href="{{ url_for('portal.mandor_installments') }}"><i class="bi bi-cash-coin"></i><strong>Cicilan</strong><small>Riwayat bayar</small></a>
         <a href="{{ url_for('portal.mandor_invoices') }}"><i class="bi bi-file-earmark-text"></i><strong>Invoice</strong><small>Status tagihan</small></a>
         <a href="{{ url_for('portal.mandor_payments') }}"><i class="bi bi-credit-card"></i><strong>Pembayaran</strong><small>Riwayat bayar</small></a>
@@ -83,7 +83,7 @@
         <section class="portal-home-panel">
             <div class="portal-home-panel-head">
                 <div>
-                    <span>Hutang Pekerja</span>
+                    <span>Hutang {{ term('worker') }}</span>
                     <h2>Warung dan cicilan.</h2>
                 </div>
                 <a href="{{ url_for('portal.mandor_canteen_debts') }}">Detail</a>
@@ -99,7 +99,7 @@
                         <b>{{ debt.remaining_amount|rupiah }}</b>
                     </article>
                 {% else %}
-                    <div class="portal-home-empty">Belum ada hutang pekerja dalam akses mandor.</div>
+                    <div class="portal-home-empty">Belum ada hutang {{ term('worker', lower=True) }} dalam akses {{ term('sub_client', lower=True) }}.</div>
                 {% endfor %}
             </div>
         </section>
@@ -107,7 +107,7 @@
         <section class="portal-home-panel">
             <div class="portal-home-panel-head">
                 <div>
-                    <span>Invoice Mandor</span>
+                    <span>Invoice {{ term('sub_client') }}</span>
                     <h2>Status tagihan.</h2>
                 </div>
                 <a href="{{ url_for('portal.mandor_invoices') }}">Detail</a>
@@ -123,7 +123,7 @@
                         <b>{{ invoice.remaining_amount|rupiah }}</b>
                     </article>
                 {% else %}
-                    <div class="portal-home-empty">Belum ada invoice dalam akses mandor.</div>
+                    <div class="portal-home-empty">Belum ada invoice dalam akses {{ term('sub_client', lower=True) }}.</div>
                 {% endfor %}
             </div>
         </section>
@@ -133,13 +133,13 @@
         <div class="portal-home-panel-head">
             <div>
                     <span>Akun</span>
-                <h2>Data sesuai akun mandor.</h2>
+                <h2>Data sesuai akun {{ term('sub_client', lower=True) }}.</h2>
             </div>
             <span class="portal-home-soft-pill">Aktif</span>
         </div>
         <div class="portal-home-scope-grid">
-            <article><span>Client/PT</span><strong>{{ scope.client_ids|length }}</strong></article>
-            <article><span>Mandor</span><strong>{{ scope.mandor_ids|length }}</strong></article>
+            <article><span>{{ term('client') }}</span><strong>{{ scope.client_ids|length }}</strong></article>
+            <article><span>{{ term('sub_client') }}</span><strong>{{ scope.mandor_ids|length }}</strong></article>
             <article><span>Lokasi</span><strong>{{ scope.delivery_location_ids|length }}</strong></article>
             <article><span>Dokumen</span><strong>{{ models.documents.totals.total }}</strong></article>
         </div>

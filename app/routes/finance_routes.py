@@ -52,6 +52,7 @@ from app.services.digital_attachment_service import (
     save_digital_attachment,
     soft_delete_attachment,
 )
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -112,13 +113,13 @@ def get_invoice_bill_to(invoice):
         if getattr(invoice, "client_name_snapshot", None):
             return invoice.client_name_snapshot
         client = Client.query.get(invoice.client_id)
-        return client.name if client else f"Client ID {invoice.client_id}"
+        return client.name if client else f"{T.client} ID {invoice.client_id}"
 
     if bill_to_type == "MANDOR" and invoice.mandor_id:
         if getattr(invoice, "client_name_snapshot", None):
             return invoice.client_name_snapshot
         mandor = Mandor.query.get(invoice.mandor_id)
-        return mandor.name if mandor else f"Mandor ID {invoice.mandor_id}"
+        return mandor.name if mandor else f"{T.sub_client} ID {invoice.mandor_id}"
 
     if bill_to_type in {"KELOMPOK", "PERORANGAN", "CLIENT_LAIN"}:
         snapshot_name = getattr(invoice, "client_name_snapshot", None)

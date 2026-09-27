@@ -10,8 +10,8 @@
     <div class="portal-feature-hero portal-workflow-hero portal-order-hero">
         <a class="portal-back-link" href="{{ url_for('portal.pt_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
         <div>
-            <p>Portal PT</p>
-            <h1>PT tidak membuat pesanan personal.</h1>
+            <p>Portal {{ term('client') }}</p>
+            <h1>{{ term('client') }} tidak membuat pesanan personal.</h1>
             <span>Akses rekap perusahaan</span>
         </div>
         <strong class="portal-hero-status">Monitoring</strong>
@@ -22,28 +22,28 @@
             <div class="portal-home-panel-head">
                 <div>
                     <span>Alur yang benar</span>
-                    <h2>Order dibuat oleh mandor atau pelanggan.</h2>
+                    <h2>Order dibuat oleh {{ term('sub_client', lower=True) }} atau pelanggan.</h2>
                 </div>
                 <i class="bi bi-diagram-3"></i>
             </div>
             <div class="portal-customer-flow">
-                <article class="done"><i class="bi bi-person-check"></i><strong>Mandor/Pelanggan login</strong></article>
+                <article class="done"><i class="bi bi-person-check"></i><strong>{{ term('sub_client') }}/Pelanggan login</strong></article>
                 <article class="done"><i class="bi bi-card-checklist"></i><strong>Membuat draft pesanan</strong></article>
                 <article><i class="bi bi-shield-check"></i><strong>Admin konfirmasi pesanan</strong></article>
-                <article><i class="bi bi-building"></i><strong>PT memantau rekap tagihan</strong></article>
+                <article><i class="bi bi-building"></i><strong>{{ term('client') }} memantau rekap tagihan</strong></article>
             </div>
         </section>
 
         <section class="portal-home-panel">
             <div class="portal-home-panel-head">
                 <div>
-                    <span>Fitur PT</span>
-                    <h2>Kontrol mandor, invoice, piutang, dan kontrak.</h2>
+                    <span>Fitur {{ term('client') }}</span>
+                    <h2>Kontrol {{ term('sub_client', lower=True) }}, invoice, piutang, dan kontrak.</h2>
                 </div>
                 <i class="bi bi-building-check"></i>
             </div>
             <div class="portal-home-action-grid">
-                <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh Mandor</strong><small>Perusahaan</small></a>
+                <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh {{ term('sub_client') }}</strong><small>Perusahaan</small></a>
                 <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Total sisa tagihan</small></a>
                 <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Invoice</strong><small>Diterbitkan dan belum lunas</small></a>
                 <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Pembayaran</strong><small>Riwayat bayar</small></a>
@@ -89,7 +89,7 @@
             </div>
             <div class="portal-workflow-facts">
                 <article><span>Perusahaan</span><strong>{{ scope.client_ids|length }}</strong></article>
-                <article><span>Mandor</span><strong>{{ scope.mandor_ids|length }}</strong></article>
+                <article><span>{{ term('sub_client') }}</span><strong>{{ scope.mandor_ids|length }}</strong></article>
                 <article><span>Lokasi</span><strong>{{ context.location_cards|length }}</strong></article>
                 <article><span>Menunggu</span><strong>{{ summary.pending }}</strong></article>
             </div>
@@ -267,8 +267,8 @@
                     <p>{{ location.description or "Belum ada catatan lokasi." }}</p>
                 </div>
                 <dl>
-                    <div><dt>PT/Client</dt><dd>{{ location.client_name }}</dd></div>
-                    <div><dt>Mandor</dt><dd>{{ location.mandor_name }}</dd></div>
+                    <div><dt>{{ term('client') }}</dt><dd>{{ location.client_name }}</dd></div>
+                    <div><dt>{{ term('sub_client') }}</dt><dd>{{ location.mandor_name }}</dd></div>
                     <div><dt>Status</dt><dd>{{ "Aktif" if location.is_active else "Nonaktif" }}</dd></div>
                 </dl>
             </article>

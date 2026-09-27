@@ -5,34 +5,34 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
 {{ page_header(
-    "Lihat Data Buat Invoice Periode Client",
-    "Lihat Data tagihan resmi ke client/perusahaan yang berisi catering, revisi tambah, dan hutang warung dalam satu periode.",
+    ("Lihat Data Buat Invoice Periode " ~ term('client')),
+    ("Lihat Data tagihan resmi ke " ~ term('client', lower=True) ~ " yang berisi catering, revisi tambah, dan hutang warung dalam satu periode."),
     "Finance",
     actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"}]
 ) }}
 
 <div class="app-card soft-warning-card">
     <strong>Step Aman</strong>
-    <p>Halaman ini baru preview. Data invoice belum disimpan. Invoice periode akan ditagihkan ke client/perusahaan, sedangkan mandor tetap dicatat sebagai PIC lapangan.</p>
+    <p>Halaman ini baru preview. Data invoice belum disimpan. Invoice periode akan ditagihkan ke {{ term('client', lower=True) }}, sedangkan {{ term('sub_client', lower=True) }} tetap dicatat sebagai PIC lapangan.</p>
 </div>
 
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
             <h5>Filter Periode Invoice</h5>
-            <p>Pilih PIC lapangan/mandor dan rentang tanggal tagihan. Sistem akan mengambil client dari data mandor.</p>
+            <p>Pilih PIC lapangan/{{ term('sub_client', lower=True) }} dan rentang tanggal tagihan. Sistem akan mengambil {{ term('client', lower=True) }} dari data {{ term('sub_client', lower=True) }}.</p>
         </div>
     </div>
 
     <form method="POST" class="form-grid app-form" data-ui-form="true">
         {% include "components/csrf_token.html" %}
         <div class="form-group">
-            <label>PIC Lapangan / Mandor</label>
+            <label>PIC Lapangan / {{ term('sub_client') }}</label>
             <select name="mandor_id" class="form-control" required>
-                <option value="">-- Pilih Mandor --</option>
+                <option value="">-- Pilih {{ term('sub_client') }} --</option>
                 {% for mandor in mandors %}
                     <option value="{{ mandor.id }}" {% if selected_mandor_id|string == mandor.id|string %}selected{% endif %}>
-                        {{ mandor.name if mandor.name is defined else mandor.mandor_name if mandor.mandor_name is defined else 'Mandor ID ' ~ mandor.id }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
+                        {{ mandor.name if mandor.name is defined else mandor.mandor_name if mandor.mandor_name is defined else (term('sub_client') ~ ' ID ') ~ mandor.id }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
                     </option>
                 {% endfor %}
             </select>
@@ -65,7 +65,7 @@
             <strong>{{ selected_client.name }}</strong>
         </div>
         <div>
-            <span>Kode Client</span>
+            <span>Kode {{ term('client') }}</span>
             <strong>{{ selected_client.client_code if selected_client and selected_client.client_code is defined and selected_client.client_code else '-' }}</strong>
         </div>
         <div>
@@ -97,7 +97,7 @@
     <div class="app-stat-card">
         <span>Warung Belum Lunas</span>
         <h3>{{ total_warung|rupiah }}</h3>
-        <p>Hutang pekerja dalam periode</p>
+        <p>Hutang {{ term('worker', lower=True) }} dalam periode</p>
     </div>
 
     <div class="app-stat-card">
@@ -133,7 +133,7 @@
                     {% endfor %}
                 </select>
                 {% if not selected_client_pics %}
-                    <div class="form-text text-danger">Client belum punya PIC resmi aktif. Tambahkan PIC di Master Client dulu.</div>
+                    <div class="form-text text-danger">{{ term('client') }} belum punya PIC resmi aktif. Tambahkan PIC di Master {{ term('client') }} dulu.</div>
                 {% else %}
                     <div class="form-text">PIC ini akan dikunci sebagai snapshot invoice resmi.</div>
                 {% endif %}
@@ -144,7 +144,7 @@
             <div>
                 <strong>Grand Total: {{ grand_total|rupiah }}</strong>
                 <div class="text-muted small">
-                    Client {{ selected_client.name if selected_client else '-' }} | PIC {{ selected_mandor.name if selected_mandor else '-' }} | Periode {{ period_start_value }} s/d {{ period_end_value }}
+                    {{ term('client') }} {{ selected_client.name if selected_client else '-' }} | PIC {{ selected_mandor.name if selected_mandor else '-' }} | Periode {{ period_start_value }} s/d {{ period_end_value }}
                 </div>
             </div>
 

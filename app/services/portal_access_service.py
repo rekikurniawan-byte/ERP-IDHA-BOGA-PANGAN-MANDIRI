@@ -7,6 +7,8 @@ from app.services.portal_mapping_service import (
     is_portal_external_role,
     list_active_portal_mappings,
 )
+from app.utils.terms import T
+from app.utils.terms import L
 
 
 PORTAL_PREVIEW_ROLES = {"OWNER", "ADMIN"}
@@ -20,14 +22,14 @@ PORTAL_STATUS_ROWS = [
         "note": "Portal siap digunakan sesuai akun masing-masing.",
     },
     {
-        "area": "Akses Client/PT dan Mandor",
+        "area": L("Akses {client} dan {sub_client}"),
         "availability": "READY",
         "label": "Aktif",
         "source": "Master Data",
-        "note": "Data mengikuti perusahaan, mandor, dan lokasi yang sudah ditentukan admin.",
+        "note": L("Data mengikuti perusahaan, {sub_client_lower}, dan lokasi yang sudah ditentukan admin."),
     },
     {
-        "area": "Akun eksternal Client/PT/Mandor",
+        "area": L("Akun eksternal {client}/{sub_client}"),
         "availability": "READY",
         "label": "Aktif",
         "source": "Akun",
@@ -603,21 +605,21 @@ def build_portal_ownership_analysis(user):
     }
     relationship_rows = [
         {
-            "principal": "Client/PT",
+            "principal": T.client,
             "existing_source": "clients",
-            "current_link": "Client.id -> Mandor.client_id",
+            "current_link": f"{T.client}.id -> {T.sub_client}.client_id",
             "portal_readiness": "READ_ONLY_SOURCE",
-            "risk": "Belum ada user eksternal yang mengikat satu akun ke satu Client/PT.",
+            "risk": f"Belum ada user eksternal yang mengikat satu akun ke satu {T.client}.",
         },
         {
-            "principal": "Mandor",
+            "principal": T.sub_client,
             "existing_source": "mandors",
-            "current_link": "Mandor.branch_id, Mandor.client_id",
+            "current_link": f"{T.sub_client}.branch_id, {T.sub_client}.client_id",
             "portal_readiness": "READ_ONLY_SOURCE",
-            "risk": "Mandor bisa menjadi pemilik portal, tetapi butuh mapping user dan aturan delegasi.",
+            "risk": f"{T.sub_client} bisa menjadi pemilik portal, tetapi butuh mapping user dan aturan delegasi.",
         },
         {
-            "principal": "Client PIC",
+            "principal": f"{T.client} PIC",
             "existing_source": "client_pics",
             "current_link": "ClientPic.client_id",
             "portal_readiness": "CONTACT_ONLY",
@@ -628,7 +630,7 @@ def build_portal_ownership_analysis(user):
             "existing_source": "delivery_locations",
             "current_link": "DeliveryLocation.mandor_id",
             "portal_readiness": "CHILD_SCOPE",
-            "risk": "Lokasi boleh terlihat jika mandor/client pemiliknya sudah jelas.",
+            "risk": f"Lokasi boleh terlihat jika {T.sub_client_lower}/{T.client_lower} pemiliknya sudah jelas.",
         },
         {
             "principal": "User internal",
@@ -641,7 +643,7 @@ def build_portal_ownership_analysis(user):
     decision_rows = [
         {
             "decision": "Principal type eksternal",
-            "safe_default": "PT, Mandor, Pelanggan Umum, Delegate harus dipilih eksplisit.",
+            "safe_default": f"{T.client}, {T.sub_client}, dan Pelanggan Umum harus dipilih eksplisit.",
             "status": "APPROVAL_REQUIRED",
         },
         {

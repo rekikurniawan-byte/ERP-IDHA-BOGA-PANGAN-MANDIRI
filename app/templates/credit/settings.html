@@ -13,7 +13,7 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 {{ page_header(
     "Setel Kredit: " ~ mandor.name,
-    "Hanya OWNER. Mandor yang ditagih langsung wajib punya limit, termin, NIK, dan alamat. Kredit baru menyala setelah deposit yang disyaratkan benar-benar diterima.",
+    ("Hanya OWNER. " ~ term('sub_client') ~ " yang ditagih langsung wajib punya limit, termin, NIK, dan alamat. Kredit baru menyala setelah deposit yang disyaratkan benar-benar diterima."),
     "Keuangan • Kredit",
     actions=[{"label": "Kontrol Kredit", "url": url_for('credit.overview'), "icon": "bi-arrow-left"}]
 ) }}
@@ -47,7 +47,7 @@
                 <p>
                     Usulan limit dari order 30 hari terakhir × (termin + 7 hari cadangan):
                     <strong>{{ defaults.suggested_limit|rupiah if defaults.suggested_limit else "belum ada riwayat order berharga" }}</strong>.
-                    Mandor baru sebaiknya mulai dari limit kecil, lalu dinaikkan setelah 2–3 siklus bayar tepat waktu.
+                    {{ term('sub_client') }} baru sebaiknya mulai dari limit kecil, lalu dinaikkan setelah 2–3 siklus bayar tepat waktu.
                 </p>
             </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="card-header-clean">
             <div>
                 <h5>Identitas & Penjamin</h5>
-                <p>NIK dipakai sebagai daftar cekal: mandor yang pernah diblokir atau dihapus buku tidak bisa dapat kredit langsung lagi dengan NIK yang sama.</p>
+                <p>NIK dipakai sebagai daftar cekal: {{ term('sub_client', lower=True) }} yang pernah diblokir atau dihapus buku tidak bisa dapat kredit langsung lagi dengan NIK yang sama.</p>
             </div>
         </div>
         <div class="row g-3">

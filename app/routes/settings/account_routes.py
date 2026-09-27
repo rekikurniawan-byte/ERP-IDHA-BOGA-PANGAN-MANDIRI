@@ -63,10 +63,10 @@ def company_settings():
             action="UPDATE",
             table_name="branch_settings",
             record_id=current_user.branch_id,
-            description="Pengaturan PT/cabang diperbarui.",
+            description="Pengaturan perusahaan/cabang diperbarui.",
             metadata={"branch_id": current_user.branch_id, "sensitive_guard": guard_meta},
         )
-        flash("Pengaturan PT berhasil disimpan.", "success")
+        flash("Pengaturan perusahaan berhasil disimpan.", "success")
         return redirect(url_for("settings.company_settings"))
 
     settings = get_company_settings(current_user.branch_id)

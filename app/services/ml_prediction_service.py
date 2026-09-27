@@ -18,6 +18,7 @@ from collections import OrderedDict
 from sqlalchemy import text
 
 from app.extensions import db
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -540,7 +541,7 @@ def predict_demand(branch_id, prediction_date, mandor_ids=None):
 
         predictions.append({
             "mandor_id": mandor_id,
-            "mandor_name": mandor_map.get(mandor_id, f"Mandor #{mandor_id}"),
+            "mandor_name": mandor_map.get(mandor_id, f"{T.sub_client} #{mandor_id}"),
             "meal_type": meal_label,
             "meal_type_code": meal_type,
             "predicted_qty": predicted_qty,

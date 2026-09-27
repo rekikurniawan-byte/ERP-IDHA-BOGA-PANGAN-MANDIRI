@@ -21,6 +21,7 @@ from app.services.manual_billing_service import (
     generate_manual_billing_invoice_number,
     generate_manual_billing_number,
 )
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -449,9 +450,9 @@ def _validate_manual_backfill_batch_items(batch):
         getattr(batch, "bill_to_name_snapshot", None),
     )
     if raw_bill_to_type and bill_to_type == BILL_TO_MANDOR_EXISTING and not getattr(batch, "mandor_id", None):
-        raise ManualBackfillBillingError("Mandor existing wajib ada pada rekap manual.")
+        raise ManualBackfillBillingError(f"{T.sub_client} existing wajib ada pada rekap manual.")
     if raw_bill_to_type and bill_to_type == BILL_TO_CLIENT_EXISTING and not getattr(batch, "client_id", None):
-        raise ManualBackfillBillingError("Client existing wajib ada pada rekap manual.")
+        raise ManualBackfillBillingError(f"{T.client} existing wajib ada pada rekap manual.")
     if bill_to_type in {BILL_TO_KELOMPOK, BILL_TO_PERORANGAN, BILL_TO_CLIENT_LAIN} and not _clean_text(getattr(batch, "bill_to_name_snapshot", "")):
         raise ManualBackfillBillingError("Nama pihak ditagih wajib ada pada rekap manual.")
 
@@ -726,14 +727,14 @@ def _resolve_backfill_bill_to_snapshot(batch):
 
     if bill_to_type == BILL_TO_MANDOR_EXISTING:
         if not mandor:
-            raise ManualBackfillBillingError("Mandor existing pada rekap tidak ditemukan.")
+            raise ManualBackfillBillingError(f"{T.sub_client} existing pada rekap tidak ditemukan.")
         client = client or getattr(mandor, "client", None)
-        label = _clean_text(getattr(batch, "bill_to_name_snapshot", "")) or _clean_text(getattr(mandor, "name", "")) or f"Mandor ID {getattr(batch, 'mandor_id', '-')}"
+        label = _clean_text(getattr(batch, "bill_to_name_snapshot", "")) or _clean_text(getattr(mandor, "name", "")) or f"{T.sub_client} ID {getattr(batch, 'mandor_id', '-')}"
         phone = _clean_text(getattr(batch, "bill_to_phone_snapshot", "")) or _clean_text(getattr(mandor, "phone", ""))
-        client_context = _clean_text(getattr(client, "name", "")) if client else "Mandor/Kelompok tanpa PT penaung"
+        client_context = _clean_text(getattr(client, "name", "")) if client else f"{T.sub_client}/Kelompok tanpa {T.client_lower} penaung"
     elif bill_to_type == BILL_TO_CLIENT_EXISTING:
         if not client:
-            raise ManualBackfillBillingError("Client existing pada rekap tidak ditemukan.")
+            raise ManualBackfillBillingError(f"{T.client} existing pada rekap tidak ditemukan.")
         label = _clean_text(getattr(batch, "bill_to_name_snapshot", "")) or _clean_text(getattr(client, "name", ""))
         phone = _clean_text(getattr(batch, "bill_to_phone_snapshot", "")) or _clean_text(getattr(client, "phone", ""))
         client_context = label
@@ -889,7 +890,7 @@ def create_invoice_from_manual_backfill_batch(*, batch_id, branch_id, created_by
                 f"Periode {batch.period_start.strftime('%d-%m-%Y')} s/d {batch.period_end.strftime('%d-%m-%Y')}. "
                 f"Pihak ditagih: {identity['bill_to_label']}. "
                 f"Tipe pihak: {_bill_to_display_label(identity.get('batch_bill_to_type') or identity['bill_to_type'])}. "
-                f"Konteks perusahaan/PT: {identity['client_context_label']}. "
+                f"Konteks {T.client_lower}: {identity['client_context_label']}. "
                 f"Alamat: {identity['bill_to_address_snapshot'] or '-'}. "
                 f"Catatan pihak: {identity['bill_to_notes'] or '-'}. "
                 "Sumber: input belakangan, bukan pembayaran tunai."

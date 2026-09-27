@@ -10,9 +10,9 @@
 <section class="portal-home portal-home-pt">
     <div class="portal-home-hero pt">
         <div class="portal-home-hero-copy">
-            <span class="portal-home-kicker">Portal PT</span>
-            <h1>Rekap mandor, invoice, piutang, dan kontrak perusahaan.</h1>
-            <p>PT melihat rangkuman perusahaan, bukan pesanan pribadi satu mandor.</p>
+            <span class="portal-home-kicker">Portal {{ term('client') }}</span>
+            <h1>Rekap {{ term('sub_client', lower=True) }}, invoice, piutang, dan kontrak perusahaan.</h1>
+            <p>{{ term('client') }} melihat rangkuman perusahaan, bukan pesanan pribadi satu {{ term('sub_client', lower=True) }}.</p>
             <div class="portal-home-cta-row">
                 {% if direct_ordering_enabled %}
                 <a class="portal-home-primary" href="{{ url_for('portal.draft_order') }}">
@@ -26,12 +26,12 @@
                 </a>
                 <a class="portal-home-secondary" href="{{ url_for('portal.pt_mandors') }}">
                     <i class="bi bi-diagram-3"></i>
-                    <span>Lihat Mandor</span>
+                    <span>Lihat {{ term('sub_client') }}</span>
                 </a>
             </div>
         </div>
         <div class="portal-pt-executive-card">
-            <span>Sisa Tagihan PT</span>
+            <span>Sisa Tagihan {{ term('client') }}</span>
             <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
             <small>{{ invoices.active_invoice_count or invoices.invoice_count }} invoice aktif perusahaan.</small>
         </div>
@@ -53,9 +53,9 @@
 
     <div class="portal-home-metric-row pt">
         <article>
-            <span>Mandor</span>
+            <span>{{ term('sub_client') }}</span>
             <strong>{{ scope.mandor_ids|length }}</strong>
-            <small>di bawah PT</small>
+            <small>di bawah {{ term('client') }}</small>
         </article>
         <article>
             <span>Total Piutang</span>
@@ -75,7 +75,7 @@
     </div>
 
     <div class="portal-home-action-band pt">
-        <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh Mandor</strong><small>Perusahaan</small></a>
+        <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh {{ term('sub_client') }}</strong><small>Perusahaan</small></a>
         <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Seluruh Invoice</strong><small>Diterbitkan</small></a>
         <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Sisa tagihan</small></a>
         <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Riwayat Pembayaran</strong><small>Pembayaran</small></a>
@@ -111,7 +111,7 @@
             <div class="portal-home-panel-head">
                 <div>
                     <span>Kontrak</span>
-                    <h2>Status kontrak PT.</h2>
+                    <h2>Status kontrak {{ term('client') }}.</h2>
                 </div>
                 <a href="{{ url_for('portal.pt_contracts') }}">Detail</a>
             </div>
@@ -135,7 +135,7 @@
     <section class="portal-home-panel full">
         <div class="portal-home-panel-head">
             <div>
-                <span>Rekap Keuangan PT</span>
+                <span>Rekap Keuangan {{ term('client') }}</span>
                 <h2>Ringkasan pembayaran dan sisa tagihan.</h2>
             </div>
             <span class="portal-home-soft-pill">Aktif</span>
@@ -145,7 +145,7 @@
             <article><span>Sudah Dibayar</span><strong>{{ invoices.paid_amount|rupiah }}</strong></article>
             <article><span>Sisa Invoice</span><strong>{{ invoices.active_outstanding_amount|rupiah }}</strong></article>
             <article><span>Pembayaran Masuk</span><strong>{{ payments.payment_amount|rupiah }}</strong></article>
-            <article><span>Hutang Pekerja</span><strong>{{ debts.active_remaining_amount|rupiah }}</strong></article>
+            <article><span>Hutang {{ term('worker') }}</span><strong>{{ debts.active_remaining_amount|rupiah }}</strong></article>
             <article><span>Lokasi</span><strong>{{ scope.delivery_location_ids|length }}</strong></article>
         </div>
     </section>

@@ -5,7 +5,7 @@
 <div class="finance-page-shell unified-finance-page" data-unified-finance="true" data-accounting-precision-ready="true">
     {{ page_header(
         "Input Cepat Finance",
-        "Satu halaman untuk input DP, transport/BBM, dan biaya operasional. Invoice, rekap tagihan mandor, piutang, hutang supplier, dan buku kas/bank punya alur dokumen masing-masing.",
+        ("Satu halaman untuk input DP, transport/BBM, dan biaya operasional. Invoice, rekap tagihan " ~ term('sub_client', lower=True) ~ ", piutang, hutang supplier, dan buku kas/bank punya alur dokumen masing-masing."),
         "Keuangan • Input Cepat",
         actions=[
             {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"},
@@ -93,12 +93,12 @@
                             <option value="{{ item.value }}" data-party="{{ item.party_type }}">{{ item.label }} — {{ item.description }}</option>
                         {% endfor %}
                     </select>
-                    <div class="form-text">Client, supplier, dan mandor diperlakukan berbeda.</div>
+                    <div class="form-text">{{ term('client') }}, supplier, dan {{ term('sub_client', lower=True) }} diperlakukan berbeda.</div>
                 </div>
                 <div class="col-md-4 unified-advance-party" data-party-field="CLIENT">
-                    <label class="form-label">Client</label>
+                    <label class="form-label">{{ term('client') }}</label>
                     <select name="advance_client_id" class="form-select">
-                        <option value="">Pilih client</option>
+                        <option value="">Pilih {{ term('client', lower=True) }}</option>
                         {% for client in clients %}<option value="{{ client.id }}">{{ client.name }}</option>{% endfor %}
                     </select>
                 </div>
@@ -110,9 +110,9 @@
                     </select>
                 </div>
                 <div class="col-md-4 unified-advance-party" data-party-field="MANDOR">
-                    <label class="form-label">Mandor / PIC Lapangan</label>
+                    <label class="form-label">{{ term('sub_client') }} / PIC Lapangan</label>
                     <select name="advance_mandor_id" class="form-select">
-                        <option value="">Pilih mandor</option>
+                        <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
                         {% for mandor in mandors %}<option value="{{ mandor.id }}">{{ mandor.name }}</option>{% endfor %}
                     </select>
                 </div>

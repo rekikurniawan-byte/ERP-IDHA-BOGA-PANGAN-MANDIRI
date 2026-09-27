@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models.master import Mandor
+from app.utils.terms import T
 
 
 DIRECT_UNIT_SUFFIX = " — Langsung"
@@ -46,7 +47,7 @@ def activate_direct_ordering(client, branch_id):
     from app.services.master_data_service import create_direct_unit_record
 
     if not getattr(client, "is_active", True):
-        raise DirectOrderError("Client nonaktif tidak bisa diaktifkan order langsungnya.")
+        raise DirectOrderError(f"{T.client} nonaktif tidak bisa diaktifkan order langsungnya.")
 
     existing = get_direct_unit(branch_id, client.id)
     if existing is not None:
@@ -58,7 +59,7 @@ def activate_direct_ordering(client, branch_id):
     ).first()
     if name_taken is not None:
         raise DirectOrderError(
-            f"Sudah ada sub client bernama '{name}' di cabang ini. Ganti namanya dulu."
+            f"Sudah ada {T.sub_client_lower} bernama '{name}' di cabang ini. Ganti namanya dulu."
         )
 
     try:

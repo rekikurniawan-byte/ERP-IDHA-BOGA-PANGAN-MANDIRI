@@ -6,7 +6,7 @@
 <section class="page-section">
     {{ portal_page_header(
         "Pengaturan Akses Portal",
-        "Kelola akun portal, akses perusahaan, mandor, lokasi, dan antrian pesanan.",
+        ("Kelola akun portal, akses perusahaan, " ~ term('sub_client', lower=True) ~ ", lokasi, dan antrian pesanan."),
         status_label=data.status_label
     ) }}
 
@@ -31,7 +31,7 @@
             <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                 <div>
                     <h2 class="h5 mb-1">Sumber Data Terintegrasi</h2>
-                    <p class="text-muted mb-0">Portal memakai data perusahaan, mandor, lokasi, invoice, dan pembayaran dari sistem pusat.</p>
+                    <p class="text-muted mb-0">Portal memakai data perusahaan, {{ term('sub_client', lower=True) }}, lokasi, invoice, dan pembayaran dari sistem pusat.</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>

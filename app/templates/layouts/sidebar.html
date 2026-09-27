@@ -178,7 +178,7 @@
                             <a href="{{ url_for('portal.mandor_workers') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_workers' else '' }}">
                                 <i class="bi bi-people"></i>
-                                <span>Data Pekerja</span>
+                                <span>Data {{ term('worker') }}</span>
                             </a>
                             <a href="{{ url_for('portal.mandor_catering_debts') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.mandor_catering_debts' else '' }}">
@@ -211,7 +211,7 @@
                             <a href="{{ url_for('portal.pt_mandors') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_mandors' else '' }}">
                                 <i class="bi bi-diagram-3"></i>
-                                <span>Seluruh Mandor</span>
+                                <span>Seluruh {{ term('sub_client') }}</span>
                             </a>
                             <a href="{{ url_for('portal.pt_invoices') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.pt_invoices' else '' }}">
@@ -350,7 +350,7 @@
                                class="sidebar-link sidebar-sublink {{ 'active' if endpoint.startswith('canteen.') else '' }}"
                                aria-current="{{ 'page' if endpoint.startswith('canteen.') else 'false' }}">
                                 <i class="bi bi-shop"></i>
-                                <span>Warung Pekerja</span>
+                                <span>Warung {{ term('worker') }}</span>
                             </a>
                         {% endif %}
 
@@ -418,7 +418,7 @@
                            class="sidebar-link sidebar-sublink {{ 'active' if is_finance_manual_billing else '' }}"
                            aria-current="{{ 'page' if is_finance_manual_billing else 'false' }}">
                             <i class="bi bi-receipt-cutoff"></i>
-                            <span>Rekap Tagihan Mandor</span>
+                            <span>Rekap Tagihan {{ term('sub_client') }}</span>
                         </a>
 
                         <a href="{{ url_for('field_transactions.monitoring') }}"
@@ -439,7 +439,7 @@
                            class="sidebar-link sidebar-sublink {{ 'active' if is_finance_receivable else '' }}"
                            aria-current="{{ 'page' if is_finance_receivable else 'false' }}">
                             <i class="bi bi-cash-coin"></i>
-                            <span>Piutang Client</span>
+                            <span>Piutang {{ term('client') }}</span>
                         </a>
 
                         {% if has_role(["OWNER", "ADMIN"]) %}
@@ -685,7 +685,7 @@
                                class="sidebar-link sidebar-sublink {{ 'active' if is_clients else '' }}"
                                aria-current="{{ 'page' if is_clients else 'false' }}">
                                 <i class="bi bi-building-check"></i>
-                                <span>Client</span>
+                                <span>{{ term('client') }}</span>
                             </a>
                         {% endif %}
 
@@ -694,21 +694,21 @@
                                class="sidebar-link sidebar-sublink {{ 'active' if is_mandors else '' }}"
                                aria-current="{{ 'page' if is_mandors else 'false' }}">
                                 <i class="bi bi-person-badge"></i>
-                                <span>Mandor</span>
+                                <span>{{ term('sub_client') }}</span>
                             </a>
 
                             <a href="{{ url_for('master.locations') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_locations else '' }}"
                                aria-current="{{ 'page' if is_locations else 'false' }}">
                                 <i class="bi bi-geo-alt"></i>
-                                <span>Lokasi Antar</span>
+                                <span>{{ term('location') }}</span>
                             </a>
 
                             <a href="{{ url_for('master.workers') }}"
                                class="sidebar-link sidebar-sublink {{ 'active' if is_workers else '' }}"
                                aria-current="{{ 'page' if is_workers else 'false' }}">
                                 <i class="bi bi-people"></i>
-                                <span>Pekerja</span>
+                                <span>{{ term('worker') }}</span>
                             </a>
 
                             <a href="{{ url_for('master.drivers') }}"

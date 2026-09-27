@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.utils.terms import T
 
 
 @master_bp.route("/mandors")
@@ -49,10 +50,10 @@ def create_mandor():
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not name:
-            flash("Nama mandor wajib diisi.", "warning")
+            flash(f"Nama {T.sub_client_lower} wajib diisi.", "warning")
             return redirect(url_for("master.create_mandor"))
         if mandor_name_is_used(name, current_user.branch_id):
-            flash("Nama mandor sudah ada di cabang ini. Data tidak disimpan agar tidak terjadi duplikasi.", "warning")
+            flash(f"Nama {T.sub_client_lower} sudah ada di cabang ini. Data tidak disimpan agar tidak terjadi duplikasi.", "warning")
             return redirect(url_for("master.create_mandor"))
         create_mandor_record(
             branch_id=current_user.branch_id,
@@ -62,7 +63,7 @@ def create_mandor():
             is_active=is_active,
         )
 
-        flash("Mandor berhasil ditambahkan.", "success")
+        flash(f"{T.sub_client} berhasil ditambahkan.", "success")
         return redirect(url_for("master.mandors"))
 
     return render_template("master/mandor_form.html", clients=clients, mandor=None)
@@ -74,7 +75,7 @@ def edit_mandor(mandor_id):
     mandor = Mandor.query.get_or_404(mandor_id)
 
     if mandor.branch_id != current_user.branch_id:
-        flash("Data mandor tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.sub_client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.mandors"))
 
     clients = Client.query.filter_by(is_active=True).order_by(Client.name.asc()).all()
@@ -86,11 +87,11 @@ def edit_mandor(mandor_id):
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not name:
-            flash("Nama mandor wajib diisi.", "warning")
+            flash(f"Nama {T.sub_client_lower} wajib diisi.", "warning")
             return redirect(url_for("master.edit_mandor", mandor_id=mandor.id))
 
         if mandor_name_is_used(name, current_user.branch_id, exclude_id=mandor.id):
-            flash("Nama mandor sudah digunakan oleh data lain. Perubahan tidak disimpan.", "warning")
+            flash(f"Nama {T.sub_client_lower} sudah digunakan oleh data lain. Perubahan tidak disimpan.", "warning")
             return redirect(url_for("master.edit_mandor", mandor_id=mandor.id))
 
         update_mandor_record(
@@ -101,7 +102,7 @@ def edit_mandor(mandor_id):
             is_active=is_active,
         )
 
-        flash("Mandor berhasil diperbarui.", "success")
+        flash(f"{T.sub_client} berhasil diperbarui.", "success")
         return redirect(url_for("master.mandors"))
 
     return render_template("master/mandor_form.html", clients=clients, mandor=mandor)
@@ -113,12 +114,12 @@ def toggle_mandor(mandor_id):
     mandor = Mandor.query.get_or_404(mandor_id)
 
     if mandor.branch_id != current_user.branch_id:
-        flash("Data mandor tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.sub_client_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.mandors"))
 
     toggle_mandor_active(mandor)
 
-    flash("Status mandor berhasil diubah.", "success")
+    flash(f"Status {T.sub_client_lower} berhasil diubah.", "success")
     return redirect(url_for("master.mandors"))
 
 
@@ -175,7 +176,7 @@ def create_location():
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not mandor_id or not location_name:
-            flash("Mandor dan nama lokasi wajib diisi.", "warning")
+            flash(f"{T.sub_client} dan nama lokasi wajib diisi.", "warning")
             return redirect(url_for("master.create_location"))
 
         try:
@@ -186,10 +187,10 @@ def create_location():
                 is_active=is_active,
             )
         except IntegrityError:
-            flash("Lokasi ini sudah ada untuk mandor tersebut.", "warning")
+            flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
             return redirect(url_for("master.create_location"))
 
-        flash("Lokasi mandor berhasil ditambahkan.", "success")
+        flash(f"Lokasi {T.sub_client_lower} berhasil ditambahkan.", "success")
         return redirect(url_for("master.locations"))
 
     # Dipakai tombol "Aktifkan Order Langsung": unit barunya langsung terpilih.
@@ -222,7 +223,7 @@ def edit_location(location_id):
         is_active = True if request.form.get("is_active") == "on" else False
 
         if not mandor_id or not location_name:
-            flash("Mandor dan nama lokasi wajib diisi.", "warning")
+            flash(f"{T.sub_client} dan nama lokasi wajib diisi.", "warning")
             return redirect(url_for("master.edit_location", location_id=location.id))
 
         try:
@@ -234,7 +235,7 @@ def edit_location(location_id):
                 is_active=is_active,
             )
         except IntegrityError:
-            flash("Lokasi ini sudah ada untuk mandor tersebut.", "warning")
+            flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
             return redirect(url_for("master.edit_location", location_id=location.id))
 
         flash("Lokasi berhasil diperbarui.", "success")
@@ -312,7 +313,7 @@ def create_worker():
         notes = (request.form.get("notes") or "").strip()
 
         if not mandor_id or not full_name:
-            flash("Mandor dan nama pekerja wajib diisi.", "warning")
+            flash(f"{T.sub_client} dan nama {T.worker_lower} wajib diisi.", "warning")
             return redirect(url_for("master.create_worker"))
 
         worker = create_worker_record(
@@ -324,7 +325,7 @@ def create_worker():
             notes=notes,
         )
 
-        flash(f"Pekerja berhasil ditambahkan dengan kode {worker.worker_code}.", "success")
+        flash(f"{T.worker} berhasil ditambahkan dengan kode {worker.worker_code}.", "success")
         return redirect(url_for("master.workers"))
 
     return render_template(
@@ -341,7 +342,7 @@ def edit_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 
     if not worker.mandor or worker.mandor.branch_id != current_user.branch_id:
-        flash("Data pekerja tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.worker_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.workers"))
 
     mandors = Mandor.query.filter_by(
@@ -357,7 +358,7 @@ def edit_worker(worker_id):
         notes = (request.form.get("notes") or "").strip()
 
         if not mandor_id or not full_name:
-            flash("Mandor dan nama pekerja wajib diisi.", "warning")
+            flash(f"{T.sub_client} dan nama {T.worker_lower} wajib diisi.", "warning")
             return redirect(url_for("master.edit_worker", worker_id=worker.id))
 
         update_worker_record(
@@ -370,7 +371,7 @@ def edit_worker(worker_id):
             notes=notes,
         )
 
-        flash("Pekerja berhasil diperbarui.", "success")
+        flash(f"{T.worker} berhasil diperbarui.", "success")
         return redirect(url_for("master.workers"))
 
     return render_template(
@@ -387,12 +388,12 @@ def toggle_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 
     if not worker.mandor or worker.mandor.branch_id != current_user.branch_id:
-        flash("Data pekerja tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.worker_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.workers"))
 
     toggle_worker_status(worker)
 
-    flash("Status pekerja berhasil diubah.", "success")
+    flash(f"Status {T.worker_lower} berhasil diubah.", "success")
     return redirect(url_for("master.workers"))
 
 @master_bp.route("/workers/<int:worker_id>/delete", methods=["POST"])
@@ -401,16 +402,16 @@ def delete_worker(worker_id):
     worker = Worker.query.get_or_404(worker_id)
 
     if not worker.mandor or worker.mandor.branch_id != current_user.branch_id:
-        flash("Data pekerja tidak sesuai cabang user.", "danger")
+        flash(f"Data {T.worker_lower} tidak sesuai cabang user.", "danger")
         return redirect(url_for("master.workers"))
 
     if worker_is_used(worker.id):
-        flash("Pekerja sudah pernah digunakan pada transaksi hutang warung. Data tidak bisa dihapus, silakan nonaktifkan.", "warning")
+        flash(f"{T.worker} sudah pernah digunakan pada transaksi hutang warung. Data tidak bisa dihapus, silakan nonaktifkan.", "warning")
         return redirect(url_for("master.workers"))
 
     delete_worker_record(worker)
 
-    flash("Pekerja berhasil dihapus karena belum pernah digunakan transaksi.", "success")
+    flash(f"{T.worker} berhasil dihapus karena belum pernah digunakan transaksi.", "success")
     return redirect(url_for("master.workers"))
 
 # =========================

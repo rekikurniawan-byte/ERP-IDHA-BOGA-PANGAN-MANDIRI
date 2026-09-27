@@ -7,7 +7,7 @@
         page_title or 'Input Rekap Manual dari Buku',
         page_subtitle or 'Jalur tambahan untuk memasukkan rekap lama/buku manual. Ini tidak mengubah alur realtime order harian.',
         "Keuangan | Rekap Tagihan Manual",
-        actions=[{"label": "Rekap Tagihan Mandor", "url": url_for('finance.manual_billing'), "icon": "bi-arrow-left"}]
+        actions=[{"label": ("Rekap Tagihan " ~ term('sub_client')), "url": url_for('finance.manual_billing'), "icon": "bi-arrow-left"}]
     ) }}
 
     <div class="app-card soft-warning-card mt-4">
@@ -31,18 +31,18 @@
                     <label class="form-label">Tipe Pihak Ditagih</label>
                     <select name="bill_to_type" class="form-select" required>
                         {% set selected_bill_to_type = form_values.bill_to_type or 'MANDOR_EXISTING' %}
-                        <option value="MANDOR_EXISTING" {% if selected_bill_to_type == 'MANDOR_EXISTING' %}selected{% endif %}>Mandor existing</option>
-                        <option value="CLIENT_EXISTING" {% if selected_bill_to_type == 'CLIENT_EXISTING' %}selected{% endif %}>Client existing</option>
+                        <option value="MANDOR_EXISTING" {% if selected_bill_to_type == 'MANDOR_EXISTING' %}selected{% endif %}>{{ term('sub_client') }} existing</option>
+                        <option value="CLIENT_EXISTING" {% if selected_bill_to_type == 'CLIENT_EXISTING' %}selected{% endif %}>{{ term('client') }} existing</option>
                         <option value="KELOMPOK" {% if selected_bill_to_type == 'KELOMPOK' %}selected{% endif %}>Kelompok</option>
                         <option value="PERORANGAN" {% if selected_bill_to_type == 'PERORANGAN' %}selected{% endif %}>Perorangan</option>
-                        <option value="CLIENT_LAIN" {% if selected_bill_to_type == 'CLIENT_LAIN' %}selected{% endif %}>Client lain</option>
+                        <option value="CLIENT_LAIN" {% if selected_bill_to_type == 'CLIENT_LAIN' %}selected{% endif %}>{{ term('client') }} lain</option>
                     </select>
-                    <div class="form-text">Untuk pihak bebas, isi nama snapshot di bawah tanpa master mandor/client.</div>
+                    <div class="form-text">Untuk pihak bebas, isi nama snapshot di bawah tanpa master {{ term('sub_client', lower=True) }}/{{ term('client', lower=True) }}.</div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Mandor Existing</label>
+                    <label class="form-label">{{ term('sub_client') }} Existing</label>
                     <select name="mandor_id" class="form-select">
-                        <option value="">Pilih mandor</option>
+                        <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
                         {% for mandor in mandors %}
                             <option value="{{ mandor.id }}" {% if form_values.mandor_id|string == mandor.id|string %}selected{% endif %}>
                                 {{ mandor.name }}{% if mandor.client %} - {{ mandor.client.name }}{% endif %}
@@ -51,9 +51,9 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Client Existing</label>
+                    <label class="form-label">{{ term('client') }} Existing</label>
                     <select name="client_id" class="form-select">
-                        <option value="">Pilih client</option>
+                        <option value="">Pilih {{ term('client', lower=True) }}</option>
                         {% for client in clients %}
                             <option value="{{ client.id }}" {% if form_values.client_id|string == client.id|string %}selected{% endif %}>
                                 {{ client.name }}
@@ -72,7 +72,7 @@
                 <div class="col-md-4">
                     <label class="form-label">Nama Pihak Ditagih</label>
                     <input type="text" name="bill_to_name_snapshot" class="form-control" value="{{ form_values.bill_to_name_snapshot }}" placeholder="Contoh: Kelompok Pak Yatno">
-                    <div class="form-text">Wajib untuk Kelompok, Perorangan, atau Client lain. Untuk master existing boleh kosong.</div>
+                    <div class="form-text">Wajib untuk Kelompok, Perorangan, atau {{ term('client') }} lain. Untuk master existing boleh kosong.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Telepon Pihak</label>
@@ -148,8 +148,8 @@
         <div class="app-card mt-4 manual-backfill-table-card">
             <div class="card-header-clean">
                 <div>
-                    <h5>Data Warung / Kasbon Pekerja</h5>
-                    <p>Isi hutang/kasbon pekerja dari buku yang ikut ditagihkan ke mandor/kelompok.</p>
+                    <h5>Data Warung / Kasbon {{ term('worker') }}</h5>
+                    <p>Isi hutang/kasbon {{ term('worker', lower=True) }} dari buku yang ikut ditagihkan ke {{ term('sub_client', lower=True) }}/kelompok.</p>
                 </div>
                 <button type="button" class="btn app-btn-secondary btn-sm" id="addWarungRowBtn">
                     <i class="bi bi-plus-circle"></i>
@@ -160,7 +160,7 @@
                 <table class="table app-table align-middle manual-backfill-edit-table" id="warungBackfillTable">
                     <thead>
                         <tr>
-                            <th style="min-width: 220px;">Nama Pekerja</th>
+                            <th style="min-width: 220px;">Nama {{ term('worker') }}</th>
                             <th class="text-end" style="min-width: 180px;">Nominal Hutang/Kasbon</th>
                             <th style="min-width: 260px;">Catatan</th>
                             <th class="text-end" style="min-width: 90px;">Aksi</th>
@@ -169,7 +169,7 @@
                     <tbody id="warungBackfillRows">
                         {% for row in warung_form_rows %}
                         <tr>
-                            <td><input type="text" name="warung_worker_name[]" class="form-control" value="{{ row.worker_name or '' }}" placeholder="Nama pekerja"></td>
+                            <td><input type="text" name="warung_worker_name[]" class="form-control" value="{{ row.worker_name or '' }}" placeholder="Nama {{ term('worker', lower=True) }}"></td>
                             <td><input type="number" step="0.01" min="0" name="warung_amount[]" class="form-control text-end js-warung-cascade-input" value="{{ row.amount or '' }}" placeholder="0" data-cascade-key="amount"></td>
                             <td><input type="text" name="warung_note[]" class="form-control js-warung-cascade-input" value="{{ row.note or '' }}" placeholder="Opsional" data-cascade-key="note"></td>
                             <td class="text-end">

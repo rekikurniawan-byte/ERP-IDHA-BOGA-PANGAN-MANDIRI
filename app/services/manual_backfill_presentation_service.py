@@ -3,6 +3,7 @@ from app.services.manual_backfill_billing_service import *  # noqa: F401,F403
 from app.services.manual_backfill_billing_service import _to_float
 from app.services.manual_backfill_bill_to_service import _clean_text
 from app.services.manual_backfill_duplicate_service import get_manual_backfill_bill_to_context
+from app.utils.terms import T
 
 def get_manual_backfill_status_context(status):
     """Return human-readable status metadata for the manual-book backfill flow."""
@@ -68,11 +69,11 @@ def get_manual_backfill_bill_to_filter_choices():
     """Choices for the manual-book billed-party type filter."""
     return [
         {"value": "", "label": "Semua pihak"},
-        {"value": BILL_TO_MANDOR_EXISTING, "label": "Mandor existing"},
-        {"value": BILL_TO_CLIENT_EXISTING, "label": "Client existing"},
+        {"value": BILL_TO_MANDOR_EXISTING, "label": f"{T.sub_client} existing"},
+        {"value": BILL_TO_CLIENT_EXISTING, "label": f"{T.client} existing"},
         {"value": BILL_TO_KELOMPOK, "label": "Kelompok"},
         {"value": BILL_TO_PERORANGAN, "label": "Perorangan"},
-        {"value": BILL_TO_CLIENT_LAIN, "label": "Client lain"},
+        {"value": BILL_TO_CLIENT_LAIN, "label": f"{T.client} lain"},
     ]
 
 

@@ -4,6 +4,7 @@ Route functions moved out of app.routes.finance_routes without changing URL rule
 """
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.routes.finance.period_invoice_routes import _period_parse_date
+from app.utils.terms import T
 
 
 @finance_bp.route("/transactions", methods=["GET", "POST"])
@@ -210,20 +211,20 @@ def manual_billing():
         except (TypeError, ValueError):
             selected_mandor_id_int = None
         if not period_start or not period_end:
-            flash("Periode rekap tagihan mandor tidak valid.", "warning")
+            flash(f"Periode rekap tagihan {T.sub_client_lower} tidak valid.", "warning")
         elif period_start > period_end:
             flash("Tanggal mulai tidak boleh lebih besar dari tanggal selesai.", "warning")
         elif not selected_mandor_id_int:
-            flash("Mandor/PIC lapangan tidak valid.", "warning")
+            flash(f"{T.sub_client}/PIC lapangan tidak valid.", "warning")
         else:
             selected_mandor = Mandor.query.filter_by(
                 id=selected_mandor_id_int,
                 branch_id=current_user.branch_id,
             ).first()
             if not selected_mandor:
-                flash("Mandor/PIC lapangan tidak ditemukan.", "warning")
+                flash(f"{T.sub_client}/PIC lapangan tidak ditemukan.", "warning")
             elif not getattr(selected_mandor, "client", None):
-                flash("Mandor/PIC lapangan belum terhubung ke client/perusahaan.", "warning")
+                flash(f"{T.sub_client}/PIC lapangan belum terhubung ke {T.client_lower}.", "warning")
             else:
                 preview = collect_manual_billing_candidates(
                     branch_id=current_user.branch_id,
@@ -234,7 +235,7 @@ def manual_billing():
                 client_pics = get_active_client_pics_for_mandor(selected_mandor)
                 preview_ready = True
                 if not client_pics:
-                    flash("Client belum punya PIC resmi aktif. Tambahkan PIC di Master Client sebelum membuat invoice.", "warning")
+                    flash(f"{T.client} belum punya PIC resmi aktif. Tambahkan PIC di Master {T.client} sebelum membuat invoice.", "warning")
 
     manual_backfill_batches = ManualBillingBatch.query.filter_by(
         branch_id=current_user.branch_id,
@@ -989,7 +990,7 @@ def create_manual_billing_invoice_route():
     period_end = _period_parse_date(period_end_value)
 
     if not mandor_id or not period_start or not period_end:
-        flash("Mandor dan periode wajib diisi.", "warning")
+        flash(f"{T.sub_client} dan periode wajib diisi.", "warning")
         return redirect(url_for("finance.manual_billing"))
 
     try:
@@ -1008,7 +1009,7 @@ def create_manual_billing_invoice_route():
         flash(str(exc), "warning")
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:6038")
-        flash(f"Gagal membuat invoice dari rekap tagihan mandor: {exc}", "danger")
+        flash(f"Gagal membuat invoice dari rekap tagihan {T.sub_client_lower}: {exc}", "danger")
 
     return redirect(url_for(
         "finance.manual_billing",

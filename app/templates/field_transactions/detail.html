@@ -705,9 +705,9 @@
         {% include "components/csrf_token.html" %}
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label">Mandor</label>
+                <label class="form-label">{{ term('sub_client') }}</label>
                 <select name="mandor_id" class="form-select" required>
-                    <option value="">Pilih mandor</option>
+                    <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
                     {% for mandor in mandors %}
                         <option value="{{ mandor.id }}" {% if transaction.counterparty and transaction.counterparty.linked_mandor_id == mandor.id %}selected{% endif %}>{{ mandor.name }}</option>
                     {% endfor %}
@@ -722,7 +722,7 @@
                 <textarea name="notes" class="form-control" rows="2">{{ transaction.notes or '' }}</textarea>
             </div>
             <div class="col-md-12">
-                <button type="submit" class="btn app-btn-primary">Hubungkan ke Panjar Mandor</button>
+                <button type="submit" class="btn app-btn-primary">Hubungkan ke Panjar {{ term('sub_client') }}</button>
             </div>
         </div>
     </form>

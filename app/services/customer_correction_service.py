@@ -12,6 +12,7 @@ from app.models.operational import DailyOrder
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.business_logic_guard_service import decimal_money
+from app.utils.terms import T
 
 
 CORRECTION_TYPE_RETURN = "RETURN"
@@ -240,17 +241,17 @@ def _assert_reference_scope(
         if not complaint:
             raise CustomerCorrectionError("Complaint referensi tidak ditemukan untuk branch ini.")
         if client_id and complaint.client_id and complaint.client_id != client_id:
-            raise CustomerCorrectionError("Complaint tidak sesuai client.")
+            raise CustomerCorrectionError(f"Complaint tidak sesuai {T.client_lower}.")
         if mandor_id and complaint.mandor_id and complaint.mandor_id != mandor_id:
-            raise CustomerCorrectionError("Complaint tidak sesuai mandor.")
+            raise CustomerCorrectionError(f"Complaint tidak sesuai {T.sub_client_lower}.")
     if client_id and not Client.query.filter_by(id=client_id).first():
-        raise CustomerCorrectionError("Client koreksi tidak ditemukan.")
+        raise CustomerCorrectionError(f"{T.client} koreksi tidak ditemukan.")
     if mandor_id:
         mandor = Mandor.query.filter_by(id=mandor_id, branch_id=branch_id).first()
         if not mandor:
-            raise CustomerCorrectionError("Mandor koreksi tidak ditemukan untuk branch ini.")
+            raise CustomerCorrectionError(f"{T.sub_client} koreksi tidak ditemukan untuk branch ini.")
         if client_id and mandor.client_id != client_id:
-            raise CustomerCorrectionError("Mandor koreksi tidak sesuai client.")
+            raise CustomerCorrectionError(f"{T.sub_client} koreksi tidak sesuai {T.client_lower}.")
     if order_id and not DailyOrder.query.filter_by(id=order_id, branch_id=branch_id).first():
         raise CustomerCorrectionError("Order koreksi tidak ditemukan untuk branch ini.")
     if delivery_id and not Delivery.query.filter_by(id=delivery_id, branch_id=branch_id).first():
@@ -260,9 +261,9 @@ def _assert_reference_scope(
         if not invoice:
             raise CustomerCorrectionError("Invoice koreksi tidak ditemukan untuk branch ini.")
         if client_id and invoice.client_id and invoice.client_id != client_id:
-            raise CustomerCorrectionError("Invoice koreksi tidak sesuai client.")
+            raise CustomerCorrectionError(f"Invoice koreksi tidak sesuai {T.client_lower}.")
         if mandor_id and invoice.mandor_id and invoice.mandor_id != mandor_id:
-            raise CustomerCorrectionError("Invoice koreksi tidak sesuai mandor.")
+            raise CustomerCorrectionError(f"Invoice koreksi tidak sesuai {T.sub_client_lower}.")
 
 
 def _assert_user_in_branch(user_id: int, branch_id: int) -> None:

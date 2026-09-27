@@ -6,7 +6,7 @@
 {{ page_header(
     title='Penerimaan',
     eyebrow='Pengantar',
-    description='Daftar mandor/lokasi yang belum dan sudah dicatat penerimaannya.',
+    description=('Daftar ' ~ term('sub_client', lower=True) ~ '/lokasi yang belum dan sudah dicatat penerimaannya.'),
     collapse=false,
     actions=[
         {'label': 'Pengiriman', 'url': url_for('delivery.today', date=selected_date_text), 'icon': 'bi-truck'},
@@ -61,7 +61,7 @@
                 <tr>
                     <th>No Delivery</th>
                     <th>Tipe</th>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Planned</th>
                     <th>Status Delivery</th>
@@ -117,7 +117,7 @@
                 <tr>
                     <th>No Delivery</th>
                     <th>Tipe</th>
-                    <th>Mandor</th>
+                    <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Planned</th>
                     <th>Delivered</th>

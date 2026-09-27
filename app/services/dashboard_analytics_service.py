@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from sqlalchemy import text
 
 from app.extensions import db
+from app.utils.terms import T
 
 logger = logging.getLogger(__name__)
 
@@ -704,7 +705,7 @@ def get_revenue_explorer_data(
     mix_segments = [
         {"key": "invoice", "label": "Invoice Catering", "amount": total_invoice_accrual, "endpoint": "finance.invoices", "description": "Omzet akrual dari invoice aktif."},
         {"key": "canteen_paid", "label": "Warung Lunas", "amount": total_canteen_paid, "endpoint": "canteen.index", "description": "Penjualan warung cash/QRIS/transfer."},
-        {"key": "canteen_debt", "label": "Warung Hutang", "amount": total_canteen_debt_sale, "endpoint": "canteen.debts", "description": "Penjualan warung hutang pekerja/eksternal."},
+        {"key": "canteen_debt", "label": "Warung Hutang", "amount": total_canteen_debt_sale, "endpoint": "canteen.debts", "description": f"Penjualan warung hutang {T.worker_lower}/eksternal."},
     ]
     mix_total = sum(_as_float(segment.get("amount")) for segment in mix_segments)
     for segment in mix_segments:
@@ -809,7 +810,7 @@ def get_revenue_explorer_data(
             "Omzet akrual membaca invoice aktif berdasarkan tanggal invoice.",
             "Kas masuk membaca pembayaran invoice, penjualan warung lunas, dan pembayaran hutang warung.",
             "Warung debt adalah omzet warung yang belum tentu langsung jadi kas.",
-            "Filter client/mandor hanya berlaku untuk invoice dan payment catering; warung tidak punya relasi client/mandor.",
+            f"Filter {T.client_lower}/{T.sub_client_lower} hanya berlaku untuk invoice dan payment catering; warung tidak punya relasi {T.client_lower}/{T.sub_client_lower}.",
         ],
         "data_contract": {
             "invoice_accrual": "invoices.total_amount where status not cancelled grouped by invoice_date",

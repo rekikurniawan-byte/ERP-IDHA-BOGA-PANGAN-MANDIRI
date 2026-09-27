@@ -119,7 +119,7 @@
 
         <div class="col-lg-4">
             <h6>Kembalikan Deposit</h6>
-            <p class="small">Hanya bisa kalau mandor tidak punya hutang invoice lagi.</p>
+            <p class="small">Hanya bisa kalau {{ term('sub_client', lower=True) }} tidak punya hutang invoice lagi.</p>
             <form method="POST" action="{{ url_for('credit.deposit_refund', account_id=account.id) }}" class="app-form">
                 {% include "components/csrf_token.html" %}
                 <input type="text" name="amount" class="form-control mb-2" placeholder="Nominal (kosong = semua)">
@@ -169,7 +169,7 @@
     {% if detail.can_write_off %}
     <hr>
     <h6 class="text-danger">Hapus Buku</h6>
-    <p class="small">Deposit dipotong dulu ke invoice tertua, sisanya dijurnal ke 5013 Beban Piutang Tak Tertagih, invoice ditutup, mandor dinonaktifkan, dan NIK-nya masuk daftar cekal. Tidak bisa dibatalkan dari layar.</p>
+    <p class="small">Deposit dipotong dulu ke invoice tertua, sisanya dijurnal ke 5013 Beban Piutang Tak Tertagih, invoice ditutup, {{ term('sub_client', lower=True) }} dinonaktifkan, dan NIK-nya masuk daftar cekal. Tidak bisa dibatalkan dari layar.</p>
     <form method="POST" action="{{ url_for('credit.write_off', account_id=account.id) }}" class="row g-3 app-form">
         {% include "components/csrf_token.html" %}
         <div class="col-md-9"><input type="text" name="reason" class="form-control" placeholder="Alasan hapus buku (wajib)" required></div>

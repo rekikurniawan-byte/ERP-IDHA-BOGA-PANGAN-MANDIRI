@@ -4,9 +4,9 @@
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 {{ page_header(
-    "Edit Mandor" if mandor else "Input Mandor",
-    "Mandor dipakai pada order harian, lokasi kerja, pekerja, pengiriman, dan laporan.",
-    eyebrow="Edit Mandor" if mandor else "Tambah Mandor",
+    ("Edit " ~ term('sub_client')) if mandor else ("Input " ~ term('sub_client')),
+    (term('sub_client') ~ " dipakai pada order harian, lokasi kerja, " ~ term('worker', lower=True) ~ ", pengiriman, dan laporan."),
+    eyebrow=("Edit " ~ term('sub_client')) if mandor else ("Tambah " ~ term('sub_client')),
     actions=[{"label": "Kembali", "url": url_for('master.mandors')}]
 ) }}
 
@@ -15,7 +15,7 @@
         {% include "components/csrf_token.html" %}
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">Client</label>
+                <label class="form-label">{{ term('client') }}</label>
                 <select name="client_id" class="form-select app-input">
                     <option value="">- Tidak dipilih -</option>
                     {% for client in clients %}
@@ -27,7 +27,7 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Nama Mandor</label>
+                <label class="form-label">Nama {{ term('sub_client') }}</label>
                 <input type="text" name="name" class="form-control app-input" value="{{ mandor.name if mandor else '' }}" required>
             </div>
 
@@ -39,14 +39,14 @@
             <div class="col-md-12">
                 <label class="checkbox-clean">
                     <input type="checkbox" name="is_active" {% if not mandor or mandor.is_active %}checked{% endif %}>
-                    <span>Mandor aktif</span>
+                    <span>{{ term('sub_client') }} aktif</span>
                 </label>
             </div>
         </div>
 
         <div class="form-actions mt-4">
             <button type="submit" class="btn app-btn-primary">
-                {% if mandor %}Simpan Perubahan{% else %}Simpan Mandor{% endif %}
+                {% if mandor %}Simpan Perubahan{% else %}Simpan {{ term('sub_client') }}{% endif %}
             </button>
         </div>
     </form>

@@ -10,6 +10,7 @@ from app.models.master import Client, Mandor, User
 from app.models.operational import DailyOrder
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
+from app.utils.terms import T
 
 
 COMPLAINT_CATEGORY_FOOD_SHORTAGE = "FOOD_SHORTAGE"
@@ -246,13 +247,13 @@ def _assert_reference_scope(
     invoice_id: int | None,
 ) -> None:
     if client_id and not Client.query.filter_by(id=client_id).first():
-        raise CustomerComplaintError("Client complaint tidak ditemukan.")
+        raise CustomerComplaintError(f"{T.client} complaint tidak ditemukan.")
     if mandor_id:
         mandor = Mandor.query.filter_by(id=mandor_id, branch_id=branch_id).first()
         if not mandor:
-            raise CustomerComplaintError("Mandor complaint tidak ditemukan untuk branch ini.")
+            raise CustomerComplaintError(f"{T.sub_client} complaint tidak ditemukan untuk branch ini.")
         if client_id and mandor.client_id != client_id:
-            raise CustomerComplaintError("Mandor complaint tidak sesuai client.")
+            raise CustomerComplaintError(f"{T.sub_client} complaint tidak sesuai {T.client_lower}.")
     if order_id and not DailyOrder.query.filter_by(id=order_id, branch_id=branch_id).first():
         raise CustomerComplaintError("Order complaint tidak ditemukan untuk branch ini.")
     if delivery_id and not Delivery.query.filter_by(id=delivery_id, branch_id=branch_id).first():
@@ -262,9 +263,9 @@ def _assert_reference_scope(
         if not invoice:
             raise CustomerComplaintError("Invoice complaint tidak ditemukan untuk branch ini.")
         if client_id and invoice.client_id and invoice.client_id != client_id:
-            raise CustomerComplaintError("Invoice complaint tidak sesuai client.")
+            raise CustomerComplaintError(f"Invoice complaint tidak sesuai {T.client_lower}.")
         if mandor_id and invoice.mandor_id and invoice.mandor_id != mandor_id:
-            raise CustomerComplaintError("Invoice complaint tidak sesuai mandor.")
+            raise CustomerComplaintError(f"Invoice complaint tidak sesuai {T.sub_client_lower}.")
 
 
 def _assert_user_in_branch(user_id: int, branch_id: int, label: str) -> None:
