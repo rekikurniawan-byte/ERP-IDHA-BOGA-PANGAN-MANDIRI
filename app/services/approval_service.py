@@ -68,7 +68,9 @@ def ensure_action_has_approval(
     requested_by: int,
     requested_reason: str,
     payload: Mapping[str, Any] | None = None,
+    commit: bool = True,
 ) -> tuple[bool, ApprovalRequest, str]:
+    """commit=False: pemanggil yang commit (mis. alur yang sedang memegang kunci baris)."""
     request_row = get_latest_action_request(
         branch_id=branch_id,
         action_key=action_key,
@@ -90,11 +92,14 @@ def ensure_action_has_approval(
         payload=payload,
         commit=False,
     )
-    try:
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        raise
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    else:
+        db.session.flush()
     return False, request_row, "Approval maker-checker dibuat. Checker harus menyetujui sebelum aksi diproses."
 
 

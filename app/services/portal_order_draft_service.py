@@ -677,6 +677,9 @@ def evaluate_portal_order_draft_gate(
                     "gate": gate["key"],
                     "source": "portal_order_draft_service",
                 },
+                # Konfirmasi draft memegang kunci baris draft; commit sekali di
+                # akhir alur konfirmasi, bukan di tengah (kunci tidak lepas lebih awal).
+                commit=False,
             )
             approval_messages.append(f"{gate['title']}: {message} (approval #{request_row.id})")
     can_confirm = not blockers and not approvals
@@ -1247,6 +1250,10 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
         owner_override=owner_override,
     )
     if not gate["can_confirm"]:
+        if gate["needs_approval"]:
+            # Permintaan approval yang baru dibuat harus tersimpan walau draft
+            # belum bisa dikonfirmasi.
+            _commit_or_rollback()
         return draft, False, " ".join(gate["blockers"] or gate["warnings"]) or "Draft order perlu review manual."
 
     if not daily_order:

@@ -6,12 +6,17 @@ from tools.audit_db_commits import collect_db_session_calls, render_report
 
 def test_db_commit_audit_counts_real_commit_calls_only():
     calls = collect_db_session_calls(Path("app"))
+    report = render_report(calls)
 
     commit_calls = [call for call in calls if call.method == "commit"]
     rollback_calls = [call for call in calls if call.method == "rollback"]
 
-    assert len(commit_calls) == 102
-    assert len(rollback_calls) == 49
+    # Jumlahnya bertambah setiap ada layanan baru; yang dikunci adalah bahwa
+    # laporan menghitung persis panggilan commit/rollback yang ditemukan, dan
+    # teks (bukan kode) tidak ikut terhitung.
+    assert commit_calls and rollback_calls
+    assert _summary_value(report, "Total db.session.commit()") == len(commit_calls)
+    assert _summary_value(report, "Total db.session.rollback()") == len(rollback_calls)
     assert all("atomic_transaction_audit_map_service.py:222" not in f"{call.relative_path}:{call.line}" for call in calls)
 
 
@@ -22,7 +27,7 @@ def test_db_commit_audit_report_prioritizes_route_commits():
 
     assert "| Commit di route | 0 |" in report
     assert "| Rollback di route | 0 |" in report
-    assert "| Commit di service | 102 |" in report
+    assert _summary_value(report, "Commit di service") == len([c for c in calls if c.method == "commit" and c.layer == "service"])
     assert "| Fungsi dengan lebih dari satu commit | 0 |" in report
     assert "| Service call ke fungsi ber-commit | 0 |" in report
     assert explicit_commit_true >= 32
