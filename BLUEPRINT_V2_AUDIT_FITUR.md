@@ -399,10 +399,50 @@ label; jumlah dan jurnal lamanya tidak berubah. Jurnal pendapatan catering
 masuk 4001, bukan 4002. Invoice tanpa client master (tagihan manual ke
 kelompok/perorangan) tetap memakai aturan lama.
 
+### Langkah 5 — Bangun ulang atau lanjut? (penilaian 2026-09-27)
+
+**Kesimpulan: tidak perlu dibangun ulang.** Lanjutkan sistem yang sekarang,
+dengan satu putaran pengerasan sebelum dipakai produksi.
+
+Bukti (diukur dari kode, bukan perkiraan):
+
+| Ukuran | Angka |
+|---|---|
+| Kode Python | 214 file, ±74.000 baris |
+| Template | 267 file, ±42.000 baris |
+| Tabel database / migrasi | 127 / 64 |
+| Halaman (route) / dijaga role | 438 / 420 (sisanya publik: login, daftar, health) |
+| Tes | 626 — lulus 623; 3 gagal karena tesnya usang, bukan bug |
+
+Alasan tidak membangun ulang:
+1. Isinya aturan bisnis yang sudah dikunci dan dites — akuntansi otomatis,
+   kontrol kredit, dua jalur transaksi, harga & ongkir, portal tiga peran.
+   Membangun ulang berarti menulis ulang semuanya dari nol (berbulan-bulan)
+   dan mengulang risiko salah hitung uang yang sudah ditutup tes.
+2. Fondasinya benar: teknologi umum (Flask + PostgreSQL + Alembic), semua
+   halaman lewat satu penjaga role, batas transaksi atomik, idempotensi,
+   audit log, optimistic locking di semua tabel, jurnal hanya lewat layanan.
+3. Terbukti bisa diubah dengan aman: role 14→7, istilah per cabang, modul
+   per cabang, dan dua jalur transaksi selesai tanpa merusak fitur lain.
+4. Belum produksi — tidak ada data nyata yang dipertaruhkan, tapi juga tidak
+   ada alasan membuang yang sudah bekerja.
+
+Pengerasan sebelum produksi (urut risiko):
+
+| # | Temuan | Risiko | Wajib sebelum produksi |
+|---|---|---|---|
+| 1 | Angka "cutover" tertanam di akuntansi (`ACCOUNTING9B/9D_CUTOVER_*` = 2 atau 4): di database produksi baru, penjualan warung #1–2 dan hutang pekerja #1–2 **tidak dijurnal**, invoice #1–2 diperlakukan sebagai data lama | Buku besar kurang | **Ya** |
+| 2 | Uang masih dihitung dengan `float` di ±56 tempat jalur invoice/uang muka/akuntansi | Selisih pembulatan | **Ya** (jalur uang) |
+| 3 | 259 tempat mencatat "Suppressed unexpected exception" / 326 `except Exception` | Kegagalan lolos tanpa terlihat | **Ya** untuk jalur uang; sisanya bertahap |
+| 4 | Kesiapan operasional: migrasi harus dengan user aplikasi (izin tabel), penyapu kredit harian masih menumpang permintaan pertama (perlu penjadwal), backup & pemulihan diuji, pemantauan error | Operasional | **Ya** |
+| 5 | 3 tes usang (hitungan audit commit, teks antrean bukti bayar) | Suite tidak hijau penuh | Ya |
+| 6 | CSS ±82.000 baris dengan 94 file override bertumpuk | Perubahan tampilan lambat | Bertahap |
+| 7 | Kode mati & tambalan: pembuat jurnal lama yang tak dipanggil, 86 penanda PATCH/PRODUCTION, 41 modul rute `import *`, dua pembuat nomor invoice | Pemeliharaan | Bertahap |
+| 8 | Uji coba satu cabang dengan data nyata sebelum semua cabang | Validasi | **Ya** |
+
 ### Sisa pekerjaan
 
-- Langkah 5 rencana: menilai apakah sistem masih perlu dibangun ulang, atau
-  cukup yang sekarang.
+- Pengerasan sebelum produksi (tabel di atas), mulai dari #1.
 
 ---
 
