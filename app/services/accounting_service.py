@@ -152,8 +152,7 @@ def build_invoice_journal_amounts(invoice):
     catering_revenue_code = revenue_rule.get("account_code")
 
     is_future_accrual_invoice = (
-        "ACCOUNTING9D_CUTOVER_INVOICE_ID" in globals()
-        and int(getattr(invoice, "id", 0) or 0) > ACCOUNTING9D_CUTOVER_INVOICE_ID
+        int(getattr(invoice, "id", 0) or 0) > legacy_cutover_id("invoice")
     )
 
     for item in items:
@@ -710,10 +709,20 @@ def generate_procurement_journals_batch(*, created_by_id, commit=True):
 
 
 # ACCOUNTING9D_WARUNG_FUTURE_ACCRUAL_SERVICE
-ACCOUNTING9D_CUTOVER_CANTEEN_SALE_ID = 2
-ACCOUNTING9D_CUTOVER_WORKER_DEBT_ID = 2
-ACCOUNTING9D_CUTOVER_DEBT_PAYMENT_ID = 4
-ACCOUNTING9D_CUTOVER_INVOICE_ID = 2
+def legacy_cutover_id(kind):
+    """Batas ID data lama untuk jenis ini (invoice, worker_debt, debt_payment, canteen_sale).
+
+    Dulu tertanam 2/4 di kode: di database produksi baru, penjualan warung
+    #1-2 dan hutang pekerja #1-2 jadi tidak dijurnal. Sekarang dibaca dari
+    ACCOUNTING_LEGACY_CUTOVER (config.py); bawaannya 0 = tidak ada yang dilewati.
+    """
+    try:
+        from flask import current_app
+
+        return int((current_app.config.get("ACCOUNTING_LEGACY_CUTOVER") or {}).get(kind, 0))
+    except RuntimeError:
+        return 0
+
 
 
 def _accounting9d_float(value):
@@ -735,14 +744,14 @@ def create_warung_cash_sale_journal(sale, created_by, commit=False):
     """
     Future only:
     CASH warung -> Dr 1001 Kas / Cr 4003 Pendapatan Warung
-    Data existing <= ACCOUNTING9D_CUTOVER_CANTEEN_SALE_ID dilindungi.
+    Data lama (<= legacy_cutover_id("canteen_sale")) dilindungi.
     """
     if not sale:
         return False, "Transaksi warung tidak ditemukan.", None
 
     sale_id = int(getattr(sale, "id", 0) or 0)
 
-    if sale_id <= ACCOUNTING9D_CUTOVER_CANTEEN_SALE_ID:
+    if sale_id <= legacy_cutover_id("canteen_sale"):
         return False, "Transaksi warung lama dilindungi cutover.", None
 
     sale_type = str(getattr(sale, "sale_type", "") or "").upper()
@@ -813,14 +822,14 @@ def create_warung_debt_accrual_journal(worker_debt, created_by, commit=False):
     """
     Future only:
     Hutang warung pekerja -> Dr 1005 Piutang Karyawan / Cr 4003 Pendapatan Warung
-    Data existing <= ACCOUNTING9D_CUTOVER_WORKER_DEBT_ID dilindungi.
+    Data lama (<= legacy_cutover_id("worker_debt")) dilindungi.
     """
     if not worker_debt:
         return False, "Hutang warung tidak ditemukan.", None
 
     worker_debt_id = int(getattr(worker_debt, "id", 0) or 0)
 
-    if worker_debt_id <= ACCOUNTING9D_CUTOVER_WORKER_DEBT_ID:
+    if worker_debt_id <= legacy_cutover_id("worker_debt"):
         return False, "Hutang warung lama dilindungi cutover.", None
 
     existing = _accounting9d_existing_journal(
@@ -900,14 +909,14 @@ def create_warung_debt_payment_journal(debt_payment, created_by, commit=False):
     """
     Future only:
     Pembayaran hutang warung -> Dr Kas/Bank / Cr 1005 Piutang Karyawan
-    Data existing <= ACCOUNTING9D_CUTOVER_DEBT_PAYMENT_ID dilindungi.
+    Data lama (<= legacy_cutover_id("debt_payment")) dilindungi.
     """
     if not debt_payment:
         return False, "Pembayaran hutang warung tidak ditemukan.", None
 
     debt_payment_id = int(getattr(debt_payment, "id", 0) or 0)
 
-    if debt_payment_id <= ACCOUNTING9D_CUTOVER_DEBT_PAYMENT_ID:
+    if debt_payment_id <= legacy_cutover_id("debt_payment"):
         return False, "Payment warung lama dilindungi cutover.", None
 
     existing = _accounting9d_existing_journal(
@@ -1282,7 +1291,7 @@ def create_warung_direct_sale_journal(sale, created_by, commit=False):
         return False, "Transaksi warung tidak ditemukan.", None
 
     sale_id = int(getattr(sale, "id", 0) or 0)
-    if sale_id <= ACCOUNTING9D_CUTOVER_CANTEEN_SALE_ID:
+    if sale_id <= legacy_cutover_id("canteen_sale"):
         return False, "Transaksi warung lama dilindungi cutover.", None
 
     payment_method = str(getattr(sale, "payment_method", None) or getattr(sale, "sale_type", None) or "CASH").upper()

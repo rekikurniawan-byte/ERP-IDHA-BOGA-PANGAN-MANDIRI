@@ -12,6 +12,22 @@ def _env_bool(name, default=False):
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _cutover_env(name):
+    """ACCOUNTING_LEGACY_CUTOVER="invoice=2,worker_debt=2,debt_payment=4,canteen_sale=2".
+
+    Batas ID data lama yang dulu dijurnal dengan cara lama. Database baru
+    tidak punya data lama, jadi bawaannya kosong: tidak ada yang dilewati.
+    """
+    result = {}
+    for part in _csv_env(name):
+        key, _, value = part.partition("=")
+        try:
+            result[key.strip()] = int(value)
+        except ValueError:
+            continue
+    return result
+
+
 def _csv_env(name, default=""):
     value = os.getenv(name, default)
     return [item.strip() for item in str(value).split(",") if item.strip()]
@@ -149,6 +165,7 @@ class Config:
     CONTENT_SECURITY_POLICY = os.getenv("CONTENT_SECURITY_POLICY", DEFAULT_CONTENT_SECURITY_POLICY)
     CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", False)
     PORTAL_ENABLED = _env_bool("PORTAL_ENABLED", False)
+    ACCOUNTING_LEGACY_CUTOVER = _cutover_env("ACCOUNTING_LEGACY_CUTOVER")
 
     UPLOAD_ROOT = os.getenv("UPLOAD_ROOT", os.path.join(INSTANCE_DIR, "uploads"))
     DIGITAL_ATTACHMENT_UPLOAD_DIR = os.getenv(

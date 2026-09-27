@@ -64,9 +64,8 @@ def _reserve_accounting_idempotency(scope, payload, default_endpoint="accounting
 
 
 # ACCOUNTING9B_WARUNG_FUTURE_ACCRUAL_HELPER
-ACCOUNTING9B_CUTOVER_WORKER_DEBT_ID = 2
-ACCOUNTING9B_CUTOVER_DEBT_PAYMENT_ID = 4
-ACCOUNTING9B_CUTOVER_INVOICE_ID = 2
+# Batas data lama dibaca dari ACCOUNTING_LEGACY_CUTOVER (lihat legacy_cutover_id).
+from app.services.accounting_service import legacy_cutover_id  # noqa: E402
 
 
 

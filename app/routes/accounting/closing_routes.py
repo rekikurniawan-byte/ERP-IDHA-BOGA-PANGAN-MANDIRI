@@ -81,7 +81,7 @@ def _build_accounting9b_warung_debt_accrual_candidates(include_protected_existin
     """
 
     rows = db.session.execute(text(sql), {
-        "cutover_worker_debt_id": ACCOUNTING9B_CUTOVER_WORKER_DEBT_ID
+        "cutover_worker_debt_id": legacy_cutover_id("worker_debt")
     }).mappings().all()
 
     candidates = []
@@ -90,7 +90,7 @@ def _build_accounting9b_warung_debt_accrual_candidates(include_protected_existin
         row_dict = dict(row)
         worker_debt_id = row_dict["worker_debt_id"]
         amount = _accounting9b_float(row_dict["debt_amount"])
-        protected_existing = worker_debt_id <= ACCOUNTING9B_CUTOVER_WORKER_DEBT_ID
+        protected_existing = worker_debt_id <= legacy_cutover_id("worker_debt")
 
         existing = _accounting9b_existing_journal(
             ["WARUNG_DEBT_ACCRUAL"],
@@ -236,7 +236,7 @@ def _build_accounting9b_warung_debt_payment_candidates(include_protected_existin
     """
 
     rows = db.session.execute(text(sql), {
-        "cutover_debt_payment_id": ACCOUNTING9B_CUTOVER_DEBT_PAYMENT_ID
+        "cutover_debt_payment_id": legacy_cutover_id("debt_payment")
     }).mappings().all()
 
     candidates = []
@@ -245,7 +245,7 @@ def _build_accounting9b_warung_debt_payment_candidates(include_protected_existin
         row_dict = dict(row)
         debt_payment_id = row_dict["debt_payment_id"]
         amount = _accounting9b_float(row_dict["amount"])
-        protected_existing = debt_payment_id <= ACCOUNTING9B_CUTOVER_DEBT_PAYMENT_ID
+        protected_existing = debt_payment_id <= legacy_cutover_id("debt_payment")
 
         existing = _accounting9b_existing_journal(
             [
@@ -371,7 +371,7 @@ def _generate_accounting9b_warung_debt_payment_journals(created_by_id, commit=Tr
 
 
 def _build_accounting9b_future_invoice_journal_amounts(invoice, include_protected_existing=False):
-    protected_existing = invoice.id <= ACCOUNTING9B_CUTOVER_INVOICE_ID
+    protected_existing = invoice.id <= legacy_cutover_id("invoice")
 
     if protected_existing and not include_protected_existing:
         return {
