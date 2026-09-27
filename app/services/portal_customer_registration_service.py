@@ -7,6 +7,7 @@ from app.extensions import db
 from app.models.master import Branch, Client, DeliveryLocation, Mandor, User
 from app.models.system import PortalUserMapping
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, PRINCIPAL_DELEGATE
+from app.services.pricing_service import PATH_GENERAL
 from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     normalize_username,
@@ -112,6 +113,8 @@ def register_portal_customer(form):
         address=payload["address"],
         phone=payload["phone"],
         is_active=True,
+        # Pendaftar portal = pelanggan umum: bayar di muka per pesanan.
+        customer_path=PATH_GENERAL,
     )
     mandor = Mandor(
         branch_id=branch.id,

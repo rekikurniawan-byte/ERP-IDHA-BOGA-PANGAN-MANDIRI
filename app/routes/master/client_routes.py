@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.services.pricing_service import CUSTOMER_PATH_LABELS, CUSTOMER_PATHS, PATH_CONTRACT
 from app.utils.terms import T
 
 
@@ -48,6 +49,11 @@ def index():
 # =========================
 # CLIENT
 # =========================
+
+
+def _requested_customer_path():
+    value = (request.form.get("customer_path") or "").strip().upper()
+    return value if value in CUSTOMER_PATHS else PATH_CONTRACT
 
 
 def _clean_client_code(value):
@@ -129,12 +135,13 @@ def create_client():
             phone=phone,
             address=address,
             is_active=is_active,
+            customer_path=_requested_customer_path(),
         )
 
         flash(f"{T.client} berhasil ditambahkan.", "success")
         return redirect(url_for("master.clients"))
 
-    return render_template("master/client_form.html", client=None)
+    return render_template("master/client_form.html", client=None, customer_paths=CUSTOMER_PATH_LABELS)
 
 
 @master_bp.route("/clients/<int:client_id>/edit", methods=["GET", "POST"])
@@ -165,6 +172,9 @@ def edit_client(client_id):
             flash(f"Kode {T.client_lower} sudah digunakan oleh {T.client_lower} lain. Perubahan tidak disimpan.", "warning")
             return redirect(url_for("master.edit_client", client_id=client.id))
 
+        # Memindah jalur mengubah cara pelanggan membayar: hanya OWNER.
+        previous_path = client.customer_path
+        new_path = _requested_customer_path() if current_user.role == "OWNER" else None
         update_client_record(
             client,
             client_code=client_code,
@@ -172,7 +182,19 @@ def edit_client(client_id):
             phone=phone,
             address=address,
             is_active=is_active,
+            customer_path=new_path,
         )
+        if new_path and new_path != previous_path:
+            record_audit_log(
+                module="PRICING",
+                event_type="CUSTOMER_PATH_CHANGED",
+                action="UPDATE",
+                table_name="clients",
+                record_id=client.id,
+                description=f"Jalur {client.name}: {previous_path} → {new_path}.",
+                old_value={"customer_path": previous_path},
+                new_value={"customer_path": new_path},
+            )
 
         flash(f"{T.client} berhasil diperbarui.", "success")
         return redirect(url_for("master.clients"))
@@ -183,6 +205,7 @@ def edit_client(client_id):
         "master/client_form.html",
         client=client,
         direct_unit=get_direct_unit(current_user.branch_id, client.id),
+        customer_paths=CUSTOMER_PATH_LABELS,
     )
 
 

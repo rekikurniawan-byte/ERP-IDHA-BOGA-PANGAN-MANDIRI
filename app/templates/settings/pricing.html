@@ -1,0 +1,177 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true">
+{{ page_header(
+    "Harga & Ongkir",
+    "Harga jual per porsi bisa diubah kapan saja mengikuti harga bahan pokok dan BBM. Harga baru hanya berlaku untuk pesanan yang dibuat sejak tanggal berlakunya; pesanan, invoice, dan uang muka yang sudah ada tidak ikut berubah.",
+    eyebrow="Pengaturan",
+    actions=[{"label": "Kembali", "url": url_for('dashboard.index')}]
+) }}
+
+{% if below_hpp %}
+<div class="alert alert-warning app-alert">
+    <strong>Harga standar di bawah HPP.</strong>
+    Harga Rp {{ '{:,.0f}'.format(current.price_per_portion) }}/porsi merugi untuk:
+    {% for menu, hpp in below_hpp %}{{ menu.menu_name }} (HPP {{ hpp|rupiah }}){{ ", " if not loop.last }}{% endfor %}.
+</div>
+{% endif %}
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Harga Standar per Porsi</h3>
+            <p>Dipakai pelanggan umum dan {{ term('client', lower=True) }} yang tidak punya harga kontrak. Sama untuk makan siang dan malam.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 align-items-start">
+        <div class="col-md-4">
+            <div class="text-muted small">Berlaku sekarang</div>
+            {% if current %}
+                <div class="fs-3 fw-semibold">{{ current.price_per_portion|rupiah }}</div>
+                <div class="small text-muted">sejak {{ current.effective_from.strftime('%d-%m-%Y') }}</div>
+            {% else %}
+                <div class="fs-5 fw-semibold text-danger">Belum diatur</div>
+                <div class="small text-muted">Pesanan belum bisa dibuat sampai harga standar diisi.</div>
+            {% endif %}
+            {% for row in scheduled %}
+                <div class="small mt-2"><i class="bi bi-calendar-event"></i> {{ row.price_per_portion|rupiah }} mulai {{ row.effective_from.strftime('%d-%m-%Y') }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-8">
+            <form method="POST" action="{{ url_for('settings.pricing_set_price') }}" class="row g-2 app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-4">
+                    <label class="form-label">Harga baru per porsi</label>
+                    <input type="number" name="price_per_portion" class="form-control app-input" min="1" step="1" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Berlaku mulai</label>
+                    <input type="date" name="effective_from" class="form-control app-input" value="{{ today.isoformat() }}" min="{{ today.isoformat() }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Catatan</label>
+                    <input type="text" name="notes" class="form-control app-input" placeholder="Contoh: BBM naik">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan Harga Standar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Harga Kontrak per {{ term('client') }}</h3>
+            <p>Harga yang disepakati di kontrak. Menang atas harga standar untuk semua {{ term('sub_client', lower=True) }} {{ term('client', lower=True) }} itu, dan tetap berlaku saat kontrak diperpanjang.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive mb-3">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>{{ term('client') }}</th><th>Jalur</th><th>Berlaku sekarang</th><th>Terjadwal</th></tr>
+            </thead>
+            <tbody>
+                {% for item in client_prices %}
+                <tr>
+                    <td><strong>{{ item.client.name }}</strong></td>
+                    <td>{{ "Umum" if item.client.customer_path == "UMUM" else "Kontrak" }}</td>
+                    <td>
+                        {% if item.current %}{{ item.current.price_per_portion|rupiah }} <span class="small text-muted">sejak {{ item.current.effective_from.strftime('%d-%m-%Y') }}</span>
+                        {% else %}<span class="text-muted">Belum berlaku</span>{% endif %}
+                    </td>
+                    <td>
+                        {% for row in item.scheduled %}{{ row.price_per_portion|rupiah }} mulai {{ row.effective_from.strftime('%d-%m-%Y') }}{{ "; " if not loop.last }}{% else %}-{% endfor %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted">Belum ada harga kontrak. Semua {{ term('client', lower=True) }} memakai harga standar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="POST" action="{{ url_for('settings.pricing_set_price') }}" class="row g-2 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-4">
+            <label class="form-label">{{ term('client') }}</label>
+            <select name="client_id" class="form-select app-input" required>
+                <option value="">Pilih {{ term('client', lower=True) }}</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Harga per porsi</label>
+            <input type="number" name="price_per_portion" class="form-control app-input" min="1" step="1" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Berlaku mulai</label>
+            <input type="date" name="effective_from" class="form-control app-input" value="{{ today.isoformat() }}" min="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Catatan</label>
+            <input type="text" name="notes" class="form-control app-input" placeholder="Contoh: addendum kontrak">
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan Harga Kontrak</button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mb-4">
+    <div class="section-title">
+        <div>
+            <h3>Minimal Pesan Pelanggan Umum</h3>
+            <p>Berlaku per pengiriman: kiriman siang dan kiriman malam masing-masing harus memenuhi. {{ term('client') }} kontrak tidak dibatasi.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('settings.pricing_set_min_portions') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Minimal porsi</label>
+            <input type="number" name="min_portions" class="form-control app-input" min="1" step="1" value="{{ min_portions }}" required>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan</button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="section-title">
+        <div>
+            <h3>Riwayat Harga Standar</h3>
+            <p>Harga lama tidak pernah dihapus atau diubah; setiap perubahan tercatat di sini dan di audit log.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>Berlaku mulai</th><th>Harga/porsi</th><th>Catatan</th><th>Diubah oleh</th><th>Waktu</th></tr>
+            </thead>
+            <tbody>
+                {% for row in history %}
+                <tr>
+                    <td>{{ row.effective_from.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.price_per_portion|rupiah }}</td>
+                    <td>{{ row.notes or "-" }}</td>
+                    <td>{{ row.creator.full_name if row.creator else "-" }}</td>
+                    <td>{{ row.created_at_label }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-muted">Belum ada harga standar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -33,6 +33,9 @@ class DailyOrderDetail(BaseModel):
     mandor_id = db.Column(db.Integer, db.ForeignKey("mandors.id"), nullable=False)
     delivery_location_id = db.Column(db.Integer, db.ForeignKey("delivery_locations.id"), nullable=False)
     price_per_portion = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    # Asal harga yang dikunci: KONTRAK / STANDAR / OWNER (diubah OWNER).
+    # Kosong = order lama, harga diketik manual sebelum daftar harga ada.
+    price_source = db.Column(db.String(20), nullable=True)
     lunch_qty = db.Column(db.Integer, nullable=False, default=0)
     dinner_qty = db.Column(db.Integer, nullable=False, default=0)
     total_qty = db.Column(db.Integer, nullable=False, default=0)

@@ -307,9 +307,54 @@ Perusahaan → **Modul**, hanya OWNER:
    invoice, apa pun status modulnya.
 5. Setiap perubahan saklar tercatat di audit log (lama → baru).
 
+### Dua jalur transaksi — SEDANG DIKERJAKAN
+
+Langkah 3 rencana (bagian 5). Kondisi awal yang ditemukan: pembeda jalur
+hanya jenis akun portal; pelanggan umum tersimpan sebagai Client + Sub Client
+biasa; tidak ada daftar harga (harga diketik di setiap order, pesanan portal
+masuk dengan harga 0); bukti bayar pelanggan umum tanpa nominal dan tanpa
+jurnal.
+
+Keputusan owner (2026-09-27):
+
+| Jalur | Siapa | Bayar | Pendapatan |
+|---|---|---|---|
+| **Kontrak** | client berkontrak | kredit lewat invoice, limit & kontrol kredit | 4001 |
+| **Umum** | pelanggan umum (daftar sendiri) | di muka per pesanan | 4002 |
+
+- **Harga:** satu harga per porsi (siang = malam, pilihan A). Harga kontrak per
+  client menang atas harga standar cabang. Bisa diubah kapan saja mengikuti
+  bahan pokok dan BBM, dengan tanggal berlaku (bisa dijadwalkan). Harga
+  dikunci ke pesanan saat dibuat. Admin tidak mengetik harga; hanya OWNER yang
+  boleh mengubah harga satu pesanan (audit log). Peringatan kalau di bawah HPP.
+- **Minimal pesan pelanggan umum:** 10 porsi per pengiriman (bisa diubah per
+  cabang).
+- **Ongkir:** kontrak sudah termasuk harga porsi (kecuali kontrak menyebut
+  lain); umum per zona, per pengiriman (siang dan malam = dua kali jalan),
+  gratis di atas N porsi; akun baru 4005 Pendapatan Ongkos Kirim.
+- **Bayar di muka:** total dihitung sistem → bukti bayar bernominal → Finance
+  verifikasi → Uang Muka Pelanggan (2008) + jurnal otomatis → baru masuk dapur
+  (OWNER boleh meloloskan, tercatat) → invoice lunas otomatis dipotong uang
+  muka. Order umum yang diinput admin: pembayaran dicatat saat input. Batal
+  setelah bayar: pengembalian atas keputusan OWNER, jurnal otomatis.
+
+| Tahap | Isi | Status |
+|---|---|---|
+| 1 | Jalur di client, halaman Harga & Ongkir, harga otomatis di order dan pesanan portal, harga kontrak, minimal porsi, peringatan HPP | **Selesai** |
+| 2 | Zona ongkir, tarif per pengiriman, gratis di atas N porsi, baris ongkir di invoice, akun 4005 | Berikutnya |
+| 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | — |
+| 4 | Laporan dipisah per jalur | — |
+
+Catatan tahap 1: client yang terdaftar lewat portal pelanggan umum ditandai
+UMUM oleh migrasi `c4d5e6f7a8b9` hanya kalau **semua** akun portal yang
+terkait adalah pelanggan umum; client kontrak yang kebetulan dipetakan ke akun
+pelanggan (data demo di staging) tetap KONTRAK. Setelah rilis, OWNER perlu
+mengisi harga standar di Pengaturan → Harga & Ongkir; sebelum itu pesanan baru
+ditolak dengan pesan yang menjelaskannya.
+
 ### Sisa pekerjaan
 
-- Tidak ada yang tertunda dari keputusan owner sejauh ini.
+- Dua jalur transaksi tahap 2–4 (lihat di atas).
 
 ---
 

@@ -191,14 +191,16 @@
                                     data-mandor-name="{{ location.mandor_name }}"
                                     data-location-description="{{ location.description or '' }}"
                                 >
-                                    {{ location.label }}
+                                    {{ location.label }} — {% if location.price_per_portion %}{{ location.price_per_portion|rupiah }}/porsi{% else %}harga belum tersedia{% endif %}
                                 </option>
                             {% endfor %}
                         </select>
                     </label>
+                    {% set min_portions = (context.location_cards[0].min_portions if context.location_cards else None) %}
                     <label>
                         <span>Jumlah Porsi</span>
-                        <input type="number" name="portion_qty" min="1" step="1" inputmode="numeric" required data-portal-portion-input>
+                        <input type="number" name="portion_qty" min="{{ min_portions or 1 }}" step="1" inputmode="numeric" required data-portal-portion-input>
+                        {% if min_portions %}<small>Minimal {{ min_portions }} porsi per pengiriman.</small>{% endif %}
                     </label>
                     <label>
                         <span>Jam Kirim</span>
@@ -327,6 +329,7 @@
                         <p>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} | {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</p>
                         <div class="portal-chip-row">
                             <span>{{ row.status_label }}</span>
+                            {% if draft.price_per_portion %}<span>{{ draft.price_per_portion|rupiah }}/porsi · Total {{ (draft.price_per_portion * draft.portion_qty)|rupiah }}</span>{% endif %}
                             <span>{{ draft.submitted_at.strftime('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</span>
                             {% if draft.converted_daily_order %}<span>{{ draft.converted_daily_order.order_number }}</span>{% endif %}
                         </div>

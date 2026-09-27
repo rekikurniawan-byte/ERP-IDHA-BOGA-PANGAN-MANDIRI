@@ -103,6 +103,57 @@ def get_form_master_data():
     return mandors, locations
 
 
+def _detail_price(mandor_id, lunch_qty, dinner_qty):
+    """Harga yang dikunci ke baris order baru + cek minimal porsi pelanggan umum.
+
+    Mengembalikan (harga, asal, pesan_error). Admin tidak mengetik harga;
+    OWNER boleh mengisi harga lain untuk pesanan ini.
+    """
+    from app.services.pricing_service import min_portion_error, resolve_order_price
+
+    mandor = Mandor.query.get(mandor_id)
+    minimum_error = min_portion_error(
+        current_user.branch_id,
+        getattr(mandor, "client", None),
+        [("siang", lunch_qty), ("malam", dinner_qty)],
+    )
+    if minimum_error:
+        return None, None, minimum_error
+    return resolve_order_price(
+        branch_id=current_user.branch_id,
+        mandor_id=mandor_id,
+        actor_role=current_user.role,
+        requested_price=request.form.get("price_per_portion"),
+    )
+
+
+def _after_detail_saved(daily_order, detail, price, source):
+    """Catatan OWNER yang mengubah harga, dan peringatan kalau harga di bawah HPP."""
+    from app.services.pricing_service import SOURCE_OWNER, order_hpp_warning, quote_price_for_mandor
+
+    if source == SOURCE_OWNER and detail is not None:
+        quote = quote_price_for_mandor(current_user.branch_id, detail.mandor_id)
+        listed = f" (daftar harga Rp {quote.price:,.0f})." if quote else " (daftar harga belum diatur)."
+        record_audit_log(
+            module="PRICING",
+            event_type="ORDER_PRICE_OVERRIDE",
+            action="UPDATE",
+            table_name="daily_order_details",
+            record_id=detail.id,
+            description=f"OWNER memakai harga Rp {price:,.0f}/porsi untuk order {daily_order.order_number}{listed}",
+            metadata={"daily_order_id": daily_order.id, "mandor_id": detail.mandor_id},
+        )
+    warning = order_hpp_warning(daily_order, price)
+    if warning:
+        flash(warning, "warning")
+
+
+def _price_quotes(mandors):
+    from app.services.pricing_service import price_quotes_by_mandor
+
+    return price_quotes_by_mandor(current_user.branch_id, mandors)
+
+
 def validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
     location = DeliveryLocation.query.get(delivery_location_id)
 
@@ -245,13 +296,17 @@ def create_order():
         order_date = datetime.strptime(request.form.get("order_date"), "%Y-%m-%d").date()
         mandor_id = int(request.form.get("mandor_id"))
         delivery_location_id = int(request.form.get("delivery_location_id"))
-        price_per_portion = float(request.form.get("price_per_portion") or 0)
         lunch_qty = int(request.form.get("lunch_qty") or 0)
         dinner_qty = int(request.form.get("dinner_qty") or 0)
         notes = request.form.get("notes")
 
         if not validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
+            return redirect(url_for("operational.create_order"))
+
+        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        if price_error:
+            flash(price_error, "warning")
             return redirect(url_for("operational.create_order"))
 
         daily_order = get_or_create_daily_order(
@@ -278,6 +333,7 @@ def create_order():
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
             price_per_portion=price_per_portion,
+            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             notes=notes,
@@ -285,11 +341,14 @@ def create_order():
         )
 
         flash(message, "success" if success else "warning")
+        if success:
+            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
         "operational/order_form.html",
         mandors=mandors,
+        price_quotes=_price_quotes(mandors),
         locations=locations,
         daily_order=None,
         form_action=url_for("operational.create_order"),
@@ -317,7 +376,6 @@ def add_order_detail(order_id):
     if request.method == "POST":
         mandor_id = int(request.form.get("mandor_id"))
         delivery_location_id = int(request.form.get("delivery_location_id"))
-        price_per_portion = float(request.form.get("price_per_portion") or 0)
         lunch_qty = int(request.form.get("lunch_qty") or 0)
         dinner_qty = int(request.form.get("dinner_qty") or 0)
         notes = request.form.get("notes")
@@ -326,11 +384,17 @@ def add_order_detail(order_id):
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
+        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        if price_error:
+            flash(price_error, "warning")
+            return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
+
         success, message, detail = add_or_update_order_detail(
             daily_order=daily_order,
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
             price_per_portion=price_per_portion,
+            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             notes=notes,
@@ -338,11 +402,14 @@ def add_order_detail(order_id):
         )
 
         flash(message, "success" if success else "warning")
+        if success:
+            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
         "operational/order_form.html",
         mandors=mandors,
+        price_quotes=_price_quotes(mandors),
         locations=locations,
         daily_order=daily_order,
         form_action=url_for("operational.add_order_detail", order_id=daily_order.id)
@@ -367,7 +434,6 @@ def add_increase_after_lock_route(order_id):
     if request.method == "POST":
         mandor_id = int(request.form.get("mandor_id"))
         delivery_location_id = int(request.form.get("delivery_location_id"))
-        price_per_portion = float(request.form.get("price_per_portion") or 0)
         lunch_qty = int(request.form.get("lunch_qty") or 0)
         dinner_qty = int(request.form.get("dinner_qty") or 0)
         notes = request.form.get("notes") or "Penambahan order setelah lock"
@@ -376,11 +442,17 @@ def add_increase_after_lock_route(order_id):
             flash(f"{T.location} tidak sesuai dengan {T.sub_client_lower} yang dipilih.", "warning")
             return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
 
+        price_per_portion, price_source, price_error = _detail_price(mandor_id, lunch_qty, dinner_qty)
+        if price_error:
+            flash(price_error, "warning")
+            return redirect(url_for("operational.add_increase_after_lock_route", order_id=daily_order.id))
+
         success, message, detail = add_increase_after_lock(
             daily_order=daily_order,
             mandor_id=mandor_id,
             delivery_location_id=delivery_location_id,
             price_per_portion=price_per_portion,
+            price_source=price_source,
             lunch_qty=lunch_qty,
             dinner_qty=dinner_qty,
             reason=notes,
@@ -389,6 +461,7 @@ def add_increase_after_lock_route(order_id):
         )
 
         if success:
+            _after_detail_saved(daily_order, detail, price_per_portion, price_source)
             production_success, production_message = generate_production_from_order(
                 daily_order,
                 current_user.id
@@ -406,6 +479,7 @@ def add_increase_after_lock_route(order_id):
     return render_template(
         "operational/order_form.html",
         mandors=mandors,
+        price_quotes=_price_quotes(mandors),
         locations=locations,
         daily_order=daily_order,
         form_action=url_for("operational.add_increase_after_lock_route", order_id=daily_order.id),

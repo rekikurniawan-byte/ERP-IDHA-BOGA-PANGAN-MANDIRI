@@ -30,6 +30,22 @@
                 <input type="text" name="phone" class="form-control app-input" value="{{ client.phone if client and client.phone is defined else '' }}">
             </div>
 
+            <div class="col-md-4">
+                <label class="form-label">Jalur Transaksi</label>
+                {% set current_path = client.customer_path if client else 'KONTRAK' %}
+                {% if not client or current_user.role == 'OWNER' %}
+                    <select name="customer_path" class="form-select app-input">
+                        {% for value, label in customer_paths.items() %}
+                            <option value="{{ value }}" {% if value == current_path %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Kontrak: ditagih lewat invoice. Umum: bayar di muka setiap pesanan, minimal porsi berlaku.</div>
+                {% else %}
+                    <div class="form-control app-input bg-light">{{ customer_paths.get(current_path, current_path) }}</div>
+                    <div class="form-text">Hanya OWNER yang bisa memindah jalur {{ term('client', lower=True) }}.</div>
+                {% endif %}
+            </div>
+
             <div class="col-md-12">
                 <label class="form-label">Alamat</label>
                 <textarea name="address" class="form-control app-input" rows="3">{{ client.address if client and client.address is defined else '' }}</textarea>

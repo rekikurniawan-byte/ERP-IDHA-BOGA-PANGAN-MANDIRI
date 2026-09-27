@@ -58,6 +58,10 @@ class Client(BaseModel):
     phone = db.Column(db.String(30), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
+    # Jalur transaksi (keputusan owner 2026-09-27): KONTRAK = kredit lewat
+    # invoice; UMUM = bayar di muka per pesanan. Lihat app/services/pricing_service.py.
+    customer_path = db.Column(db.String(20), nullable=False, default="KONTRAK", server_default="KONTRAK")
+
     pics = db.relationship("ClientPic", backref="client", lazy=True)
     mandors = db.relationship("Mandor", backref="client", lazy=True)
 

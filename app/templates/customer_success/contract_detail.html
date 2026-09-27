@@ -46,6 +46,14 @@
                             <div class="fw-semibold">{{ contract.payment_terms }}</div>
                         </div>
                         <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">Harga per Porsi</div>
+                            {% set quote = data.price_quote %}
+                            <div class="fw-semibold">
+                                {% if quote %}{{ quote.price|rupiah }} <span class="small text-muted">({{ quote.source_label }})</span>{% else %}Belum diatur{% endif %}
+                            </div>
+                            {% if current_user.role == 'OWNER' %}<a class="small" href="{{ url_for('settings.pricing') }}">Ubah di Harga &amp; Ongkir</a>{% endif %}
+                        </div>
+                        <div class="col-md-6">
                             <div class="text-muted small text-uppercase fw-bold">PIC</div>
                             <div class="fw-semibold">{{ contract.client_pic.name if contract.client_pic else '-' }}</div>
                         </div>

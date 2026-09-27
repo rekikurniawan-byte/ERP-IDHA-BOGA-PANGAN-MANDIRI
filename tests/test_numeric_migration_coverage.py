@@ -24,6 +24,9 @@ customer_corrections_95 = importlib.import_module(
 credit_control_a0 = importlib.import_module(
     "migrations.versions.a0b1c2d3e4f5_add_credit_control"
 )
+pricing_c4 = importlib.import_module(
+    "migrations.versions.c4d5e6f7a8b9_customer_path_and_portion_prices"
+)
 
 
 def _migration_columns(module):
@@ -58,6 +61,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(customer_contracts_93),
         **_migration_columns(customer_corrections_95),
         **_migration_columns(credit_control_a0),
+        **_migration_columns(pricing_c4),
     }
 
     assert migration_columns

@@ -106,6 +106,10 @@ from app.models.credit import (
     CreditStatusEvent,
 )
 
+from app.models.pricing import (
+    PortionPrice,
+)
+
 from app.models.complaint import (
     CustomerComplaint,
 )

@@ -80,9 +80,11 @@ def _commit_or_rollback():
         raise
 
 
-def create_client_record(*, branch_id, client_code, name, phone, address, is_active):
+def create_client_record(*, branch_id, client_code, name, phone, address, is_active, customer_path=None):
     client = Client()
     _set_if_has_column(client, "branch_id", branch_id)
+    if customer_path:
+        client.customer_path = customer_path
     _set_if_has_column(client, "client_code", client_code)
     _set_if_has_column(client, "name", name)
     _set_if_has_column(client, "phone", phone)
@@ -94,7 +96,9 @@ def create_client_record(*, branch_id, client_code, name, phone, address, is_act
     return client
 
 
-def update_client_record(client, *, client_code, name, phone, address, is_active):
+def update_client_record(client, *, client_code, name, phone, address, is_active, customer_path=None):
+    if customer_path:
+        client.customer_path = customer_path
     _set_if_has_column(client, "client_code", client_code)
     _set_if_has_column(client, "name", name)
     _set_if_has_column(client, "phone", phone)

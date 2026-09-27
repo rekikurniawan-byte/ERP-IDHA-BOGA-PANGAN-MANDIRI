@@ -61,6 +61,7 @@ def add_or_update_order_detail(
     dinner_qty,
     notes=None,
     actor_role=None,
+    price_source=None,
 ):
     existing_detail = DailyOrderDetail.query.filter_by(
         daily_order_id=daily_order.id,
@@ -87,6 +88,7 @@ def add_or_update_order_detail(
         mandor_id=mandor_id,
         delivery_location_id=delivery_location_id,
         price_per_portion=price_per_portion,
+        price_source=price_source,
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=total_qty,
@@ -224,6 +226,7 @@ def add_increase_after_lock(
     reason,
     created_by,
     actor_role=None,
+    price_source=None,
 ):
     if not daily_order.is_locked:
         return False, "Order belum LOCKED. Gunakan input detail biasa.", None
@@ -292,6 +295,7 @@ def add_increase_after_lock(
         mandor_id=mandor_id,
         delivery_location_id=delivery_location_id,
         price_per_portion=price_per_portion,
+        price_source=price_source,
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=lunch_qty + dinner_qty,

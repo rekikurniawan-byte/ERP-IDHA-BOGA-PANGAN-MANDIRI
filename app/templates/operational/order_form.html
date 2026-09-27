@@ -46,7 +46,8 @@
                 <select name="mandor_id" class="form-select app-input" required>
                     <option value="">Pilih {{ term('sub_client') }}</option>
                     {% for mandor in mandors %}
-                        <option value="{{ mandor.id }}">{{ mandor.name }}</option>
+                        {% set quote = (price_quotes or {}).get(mandor.id) %}
+                        <option value="{{ mandor.id }}">{{ mandor.name }} — {% if quote %}{{ quote.price|rupiah }}/porsi ({{ quote.source_label }}){% else %}harga belum diatur{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -66,7 +67,13 @@
 
             <div class="col-md-4">
                 <label class="form-label">Harga per Porsi</label>
-                <input type="number" name="price_per_portion" class="form-control app-input" value="0" min="0" required>
+                {% if current_user.role == 'OWNER' %}
+                    <input type="number" name="price_per_portion" class="form-control app-input" min="0" step="0.01" placeholder="Kosongkan = harga di daftar">
+                    <small class="text-muted">Khusus OWNER: isi hanya kalau pesanan ini memakai harga lain. Tercatat di audit log.</small>
+                {% else %}
+                    <div class="form-control app-input bg-light">Otomatis dari daftar harga</div>
+                    <small class="text-muted">Harga kontrak {{ term('client', lower=True) }}, atau harga standar cabang. Tertera di pilihan {{ term('sub_client', lower=True) }}.</small>
+                {% endif %}
             </div>
 
             <div class="col-md-4">

@@ -152,12 +152,18 @@ def _allowed_location_options(scope, location_ids=None):
 
 
 def _location_option_cards(locations):
+    from app.services.pricing_service import general_min_portions, is_general_client, quote_price
+
     cards = []
     for location in locations:
         mandor = location.mandor
         client = mandor.client if mandor else None
+        quote = quote_price(mandor.branch_id, getattr(client, "id", None)) if mandor else None
         cards.append(
             {
+                "price_per_portion": quote.price if quote else None,
+                "price_label": quote.source_label if quote else None,
+                "min_portions": general_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
                 "id": location.id,
                 "name": location.location_name,
                 "description": location.description,
@@ -898,6 +904,18 @@ def _validate_draft_payload(user, form):
     if location.mandor_id not in scope.mandor_ids:
         return None, f"{T.sub_client} lokasi tidak termasuk akses portal user."
 
+    from app.services.pricing_service import min_portion_error, quote_price
+
+    branch_id = location.mandor.branch_id
+    client = location.mandor.client
+    minimum_error = min_portion_error(branch_id, client, [(MEAL_TYPE_LABELS.get(meal_type, meal_type), portion_qty)])
+    if minimum_error:
+        return None, minimum_error
+    # Harga dikunci sekarang: pelanggan membayar angka yang ia lihat saat memesan.
+    quote = quote_price(branch_id, getattr(client, "id", None))
+    if not quote:
+        return None, "Harga pesanan belum tersedia. Hubungi admin untuk mengatur harga."
+
     idempotency_key = _clean_text(form.get("idempotency_key"))
     if not idempotency_key:
         return None, "Idempotency key wajib tersedia untuk mencegah double submit."
@@ -924,6 +942,8 @@ def _validate_draft_payload(user, form):
         "order_date": order_date,
         "meal_type": meal_type,
         "portion_qty": portion_qty,
+        "price_per_portion": quote.price,
+        "price_source": quote.source,
         "notes": "\n".join(note_parts) or None,
         "idempotency_key": idempotency_key,
     }, None
@@ -1177,13 +1197,28 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None):
     if existing_detail:
         return draft, False, f"Detail {T.sub_client_lower}/lokasi sudah ada di order harian. Review manual diperlukan."
 
+    # Harga terkunci di draft. Draft lama (sebelum daftar harga) diberi harga
+    # yang berlaku sekarang; tanpa harga sama sekali, draft tidak bisa masuk order.
+    price_per_portion, price_source = draft.price_per_portion, draft.price_source
+    if not price_per_portion:
+        from app.services.pricing_service import quote_price
+
+        quote = quote_price(draft.branch_id, draft.client_id)
+        if not quote:
+            return draft, False, (
+                "Harga per porsi belum diatur. OWNER perlu mengisi harga standar di "
+                "Pengaturan → Harga & Ongkir sebelum draft bisa dikonfirmasi."
+            )
+        price_per_portion, price_source = quote.price, quote.source
+
     lunch_qty = draft.portion_qty if draft.meal_type == "LUNCH" else 0
     dinner_qty = draft.portion_qty if draft.meal_type == "DINNER" else 0
     detail = DailyOrderDetail(
         daily_order_id=daily_order.id,
         mandor_id=draft.mandor_id,
         delivery_location_id=draft.delivery_location_id,
-        price_per_portion=0,
+        price_per_portion=price_per_portion,
+        price_source=price_source,
         lunch_qty=lunch_qty,
         dinner_qty=dinner_qty,
         total_qty=draft.portion_qty,

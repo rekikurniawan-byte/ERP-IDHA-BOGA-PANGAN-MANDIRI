@@ -381,6 +381,7 @@
                     <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
                     <td>
                         {{ detail.price_per_portion|rupiah }}
+                        {% if detail.price_source %}<div class="muted-small">{{ {'KONTRAK': 'Harga kontrak', 'STANDAR': 'Harga standar', 'OWNER': 'Diubah OWNER'}.get(detail.price_source, detail.price_source) }}</div>{% endif %}
                         {% if detail.revisions %}
                             <div class="muted-small">Harga revisi lihat riwayat</div>
                         {% endif %}

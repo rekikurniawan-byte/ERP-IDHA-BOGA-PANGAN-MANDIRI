@@ -13,6 +13,7 @@ from app.models.operational import DailyOrder
 from app.models.production import Production
 from app.models.system import ApprovalRequest, DigitalAttachment, Notification, PortalOrderDraft
 from app.models.system import PortalUserMapping
+from app.models.pricing import PortionPrice
 from app.services.branch_module_service import WARUNG, WORKER_DEBT, enable_modules_for_branch
 from app.services.portal_access_service import (
     build_portal_access_scope,
@@ -57,6 +58,11 @@ def _create_test_user(role="OWNER"):
     db.session.flush()
     # Cabang proyek: halaman pekerja/hutang warung portal ikut diuji di sini.
     enable_modules_for_branch(branch.id, [WARUNG, WORKER_DEBT])
+    # Pesanan tanpa harga ditolak sejak ada daftar harga; beri harga standar.
+    db.session.add(PortionPrice(
+        branch_id=branch.id, price_per_portion=25000, effective_from=date(2000, 1, 1), created_by=user.id,
+    ))
+    db.session.flush()
     return user
 
 
@@ -919,6 +925,9 @@ def test_admin_confirmation_bridge_converts_draft_once_to_daily_order(app):
         assert details[0].dinner_qty == 12
         assert details[0].lunch_qty == 0
         assert details[0].total_qty == 12
+        # Harga dikunci di draft saat dikirim, lalu dibawa ke order (dulu selalu 0).
+        assert details[0].price_per_portion == 25000
+        assert details[0].price_source == "STANDAR"
         assert draft.status == "CONFIRMED"
 
 

@@ -94,3 +94,4 @@ from app.routes.settings import backup_routes as _settings_backup_routes  # noqa
 from app.routes.settings import audit_attachment_routes as _settings_audit_attachment_routes  # noqa: F401,E402
 from app.routes.settings import notification_routes as _settings_notification_routes  # noqa: F401,E402
 from app.routes.settings import approval_routes as _settings_approval_routes  # noqa: F401,E402
+from app.routes.settings import pricing_routes as _settings_pricing_routes  # noqa: F401,E402

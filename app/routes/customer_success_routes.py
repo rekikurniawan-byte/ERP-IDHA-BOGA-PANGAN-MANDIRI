@@ -236,10 +236,13 @@ def contract_detail(contract_id):
     if not contract:
         flash("Kontrak customer tidak ditemukan.", "warning")
         return redirect(url_for("customer_success.contracts"))
+    from app.services.pricing_service import quote_price
+
     data = {
         "contract": contract,
         "documents": list_customer_contract_documents(contract_id=contract.id, branch_id=current_user.branch_id),
         "attachment_types": sorted(ALLOWED_CONTRACT_ATTACHMENT_TYPES),
+        "price_quote": quote_price(current_user.branch_id, contract.client_id),
     }
     return render_template("customer_success/contract_detail.html", data=data)
 
