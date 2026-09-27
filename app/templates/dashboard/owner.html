@@ -67,6 +67,47 @@
     </div>
 </section>
 
+{% if path_summary %}
+<section class="dashboard-section" data-dashboard-section="customer-paths">
+    <div class="dashboard-section-header dashboard-section-header-compact">
+        <div>
+            <h2>Dua Jalur Transaksi</h2>
+            <p>Kontrak (kredit lewat invoice) dan Umum (bayar di muka), bulan ini {{ path_summary.period_label }}. Piutang = sisa saat ini.</p>
+        </div>
+        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('finance.invoices') }}">Invoice per jalur</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>Jalur</th><th>Omzet bulan ini</th><th>Kas masuk bulan ini</th><th>Piutang</th></tr>
+            </thead>
+            <tbody>
+                {% for row in path_summary.rows %}
+                <tr>
+                    <td><strong>{{ row.label }}</strong> <span class="small text-muted">{{ row.invoice_count }} invoice</span></td>
+                    <td>{{ row.revenue|rupiah }}</td>
+                    <td>{{ row.cash_in|rupiah }}</td>
+                    <td>{{ row.receivable|rupiah }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>{{ path_summary.totals.revenue|rupiah }}</strong></td>
+                    <td><strong>{{ path_summary.totals.cash_in|rupiah }}</strong></td>
+                    <td><strong>{{ path_summary.totals.receivable|rupiah }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="small mt-2">
+        Ongkir (4005) bulan ini <strong>{{ path_summary.delivery_revenue|rupiah }}</strong> vs beban transport/BBM (5003)
+        <strong>{{ path_summary.transport_expense|rupiah }}</strong>:
+        {% if path_summary.delivery_gap >= 0 %}ongkir menutup biaya kirim, lebih {{ path_summary.delivery_gap|rupiah }}{% else %}ongkir kurang {{ (-path_summary.delivery_gap)|rupiah }} dari biaya kirim{% endif %}
+        <span class="text-muted">(buku besar seluruh perusahaan)</span>.
+    </div>
+</section>
+{% endif %}
+
 {% include "dashboard/_analytics_charts.html" %}
 
 <section class="dashboard-section" data-dashboard-section="operational-reminder">

@@ -146,7 +146,7 @@ def generate_order_invoice(order_id, mandor_id):
         description=f"Invoice dibuat dari order locked: {invoice.invoice_number}.",
         metadata={"invoice_number": invoice.invoice_number, "source_type": invoice.source_type, "input_source": invoice.input_source, "total_amount": invoice.total_amount},
     )
-    flash("Invoice catering harian resmi berhasil dibuat dan jurnal otomatis dicatat ke 4002.", "success")
+    flash("Invoice catering resmi berhasil dibuat; jurnal otomatis dicatat ke 4001 (kontrak) atau 4002 (umum).", "success")
     return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
 

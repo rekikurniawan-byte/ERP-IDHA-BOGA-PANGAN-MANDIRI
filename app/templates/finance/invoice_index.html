@@ -50,6 +50,8 @@
     </div>
 </div>
 
+{% include "components/path_breakdown.html" %}
+
 <div class="app-card soft-warning-card mt-4">
     <strong>Catatan Masuk/Keluar Final</strong>
     <p>Invoice final dibuat per periode berdasarkan {{ term('sub_client', lower=True) }}, berisi catering locked, revisi tambah setelah lock, dan hutang warung {{ term('worker', lower=True) }} yang belum lunas.</p>
@@ -97,6 +99,7 @@
                             {% else %}
                                 <span class="text-muted">{{ invoice.source_type or "-" }}</span>
                             {% endif %}
+                            {% if invoice.customer_path %}<div class="small text-muted">Jalur {{ 'Kontrak' if invoice.customer_path == 'KONTRAK' else 'Umum' }}</div>{% endif %}
                         </td>
                         <td>
                             <span class="status-badge {{ row.input_source.badge_class }}">{{ row.input_source.label }}</span>

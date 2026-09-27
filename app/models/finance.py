@@ -53,6 +53,11 @@ class Invoice(BaseModel):
     # Dipisahkan dari source_type agar invoice tahu jalur input bisnisnya.
     input_source = db.Column(db.String(30), nullable=False, default="REALTIME", server_default="REALTIME", index=True)
 
+    # Jalur transaksi client saat invoice dibuat (KONTRAK/UMUM), dikunci supaya
+    # pindah jalur tidak mengubah laporan dan jurnal lama. Diisi otomatis oleh
+    # _snapshot_customer_path di bawah; kosong = invoice tanpa client master.
+    customer_path = db.Column(db.String(20), nullable=True, index=True)
+
     created_by = db.Column(db.Integer, nullable=False)
 
     client = db.relationship("Client", foreign_keys=[client_id], lazy=True)
@@ -499,3 +504,15 @@ class OperationalExpense(BaseModel):
     supplier = db.relationship("Supplier", foreign_keys=[supplier_id], lazy=True)
     cash_bank_transaction = db.relationship("CashBankTransaction", foreign_keys=[cash_bank_transaction_id], lazy=True)
     journal = db.relationship("Journal", foreign_keys=[journal_id], lazy=True)
+
+
+@db.event.listens_for(Invoice, "before_insert")
+def _snapshot_customer_path(mapper, connection, invoice):
+    """Setiap invoice baru mencatat jalur client-nya, apa pun jalan pembuatannya."""
+    if invoice.customer_path or not invoice.client_id:
+        return
+    from app.models.master import Client
+
+    invoice.customer_path = connection.execute(
+        db.select(Client.__table__.c.customer_path).where(Client.__table__.c.id == invoice.client_id)
+    ).scalar()

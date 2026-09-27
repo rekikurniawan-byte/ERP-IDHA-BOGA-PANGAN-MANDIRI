@@ -307,7 +307,7 @@ Perusahaan → **Modul**, hanya OWNER:
    invoice, apa pun status modulnya.
 5. Setiap perubahan saklar tercatat di audit log (lama → baru).
 
-### Dua jalur transaksi — SEDANG DIKERJAKAN
+### Dua jalur transaksi — SELESAI
 
 Langkah 3 rencana (bagian 5). Kondisi awal yang ditemukan: pembeda jalur
 hanya jenis akun portal; pelanggan umum tersimpan sebagai Client + Sub Client
@@ -343,7 +343,7 @@ Keputusan owner (2026-09-27):
 | 1 | Jalur di client, halaman Harga & Ongkir, harga otomatis di order dan pesanan portal, harga kontrak, minimal porsi, peringatan HPP | **Selesai** |
 | 2 | Zona ongkir, tarif per pengiriman, gratis di atas N porsi, baris ongkir di invoice, akun 4005 | **Selesai** |
 | 3 | Pembayaran jalur umum: total, bukti bernominal, uang muka + jurnal, gerbang dapur, pengembalian, invoice lunas otomatis | **Selesai** |
-| 4 | Laporan dipisah per jalur | Berikutnya |
+| 4 | Pendapatan per jalur (Kontrak 4001, Umum 4002), jalur dikunci di invoice, filter & subtotal per jalur di Invoice dan Piutang, ringkasan di dashboard OWNER + ongkir vs BBM | **Selesai** |
 
 Catatan tahap 1: client yang terdaftar lewat portal pelanggan umum ditandai
 UMUM oleh migrasi `c4d5e6f7a8b9` hanya kalau **semua** akun portal yang
@@ -391,9 +391,18 @@ baru yang ditulis tangan):
 - Invoice untuk pelanggan umum tidak lagi mewajibkan PIC client: kontaknya
   pelanggan itu sendiri.
 
+Catatan tahap 4: jalur dikunci di `invoices.customer_path` saat invoice
+disimpan (satu kait `before_insert`, jadi keempat jalan pembuatan invoice
+tercakup). Invoice lama diberi label dari jalur client-nya sekarang — hanya
+label; jumlah dan jurnal lamanya tidak berubah. Jurnal pendapatan catering
+**mulai sekarang** mengikuti jalur: client kontrak yang ditagih harian kini
+masuk 4001, bukan 4002. Invoice tanpa client master (tagihan manual ke
+kelompok/perorangan) tetap memakai aturan lama.
+
 ### Sisa pekerjaan
 
-- Dua jalur transaksi tahap 4: laporan dipisah per jalur.
+- Langkah 5 rencana: menilai apakah sistem masih perlu dibangun ulang, atau
+  cukup yang sekarang.
 
 ---
 

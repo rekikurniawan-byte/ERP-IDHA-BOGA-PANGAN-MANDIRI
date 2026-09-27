@@ -7,12 +7,17 @@ def invoices():
     from flask_login import current_user
     from flask import render_template
     from app.models.finance import Invoice
+    from app.services.pricing_service import PATH_FILTER_CHOICES, invoice_path_breakdown, requested_path
 
-    invoices = Invoice.query.filter_by(
+    all_invoices = Invoice.query.filter_by(
         branch_id=current_user.branch_id
     ).order_by(
         Invoice.id.desc()
     ).all()
+    # Ringkasan per jalur selalu dari semua invoice; daftar & kartu mengikuti filter.
+    path_breakdown = invoice_path_breakdown(all_invoices)
+    selected_path = requested_path(request.args.get("path"))
+    invoices = [invoice for invoice in all_invoices if not selected_path or invoice.customer_path == selected_path]
 
     invoices_data = []
     for invoice in invoices:
@@ -49,6 +54,10 @@ def invoices():
         # HYGIENE7A_CANCELLED_COUNT_SUMMARY
         active_invoice_count=len(active_invoices),
         cancelled_count=len(invoices) - len(active_invoices),
+        path_breakdown=path_breakdown,
+        selected_path=selected_path,
+        path_choices=PATH_FILTER_CHOICES,
+        path_filter_endpoint="finance.invoices",
     )
 
 

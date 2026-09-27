@@ -349,6 +349,14 @@ def _build_receivables_dashboard_context(args):
         Invoice.id.asc()
     ).all()
 
+    # Jalur transaksi (Kontrak/Umum): ringkasan dari semua piutang, daftar mengikuti filter.
+    from app.services.pricing_service import PATH_FILTER_CHOICES, invoice_path_breakdown, requested_path
+
+    path_breakdown = invoice_path_breakdown(invoices)
+    selected_path = requested_path(args.get("path"))
+    if selected_path:
+        invoices = [invoice for invoice in invoices if invoice.customer_path == selected_path]
+
     client_ids = {invoice.client_id for invoice in invoices if invoice.client_id}
     mandor_ids = {invoice.mandor_id for invoice in invoices if invoice.mandor_id}
     client_map = {client.id: client for client in Client.query.filter(Client.id.in_(client_ids)).all()} if client_ids else {}
@@ -571,6 +579,10 @@ def _build_receivables_dashboard_context(args):
         "selected_status": selected_status,
         "selected_period_from": selected_period_from_raw,
         "selected_period_to": selected_period_to_raw,
+        "path_breakdown": path_breakdown,
+        "selected_path": selected_path,
+        "path_choices": PATH_FILTER_CHOICES,
+        "path_filter_endpoint": "finance.receivables",
         "filter_query": {
             "filter": selected_filter,
             "client_id": selected_client_id,
@@ -579,6 +591,7 @@ def _build_receivables_dashboard_context(args):
             "status": selected_status,
             "period_from": selected_period_from_raw,
             "period_to": selected_period_to_raw,
+            "path": selected_path,
         },
     }
 

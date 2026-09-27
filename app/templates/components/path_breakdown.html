@@ -1,0 +1,38 @@
+{# Ringkasan per jalur transaksi (Kontrak / Umum) + filter.
+   Butuh: path_breakdown (dict dari invoice_path_breakdown), selected_path,
+   path_choices, dan path_filter_endpoint untuk url_for. #}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Per Jalur Transaksi</h5>
+            <p>Kontrak = kredit lewat invoice. Umum = bayar di muka. Jalur dikunci di invoice saat dibuat.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% for value, label in path_choices %}
+                <a href="{{ url_for(path_filter_endpoint, path=value or None) }}"
+                   class="btn btn-sm {{ 'app-btn-primary' if (selected_path or '') == value else 'app-btn-secondary' }}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr><th>Jalur</th><th>Invoice aktif</th><th>Total</th><th>Dibayar</th><th>Sisa piutang</th></tr>
+            </thead>
+            <tbody>
+                {% for key, label in [('KONTRAK', 'Kontrak'), ('UMUM', 'Umum'), ('TANPA', 'Tanpa jalur (tagihan non-master)')] %}
+                    {% set row = path_breakdown[key] %}
+                    {% if key != 'TANPA' or row.count %}
+                    <tr>
+                        <td><strong>{{ label }}</strong></td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.total|rupiah }}</td>
+                        <td>{{ row.paid|rupiah }}</td>
+                        <td>{{ row.remaining|rupiah }}</td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

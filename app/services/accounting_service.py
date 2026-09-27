@@ -62,8 +62,12 @@ def resolve_invoice_catering_revenue_account(invoice):
     PRODUCTION: resolve akun pendapatan catering tanpa mengubah schema.
 
     Rule dikunci:
-    - PERIOD_INVOICE / invoice berperiode / invoice rekap bulanan -> 4001 Pendapatan Catering Proyek.
-    - DAILY_ORDER / invoice order harian non-period -> 4002 Pendapatan Catering Harian.
+    - Jalur pelanggan yang dikunci di invoice menang (keputusan owner
+      2026-09-27): KONTRAK -> 4001, UMUM -> 4002, apa pun jenis invoicenya.
+    - Invoice tanpa jalur (tanpa client master, atau dibuat sebelum jalur ada)
+      memakai aturan lama:
+      - PERIOD_INVOICE / invoice berperiode / invoice rekap bulanan -> 4001 Pendapatan Catering Proyek.
+      - DAILY_ORDER / invoice order harian non-period -> 4002 Pendapatan Catering Harian.
     - Unknown source tidak dipaksa posting ke 4001 agar laporan pendapatan tidak bias.
     """
     if not invoice:
@@ -72,6 +76,22 @@ def resolve_invoice_catering_revenue_account(invoice):
             "classification": "UNKNOWN",
             "reason": "Invoice tidak tersedia.",
             "is_supported": False,
+        }
+
+    customer_path = _normalize_code(getattr(invoice, "customer_path", None))
+    if customer_path == "KONTRAK":
+        return {
+            "account_code": CATERING_REVENUE_PROJECT_CODE,
+            "classification": "CONTRACT_PATH",
+            "reason": "Pelanggan jalur Kontrak: pendapatan catering kontrak.",
+            "is_supported": True,
+        }
+    if customer_path == "UMUM":
+        return {
+            "account_code": CATERING_REVENUE_DAILY_CODE,
+            "classification": "GENERAL_PATH",
+            "reason": "Pelanggan jalur Umum: pendapatan catering harian/umum.",
+            "is_supported": True,
         }
 
     source_type = _normalize_code(getattr(invoice, "source_type", None))

@@ -635,3 +635,30 @@ def order_trip_fees(branch_id, client, location, lunch_qty, dinner_qty, on_date=
     if error:
         return None, None, error
     return lunch_fee, dinner_fee, None
+
+
+# --- laporan per jalur ----------------------------------------------------
+
+PATH_FILTER_CHOICES = (("", "Semua"), (PATH_CONTRACT, "Kontrak"), (PATH_GENERAL, "Umum"))
+_INACTIVE_INVOICE_STATUSES = {"CANCELLED", "CANCELED"}
+
+
+def requested_path(value):
+    """Filter jalur dari query string; selain KONTRAK/UMUM berarti semua."""
+    value = str(value or "").strip().upper()
+    return value if value in CUSTOMER_PATHS else None
+
+
+def invoice_path_breakdown(invoices):
+    """Jumlah, total, dibayar, dan sisa invoice aktif per jalur (tanpa jalur = TANPA)."""
+    rows = {key: {"count": 0, "total": Decimal("0"), "paid": Decimal("0"), "remaining": Decimal("0")}
+            for key in (PATH_CONTRACT, PATH_GENERAL, "TANPA")}
+    for invoice in invoices:
+        if str(getattr(invoice, "status", "") or "").upper() in _INACTIVE_INVOICE_STATUSES:
+            continue
+        row = rows[getattr(invoice, "customer_path", None) or "TANPA"]
+        row["count"] += 1
+        row["total"] += Decimal(str(invoice.total_amount or 0))
+        row["paid"] += Decimal(str(invoice.paid_amount or 0))
+        row["remaining"] += Decimal(str(invoice.remaining_amount or 0))
+    return rows
