@@ -205,13 +205,3 @@ def _notify_finance_draft_payment_proof_uploaded(user, draft: PortalOrderDraft, 
     )
 
 
-def list_pending_portal_payment_proofs(*, branch_id: int | None = None) -> list[DigitalAttachment]:
-    """Small read helper for the next finance verification queue batch."""
-    query = DigitalAttachment.query.filter_by(
-        module=PORTAL_PAYMENT_MODULE,
-        attachment_type=PAYMENT_PROOF_PENDING_TYPE,
-        is_deleted=False,
-    )
-    if branch_id is not None:
-        query = query.filter(DigitalAttachment.branch_id == branch_id)
-    return query.order_by(DigitalAttachment.created_at.asc(), DigitalAttachment.id.asc()).all()

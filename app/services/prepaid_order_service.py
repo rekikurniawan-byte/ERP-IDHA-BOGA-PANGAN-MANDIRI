@@ -20,7 +20,7 @@ from datetime import date
 from decimal import Decimal
 
 from app.models.finance import AdvanceTransaction
-from app.services.advance_service import CLIENT_DP_RECEIVED, CLIENT_DP_REFUND, create_advance_settlement, create_advance_transaction
+from app.services.advance_service import CLIENT_DP_RECEIVED, create_advance_settlement, create_advance_transaction
 from app.services.audit_log_service import record_audit_log
 
 ZERO = Decimal("0.00")
@@ -361,28 +361,3 @@ def advances_to_refund(branch_id):
     return result
 
 
-def refund_prepayments(*, advances, created_by, payment_method, bank_account_id=None, reason=None):
-    """Kembalikan sisa uang muka ke pelanggan. Hanya OWNER (dicek advance_service). Tidak commit."""
-    refunded = ZERO
-    for advance in advances:
-        amount = _money(advance.remaining_amount)
-        if amount <= 0:
-            continue
-        try:
-            create_advance_settlement(
-                advance=advance,
-                settlement_date=max(date.today(), advance.advance_date),
-                settlement_type=CLIENT_DP_REFUND,
-                amount=amount,
-                created_by=created_by,
-                notes=reason or "Pesanan ditolak/dibatalkan setelah dibayar.",
-                commit=False,
-                payment_method=advance_method(payment_method),
-                bank_account_id=bank_account_id,
-            )
-        except Exception as error:
-            raise PrepaymentError(str(error)) from error
-        refunded += amount
-    if refunded <= 0:
-        raise PrepaymentError("Tidak ada uang muka yang bisa dikembalikan.")
-    return refunded

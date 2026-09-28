@@ -1,7 +1,6 @@
 from datetime import date
 
 from app.models.finance import SupplierBill, SupplierPayment
-from app.models.master import Supplier
 
 
 AGING_BUCKETS = [

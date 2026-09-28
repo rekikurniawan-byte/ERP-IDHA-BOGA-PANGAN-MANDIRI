@@ -7,7 +7,6 @@ from flask_login import current_user
 from app.utils.decorators import module_required, role_required
 from app.services.branch_module_service import WARUNG, WORKER_DEBT, module_enabled
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
-from app.extensions import db
 from app.models.canteen import CanteenSale, WorkerDebt, CanteenExternalReceivable
 from app.models.finance import BankAccount
 from app.models.master import Item, Worker, Mandor

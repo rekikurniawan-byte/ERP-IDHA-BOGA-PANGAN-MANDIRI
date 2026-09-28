@@ -212,20 +212,3 @@ def get_backup_restore_sop() -> Dict[str, object]:
     }
 
 
-def get_recovery_sop_summary() -> Dict[str, object]:
-    """Small summary used by Backup/Kesehatan Sistem pages."""
-    return {
-        "schema_version": "PRODUCTION_RECOVERY_SOP_SUMMARY_V1",
-        "app_version": APP_VERSION,
-        "disaster_recovery_route": "sop.disaster_recovery",
-        "backup_restore_route": "sop.backup_restore",
-        "minimum_safe_backup_status": "VERIFIED",
-        "restore_mode": "MANUAL_ASSISTED_ONLY",
-        "must_pass_before_restore": [
-            "Pre-backup health check",
-            "Post-backup verification",
-            "Restore preview dry-run",
-            "DB integrity/FK/journal balance",
-            "Upload checksum/count/size check",
-        ],
-    }

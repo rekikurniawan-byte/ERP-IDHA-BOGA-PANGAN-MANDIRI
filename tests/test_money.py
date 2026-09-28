@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.utils.money import money, money_sum
+from app.utils.money import money
 
 
 def test_float_diubah_lewat_repr_tanpa_sisa_biner():
@@ -21,7 +21,3 @@ def test_kosong_jadi_nol_dan_teks_rusak_ditolak():
     assert money("") == Decimal("0.00")
     with pytest.raises(ValueError):
         money("abc")
-
-
-def test_jumlah_banyak_baris_tetap_tepat():
-    assert money_sum([0.1] * 10) == Decimal("1.00")  # float: 0.9999999999999999

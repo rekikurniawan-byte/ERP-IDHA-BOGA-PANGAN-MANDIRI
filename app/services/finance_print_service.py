@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Dict, Mapping, Optional
 
-from app.models.finance import BankAccount, CashBankTransaction, Invoice
+from app.models.finance import BankAccount, Invoice
 from app.models.master import Client, Mandor, Supplier
 from app.services.company_settings_service import get_company_settings
 from app.services.finance_export_service import (

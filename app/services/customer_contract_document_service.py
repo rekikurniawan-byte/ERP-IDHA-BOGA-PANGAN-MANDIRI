@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models.system import DigitalAttachment
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
-from app.services.customer_contract_service import CustomerContractError, get_customer_contract
+from app.services.customer_contract_service import get_customer_contract
 from app.services.digital_attachment_service import stage_digital_attachment
 
 
@@ -90,21 +90,6 @@ def list_customer_contract_documents(
     if not include_deleted:
         query = query.filter(DigitalAttachment.is_deleted.is_(False))
     return query.order_by(DigitalAttachment.created_at.desc(), DigitalAttachment.id.desc()).all()
-
-
-def get_customer_contract_document(*, attachment_id: int, branch_id: int) -> DigitalAttachment | None:
-    attachment = DigitalAttachment.query.filter(
-        DigitalAttachment.id == attachment_id,
-        DigitalAttachment.branch_id == branch_id,
-        DigitalAttachment.module == CUSTOMER_CONTRACT_DOCUMENT_MODULE,
-        DigitalAttachment.reference_type == CUSTOMER_CONTRACT_REFERENCE_TYPE,
-        DigitalAttachment.is_deleted.is_(False),
-    ).first()
-    if not attachment:
-        return None
-    if not get_customer_contract(attachment.reference_id, branch_id=branch_id):
-        return None
-    return attachment
 
 
 def _stage_contract_document(contract, file_storage, uploaded_by: int | None, attachment_type: str, notes: str | None) -> DigitalAttachment:

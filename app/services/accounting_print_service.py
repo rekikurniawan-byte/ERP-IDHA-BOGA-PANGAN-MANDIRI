@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Mapping
 
 from app.models.accounting import Journal
 from app.services.company_settings_service import get_company_settings

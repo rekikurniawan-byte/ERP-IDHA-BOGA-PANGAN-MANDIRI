@@ -96,10 +96,6 @@ def get_role_label(role):
     return ROLE_LABELS.get(role, role or "-")
 
 
-def get_role_description(role):
-    return ROLE_DESCRIPTIONS.get(role, "")
-
-
 def get_portal_role_landing_endpoint(role):
     return PORTAL_ROLE_LANDING_ENDPOINTS.get(role)
 

@@ -37,7 +37,7 @@ def create_invoice_payment(invoice_id):
     from datetime import datetime
     from flask import request
     from app.extensions import db
-    from app.models.finance import Invoice, Payment, BankAccount, SupplierBill, SupplierPayment
+    from app.models.finance import Invoice, Payment, BankAccount
 
     invoice = Invoice.query.get_or_404(invoice_id)
 

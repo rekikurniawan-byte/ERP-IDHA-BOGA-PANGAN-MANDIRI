@@ -4,7 +4,7 @@ from collections import Counter
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 # LOGIN_REQUIRED_IMPORT
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 from app.extensions import db, limiter
 from app.models.master import Employee, EmployeeSkill
@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 # SDM2A_HR_ROUTES
-
-def _hr_money(value):
-    return float(value or 0)
 
 
 def _payroll_period_label(payroll):

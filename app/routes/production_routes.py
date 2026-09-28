@@ -3,7 +3,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from datetime import datetime
 
-from app.extensions import db
 from app.models.production import Production
 from app.models.operational import DailyOrder
 from app.services.delivery_service import build_delivery_next_action_for_order

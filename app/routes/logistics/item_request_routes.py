@@ -151,7 +151,7 @@ def create_item_request():
 @role_required("OWNER", "LOGISTICS", "DAPUR")
 def item_request_detail(request_id):
     from app.models.logistics import ItemRequest
-    from app.services.stock_service import get_item_stock, is_integer_unit
+    from app.services.stock_service import get_item_stock
 
     item_request = ItemRequest.query.get_or_404(request_id)
 

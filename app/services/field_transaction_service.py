@@ -15,7 +15,6 @@ from app.models.field_transaction import (
     FieldTransactionAttachment,
     FieldTransactionLink,
     FieldTransactionReviewLog,
-    FieldTransactionSettlement,
 )
 from app.models.finance import BankAccount
 from app.models.master import Mandor
@@ -191,19 +190,6 @@ def generate_field_transaction_number(transaction_date):
     while True:
         number = f"{prefix}-{counter:04d}"
         if not FieldTransaction.query.filter_by(transaction_number=number).first():
-            return number
-        counter += 1
-
-
-def generate_field_transaction_settlement_number(settlement_date):
-    prefix = f"FTS-{settlement_date.strftime('%Y%m%d')}"
-    counter = FieldTransactionSettlement.query.filter(
-        FieldTransactionSettlement.settlement_number.like(f"{prefix}-%")
-    ).count() + 1
-
-    while True:
-        number = f"{prefix}-{counter:04d}"
-        if not FieldTransactionSettlement.query.filter_by(settlement_number=number).first():
             return number
         counter += 1
 

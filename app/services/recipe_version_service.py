@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models.master import RecipeHeader, RecipeItem, RecipeVersion, RecipeVersionItem
+from app.models.master import RecipeHeader, RecipeVersion, RecipeVersionItem
 
 
 class RecipeVersionError(ValueError):
@@ -102,7 +102,3 @@ def create_recipe_version_snapshot(recipe, finalized_by=None, finalized_at=None)
     return version
 
 
-def has_recipe_versions(recipe):
-    if not recipe:
-        return False
-    return RecipeVersion.query.filter_by(branch_id=recipe.branch_id, recipe_id=recipe.id).first() is not None

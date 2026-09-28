@@ -134,25 +134,6 @@ def get_recipe_for_menu(menu):
     return RecipeHeader.query.filter_by(menu_id=menu.id, branch_id=menu.branch_id).first()
 
 
-def create_default_recipe(menu):
-    recipe = RecipeHeader(
-        branch_id=menu.branch_id,
-        menu_id=menu.id,
-        recipe_name=f"Resep {menu.menu_name}",
-        base_portion=1,
-        recipe_status="DRAFT",
-        version_label="v1",
-        version_note=None,
-        finalized_at=None,
-        finalized_by=None,
-        notes=None,
-        is_active=True,
-        updated_by=current_user.id,
-    )
-    db.session.add(recipe)
-    return recipe
-
-
 # Domain route modules. Imported after shared helpers are defined so decorators bind to the same blueprint.
 from app.routes.costing import snapshot_routes as _costing_snapshot_routes  # noqa: F401,E402
 from app.routes.costing import menu_routes as _costing_menu_routes  # noqa: F401,E402

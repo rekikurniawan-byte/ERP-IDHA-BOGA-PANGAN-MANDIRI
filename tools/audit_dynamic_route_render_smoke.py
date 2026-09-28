@@ -186,7 +186,6 @@ def _endpoint_values(endpoint: str, branch_id: int | None = None) -> dict[str, A
         "master.edit_mandor": lambda: {"mandor_id": _first_id(Mandor, branch_id)},
         "master.edit_supplier": lambda: {"supplier_id": _first_id(Supplier, branch_id)},
         "master.edit_worker": lambda: {"worker_id": _first_id(Worker, branch_id)},
-        "dashboard.module_placeholder": lambda: {"module_name": "finance"},
         "operational.create_revision": lambda: {"detail_id": _first_id(DailyOrderDetail)},
         "operational.order_detail": lambda: {"order_id": _first_id(DailyOrder, branch_id)},
         "operational.add_order_detail": lambda: {"order_id": _first_id(DailyOrder, branch_id)},

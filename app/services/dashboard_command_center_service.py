@@ -8,7 +8,7 @@ melakukan commit/flush/mutation database.
 from __future__ import annotations
 import logging
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 from app.services.branch_module_service import WARUNG, WORKER_DEBT, module_enabled
 from app.utils.terms import T
 

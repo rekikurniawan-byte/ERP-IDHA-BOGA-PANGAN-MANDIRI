@@ -158,37 +158,12 @@ def _get_active_account_by_code(account_code):
     ).first()
 
 
-def _build_invoice_journal_amounts(invoice):
-    catering_total = 0
-    warung_total = 0
-    other_total = 0
-
-    for item in invoice.items:
-        item_type = str(item.item_type or "").upper()
-        subtotal = float(item.subtotal or 0)
-
-        if item_type in ["CATERING", "REVISION_INCREASE"]:
-            catering_total += subtotal
-        elif item_type in ["WARUNG_DEBT", "WARUNG"]:
-            warung_total += subtotal
-        else:
-            other_total += subtotal
-
-    return {
-        "catering_total": catering_total,
-        "warung_total": warung_total,
-        "other_total": other_total,
-        "total_credit": catering_total + warung_total + other_total,
-        "total_debit": float(invoice.total_amount or 0),
-    }
-
-
 @accounting_bp.route("/journals/generate-period-invoice", methods=["POST"])
 @login_required
 @role_required("OWNER", "ACCOUNTING")
 def generate_period_invoice_journals():
     # ACCOUNTING10B_ALIGN_MANUAL_INVOICE_GENERATOR
-    from flask import flash, redirect, url_for
+    from flask import flash
     from flask_login import current_user
     from app.services.accounting_service import generate_period_invoice_journals_batch
 
@@ -254,7 +229,7 @@ def generate_period_invoice_journals():
 @role_required("OWNER", "ACCOUNTING")
 def generate_payment_journals():
     # ACCOUNTING11C_ALIGN_MANUAL_PAYMENT_GENERATOR
-    from flask import flash, redirect, url_for
+    from flask import flash
     from flask_login import current_user
     from app.services.accounting_service import generate_payment_journals_batch
 

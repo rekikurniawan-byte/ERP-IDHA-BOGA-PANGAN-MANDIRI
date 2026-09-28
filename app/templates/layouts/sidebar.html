@@ -1,14 +1,14 @@
 {% set endpoint = request.endpoint or "" %}
 {% set role = current_user.role if current_user.is_authenticated else "" %}
 
-{% set is_dashboard = endpoint.startswith("dashboard.") and endpoint != "dashboard.module_placeholder" %}
+{% set is_dashboard = endpoint.startswith("dashboard.") %}
 {% set is_master = endpoint.startswith("master.") %}
 {% set is_costing = endpoint.startswith("costing.") %}
 {% set is_operational = endpoint.startswith("operational.") or endpoint.startswith("production.") or endpoint.startswith("delivery.") or endpoint.startswith("canteen.") %}
 {% set is_operational_order = endpoint in ["operational.orders", "operational.create_order", "operational.add_order_detail", "operational.add_increase_after_lock_route", "operational.order_detail", "operational.update_order_hpp_defaults_route", "operational.lock_order", "operational.generate_production", "operational.create_revision", "operational.create_order_hpp_snapshot_route", "operational.order_hpp_snapshot_detail", "operational.order_hpp_snapshot_stock_dry_run", "operational.order_hpp_snapshot_stock_commit", "operational.order_hpp_stock_consumption_detail"] %}
 {% set is_daily_catering_log = endpoint == "operational.daily_catering_log" %}
 {% set is_monthly_catering_recap = endpoint == "operational.monthly_catering_recap" %}
-{% set is_finance_invoice = endpoint in ["finance.invoices", "finance.create_period_invoice", "finance.invoice_detail", "finance.create_payment"] %}
+{% set is_finance_invoice = endpoint in ["finance.invoices", "finance.invoice_detail", "finance.generate_period_invoice_preview", "finance.invoice_print"] %}
 {% set is_finance_profit = endpoint in ["finance.invoice_profit_report", "finance.invoice_profit_detail"] %}
 {% set is_finance_payment = endpoint == "finance.payment_history" %}
 {% set is_finance_hub = endpoint == "finance.index" %}
@@ -41,8 +41,6 @@
 {% set is_change_password = endpoint == "settings.change_password" %}
 {% set is_recovery_center = endpoint == "settings.recovery_center" %}
 {% set is_system_health = endpoint == "settings.system_health" %}
-{% set is_visual_sweep = endpoint == "settings.visual_sweep" %}
-{% set is_final_visual_browser_qa = endpoint == "settings.final_visual_browser_qa" %}
 {% set is_atomic_transaction_map = endpoint == "settings.atomic_transaction_map" %}
 {% set is_atomic_smoke_simulation = endpoint == "settings.atomic_smoke_simulation" %}
 {% set is_backup_management = endpoint in ["settings.backups", "settings.create_backup", "settings.create_full_backup", "settings.validate_backup_preview", "settings.download_backup", "settings.download_backup_confirm"] %}
@@ -155,7 +153,7 @@
     {% set is_kitchen_costing = is_costing or is_item_costing %}
     {% set is_stock_group = is_logistics or is_kitchen_costing %}
     {% set is_master_group = is_master and not (is_item_costing or is_fixed_assets) %}
-    {% set is_system_tools = is_system_health or is_recovery_center or is_atomic_transaction_map or is_atomic_smoke_simulation or is_visual_sweep or is_final_visual_browser_qa %}
+    {% set is_system_tools = is_system_health or is_recovery_center or is_atomic_transaction_map or is_atomic_smoke_simulation %}
 
     <nav class="sidebar-nav" aria-label="Navigasi utama">
         <div class="sidebar-section">
@@ -264,7 +262,7 @@
             {% if can_view_logistics or can_view_costing %}
                 {% call nav_group("Stok & Dapur", "bi-box-seam", is_stock_group) %}
                     {% if has_role(["OWNER", "LOGISTICS"]) %}
-                        {{ nav_link(url_for('logistics.index'), "Stok Barang", "bi-box-seam", endpoint in ["logistics.index", "logistics.stock_card"]) }}
+                        {{ nav_link(url_for('logistics.index'), "Stok Barang", "bi-box-seam", endpoint == "logistics.index") }}
                     {% endif %}
                     {% if can_view_logistics %}
                         {{ nav_link(url_for('logistics.item_requests'), "Permintaan Barang", "bi-cart-plus", endpoint.startswith("logistics.item_request")) }}

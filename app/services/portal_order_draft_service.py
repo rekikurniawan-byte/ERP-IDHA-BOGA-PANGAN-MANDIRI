@@ -1093,10 +1093,6 @@ def create_portal_order_draft(user, form):
     return draft, True, None
 
 
-def count_existing_operational_orders():
-    return DailyOrder.query.count()
-
-
 def _draft_title(draft):
     return (
         f"{_meal_label(draft.meal_type)} {int(draft.portion_qty or 0)} porsi "
@@ -1248,10 +1244,6 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
             ),
         },
     }
-
-
-def get_portal_order_draft_or_404(draft_id):
-    return PortalOrderDraft.query.get_or_404(draft_id)
 
 
 def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepayment_override=False):

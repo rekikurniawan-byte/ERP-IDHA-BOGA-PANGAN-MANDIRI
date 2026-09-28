@@ -5,7 +5,7 @@ import re
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List
 
 from flask import current_app
 

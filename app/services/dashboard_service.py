@@ -72,7 +72,7 @@ def get_owner_dashboard_data(
         Payment,
         SupplierBill,
     )
-    from app.models.accounting import Journal, JournalDetail
+    from app.models.accounting import Journal
     from app.models.operational import OrderHppSnapshot
 
     today = date.today()
@@ -86,7 +86,6 @@ def get_owner_dashboard_data(
                 total += float(value or 0)
             except Exception:
                 logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:84")
-                pass
 
         return total
 
@@ -95,7 +94,6 @@ def get_owner_dashboard_data(
             db.session.rollback()
         except Exception:
             logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:92")
-            pass
 
     def _table_count(table_name):
         if table_name not in _ALLOWED_COUNT_TABLES:
@@ -564,220 +562,6 @@ def get_owner_dashboard_data(
     }
 
 
-
-def _format_dashboard_rupiah(value):
-    try:
-        value = float(value or 0)
-        return "Rp {:,.0f}".format(value).replace(",", ".")
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:564")
-        return "Rp 0"
-
-
-def _dashboard_kpi(label, value, caption, icon="bi-speedometer2", tone="blue"):
-    return {
-        "label": label,
-        "value": value,
-        "caption": caption,
-        "icon": icon,
-        "tone": tone,
-    }
-
-
-def get_role_dashboard_metrics(role, branch_id=None):
-    """Read-only KPI summary for PRODUCTION role landing dashboards.
-
-    Semua query dibuat defensif agar landing role tetap render walaupun data lama
-    belum lengkap. Fungsi ini tidak melakukan write/commit apa pun ke database.
-    """
-    role = str(role or "").upper()
-
-    try:
-        if role == "FINANCE":
-            from app.models.finance import Invoice, Payment, SupplierBill, CashBankTransaction
-
-            invoice_query = Invoice.query
-            payment_query = Payment.query
-            supplier_bill_query = SupplierBill.query
-            ledger_query = CashBankTransaction.query
-
-            if branch_id:
-                invoice_query = invoice_query.filter_by(branch_id=branch_id)
-                payment_query = payment_query.filter_by(branch_id=branch_id)
-                supplier_bill_query = supplier_bill_query.filter_by(branch_id=branch_id)
-                ledger_query = ledger_query.filter_by(branch_id=branch_id)
-
-            receivable_invoices = invoice_query.filter(
-                Invoice.remaining_amount > 0,
-                Invoice.status.notin_(["CANCELLED", "CANCELED"]),
-            ).all()
-            open_supplier_bills = supplier_bill_query.filter(
-                SupplierBill.remaining_amount > 0,
-                SupplierBill.status != "PAID",
-            ).all()
-
-            return [
-                _dashboard_kpi(
-                    "Piutang Aktif",
-                    _format_dashboard_rupiah(sum(invoice.remaining_amount or 0 for invoice in receivable_invoices)),
-                    f"{len(receivable_invoices)} invoice belum lunas",
-                    "bi-cash-coin",
-                    "red" if receivable_invoices else "green",
-                ),
-                _dashboard_kpi(
-                    "Pembayaran Masuk",
-                    payment_query.count(),
-                    "Total transaksi payment tercatat",
-                    "bi-credit-card",
-                    "green",
-                ),
-                _dashboard_kpi(
-                    "Hutang Supplier",
-                    _format_dashboard_rupiah(sum(bill.remaining_amount or 0 for bill in open_supplier_bills)),
-                    f"{len(open_supplier_bills)} bill masih terbuka",
-                    "bi-receipt-cutoff",
-                    "orange" if open_supplier_bills else "green",
-                ),
-                _dashboard_kpi(
-                    "Buku Kas/Bank",
-                    ledger_query.count(),
-                    "Transaksi ledger tercatat",
-                    "bi-bank",
-                    "blue",
-                ),
-            ]
-
-        if role == "ACCOUNTING":
-            from app.models.accounting import Account, Journal, JournalDetail
-            from sqlalchemy import text as sa_text
-            from app.extensions import db
-
-            journal_count = Journal.query.count()
-            today_journal_count = Journal.query.filter_by(journal_date=date.today()).count()
-            account_count = Account.query.filter_by(is_active=True).count()
-
-            # Optimized: single SQL query for unbalanced count (replaces N+1 loop)
-            try:
-                unbalanced_count = int(db.session.execute(sa_text("""
-                    SELECT COUNT(*) FROM (
-                        SELECT journal_id
-                        FROM journal_details
-                        GROUP BY journal_id
-                        HAVING ABS(COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0)) > 1
-                    ) unbalanced
-                """)).scalar() or 0)
-            except Exception:
-                logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:660")
-                unbalanced_count = 0
-
-            return [
-                _dashboard_kpi("Jurnal", journal_count, "Total jurnal akuntansi", "bi-journal-check", "blue"),
-                _dashboard_kpi("Jurnal Hari Ini", today_journal_count, "Posting sesuai tanggal sistem", "bi-calendar-check", "green"),
-                _dashboard_kpi("COA Aktif", account_count, "Akun yang dapat dipakai", "bi-diagram-2", "blue"),
-                _dashboard_kpi(
-                    "Tidak Balance",
-                    unbalanced_count,
-                    "Harus 0 sebelum final lock",
-                    "bi-exclamation-triangle",
-                    "red" if unbalanced_count else "green",
-                ),
-            ]
-
-        if role == "LOGISTICS":
-            from sqlalchemy import text
-            from app.extensions import db
-            from app.models.master import Item, Supplier
-            from app.models.logistics import Procurement, ItemRequest, DamagedItem
-
-            item_count = Item.query.filter_by(is_active=True).count()
-            supplier_query = Supplier.query.filter_by(is_active=True)
-            procurement_query = Procurement.query
-            request_query = ItemRequest.query
-            damaged_query = DamagedItem.query
-
-            if branch_id:
-                supplier_query = supplier_query.filter_by(branch_id=branch_id)
-                procurement_query = procurement_query.filter_by(branch_id=branch_id)
-                request_query = request_query.filter_by(branch_id=branch_id)
-                damaged_query = damaged_query.filter_by(branch_id=branch_id)
-
-            low_stock_count = 0
-            try:
-                low_stock_count = int(db.session.execute(text("""
-                    SELECT COUNT(*) FROM (
-                        SELECT i.id,
-                               COALESCE(SUM(CASE
-                                   WHEN sm.movement_type = 'IN' THEN sm.qty
-                                   WHEN sm.movement_type = 'OUT' THEN -sm.qty
-                                   ELSE sm.qty
-                               END), 0) AS current_stock,
-                               i.minimum_stock
-                        FROM items i
-                        LEFT JOIN stock_movements sm ON sm.item_id = i.id
-                        WHERE i.is_stock_tracked IS TRUE
-                          AND i.is_active IS TRUE
-                        GROUP BY i.id, i.minimum_stock
-                        HAVING COALESCE(SUM(CASE
-                                   WHEN sm.movement_type = 'IN' THEN sm.qty
-                                   WHEN sm.movement_type = 'OUT' THEN -sm.qty
-                                   ELSE sm.qty
-                               END), 0) <= i.minimum_stock
-                    ) low_items
-                """)).scalar() or 0)
-            except Exception:
-                logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:717")
-                try:
-                    db.session.rollback()
-                except Exception:
-                    logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:720")
-                    pass
-                low_stock_count = 0
-
-            pending_requests = request_query.filter(ItemRequest.status == "PENDING").count()
-
-            return [
-                _dashboard_kpi("Item Aktif", item_count, "Master bahan/barang aktif", "bi-box-seam", "blue"),
-                _dashboard_kpi("Stok Menipis", low_stock_count, "Item di bawah minimum", "bi-exclamation-triangle", "red" if low_stock_count else "green"),
-                _dashboard_kpi("Request Dapur", pending_requests, "Permintaan menunggu proses", "bi-inboxes", "orange" if pending_requests else "green"),
-                _dashboard_kpi("Pembelian", procurement_query.count(), f"{supplier_query.count()} supplier aktif", "bi-basket", "blue"),
-            ]
-
-        if role == "HR":
-            from app.models.master import Employee
-            from app.models.hr import Payroll, PayrollDetail, EmployeeAttendance
-
-            employee_query = Employee.query
-            payroll_query = Payroll.query
-            attendance_query = EmployeeAttendance.query
-
-            if branch_id:
-                employee_query = employee_query.filter_by(branch_id=branch_id)
-                payroll_query = payroll_query.filter_by(branch_id=branch_id)
-                attendance_query = attendance_query.filter_by(branch_id=branch_id)
-
-            active_employee_count = employee_query.filter(Employee.status == "ACTIVE").count()
-            draft_payroll_count = payroll_query.filter(Payroll.status == "DRAFT").count()
-            payroll_detail_count = PayrollDetail.query.join(Payroll).filter(Payroll.branch_id == branch_id).count() if branch_id else PayrollDetail.query.count()
-
-            return [
-                _dashboard_kpi("Karyawan Aktif", active_employee_count, "Employee internal saja", "bi-people", "green"),
-                _dashboard_kpi("Payroll Draft", draft_payroll_count, "Perlu dicek sebelum final", "bi-cash-stack", "orange" if draft_payroll_count else "green"),
-                _dashboard_kpi("Detail Payroll", payroll_detail_count, "Baris payroll tercatat", "bi-list-check", "blue"),
-                _dashboard_kpi("Absensi", attendance_query.count(), "Catatan absensi karyawan", "bi-calendar2-check", "blue"),
-            ]
-
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:757")
-        pass
-
-    return [
-        _dashboard_kpi("Area Role", "Aktif", "Dashboard role berhasil dibuka", "bi-speedometer2", "blue"),
-        _dashboard_kpi("Shortcut", "Siap", "Akses modul tersedia", "bi-grid", "green"),
-        _dashboard_kpi("Reminder", "Live", "Mengikuti halaman Pengingat", "bi-bell", "orange"),
-        _dashboard_kpi("Data", "Read-only", "Tidak mengubah database", "bi-shield-check", "green"),
-    ]
-
-
 def get_admin_dashboard_data(
     branch_id,
     analytics_year=None,
@@ -879,7 +663,6 @@ def get_admin_dashboard_data(
             db.session.rollback()
         except Exception:
             logger.exception("Suppressed unexpected exception in app/services/dashboard_service.py:866")
-            pass
         admin_low_stock_count = 0
 
     today_productions = Production.query.filter_by(

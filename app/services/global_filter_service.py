@@ -42,19 +42,6 @@ class DateFilterState:
     has_active_date: bool
     warning: str = ""
 
-    def to_template(self) -> dict[str, Any]:
-        return {
-            "preset": self.preset,
-            "start_date": self.start_date,
-            "end_date": self.end_date,
-            "start_value": self.start_value,
-            "end_value": self.end_value,
-            "label": self.label,
-            "is_custom": self.is_custom,
-            "has_active_date": self.has_active_date,
-            "warning": self.warning,
-            "preset_options": PRESET_OPTIONS,
-        }
 
 
 def parse_date(value: Any) -> date | None:

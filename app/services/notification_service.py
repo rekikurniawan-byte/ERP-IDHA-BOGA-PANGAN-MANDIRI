@@ -347,14 +347,6 @@ def mark_notification_dismissed(notification: Notification, *, commit: bool = Tr
     return notification
 
 
-def mark_notification_resolved(notification: Notification, *, commit: bool = True) -> Notification:
-    notification.status = "RESOLVED"
-    notification.resolved_at = _now()
-    if commit:
-        db.session.commit()
-    return notification
-
-
 def resolve_generated_notifications_not_in(
     *,
     branch_id: int,

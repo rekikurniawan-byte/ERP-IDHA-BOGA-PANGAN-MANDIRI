@@ -17,10 +17,6 @@ from app.models.pricing import PortionPrice
 from app.services.branch_module_service import WARUNG, WORKER_DEBT, enable_modules_for_branch
 from app.services.portal_access_service import (
     build_portal_access_scope,
-    build_portal_location_directory,
-    build_portal_mandor_directory,
-    build_portal_ownership_analysis,
-    build_portal_status_shell,
 )
 from app.services.portal_mapping_service import (
     PRINCIPAL_CLIENT,
@@ -437,86 +433,15 @@ def test_portal_readonly_directories_are_branch_scoped_for_admin(app):
             _create_scope_master_data(user)
             _create_other_branch_scope_data()
 
+            # Direktori lama digantikan Pelanggan > Akun Portal (perapian 2026-09-28).
             with app.test_client() as client:
                 _login(client, user)
-                customers_response = client.get("/portal/customers")
-                mandors_response = client.get("/portal/mandors")
-                locations_response = client.get("/portal/locations")
+                accounts_response = client.get("/portal/dashboard")
+                removed = {path: client.get(path).status_code for path in ("/portal/customers", "/portal/mandors", "/portal/locations")}
 
-            customers_html = customers_response.get_data(as_text=True)
-            mandors_html = mandors_response.get_data(as_text=True)
-            locations_html = locations_response.get_data(as_text=True)
-
-            assert customers_response.status_code == 200
-            assert mandors_response.status_code == 200
-            assert locations_response.status_code == 200
-            assert "Client Read-only" in customers_html
-            assert "Sub Client Read-only" in mandors_html
-            assert "Lokasi Read-only" in locations_html
-            assert "AAA Test Portal Client" in customers_html
-            assert "AAA Test Portal Mandor" in mandors_html
-            assert "AAA Test Portal Location" in locations_html
-            assert "ZZZ Other Branch Client" not in customers_html
-            assert "ZZZ Other Branch Mandor" not in mandors_html
-            assert "ZZZ Other Branch Location" not in locations_html
-            assert 'action="/portal' not in customers_html.lower()
-            assert 'action="/portal' not in mandors_html.lower()
-            assert 'action="/portal' not in locations_html.lower()
-        finally:
-            transaction.rollback()
-
-
-def test_portal_status_shell_is_read_only_and_shows_approval_gates(app):
-    app.config["PORTAL_ENABLED"] = True
-
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_test_user("OWNER")
-            status = build_portal_status_shell(user)
-
-            with app.test_client() as client:
-                _login(client, user)
-                response = client.get("/portal/status")
-
-            html = response.get_data(as_text=True)
-            assert status["ready_count"] >= 1
-            assert status["approval_required_count"] >= 1
-            assert response.status_code == 200
-            assert "Status Portal Read-only" in html
-            assert "Akun eksternal Client/Sub Client" in html
-            assert "Draft order portal" in html
-            assert "Invoice/payment portal" in html
-            assert 'action="/portal' not in html.lower()
-        finally:
-            transaction.rollback()
-
-
-def test_portal_ownership_analysis_is_read_only_and_branch_scoped(app):
-    app.config["PORTAL_ENABLED"] = True
-
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_test_user("ADMIN")
-            _create_scope_master_data(user)
-            _create_other_branch_scope_data()
-            analysis = build_portal_ownership_analysis(user)
-
-            with app.test_client() as client:
-                _login(client, user)
-                response = client.get("/portal/ownership")
-
-            html = response.get_data(as_text=True)
-            assert analysis["summary"]["scope_mode"] == "ADMIN_BRANCH_PREVIEW"
-            assert analysis["summary"]["clients"] == 1
-            assert analysis["summary"]["mandors"] == 1
-            assert analysis["summary"]["locations"] == 1
-            assert response.status_code == 200
-            assert "Ownership Portal" in html
-            assert "User.branch_id, User.role" in html
-            assert "APPROVAL_REQUIRED" in html
-            assert 'action="/portal' not in html.lower()
+            assert accounts_response.status_code == 200
+            assert "Terhubung ke" in accounts_response.get_data(as_text=True)
+            assert removed == {"/portal/customers": 404, "/portal/mandors": 404, "/portal/locations": 404}
         finally:
             transaction.rollback()
 
@@ -611,10 +536,10 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             dashboard_html = dashboard_response.get_data(as_text=True)
 
             assert dashboard_response.status_code == 200
-            assert customers_response.status_code == 302
-            assert mandors_response.status_code == 302
-            assert locations_response.status_code == 302
-            assert status_response.status_code == 302
+            assert customers_response.status_code == 404
+            assert mandors_response.status_code == 404
+            assert locations_response.status_code == 404
+            assert status_response.status_code == 404
             assert "PORTAL_SUBCLIENT_SCOPE" in dashboard_html
             assert "AAA Test Portal Client" not in dashboard_html
             assert "AAA Test Portal Mandor" not in dashboard_html
@@ -622,51 +547,7 @@ def test_portal_external_mandor_scope_uses_mapping_and_hides_other_branch(app):
             assert "ZZZ Other Branch Client" not in dashboard_html
             assert "ZZZ Other Branch Mandor" not in dashboard_html
             assert "Ownership" not in dashboard_html
-            assert ownership_response.status_code == 302
-        finally:
-            transaction.rollback()
-
-
-def test_portal_client_scope_covers_client_family_without_other_client(app):
-    app.config["PORTAL_ENABLED"] = True
-
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_test_user(ROLE_PORTAL_CLIENT)
-            client_obj, _client_pic, mandor, location = _create_scope_master_data(user)
-            sibling_mandor, sibling_location = _create_extra_mandor_location(user, client_obj, "BBB Same Client")
-            _create_portal_mapping(user, principal_type=PRINCIPAL_CLIENT, client=client_obj)
-            _create_other_branch_scope_data()
-
-            scope = build_portal_external_scope(user)
-            directory = build_portal_mandor_directory(user)
-
-            assert scope.allowed is True
-            assert scope.scope_mode == "PORTAL_CLIENT_SCOPE"
-            assert scope.client_ids == {client_obj.id}
-            assert {mandor.id, sibling_mandor.id}.issubset(scope.mandor_ids)
-            assert {location.id, sibling_location.id}.issubset(scope.delivery_location_ids)
-            assert directory["allowed"] is True
-            assert {row["name"] for row in directory["rows"]} == {
-                "AAA Test Portal Mandor",
-                "BBB Same Client Mandor",
-            }
-
-            with app.test_client() as client:
-                _login(client, user)
-                profile_response = client.get("/portal/profile")
-                mandors_response = client.get("/portal/mandors")
-
-            profile_html = profile_response.get_data(as_text=True)
-            mandors_html = mandors_response.get_data(as_text=True)
-
-            assert profile_response.status_code == 200
-            assert mandors_response.status_code == 302
-            assert "PORTAL_CLIENT_SCOPE" in profile_html
-            assert "AAA Test Portal Mandor" not in mandors_html
-            assert "BBB Same Client Mandor" not in mandors_html
-            assert "ZZZ Other Branch Mandor" not in mandors_html
+            assert ownership_response.status_code == 404
         finally:
             transaction.rollback()
 
@@ -1353,7 +1234,7 @@ def test_portal_customer_prepayment_guard_blocks_draft_order(app):
 
     assert get_response.status_code == 200
     assert post_response.status_code == 400
-    assert status_response.status_code == 302
+    assert status_response.status_code == 404
     assert dashboard_response.status_code == 200
     assert "Pelanggan umum wajib memiliki pembayaran terverifikasi" in get_html
     assert "Prepayment tetap wajib" in dashboard_html
@@ -1392,7 +1273,6 @@ def test_portal_external_mandor_role_can_render_role_dashboard_pages(app):
         "/portal/invoices": ["Invoice Portal", "Belum ada invoice dalam scope portal"],
         "/portal/payments": ["Riwayat Pembayaran", "Belum ada pembayaran dalam scope portal"],
         "/portal/debts": ["Hutang Pekerja", "Belum ada hutang pekerja dalam scope portal"],
-        "/portal/closing": ["Closing Portal", "Status closing"],
     }
 
     for path, texts in page_expectations.items():
@@ -1510,11 +1390,6 @@ def test_portal_internal_configuration_pages_are_not_external_portal_pages(app):
 
     internal_paths = [
         "/portal/dashboard",
-        "/portal/customers",
-        "/portal/mandors",
-        "/portal/locations",
-        "/portal/status",
-        "/portal/ownership",
         "/portal/admin/order-drafts",
     ]
 
@@ -1991,10 +1866,6 @@ def test_portal_customer_general_pages_render_with_financial_guards(app):
         "/portal/debts": [
             'data-endpoint="portal.customer_dashboard"',
             "Pesan catering, bayar, lalu kami proses.",
-        ],
-        "/portal/closing": [
-            'data-endpoint="portal.customer_dashboard"',
-            "Pelanggan umum tidak memakai kredit.",
         ],
     }
 

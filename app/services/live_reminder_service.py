@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from flask import url_for
 
-from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
+from app.models.delivery import Delivery
 from app.models.finance import CashBankTransaction, Invoice, Payment, SupplierBill, SupplierPayment
 from app.models.logistics import Procurement
 from app.models.operational import DailyOrder

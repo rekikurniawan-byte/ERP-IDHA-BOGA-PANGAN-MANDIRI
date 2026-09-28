@@ -722,7 +722,6 @@ def legacy_cutover_id(kind):
         return 0
 
 
-
 def _accounting9d_money(value):
     # Nominal tak terbaca ditolak (ValueError), tidak diam-diam menjadi 0.
     return money(value)
@@ -733,84 +732,6 @@ def _accounting9d_existing_journal(reference_types, reference_id):
         Journal.reference_type.in_(reference_types),
         Journal.reference_id == reference_id
     ).first()
-
-
-def create_warung_cash_sale_journal(sale, created_by, commit=False):
-    """
-    Future only:
-    CASH warung -> Dr 1001 Kas / Cr 4003 Pendapatan Warung
-    Data lama (<= legacy_cutover_id("canteen_sale")) dilindungi.
-    """
-    if not sale:
-        return False, "Transaksi warung tidak ditemukan.", None
-
-    sale_id = int(getattr(sale, "id", 0) or 0)
-
-    if sale_id <= legacy_cutover_id("canteen_sale"):
-        return False, "Transaksi warung lama dilindungi cutover.", None
-
-    sale_type = str(getattr(sale, "sale_type", "") or "").upper()
-
-    if sale_type != "CASH":
-        return False, "Transaksi bukan cash sale warung.", None
-
-    existing = _accounting9d_existing_journal(
-        ["WARUNG_CASH_SALE"],
-        sale_id
-    )
-
-    if existing:
-        return False, "Jurnal cash sale warung sudah ada.", existing
-
-    amount = _accounting9d_money(getattr(sale, "total_amount", 0))
-
-    if amount <= 0:
-        raise Exception("Nominal cash sale warung tidak valid.")
-
-    acc_cash = get_active_account_by_code("1001")
-    acc_warung = get_active_account_by_code("4003")
-
-    missing = []
-
-    if not acc_cash:
-        missing.append("1001 Kas")
-
-    if not acc_warung:
-        missing.append("4003 Pendapatan Warung")
-
-    if missing:
-        raise Exception("Akun wajib belum lengkap: " + ", ".join(missing))
-
-    journal = Journal(
-        journal_number=generate_journal_number(sale.sale_date),
-        journal_date=sale.sale_date,
-        reference_type="WARUNG_CASH_SALE",
-        reference_id=sale.id,
-        description=f"Jurnal penjualan cash warung - Sale #{sale.id}",
-        created_by=created_by
-    )
-
-    db.session.add(journal)
-    db.session.flush()
-
-    db.session.add(JournalDetail(
-        journal_id=journal.id,
-        account_id=acc_cash.id,
-        debit=amount,
-        credit=0
-    ))
-
-    db.session.add(JournalDetail(
-        journal_id=journal.id,
-        account_id=acc_warung.id,
-        debit=0,
-        credit=amount
-    ))
-
-    if commit:
-        db.session.commit()
-
-    return True, "Jurnal cash sale warung berhasil dibuat.", journal
 
 
 def create_warung_debt_accrual_journal(worker_debt, created_by, commit=False):
@@ -1063,7 +984,6 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
     return True, "Jurnal payroll berhasil dibuat.", journal
 
 
-
 # SDM5D_PAYROLL_PAYMENT_CASH_BANK_BALANCE_GUARD
 def _sdm5d_format_money(value):
     return f"Rp {float(value or 0):,.0f}".replace(",", ".")
@@ -1166,7 +1086,6 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
         db.session.commit()
 
     return True, "Pembayaran gaji berhasil dicatat otomatis.", journal
-
 
 
 # === PRODUCTION_SUPPLIER_PAYMENT_JOURNAL_SERVICE ===

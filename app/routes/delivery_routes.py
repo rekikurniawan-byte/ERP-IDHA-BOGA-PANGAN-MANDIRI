@@ -3,7 +3,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import current_user
 from datetime import datetime
 
-from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
 from app.models.operational import DailyOrder
 from app.services.delivery_service import (
@@ -535,7 +534,7 @@ def receiving():
 @delivery_bp.route("/history")
 @role_required("ADMIN", "PENGANTAR")
 def history():
-    from datetime import date, datetime
+    from datetime import date
 
     status_filter = request.args.get("status") or "ALL"
     date_state = resolve_date_filter(

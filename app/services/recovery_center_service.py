@@ -31,7 +31,6 @@ from app.services.disaster_recovery_sop_service import (
     RESTORE_DRILL_SOP_VERSION,
 )
 from app.services.system_health_service import (
-    STATUS_SAFE,
     build_empty_system_health_report,
     build_system_health_report,
 )

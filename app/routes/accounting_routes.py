@@ -31,10 +31,6 @@ def _journal_total_credit(journal):
     return sum(float(detail.credit or 0) for detail in journal.details)
 
 
-def _journal_is_balanced(journal):
-    return round(_journal_total_debit(journal), 2) == round(_journal_total_credit(journal), 2)
-
-
 def _redirect_after_accounting_post(default_endpoint="accounting.journals"):
     next_url = (request.form.get("next") or "").strip()
     if next_url.startswith("/") and not next_url.startswith("//"):
@@ -66,8 +62,6 @@ def _reserve_accounting_idempotency(scope, payload, default_endpoint="accounting
 # ACCOUNTING9B_WARUNG_FUTURE_ACCRUAL_HELPER
 # Batas data lama dibaca dari ACCOUNTING_LEGACY_CUTOVER (lihat legacy_cutover_id).
 from app.services.accounting_service import legacy_cutover_id  # noqa: E402
-
-
 
 
 # Domain route modules. Imported after shared helpers are defined so decorators bind to the same blueprint.

@@ -13,8 +13,7 @@ from typing import Any
 
 from flask import url_for
 
-from app.extensions import db
-from app.models.accounting import Account, FixedAssetDepreciation, Journal, JournalDetail
+from app.models.accounting import Account, Journal, JournalDetail
 from app.models.finance import OperationalExpense, TransportVehicleExpense
 from app.services.accounting_posting_status_service import build_accounting_posting_status_report
 

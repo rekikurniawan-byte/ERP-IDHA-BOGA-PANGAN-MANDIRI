@@ -766,7 +766,6 @@ def fixed_asset_installments():
 @role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING")
 def create_fixed_asset_installment_contract():
     from datetime import datetime
-    from app.extensions import db
     from app.models.accounting import FixedAsset
     from app.models.finance import BankAccount
     from app.services.fixed_asset_installment_service import (
@@ -874,7 +873,6 @@ def fixed_asset_installment_detail(contract_id):
 @role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING")
 def pay_fixed_asset_installment(contract_id, schedule_id):
     from datetime import datetime
-    from app.extensions import db
     from app.services.fixed_asset_installment_service import is_installment_schema_ready, pay_installment_schedule
 
     if not is_installment_schema_ready():

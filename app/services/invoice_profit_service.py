@@ -6,9 +6,8 @@ PRODUCTION
 - Hanya membaca invoice_items dan order_hpp_snapshot_allocations.
 """
 
-from collections import defaultdict
 
-from app.models.finance import Invoice, InvoiceItem
+from app.models.finance import Invoice
 from app.models.operational import (
     DailyOrderDetail,
     OrderHppSnapshot,

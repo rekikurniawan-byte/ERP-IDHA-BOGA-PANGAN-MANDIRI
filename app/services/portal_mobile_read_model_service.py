@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from decimal import Decimal
 
-from app.models.master import DeliveryLocation, Mandor, Worker
+from app.models.master import DeliveryLocation, Worker
 from app.services.portal_access_service import build_portal_mandor_directory
 from app.services.portal_debt_visibility_service import build_portal_worker_debt_read_model
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
@@ -113,9 +112,3 @@ def build_portal_mobile_debt_cards(user, *, limit: int = 100) -> dict:
     return build_portal_worker_debt_read_model(user, limit=limit)
 
 
-def money_or_zero(value) -> Decimal:
-    if value is None:
-        return Decimal("0")
-    if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value))

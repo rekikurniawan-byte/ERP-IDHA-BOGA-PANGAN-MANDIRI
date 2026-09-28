@@ -48,11 +48,6 @@ from app.services.atomic_failure_simulation_service import (
 )
 from app.services.sensitive_action_guard_service import validate_sensitive_action_guard
 from app.services.live_reminder_service import build_empty_live_reminder_center, build_live_reminder_center
-from app.services.visual_sweep_service import build_empty_visual_sweep_report, build_visual_sweep_report
-from app.services.final_visual_browser_qa_service import (
-    build_empty_final_visual_browser_qa_report,
-    build_final_visual_browser_qa_report,
-)
 from app.services.notification_service import (
     NOTIFICATION_PRIORITIES,
     NOTIFICATION_STATUSES,

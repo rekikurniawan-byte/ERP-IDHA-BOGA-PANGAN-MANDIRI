@@ -130,8 +130,6 @@ def audit():
 @logistics_bp.route("/audit/create", methods=["GET", "POST"])
 @role_required("OWNER", "LOGISTICS")
 def create_audit():
-    from app.extensions import db
-    from app.models.logistics import StockMovement
     from app.models.master import Item
     from app.services.stock_service import get_stock_items, get_item_stock, is_integer_unit
 

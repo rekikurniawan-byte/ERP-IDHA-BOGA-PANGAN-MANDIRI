@@ -26,5 +26,3 @@ def money(value):
         raise ValueError(f"Nominal uang tidak valid: {value!r}") from error
 
 
-def money_sum(values):
-    return sum((money(value) for value in values), ZERO)

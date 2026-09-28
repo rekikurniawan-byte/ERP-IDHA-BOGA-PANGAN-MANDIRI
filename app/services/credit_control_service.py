@@ -499,14 +499,6 @@ class CreditDecision:
     reason: str = ""
     message: str = ""
 
-    @property
-    def is_blocking(self):
-        return not self.allowed
-
-    @property
-    def max_loss_if_absconded(self):
-        return max(self.exposure, ZERO)
-
 
 def evaluate_credit(branch_id, client_id=None, mandor_id=None, pending_amount=0, today=None):
     """Keputusan kredit untuk satu order yang mau masuk.

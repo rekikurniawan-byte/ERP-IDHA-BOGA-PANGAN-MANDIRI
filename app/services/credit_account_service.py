@@ -24,7 +24,6 @@ from app.models.credit import (
     BILLING_DIRECT,
     BILLING_VIA_CLIENT,
     CREDIT_STATUS_ORDER,
-    PARTY_CLIENT,
     PARTY_MANDOR,
     STATUS_ACTIVE,
     STATUS_BLOCKED,

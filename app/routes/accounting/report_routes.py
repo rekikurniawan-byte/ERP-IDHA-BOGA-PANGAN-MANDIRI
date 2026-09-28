@@ -705,43 +705,6 @@ def _accounting2e_purchase_credit_account(procurement):
     return None, "UNKNOWN"
 
 
-def _build_accounting2e_procurement_candidates():
-    from app.models.logistics import Procurement
-    from app.models.accounting import Journal
-
-    procurements = Procurement.query.order_by(
-        Procurement.procurement_date.asc(),
-        Procurement.id.asc()
-    ).all()
-
-    candidates = []
-
-    for procurement in procurements:
-        existing = Journal.query.filter_by(
-            reference_type="PROCUREMENT",
-            reference_id=procurement.id
-        ).first()
-
-        amount = _accounting2e_procurement_amount(procurement)
-        credit_account, credit_label = _accounting2e_purchase_credit_account(procurement)
-
-        candidates.append({
-            "procurement": procurement,
-            "amount": amount,
-            "purchase_type": str(procurement.purchase_type or "").upper(),
-            "credit_account": credit_account,
-            "credit_label": credit_label,
-            "existing_journal": existing,
-            "can_generate": (
-                existing is None
-                and amount > 0
-                and credit_account is not None
-            ),
-        })
-
-    return candidates
-
-
 def _generate_accounting2e_procurement_journals(created_by_id, commit=True):
     from app.services.accounting_service import generate_procurement_journals_batch
 
@@ -752,7 +715,7 @@ def _generate_accounting2e_procurement_journals(created_by_id, commit=True):
 @login_required
 @role_required("OWNER", "ACCOUNTING")
 def generate_procurement_journals():
-    from flask import flash, redirect, url_for
+    from flask import flash
     from flask_login import current_user
 
     idempotency_record, idempotency_response = _reserve_accounting_idempotency(

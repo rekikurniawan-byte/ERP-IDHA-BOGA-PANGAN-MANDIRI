@@ -2,13 +2,6 @@
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.utils.terms import T
 
-def _finance_ar_money(value):
-    try:
-        return f"Rp {float(value or 0):,.0f}".replace(",", ".")
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:2511")
-        return "Rp 0"
-
 
 def _finance_ar_percent(paid, total):
     try:
@@ -230,9 +223,6 @@ def build_invoice_ar_warning(invoice):
 @finance_bp.app_template_global()
 def finance_ar_warning(invoice):
     return build_invoice_ar_warning(invoice)
-
-
-
 
 
 # === PATCH_RECEIVABLES_DASHBOARD_STEP12C1 ===

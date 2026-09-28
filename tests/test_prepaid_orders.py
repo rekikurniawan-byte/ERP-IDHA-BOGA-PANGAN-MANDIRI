@@ -289,20 +289,23 @@ def test_diloloskan_owner_sisa_jadi_piutang(ctx):
 # --- pengembalian ---------------------------------------------------------
 
 def test_pengembalian_uang_muka_hanya_owner_dan_dijurnal(ctx):
+    # Jalur yang dipakai halaman Finance > Uang Muka & Refund (advance_settle).
     from app.models.accounting import Account, JournalDetail
     from app.models.finance import AdvanceSettlement
-    from app.services.prepaid_order_service import PrepaymentError, refund_prepayments
+    from app.services.advance_service import CLIENT_DP_REFUND, create_advance_settlement
 
     s = _setup(ctx)
     draft = _draft(ctx, s)
     advance = _pay(s, draft, 315000)
+    refund = dict(advance=advance, settlement_date=TODAY, settlement_type=CLIENT_DP_REFUND, amount=Decimal("315000"),
+                  notes="ditolak", payment_method="CASH", commit=False)
 
-    with pytest.raises(PrepaymentError):
-        refund_prepayments(advances=[advance], created_by=s.admin.id, payment_method="CASH")
+    with pytest.raises(Exception, match="OWNER"):
+        create_advance_settlement(created_by=s.admin.id, **refund)
 
-    refunded = refund_prepayments(advances=[advance], created_by=s.owner.id, payment_method="CASH", reason="ditolak")
+    create_advance_settlement(created_by=s.owner.id, **refund)
 
-    assert refunded == Decimal("315000.00")
+    assert Decimal(str(advance.remaining_amount)) == Decimal("0.00")
     settlement = AdvanceSettlement.query.filter_by(advance_id=advance.id).one()
     lines = {
         Account.query.get(row.account_id).account_code: (Decimal(str(row.debit)), Decimal(str(row.credit)))

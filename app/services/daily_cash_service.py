@@ -16,7 +16,6 @@ Catatan integrasi:
   transaksi warung (CanteenSale) yang sudah tercatat sendiri. daily_closing_service
   membaca record ini untuk audit tutup harian.
 """
-from datetime import date
 
 from app.extensions import db
 from app.models.canteen import CashDaily, CanteenSale, DebtPayment, WorkerDebt

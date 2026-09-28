@@ -54,7 +54,6 @@ def _period_invoice_item_exists(source_type, source_id):
 @finance_bp.route("/invoice-profit-report")
 @role_required("OWNER", "ADMIN", "FINANCE")
 def invoice_profit_report():
-    from app.models.finance import Invoice
     from app.services.invoice_profit_service import build_invoice_profit_report_index
 
     start_value = request.args.get("start_date", "").strip()
@@ -129,7 +128,7 @@ def invoice_profit_detail(invoice_id):
 def generate_period_invoice_preview():
     from datetime import date
     from flask import request
-    from app.models.master import Client, Mandor
+    from app.models.master import Mandor
     from app.models.operational import DailyOrder
     from app.models.finance import Invoice
     from app.models.canteen import WorkerDebt
@@ -571,7 +570,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
 @finance_bp.route("/invoices/generate-period/save", methods=["POST"])
 @role_required("OWNER", "ADMIN", "FINANCE")
 def generate_period_invoice_save():
-    from datetime import date, timedelta
+    from datetime import date
     from app.extensions import db
     from app.models.master import Mandor
     from app.models.finance import Invoice, InvoiceItem

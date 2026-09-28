@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models.system import DigitalAttachment
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
-from app.services.customer_complaint_service import CustomerComplaintError, get_customer_complaint
+from app.services.customer_complaint_service import get_customer_complaint
 from app.services.digital_attachment_service import stage_digital_attachment
 
 

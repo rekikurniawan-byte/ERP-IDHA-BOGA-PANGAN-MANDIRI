@@ -3,7 +3,6 @@ import logging
 
 import hashlib
 import mimetypes
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Tuple

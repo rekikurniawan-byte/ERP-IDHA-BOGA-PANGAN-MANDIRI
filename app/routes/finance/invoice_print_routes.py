@@ -30,11 +30,6 @@ def _invoice_print_parse_meals(description):
     }
 
 
-def _invoice_print_parse_lunch_dinner(description):
-    meals = _invoice_print_parse_meals(description)
-    return meals["lunch"], meals["dinner"]
-
-
 def _invoice_print_parse_money(value):
     value = str(value or "").strip()
 
@@ -99,7 +94,6 @@ def _invoice_print_parse_worker_debt(description):
         "remaining_amount": remaining_amount,
         "note": description,
     }
-
 
 
 def _invoice_print_format_date(value):

@@ -13,7 +13,6 @@ from app.services.customer_contract_document_service import (
     CUSTOMER_CONTRACT_REFERENCE_TYPE,
     CustomerContractDocumentError,
     attach_customer_contract_document,
-    get_customer_contract_document,
     list_customer_contract_documents,
 )
 from app.services.customer_contract_service import CONTRACT_STATUS_ACTIVE, create_customer_contract
@@ -83,7 +82,6 @@ def test_attach_customer_contract_document_archives_private_attachment(app, tmp_
             assert attachment.mime_type == "application/pdf"
             assert attachment.notes == "CONTRACT_DOCUMENT: Dokumen kontrak utama"
             assert listed[0].id == attachment.id
-            assert get_customer_contract_document(attachment_id=attachment.id, branch_id=user.branch_id).id == attachment.id
             assert contract.status == original_status
             assert contract.payment_terms == original_terms
             assert contract.credit_limit == original_limit
@@ -111,7 +109,6 @@ def test_contract_document_list_is_branch_scoped(app, tmp_path):
             assert list_customer_contract_documents(contract_id=contract.id, branch_id=user.branch_id)[0].id == attachment.id
             with pytest.raises(CustomerContractDocumentError):
                 list_customer_contract_documents(contract_id=contract.id, branch_id=other_user.branch_id)
-            assert get_customer_contract_document(attachment_id=attachment.id, branch_id=other_user.branch_id) is None
         finally:
             transaction.rollback()
 

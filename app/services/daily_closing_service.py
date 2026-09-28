@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from app.models.accounting import Journal
 from app.models.canteen import CashDaily, CanteenSale, DebtPayment, WorkerDebt
-from app.models.delivery import Delivery, DeliveryDetail
+from app.models.delivery import Delivery
 from app.models.finance import Invoice, Payment
 from app.models.logistics import StockMovement
 from app.models.operational import DailyOrder

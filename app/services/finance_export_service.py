@@ -23,7 +23,7 @@ from app.models.finance import (
     TransportVehicleExpense,
 )
 from app.models.logistics import Procurement
-from app.models.master import Client, Mandor, Supplier
+from app.models.master import Client, Mandor
 from app.services.digital_attachment_service import count_reference_attachments
 from app.utils.terms import T
 
@@ -516,7 +516,6 @@ def _latest_collection_log(branch_id: int, invoice_id: int):
 
 def build_receivables_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
     from app.services.finance_receivables_service import (
-        BILL_TO_TYPE_CHOICES,
         INACTIVE_INVOICE_STATUSES,
         invoice_matches_receivable_filters,
         invoice_party_context,

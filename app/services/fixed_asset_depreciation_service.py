@@ -118,13 +118,6 @@ def resolve_default_accumulated_account_code(asset_category: str) -> str:
     return ASSET_CATEGORY_ACCUMULATED_ACCOUNT.get(str(asset_category or "OTHER").upper(), "2101")
 
 
-def is_asset_depreciation_configured(asset: FixedAsset) -> bool:
-    if not asset:
-        return False
-    config = getattr(asset, "depreciation_config", None)
-    return bool(config and config.status in [DEPRECIATION_STATUS_CONFIGURED, DEPRECIATION_STATUS_ACTIVE])
-
-
 def calculate_monthly_depreciation(asset: FixedAsset, config: FixedAssetDepreciationConfig) -> float:
     if not asset or not config:
         return 0.0

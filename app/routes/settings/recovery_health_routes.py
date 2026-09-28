@@ -52,29 +52,3 @@ def atomic_smoke_simulation():
     return render_template("settings/atomic_smoke_simulation.html", report=report)
 
 
-
-
-@settings_bp.route("/visual-sweep")
-@role_required("OWNER", "ADMIN")
-def visual_sweep():
-    try:
-        report = build_visual_sweep_report()
-    except Exception as exc:
-        current_app.logger.exception("PRODUCTION Visual Sweep failed")
-        report = build_empty_visual_sweep_report(str(exc))
-        flash("Visual Sweep gagal dibaca penuh. Detail error tercatat di terminal/log Flask.", "danger")
-
-    return render_template("settings/visual_sweep.html", report=report)
-
-
-@settings_bp.route("/final-visual-qa")
-@role_required("OWNER", "ADMIN")
-def final_visual_browser_qa():
-    try:
-        report = build_final_visual_browser_qa_report()
-    except Exception as exc:
-        current_app.logger.exception("PRODUCTION Final Visual Browser QA failed")
-        report = build_empty_final_visual_browser_qa_report(str(exc))
-        flash("Final Visual Browser QA gagal dibaca penuh. Detail error tercatat di terminal/log Flask.", "danger")
-
-    return render_template("settings/final_visual_browser_qa.html", report=report)

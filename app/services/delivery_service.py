@@ -46,16 +46,6 @@ def generate_delivery_number(delivery_date, delivery_type):
     return f"DLV-{date_code}-{delivery_type}-{next_number:03d}"
 
 
-def get_delivered_qty_for_order_detail(order_detail_id, delivery_type):
-    delivery_details = DeliveryDetail.query.join(Delivery).filter(
-        DeliveryDetail.daily_order_detail_id == order_detail_id,
-        Delivery.notes.like(f"%delivery_type={delivery_type}%"),
-        Delivery.status != "CANCELLED"
-    ).all()
-
-    return sum(detail.delivered_qty for detail in delivery_details)
-
-
 def unreplaced_shortage_qty(order_detail_id, delivery_type):
     """Porsi kurang kirim yang tercatat di tanda terima dan belum diganti.
 
@@ -439,8 +429,6 @@ def update_delivery_receipt(delivery_detail, delivered_qty, receiver_name, notes
     return True, "Penerimaan pengiriman berhasil disimpan."
 
 
-
-
 # === PATCH_SHORTAGE_REPLACEMENT_DELIVERY ===
 def get_planned_delivery_qty_for_order_detail(order_detail_id, delivery_type):
     """
@@ -551,9 +539,6 @@ def create_shortage_replacement_delivery(source_delivery_detail, created_by):
     return True, f"Delivery pengganti shortage berhasil dibuat untuk {shortage_qty} porsi.", replacement_delivery
 
 
-
-
-
 # === PATCH_CANCEL_DELIVERY ===
 def cancel_delivery(delivery, cancelled_by, reason=None):
     """
@@ -593,9 +578,6 @@ def cancel_delivery(delivery, cancelled_by, reason=None):
     db.session.commit()
 
     return True, "Delivery berhasil dibatalkan."
-
-
-
 
 
 # === PATCH_ACTIVE_DELIVERY_COUNT_ONLY ===

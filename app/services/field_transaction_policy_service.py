@@ -234,10 +234,6 @@ def get_field_transaction_event_policy(event_type):
     return merged
 
 
-def is_field_transaction_event_ui_ready(event_type):
-    return normalize_event_type(event_type) in FIELD_TRANSACTION_UI_READY_EVENT_TYPES
-
-
 def ensure_field_transaction_event_ui_ready(event_type):
     normalized = normalize_event_type(event_type)
     if normalized not in FIELD_TRANSACTION_UI_READY_EVENT_TYPES:

@@ -68,7 +68,6 @@ COST_UNITS = ["GRAM", "KG", "ML", "LITER", "PCS", "PACK", "DUS", "KARUNG", "TABU
 COST_SOURCES = ["STANDARD", "MANUAL", "LAST_PURCHASE"]
 
 
-
 def to_float(value):
     try:
         cleaned = str(value or "0").strip()
@@ -163,10 +162,6 @@ def client_name_is_used(name, branch_id, exclude_id=None):
 
     return query.first() is not None
 
-
-def set_if_has_column(model_object, column_name, value):
-    if hasattr(model_object.__class__, column_name):
-        setattr(model_object, column_name, value)
 
 def worker_is_used(worker_id):
     has_debt = WorkerDebt.query.filter_by(worker_id=worker_id).first()

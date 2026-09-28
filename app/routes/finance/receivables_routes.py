@@ -7,9 +7,6 @@ from app.routes.finance.ar_dashboard_routes import _build_receivables_dashboard_
 from app.routes.finance_routes import (
     _payment_attachment_or_404,
     _payment_or_404,
-    _resolve_manual_billing_source_reference,
-    _supplier_payment_attachment_or_404,
-    _supplier_payment_or_404,
 )
 from app.utils.terms import T
 
@@ -31,7 +28,6 @@ def receivables_print():
 @finance_bp.route("/receivables/statement")
 @role_required("OWNER", "ADMIN", "FINANCE")
 def receivables_statement():
-    from collections import defaultdict
     from datetime import date
     from urllib.parse import quote
     # SOA5B_IMPORT_PAYMENT

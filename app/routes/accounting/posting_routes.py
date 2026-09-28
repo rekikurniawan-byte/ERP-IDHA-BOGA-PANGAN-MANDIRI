@@ -71,7 +71,7 @@ def _accounting3b_existing_opening_journal():
 
 
 def _build_accounting3b_opening_balance_data():
-    from app.models.accounting import Account, JournalDetail
+    pass
 
     asset_fields = [
         {"name": "cash", "code": "1001", "label": "Kas"},
@@ -373,7 +373,6 @@ def _accounting4b_get_item_average_cost(item_id):
 
 
 def _build_accounting4b_hpp_candidates():
-    from app.extensions import db
     from app.models.accounting import Journal
     from app.models.master import Item
     from app.models.logistics import StockMovement
@@ -533,7 +532,7 @@ def _generate_accounting4b_hpp_journals(created_by_id, commit=True):
 @login_required
 @role_required("OWNER", "ACCOUNTING")
 def generate_hpp_production_journals():
-    from flask import flash, redirect, url_for
+    from flask import flash
     from flask_login import current_user
 
     idempotency_record, idempotency_response = _reserve_accounting_idempotency(
@@ -774,7 +773,7 @@ def _generate_accounting7c_warung_payment_correction_journals(created_by_id, com
 @login_required
 @role_required("OWNER", "ACCOUNTING")
 def generate_warung_payment_correction_journals():
-    from flask import flash, redirect, url_for
+    from flask import flash
     from flask_login import current_user
 
     idempotency_record, idempotency_response = _reserve_accounting_idempotency(

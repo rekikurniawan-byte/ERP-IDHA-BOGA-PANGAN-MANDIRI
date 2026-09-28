@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
 
 from app.extensions import db
 from app.models.contract import CustomerContract

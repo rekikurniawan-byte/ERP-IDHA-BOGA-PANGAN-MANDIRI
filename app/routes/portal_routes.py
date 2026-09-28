@@ -6,12 +6,7 @@ from flask_login import current_user
 from app.models.system import PortalOrderDraft
 from app.services.portal_access_service import (
     build_portal_access_scope,
-    build_portal_customer_directory,
-    build_portal_location_directory,
-    build_portal_mandor_directory,
-    build_portal_ownership_analysis,
     build_portal_profile,
-    build_portal_status_shell,
 )
 from app.services.portal_closing_visibility_service import build_portal_closing_visibility
 from app.services.portal_command_center_service import build_portal_command_center
@@ -735,25 +730,6 @@ def debts():
     )
 
 
-@portal_bp.route("/closing")
-@role_required(*PORTAL_READONLY_ROLES)
-def closing():
-    if current_user.role == ROLE_PORTAL_CUSTOMER:
-        return redirect(url_for("portal.customer_dashboard"))
-    return render_template(
-        "portal/closing.html",
-        data={
-            **_role_dashboard_data(_current_portal_persona()),
-            "status_label": "Read-only",
-            "model": build_portal_closing_visibility(
-                current_user,
-                year=request.args.get("year"),
-                month=request.args.get("month"),
-            ),
-        },
-    )
-
-
 @portal_bp.route("/notifications")
 @role_required(*PORTAL_READONLY_ROLES)
 def notifications():
@@ -920,42 +896,6 @@ def profile():
     )
 
 
-@portal_bp.route("/customers")
-@role_required(*PORTAL_INTERNAL_ROLES)
-def customers():
-    data = {
-        "status_label": "Hanya dilihat",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "directory": build_portal_customer_directory(current_user),
-    }
-    return render_template("portal/customers.html", data=data)
-
-
-@portal_bp.route("/mandors")
-@role_required(*PORTAL_INTERNAL_ROLES)
-def mandors():
-    data = {
-        "status_label": "Hanya dilihat",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "directory": build_portal_mandor_directory(current_user),
-    }
-    return render_template("portal/mandors.html", data=data)
-
-
-@portal_bp.route("/locations")
-@role_required(*PORTAL_INTERNAL_ROLES)
-def locations():
-    data = {
-        "status_label": "Hanya dilihat",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "directory": build_portal_location_directory(current_user),
-    }
-    return render_template("portal/locations.html", data=data)
-
-
 @portal_bp.route("/orders/draft", methods=["GET", "POST"])
 @role_required(*PORTAL_READONLY_ROLES)
 def draft_order():
@@ -1117,27 +1057,4 @@ def reject_order_draft(draft_id):
             )
     return redirect(url_for("portal.admin_order_drafts"))
 
-
-@portal_bp.route("/status")
-@role_required(*PORTAL_INTERNAL_ROLES)
-def status():
-    data = {
-        "status_label": "Hanya dilihat",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "status": build_portal_status_shell(current_user),
-    }
-    return render_template("portal/status.html", data=data)
-
-
-@portal_bp.route("/ownership")
-@role_required("ADMIN")
-def ownership():
-    data = {
-        "status_label": "Hanya analisis",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
-        "ownership": build_portal_ownership_analysis(current_user),
-    }
-    return render_template("portal/ownership.html", data=data)
 

@@ -10,7 +10,6 @@ from app.models.complaint import CustomerComplaint
 from app.models.contract import CustomerContract
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice
-from app.models.operational import DailyOrder, DailyOrderDetail
 from app.models.system import ApprovalRequest, DigitalAttachment, PortalOrderDraft
 from app.services.notification_service import list_notifications, notification_to_dict
 from app.services.portal_mapping_service import build_portal_external_scope
@@ -41,19 +40,6 @@ def _portal_invoice_filter(scope):
     if scope.mandor_ids:
         filters.append(Invoice.mandor_id.in_(sorted(scope.mandor_ids)))
     return or_(*filters) if filters else false()
-
-
-def _portal_order_filter(scope):
-    detail_filters = []
-    if scope.mandor_ids:
-        detail_filters.append(DailyOrder.details.any(DailyOrderDetail.mandor_id.in_(sorted(scope.mandor_ids))))
-    if scope.delivery_location_ids:
-        detail_filters.append(
-            DailyOrder.details.any(DailyOrderDetail.delivery_location_id.in_(sorted(scope.delivery_location_ids)))
-        )
-    if not detail_filters:
-        return false()
-    return or_(*detail_filters)
 
 
 def _attachment_scope_filter(user, scope):
