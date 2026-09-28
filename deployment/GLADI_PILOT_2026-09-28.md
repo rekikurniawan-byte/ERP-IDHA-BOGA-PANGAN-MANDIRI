@@ -85,12 +85,16 @@ Tambahan `ops-check` dari temuan gladi:
 
 ## Keputusan yang perlu OWNER
 
-1. **Akun portal untuk client kontrak.** *Owner setuju dibuat; alurnya dijelaskan dulu.* Pelanggan umum otomatis terhubung saat
+1. **Akun portal untuk client kontrak.** *Keputusan owner: dibuat sesuai
+   rekomendasi — sudah dikerjakan.* OWNER menghubungkan akun di form User
+   (satu akun = satu PT atau satu mandor); Portal PT memantau, memesan hanya
+   lewat Order langsung; Portal Mandor memesan, admin tetap mengonfirmasi. Pelanggan umum otomatis terhubung saat
    mendaftar, tapi akun portal PT/mandor tidak bisa dihubungkan ke client-nya —
    belum ada halamannya. Perlu dibuat halaman "hubungkan akun portal ke PT /
    mandor / lokasi" (alurnya akan dijelaskan dulu sebelum dibangun). Sementara
    itu pesanan kontrak diinput admin.
-2. **Pengiriman kurang yang tidak diganti.** *Menunggu pilihan owner.* Mandor Joko pesan 25, diterima 23.
+2. **Pengiriman kurang yang tidak diganti.** *Keputusan owner: tagih yang
+   diterima, kelebihan uang muka dikembalikan — sudah dikerjakan.* Mandor Joko pesan 25, diterima 23.
    Invoice periode tetap menagih **25**. Yang benar: tagih yang dipesan, atau
    yang diterima?
 3. **Pilih pengantar per pengiriman.** Sekarang semua pengiriman otomatis
@@ -119,3 +123,24 @@ python tools/pilot_dry_run.py --db idha_boga_pilot --backup   # PG_DUMP_PATH kal
 Alat hanya mau jalan di database yang namanya mengandung "pilot" atau "gladi",
 dan menolak database yang sudah pernah dipakai gladi. Hasil per langkah ditulis
 ke `instance/gladi_pilot_hasil.md`.
+
+## Gladi ulang setelah keputusan owner (28-09-2026 sore)
+
+Skenario ditambah: akun Portal PT dan Portal Mandor dihubungkan lewat form
+User, Mandor Budi memesan siang dan malam lewat portal, kurang kirim di
+kontrak (Gudang Cikarang 23/25) dan di pelanggan umum (Kantor Notaris 19/20)
+dengan sisa uang muka Rp18.000 dikembalikan OWNER.
+
+Hasil: **120 / 120 langkah OK, 17 / 17 pemeriksaan lulus**, saldo semua akun
+cocok dengan hitungan manual, `ops-check` 10 cek 0 FAIL 0 WARN.
+
+Temuan baru dan sudah diperbaiki:
+
+- **Pesanan portal siang + malam untuk lokasi yang sama tidak bisa
+  dikonfirmasi** — sesi kedua ditolak "detail sudah ada". Sekarang digabung ke
+  baris order yang sama; yang ditolak hanya pesanan ganda sesi yang sama atau
+  harga berbeda.
+- `PORTAL_ENABLED` bawaan template produksi `0` — portal mati. Masuk runbook
+  dan `ops-check` (juga memeriksa akun portal yang belum terhubung).
+- Halaman "Pengaturan Akses Portal" hanya berisi hitungan dan nama tabel;
+  sekarang daftar akun portal dan ke mana masing-masing terhubung.

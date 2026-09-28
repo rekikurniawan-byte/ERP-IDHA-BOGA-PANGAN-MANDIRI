@@ -42,10 +42,12 @@ Peran:
       untuk pelanggan umum), pengantar, rekening bank.
 - [ ] **PIC resmi** untuk setiap client kontrak (Master Client → PIC). Tanpa
       PIC, invoice kontrak tidak bisa disimpan.
-- [ ] Akun pengguna: OWNER, ADMIN, DAPUR, PENGANTAR; pelanggan umum yang
-      bersedia ikut mendaftar sendiri di portal. Akun portal untuk client
-      kontrak **belum bisa** dihubungkan ke client-nya (belum ada halamannya);
-      selama pilot, pesanan client kontrak diinput ADMIN.
+- [ ] `PORTAL_ENABLED=1` di `.env.production` (bawaan template `0`: portal mati,
+      pelanggan umum tidak bisa daftar/pesan).
+- [ ] Akun pengguna: OWNER, ADMIN, DAPUR, PENGANTAR. Akun portal PT / Mandor
+      dibuat OWNER di Pengaturan → User dan **dihubungkan** ke satu PT atau
+      satu mandor (daftarnya di Portal → Pengaturan Akses). Pelanggan umum yang
+      bersedia ikut mendaftar sendiri di portal.
 - [ ] Saldo awal diisi di **dua** tempat dengan angka yang sama:
       Akuntansi → Saldo Awal (jurnal) **dan** Finance → Saldo Awal Kas/Bank
       (buku kas/bank). `ops-check` membandingkan keduanya.

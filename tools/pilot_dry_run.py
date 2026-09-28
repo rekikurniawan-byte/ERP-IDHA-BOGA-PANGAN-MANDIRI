@@ -42,17 +42,19 @@ D1, D2 = TODAY + timedelta(days=1), TODAY + timedelta(days=2)
 
 # Hitungan manual skenario di bawah (harga standar 18.000, kontrak PT Maju 16.000,
 # ongkir Dekat 10.000 / Jauh 25.000 / kontrak PT Sinar 15.000 per trip).
+# Kurang kirim yang tidak diganti tidak ditagih (keputusan owner 2026-09-28):
+# Gudang Cikarang (Joko) kurang 2 dari 25, Kantor Notaris (Sari) kurang 1 dari 20.
 EXPECTED_BALANCES = {
     "1001": Decimal("5405000"),     # 5.000.000 awal + 200.000 Joko + 205.000 Dedi D2 tunai
-    "1002": Decimal("28353000"),    # 25.000.000 awal + 1.271.000 uang muka - 190.000 refund + 2.272.000 Budi
-    "1004": Decimal("1628000"),     # sisa Joko 200.000 + Asep 1.428.000
+    "1002": Decimal("28335000"),    # 25.000.000 + 1.271.000 uang muka - 190.000 refund ditolak - 18.000 refund kurang kirim + 2.272.000 Budi
+    "1004": Decimal("1596000"),     # sisa Joko 368.000 - 200.000 + Asep 1.428.000
     "1006": Decimal("3500000"),
     "1101": Decimal("30000000"),
     "2002": Decimal("-2000000"),
     "2008": Decimal("0"),
     "3001": Decimal("-61500000"),
-    "4001": Decimal("-4040000"),    # 142 x 16.000 Budi + 25 x 16.000 Joko + 76 x 18.000 Asep
-    "4002": Decimal("-1206000"),    # (15+12+20+10+10) x 18.000
+    "4001": Decimal("-4008000"),    # 142 x 16.000 Budi + 23 x 16.000 Joko + 76 x 18.000 Asep
+    "4002": Decimal("-1188000"),    # (15 + 12 + 19 + 10 + 10) x 18.000
     "4005": Decimal("-140000"),     # umum 10.000+25.000+10.000+10.000+25.000, kontrak 4 trip x 15.000
 }
 
@@ -150,7 +152,7 @@ def stage_setup(run):
         "document_prefix_delivery": "DLV", "document_prefix_journal": "JRN", **guard})
 
     for full_name, username, role in (("Admin Pilot", "admin.pilot", "ADMIN"), ("Dapur Pilot", "dapur.pilot", "DAPUR"),
-                                      ("Pengantar Pilot", "antar.pilot", "PENGANTAR"), ("Portal PT Maju", "portal.maju", "PORTAL_CLIENT")):
+                                      ("Pengantar Pilot", "antar.pilot", "PENGANTAR")):
         run.step(own, f"Akun {role}: {username}", "/settings/users/create", data={
             "full_name": full_name, "username": username, "role": role, "branch_id": branch_id, "is_active": "on",
             "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, **guard})
@@ -188,6 +190,15 @@ def stage_setup(run):
         run.step(adm, f"Lokasi {location}", "/master/locations/create", data={"mandor_id": mandor_id, "location_name": location, "is_active": "on"})
     for driver in ("Pak Ujang", "Pak Karim"):
         run.step(adm, f"Pengantar {driver}", "/master/drivers/create", data={"name": driver, "phone": "0814000000", "license_number": "SIM-A", "is_active": "on"})
+
+    budi = run.q(lambda: Mandor.query.filter_by(name="Mandor Budi").one().id)
+    portal = {"branch_id": branch_id, "is_active": "on", "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, **guard}
+    run.step(own, "Akun Portal PT tanpa memilih PT (harus ditolak)", "/settings/users/create", data={
+        "full_name": "Portal PT Maju", "username": "portal.maju", "role": "PORTAL_CLIENT", **portal}, expect=("warning",))
+    run.step(own, "Akun Portal PT dihubungkan ke PT Maju", "/settings/users/create", data={
+        "full_name": "Portal PT Maju", "username": "portal.maju", "role": "PORTAL_CLIENT", "portal_client_id": maju, **portal})
+    run.step(own, "Akun Portal Mandor dihubungkan ke Mandor Budi", "/settings/users/create", data={
+        "full_name": "Mandor Budi", "username": "mandor.budi", "role": "PORTAL_SUBCLIENT", "portal_mandor_id": budi, **portal})
 
     anon = run.client()
     for index, (full_name, username, zone, location, address) in enumerate((
@@ -241,11 +252,24 @@ def stage_orders(run, refs):
     adm, own = run.client("admin.pilot"), run.client("owner.pilot")
 
     for day, location, lunch, dinner in ((D1, "Proyek Tol Km 12", 40, 30), (D1, "Gudang Cikarang", 25, 0), (D1, "Batching Plant Cibitung", 20, 20),
-                                         (D2, "Proyek Tol Km 12", 42, 30), (D2, "Batching Plant Cibitung", 18, 18)):
+                                         (D2, "Batching Plant Cibitung", 18, 18)):
         loc = _location(run, location)
         run.step(adm, f"Order kontrak {day:%d-%m} {location} siang {lunch} / malam {dinner}", "/operational/orders/create", data={
             "order_date": day.isoformat(), "mandor_id": loc["mandor_id"], "delivery_location_id": loc["id"],
             "lunch_qty": lunch, "dinner_qty": dinner, "notes": "gladi"})
+    budi = run.client("mandor.budi")
+    tol = _location(run, "Proyek Tol Km 12")
+    for meal, qty in (("LUNCH", 42), ("DINNER", 30)):
+        page = budi.get("/portal/orders/draft").get_data(as_text=True)
+        key = re.search(r'name="idempotency_key" value="([^"]+)"', page)
+        run.step(budi, f"Portal Mandor Budi pesan {D2:%d-%m} {meal} {qty} porsi", "/portal/orders/draft", data={
+            "idempotency_key": key.group(1) if key else uuid.uuid4().hex, "order_date": D2.isoformat(), "meal_type": meal,
+            "delivery_location_id": tol["id"], "portion_qty": qty, "delivery_time": "11:30" if meal == "LUNCH" else "17:30",
+            "contact_name": "Mandor Budi", "contact_phone": "0813000000"})
+        draft = _draft(run, "mandor.budi", D2, meal)
+        run.step(adm, f"Admin konfirmasi pesanan Mandor Budi {meal} (kontrak: tanpa bayar di muka)",
+                 f"/portal/admin/order-drafts/{draft['id']}/confirm", data={"review_note": "gladi"})
+
     rina = _location(run, "Rumah Bu Rina")
     run.step(adm, "Admin input pelanggan umum 8 porsi (harus ditolak: minimal 10)", "/operational/orders/create", data={
         "order_date": D2.isoformat(), "mandor_id": rina["mandor_id"], "delivery_location_id": rina["id"],
@@ -345,7 +369,8 @@ def stage_operations(run, day, shortage=None):
             received = planned - shortage.get(location, 0)
             run.step(antar, f"Tanda terima {kind} {location}: {received}/{planned}", f"/delivery/details/{detail_id}/receive", data={
                 "delivered_qty": received, "receiver_name": f"Penerima {location}",
-                "notes": "kurang porsi" if received < planned else ""})
+                "notes": "kurang porsi" if received < planned else ""},
+                expect=("success", "info", "warning") if received < planned else ("success", "info"))
         assert run.q(lambda: all(DeliveryReceipt.query.filter_by(delivery_detail_id=d[0]).first() for d in details))
 
 
@@ -384,6 +409,16 @@ def stage_billing(run, refs):
     pay(budi, budi["total"] + 50000, "TRANSFER", "(lebih bayar: harus ditolak)", expect=("warning", "danger"))
     pay(budi, budi["total"], "TRANSFER", "(lunas)")
     pay(invoice("Mandor Joko", source_type="PERIOD_INVOICE"), 200000, "CASH", "(sebagian)")
+    from app.models.master import User
+    from app.services.prepaid_order_service import advances_to_refund
+
+    own = run.client("owner.pilot")
+    branch_id = run.q(lambda: User.query.filter_by(username="owner.pilot").one().branch_id)
+    for advance_id, number, remaining in run.q(lambda: [(a.id, a.advance_number, int(a.remaining_amount)) for a, _reason in advances_to_refund(branch_id)]):
+        run.step(own, f"OWNER kembalikan sisa uang muka {number} Rp{remaining:,} (kurang kirim)", f"/finance/advances/{advance_id}/settle", data={
+            "settlement_type": "CLIENT_DP_REFUND", "settlement_date": TODAY.isoformat(), "amount": str(remaining),
+            "payment_method": "TRANSFER", "bank_account_id": refs["bca"], "notes": "Kurang kirim 1 porsi, dikembalikan"})
+
     dedi_mandor = run.q(lambda: Mandor.query.join(Client, Client.id == Mandor.client_id).filter(Client.name == "Pak Dedi").first().name)
     dedi = invoice(dedi_mandor, source_type="DAILY_ORDER")
     pay(dedi, dedi["total"], "CASH", "(pesanan yang diloloskan OWNER, dibayar tunai saat antar)")
@@ -436,14 +471,24 @@ def stage_checks(run, backup):
         return run.q(lambda: [json.loads(row.metadata_json or "{}").get("reason") for row in AuditLog.query.filter_by(event_type=event_type).all()])
     price_reasons = reasons("PORTION_PRICE_SET")
     run.check("Audit log: perubahan harga punya alasan", price_reasons and all(price_reasons), f"{price_reasons}")
-    refund_reasons = [r for r in reasons("ADVANCE_SETTLED") if r and "ditolak" in r.lower()]
+    refund_reasons = [r for r in reasons("ADVANCE_SETTLED") if r and ("ditolak" in r.lower() or "kurang kirim" in r.lower())]
     run.check("Audit log: pengembalian uang muka punya alasan", bool(refund_reasons), f"{refund_reasons}")
     override_reasons = reasons("PREPAYMENT_OVERRIDE")
     run.check("Audit log: pesanan diloloskan sebelum lunas punya alasan", override_reasons and all(override_reasons), f"{override_reasons}")
 
-    portal = run.text(run.client("portal.maju"), "/portal/orders/draft")
-    run.check("Akun portal client kontrak bisa memesan", "Kirim Draft Pesanan" in portal,
-              "bisa" if "Kirim Draft Pesanan" in portal else "belum bisa: akun belum terhubung ke client (tidak ada halaman pemetaan)")
+    from app.models.finance import Invoice
+    from app.models.master import Mandor
+    from app.models.operational import DailyOrder, DailyOrderDetail
+
+    budi_invoice = run.q(lambda: Invoice.query.filter_by(source_type="PERIOD_INVOICE", mandor_id=Mandor.query.filter_by(name="Mandor Budi").one().id).one().invoice_number)
+    pt_page = run.text(run.client("portal.maju"), "/portal/pt/invoices")
+    run.check("Portal PT melihat invoice PT-nya", budi_invoice in pt_page, f"{budi_invoice} {'tampil' if budi_invoice in pt_page else 'tidak tampil'}")
+    ordered = run.q(lambda: [(d.lunch_qty, d.dinner_qty) for d in DailyOrderDetail.query.join(DailyOrder, DailyOrder.id == DailyOrderDetail.daily_order_id)
+                             .filter(DailyOrder.order_date == D2, DailyOrderDetail.mandor_id == Mandor.query.filter_by(name="Mandor Budi").one().id).all()])
+    run.check("Pesanan Portal Mandor masuk order harian", ordered == [(42, 30)], f"{ordered}")
+    joko_invoice = run.q(lambda: [(item.qty, item.description) for item in Invoice.query.filter_by(
+        source_type="PERIOD_INVOICE", mandor_id=Mandor.query.filter_by(name="Mandor Joko").one().id).one().items])
+    run.check("Kurang kirim tidak ditagih (Joko 23 dari 25)", any(float(qty) == 23 and "Kurang kirim 2" in desc for qty, desc in joko_invoice), f"{joko_invoice}")
 
     if backup:
         from app.services.backup_service import create_full_backup_package, verify_full_backup_package
@@ -497,7 +542,7 @@ def main():
 
     refs = stage_setup(run)
     stage_orders(run, refs)
-    stage_operations(run, D1, shortage={"Gudang Cikarang": 2})
+    stage_operations(run, D1, shortage={"Gudang Cikarang": 2, "Kantor Notaris": 1})
     stage_operations(run, D2)
     stage_billing(run, refs)
     stage_checks(run, args.backup)
