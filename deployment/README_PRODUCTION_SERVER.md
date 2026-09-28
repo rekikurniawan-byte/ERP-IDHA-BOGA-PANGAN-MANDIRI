@@ -28,6 +28,10 @@ cd /opt/idha-boga/app
 # Selalu sebagai user aplikasi dengan .env.production: tabel yang dibuat user
 # database lain membuat aplikasi kena "permission denied".
 sudo -u idhaboga env $(cat .env.production | xargs) /opt/idha-boga/venv/bin/flask --app run db upgrade
+# Database baru hanya berisi tabel: isi COA acuan, cabang pertama, dan OWNER
+# pertama. Aman diulang; password diminta (atau BOOTSTRAP_OWNER_PASSWORD).
+sudo -u idhaboga env $(cat .env.production | xargs) /opt/idha-boga/venv/bin/flask --app run bootstrap \
+    --branch-code PUSAT --branch-name "Cabang Pusat" --owner-username owner --owner-name "Nama Owner"
 python tools/check_production_runtime_foundation.py
 python tools/check_production_health_monitoring.py
 /opt/idha-boga/venv/bin/flask --app run ops-check   # wajib 0 FAIL sebelum dibuka ke pengguna

@@ -25,6 +25,8 @@ Peran:
 - [ ] Database produksi **baru** (bukan salinan staging/demo).
 - [ ] `ACCOUNTING_LEGACY_CUTOVER` **kosong** di `.env.production`.
 - [ ] Migrasi dijalankan sebagai user aplikasi.
+- [ ] `flask --app run bootstrap` → COA acuan, cabang pertama, OWNER pertama
+      (database baru dari migrasi tidak punya akun, cabang, maupun user).
 - [ ] Tiga timer systemd aktif: `systemctl list-timers 'idha-boga-*'`.
 - [ ] Satu backup penuh berhasil: `flask --app run backup-full` → `PASS`.
 - [ ] Pulihkan backup itu di server lain sekali (lihat `BACKUP_RESTORE_RECOVERY_SOP.md`).
@@ -38,11 +40,23 @@ Peran:
       minimal pesan pelanggan umum.
 - [ ] Master: client (jalur Kontrak/Umum benar), sub client, lokasi (zona
       untuk pelanggan umum), pengantar, rekening bank.
-- [ ] Akun pengguna: OWNER, ADMIN, DAPUR, PENGANTAR; akun portal untuk 1–2
-      client kontrak dan beberapa pelanggan umum yang bersedia ikut.
-- [ ] Saldo awal kas/bank dan piutang lama dimasukkan lewat Akuntansi → Saldo Awal.
+- [ ] **PIC resmi** untuk setiap client kontrak (Master Client → PIC). Tanpa
+      PIC, invoice kontrak tidak bisa disimpan.
+- [ ] Akun pengguna: OWNER, ADMIN, DAPUR, PENGANTAR; pelanggan umum yang
+      bersedia ikut mendaftar sendiri di portal. Akun portal untuk client
+      kontrak **belum bisa** dihubungkan ke client-nya (belum ada halamannya);
+      selama pilot, pesanan client kontrak diinput ADMIN.
+- [ ] Saldo awal diisi di **dua** tempat dengan angka yang sama:
+      Akuntansi → Saldo Awal (jurnal) **dan** Finance → Saldo Awal Kas/Bank
+      (buku kas/bank). `ops-check` membandingkan keduanya.
 
-**Gerbang mulai:** `flask --app run ops-check` harus **0 FAIL**.
+**Gerbang mulai:** `flask --app run ops-check` harus **0 FAIL**, dan sebaiknya
+0 WARN.
+
+**Gladi dulu (disarankan):** `python tools/pilot_dry_run.py --db idha_boga_pilot`
+menjalankan seluruh runbook ini dengan data demo di database gladi terpisah
+dan mencocokkan setiap saldo dengan hitungan manual. Jalankan ulang setiap ada
+perubahan besar sebelum dipakai.
 
 ## 2. Setiap hari
 
