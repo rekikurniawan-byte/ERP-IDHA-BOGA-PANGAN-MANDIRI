@@ -18,8 +18,6 @@ from app.services.portal_integrated_foundation_service import (
     build_portal_calendar_model,
     build_portal_document_model,
     build_portal_notification_model,
-    build_portal_return_model,
-    build_portal_subscription_model,
 )
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
 from app.services.portal_order_draft_service import build_portal_order_status_context
@@ -159,13 +157,6 @@ def _contract_endpoint(role: str | None) -> str | None:
     return "portal.pt_contracts" if role == ROLE_PORTAL_CLIENT else None
 
 
-def _subscription_endpoint(role: str | None) -> str | None:
-    return {
-        ROLE_PORTAL_SUBCLIENT: "portal.mandor_subscriptions",
-        ROLE_PORTAL_CLIENT: "portal.pt_subscriptions",
-    }.get(role)
-
-
 def _action(label: str, endpoint: str | None, icon: str, tone: str, caption: str, *, enabled: bool = True) -> dict:
     return {
         "label": label,
@@ -236,17 +227,6 @@ def _build_quick_actions(role: str | None, scope, worker_debt_on: bool = True) -
                 enabled=True,
             )
         )
-    if role in {ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT}:
-        actions.append(
-            _action(
-                "Langganan",
-                _subscription_endpoint(role),
-                "bi-calendar2-week",
-                "green",
-                "Pola pesanan berulang.",
-                enabled=True,
-            )
-        )
     if role == ROLE_PORTAL_CUSTOMER:
         actions.append(
             _action(
@@ -255,16 +235,6 @@ def _build_quick_actions(role: str | None, scope, worker_debt_on: bool = True) -
                 "bi-chat-square-text",
                 "red",
                 "Keluhan masuk ke layanan admin.",
-                enabled=True,
-            )
-        )
-        actions.append(
-            _action(
-                "Retur",
-                "portal.customer_returns",
-                "bi-arrow-counterclockwise",
-                "orange",
-                "Laporan retur untuk diperiksa admin.",
                 enabled=True,
             )
         )
@@ -290,7 +260,6 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
     approvals = models["approvals"]["totals"]
     contracts = models["contracts"]["totals"]
     complaints = models["complaints"]["totals"]
-    returns = models["returns"]["totals"]
 
     kpis = [
         {
@@ -347,23 +316,14 @@ def _build_kpis(role: str | None, models: dict) -> list[dict]:
             }
         )
     if role == ROLE_PORTAL_CUSTOMER:
-        kpis.extend(
-            [
-                {
-                    "label": "Komplain",
-                    "value": complaints.get("open_count", 0),
-                    "caption": f"{complaints.get('complaint_count', 0)} total",
-                    "icon": "bi-chat-square-text",
-                    "tone": "red" if complaints.get("open_count", 0) else "slate",
-                },
-                {
-                    "label": "Retur",
-                    "value": returns.get("open", 0),
-                    "caption": f"{returns.get('total', 0)} total",
-                    "icon": "bi-arrow-counterclockwise",
-                    "tone": "orange",
-                },
-            ]
+        kpis.append(
+            {
+                "label": "Komplain",
+                "value": complaints.get("open_count", 0),
+                "caption": f"{complaints.get('complaint_count', 0)} total",
+                "icon": "bi-chat-square-text",
+                "tone": "red" if complaints.get("open_count", 0) else "slate",
+            }
         )
 
     kpis.append(
@@ -406,7 +366,6 @@ def _build_role_focus(role: str | None, models: dict, worker_debt_on: bool = Tru
     debts = models["debts"]["totals"]
     contracts = models["contracts"]["totals"]
     complaints = models["complaints"]["totals"]
-    returns = models["returns"]["totals"]
     calendar = models["calendar"]["totals"]
     scope = models["scope"]
 
@@ -431,7 +390,7 @@ def _build_role_focus(role: str | None, models: dict, worker_debt_on: bool = Tru
             _focus_card(
                 "Layanan",
                 complaints.get("open_count", 0),
-                f"{returns.get('open', 0)} retur terbuka, {complaints.get('awaiting_response_count', 0)} perlu respons.",
+                f"{complaints.get('awaiting_response_count', 0)} komplain menunggu jawaban.",
                 "bi-headset",
                 "red" if complaints.get("open_count", 0) else "slate",
                 "portal.customer_complaints",
@@ -831,7 +790,7 @@ def _build_role_narrative(role: str | None) -> dict:
             "integration": f"Pesanan, {T.worker_lower}, hutang, invoice, dan pembayaran tetap memakai data perusahaan yang sama.",
         },
         ROLE_PORTAL_CLIENT: {
-            "headline": f"{T.client} melihat seluruh {T.sub_client_lower}, invoice, piutang, kontrak, closing, dan langganan.",
+            "headline": f"{T.client} melihat seluruh {T.sub_client_lower}, invoice, piutang, kontrak, dan closing.",
             "guard": f"{T.client} melihat dan membayar tagihan tanpa mengubah data keuangan secara langsung.",
             "integration": f"Kontrak, invoice, {T.sub_client_lower}, dan lokasi tetap memakai data perusahaan yang sama.",
         },
@@ -867,8 +826,6 @@ def build_portal_command_center(user) -> dict:
         "approvals": build_portal_approval_model(user, limit=25),
         "calendar": build_portal_calendar_model(user, days=45),
         "complaints": build_portal_complaint_model(user, limit=25),
-        "returns": build_portal_return_model(user, limit=25),
-        "subscriptions": build_portal_subscription_model(user, limit=25),
         "contracts": build_portal_contract_model(user, limit=25),
         "closing": build_portal_closing_visibility(user),
     }

@@ -40,17 +40,6 @@ from app.services.customer_contract_service import (
     list_customer_contracts,
     renew_customer_contract,
 )
-from app.services.customer_correction_service import (
-    CORRECTION_STATUSES,
-    CORRECTION_TYPES,
-    EFFECT_NONE,
-    EFFECT_PENDING,
-    CustomerCorrectionError,
-    create_customer_correction,
-    get_customer_correction,
-    list_customer_corrections,
-    submit_customer_correction,
-)
 from app.services.digital_attachment_service import AttachmentValidationError
 from app.services.user_management_service import ROLE_CUSTOMER_SUCCESS
 from app.utils.decorators import role_required
@@ -64,135 +53,6 @@ CUSTOMER_SUCCESS_ROLES = ("ADMIN", ROLE_CUSTOMER_SUCCESS)
 @role_required(*CUSTOMER_SUCCESS_ROLES)
 def index():
     return redirect(url_for("customer_success.contracts"))
-
-
-@customer_success_bp.route("/returns")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def returns():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Return Management",
-            description="Retur dan koreksi pengiriman, menu, jumlah, dan kualitas. Efek stok/finance tetap lewat koreksi dan persetujuan.",
-            status="Disiapkan",
-            source="customer_complaints, customer_corrections, daily_orders, deliveries",
-            actions=[
-                {"label": "Komplain", "url": url_for("customer_success.complaints"), "icon": "bi-chat-square-dots"},
-                {"label": "Koreksi", "url": url_for("customer_success.corrections"), "icon": "bi-arrow-repeat"},
-            ],
-            rules=[
-                "Retur tidak langsung mengubah stok, invoice, payment, atau jurnal.",
-                "Retur yang berdampak finansial/stok harus masuk koreksi dan approval.",
-                "Histori retur memakai komplain dan koreksi yang sudah tersedia sampai aturan khusus disetujui.",
-            ],
-        ),
-    )
-
-
-@customer_success_bp.route("/approval-engine")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def approval_engine():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Approval Engine",
-            description="Pintu Layanan Pelanggan ke proses maker-checker.",
-            status="Terhubung",
-            source="Daftar persetujuan",
-            actions=[{"label": "Request Koreksi", "url": url_for("customer_success.corrections"), "icon": "bi-arrow-repeat"}],
-            rules=[
-                "Approval engine tidak dibuat ulang.",
-                "Semua keputusan sensitif tetap melalui daftar persetujuan sistem.",
-                "Route ini hanya memberi konteks modul customer dan link ke approval center.",
-            ],
-        ),
-    )
-
-
-@customer_success_bp.route("/notifications")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def notification_center():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Notification Center",
-            description="Fondasi notifikasi customer, kontrak hampir habis, komplain, dan tindak lanjut.",
-            status="Terhubung",
-            source="Pusat notifikasi",
-            actions=[{"label": "Kontrak Customer", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"}],
-            rules=[
-                "Notifikasi tidak memakai inbox baru.",
-                "Reminder kontrak memakai pusat notifikasi sistem.",
-                "Target role/user mengikuti aturan notifikasi yang sudah ada.",
-            ],
-        ),
-    )
-
-
-@customer_success_bp.route("/documents")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def document_management():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Document Management",
-            description="Pusat dokumen pelanggan yang terhubung ke bukti digital.",
-            status="Terhubung",
-            source="Bukti digital",
-            actions=[
-                {"label": "Kontrak", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"},
-                {"label": "Komplain", "url": url_for("customer_success.complaints"), "icon": "bi-chat-square-dots"},
-            ],
-            rules=[
-                "Tidak membuat storage dokumen baru.",
-                "Dokumen kontrak dan komplain memakai arsip bukti digital.",
-                "Penghapusan file fisik tetap mengikuti guard lampiran.",
-            ],
-        ),
-    )
-
-
-@customer_success_bp.route("/subscriptions")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def subscriptions():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Subscription Order",
-            description="Rencana pesanan berulang dari kontrak pelanggan ke order harian.",
-            status="Butuh Persetujuan",
-            source="customer_contracts -> daily_orders",
-            actions=[{"label": "Kontrak Customer", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"}],
-            rules=[
-                "Belum membuat jadwal order otomatis agar tidak menggandakan order.",
-                "Jika butuh jadwal berulang permanen, schema dan approval user diperlukan.",
-                "Eksekusi order tetap masuk ke alur order harian.",
-            ],
-        ),
-    )
-
-
-@customer_success_bp.route("/calendar")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def operational_calendar():
-    return render_template(
-        "customer_success/foundation_shell.html",
-        data=_foundation_data(
-            title="Operational Calendar",
-            description="Kalender operasional pelanggan dari kontrak, order, pengiriman, closing, dan reminder.",
-            status="Aktif",
-            source="customer_contracts, daily_orders, deliveries, period_closings, notifications",
-            actions=[
-                {"label": "Kontrak", "url": url_for("customer_success.contracts"), "icon": "bi-file-earmark-text"},
-                {"label": "Komplain", "url": url_for("customer_success.complaints"), "icon": "bi-chat-square-dots"},
-            ],
-            rules=[
-                "Kalender tidak membuat jadwal baru.",
-                "Kalender membaca tanggal dari modul yang sudah tersedia.",
-                "Subscription otomatis dipisah sampai business rule disetujui.",
-            ],
-        ),
-    )
 
 
 @customer_success_bp.route("/contracts", methods=["GET", "POST"])
@@ -396,65 +256,6 @@ def upload_complaint_evidence(complaint_id):
     return redirect(url_for("customer_success.complaint_detail", complaint_id=complaint_id))
 
 
-@customer_success_bp.route("/corrections", methods=["GET", "POST"])
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def corrections():
-    if request.method == "POST":
-        try:
-            correction = create_customer_correction(
-                branch_id=current_user.branch_id,
-                correction_type=request.form.get("correction_type"),
-                reason=request.form.get("reason"),
-                proposed_action=request.form.get("proposed_action"),
-                correction_amount=request.form.get("correction_amount") or 0,
-                complaint_id=_int_or_none(request.form.get("complaint_id")),
-                client_id=_int_or_none(request.form.get("client_id")),
-                mandor_id=_int_or_none(request.form.get("mandor_id")),
-                stock_effect=request.form.get("stock_effect") or EFFECT_NONE,
-                financial_effect=request.form.get("financial_effect") or EFFECT_NONE,
-                notes=request.form.get("notes"),
-                submitted_by=current_user.id,
-            )
-            flash("Request koreksi customer berhasil dibuat.", "success")
-            return redirect(url_for("customer_success.correction_detail", correction_id=correction.id))
-        except CustomerCorrectionError as error:
-            flash(str(error), "danger")
-
-    status_filter = request.args.get("status") or "ALL"
-    data = {
-        "corrections": list_customer_corrections(current_user.branch_id, status=status_filter),
-        "status_filter": status_filter,
-        "status_options": ["ALL", *sorted(CORRECTION_STATUSES)],
-        "type_options": sorted(CORRECTION_TYPES),
-        "effect_options": [EFFECT_NONE, EFFECT_PENDING],
-        "complaints": list_customer_complaints(current_user.branch_id, status="ALL", limit=100),
-        "clients": _active_clients(),
-        "mandors": _branch_mandors(),
-    }
-    return render_template("customer_success/corrections.html", data=data)
-
-
-@customer_success_bp.route("/corrections/<int:correction_id>")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def correction_detail(correction_id):
-    correction = get_customer_correction(correction_id, branch_id=current_user.branch_id)
-    if not correction:
-        flash("Request koreksi customer tidak ditemukan.", "warning")
-        return redirect(url_for("customer_success.corrections"))
-    return render_template("customer_success/correction_detail.html", data={"correction": correction})
-
-
-@customer_success_bp.route("/corrections/<int:correction_id>/submit", methods=["POST"])
-@role_required(*CUSTOMER_SUCCESS_ROLES)
-def submit_correction(correction_id):
-    try:
-        submit_customer_correction(correction_id, branch_id=current_user.branch_id, submitted_by=current_user.id)
-        flash("Request koreksi customer berhasil diajukan.", "success")
-    except CustomerCorrectionError as error:
-        flash(str(error), "danger")
-    return redirect(url_for("customer_success.correction_detail", correction_id=correction_id))
-
-
 def _active_clients():
     return Client.query.filter_by(is_active=True).order_by(Client.name.asc()).all()
 
@@ -469,26 +270,6 @@ def _branch_mandors():
 
 def _branch_users():
     return User.query.filter_by(branch_id=current_user.branch_id, is_active=True).order_by(User.full_name.asc()).all()
-
-
-def _foundation_data(title, description, status, source, actions, rules):
-    contracts = list_customer_contracts(current_user.branch_id, status="ALL")
-    complaints = list_customer_complaints(current_user.branch_id, status="ALL", limit=500)
-    corrections = list_customer_corrections(current_user.branch_id, status="ALL")
-    integration_guard = "Integrasi Data tidak membuat tabel atau workflow paralel."
-    return {
-        "title": title,
-        "description": description,
-        "status": status,
-        "source": source,
-        "actions": actions,
-        "rules": [integration_guard, *rules],
-        "summary": [
-            {"label": "Kontrak", "value": len(contracts), "caption": "Data kontrak pelanggan"},
-            {"label": "Komplain", "value": len(complaints), "caption": "Data komplain pelanggan"},
-            {"label": "Koreksi", "value": len(corrections), "caption": "Data koreksi pelanggan"},
-        ],
-    }
 
 
 def _int_or_none(value):

@@ -26,7 +26,6 @@ from app.services.portal_order_draft_service import (
     build_portal_draft_order_context,
     confirm_portal_order_draft,
     create_portal_order_draft,
-    list_pending_portal_order_drafts,
     reject_portal_order_draft,
 )
 from app.services.portal_mobile_read_model_service import (
@@ -45,8 +44,6 @@ from app.services.portal_integrated_foundation_service import (
     build_portal_calendar_model,
     build_portal_document_model,
     build_portal_notification_model,
-    build_portal_return_model,
-    build_portal_subscription_model,
     get_portal_owned_document,
 )
 from app.services.portal_payment_instruction_service import build_portal_payment_instruction
@@ -188,6 +185,10 @@ def my_dashboard():
     role_endpoint = PORTAL_ROLE_DASHBOARD_ENDPOINTS.get(current_user.role)
     if role_endpoint:
         return redirect(url_for(role_endpoint))
+    if current_user.role in ("OWNER", "ADMIN"):
+        # Staf internal tidak punya "dashboard portal"; halaman portal mereka
+        # adalah daftar akun portal (perapian menu 2026-09-28).
+        return redirect(url_for("portal.dashboard"))
 
     data = {
         "status_label": "Role portal",
@@ -226,16 +227,6 @@ def _role_dashboard_data(persona, *, include_center=False):
     if include_center:
         data["center"] = build_portal_command_center(current_user)
     return data
-
-
-def _portal_feature_data(persona, feature):
-    data = _role_dashboard_data(persona)
-    data["feature"] = feature
-    return data
-
-
-def _portal_feature_response(persona, feature):
-    return render_template("portal/feature_shell.html", data=_portal_feature_data(persona, feature))
 
 
 def _customer_persona():
@@ -400,20 +391,6 @@ def upload_customer_complaint_evidence(complaint_id):
     return redirect(url_for("portal.customer_complaints"))
 
 
-@portal_bp.route("/customer/returns")
-@role_required(ROLE_PORTAL_CUSTOMER)
-def customer_returns():
-    return render_template(
-        "portal/returns.html",
-        data={
-            **_role_dashboard_data(_customer_persona()),
-            "page_title": "Retur",
-            "page_description": "Retur dibaca dari laporan pelanggan kategori kekurangan, salah menu, rusak, atau pengiriman kurang.",
-            "returns": build_portal_return_model(current_user),
-        },
-    )
-
-
 @portal_bp.route("/mandor")
 @role_required(ROLE_PORTAL_SUBCLIENT)
 def mandor_dashboard():
@@ -549,20 +526,6 @@ def mandor_payments():
     )
 
 
-@portal_bp.route("/mandor/subscriptions")
-@role_required(ROLE_PORTAL_SUBCLIENT)
-def mandor_subscriptions():
-    return render_template(
-        "portal/subscriptions.html",
-        data={
-            **_role_dashboard_data(_mandor_persona()),
-            "page_title": "Pesanan Berulang",
-            "page_description": "Pola order berulang dibaca dari draft order portal. Tidak membuat order otomatis.",
-            "subscriptions": build_portal_subscription_model(current_user),
-        },
-    )
-
-
 @portal_bp.route("/pt")
 @role_required(ROLE_PORTAL_CLIENT)
 def pt_dashboard():
@@ -659,20 +622,6 @@ def pt_contracts():
             "page_title": "Seluruh Kontrak",
             "page_description": f"Kontrak {T.client_lower} Anda dan masa berlakunya.",
             "contracts": build_portal_contract_model(current_user),
-        },
-    )
-
-
-@portal_bp.route("/pt/subscriptions")
-@role_required(ROLE_PORTAL_CLIENT)
-def pt_subscriptions():
-    return render_template(
-        "portal/subscriptions.html",
-        data={
-            **_role_dashboard_data(_pt_persona()),
-            "page_title": "Pesanan Berulang",
-            "page_description": f"Pola order berulang {T.client_lower} dibaca dari draft order portal. Aktivasi otomatis perlu approval terpisah.",
-            "subscriptions": build_portal_subscription_model(current_user),
         },
     )
 

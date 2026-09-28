@@ -337,7 +337,7 @@
                 <div class="portal-command-panel-head">
                     <div>
                         <span>Layanan Pelanggan</span>
-                        <h3>Komplain dan Retur</h3>
+                        <h3>Komplain</h3>
                     </div>
                     <i class="bi bi-chat-square-heart"></i>
                 </div>
@@ -350,26 +350,6 @@
                         </article>
                     {% else %}
                         <div class="portal-command-soft-empty">Belum ada komplain pelanggan.</div>
-                    {% endfor %}
-                </div>
-            </section>
-            <section class="portal-command-panel">
-                <div class="portal-command-panel-head">
-                    <div>
-                        <span>Retur</span>
-                        <h3>Kekurangan/Salah Menu</h3>
-                    </div>
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                </div>
-                <div class="portal-command-list">
-                    {% for item in models.returns.rows[:5] %}
-                        <article>
-                            <strong>{{ item.complaint_number }}</strong>
-                            <span>{{ item.title }}</span>
-                            <b>{{ item.status|replace("_", " ")|title }}</b>
-                        </article>
-                    {% else %}
-                        <div class="portal-command-soft-empty">Belum ada retur dalam akses user.</div>
                     {% endfor %}
                 </div>
             </section>
@@ -395,26 +375,6 @@
                         </article>
                     {% else %}
                         <div class="portal-command-soft-empty">Belum ada hutang {{ term('worker', lower=True) }} dalam akses {{ term('sub_client', lower=True) }}.</div>
-                    {% endfor %}
-                </div>
-            </section>
-            <section class="portal-command-panel">
-                <div class="portal-command-panel-head">
-                    <div>
-                        <span>Langganan</span>
-                        <h3>Pola Order</h3>
-                    </div>
-                    <i class="bi bi-calendar2-week"></i>
-                </div>
-                <div class="portal-command-list">
-                    {% for item in models.subscriptions.rows[:6] %}
-                        <article>
-                            <strong>{{ item.location_name }}</strong>
-                            <span>{{ item.meal_type|replace("LUNCH", "Makan Siang")|replace("DINNER", "Makan Malam") }} | {{ item.portion_qty }} porsi</span>
-                            <b>{{ item.repeat_count }}x</b>
-                        </article>
-                    {% else %}
-                        <div class="portal-command-soft-empty">Belum ada pola order berulang.</div>
                     {% endfor %}
                 </div>
             </section>

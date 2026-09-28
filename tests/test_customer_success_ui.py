@@ -5,12 +5,7 @@ from uuid import uuid4
 from app.extensions import db
 from app.models.complaint import CustomerComplaint
 from app.models.contract import CustomerContract
-from app.models.correction import CustomerCorrection
 from app.models.system import DigitalAttachment
-from app.services.customer_correction_service import (
-    CORRECTION_STATUS_SUBMITTED,
-    create_customer_correction,
-)
 from app.services.user_management_service import ALLOWED_ROLES, ROLE_CUSTOMER_SUCCESS
 from tests.test_portal_financial_visibility_service import _create_client_family, _create_user
 
@@ -41,16 +36,13 @@ def test_customer_success_sidebar_and_index_render_for_admin(app):
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Customer Success" in html
-    assert "Kontrak Customer" in html
-    assert "Komplain" in html
-    assert "Koreksi" in html
-    assert "Return Management" in html
-    assert "Approval Engine" in html
-    assert "Notification Center" in html
-    assert "Document Management" in html
-    assert "Subscription Order" in html
-    assert "Operational Calendar" in html
+    # Grup menu "Pelanggan" (perapian 2026-09-28): Kontrak dan Komplain saja.
+    assert "<span>Pelanggan</span>" in html
+    assert "<span>Kontrak</span>" in html
+    assert "<span>Komplain</span>" in html
+    for removed in ("Return Management", "Approval Engine", "Notification Center", "Document Management",
+                    "Subscription Order", "Operational Calendar", "<span>Koreksi</span>"):
+        assert removed not in html
 
 
 def test_customer_success_role_is_retired_into_admin(app):
@@ -244,84 +236,6 @@ def test_customer_success_complaint_status_and_evidence_upload(app, tmp_path):
         assert attachment.original_filename == "complaint-ui.pdf"
 
 
-def test_customer_success_correction_route_uses_real_service(app):
-    app.config["WTF_CSRF_ENABLED"] = False
-    reason = f"Porsi kurang {uuid4().hex[:8]}"
-
-    with app.app_context():
-        user = _create_user("ADMIN")
-        client_obj, _pic, mandor, _location = _create_client_family(user.branch, "CSUI-CORRECTION")
-        db.session.commit()
-        user_id = user.id
-        client_id = client_obj.id
-        mandor_id = mandor.id
-
-    client = app.test_client()
-    _login_user_id(client, user_id)
-
-    create_response = client.post(
-        "/customer-success/corrections",
-        data={
-            "correction_type": "COMPENSATION",
-            "client_id": str(client_id),
-            "mandor_id": str(mandor_id),
-            "reason": reason,
-            "proposed_action": "Kompensasi order berikutnya",
-            "correction_amount": "50000",
-            "stock_effect": "NONE",
-            "financial_effect": "PENDING",
-        },
-        follow_redirects=False,
-    )
-
-    with app.app_context():
-        correction = CustomerCorrection.query.filter_by(reason=reason).one()
-        correction_id = correction.id
-
-    detail_response = client.get(f"/customer-success/corrections/{correction_id}")
-    submit_response = client.post(f"/customer-success/corrections/{correction_id}/submit", follow_redirects=False)
-
-    with app.app_context():
-        correction = db.session.get(CustomerCorrection, correction_id)
-
-        assert create_response.status_code == 302
-        assert detail_response.status_code == 200
-        assert submit_response.status_code == 302
-        assert correction.status == CORRECTION_STATUS_SUBMITTED
-        assert correction.financial_effect == "PENDING"
-        assert correction.stock_effect == "NONE"
-
-
-def test_customer_success_service_allows_correction_without_financial_or_stock_posting(app):
-    with app.app_context():
-        transaction = db.session.begin_nested()
-        try:
-            user = _create_user("ADMIN")
-            client_obj, _pic, mandor, _location = _create_client_family(user.branch, "CSUI-SERVICE")
-
-            correction = create_customer_correction(
-                branch_id=user.branch_id,
-                correction_type="RETURN",
-                client_id=client_obj.id,
-                mandor_id=mandor.id,
-                reason="Barang return",
-                proposed_action="Evaluasi dan ajukan approval jika perlu posting.",
-                correction_amount="0",
-                stock_effect="NONE",
-                financial_effect="NONE",
-                submitted_by=user.id,
-                commit=False,
-            )
-
-            assert correction.correction_number.startswith("CRC-")
-            assert correction.status == "DRAFT"
-            assert correction.approval_request_id is None
-            assert correction.stock_effect == "NONE"
-            assert correction.financial_effect == "NONE"
-        finally:
-            transaction.rollback()
-
-
 def test_customer_success_route_has_no_session_commit_or_rollback():
     source = Path("app/routes/customer_success_routes.py").read_text()
 
@@ -329,31 +243,21 @@ def test_customer_success_route_has_no_session_commit_or_rollback():
     assert "db.session.rollback(" not in source
 
 
-def test_customer_success_foundation_shell_pages_render(app):
+def test_customer_success_hanya_kontrak_dan_komplain(app):
+    """Perapian menu 2026-09-28 (keputusan owner): halaman keterangan dan Koreksi dihapus."""
     with app.app_context():
-        user = _create_user(ROLE_CUSTOMER_SUCCESS)
+        user = _create_user("ADMIN")
         db.session.commit()
         user_id = user.id
 
     client = app.test_client()
     _login_user_id(client, user_id)
 
-    pages = {
-        "/customer-success/returns": "Return Management",
-        "/customer-success/approval-engine": "Approval Engine",
-        "/customer-success/notifications": "Notification Center",
-        "/customer-success/documents": "Document Management",
-        "/customer-success/subscriptions": "Subscription Order",
-        "/customer-success/calendar": "Operational Calendar",
-    }
-
-    for path, title in pages.items():
-        response = client.get(path)
-        html = response.get_data(as_text=True)
-
-        assert response.status_code == 200, path
-        assert title in html
-        assert "Integrasi Data" in html
-        assert "tidak membuat tabel atau workflow paralel" in html
-        assert "BuildError" not in html
-        assert "UndefinedError" not in html
+    for path in ("/customer-success/contracts", "/customer-success/complaints"):
+        assert client.get(path).status_code == 200, path
+    for path in (
+        "/customer-success/returns", "/customer-success/approval-engine", "/customer-success/notifications",
+        "/customer-success/documents", "/customer-success/subscriptions", "/customer-success/calendar",
+        "/customer-success/corrections",
+    ):
+        assert client.get(path).status_code == 404, path

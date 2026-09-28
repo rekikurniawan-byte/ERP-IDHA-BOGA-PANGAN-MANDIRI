@@ -11,7 +11,7 @@ from app.models.contract import CustomerContract
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice
 from app.models.operational import DailyOrder, DailyOrderDetail
-from app.models.system import ApprovalRequest, DigitalAttachment, Notification, PortalOrderDraft
+from app.models.system import ApprovalRequest, DigitalAttachment, PortalOrderDraft
 from app.services.notification_service import list_notifications, notification_to_dict
 from app.services.portal_mapping_service import build_portal_external_scope
 
@@ -248,92 +248,6 @@ def build_portal_approval_model(user, *, limit=80):
             "submitted": sum(1 for row in rows if row.status == "SUBMITTED"),
             "approved": sum(1 for row in rows if row.status == "APPROVED"),
             "rejected": sum(1 for row in rows if row.status == "REJECTED"),
-        },
-    }
-
-
-def build_portal_return_model(user, *, limit=80):
-    scope = build_portal_external_scope(user)
-    if not getattr(user, "branch_id", None):
-        return _empty_model(
-            "Akun portal belum memiliki cabang aktif.",
-            scope,
-            {"total": 0, "open": 0, "done": 0},
-        )
-    rows = (
-        CustomerComplaint.query.filter(
-            CustomerComplaint.branch_id == user.branch_id,
-            CustomerComplaint.submitted_by == getattr(user, "id", None),
-            CustomerComplaint.category.in_(["FOOD_SHORTAGE", "WRONG_MENU", "PORTION_SHORTAGE", "DAMAGED_FOOD"]),
-        )
-        .order_by(CustomerComplaint.submitted_at.desc(), CustomerComplaint.id.desc())
-        .limit(limit)
-        .all()
-    )
-    category_counts = Counter(row.category for row in rows)
-    return {
-        "allowed": True,
-        "scope_mode": scope.scope_mode,
-        "reason": "Retur portal memakai CustomerComplaint existing kategori kekurangan/salah/rusak tanpa tabel paralel.",
-        "rows": rows,
-        "category_counts": {
-            "FOOD_SHORTAGE": category_counts.get("FOOD_SHORTAGE", 0),
-            "WRONG_MENU": category_counts.get("WRONG_MENU", 0),
-            "PORTION_SHORTAGE": category_counts.get("PORTION_SHORTAGE", 0),
-            "DAMAGED_FOOD": category_counts.get("DAMAGED_FOOD", 0),
-        },
-        "totals": {
-            "total": len(rows),
-            "open": sum(1 for row in rows if row.status in {"OPEN", "IN_PROGRESS"}),
-            "done": sum(1 for row in rows if row.status in {"RESOLVED", "CLOSED"}),
-            "with_invoice": sum(1 for row in rows if row.invoice_id),
-            "with_delivery": sum(1 for row in rows if row.delivery_id),
-        },
-    }
-
-
-def build_portal_subscription_model(user, *, limit=80):
-    scope = build_portal_external_scope(user)
-    if not scope.allowed:
-        return _empty_model(
-            scope.reason or "Akses portal belum aktif.",
-            scope,
-            {"total": 0, "draft_count": 0, "repeat_pattern": 0},
-        )
-    drafts = (
-        PortalOrderDraft.query.filter(PortalOrderDraft.user_id == getattr(user, "id", None))
-        .order_by(PortalOrderDraft.order_date.desc(), PortalOrderDraft.id.desc())
-        .limit(limit)
-        .all()
-    )
-    grouped = Counter((draft.delivery_location_id, draft.meal_type, draft.portion_qty) for draft in drafts)
-    rows = []
-    for key, total in grouped.most_common(20):
-        location_id, meal_type, portion_qty = key
-        sample = next(
-            draft
-            for draft in drafts
-            if (draft.delivery_location_id, draft.meal_type, draft.portion_qty) == key
-        )
-        rows.append(
-            {
-                "location_name": sample.delivery_location.location_name if sample.delivery_location else "-",
-                "meal_type": meal_type,
-                "portion_qty": portion_qty,
-                "repeat_count": total,
-                "last_order_date": sample.order_date,
-                "status": "POLA_DRAFT",
-            }
-        )
-    return {
-        "allowed": True,
-        "scope_mode": scope.scope_mode,
-        "reason": "Langganan belum membuat order otomatis; halaman ini membaca pola draft portal.",
-        "rows": rows,
-        "totals": {
-            "total": len(rows),
-            "draft_count": len(drafts),
-            "repeat_pattern": sum(1 for row in rows if row["repeat_count"] > 1),
         },
     }
 

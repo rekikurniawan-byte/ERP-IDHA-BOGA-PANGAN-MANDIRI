@@ -349,7 +349,8 @@ def test_portal_navigation_is_visible_when_feature_flag_on_for_owner(app):
             assert 'href="/portal/closing"' not in html
             assert 'href="/portal/status"' not in html
             assert 'href="/portal/ownership"' not in html
-            assert "Pengaturan Akses" in html
+            assert "<span>Akun Portal</span>" in html  # grup menu "Pelanggan" (2026-09-28)
+            assert 'href="/portal/admin/order-drafts"' in html  # grup menu "Antrean Kerja"
         finally:
             transaction.rollback()
 
@@ -1591,7 +1592,6 @@ def test_portal_customer_feature_foundation_pages_render(app):
         "/portal/customer/tracking": "Lacak Pesanan",
         "/portal/customer/payments": "Pembayaran",
         "/portal/customer/complaints": "Komplain",
-        "/portal/customer/returns": "Retur",
         "/portal/notifications": "Notifikasi",
         "/portal/documents": "Dokumen",
         "/portal/approvals": "Approval",
@@ -1636,7 +1636,6 @@ def test_portal_mandor_feature_foundation_pages_render(app):
         "/portal/mandor/installments": "Cicilan",
         "/portal/mandor/invoices": "Invoice",
         "/portal/mandor/payments": "Riwayat Pembayaran",
-        "/portal/mandor/subscriptions": "Pesanan Berulang",
         "/portal/notifications": "Notifikasi",
         "/portal/documents": "Dokumen",
         "/portal/approvals": "Approval",
@@ -1674,7 +1673,6 @@ def test_portal_pt_feature_foundation_pages_render(app):
         "/portal/pt/invoices": "Seluruh Invoice",
         "/portal/pt/receivables": "Seluruh Piutang",
         "/portal/pt/contracts": "Seluruh Kontrak",
-        "/portal/pt/subscriptions": "Pesanan Berulang",
         "/portal/notifications": "Notifikasi",
         "/portal/documents": "Dokumen",
         "/portal/approvals": "Approval",
@@ -1880,7 +1878,6 @@ def test_portal_integrated_foundation_pages_read_existing_tables(app, tmp_path):
         "/portal/notifications": ["Jadwal kirim berubah", "notifications ERP existing"],
         "/portal/documents": ["portal-proof.pdf", "digital_attachments ERP existing"],
         "/portal/approvals": ["PORTAL_ORDER_APPROVAL", "approval_requests ERP existing"],
-        "/portal/mandor/subscriptions": ["2x draft", "portal_order_drafts ERP existing"],
         "/portal/calendar": ["LUNCH 20 porsi", "Draft, invoice, kontrak, delivery ERP existing"],
     }
 
@@ -1915,7 +1912,6 @@ def test_portal_integrated_foundation_pages_read_existing_tables(app, tmp_path):
     with app.app_context():
         _login(customer_client, User.query.filter_by(username=customer_username).first())
     returns_response = customer_client.get("/portal/customer/returns")
-    returns_html = returns_response.get_data(as_text=True)
     evidence_response = customer_client.post(
         f"/portal/customer/complaints/{complaint_id}/evidence",
         data={
@@ -1927,9 +1923,7 @@ def test_portal_integrated_foundation_pages_read_existing_tables(app, tmp_path):
     )
     evidence_html = evidence_response.get_data(as_text=True)
 
-    assert returns_response.status_code == 200
-    assert "Menu salah kirim" in returns_html
-    assert "customer_complaints ERP existing" in returns_html
+    assert returns_response.status_code == 404  # Retur digabung ke Komplain (2026-09-28)
     assert evidence_response.status_code == 200
     assert "complaint-evidence.pdf" in evidence_html or "berhasil diupload" in evidence_html
     with app.app_context():

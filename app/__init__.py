@@ -373,6 +373,26 @@ def create_app():
         }
 
     @flask_app.context_processor
+    def inject_work_queue():
+        """Angka di grup menu "Antrean Kerja" (OWNER/ADMIN)."""
+        empty = {"portal_orders": 0, "payment_proofs": 0, "refunds": 0, "approvals": 0, "total": 0}
+        try:
+            from flask_login import current_user
+            from app.services.work_queue_service import work_queue_counts
+
+            if current_user.is_authenticated and role_in(current_user.role, ("OWNER", "ADMIN")):
+                return {
+                    "global_work_queue": get_cached_value(
+                        ("work_queue", current_user.branch_id),
+                        lambda: work_queue_counts(current_user.branch_id),
+                        ttl_seconds=10,
+                    )
+                }
+        except Exception:
+            flask_app.logger.exception("Gagal memuat antrean kerja.")
+        return {"global_work_queue": empty}
+
+    @flask_app.context_processor
     def inject_portal_feature_flags():
         return {"global_portal_enabled": bool(flask_app.config.get("PORTAL_ENABLED", False))}
 
