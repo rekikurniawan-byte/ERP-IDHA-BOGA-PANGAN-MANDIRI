@@ -297,11 +297,10 @@ def test_portal_enabled_allows_owner_and_admin_preview(app):
 
                 assert response.status_code == 200
                 assert "Pengaturan Akses Portal" in html
-                assert "Kontrol integrasi user portal ke data ERP existing" in html
-                assert "User Portal" in html
-                assert "Mapping Aktif" in html
-                assert "Draft Pending" in html
-                assert "clients, mandors, delivery_locations" in html
+                assert "Akun Portal" in html
+                assert "Belum Terhubung" in html
+                assert "Pesanan Menunggu" in html
+                assert "Terhubung ke" in html
         finally:
             transaction.rollback()
 
@@ -529,35 +528,40 @@ def test_portal_access_service_has_no_session_commit_or_rollback():
 
 
 def test_user_management_accepts_portal_roles_on_existing_auth(app):
+    """Akun portal PT/Mandor wajib terhubung ke satu PT / satu mandor (keputusan owner 2026-09-28)."""
+    from app.models.master import Client, Mandor
+
     with app.app_context():
         transaction = db.session.begin_nested()
         try:
             owner = _create_test_user("OWNER")
-            payload, error = validate_user_payload(
-                {
-                    "full_name": "Portal Mandor User",
-                    "username": f"portal-mandor-{uuid4().hex[:8]}",
-                    "role": ROLE_PORTAL_SUBCLIENT,
-                    "branch_id": str(owner.branch_id),
-                    "is_active": "on",
-                }
-            )
+            client = Client(name=f"PT Portal {uuid4().hex[:6]}", customer_path="KONTRAK", is_active=True)
+            db.session.add(client)
+            db.session.flush()
+            mandor = Mandor(branch_id=owner.branch_id, client_id=client.id, name=f"Mandor Portal {uuid4().hex[:6]}", is_active=True)
+            db.session.add(mandor)
+            db.session.flush()
+            base = {"full_name": "Portal User", "branch_id": str(owner.branch_id), "is_active": "on"}
 
+            _payload, error = validate_user_payload({**base, "username": f"portal-mandor-{uuid4().hex[:8]}", "role": ROLE_PORTAL_SUBCLIENT})
+            assert error and "Portal" in error
+
+            payload, error = validate_user_payload({
+                **base, "username": f"portal-mandor-{uuid4().hex[:8]}", "role": ROLE_PORTAL_SUBCLIENT,
+                "portal_mandor_id": str(mandor.id),
+            })
             assert error is None
             assert payload["role"] == ROLE_PORTAL_SUBCLIENT
             assert payload["branch_id"] == owner.branch_id
+            assert payload["portal_mandor_id"] == mandor.id
 
-            pt_payload, pt_error = validate_user_payload(
-                {
-                    "full_name": "Portal PT User",
-                    "username": f"portal-pt-{uuid4().hex[:8]}",
-                    "role": ROLE_PORTAL_CLIENT,
-                    "branch_id": str(owner.branch_id),
-                    "is_active": "on",
-                }
-            )
+            pt_payload, pt_error = validate_user_payload({
+                **base, "username": f"portal-pt-{uuid4().hex[:8]}", "role": ROLE_PORTAL_CLIENT,
+                "portal_client_id": str(client.id),
+            })
             assert pt_error is None
             assert pt_payload["role"] == ROLE_PORTAL_CLIENT
+            assert pt_payload["portal_client_id"] == client.id
         finally:
             transaction.rollback()
 

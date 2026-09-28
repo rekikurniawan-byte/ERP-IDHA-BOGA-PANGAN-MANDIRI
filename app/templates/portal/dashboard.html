@@ -2,11 +2,10 @@
 {% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
-<!-- Kontrol integrasi user portal ke data ERP existing. -->
 <section class="page-section">
     {{ portal_page_header(
         "Pengaturan Akses Portal",
-        ("Kelola akun portal, akses perusahaan, " ~ term('sub_client', lower=True) ~ ", lokasi, dan antrian pesanan."),
+        ("Akun portal " ~ term('client', lower=True) ~ ", " ~ term('sub_client', lower=True) ~ ", dan pelanggan umum, serta ke mana masing-masing terhubung."),
         status_label=data.status_label
     ) }}
 
@@ -30,12 +29,17 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                 <div>
-                    <h2 class="h5 mb-1">Sumber Data Terintegrasi</h2>
-                    <p class="text-muted mb-0">Portal memakai data perusahaan, {{ term('sub_client', lower=True) }}, lokasi, invoice, dan pembayaran dari sistem pusat.</p>
+                    <h2 class="h5 mb-1">Akun Portal</h2>
+                    <p class="text-muted mb-0">
+                        Akun {{ term('client', lower=True) }} dan {{ term('sub_client', lower=True) }} dibuat dan dihubungkan OWNER di Pengaturan &gt; User.
+                        Pelanggan umum mendaftar sendiri dan otomatis terhubung ke lokasi antarnya.
+                    </p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.my_dashboard') }}">Dashboard Saya</a>
-                    <span class="status-badge neutral">Data terpusat</span>
+                    <a class="btn app-btn-secondary btn-sm" href="{{ url_for('portal.admin_order_drafts') }}">Pesanan Menunggu</a>
+                    {% if data.can_edit_users %}
+                        <a class="btn app-btn-primary btn-sm" href="{{ url_for('settings.create_user_page') }}">Tambah Akun Portal</a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -43,17 +47,35 @@
                 <table class="table app-table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Area Portal</th>
-                            <th>Sumber Data</th>
-                            <th>Aturan Integrasi</th>
+                            <th>Nama</th>
+                            <th>Username</th>
+                            <th>Jenis Akun</th>
+                            <th>Terhubung ke</th>
+                            <th>Status</th>
+                            {% if data.can_edit_users %}<th></th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
-                        {% for source in data.sources %}
+                        {% for row in data.rows %}
                             <tr>
-                                <td class="fw-semibold">{{ source.area }}</td>
-                                <td>{{ source.erp_source }}</td>
-                                <td>{{ source.rule }}</td>
+                                <td class="fw-semibold">{{ row.user.full_name }}</td>
+                                <td>{{ row.user.username }}</td>
+                                <td>{{ row.role_label }}</td>
+                                <td>
+                                    {% if row.link %}{{ row.link }}{% else %}<span class="status-badge warning">Belum terhubung</span>{% endif %}
+                                </td>
+                                <td>{{ "Aktif" if row.user.is_active else "Nonaktif" }}</td>
+                                {% if data.can_edit_users %}
+                                    <td class="text-end">
+                                        {% if row.user.role != "PORTAL_CUSTOMER" %}
+                                            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('settings.edit_user_page', user_id=row.user.id) }}">Ubah</a>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="{{ 6 if data.can_edit_users else 5 }}" class="text-muted">Belum ada akun portal.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -63,5 +85,3 @@
     </div>
 </section>
 {% endblock %}
-
-

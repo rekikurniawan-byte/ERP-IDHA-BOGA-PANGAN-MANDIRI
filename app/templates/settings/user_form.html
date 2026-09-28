@@ -6,6 +6,8 @@
 {% set selected_branch = form_data.get('branch_id') if form_data else (target_user.branch_id if target_user else current_user.branch_id) %}
 {% set selected_role = form_data.get('role') if form_data else (target_user.role if target_user else 'ADMIN') %}
 {% set selected_active = form_data.get('is_active') if form_data else (target_user.is_active if target_user else True) %}
+{% set selected_portal_client = (form_data.get('portal_client_id') if form_data else portal_link.get('client_id'))|string %}
+{% set selected_portal_mandor = (form_data.get('portal_mandor_id') if form_data else portal_link.get('mandor_id'))|string %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -83,6 +85,40 @@
         </div>
     </div>
 
+    {# Akun portal PT/Mandor wajib terhubung ke satu PT atau satu mandor (keputusan owner 2026-09-28). #}
+    <div class="app-card mb-4" data-portal-link {% if selected_role not in ['PORTAL_CLIENT', 'PORTAL_SUBCLIENT'] %}hidden{% endif %}>
+        <div class="section-title">
+            <div>
+                <h3>Akses Portal</h3>
+                <p>Akun portal hanya melihat data {{ term('client', lower=True) }}/{{ term('sub_client', lower=True) }} yang dipilih di sini.{% if portal_link.get('label') %} Sekarang terhubung ke <strong>{{ portal_link.label }}</strong>.{% endif %}</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6" data-portal-link-for="PORTAL_CLIENT" {% if selected_role != 'PORTAL_CLIENT' %}hidden{% endif %}>
+                <label class="form-label">{{ term('client') }} <span class="text-danger">*</span></label>
+                <select name="portal_client_id" class="form-select app-input">
+                    <option value="">Pilih {{ term('client', lower=True) }} kontrak</option>
+                    {% for client in portal_options.clients %}
+                        <option value="{{ client.id }}" {% if selected_portal_client == client.id|string %}selected{% endif %}>{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Melihat seluruh {{ term('sub_client', lower=True) }}, invoice, piutang, dan kontrak {{ term('client', lower=True) }} ini. Memesan hanya kalau Order langsung {{ term('client', lower=True) }} diaktifkan.</div>
+            </div>
+
+            <div class="col-md-6" data-portal-link-for="PORTAL_SUBCLIENT" {% if selected_role != 'PORTAL_SUBCLIENT' %}hidden{% endif %}>
+                <label class="form-label">{{ term('sub_client') }} <span class="text-danger">*</span></label>
+                <select name="portal_mandor_id" class="form-select app-input">
+                    <option value="">Pilih {{ term('sub_client', lower=True) }}</option>
+                    {% for mandor in portal_options.mandors %}
+                        <option value="{{ mandor.id }}" {% if selected_portal_mandor == mandor.id|string %}selected{% endif %}>{{ mandor.name }}{% if mandor.client %} — {{ mandor.client.name }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Memesan untuk lokasinya sendiri (admin tetap mengonfirmasi), melihat invoice, pembayaran, dan hutangnya.</div>
+            </div>
+        </div>
+    </div>
+
     {% if not is_edit %}
     <div class="app-card mb-4">
         <div class="section-title">
@@ -142,4 +178,21 @@
     </div>
 </form>
 </div>
+<script>
+(function () {
+    var role = document.querySelector('select[name="role"]');
+    var card = document.querySelector('[data-portal-link]');
+    if (!role || !card) { return; }
+    function sync() {
+        var shown = false;
+        card.querySelectorAll('[data-portal-link-for]').forEach(function (block) {
+            var match = block.getAttribute('data-portal-link-for') === role.value;
+            block.hidden = !match;
+            shown = shown || match;
+        });
+        card.hidden = !shown;
+    }
+    role.addEventListener('change', sync);
+})();
+</script>
 {% endblock %}

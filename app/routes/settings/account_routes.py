@@ -117,6 +117,34 @@ def users():
     )
 
 
+def _portal_link_label(user):
+    from app.services.user_management_service import current_portal_link
+
+    return current_portal_link(user).get("label")
+
+
+def _render_user_form(target_user, branches, form_data):
+    from app.services.user_management_service import (
+        ROLE_PORTAL_CUSTOMER,
+        current_portal_link,
+        portal_link_options,
+    )
+
+    # Pelanggan umum mendaftar sendiri; role itu hanya tampil untuk akun yang sudah ada.
+    roles = [role for role in ALLOWED_ROLES if role != ROLE_PORTAL_CUSTOMER or (target_user and target_user.role == role)]
+    return render_template(
+        "settings/user_form.html",
+        target_user=target_user,
+        branches=branches,
+        roles=roles,
+        role_labels=ROLE_LABELS,
+        role_descriptions=ROLE_DESCRIPTIONS,
+        form_data=form_data,
+        portal_options=portal_link_options(),
+        portal_link=current_portal_link(target_user) if target_user else {},
+    )
+
+
 @settings_bp.route("/users/create", methods=["GET", "POST"])
 @role_required("OWNER")
 def create_user_page():
@@ -130,29 +158,13 @@ def create_user_page():
         )
         if not guard_ok:
             flash(guard_message, "danger")
-            return render_template(
-                "settings/user_form.html",
-                target_user=None,
-                branches=branches,
-                roles=ALLOWED_ROLES,
-                role_labels=ROLE_LABELS,
-                role_descriptions=ROLE_DESCRIPTIONS,
-                form_data=request.form,
-            )
+            return _render_user_form(None, branches, request.form)
 
-        user, error = create_user(request.form)
+        user, error = create_user(request.form, acted_by=current_user.id)
 
         if error:
             flash(error, "warning")
-            return render_template(
-                "settings/user_form.html",
-                target_user=None,
-                branches=branches,
-                roles=ALLOWED_ROLES,
-                role_labels=ROLE_LABELS,
-                role_descriptions=ROLE_DESCRIPTIONS,
-                form_data=request.form,
-            )
+            return _render_user_form(None, branches, request.form)
 
         record_critical_audit_log(
             module="SECURITY",
@@ -161,20 +173,12 @@ def create_user_page():
             table_name="users",
             record_id=user.id,
             description=f"User dibuat: {user.username}",
-            metadata={"target_user_id": user.id, "target_username": user.username, "target_role": user.role, "sensitive_guard": guard_meta},
+            metadata={"target_user_id": user.id, "target_username": user.username, "target_role": user.role, "portal_link": _portal_link_label(user), "sensitive_guard": guard_meta},
         )
         flash(f"User {user.username} berhasil dibuat.", "success")
         return redirect(url_for("settings.users"))
 
-    return render_template(
-        "settings/user_form.html",
-        target_user=None,
-        branches=branches,
-        roles=ALLOWED_ROLES,
-        role_labels=ROLE_LABELS,
-        role_descriptions=ROLE_DESCRIPTIONS,
-        form_data={},
-    )
+    return _render_user_form(None, branches, {})
 
 
 @settings_bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
@@ -191,29 +195,13 @@ def edit_user_page(user_id):
         )
         if not guard_ok:
             flash(guard_message, "danger")
-            return render_template(
-                "settings/user_form.html",
-                target_user=target_user,
-                branches=branches,
-                roles=ALLOWED_ROLES,
-                role_labels=ROLE_LABELS,
-                role_descriptions=ROLE_DESCRIPTIONS,
-                form_data=request.form,
-            )
+            return _render_user_form(target_user, branches, request.form)
 
         user, error = update_user(target_user, request.form, current_user)
 
         if error:
             flash(error, "warning")
-            return render_template(
-                "settings/user_form.html",
-                target_user=target_user,
-                branches=branches,
-                roles=ALLOWED_ROLES,
-                role_labels=ROLE_LABELS,
-                role_descriptions=ROLE_DESCRIPTIONS,
-                form_data=request.form,
-            )
+            return _render_user_form(target_user, branches, request.form)
 
         record_critical_audit_log(
             module="SECURITY",
@@ -222,20 +210,12 @@ def edit_user_page(user_id):
             table_name="users",
             record_id=user.id,
             description=f"User diperbarui: {user.username}",
-            metadata={"target_user_id": user.id, "target_username": user.username, "target_role": user.role, "is_active": user.is_active, "sensitive_guard": guard_meta},
+            metadata={"target_user_id": user.id, "target_username": user.username, "target_role": user.role, "is_active": user.is_active, "portal_link": _portal_link_label(user), "sensitive_guard": guard_meta},
         )
         flash(f"User {user.username} berhasil diperbarui.", "success")
         return redirect(url_for("settings.users"))
 
-    return render_template(
-        "settings/user_form.html",
-        target_user=target_user,
-        branches=branches,
-        roles=ALLOWED_ROLES,
-        role_labels=ROLE_LABELS,
-        role_descriptions=ROLE_DESCRIPTIONS,
-        form_data={},
-    )
+    return _render_user_form(target_user, branches, {})
 
 
 @settings_bp.route("/users/<int:user_id>/toggle", methods=["POST"])

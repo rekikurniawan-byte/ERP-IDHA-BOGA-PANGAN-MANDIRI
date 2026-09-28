@@ -3,8 +3,7 @@ from uuid import uuid4
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
 
-from app.models.master import User
-from app.models.system import PortalOrderDraft, PortalUserMapping
+from app.models.system import PortalOrderDraft
 from app.services.portal_access_service import (
     build_portal_access_scope,
     build_portal_customer_directory,
@@ -157,62 +156,27 @@ def index():
 @portal_bp.route("/dashboard")
 @role_required(*PORTAL_INTERNAL_ROLES)
 def dashboard():
-    portal_roles = [
-        ROLE_PORTAL_CLIENT,
-        ROLE_PORTAL_SUBCLIENT,
-        ROLE_PORTAL_CUSTOMER,
-    ]
-    user_query = User.query.filter(User.role.in_(portal_roles))
-    mapping_query = PortalUserMapping.query.join(User, PortalUserMapping.user_id == User.id)
-    draft_query = PortalOrderDraft.query
+    """Daftar akun portal dan ke mana masing-masing terhubung (gladi pilot 2026-09-28)."""
+    from app.services.user_management_service import portal_account_rows
 
-    if current_user.role != "OWNER":
-        user_query = user_query.filter(User.branch_id == current_user.branch_id)
-        mapping_query = mapping_query.filter(User.branch_id == current_user.branch_id)
-        draft_query = draft_query.filter(PortalOrderDraft.branch_id == current_user.branch_id)
+    branch_id = None if current_user.role == "OWNER" else current_user.branch_id
+    rows = portal_account_rows(branch_id)
+    draft_query = PortalOrderDraft.query.filter(PortalOrderDraft.status == "PENDING_ADMIN_CONFIRMATION")
+    if branch_id is not None:
+        draft_query = draft_query.filter(PortalOrderDraft.branch_id == branch_id)
 
     data = {
         "status_label": "Internal",
-        "active_role": current_user.role,
-        "branch_id": current_user.branch_id,
+        "rows": rows,
+        "can_edit_users": current_user.role == "OWNER",
         "cards": [
+            {"title": "Akun Portal", "value": len(rows), "caption": f"{T.client}, {T.sub_client_lower}, dan pelanggan umum."},
             {
-                "title": "User Portal",
-                "value": user_query.count(),
-                "caption": "Akun portal memakai sistem login yang sama.",
+                "title": "Belum Terhubung",
+                "value": sum(1 for row in rows if not row["link"]),
+                "caption": "Akun ini belum bisa melihat apa pun sampai dihubungkan.",
             },
-            {
-                "title": "Mapping Aktif",
-                "value": mapping_query.filter(PortalUserMapping.is_active.is_(True)).count(),
-                "caption": f"Penghubung akun ke perusahaan, {T.sub_client_lower}, dan lokasi.",
-            },
-            {
-                "title": "Draft Pending",
-                "value": draft_query.filter(PortalOrderDraft.status == "PENDING_ADMIN_CONFIRMATION").count(),
-                "caption": "Antrian sebelum diproses admin.",
-            },
-        ],
-        "sources": [
-            {
-                "area": "Akun portal",
-                "erp_source": "Akun dan hak akses",
-                "rule": "Semua akun masuk dari halaman login yang sama.",
-            },
-            {
-                "area": f"{T.client}, {T.sub_client_lower}, lokasi",
-                "erp_source": "clients, mandors, delivery_locations",
-                "rule": f"Perusahaan, {T.sub_client_lower}, dan lokasi tetap dikelola dari Master Data.",
-            },
-            {
-                "area": "Draft order",
-                "erp_source": "Pesanan harian",
-                "rule": "Pesanan baru menunggu admin sebelum masuk produksi dan pengiriman.",
-            },
-            {
-                "area": "Tagihan dan pembayaran",
-                "erp_source": "Finance",
-                "rule": "Invoice dan pembayaran mengikuti hak akses akun.",
-            },
+            {"title": "Pesanan Menunggu", "value": draft_query.count(), "caption": "Draft portal yang menunggu konfirmasi admin."},
         ],
     }
     return render_template("portal/dashboard.html", data=data)
@@ -278,7 +242,7 @@ def _customer_persona():
     return {
         "eyebrow": "Portal Pelanggan Umum",
         "title": "Beranda Pelanggan",
-        "description": "Ringkasan akses pelanggan umum. Order dan pembayaran aktual tetap mengikuti workflow data utama.",
+        "description": "Pesanan, pembayaran, dan tagihan Anda di satu tempat.",
         "scope_label": "Akses pribadi",
         "primary_note": f"Prepayment tetap wajib. Pelanggan umum belum membuka piutang/hutang {T.worker_lower}.",
     }
@@ -314,7 +278,7 @@ def _current_portal_persona():
     return {
         "eyebrow": "Portal",
         "title": "Beranda Portal",
-        "description": "Ringkasan portal terintegrasi dengan data utama.",
+        "description": "Ringkasan pesanan, tagihan, dan pembayaran.",
         "scope_label": "Akses portal",
         "primary_note": "Akses mengikuti role dan data yang ditentukan admin.",
     }
@@ -409,7 +373,7 @@ def customer_complaints():
         data={
             **_role_dashboard_data(_customer_persona()),
             "page_title": "Komplain",
-            "page_description": "Komplain pelanggan tersambung ke Complaint Management data utama.",
+            "page_description": "Laporkan masalah pesanan; tim kami menindaklanjutinya di sini.",
             "complaints": build_portal_complaint_model(current_user),
         },
     )
@@ -522,7 +486,7 @@ def mandor_catering_debts():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Hutang Catering",
-            "page_description": "Sisa tagihan catering dari invoice data utama.",
+            "page_description": "Sisa tagihan catering Anda.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
         },
     )
@@ -537,7 +501,7 @@ def mandor_canteen_debts():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Hutang Warung",
-            "page_description": f"Hutang {T.worker_lower} dari WorkerDebt data utama.",
+            "page_description": f"Hutang warung {T.worker_lower} Anda.",
             "debt_model": build_portal_mobile_debt_cards(current_user),
         },
     )
@@ -580,7 +544,7 @@ def mandor_payments():
         data={
             **_role_dashboard_data(_mandor_persona()),
             "page_title": "Riwayat Pembayaran",
-            "page_description": f"Pembayaran {T.sub_client_lower} dari data payment data utama.",
+            "page_description": "Riwayat pembayaran yang sudah diterima.",
         },
     )
 
@@ -652,7 +616,7 @@ def pt_invoices():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Seluruh Tagihan",
-            "page_description": f"Tagihan {T.client_lower} dari invoice data utama.",
+            "page_description": f"Semua tagihan {T.client_lower} Anda.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
         },
     )
@@ -666,7 +630,7 @@ def pt_receivables():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Seluruh Piutang",
-            "page_description": "Piutang dihitung dari remaining invoice dan payment .",
+            "page_description": "Sisa tagihan yang belum dibayar.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
         },
     )
@@ -693,7 +657,7 @@ def pt_contracts():
         data={
             **_role_dashboard_data(_pt_persona()),
             "page_title": "Seluruh Kontrak",
-            "page_description": f"Kontrak {T.client_lower} dibaca dari Kontrak data utama sesuai akses {T.client_lower}.",
+            "page_description": f"Kontrak {T.client_lower} Anda dan masa berlakunya.",
             "contracts": build_portal_contract_model(current_user),
         },
     )
@@ -748,7 +712,7 @@ def invoice_payment_instruction(invoice_id):
                 "title": "Instruksi Pembayaran",
                 "description": "Instruksi pembayaran portal.",
                 "scope_label": "Akses portal",
-                "primary_note": "Instruksi dibaca dari invoice data utama.",
+                "primary_note": "Instruksi sesuai tagihan Anda.",
             }
         ),
         "page_title": "Instruksi Pembayaran",
@@ -987,7 +951,7 @@ def calendar():
         data={
             **_role_dashboard_data(persona),
             "page_title": "Kalender Operasional",
-            "page_description": "Kalender membaca draft order, tagihan jatuh tempo, kontrak, dan pengiriman data utama.",
+            "page_description": "Jadwal pesanan, pengiriman, jatuh tempo tagihan, dan kontrak.",
             "calendar": build_portal_calendar_model(current_user),
         },
     )
@@ -1130,7 +1094,7 @@ def order_status():
                 "title": "Status Pesanan",
                 "description": "Status pesanan portal.",
                 "scope_label": "Akses portal",
-                "primary_note": "Status dibaca dari data utama.",
+                "primary_note": "Status terbaru pesanan Anda.",
             }
         ),
         "status_label": "Hanya dilihat",

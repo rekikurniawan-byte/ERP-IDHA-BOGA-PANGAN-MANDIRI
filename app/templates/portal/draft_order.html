@@ -72,7 +72,7 @@
                 <strong>{{ summary.total }} draft</strong>
             </div>
             <h2>Pesanan masuk ke admin sebelum diproses</h2>
-            <p>Setelah dikirim, admin akan memeriksa pesanan dan melanjutkannya ke operasional. Pelanggan umum wajib menyertakan bukti pembayaran awal.</p>
+            <p>Setelah dikirim, admin akan memeriksa pesanan dan melanjutkannya ke operasional.{% if current_user.role == "PORTAL_CUSTOMER" %} Pelanggan umum wajib menyertakan bukti pembayaran awal.{% endif %}</p>
             <div class="portal-workflow-steps">
                 <div class="is-active"><i class="bi bi-person-check"></i><span>Login</span></div>
                 <div class="is-active"><i class="bi bi-card-checklist"></i><span>Draft</span></div>

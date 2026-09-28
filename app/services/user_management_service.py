@@ -2,7 +2,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 from app.models.master import Branch, User
-from app.utils.terms import L
+from app.utils.terms import L, T
 
 
 ROLE_OWNER = "OWNER"
@@ -84,9 +84,9 @@ ROLE_DESCRIPTIONS = {
     ROLE_DAPUR: "Akses produksi dapur, permintaan bahan, dan pemakaian dapur.",
     ROLE_PENGANTAR: "Akses pengiriman, penerimaan, riwayat delivery, dan bukti digital delivery.",
     ROLE_CUSTOMER_SUCCESS: "Akses kontrak customer, komplain, koreksi, bukti pendukung, dan koordinasi tindak lanjut tanpa posting langsung ke finance/stok.",
-    ROLE_PORTAL_CLIENT: L("Akses portal read-only untuk {client}: seluruh {sub_client_lower}, invoice, piutang, pembayaran, dan kontrak perusahaannya."),
-    ROLE_PORTAL_SUBCLIENT: L("Akses portal read-only untuk {sub_client} berdasarkan mapping eksplisit."),
-    ROLE_PORTAL_CUSTOMER: "Role reservasi pelanggan umum; akses transaksi tetap menunggu mapping dan approval lanjutan.",
+    ROLE_PORTAL_CLIENT: L("Akses portal satu {client}: seluruh {sub_client_lower}, invoice, piutang, pembayaran, dan kontrak perusahaannya. Memesan hanya lewat Order langsung."),
+    ROLE_PORTAL_SUBCLIENT: L("Akses portal satu {sub_client_lower}: pesan untuk lokasinya sendiri (dikonfirmasi admin), invoice, pembayaran, dan hutang."),
+    ROLE_PORTAL_CUSTOMER: "Pelanggan umum. Mendaftar sendiri lewat halaman Daftar di portal; akunnya otomatis terhubung ke lokasi antarnya.",
 }
 
 MIN_PASSWORD_LENGTH = 8
@@ -196,6 +196,16 @@ def validate_user_payload(form, existing_user=None, current_user=None):
         branch_id = existing_user.branch_id
         is_active = existing_user.is_active
 
+    if role == ROLE_PORTAL_CUSTOMER and not (existing_user and existing_user.role == ROLE_PORTAL_CUSTOMER):
+        return None, (
+            "Pelanggan umum mendaftar sendiri lewat halaman Daftar di portal, "
+            "supaya akunnya langsung terhubung ke lokasi antar dan zona ongkirnya."
+        )
+
+    portal_link, portal_error = _validate_portal_link(role, form, branch_id)
+    if portal_error:
+        return None, portal_error
+
     if existing_user and existing_user.role == "OWNER" and role != "OWNER":
         if active_owner_count(exclude_user_id=existing_user.id) <= 0:
             return None, "Tidak boleh mengubah role OWNER terakhir."
@@ -210,10 +220,11 @@ def validate_user_payload(form, existing_user=None, current_user=None):
         "role": role,
         "branch_id": branch_id,
         "is_active": is_active,
+        **portal_link,
     }, None
 
 
-def create_user(form):
+def create_user(form, acted_by=None):
     payload, error = validate_user_payload(form)
     if error:
         return None, error
@@ -234,6 +245,8 @@ def create_user(form):
     )
 
     db.session.add(user)
+    db.session.flush()
+    sync_portal_link(user, client_id=payload.get("portal_client_id"), mandor_id=payload.get("portal_mandor_id"), acted_by=acted_by)
     db.session.commit()
     return user, None
 
@@ -248,6 +261,12 @@ def update_user(user, form, current_user):
     user.role = payload["role"]
     user.branch_id = payload["branch_id"]
     user.is_active = payload["is_active"]
+    sync_portal_link(
+        user,
+        client_id=payload.get("portal_client_id"),
+        mandor_id=payload.get("portal_mandor_id"),
+        acted_by=getattr(current_user, "id", None),
+    )
 
     db.session.commit()
     return user, None
@@ -296,3 +315,149 @@ def change_own_password(user, current_password, new_password, confirmation):
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
     return True, None
+
+
+# --- akun portal PT / Mandor --------------------------------------------------
+# Keputusan owner 2026-09-28 (gladi pilot): OWNER menghubungkan akun portal di
+# form User; satu akun = satu PT atau satu mandor. Portal PT memantau seluruh
+# mandornya dan hanya memesan lewat Order langsung (orderable_location_ids);
+# Portal Mandor memesan untuk lokasinya sendiri, tetap dikonfirmasi admin.
+# Pelanggan umum terhubung sendiri saat mendaftar (pemetaan DELEGATE).
+PORTAL_LINK_PRINCIPALS = {ROLE_PORTAL_CLIENT: "CLIENT", ROLE_PORTAL_SUBCLIENT: "MANDOR"}
+
+
+def portal_link_options():
+    """Pilihan PT kontrak dan mandor-nya untuk form User."""
+    from app.models.master import Client, Mandor
+    from app.services.pricing_service import PATH_CONTRACT
+
+    clients = (
+        Client.query.filter(Client.is_active.is_(True), Client.customer_path == PATH_CONTRACT)
+        .order_by(Client.name.asc()).all()
+    )
+    mandors = (
+        Mandor.query.outerjoin(Client, Client.id == Mandor.client_id)
+        .filter(
+            Mandor.is_active.is_(True),
+            Mandor.is_direct_unit.is_(False),
+            db.or_(Mandor.client_id.is_(None), Client.customer_path == PATH_CONTRACT),
+        )
+        .order_by(Mandor.name.asc()).all()
+    )
+    return {"clients": clients, "mandors": mandors}
+
+
+def current_portal_link(user):
+    """PT/mandor yang sekarang terhubung ke akun ini ({} kalau belum ada)."""
+    from app.models.system import PortalUserMapping
+
+    if not getattr(user, "id", None):
+        return {}
+    row = (
+        PortalUserMapping.query.filter(
+            PortalUserMapping.user_id == user.id,
+            PortalUserMapping.is_active.is_(True),
+            PortalUserMapping.principal_type.in_(tuple(PORTAL_LINK_PRINCIPALS.values())),
+        )
+        .order_by(PortalUserMapping.id.desc()).first()
+    )
+    if not row:
+        return {}
+    if row.principal_type == "CLIENT":
+        label = row.client.name if row.client else "-"
+    else:
+        label = row.mandor.name if row.mandor else "-"
+        if row.mandor and row.mandor.client:
+            label = f"{label} ({row.mandor.client.name})"
+    return {"client_id": row.client_id, "mandor_id": row.mandor_id, "label": label}
+
+
+def _int_or_none(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _validate_portal_link(role, form, branch_id):
+    from app.models.master import Client, Mandor
+    from app.services.pricing_service import PATH_CONTRACT
+
+    principal = PORTAL_LINK_PRINCIPALS.get(role)
+    if principal == "CLIENT":
+        client = Client.query.get(_int_or_none(form.get("portal_client_id")) or 0)
+        if not client or not client.is_active or client.customer_path != PATH_CONTRACT:
+            return None, f"Pilih {T.client} kontrak yang dihubungkan ke akun Portal {T.client} ini."
+        return {"portal_client_id": client.id}, None
+    if principal == "MANDOR":
+        mandor = Mandor.query.get(_int_or_none(form.get("portal_mandor_id")) or 0)
+        valid = (
+            mandor is not None and mandor.is_active and not mandor.is_direct_unit
+            and mandor.branch_id == branch_id
+            and (mandor.client is None or mandor.client.customer_path == PATH_CONTRACT)
+        )
+        if not valid:
+            return None, f"Pilih {T.sub_client_lower} aktif di cabang akun ini untuk akun Portal {T.sub_client}."
+        return {"portal_mandor_id": mandor.id}, None
+    return {}, None
+
+
+def sync_portal_link(user, *, client_id=None, mandor_id=None, acted_by=None):
+    """Samakan pemetaan PT/mandor akun ini dengan pilihan form. Tidak commit.
+
+    Pemetaan lain yang aktif dinonaktifkan (satu akun = satu PT/mandor), dan
+    akun yang pindah ke role non-portal kehilangan aksesnya. Pemetaan pelanggan
+    umum (DELEGATE) tidak disentuh.
+    """
+    from datetime import datetime
+
+    from app.models.system import PortalUserMapping
+
+    principal = PORTAL_LINK_PRINCIPALS.get(user.role)
+    target = client_id if principal == "CLIENT" else mandor_id
+    kept = None
+    for row in PortalUserMapping.query.filter(
+        PortalUserMapping.user_id == user.id,
+        PortalUserMapping.is_active.is_(True),
+        PortalUserMapping.principal_type.in_(tuple(PORTAL_LINK_PRINCIPALS.values())),
+    ).all():
+        same = row.principal_type == principal and (row.client_id if principal == "CLIENT" else row.mandor_id) == target
+        if same and kept is None:
+            kept = row
+            continue
+        row.is_active = False
+        row.updated_at = datetime.utcnow()
+        row.updated_by = acted_by
+    if principal and target and kept is None:
+        db.session.add(PortalUserMapping(
+            user_id=user.id,
+            principal_type=principal,
+            client_id=target if principal == "CLIENT" else None,
+            mandor_id=target if principal == "MANDOR" else None,
+            access_level="DRAFT_ORDER",
+            is_active=True,
+            created_by=acted_by,
+        ))
+    db.session.flush()
+
+
+def portal_account_rows(branch_id=None):
+    """Akun portal beserta PT / mandor / lokasi yang terhubung, untuk halaman Pengaturan Akses Portal."""
+    from app.models.system import PortalUserMapping
+
+    query = User.query.filter(User.role.in_(sorted(PORTAL_EXTERNAL_ROLES)))
+    if branch_id is not None:
+        query = query.filter(User.branch_id == branch_id)
+    rows = []
+    for user in query.order_by(User.role.asc(), User.full_name.asc()).all():
+        if user.role == ROLE_PORTAL_CUSTOMER:
+            locations = [
+                mapping.delivery_location.location_name
+                for mapping in PortalUserMapping.query.filter_by(user_id=user.id, is_active=True).all()
+                if mapping.delivery_location
+            ]
+            link = ", ".join(locations)
+        else:
+            link = current_portal_link(user).get("label", "")
+        rows.append({"user": user, "role_label": get_role_label(user.role), "link": link})
+    return rows

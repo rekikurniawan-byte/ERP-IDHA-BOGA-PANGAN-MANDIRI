@@ -123,6 +123,30 @@ def _contract_pic_check():
     return Check(PASS, "PIC client kontrak", f"{len(in_use)} client kontrak aktif punya PIC resmi.")
 
 
+def _portal_check():
+    """Portal dipakai pelanggan umum untuk daftar & bayar di muka, dan mandor untuk memesan."""
+    from flask import current_app
+
+    from app.models.master import User
+    from app.services.user_management_service import PORTAL_LINK_PRINCIPALS, current_portal_link
+
+    if not current_app.config.get("PORTAL_ENABLED"):
+        return Check(
+            WARN, "Portal",
+            "PORTAL_ENABLED mati: pelanggan umum tidak bisa daftar/pesan dan akun portal tidak bisa login. "
+            "Isi PORTAL_ENABLED=1 di .env kalau portal dipakai.",
+        )
+    accounts = User.query.filter(User.role.in_(sorted(PORTAL_LINK_PRINCIPALS)), User.is_active.is_(True)).all()
+    unlinked = sorted(user.username for user in accounts if not current_portal_link(user))
+    if unlinked:
+        return Check(
+            WARN, "Portal",
+            f"{len(unlinked)} akun portal belum terhubung ke PT/mandor (mis. {', '.join(unlinked[:3])}). "
+            "Hubungkan di Pengaturan > User.",
+        )
+    return Check(PASS, "Portal", f"Portal aktif; {len(accounts)} akun PT/mandor terhubung.")
+
+
 def _cash_bank_ledger_check():
     """Buku Kas/Bank harus sama dengan saldo jurnal Kas (1001) dan Bank (1002, 1003).
 
@@ -223,7 +247,7 @@ def _backup_check(max_age_hours=26):
 def run_readiness_checks(branch_ids=None):
     """branch_ids membatasi cek per cabang (bawaan: semua cabang aktif)."""
     checks = []
-    for step in (_migration_check, _table_owner_check, _account_check, _backup_check, _contract_pic_check, _cash_bank_ledger_check):
+    for step in (_migration_check, _table_owner_check, _account_check, _backup_check, _contract_pic_check, _cash_bank_ledger_check, _portal_check):
         try:
             checks.append(step())
         except Exception as error:  # noqa: BLE001 - satu cek gagal tidak boleh menghentikan laporan
