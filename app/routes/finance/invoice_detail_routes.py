@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.routes.finance_routes import _resolve_manual_billing_source_reference
 from app.routes.finance.invoice_communication_routes import build_invoice_whatsapp_context
 from app.utils.terms import T
 

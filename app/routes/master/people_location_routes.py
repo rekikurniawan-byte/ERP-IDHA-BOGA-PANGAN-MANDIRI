@@ -48,7 +48,6 @@ def create_mandor():
     if request.method == "POST":
         client_id = request.form.get("client_id") or None
         name = (request.form.get("name") or "").strip()
-        client_code = _clean_client_code(request.form.get("client_code")) or generate_client_code()
         phone = (request.form.get("phone") or "").strip()
         is_active = True if request.form.get("is_active") == "on" else False
 
@@ -474,7 +473,6 @@ def drivers():
 def create_driver():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
-        client_code = _clean_client_code(request.form.get("client_code")) or generate_client_code()
         phone = (request.form.get("phone") or "").strip()
         license_number = (request.form.get("license_number") or "").strip()
         is_active = True if request.form.get("is_active") == "on" else False

@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.finance_routes without changing URL rules or endpoint names.
 """
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.routes.finance.payment_routes import _parse_payment_amount
 
 
 @finance_bp.route("/advances")

@@ -3,6 +3,8 @@
 Route functions moved out of app.routes.accounting_routes without changing URL rules or endpoint names.
 """
 from app.routes.accounting_routes import *  # noqa: F401,F403
+from app.routes.accounting_routes import _redirect_after_accounting_post, _reserve_accounting_idempotency
+from app.routes.accounting.journal_routes import _generate_journal_number
 
 
 def _accounting3b_float(value):
