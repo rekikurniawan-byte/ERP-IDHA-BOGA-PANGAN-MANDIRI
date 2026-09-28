@@ -60,7 +60,7 @@ CRITICAL_ENDPOINTS = [
     {"endpoint": "accounting.expense_drilldown", "label": "Expense Drilldown", "role": "OWNER/ACCOUNTING", "area": "Accounting"},
     {"endpoint": "accounting.posting_status", "label": "Posting Status", "role": "OWNER/ACCOUNTING", "area": "Accounting"},
     {"endpoint": "accounting.reports", "label": "Accounting Reports", "role": "OWNER/ACCOUNTING", "area": "Accounting"},
-    {"endpoint": "settings.system_health", "label": "System Health", "role": "OWNER/ADMIN", "area": "Recovery"},
+    {"endpoint": "settings.system_health", "label": "Kesehatan Sistem", "role": "OWNER/ADMIN", "area": "Recovery"},
     {"endpoint": "settings.recovery_center", "label": "Recovery Center", "role": "OWNER/ADMIN", "area": "Recovery"},
     {"endpoint": "settings.backups", "label": "Backup & Restore", "role": "OWNER", "area": "Recovery"},
     {"endpoint": "settings.audit_logs", "label": "Audit Logs", "role": "OWNER", "area": "Recovery"},

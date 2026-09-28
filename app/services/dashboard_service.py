@@ -773,7 +773,7 @@ def get_role_dashboard_metrics(role, branch_id=None):
     return [
         _dashboard_kpi("Area Role", "Aktif", "Dashboard role berhasil dibuka", "bi-speedometer2", "blue"),
         _dashboard_kpi("Shortcut", "Siap", "Akses modul tersedia", "bi-grid", "green"),
-        _dashboard_kpi("Reminder", "Live", "Mengikuti Live Reminder Center", "bi-bell", "orange"),
+        _dashboard_kpi("Reminder", "Live", "Mengikuti halaman Pengingat", "bi-bell", "orange"),
         _dashboard_kpi("Data", "Read-only", "Tidak mengubah database", "bi-shield-check", "green"),
     ]
 

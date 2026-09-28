@@ -226,7 +226,7 @@ def build_single_source_posting_status(source_type: str, source: Any) -> dict[st
             return _status(POSTED, "Pembayaran payroll sudah punya jurnal kas/bank.", journal)
         return _status(BLOCKED, "Payroll berstatus PAID, tetapi jurnal pembayaran payroll tidak ditemukan.")
 
-    return _status(WAITING, "Jenis sumber belum dikenali oleh Posting Status Center.")
+    return _status(WAITING, "Jenis sumber belum dikenali oleh Status Posting.")
 
 
 def _invoice_rows(branch_id: int) -> list[dict[str, Any]]:

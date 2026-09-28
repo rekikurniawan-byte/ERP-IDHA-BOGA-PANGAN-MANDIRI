@@ -134,7 +134,7 @@ def build_daily_closing_print_context(branch_id: int, report: Mapping[str, Any])
     return {
         "company_settings": get_company_settings(branch_id),
         "generated_date": _today(),
-        "title": "Closing Harian",
+        "title": "Tutup Harian",
         "report": report,
     }
 

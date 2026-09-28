@@ -4,7 +4,7 @@
 {% block content %}
 <div class="settings-page-shell">
     {{ page_header(
-        "Approval Center",
+        "Persetujuan",
         "Daftar pengajuan aksi sensitif yang perlu diperiksa checker.",
         eyebrow="Settings | Maker Checker",
         actions=[]
@@ -49,7 +49,7 @@
                         {% if approval.status == 'SUBMITTED' %}
                         <form method="POST" action="{{ url_for('settings.approve_approval_request', approval_id=approval.id) }}" class="d-inline app-form" data-ui-form="true">
                             {% include "components/csrf_token.html" %}
-                            <input type="hidden" name="review_note" value="Disetujui dari Approval Center">
+                            <input type="hidden" name="review_note" value="Disetujui dari halaman Persetujuan">
                             <button type="submit" class="btn btn-sm app-btn-primary">
                                 <i class="bi bi-check2-circle"></i>
                                 Approve

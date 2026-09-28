@@ -313,7 +313,7 @@ def build_empty_system_health_report(error: str) -> Dict[str, object]:
         "overall": {
             "label": STATUS_DANGER,
             "status_class": "danger",
-            "summary": "System Health gagal dibaca.",
+            "summary": "Kesehatan Sistem gagal dibaca.",
             "errors": [error],
             "warnings": [],
             "error_count": 1,
@@ -432,7 +432,7 @@ def build_system_health_report() -> Dict[str, object]:
             "description": "Ruang disk, versi release, dan arah patch berikutnya.",
             "items": [
                 _make_check("Disk free space", str(disk_health.get("status")), value=disk_health.get("free_bytes", 0), message=str(disk_health.get("message")), details=disk_health),
-                _make_check("System Health schema", "PASS", value=SYSTEM_HEALTH_SCHEMA_VERSION, message="PRODUCTION read-only health report aktif."),
+                _make_check("Kesehatan Sistem schema", "PASS", value=SYSTEM_HEALTH_SCHEMA_VERSION, message="PRODUCTION read-only health report aktif."),
                 _make_check("Backup engine", "PASS", value=BACKUP_ENGINE_VERSION, message="Backup engine B3 tetap menjadi sumber verifikasi backup."),
                 _make_check("Sensitive action guard", "PASS", value=GUARD_POLICY_VERSION, message="Aksi backup, user, company setting, dan hapus lampiran digital wajib reason + password re-confirm."),
                 _make_check("Active DB hash", "PASS", value=backup_status.get("database_sha256") or "-", message="Hash database aktif dibaca read-only."),

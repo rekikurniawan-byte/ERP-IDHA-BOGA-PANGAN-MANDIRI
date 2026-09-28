@@ -25,9 +25,9 @@ def system_health():
     try:
         health = build_system_health_report()
     except Exception as exc:
-        current_app.logger.exception("System Health read-only report failed")
+        current_app.logger.exception("Kesehatan Sistem read-only report failed")
         health = build_empty_system_health_report(str(exc))
-        flash("System Health gagal dibaca penuh. Detail error tercatat di terminal/log Flask.", "danger")
+        flash("Kesehatan Sistem gagal dibaca penuh. Detail error tercatat di terminal/log Flask.", "danger")
 
     return render_template("settings/system_health.html", health=health)
 

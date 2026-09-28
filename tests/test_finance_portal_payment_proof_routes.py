@@ -73,7 +73,7 @@ def test_finance_portal_payment_proof_queue_renders_pending_rows(app, tmp_path):
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Verifikasi Bukti Pembayaran Portal" in html
+    assert "Bukti Bayar Masuk" in html
     # Label halaman sudah berbahasa Indonesia.
     assert f"Lampiran #{attachment_id}" in html
     assert "Verifikasi" in html

@@ -5,7 +5,7 @@
 <div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="recovery-center">
 
 {% set recovery_center_actions = [
-    {"label": "System Health", "url": url_for('settings.system_health')},
+    {"label": "Kesehatan Sistem", "url": url_for('settings.system_health')},
 ] %}
 {% if current_user.role == "OWNER" %}
     {% do recovery_center_actions.append({"label": "Backup", "url": url_for('settings.backups')}) %}
@@ -114,7 +114,7 @@
             {% set atomic = report.get("atomic_map", {}).get("summary", {}) %}
             {% set audit = report.get("audit_activity", {}) %}
             <div class="detail-list">
-                <div class="detail-row"><span>System Health</span><strong>{{ health.get("overall", {}).get("label", "-") }}</strong></div>
+                <div class="detail-row"><span>Kesehatan Sistem</span><strong>{{ health.get("overall", {}).get("label", "-") }}</strong></div>
                 <div class="detail-row"><span>Backup verified terbaru</span><strong>{{ rc.get("latest_verified_backup_name") or "BELUM ADA" }}</strong></div>
                 <div class="detail-row"><span>Restore dry-run</span><strong>{{ rc.get("latest_restore_dry_run_status") or "BELUM ADA" }}</strong></div>
                 <div class="detail-row"><span>Atomic status</span><strong>{{ atomic.get("status", "-") }}</strong></div>

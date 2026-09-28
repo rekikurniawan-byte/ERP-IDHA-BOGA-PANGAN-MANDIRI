@@ -246,7 +246,7 @@ def build_invoice_profit_print_context(branch_id: int, args: Mapping[str, Any]) 
     return {
         "company_settings": get_company_settings(branch_id),
         "generated_date": _today(),
-        "title": "Profit Invoice dari HPP Allocation",
+        "title": "Laba per Invoice",
         "rows": rows,
         "totals": report_index.get("totals") or {},
         "start_date": start_date,

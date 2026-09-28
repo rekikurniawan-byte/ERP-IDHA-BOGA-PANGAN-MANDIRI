@@ -1,6 +1,6 @@
 """PRODUCTION Recovery Center final polish service.
 
-Service ini menyatukan status System Health, verified backup, restore dry-run,
+Service ini menyatukan status Kesehatan Sistem, verified backup, restore dry-run,
 critical audit, atomic map, atomic smoke access, dan SOP recovery dalam satu
 ringkasan read-only untuk owner/admin. Tidak ada restore aktif, overwrite DB,
 migration, atau mutation data bisnis di service ini.
@@ -151,9 +151,9 @@ def _build_readiness_cards(system_health: Dict[str, Any], atomic_map: Dict[str, 
 
     return [
         {
-            "title": "System Health",
+            "title": "Kesehatan Sistem",
             "value": overall.get("label", "PERLU CEK"),
-            "detail": overall.get("summary", "System Health belum terbaca."),
+            "detail": overall.get("summary", "Kesehatan Sistem belum terbaca."),
             "status": overall.get("label", "PERLU CEK"),
             "status_class": overall.get("status_class", "warning"),
             "endpoint": "settings.system_health",
@@ -227,7 +227,7 @@ def _build_action_plan(system_health: Dict[str, Any], atomic_map: Dict[str, Any]
         plan.append({
             "level": "danger",
             "title": "Stop patch besar dulu",
-            "description": "System Health masih punya error kritis. Selesaikan integrity/FK/upload/journal issue sebelum lanjut.",
+            "description": "Kesehatan Sistem masih punya error kritis. Selesaikan integrity/FK/upload/journal issue sebelum lanjut.",
             "endpoint": "settings.system_health",
             "action_label": "Lihat error",
         })

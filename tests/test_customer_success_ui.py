@@ -68,7 +68,7 @@ def test_customer_success_role_is_retired_into_admin(app):
     assert "/dashboard/admin" in dashboard_response.headers["Location"]
     assert page_response.status_code == 200
     assert "Customer Success" in html
-    assert "Komplain Customer" in html
+    assert "Komplain Pelanggan" in html
 
 
 def test_admin_opens_customer_success_pages(app):
@@ -83,7 +83,7 @@ def test_admin_opens_customer_success_pages(app):
     response = client.get("/customer-success/complaints")
 
     assert response.status_code == 200
-    assert "Komplain Customer" in response.get_data(as_text=True)
+    assert "Komplain Pelanggan" in response.get_data(as_text=True)
 
 
 def test_customer_success_rejects_unrelated_internal_role(app):

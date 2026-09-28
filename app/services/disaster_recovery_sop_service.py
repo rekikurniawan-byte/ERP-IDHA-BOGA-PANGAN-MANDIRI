@@ -60,7 +60,7 @@ def _runtime_paths() -> Dict[str, object]:
 
 def _safety_pages() -> List[Dict[str, str]]:
     return [
-        {"label": "System Health", "endpoint": "settings.system_health", "icon": "bi-heart-pulse", "purpose": "cek DB, backup, upload, jurnal, disk, dan migration secara read-only"},
+        {"label": "Kesehatan Sistem", "endpoint": "settings.system_health", "icon": "bi-heart-pulse", "purpose": "cek DB, backup, upload, jurnal, disk, dan migration secara read-only"},
         {"label": "Backup & Restore", "endpoint": "settings.backups", "icon": "bi-database-down", "purpose": "buat full backup verified dan validasi restore preview"},
         {"label": "Atomic Smoke Simulation", "endpoint": "settings.atomic_smoke_simulation", "icon": "bi-shield-check", "purpose": "uji rollback atomic di copy DB tanpa menyentuh DB aktif"},
         {"label": "Atomic Transaction Map", "endpoint": "settings.atomic_transaction_map", "icon": "bi-diagram-3", "purpose": "lihat peta area commit/rollback yang masih perlu diperketat"},
@@ -83,13 +83,13 @@ def get_disaster_recovery_sop() -> Dict[str, object]:
             "Tujuan utama bukan panik cepat restore, tetapi mengamankan kondisi aktif, membaca health, memilih backup verified, preview/dry-run, lalu restore dengan jalur balik.",
         ],
         "incident_levels": [
-            {"level": "LEVEL 1", "name": "Warning", "status_class": "warning", "examples": ["Belum ada backup verified", "orphan upload muncul", "disk mulai sempit", "ada transaksi belum posting"], "action": "Buka System Health, buat full backup verified, dan catat warning."},
+            {"level": "LEVEL 1", "name": "Warning", "status_class": "warning", "examples": ["Belum ada backup verified", "orphan upload muncul", "disk mulai sempit", "ada transaksi belum posting"], "action": "Buka Kesehatan Sistem, buat full backup verified, dan catat warning."},
             {"level": "LEVEL 2", "name": "Data Risk", "status_class": "danger", "examples": ["missing upload reference", "journal imbalance", "foreign key warning", "backup gagal verified"], "action": "Hentikan patch lanjutan, buat salinan manual DB/uploads, cek Audit Log dan Backup Restore."},
             {"level": "LEVEL 3", "name": "Emergency", "status_class": "danger", "examples": ["database corrupt", "aplikasi tidak bisa start", "DB aktif terhapus", "restore sebelumnya salah"], "action": "Jangan input transaksi baru. Stop server, amankan sisa file, restore dari backup VERIFIED lewat SOP manual."},
         ],
         "decision_flow": [
             {"step": "1", "title": "Jangan lanjut input transaksi", "description": "Saat muncul error database, file hilang, atau angka aneh, hentikan input transaksi baru agar kerusakan tidak bertambah."},
-            {"step": "2", "title": "Buka System Health", "description": "Cek integrity, FK, journal balance, backup verified, missing/orphan upload, disk, dan migration."},
+            {"step": "2", "title": "Buka Kesehatan Sistem", "description": "Cek integrity, FK, journal balance, backup verified, missing/orphan upload, disk, dan migration."},
             {"step": "3", "title": "Cek Audit Log", "description": "Cari aksi terakhir: backup/download/restore preview, user change, payment, journal, payroll, procurement, atau delete/cancel."},
             {"step": "4", "title": "Amankan kondisi aktif", "description": "Sebelum restore, copy DB aktif dan folder uploads aktif ke folder pre-restore agar masih ada jalur balik."},
             {"step": "5", "title": "Pilih backup VERIFIED", "description": "Gunakan hanya full backup yang PASS pre-check, post-check, dan restore preview dry-run."},
@@ -103,7 +103,7 @@ def get_disaster_recovery_sop() -> Dict[str, object]:
             "Pastikan ZIP berisi database/postgres.dump dan uploads/digital_attachments/.",
             "Pulihkan DB dan uploads dari timestamp backup yang sama.",
             "Jalankan python run.py dan login OWNER.",
-            "Buka System Health, Backup, Lampiran Digital, Finance Invoice, Accounting Journal, Dashboard Owner, dan Audit Log.",
+            "Buka Kesehatan Sistem, Backup, Lampiran Digital, Finance Invoice, Accounting Journal, Dashboard Owner, dan Audit Log.",
         ],
         "do_not_do": [
             "Jangan restore saat server Flask masih berjalan.",
@@ -121,7 +121,7 @@ def get_disaster_recovery_sop() -> Dict[str, object]:
             "LOGISTICS/DELIVERY mengecek stok, procurement, delivery proof, dan file bukti lapangan.",
         ],
         "before_big_patch_checklist": [
-            "System Health status AMAN atau minimal tidak ada error kritis.",
+            "Kesehatan Sistem status AMAN atau minimal tidak ada error kritis.",
             "Full backup terbaru status VERIFIED.",
             "Restore preview dry-run PASS.",
             "Atomic smoke simulation PASS.",
@@ -151,7 +151,7 @@ def get_backup_restore_sop() -> Dict[str, object]:
             "Backup tidak boleh disebut VERIFIED sebelum pre-check, post-check, dan restore preview dry-run PASS.",
         ],
         "create_full_backup_steps": [
-            {"title": "1. Buka System Health", "description": "Pastikan DB integrity, FK, journal balance, folder upload, disk, dan migration tidak error."},
+            {"title": "1. Buka Kesehatan Sistem", "description": "Pastikan DB integrity, FK, journal balance, folder upload, disk, dan migration tidak error."},
             {"title": "2. Buka Backup & Restore", "description": "Pastikan panel pre-backup health check PASS sebelum membuat backup baru."},
             {"title": "3. Buat Full Backup", "description": "Gunakan tombol full backup DB + uploads. Isi alasan dan password re-confirm sesuai sensitive action guard."},
             {"title": "4. Tunggu status VERIFIED", "description": "Sistem menjalankan pre-check, staging, ZIP, post-check, dan restore preview dry-run."},
@@ -181,7 +181,7 @@ def get_backup_restore_sop() -> Dict[str, object]:
         ],
         "post_restore_checks": [
             "Login OWNER berhasil.",
-            "System Health terbuka dan DB integrity PASS.",
+            "Kesehatan Sistem terbuka dan DB integrity PASS.",
             "Foreign key check 0 error.",
             "Journal imbalance 0.",
             "Backup & Restore terbuka dan backup terbaru terbaca.",
@@ -213,7 +213,7 @@ def get_backup_restore_sop() -> Dict[str, object]:
 
 
 def get_recovery_sop_summary() -> Dict[str, object]:
-    """Small summary used by Backup/System Health pages."""
+    """Small summary used by Backup/Kesehatan Sistem pages."""
     return {
         "schema_version": "PRODUCTION_RECOVERY_SOP_SUMMARY_V1",
         "app_version": APP_VERSION,

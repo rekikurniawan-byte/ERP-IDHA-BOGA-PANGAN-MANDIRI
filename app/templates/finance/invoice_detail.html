@@ -14,7 +14,7 @@
             {% elif invoice.source_type == "DAILY_ORDER" %}
                 - Invoice Order
             {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                - Invoice Rekap Tagihan {{ term('sub_client') }}
+                - Invoice Tagihan Manual
             {% endif %}
         </p>
     </div>
@@ -182,7 +182,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Rekap Tagihan {{ term('sub_client') }}</h5>
+            <h5>Tagihan Manual</h5>
             {% if manual_billing_batch.input_source == 'MANUAL_BACKFILL' %}
             <p>Invoice ini dibuat dari Input Rekap Manual dari Buku. Status rekap ikut berubah saat invoice dibayar sebagian atau lunas.</p>
             {% else %}
@@ -244,7 +244,7 @@
                 {% elif invoice.source_type == "DAILY_ORDER" %}
                     Invoice Order Harian
                 {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                    Invoice Rekap Tagihan {{ term('sub_client') }}
+                    Invoice Tagihan Manual
                 {% else %}
                     {{ invoice.source_type or "-" }}
                 {% endif %}

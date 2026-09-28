@@ -216,7 +216,7 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         _link("Revenue Explorer", "Analisis omzet, kas masuk, piutang, dan sumber pendapatan.", "dashboard.revenue_explorer", "bi-graph-up-arrow"),
         _link("Expense Drilldown", "Baca beban per kategori dan akun.", "accounting.expense_drilldown", "bi-graph-down-arrow"),
         _link("Posting Status", "Cek jurnal otomatis/manual dan status posting.", "accounting.posting_status", "bi-clipboard-check"),
-        _link("System Health", "Cek DB, backup verified, upload, migration, dan recovery.", "settings.system_health", "bi-heart-pulse", True),
+        _link("Kesehatan Sistem", "Cek DB, backup verified, upload, migration, dan recovery.", "settings.system_health", "bi-heart-pulse", True),
         _link("Recovery Center", "Pusat keputusan aman sebelum patch/restore.", "settings.recovery_center", "bi-life-preserver", True),
         _link("SOP Recovery", "Panduan darurat backup, restore, dan drill.", "sop.disaster_recovery", "bi-journal-medical"),
     ]
