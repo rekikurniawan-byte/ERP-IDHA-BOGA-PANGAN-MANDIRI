@@ -440,9 +440,24 @@ Pengerasan sebelum produksi (urut risiko):
 | 7 | Kode mati & tambalan: pembuat jurnal lama yang tak dipanggil, 86 penanda PATCH/PRODUCTION, 41 modul rute `import *`, dua pembuat nomor invoice | Pemeliharaan | Bertahap |
 | 8 | Uji coba satu cabang dengan data nyata sebelum semua cabang | Validasi | **Ya** |
 
+### Pengerasan sebelum produksi — hasil (2026-09-28)
+
+| # | Hasil | Commit |
+|---|---|---|
+| 1 | Cutover dibaca dari `ACCOUNTING_LEGACY_CUTOVER`, bawaan kosong: database baru tidak melewati jurnal apa pun | `516f726` |
+| 2 | Jalur jurnal, invoice, ongkir, uang muka, dan settlement dihitung dengan Decimal (`app/utils/money.py`) | `4d1327b` |
+| 3 | Ditinjau: tidak ada kegagalan posting uang yang ditelan (31 tempat hanya helper format/parse). Nominal tak terbaca kini ditolak; tes penjaga melarang `except Exception: pass` | `cb85d60` |
+| 4 | `flask ops-check` (cek kesiapan, keluar 1 kalau FAIL), `flask backup-full` (backup + verifikasi), timer systemd sweep/backup/ops-check, panduan pemantauan | `7c233eb` |
+| 5 | Semua tes lulus. Tes audit commit menjaga aturan, bukan angka; ini membongkar commit di tengah konfirmasi draft yang melepas kunci baris — diperbaiki | `0abb75c` |
+| 6 | Panduan uji coba: `deployment/PILOT_SATU_CABANG.md` — **dijalankan tim**, bukan oleh kode | (commit ini) |
+
+Yang masih bertahap setelah produksi: merapikan CSS (±82.000 baris, 94 file
+override) dan membuang kode mati/tambalan (#6–7 di tabel penilaian).
+
 ### Sisa pekerjaan
 
-- Pengerasan sebelum produksi (tabel di atas), mulai dari #1.
+- Menjalankan uji coba satu cabang sesuai `deployment/PILOT_SATU_CABANG.md`.
+- Bertahap: CSS dan kode mati.
 
 ---
 
