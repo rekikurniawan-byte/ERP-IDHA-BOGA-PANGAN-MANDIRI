@@ -12,7 +12,8 @@ from app.extensions import db
 from app.models.finance import Invoice, InvoiceItem
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
 from app.services.mandor_invoice_helper_service import (
-    calculate_realtime_locked_base_quantities,
+    billable_base_quantities,
+    shortage_note,
     delivery_fee_invoice_lines,
     finance_safe_label,
     get_client_for_mandor_invoice,
@@ -36,7 +37,7 @@ def build_order_invoice_lines(order, mandor_id):
         mandor_name = finance_safe_label(getattr(detail, "mandor", None))
         location_name = finance_safe_label(getattr(detail, "delivery_location", None))
 
-        lunch_qty, dinner_qty = calculate_realtime_locked_base_quantities(
+        lunch_qty, dinner_qty, short_qty = billable_base_quantities(
             detail,
             is_after_lock_increase_revision,
         )
@@ -49,6 +50,7 @@ def build_order_invoice_lines(order, mandor_id):
                 "description": (
                     f"{order.order_number} | PIC {mandor_name} | {location_name} | "
                     f"Porsi locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                    f"{shortage_note(short_qty)}"
                 ),
                 "qty": total_qty,
                 "unit_price": price,

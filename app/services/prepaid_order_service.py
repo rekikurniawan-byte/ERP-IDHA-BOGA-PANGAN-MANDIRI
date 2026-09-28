@@ -322,6 +322,45 @@ def invoice_after_delivery_receipt(delivery_detail, created_by):
 
 # --- 5. Pengembalian uang muka (OWNER) ------------------------------------
 
+def order_leftover_prepayment(order, mandor_id):
+    """Sisa uang muka pesanan yang sudah ditagih (mis. karena kurang kirim tidak ditagih)."""
+    return sum(
+        (available_amount(detail_prepayments(detail)) for detail in order.details if int(detail.mandor_id) == int(mandor_id)),
+        ZERO,
+    )
+
+
+def advances_to_refund(branch_id):
+    """Uang muka pelanggan umum yang sisanya harus dikembalikan OWNER.
+
+    Dua keadaan: pesanannya ditolak setelah dibayar, atau pesanannya sudah
+    ditagih tapi uang mukanya lebih besar dari tagihan -- kurang kirim tidak
+    ditagih (keputusan owner 2026-09-28) dan kelebihannya dikembalikan.
+    Mengembalikan daftar (advance, alasan).
+    """
+    from app.models.operational import DailyOrderDetail
+    from app.models.system import PortalOrderDraft
+    from app.services.order_invoice_service import find_order_invoice
+
+    result = []
+    open_advances = AdvanceTransaction.query.filter(
+        AdvanceTransaction.branch_id == branch_id,
+        AdvanceTransaction.advance_type == CLIENT_DP_RECEIVED,
+        AdvanceTransaction.remaining_amount > 0,
+    ).order_by(AdvanceTransaction.id.asc()).all()
+    for advance in open_advances:
+        detail = DailyOrderDetail.query.get(advance.daily_order_detail_id) if advance.daily_order_detail_id else None
+        if detail is not None:
+            invoice = find_order_invoice(branch_id, detail.daily_order_id, detail.mandor_id)
+            if invoice is not None:
+                result.append((advance, f"Pesanan sudah ditagih ({invoice.invoice_number}); sisa uang muka dikembalikan."))
+            continue
+        draft = PortalOrderDraft.query.get(advance.portal_order_draft_id) if advance.portal_order_draft_id else None
+        if draft is not None and draft.status == "REJECTED":
+            result.append((advance, f"Pesanan portal #{draft.id} ditolak setelah dibayar."))
+    return result
+
+
 def refund_prepayments(*, advances, created_by, payment_method, bank_account_id=None, reason=None):
     """Kembalikan sisa uang muka ke pelanggan. Hanya OWNER (dicek advance_service). Tidak commit."""
     refunded = ZERO

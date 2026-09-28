@@ -321,6 +321,15 @@ def receive(detail_id):
             elif invoice is not None:
                 status_note = "lunas dari uang muka" if invoice.status == "PAID" else f"sisa tagihan Rp {float(invoice.remaining_amount or 0):,.0f}"
                 flash(f"Invoice {invoice.invoice_number} dibuat otomatis, {status_note}.", "success")
+                from app.services.prepaid_order_service import order_leftover_prepayment, rupiah
+
+                leftover = order_leftover_prepayment(delivery_detail.daily_order_detail.daily_order, delivery_detail.mandor_id)
+                if leftover > 0:
+                    flash(
+                        f"Uang muka pelanggan lebih {rupiah(leftover)} dari tagihan (kurang kirim tidak ditagih). "
+                        "OWNER perlu mengembalikannya di Finance > Uang Muka.",
+                        "warning",
+                    )
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
     delivery_detail_sla = calculate_delivery_detail_sla(delivery_detail)

@@ -72,6 +72,32 @@ def calculate_realtime_locked_base_quantities(detail, revision_predicate):
     return max(lunch_qty, 0), max(dinner_qty, 0)
 
 
+def billable_base_quantities(detail, revision_predicate):
+    """Porsi dasar yang ditagih: (siang, malam, kurang kirim yang tidak ditagih).
+
+    Dipesan (tanpa revisi tambah setelah lock) dikurangi kekurangan kirim yang
+    tercatat dan belum diganti -- keputusan owner 2026-09-28. Ongkir tetap
+    ditagih per pengiriman yang terjadi.
+    """
+    from sqlalchemy import inspect as sqlalchemy_inspect
+
+    from app.services.delivery_service import unreplaced_shortage_qty
+
+    lunch_qty, dinner_qty = calculate_realtime_locked_base_quantities(detail, revision_predicate)
+    # Hanya baris order yang tersimpan punya tanda terima; objek lain (mis.
+    # pratinjau di memori) ditagih sesuai pesanan.
+    state = sqlalchemy_inspect(detail, raiseerr=False)
+    if state is None or state.persistent is False or getattr(detail, "id", None) is None:
+        return lunch_qty, dinner_qty, 0
+    lunch_short = min(unreplaced_shortage_qty(detail.id, "LUNCH"), lunch_qty)
+    dinner_short = min(unreplaced_shortage_qty(detail.id, "DINNER"), dinner_qty)
+    return lunch_qty - lunch_short, dinner_qty - dinner_short, lunch_short + dinner_short
+
+
+def shortage_note(short_qty):
+    return f" | Kurang kirim {short_qty} porsi (tidak ditagih)" if short_qty else ""
+
+
 DELIVERY_FEE_ITEM_TYPE = "ONGKIR"
 DELIVERY_FEE_SOURCES = (
     ("DELIVERY_FEE_LUNCH", "lunch_delivery_fee", "siang"),

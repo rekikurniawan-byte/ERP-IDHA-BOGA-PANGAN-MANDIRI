@@ -56,6 +56,31 @@ def get_delivered_qty_for_order_detail(order_detail_id, delivery_type):
     return sum(detail.delivered_qty for detail in delivery_details)
 
 
+def unreplaced_shortage_qty(order_detail_id, delivery_type):
+    """Porsi kurang kirim yang tercatat di tanda terima dan belum diganti.
+
+    Keputusan owner 2026-09-28 (gladi pilot): porsi ini tidak ditagih. Hanya
+    kekurangan yang sudah tercatat di tanda terima yang dihitung; pengiriman
+    yang belum diterima tetap ditagih penuh supaya tidak ada pesanan lolos.
+    Kiriman pengganti (batch=SHORTAGE_REPLACEMENT) yang sudah diterima
+    mengurangi kekurangan.
+    """
+    rows = DeliveryDetail.query.join(Delivery).filter(
+        DeliveryDetail.daily_order_detail_id == order_detail_id,
+        Delivery.notes.like(f"%delivery_type={delivery_type}%"),
+        Delivery.status != "CANCELLED",
+    ).all()
+    shortage = replaced = 0
+    for row in rows:
+        if row.receipt is None:
+            continue
+        if "batch=SHORTAGE_REPLACEMENT" in (row.delivery.notes or ""):
+            replaced += int(row.delivered_qty or 0)
+        else:
+            shortage += int(row.shortage_qty or 0)
+    return max(shortage - replaced, 0)
+
+
 def get_remaining_delivery_rows(daily_order, delivery_type):
     rows = []
     total_order_qty = 0

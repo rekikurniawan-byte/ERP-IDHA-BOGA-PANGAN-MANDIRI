@@ -748,13 +748,34 @@ def _coverage_rows(branch_id):
     return rows
 
 
+def _prepayment_refund_rows(branch_id):
+    from app.services.prepaid_order_service import advances_to_refund
+
+    rows = [
+        _row(
+            status="WARNING",
+            check="Uang muka harus dikembalikan",
+            item=advance.advance_number,
+            expected="Rp 0",
+            actual=_money(advance.remaining_amount),
+            difference=_money(advance.remaining_amount),
+            note=f"{reason} OWNER mengembalikannya di Finance > Uang Muka.",
+        )
+        for advance, reason in advances_to_refund(branch_id)
+    ]
+    if not rows:
+        rows.append(_row(status="AMAN", check="Uang muka harus dikembalikan", item="Semua uang muka pelanggan",
+                         note="Tidak ada sisa uang muka dari pesanan yang ditolak atau sudah ditagih."))
+    return rows
+
+
 def get_data_health_report(branch_id):
     sections = [
         _section(
             "invoice",
             "Invoice, Payment, dan Piutang",
             "Validasi total invoice, payment, remaining, dan invoice cancelled agar tidak masuk piutang aktif.",
-            _invoice_rows(branch_id) + _receivable_rows(branch_id),
+            _invoice_rows(branch_id) + _receivable_rows(branch_id) + _prepayment_refund_rows(branch_id),
         ),
         _section(
             "journal",

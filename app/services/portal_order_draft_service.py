@@ -633,13 +633,23 @@ def _duplicate_gate_for_draft(draft, daily_order=None):
             "message": "Order harian existing sudah dikunci.",
         }
     if existing_detail:
+        merge_error = _merge_conflict(draft, existing_detail)
+        if merge_error:
+            return daily_order, existing_detail, {
+                "key": "DUPLICATE",
+                "title": "Order Internal",
+                "status": "BLOCKED",
+                "label": "Sudah Ada",
+                "tone": "red",
+                "message": merge_error,
+            }
         return daily_order, existing_detail, {
             "key": "DUPLICATE",
             "title": "Order Internal",
-            "status": "BLOCKED",
-            "label": "Sudah Ada",
-            "tone": "red",
-            "message": f"Detail {T.sub_client_lower}/lokasi sudah ada pada order harian tanggal ini.",
+            "status": "OK",
+            "label": "Digabung",
+            "tone": "green",
+            "message": f"Digabung ke baris {T.sub_client_lower}/lokasi yang sama (sesi makan lain) di order harian ini.",
         }
     return daily_order, existing_detail, {
         "key": "DUPLICATE",
@@ -649,6 +659,25 @@ def _duplicate_gate_for_draft(draft, daily_order=None):
         "tone": "green",
         "message": f"Belum ada detail {T.sub_client_lower}/lokasi yang bentrok.",
     }
+
+
+def _merge_conflict(draft, detail):
+    """Pesanan portal dikirim per sesi makan, tapi satu lokasi per hari punya satu
+    baris order (siang + malam). Sesi yang masih kosong digabung ke baris itu
+    (gladi pilot 2026-09-28: mandor tidak bisa memesan siang dan malam). Yang
+    ditolak hanya sesi yang sudah terisi (pesanan ganda) atau harga berbeda.
+    """
+    meal_qty = detail.lunch_qty if draft.meal_type == "LUNCH" else detail.dinner_qty
+    if int(meal_qty or 0) > 0:
+        return f"Pesanan {_meal_label(draft.meal_type).lower()} untuk {T.location_lower} ini sudah ada di order harian tanggal ini."
+    if draft.price_per_portion is not None and detail.price_per_portion is not None and (
+        _money(draft.price_per_portion) != _money(detail.price_per_portion)
+    ):
+        return (
+            f"Harga draft Rp {_money(draft.price_per_portion):,.0f} berbeda dengan pesanan lain di "
+            f"{T.location_lower} ini (Rp {_money(detail.price_per_portion):,.0f}). Review manual diperlukan."
+        )
+    return None
 
 
 def _only_payment_blocks(gate):
@@ -1286,8 +1315,10 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
         mandor_id=draft.mandor_id,
         delivery_location_id=draft.delivery_location_id,
     ).first()
-    if existing_detail:
-        return draft, False, f"Detail {T.sub_client_lower}/lokasi sudah ada di order harian. Review manual diperlukan."
+    if existing_detail is not None:
+        merge_error = _merge_conflict(draft, existing_detail)
+        if merge_error:
+            return draft, False, merge_error
 
     # Harga terkunci di draft. Draft lama (sebelum daftar harga) diberi harga
     # yang berlaku sekarang; tanpa harga sama sekali, draft tidak bisa masuk order.
@@ -1315,20 +1346,33 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
 
     lunch_qty = draft.portion_qty if draft.meal_type == "LUNCH" else 0
     dinner_qty = draft.portion_qty if draft.meal_type == "DINNER" else 0
-    detail = DailyOrderDetail(
-        daily_order_id=daily_order.id,
-        mandor_id=draft.mandor_id,
-        delivery_location_id=draft.delivery_location_id,
-        price_per_portion=price_per_portion,
-        price_source=price_source,
-        lunch_qty=lunch_qty,
-        dinner_qty=dinner_qty,
-        total_qty=draft.portion_qty,
-        lunch_delivery_fee=delivery_fee if lunch_qty else 0,
-        dinner_delivery_fee=delivery_fee if dinner_qty else 0,
-        notes=f"Konfirmasi portal draft #{draft.id}. {draft.notes or ''}".strip(),
-    )
-    db.session.add(detail)
+    note = f"Konfirmasi portal draft #{draft.id}. {draft.notes or ''}".strip()
+    if existing_detail is not None:
+        # Sesi makan lain untuk lokasi yang sama: isi sesi yang masih kosong.
+        detail = existing_detail
+        if lunch_qty:
+            detail.lunch_qty = lunch_qty
+            detail.lunch_delivery_fee = delivery_fee
+        else:
+            detail.dinner_qty = dinner_qty
+            detail.dinner_delivery_fee = delivery_fee
+        detail.total_qty = int(detail.lunch_qty or 0) + int(detail.dinner_qty or 0)
+        detail.notes = f"{detail.notes or ''} {note}".strip()
+    else:
+        detail = DailyOrderDetail(
+            daily_order_id=daily_order.id,
+            mandor_id=draft.mandor_id,
+            delivery_location_id=draft.delivery_location_id,
+            price_per_portion=price_per_portion,
+            price_source=price_source,
+            lunch_qty=lunch_qty,
+            dinner_qty=dinner_qty,
+            total_qty=draft.portion_qty,
+            lunch_delivery_fee=delivery_fee if lunch_qty else 0,
+            dinner_delivery_fee=delivery_fee if dinner_qty else 0,
+            notes=note,
+        )
+        db.session.add(detail)
     db.session.flush()
 
     # Uang muka yang dibayar untuk draft ini ikut ke baris order, supaya invoice

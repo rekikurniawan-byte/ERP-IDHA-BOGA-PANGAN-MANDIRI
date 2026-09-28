@@ -2,7 +2,8 @@
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.services.mandor_invoice_helper_service import (
     delivery_fee_invoice_lines,
-    calculate_realtime_locked_base_quantities,
+    billable_base_quantities,
+    shortage_note,
     get_client_for_mandor_invoice,
 )
 from app.utils.terms import T
@@ -214,7 +215,7 @@ def generate_period_invoice_preview():
                     mandor_name = _period_safe_label(getattr(detail, "mandor", None))
                     location_name = _period_safe_label(getattr(detail, "delivery_location", None))
 
-                    lunch_qty, dinner_qty = calculate_realtime_locked_base_quantities(
+                    lunch_qty, dinner_qty, short_qty = billable_base_quantities(
                         detail,
                         _period_is_after_lock_increase,
                     )
@@ -238,6 +239,7 @@ def generate_period_invoice_preview():
                             "description": (
                                 f"{order.order_number} | PIC {mandor_name} | {location_name} | "
                                 f"Locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                                f"{shortage_note(short_qty)}"
                             ),
                             "qty": total_qty,
                             "unit_price": price,
@@ -451,7 +453,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
             mandor_name = _period_safe_label(getattr(detail, "mandor", None))
             location_name = _period_safe_label(getattr(detail, "delivery_location", None))
 
-            lunch_qty, dinner_qty = calculate_realtime_locked_base_quantities(
+            lunch_qty, dinner_qty, short_qty = billable_base_quantities(
                 detail,
                 _period_is_after_lock_increase,
             )
@@ -466,6 +468,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
                         "description": (
                             f"{order.order_number} | PIC {mandor_name} | {location_name} | "
                             f"Locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                            f"{shortage_note(short_qty)}"
                         ),
                         "qty": total_qty,
                         "unit_price": price,
