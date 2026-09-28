@@ -88,8 +88,11 @@
                 <strong>{{ "Aktif" if context.allowed else "Belum Aktif" }}</strong>
             </div>
             <div class="portal-workflow-facts">
+                {# Pelanggan umum adalah client dan sub client-nya sendiri: label PT/Mandor hanya membingungkan. #}
+                {% if current_user.role != "PORTAL_CUSTOMER" %}
                 <article><span>Perusahaan</span><strong>{{ scope.client_ids|length }}</strong></article>
                 <article><span>{{ term('sub_client') }}</span><strong>{{ scope.mandor_ids|length }}</strong></article>
+                {% endif %}
                 <article><span>Lokasi</span><strong>{{ context.location_cards|length }}</strong></article>
                 <article><span>Menunggu</span><strong>{{ summary.pending }}</strong></article>
             </div>
@@ -269,8 +272,10 @@
                     <p>{{ location.description or "Belum ada catatan lokasi." }}</p>
                 </div>
                 <dl>
+                    {% if current_user.role != "PORTAL_CUSTOMER" %}
                     <div><dt>{{ term('client') }}</dt><dd>{{ location.client_name }}</dd></div>
                     <div><dt>{{ term('sub_client') }}</dt><dd>{{ location.mandor_name }}</dd></div>
+                    {% endif %}
                     <div><dt>Status</dt><dd>{{ "Aktif" if location.is_active else "Nonaktif" }}</dd></div>
                 </dl>
             </article>

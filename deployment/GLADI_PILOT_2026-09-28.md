@@ -85,20 +85,19 @@ Tambahan `ops-check` dari temuan gladi:
 
 ## Keputusan yang perlu OWNER
 
-1. **Akun portal untuk client kontrak.** Pelanggan umum otomatis terhubung saat
+1. **Akun portal untuk client kontrak.** *Owner setuju dibuat; alurnya dijelaskan dulu.* Pelanggan umum otomatis terhubung saat
    mendaftar, tapi akun portal PT/mandor tidak bisa dihubungkan ke client-nya —
    belum ada halamannya. Perlu dibuat halaman "hubungkan akun portal ke PT /
    mandor / lokasi" (alurnya akan dijelaskan dulu sebelum dibangun). Sementara
    itu pesanan kontrak diinput admin.
-2. **Pengiriman kurang yang tidak diganti.** Mandor Joko pesan 25, diterima 23.
+2. **Pengiriman kurang yang tidak diganti.** *Menunggu pilihan owner.* Mandor Joko pesan 25, diterima 23.
    Invoice periode tetap menagih **25**. Yang benar: tagih yang dipesan, atau
    yang diterima?
 3. **Pilih pengantar per pengiriman.** Sekarang semua pengiriman otomatis
-   diberikan ke pengantar aktif pertama; tidak bisa memilih kalau ada lebih
-   dari satu kendaraan. Perlu dipilih per trip?
+   diberikan ke pengantar aktif pertama. *Keputusan owner 28-09-2026: tetap
+   otomatis.*
 4. Kecil: di portal pelanggan umum masih tampil istilah cabang ("PT Ibu Rina",
-   "Mandor Ibu Rina") karena istilah cabang pilot diatur PT/Mandor. Untuk
-   pelanggan umum sebaiknya disembunyikan?
+   "Mandor Ibu Rina"). *Keputusan owner: disembunyikan — sudah dikerjakan.*
 
 ## Yang belum bisa digladikan (butuh server / data nyata)
 

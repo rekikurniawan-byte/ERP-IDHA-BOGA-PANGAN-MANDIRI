@@ -210,3 +210,24 @@ def test_bootstrap_aman_diulang_dan_tidak_membuat_owner_kedua(ctx):
     assert Branch.query.filter_by(code=code).count() == 1
     assert not first["owner_created"] or owners_before == 0
     assert User.query.filter_by(role="OWNER").count() == max(owners_before, 1)
+
+
+# --- portal: pelanggan umum tidak melihat label PT/Mandor --------------------
+
+def test_halaman_pesan_pelanggan_umum_tanpa_label_pt_mandor(app, ctx):
+    from app.models.master import User
+
+    s = _setup(ctx)
+    username = f"cust-{uuid4().hex[:8]}"
+    app.test_client().post("/portal/register", data={
+        "full_name": "Ibu Uji", "phone": "081570000999", "username": username, "branch_id": s.branch.id,
+        "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026", "location_name": "Rumah Uji",
+        "delivery_zone_id": s.zone.id, "address": "Jl. Uji No. 1",
+    })
+    customer = User.query.filter_by(username=username).one()
+
+    page = _login(app, customer).get("/portal/orders/draft").get_data(as_text=True)
+
+    assert "Rumah Uji" in page
+    assert "<span>Perusahaan</span>" not in page
+    assert "<dt>Mandor</dt>" not in page and "<dt>Sub Client</dt>" not in page
