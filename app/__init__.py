@@ -174,6 +174,41 @@ def create_app():
         for branch_id, result in sweep_all_branches().items():
             print(f"Cabang {branch_id}: {result['checked']} akun diperiksa, {len(result['escalated'])} naik status.")
 
+    @flask_app.cli.command("backup-full")
+    def backup_full_command():
+        """Backup penuh (database + lampiran) lalu verifikasi isinya (untuk penjadwal server)."""
+        import sys
+
+        from app.services.backup_service import create_full_backup_package, verify_full_backup_package
+
+        try:
+            backup = create_full_backup_package(created_by="SCHEDULER")
+        except Exception as error:  # noqa: BLE001 - penjadwal harus melihat pesan yang jelas
+            print(f"FAIL backup tidak dibuat: {error}")
+            sys.exit(1)
+        result = verify_full_backup_package(backup["path"])
+        print(f"{result['status']} {backup['name']} ({backup['size_bytes']} byte)")
+        for error in result.get("errors", []):
+            print(f"  ERROR {error}")
+        if result["status"] != "PASS":
+            sys.exit(1)
+
+    @flask_app.cli.command("ops-check")
+    def ops_check_command():
+        """Cek kesiapan produksi. Keluar dengan kode 1 kalau ada FAIL."""
+        import sys
+
+        from app.services.readiness_service import FAIL, run_readiness_checks
+
+        checks = run_readiness_checks()
+        for check in checks:
+            print(f"[{check.status}] {check.name}: {check.message}")
+        failed = sum(1 for check in checks if check.status == FAIL)
+        print()
+        print(f"{len(checks)} cek, {failed} FAIL.")
+        if failed:
+            sys.exit(1)
+
 
     @flask_app.after_request
     def add_security_headers(response):

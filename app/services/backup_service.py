@@ -113,8 +113,16 @@ def _redact_database_url(uri: str) -> str:
 
 
 def _pg_dump(output_path: Path) -> None:
-    cmd = ["pg_dump", "--format=custom", "--no-owner", "--no-privileges", "--file", str(output_path), _postgres_client_url(_database_url())]
-    completed = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # PG_DUMP_PATH untuk server yang pg_dump-nya tidak ada di PATH (mis. Windows).
+    executable = os.getenv("PG_DUMP_PATH") or "pg_dump"
+    cmd = [executable, "--format=custom", "--no-owner", "--no-privileges", "--file", str(output_path), _postgres_client_url(_database_url())]
+    try:
+        completed = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except FileNotFoundError as error:
+        raise RuntimeError(
+            f"pg_dump tidak ditemukan ({executable}). Pasang PostgreSQL client tools "
+            "(Linux: paket postgresql-client) atau set PG_DUMP_PATH ke lokasi pg_dump."
+        ) from error
     if completed.returncode != 0:
         raise RuntimeError("pg_dump gagal: " + (completed.stderr or completed.stdout or "unknown error"))
     if not output_path.exists() or output_path.stat().st_size <= 0:

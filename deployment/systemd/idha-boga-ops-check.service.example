@@ -1,0 +1,12 @@
+# Salin ke /etc/systemd/system/, lalu: systemctl daemon-reload && systemctl enable --now idha-boga-ops-check.timer
+[Unit]
+Description=Idha Boga - cek kesiapan harian; FAIL membuat unit ini gagal
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=idhaboga
+Group=www-data
+WorkingDirectory=/opt/idha-boga/app
+EnvironmentFile=/opt/idha-boga/app/.env.production
+ExecStart=/opt/idha-boga/venv/bin/flask --app run ops-check

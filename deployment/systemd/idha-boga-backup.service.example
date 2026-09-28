@@ -1,0 +1,12 @@
+# Salin ke /etc/systemd/system/, lalu: systemctl daemon-reload && systemctl enable --now idha-boga-backup.timer
+[Unit]
+Description=Idha Boga - backup penuh harian (database + lampiran) lalu verifikasi
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=idhaboga
+Group=www-data
+WorkingDirectory=/opt/idha-boga/app
+EnvironmentFile=/opt/idha-boga/app/.env.production
+ExecStart=/opt/idha-boga/venv/bin/flask --app run backup-full

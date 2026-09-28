@@ -25,9 +25,40 @@ python -m venv /opt/idha-boga/venv
 /opt/idha-boga/venv/bin/pip install -r /opt/idha-boga/app/requirements.txt
 
 cd /opt/idha-boga/app
-flask db upgrade
+# Selalu sebagai user aplikasi dengan .env.production: tabel yang dibuat user
+# database lain membuat aplikasi kena "permission denied".
+sudo -u idhaboga env $(cat .env.production | xargs) /opt/idha-boga/venv/bin/flask --app run db upgrade
 python tools/check_production_runtime_foundation.py
 python tools/check_production_health_monitoring.py
+/opt/idha-boga/venv/bin/flask --app run ops-check   # wajib 0 FAIL sebelum dibuka ke pengguna
+```
+
+## Penjadwal harian (systemd timer)
+
+| Unit | Jam | Perintah | Guna |
+|---|---|---|---|
+| `idha-boga-credit-sweep` | 00:30 | `flask --app run credit-sweep` | Naikkan status akun kredit yang menunggak (tanpa menunggu ada yang login) |
+| `idha-boga-backup` | 02:00 | `flask --app run backup-full` | Backup penuh database + lampiran, lalu diverifikasi |
+| `idha-boga-ops-check` | 06:00 | `flask --app run ops-check` | Cek kesiapan; ada FAIL = unit gagal |
+
+```bash
+sudo cp deployment/systemd/idha-boga-*.service.example /etc/systemd/system/   # buang akhiran .example
+sudo cp deployment/systemd/idha-boga-*.timer.example /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now idha-boga-credit-sweep.timer idha-boga-backup.timer idha-boga-ops-check.timer
+systemctl list-timers 'idha-boga-*'
+```
+
+`backup-full` butuh `pg_dump` (paket `postgresql-client`, versi sama dengan server
+PostgreSQL). Kalau tidak ada di PATH, set `PG_DUMP_PATH`. Backup tetap harus
+disalin ke luar server dan diuji pulihkan berkala (lihat BACKUP_RESTORE_RECOVERY_SOP.md).
+
+## Pemantauan harian
+
+```bash
+systemctl --failed                                  # unit gagal (backup/ops-check/sweep)
+journalctl -u idha-boga-ops-check --since today     # hasil cek kesiapan hari ini
+tail -n 100 /var/log/idha-boga/error.log            # error aplikasi (log berputar, lihat deployment/logrotate)
 ```
 
 ## Endpoint monitoring
