@@ -114,6 +114,30 @@ def test_audit_manual_backfill_duplicates_flags_business_key_and_invoice_source_
     assert any("source yang sama" in violation.message for violation in result.violations)
 
 
+def test_audit_invoice_payment_integrity_counts_prepayment_settlements():
+    """Invoice pelanggan umum lunas dari uang muka (Dr 2008 Cr 1004), tanpa baris Payment."""
+    invoice = SimpleNamespace(id=7, invoice_number="INV-7", status="PAID", total_amount=280000, paid_amount=280000, remaining_amount=0)
+    settlements = [
+        SimpleNamespace(settlement_type="CLIENT_INVOICE", reference_id=7, amount=200000),
+        SimpleNamespace(settlement_type="CLIENT_INVOICE", reference_id=7, amount=80000),
+        SimpleNamespace(settlement_type="CLIENT_DP_REFUND", reference_id=None, amount=50000),
+    ]
+
+    assert audit_invoice_payment_integrity([invoice], [], settlements).violations == ()
+    assert len(audit_invoice_payment_integrity([invoice], [], settlements[:1]).violations) == 1
+
+
+def test_audit_invoice_sources_allow_one_invoice_per_sub_client_of_an_order():
+    invoices = [
+        SimpleNamespace(id=1, invoice_number="INV-1", source_type="DAILY_ORDER", source_order_id=5, mandor_id=1, status="PAID"),
+        SimpleNamespace(id=2, invoice_number="INV-2", source_type="DAILY_ORDER", source_order_id=5, mandor_id=2, status="PAID"),
+    ]
+    assert audit_manual_backfill_duplicates([], invoices).violations == ()
+
+    invoices.append(SimpleNamespace(id=3, invoice_number="INV-3", source_type="DAILY_ORDER", source_order_id=5, mandor_id=2, status="DRAFT"))
+    assert len(audit_manual_backfill_duplicates([], invoices).violations) == 1
+
+
 def test_render_report_includes_database_error_when_unavailable():
     report = render_report([], db_error="OperationalError: connection refused")
 

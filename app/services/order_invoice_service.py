@@ -53,7 +53,9 @@ def build_order_invoice_lines(order, mandor_id):
                 "qty": total_qty,
                 "unit_price": price,
                 "subtotal": total_qty * price,
-                "source_type": "DAILY_ORDER_DETAIL",
+                # Nama yang sama dengan invoice periode: cek kesehatan data, laporan
+                # catering, dan jejak order-sampai-lunas mengenali ORDER_DETAIL.
+                "source_type": "ORDER_DETAIL",
                 "source_id": detail.id
             })
 

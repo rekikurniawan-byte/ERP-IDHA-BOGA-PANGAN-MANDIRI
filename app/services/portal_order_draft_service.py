@@ -312,10 +312,13 @@ def _draft_payment_proof_counts(draft):
     pending = sum(1 for row in rows if row.attachment_type == PAYMENT_PROOF_PENDING_TYPE)
     verified = sum(1 for row in rows if row.attachment_type in PAYMENT_PROOF_VERIFIED_TYPES)
     rejected = sum(1 for row in rows if row.attachment_type == "PAYMENT_PROOF_REJECTED")
+    # Diverifikasi tapi uang mukanya belum dicatat Finance.
+    unrecorded = sum(1 for row in rows if row.attachment_type == "PAYMENT_PROOF_VERIFIED")
     return {
         "total": len(rows),
         "pending": pending,
         "verified": verified,
+        "unrecorded": unrecorded,
         "rejected": rejected,
         "latest": rows[0] if rows else None,
     }
@@ -580,13 +583,22 @@ def _payment_gate_for_draft(draft, owner_override=False):
             "message": f"OWNER meloloskan pesanan sebelum lunas. {due_note}",
             "needs_payment": False,
         }
-    if proof["pending"] or proof["verified"]:
+    if proof["pending"] or proof.get("unrecorded"):
         return {
             **base,
             "status": "BLOCKED",
             "label": "Menunggu Finance",
             "tone": "orange",
             "message": f"Bukti pembayaran menunggu Finance mencatat uang mukanya. {due_note}",
+            "needs_payment": True,
+        }
+    if paid > 0 and total is not None:
+        return {
+            **base,
+            "status": "BLOCKED",
+            "label": "Kurang Bayar",
+            "tone": "red",
+            "message": f"Pembayaran kurang {rupiah(total - paid)}. {due_note}",
             "needs_payment": True,
         }
     return {
@@ -1338,6 +1350,7 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
             metadata={
                 "total_amount": str(payment_gate.get("total_amount")),
                 "paid_amount": str(payment_gate.get("paid_amount")),
+                "reason": _clean_text(review_note),
             },
             user_id=getattr(admin_user, "id", None),
             branch_id=draft.branch_id,

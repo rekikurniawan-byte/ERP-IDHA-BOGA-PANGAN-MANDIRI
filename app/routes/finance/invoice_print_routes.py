@@ -183,7 +183,7 @@ def build_invoice_print_operational_data(invoice):
         source_id = getattr(item, "source_id", None)
         source_detail = {}
 
-        if source_type == "DAILY_ORDER_DETAIL":
+        if source_type in {"ORDER_DETAIL", "DAILY_ORDER_DETAIL"}:
             source_detail = _invoice_print_resolve_daily_order_detail(source_id)
 
         resolved_qty = qty or _invoice_print_float(source_detail.get("qty"))

@@ -2,6 +2,7 @@ import hashlib
 from pathlib import Path
 from uuid import uuid4
 
+import click
 from flask import Flask, g, render_template, request
 from flask_wtf.csrf import CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -173,6 +174,39 @@ def create_app():
 
         for branch_id, result in sweep_all_branches().items():
             print(f"Cabang {branch_id}: {result['checked']} akun diperiksa, {len(result['escalated'])} naik status.")
+
+    @flask_app.cli.command("bootstrap")
+    @click.option("--branch-code", required=True, help="Kode cabang pertama, mis. PUSAT.")
+    @click.option("--branch-name", required=True, help="Nama cabang pertama.")
+    @click.option("--owner-username", required=True, help="Username OWNER pertama.")
+    @click.option("--owner-name", default="Owner", help="Nama lengkap OWNER.")
+    def bootstrap_command(branch_code, branch_name, owner_username, owner_name):
+        """Isi awal database baru: COA acuan, cabang pertama, OWNER pertama (aman diulang).
+
+        Password OWNER dibaca dari BOOTSTRAP_OWNER_PASSWORD, atau ditanyakan.
+        """
+        import os
+        import sys
+
+        from app.services.bootstrap_service import BootstrapError, bootstrap_company
+
+        password = os.getenv("BOOTSTRAP_OWNER_PASSWORD") or click.prompt(
+            "Password OWNER", hide_input=True, confirmation_prompt=True
+        )
+        try:
+            result = bootstrap_company(
+                branch_code=branch_code,
+                branch_name=branch_name,
+                owner_username=owner_username,
+                owner_full_name=owner_name,
+                owner_password=password,
+            )
+        except BootstrapError as error:
+            print(f"FAIL {error}")
+            sys.exit(1)
+        print(f"COA: {len(result['accounts_created'])} akun ditambahkan.")
+        print(f"Cabang {result['branch'].name}: {'dibuat' if result['branch_created'] else 'sudah ada'}.")
+        print(f"OWNER {result['owner'].username}: {'dibuat' if result['owner_created'] else 'sudah ada, tidak diubah'}.")
 
     @flask_app.cli.command("backup-full")
     def backup_full_command():

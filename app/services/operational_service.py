@@ -122,7 +122,11 @@ def create_order_snapshot(daily_order, created_by, commit=True):
             "mandor_name": detail.mandor.name if detail.mandor else None,
             "delivery_location_id": detail.delivery_location_id,
             "location_name": detail.delivery_location.location_name if detail.delivery_location else None,
-            "price_per_portion": detail.price_per_portion,
+            # Kolom uang bertipe Numeric terbaca sebagai Decimal, yang tidak bisa
+            # langsung dijadikan JSON (mengunci order crash di database baru).
+            "price_per_portion": None if detail.price_per_portion is None else str(detail.price_per_portion),
+            "lunch_delivery_fee": str(detail.lunch_delivery_fee or 0),
+            "dinner_delivery_fee": str(detail.dinner_delivery_fee or 0),
             "lunch_qty": detail.lunch_qty,
             "dinner_qty": detail.dinner_qty,
             "total_qty": detail.total_qty,
@@ -132,7 +136,7 @@ def create_order_snapshot(daily_order, created_by, commit=True):
     snapshot = OrderSnapshot(
         daily_order_id=daily_order.id,
         snapshot_time=datetime.utcnow(),
-        snapshot_data=json.dumps(snapshot_details),
+        snapshot_data=json.dumps(snapshot_details, default=str),
         created_by=created_by
     )
 

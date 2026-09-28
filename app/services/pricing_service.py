@@ -164,6 +164,12 @@ def set_portion_price(*, branch_id, client_id=None, price, effective_from, creat
         raise PricingError("Client tidak ditemukan.")
 
     previous = price_in_effect(branch_id, client_id, effective_from)
+    if previous is not None and _money(previous.price_per_portion) == amount:
+        # Simpan ulang harga yang sama (klik dua kali, form dikirim ulang) tidak
+        # boleh menumpuk baris harga dan jejak audit palsu.
+        raise PricingError(
+            f"Harga Rp {amount:,.0f} sudah berlaku pada {effective_from.strftime('%d-%m-%Y')}; tidak ada yang diubah."
+        )
     row = PortionPrice(
         branch_id=branch_id,
         client_id=client_id or None,
@@ -188,7 +194,7 @@ def set_portion_price(*, branch_id, client_id=None, price, effective_from, creat
         ),
         old_value={"price_per_portion": str(previous.price_per_portion)} if previous else None,
         new_value={"price_per_portion": str(amount), "effective_from": effective_from.isoformat()},
-        metadata={"client_id": client_id},
+        metadata={"client_id": client_id, "reason": (notes or "").strip()},
         user_id=created_by,
         branch_id=branch_id,
         commit=False,
@@ -523,6 +529,10 @@ def set_delivery_fee(*, branch_id, zone_id=None, client_id=None, fee, effective_
         target = f"kontrak {client.name}"
 
     previous = fee_in_effect(branch_id, zone_id, client_id, effective_from)
+    if previous is not None and Decimal(previous.fee) == Decimal(amount):
+        raise PricingError(
+            f"Ongkir {target} Rp {amount:,.0f} sudah berlaku pada {effective_from.strftime('%d-%m-%Y')}; tidak ada yang diubah."
+        )
     row = DeliveryFee(
         branch_id=branch_id,
         zone_id=zone_id or None,
@@ -547,7 +557,7 @@ def set_delivery_fee(*, branch_id, zone_id=None, client_id=None, fee, effective_
         ),
         old_value={"fee": str(previous.fee)} if previous else None,
         new_value={"fee": str(amount), "effective_from": effective_from.isoformat()},
-        metadata={"zone_id": zone_id, "client_id": client_id},
+        metadata={"zone_id": zone_id, "client_id": client_id, "reason": (notes or "").strip()},
         user_id=created_by,
         branch_id=branch_id,
         commit=False,

@@ -111,10 +111,19 @@ def audit_journal_balances(journals: Iterable[Any]) -> AuditResult:
     return AuditResult("Debit = Kredit", checked, tuple(violations))
 
 
-def audit_invoice_payment_integrity(invoices: Iterable[Any], payments: Iterable[Any]) -> AuditResult:
+# Pelunasan invoice dari uang muka / deposit (AdvanceSettlement) juga pembayaran:
+# invoice pelanggan umum yang dibayar di muka lunas lewat Dr 2008 Cr 1004, tanpa
+# baris Payment.
+INVOICE_SETTLEMENT_TYPES = {"CLIENT_INVOICE", "DEPOSIT_TO_INVOICE"}
+
+
+def audit_invoice_payment_integrity(invoices: Iterable[Any], payments: Iterable[Any], settlements: Iterable[Any] = ()) -> AuditResult:
     payments_by_invoice: dict[Any, list[Any]] = defaultdict(list)
     for payment in payments:
         payments_by_invoice[_value(payment, "invoice_id")].append(payment)
+    for settlement in settlements:
+        if str(_value(settlement, "settlement_type", "") or "").upper() in INVOICE_SETTLEMENT_TYPES:
+            payments_by_invoice[_value(settlement, "reference_id")].append(settlement)
 
     violations: list[InvariantViolation] = []
     checked = 0
@@ -251,7 +260,7 @@ def audit_stock_movements(
 
 def audit_manual_backfill_duplicates(batches: Iterable[Any], invoices: Iterable[Any]) -> AuditResult:
     active_batches: dict[tuple[Any, ...], list[Any]] = defaultdict(list)
-    invoice_sources: dict[tuple[Any, Any], list[Any]] = defaultdict(list)
+    invoice_sources: dict[tuple[Any, ...], list[Any]] = defaultdict(list)
     violations: list[InvariantViolation] = []
     checked = 0
 
@@ -284,7 +293,9 @@ def audit_manual_backfill_duplicates(batches: Iterable[Any], invoices: Iterable[
         source_type = _value(invoice, "source_type")
         source_id = _value(invoice, "source_order_id")
         if source_type and source_id:
-            invoice_sources[(source_type, source_id)].append(invoice)
+            # Satu order harian ditagih per sub client (find_order_invoice), jadi
+            # beberapa invoice untuk order yang sama tapi sub client berbeda wajar.
+            invoice_sources[(source_type, source_id, _value(invoice, "mandor_id"))].append(invoice)
 
     for source_key, rows in invoice_sources.items():
         if len(rows) > 1:
@@ -364,7 +375,7 @@ def render_report(results: Iterable[AuditResult], *, db_error: str | None = None
 def collect_results_from_database() -> list[AuditResult]:
     from app import create_app
     from app.models.accounting import Journal
-    from app.models.finance import Invoice, ManualBillingBatch, Payment, SupplierBill, SupplierPayment
+    from app.models.finance import AdvanceSettlement, Invoice, ManualBillingBatch, Payment, SupplierBill, SupplierPayment
     from app.models.logistics import StockMovement, StockOpeningBalance
 
     app = create_app()
@@ -372,6 +383,7 @@ def collect_results_from_database() -> list[AuditResult]:
         journals = Journal.query.all()
         invoices = Invoice.query.all()
         payments = Payment.query.all()
+        settlements = AdvanceSettlement.query.all()
         supplier_bills = SupplierBill.query.all()
         supplier_payments = SupplierPayment.query.all()
         stock_movements = StockMovement.query.all()
@@ -380,7 +392,7 @@ def collect_results_from_database() -> list[AuditResult]:
 
         return [
             audit_journal_balances(journals),
-            audit_invoice_payment_integrity(invoices, payments),
+            audit_invoice_payment_integrity(invoices, payments, settlements),
             audit_supplier_bill_payment_integrity(supplier_bills, supplier_payments),
             audit_stock_movements(stock_movements, opening_balances=stock_opening_balances),
             audit_manual_backfill_duplicates(manual_batches, invoices),

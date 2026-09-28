@@ -592,7 +592,11 @@ def create_advance_settlement(
 
     settlement_type = _normalize(settlement_type)
     if settlement_type in OWNER_ONLY_SETTLEMENT_TYPES:
-        _require_owner(created_by, "Memotong atau mengembalikan deposit jaminan")
+        _require_owner(
+            created_by,
+            "Mengembalikan uang muka pelanggan" if settlement_type == CLIENT_DP_REFUND
+            else "Memotong atau mengembalikan deposit jaminan",
+        )
     rule, reference_obj = resolve_settlement_reference(advance.branch_id, settlement_type, reference_id)
 
     if settlement_type == DEPOSIT_TO_INVOICE and getattr(reference_obj, "mandor_id", None) != advance.mandor_id:
@@ -864,6 +868,8 @@ def create_advance_settlement(
             "amount": amount,
             "journal_id": journal.id if journal else None,
             "expense_account_code": expense_account_code if settlement_type == "MANDOR_EXPENSE_PROOF" else None,
+            # Alasan (mis. kenapa uang muka dikembalikan) ditinjau OWNER tiap minggu.
+            "reason": (notes or "").strip(),
         },
         user_id=created_by,
         branch_id=advance.branch_id,

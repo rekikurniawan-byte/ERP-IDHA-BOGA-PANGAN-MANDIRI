@@ -102,6 +102,69 @@ def _account_check():
     return Check(PASS, "Akun COA", f"{len(REQUIRED_ACCOUNTS)} akun wajib tersedia dan aktif.")
 
 
+def _contract_pic_check():
+    """Invoice kontrak baru bisa disimpan kalau client punya PIC resmi aktif (gladi pilot 2026-09-28)."""
+    from app.models.master import Client, ClientPic, Mandor
+    from app.services.pricing_service import PATH_CONTRACT
+
+    in_use = (
+        Client.query.join(Mandor, Mandor.client_id == Client.id)
+        .filter(Client.is_active.is_(True), Client.customer_path == PATH_CONTRACT, Mandor.is_active.is_(True))
+        .distinct().all()
+    )
+    with_pic = {row.client_id for row in ClientPic.query.filter(ClientPic.is_active.is_(True)).all()}
+    missing = sorted(client.name for client in in_use if client.id not in with_pic)
+    if missing:
+        return Check(
+            WARN, "PIC client kontrak",
+            f"{len(missing)} client kontrak belum punya PIC resmi aktif (mis. {', '.join(missing[:3])}): "
+            "invoicenya belum bisa disimpan. Tambahkan di Master Client > PIC.",
+        )
+    return Check(PASS, "PIC client kontrak", f"{len(in_use)} client kontrak aktif punya PIC resmi.")
+
+
+def _cash_bank_ledger_check():
+    """Buku Kas/Bank harus sama dengan saldo jurnal Kas (1001) dan Bank (1002, 1003).
+
+    Saldo awal lewat Akuntansi > Saldo Awal hanya membuat jurnal; Finance →
+    Saldo Awal Kas/Bank hanya mengisi buku kas/bank. Kalau hanya satu yang
+    diisi, cek kas harian membandingkan angka yang salah.
+    """
+    from sqlalchemy import func
+
+    from app.models.accounting import Account, JournalDetail
+    from app.models.finance import CashBankTransaction
+    from app.utils.money import money
+
+    def ledger(account_type):
+        rows = CashBankTransaction.query.filter(CashBankTransaction.account_type == account_type).all()
+        return sum(
+            (money(row.amount) if str(row.transaction_type or "").upper() == "IN" else -money(row.amount))
+            for row in rows if str(row.transaction_type or "").upper() in {"IN", "OUT"}
+        ) or money(0)
+
+    def journal(codes):
+        debit, credit = (
+            db.session.query(func.coalesce(func.sum(JournalDetail.debit), 0), func.coalesce(func.sum(JournalDetail.credit), 0))
+            .join(Account, Account.id == JournalDetail.account_id)
+            .filter(Account.account_code.in_(codes))
+            .one()
+        )
+        return money(debit) - money(credit)
+
+    differences = []
+    for label, account_type, codes in (("Kas", "CASH", ["1001"]), ("Bank", "BANK", ["1002", "1003"])):
+        book, ledger_total = journal(codes), ledger(account_type)
+        if book != ledger_total:
+            differences.append(f"{label}: jurnal Rp {book:,.0f}, buku kas/bank Rp {ledger_total:,.0f}")
+    if differences:
+        return Check(
+            WARN, "Buku kas/bank vs jurnal",
+            "; ".join(differences) + ". Saldo awal harus diisi di Akuntansi > Saldo Awal DAN Finance > Saldo Awal Kas/Bank dengan angka yang sama.",
+        )
+    return Check(PASS, "Buku kas/bank vs jurnal", "Saldo buku kas/bank sama dengan saldo jurnal Kas dan Bank.")
+
+
 def _branch_checks(branch_ids=None):
     from app.models.master import Branch, Client, DeliveryLocation, Mandor
     from app.models.pricing import DeliveryZone
@@ -160,7 +223,7 @@ def _backup_check(max_age_hours=26):
 def run_readiness_checks(branch_ids=None):
     """branch_ids membatasi cek per cabang (bawaan: semua cabang aktif)."""
     checks = []
-    for step in (_migration_check, _table_owner_check, _account_check, _backup_check):
+    for step in (_migration_check, _table_owner_check, _account_check, _backup_check, _contract_pic_check, _cash_bank_ledger_check):
         try:
             checks.append(step())
         except Exception as error:  # noqa: BLE001 - satu cek gagal tidak boleh menghentikan laporan

@@ -4,7 +4,7 @@ from datetime import datetime
 from app.models.accounting import Journal
 from app.models.canteen import CanteenSale, WorkerDebt
 from app.models.delivery import Delivery, DeliveryDetail
-from app.models.finance import Invoice, InvoiceItem, Payment
+from app.models.finance import AdvanceSettlement, Invoice, InvoiceItem, Payment
 from app.models.hr import Payroll
 from app.models.logistics import Procurement, StockMovement
 from app.models.master import Item
@@ -92,9 +92,26 @@ def _section(key, title, description, rows):
     }
 
 
+# Pelunasan invoice dari uang muka pelanggan (2008) atau deposit (2007) juga
+# pembayaran: invoice pelanggan umum lunas lewat settlement, tanpa baris Payment.
+INVOICE_SETTLEMENT_TYPES = ("CLIENT_INVOICE", "DEPOSIT_TO_INVOICE")
+
+
+def _invoice_settlement_totals(branch_id):
+    totals = defaultdict(float)
+    settlements = AdvanceSettlement.query.filter(
+        AdvanceSettlement.branch_id == branch_id,
+        AdvanceSettlement.settlement_type.in_(INVOICE_SETTLEMENT_TYPES),
+    ).all()
+    for settlement in settlements:
+        totals[settlement.reference_id] += _float(settlement.amount)
+    return totals
+
+
 def _invoice_rows(branch_id):
     rows = []
     invoices = Invoice.query.filter_by(branch_id=branch_id).order_by(Invoice.id.asc()).all()
+    settled = _invoice_settlement_totals(branch_id)
 
     for invoice in invoices:
         item_total = sum(_float(item.subtotal) for item in invoice.items)
@@ -109,7 +126,7 @@ def _invoice_rows(branch_id):
             note="Total invoice harus sama dengan subtotal seluruh item invoice.",
         ))
 
-        payment_total = sum(_float(payment.amount) for payment in invoice.payments)
+        payment_total = sum(_float(payment.amount) for payment in invoice.payments) + settled.get(invoice.id, 0.0)
         status = "RISIKO" if _is_mismatch(invoice.paid_amount, payment_total) else "AMAN"
         rows.append(_row(
             status=status,
@@ -118,7 +135,7 @@ def _invoice_rows(branch_id):
             expected=_money(payment_total),
             actual=_money(invoice.paid_amount),
             difference=_money(_diff(invoice.paid_amount, payment_total)),
-            note="Paid amount invoice harus sama dengan total payment yang tercatat.",
+            note="Paid amount invoice harus sama dengan total payment + pelunasan dari uang muka/deposit.",
         ))
 
         expected_remaining = _float(invoice.total_amount) - _float(invoice.paid_amount)
