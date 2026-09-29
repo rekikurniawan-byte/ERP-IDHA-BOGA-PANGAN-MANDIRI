@@ -325,12 +325,12 @@ def stage_orders(run, refs):
     run.step(adm, "Admin tolak draft Sari yang sudah dibayar (dapur penuh)", f"/portal/admin/order-drafts/{sari['id']}/reject",
              data={"review_note": "Dapur penuh tanggal ini"}, expect=("success", "warning"))
 
-    confirm("dedi.cust", D2, "LUNCH", "ADMIN loloskan sebelum lunas (harus ditolak)", expect=("warning", "danger"), prepayment_override="1")
+    confirm("dedi.cust", D2, "LUNCH", "ADMIN loloskan sebelum lunas (harus ditolak)", expect=("warning", "danger"), owner_override="1")
     draft = _draft(run, "dedi.cust", D2, "LUNCH")
     run.step(own, "OWNER loloskan tanpa alasan (harus ditolak)", f"/portal/admin/order-drafts/{draft['id']}/confirm",
-             data={"review_note": "", "prepayment_override": "1"}, expect=("warning", "danger"))
+             data={"review_note": "", "owner_override": "1"}, expect=("warning", "danger"))
     run.step(own, "OWNER loloskan dengan alasan", f"/portal/admin/order-drafts/{draft['id']}/confirm",
-             data={"review_note": "Pelanggan langganan, bayar tunai saat diantar", "prepayment_override": "1"})
+             data={"review_note": "Pelanggan langganan, bayar tunai saat diantar", "owner_override": "1"})
 
     advance = run.q(lambda: (lambda row: {"id": row.id, "remaining": int(row.remaining_amount or 0)})(
         AdvanceTransaction.query.filter(AdvanceTransaction.portal_order_draft_id == sari["id"]).one()))
@@ -424,7 +424,61 @@ def stage_billing(run, refs):
     pay(dedi, dedi["total"], "CASH", "(pesanan yang diloloskan OWNER, dibayar tunai saat antar)")
 
 
-# --- tahap D: pemeriksaan -----------------------------------------------------
+# --- tahap D: kontrak berakhir ------------------------------------------------
+# Sesudah penagihan, supaya angka tagihan skenario di atas tidak berubah.
+
+def stage_contracts(run):
+    from app.models.contract import CustomerContract
+    from app.models.master import Client, ClientPic, Mandor, User
+    from app.models.system import Notification
+    from app.services.credit_control_service import check_internal_order_credit, resolve_due_date
+
+    run.stage = "D. Kontrak berakhir"
+    own, adm = run.client("owner.pilot"), run.client("admin.pilot")
+    branch_id = run.q(lambda: User.query.filter_by(username="owner.pilot").one().branch_id)
+    sinar = run.q(lambda: Client.query.filter_by(name="PT Sinar Beton").one().id)
+    asep = run.q(lambda: Mandor.query.filter_by(name="Mandor Asep").one().id)
+    pic = run.q(lambda: ClientPic.query.filter_by(client_id=sinar, is_active=True).first().id)
+
+    run.step(own, "Kontrak PT Sinar net 30 yang berakhir kemarin", "/customer-success/contracts", data={
+        "client_id": sinar, "client_pic_id": pic, "title": "Katering Batching Plant 2026",
+        "start_date": (TODAY - timedelta(days=180)).isoformat(), "end_date": (TODAY - timedelta(days=1)).isoformat(),
+        "payment_terms": "net 30", "credit_limit": "0", "status": "ACTIVE"})
+    run.check("Termin kontrak aktif dipakai (net 30)",
+              run.q(lambda: resolve_due_date(TODAY, branch_id=branch_id, client_id=sinar)) == TODAY + timedelta(days=30),
+              "jatuh tempo invoice = 30 hari")
+    run.step(adm, "Periksa Kontrak Sekarang (sama dengan sapuan harian otomatis)", "/customer-success/contracts/check")
+
+    def contract_state():
+        row = CustomerContract.query.filter_by(client_id=sinar).order_by(CustomerContract.id.desc()).first()
+        lapsed = Notification.query.filter_by(generated_key=f"contract-lapsed:{branch_id}:{sinar}").first()
+        return {"id": row.id, "status": row.status, "lapsed": lapsed.status if lapsed else None}
+
+    state = run.q(contract_state)
+    run.check("Kontrak lewat tanggal otomatis Kedaluwarsa + pemberitahuan mendesak",
+              state["status"] == "EXPIRED" and state["lapsed"] == "UNREAD", state)
+    run.check("Termin kembali ke bawaan 7 hari setelah kontrak berakhir",
+              run.q(lambda: resolve_due_date(TODAY, branch_id=branch_id, client_id=sinar)) == TODAY + timedelta(days=7),
+              "jatuh tempo invoice = 7 hari")
+
+    def order_gate(role):
+        ok, message, _ = check_internal_order_credit(branch_id=branch_id, mandor_id=asep, amount=500000, actor_role=role)
+        return ok, message
+
+    admin_gate, owner_gate = run.q(lambda: order_gate("ADMIN")), run.q(lambda: order_gate("OWNER"))
+    run.check("Order Mandor Asep ditahan untuk ADMIN, diteruskan untuk OWNER",
+              not admin_gate[0] and owner_gate[0], f"ADMIN: {admin_gate[1]} | OWNER: {owner_gate[1]}")
+
+    run.step(adm, "Perpanjang kontrak PT Sinar 1 tahun", f"/customer-success/contracts/{state['id']}/renew", data={
+        "start_date": TODAY.isoformat(), "end_date": (TODAY + timedelta(days=365)).isoformat(),
+        "payment_terms": "net 30", "credit_limit": "0", "notes": "perpanjangan gladi"})
+    state = run.q(contract_state)
+    admin_gate = run.q(lambda: order_gate("ADMIN"))
+    run.check("Setelah diperpanjang: order ADMIN jalan lagi, pemberitahuan selesai sendiri",
+              state["status"] == "ACTIVE" and state["lapsed"] == "RESOLVED" and admin_gate[0], {**state, "admin_ok": admin_gate[0]})
+
+
+# --- tahap E: pemeriksaan -----------------------------------------------------
 
 def stage_checks(run, backup):
     import csv
@@ -437,7 +491,7 @@ def stage_checks(run, backup):
     from app.services.readiness_service import FAIL, run_readiness_checks
     from tools.audit_financial_invariants import collect_results_from_database
 
-    run.stage = "D. Pemeriksaan"
+    run.stage = "E. Pemeriksaan"
     own = run.client("owner.pilot")
 
     balances = run.q(lambda: {code: Decimal(value) for code, value in db.session.execute(text(
@@ -545,6 +599,7 @@ def main():
     stage_operations(run, D1, shortage={"Gudang Cikarang": 2, "Kantor Notaris": 1})
     stage_operations(run, D2)
     stage_billing(run, refs)
+    stage_contracts(run)
     stage_checks(run, args.backup)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

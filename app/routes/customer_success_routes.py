@@ -29,7 +29,7 @@ from app.services.customer_contract_document_service import (
     attach_customer_contract_document,
     list_customer_contract_documents,
 )
-from app.services.customer_contract_expiry_notification_service import generate_contract_expiry_notifications
+from app.services.contract_lifecycle_service import run_contract_sweep_now
 from app.services.customer_contract_service import (
     CONTRACT_STATUS_ACTIVE,
     CONTRACT_STATUS_DRAFT,
@@ -132,6 +132,7 @@ def renew_contract(contract_id):
             notes=request.form.get("notes"),
             created_by=current_user.id,
         )
+        run_contract_sweep_now(current_user.branch_id, actor_id=current_user.id)
         flash("Kontrak customer berhasil diperpanjang.", "success")
         return redirect(url_for("customer_success.contract_detail", contract_id=renewed.id))
     except CustomerContractError as error:
@@ -157,17 +158,16 @@ def upload_contract_document(contract_id):
     return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
 
 
-@customer_success_bp.route("/contracts/expiry-notifications", methods=["POST"])
-@role_required("ADMIN", "FINANCE")
-def generate_contract_expiry_notifications_route():
-    result = generate_contract_expiry_notifications(
-        branch_id=current_user.branch_id,
-        as_of_date=date.today(),
-        due_days=_int_or_default(request.form.get("due_days"), 30),
-        generated_by=current_user.id,
-        commit=True,
+@customer_success_bp.route("/contracts/check", methods=["POST"])
+@role_required("ADMIN")
+def check_contracts_now():
+    """Sapuan kontrak berjalan otomatis tiap hari; tombol ini untuk memeriksa sekarang juga."""
+    result = run_contract_sweep_now(current_user.branch_id, actor_id=current_user.id)
+    flash(
+        f"Kontrak diperiksa: {result['expired']} baru berakhir, {result['reminders']} hampir habis, "
+        f"{result['lapsed']} sudah berakhir dan belum diperpanjang.",
+        "success",
     )
-    flash(f"Notifikasi kontrak dibuat/diperbarui: {result['created']} baru, {result['updated']} update.", "success")
     return redirect(url_for("customer_success.contracts"))
 
 
@@ -278,13 +278,6 @@ def _int_or_none(value):
         return number if number > 0 else None
     except (TypeError, ValueError):
         return None
-
-
-def _int_or_default(value, default):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
 
 
 def _date_or_none(value):

@@ -14,6 +14,9 @@ CONTRACT_EXPIRY_NOTIFICATION_TYPE = "CUSTOMER_CONTRACT_EXPIRY"
 CONTRACT_EXPIRY_REFERENCE_TYPE = "CUSTOMER_CONTRACT"
 CONTRACT_EXPIRY_KEY_PREFIX = "contract-expiry"
 CONTRACT_EXPIRY_TARGET_ROLE = "ADMIN"
+CONTRACT_EXPIRY_ACTION_URL = "/customer-success/contracts"
+# Pengingat mulai H-30 sebagai peringatan, jadi mendesak mulai H-7.
+URGENT_DAYS = 7
 
 
 def build_contract_expiry_candidates(
@@ -96,7 +99,7 @@ def generate_contract_expiry_notifications(
                 priority=item["priority"],
                 reference_type=CONTRACT_EXPIRY_REFERENCE_TYPE,
                 reference_id=item["contract_id"],
-                action_url="#",
+                action_url=CONTRACT_EXPIRY_ACTION_URL,
                 due_date=item["end_date"],
                 generated_key=key,
                 metadata=item,
@@ -130,7 +133,7 @@ def generate_contract_expiry_notifications(
 def _candidate_payload(contract: CustomerContract, today: date, due_days: int) -> dict[str, Any]:
     days_to_expiry = (contract.end_date - today).days
     overdue = days_to_expiry < 0
-    priority = "CRITICAL" if overdue else "WARNING"
+    priority = "CRITICAL" if days_to_expiry <= URGENT_DAYS else "WARNING"
     client_name = getattr(contract.client, "name", None) or "-"
     days_text = f"lewat {abs(days_to_expiry)} hari" if overdue else f"{days_to_expiry} hari lagi"
     return {
@@ -139,7 +142,10 @@ def _candidate_payload(contract: CustomerContract, today: date, due_days: int) -
         "client_id": contract.client_id,
         "client_name": client_name,
         "title": f"Kontrak {contract.contract_number} akan berakhir",
-        "message": f"Kontrak {client_name} berakhir {days_text}. Cek renewal atau terminasi sebelum operasional terdampak.",
+        "message": (
+            f"Kontrak {client_name} berakhir {days_text}. Perpanjang sebelum habis; sesudah habis termin kembali "
+            f"ke bawaan dan pesanan baru perlu persetujuan OWNER."
+        ),
         "priority": priority,
         "status": contract.status,
         "start_date": contract.start_date,

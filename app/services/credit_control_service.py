@@ -786,7 +786,11 @@ def check_internal_order_credit(*, branch_id, mandor_id, amount, actor_role=None
     mandor itu selamanya -- jadi TAHAN di sini berarti: hanya OWNER yang boleh
     menginput order untuk pihak ini, dan tindakan OWNER itu sendiri adalah
     keputusannya. Tanpa actor_role, pemanggil diperlakukan sebagai bukan OWNER.
+
+    Kontrak client yang sudah berakhir dan belum diperpanjang juga TAHAN
+    (keputusan owner 2026-09-28), dengan aturan OWNER yang sama.
     """
+    from app.services.contract_lifecycle_service import lapsed_contract, lapsed_contract_message
     from app.models.master import Mandor
     from app.utils.roles import effective_role
 
@@ -796,6 +800,22 @@ def check_internal_order_credit(*, branch_id, mandor_id, amount, actor_role=None
         return True, None, None
 
     mandor = db.session.get(Mandor, mandor_id)
+    is_owner = effective_role(actor_role) == "OWNER"
+    lapsed = lapsed_contract(branch_id, getattr(mandor, "client_id", None))
+    if lapsed is not None and not is_owner:
+        return False, (
+            f"{lapsed_contract_message(lapsed)} Hanya OWNER yang bisa menginput order "
+            f"untuk {T.client_lower} ini sampai kontraknya diperpanjang."
+        ), None
+
+    ok, message, decision = _internal_credit_decision(branch_id, mandor, mandor_id, amount, is_owner)
+    if ok and lapsed is not None:
+        note = f"{lapsed_contract_message(lapsed)} Order diteruskan atas keputusan OWNER."
+        message = f"{note} {message}" if message else note
+    return ok, message, decision
+
+
+def _internal_credit_decision(branch_id, mandor, mandor_id, amount, is_owner):
     decision = evaluate_credit(
         branch_id,
         client_id=getattr(mandor, "client_id", None),
@@ -804,13 +824,13 @@ def check_internal_order_credit(*, branch_id, mandor_id, amount, actor_role=None
     )
 
     if not decision.enforced:
-        return _contract_limit_check(branch_id, decision, effective_role(actor_role) == "OWNER")
+        return _contract_limit_check(branch_id, decision, is_owner)
 
     if not decision.allowed:
         return False, decision.message, decision
 
     if decision.requires_approval:
-        if effective_role(actor_role) == "OWNER":
+        if is_owner:
             return True, (
                 f"Kredit pihak ini berstatus {STATUS_LABELS[decision.status]}; "
                 "order diteruskan atas keputusan OWNER."

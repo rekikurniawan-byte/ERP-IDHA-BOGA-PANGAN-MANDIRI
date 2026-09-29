@@ -611,6 +611,26 @@ def _payment_gate_for_draft(draft, owner_override=False):
     }
 
 
+def _contract_gate_for_draft(draft, owner_override=False):
+    """Kontrak client yang sudah berakhir dan belum diperpanjang menahan pesanan
+    baru sampai OWNER meloloskannya dengan alasan (keputusan owner 2026-09-28)."""
+    from app.services.contract_lifecycle_service import lapsed_contract, lapsed_contract_message
+
+    base = {"key": "CONTRACT", "title": "Kontrak"}
+    lapsed = lapsed_contract(draft.branch_id, draft.client_id)
+    if lapsed is None:
+        return {**base, "status": "OK", "label": "Aman", "tone": "green",
+                "message": "Tidak ada kontrak yang berakhir tanpa perpanjangan."}
+    message = lapsed_contract_message(lapsed)
+    if owner_override:
+        return {**base, "status": "OVERRIDE", "label": "Diloloskan OWNER", "tone": "orange",
+                "message": f"OWNER meloloskan pesanan walau kontrak sudah berakhir. {message}",
+                "contract_id": lapsed.id}
+    return {**base, "status": "BLOCKED", "label": "Kontrak Berakhir", "tone": "red",
+            "message": f"{message} Perpanjang kontraknya, atau OWNER meloloskan pesanan ini dengan alasan.",
+            "contract_id": lapsed.id}
+
+
 def _duplicate_gate_for_draft(draft, daily_order=None):
     daily_order = daily_order or DailyOrder.query.filter_by(
         branch_id=draft.branch_id,
@@ -680,10 +700,17 @@ def _merge_conflict(draft, detail):
     return None
 
 
-def _only_payment_blocks(gate):
+# Penghalang yang boleh diloloskan OWNER dengan alasan, dan sebutannya di layar.
+OWNER_OVERRIDABLE_GATES = {"PAYMENT": "belum lunas di muka", "CONTRACT": "kontrak sudah berakhir"}
+
+
+def _owner_override_reasons(gate):
+    """Sebutan penghalang kalau SEMUA penghalangnya boleh diloloskan OWNER; kosong kalau tidak."""
     blocked = [item for item in gate["gates"] if item["status"] == "BLOCKED"]
     approvals = [item for item in gate["gates"] if item.get("needs_approval")]
-    return bool(blocked) and not approvals and all(item["key"] == "PAYMENT" for item in blocked)
+    if not blocked or approvals or any(item["key"] not in OWNER_OVERRIDABLE_GATES for item in blocked):
+        return []
+    return [OWNER_OVERRIDABLE_GATES[item["key"]] for item in blocked]
 
 
 def evaluate_portal_order_draft_gate(
@@ -692,6 +719,7 @@ def evaluate_portal_order_draft_gate(
     daily_order, existing_detail, duplicate_gate = _duplicate_gate_for_draft(draft, daily_order=daily_order)
     gates = [
         _payment_gate_for_draft(draft, owner_override=owner_override),
+        _contract_gate_for_draft(draft, owner_override=owner_override),
         _credit_gate_for_draft(draft),
         _cutoff_gate_for_draft(draft),
         _closing_gate_for_draft(draft),
@@ -1197,8 +1225,8 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
                 "review_status": gate["review_status"],
                 "review_status_label": gate["review_status_label"],
                 "can_confirm": gate["can_confirm"],
-                # Satu-satunya penghalang adalah pembayaran di muka: OWNER boleh meloloskan.
-                "payment_override_available": _only_payment_blocks(gate),
+                # Penghalangnya hanya belum lunas dan/atau kontrak berakhir: OWNER boleh meloloskan.
+                "owner_override_reasons": _owner_override_reasons(gate),
                 "client_name": draft.client.name if draft.client else "-",
                 "mandor_name": draft.mandor.name if draft.mandor else "-",
                 "location_name": draft.delivery_location.location_name if draft.delivery_location else "-",
@@ -1246,7 +1274,7 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
     }
 
 
-def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepayment_override=False):
+def confirm_portal_order_draft(draft_id, admin_user, review_note=None, owner_override=False):
     draft = (
         PortalOrderDraft.query.filter(PortalOrderDraft.id == draft_id)
         .options(lazyload("*"))
@@ -1270,11 +1298,11 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
         order_date=draft.order_date,
     ).first()
 
-    # Hanya OWNER yang boleh meloloskan pesanan umum yang belum lunas di muka,
-    # dan wajib menulis alasannya.
-    owner_override = bool(prepayment_override) and getattr(admin_user, "role", None) == "OWNER"
+    # Hanya OWNER yang boleh meloloskan pesanan yang belum lunas di muka atau
+    # yang kontraknya sudah berakhir, dan wajib menulis alasannya.
+    owner_override = bool(owner_override) and getattr(admin_user, "role", None) == "OWNER"
     if owner_override and not _clean_text(review_note):
-        return draft, False, "Tulis alasan kenapa pesanan diloloskan sebelum lunas."
+        return draft, False, "Tulis alasan kenapa pesanan ini diloloskan."
     gate = evaluate_portal_order_draft_gate(
         draft,
         daily_order=daily_order,
@@ -1388,6 +1416,22 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, prepaymen
                 "paid_amount": str(payment_gate.get("paid_amount")),
                 "reason": _clean_text(review_note),
             },
+            user_id=getattr(admin_user, "id", None),
+            branch_id=draft.branch_id,
+            commit=False,
+        )
+    contract_gate = next((item for item in gate["gates"] if item["key"] == "CONTRACT"), {})
+    if contract_gate.get("status") == "OVERRIDE":
+        from app.services.audit_log_service import record_audit_log
+
+        record_audit_log(
+            module="PORTAL",
+            event_type="CONTRACT_OVERRIDE",
+            action="UPDATE",
+            table_name="portal_order_drafts",
+            record_id=draft.id,
+            description=f"OWNER meloloskan draft #{draft.id} walau kontrak sudah berakhir. {contract_gate.get('message')} Alasan: {_clean_text(review_note)}",
+            metadata={"contract_id": contract_gate.get("contract_id"), "reason": _clean_text(review_note)},
             user_id=getattr(admin_user, "id", None),
             branch_id=draft.branch_id,
             commit=False,

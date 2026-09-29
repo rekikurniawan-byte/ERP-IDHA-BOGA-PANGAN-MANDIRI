@@ -686,6 +686,21 @@ def sweep_credit_statuses(branch_id, actor_id=None, today=None):
     return {"checked": len(accounts), "escalated": escalated}
 
 
+def daily_sweep(branch_id, actor_id=None, today=None):
+    """Semua pekerjaan harian satu cabang. Tidak commit.
+
+    Kontrak lebih dulu: kontrak yang habis melepas limit dan termin kontraknya,
+    jadi status kredit sesudahnya dihitung dengan aturan yang benar.
+    """
+    from app.services.contract_lifecycle_service import sweep_contracts
+
+    today = today or date.today()
+    contracts = sweep_contracts(branch_id, today, actor_id=actor_id)
+    result = sweep_credit_statuses(branch_id, actor_id=actor_id, today=today)
+    result["contracts"] = contracts
+    return result
+
+
 def run_daily_sweep_if_due(branch_id, today=None):
     """Jalankan penyapu sekali per hari per cabang. Aman dipanggil berkali-kali.
 
@@ -718,7 +733,7 @@ def _sweep_if_due_locked(branch_id, today):
     setting = BranchSetting.query.filter_by(branch_id=branch_id, setting_key=LAST_SWEEP_KEY).first()
     if setting and setting.setting_value == today.isoformat():
         return None
-    result = sweep_credit_statuses(branch_id, today=today)
+    result = daily_sweep(branch_id, today=today)
     if setting is None:
         db.session.add(BranchSetting(branch_id=branch_id, setting_key=LAST_SWEEP_KEY, setting_value=today.isoformat()))
     else:
@@ -728,7 +743,7 @@ def _sweep_if_due_locked(branch_id, today):
 
 def run_sweep_now(branch_id, actor_id=None, today=None):
     """Tombol "Periksa Kredit Sekarang": sapu satu cabang dan simpan."""
-    return _in_transaction(lambda: sweep_credit_statuses(branch_id, actor_id=actor_id, today=today))
+    return _in_transaction(lambda: daily_sweep(branch_id, actor_id=actor_id, today=today))
 
 
 def sweep_all_branches(today=None):

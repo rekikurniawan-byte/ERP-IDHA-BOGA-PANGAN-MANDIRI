@@ -1020,7 +1020,7 @@ def confirm_order_draft(draft_id):
         draft_id,
         current_user,
         review_note=request.form.get("review_note"),
-        prepayment_override=request.form.get("prepayment_override") == "1",
+        owner_override=request.form.get("owner_override") == "1",
     )
     if error:
         flash(error, "warning")

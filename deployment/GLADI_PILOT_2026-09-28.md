@@ -144,3 +144,15 @@ Temuan baru dan sudah diperbaiki:
   dan `ops-check` (juga memeriksa akun portal yang belum terhubung).
 - Halaman "Pengaturan Akses Portal" hanya berisi hitungan dan nama tabel;
   sekarang daftar akun portal dan ke mana masing-masing terhubung.
+
+## Gladi ulang: kontrak otomatis (29-09-2026)
+
+Tahap baru **D. Kontrak berakhir** (sesudah penagihan, supaya angka tagihan
+tidak berubah): kontrak PT Sinar net 30 yang berakhir kemarin, "Periksa
+Kontrak Sekarang" (sama dengan sapuan harian otomatis), lalu diperpanjang.
+
+Hasil: **123 / 123 langkah OK, 21 / 21 pemeriksaan lulus**. Yang dibuktikan:
+kontrak otomatis Kedaluwarsa + pemberitahuan mendesak; termin invoice kembali
+dari 30 ke 7 hari; order Mandor Asep ditahan untuk ADMIN, diteruskan untuk
+OWNER; setelah diperpanjang, order ADMIN jalan lagi dan pemberitahuannya
+selesai sendiri.

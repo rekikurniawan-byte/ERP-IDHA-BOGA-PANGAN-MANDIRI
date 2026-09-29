@@ -41,7 +41,7 @@ python tools/check_production_health_monitoring.py
 
 | Unit | Jam | Perintah | Guna |
 |---|---|---|---|
-| `idha-boga-credit-sweep` | 00:30 | `flask --app run credit-sweep` | Naikkan status akun kredit yang menunggak (tanpa menunggu ada yang login) |
+| `idha-boga-credit-sweep` | 00:30 | `flask --app run credit-sweep` | Penyapu harian: kontrak yang lewat tanggal berakhir jadi Kedaluwarsa, pengingat kontrak H-30/H-7, lalu naikkan status akun kredit yang menunggak (tanpa menunggu ada yang login) |
 | `idha-boga-backup` | 02:00 | `flask --app run backup-full` | Backup penuh database + lampiran, lalu diverifikasi |
 | `idha-boga-ops-check` | 06:00 | `flask --app run ops-check` | Cek kesiapan; ada FAIL = unit gagal |
 

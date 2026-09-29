@@ -158,10 +158,10 @@ def test_owner_boleh_meloloskan_dengan_alasan(ctx):
     s = _setup(ctx)
     draft = _draft(ctx, s)
 
-    _, converted, error = confirm_portal_order_draft(draft.id, s.owner, review_note="", prepayment_override=True)
+    _, converted, error = confirm_portal_order_draft(draft.id, s.owner, review_note="", owner_override=True)
     assert not converted and "alasan" in error
 
-    _, converted, error = confirm_portal_order_draft(draft.id, s.admin, review_note="x", prepayment_override=True)
+    _, converted, error = confirm_portal_order_draft(draft.id, s.admin, review_note="x", owner_override=True)
     assert not converted  # override hanya berlaku untuk OWNER
 
     assert _payment_gate(draft, owner_override=True)["status"] == "OVERRIDE"

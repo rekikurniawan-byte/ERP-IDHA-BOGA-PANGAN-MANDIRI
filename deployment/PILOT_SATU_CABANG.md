@@ -42,6 +42,10 @@ Peran:
       untuk pelanggan umum), pengantar, rekening bank.
 - [ ] **PIC resmi** untuk setiap client kontrak (Master Client → PIC). Tanpa
       PIC, invoice kontrak tidak bisa disimpan.
+- [ ] Kontrak aktif setiap PT (Pelanggan → Kontrak) dengan tanggal berakhir
+      yang benar. Sistem mengingatkan mulai H-30 (mendesak H-7); setelah lewat
+      tanggal, kontrak otomatis Kedaluwarsa, termin kembali 7 hari, dan pesanan
+      baru PT itu perlu keputusan OWNER sampai diperpanjang.
 - [ ] `PORTAL_ENABLED=1` di `.env.production` (bawaan template `0`: portal mati,
       pelanggan umum tidak bisa daftar/pesan).
 - [ ] Akun pengguna: OWNER, ADMIN, DAPUR, PENGANTAR. Akun portal PT / Mandor

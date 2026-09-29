@@ -138,7 +138,7 @@ def create_app():
 
     @flask_app.before_request
     def run_daily_credit_sweep():
-        """Penyapu kredit harian, dipicu permintaan internal pertama tiap hari.
+        """Penyapu harian (kontrak lalu kredit), dipicu permintaan internal pertama tiap hari.
 
         Aplikasi ini tidak punya penjadwal. Gerbang order tidak bergantung
         pada penyapu (gerbang selalu menghitung ulang), jadi kalau langkah ini
@@ -164,16 +164,20 @@ def create_app():
             )
         except Exception:
             # run_daily_sweep_if_due sudah me-rollback transaksinya sendiri.
-            flask_app.logger.exception("Penyapu kredit harian gagal; gerbang order tetap aktif.")
+            flask_app.logger.exception("Penyapu harian gagal; gerbang order tetap aktif.")
 
 
     @flask_app.cli.command("credit-sweep")
     def credit_sweep_command():
-        """Jalankan penyapu kredit untuk semua cabang (untuk penjadwal server)."""
+        """Jalankan penyapu harian (kontrak lalu kredit) untuk semua cabang (untuk penjadwal server)."""
         from app.services.credit_account_service import sweep_all_branches
 
         for branch_id, result in sweep_all_branches().items():
-            print(f"Cabang {branch_id}: {result['checked']} akun diperiksa, {len(result['escalated'])} naik status.")
+            contracts = result["contracts"]
+            print(
+                f"Cabang {branch_id}: {contracts['expired']} kontrak berakhir, {contracts['reminders']} kontrak hampir habis, "
+                f"{result['checked']} akun kredit diperiksa, {len(result['escalated'])} naik status."
+            )
 
     @flask_app.cli.command("bootstrap")
     @click.option("--branch-code", required=True, help="Kode cabang pertama, mis. PUSAT.")
