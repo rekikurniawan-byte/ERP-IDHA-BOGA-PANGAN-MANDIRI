@@ -29,53 +29,12 @@ def is_integer_unit(unit):
     return any(keyword in unit_text for keyword in INTEGER_UNIT_KEYWORDS)
 
 
-
 def get_stock_items():
     return Item.query.filter(
         Item.is_active == True,
         Item.is_stock_tracked == True,
         Item.category != "MERCHANDISE"
     ).order_by(Item.item_name.asc()).all()
-
-
-def get_stock_opening_balance(branch_id, item_id):
-    return StockOpeningBalance.query.filter_by(
-        branch_id=branch_id,
-        item_id=item_id,
-    ).first()
-
-
-def save_stock_opening_balance(branch_id, item_id, opening_date, qty, notes, created_by):
-    item = Item.query.get(item_id)
-    if not item:
-        return False, "Item tidak ditemukan.", None
-    if not item.is_stock_tracked:
-        return False, "Item ini tidak dilacak stoknya.", None
-
-    qty = _to_decimal(qty)
-    if qty is None:
-        return False, "Saldo awal stok tidak valid.", None
-    if qty < 0:
-        return False, "Saldo awal stok tidak boleh negatif.", None
-
-    opening = get_stock_opening_balance(branch_id, item_id)
-    if opening:
-        opening.opening_date = opening_date
-        opening.qty = qty
-        opening.notes = notes
-    else:
-        opening = StockOpeningBalance(
-            branch_id=branch_id,
-            item_id=item_id,
-            opening_date=opening_date,
-            qty=qty,
-            notes=notes,
-            created_by=created_by,
-        )
-        db.session.add(opening)
-
-    db.session.commit()
-    return True, "Saldo awal stok berhasil disimpan.", opening
 
 
 def movement_sign(movement_type):
@@ -218,8 +177,16 @@ def create_stock_movement(
         created_by=created_by
     )
 
-    db.session.add(movement)
-    db.session.commit()
+    from app.services.stock_journal_service import journal_stock_movement
+
+    try:
+        db.session.add(movement)
+        db.session.flush()
+        journal_stock_movement(movement, created_by=created_by)
+        db.session.commit()
+    except Exception as error:
+        db.session.rollback()
+        return False, f"Pergerakan stok gagal disimpan: {error}", None
 
     return True, "Pergerakan stok berhasil disimpan.", movement
 

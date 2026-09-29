@@ -11,6 +11,7 @@ from app.models.operational import (
 from app.services.hpp_service import find_unit_multiplier, normalize_unit
 from app.services.stock_service import get_item_stock, get_item_stock_for_update, is_integer_unit
 from app.services.business_logic_guard_service import validate_stock_movement_guard
+from app.services.stock_journal_service import journal_stock_movement
 
 logger = logging.getLogger(__name__)
 
@@ -404,6 +405,7 @@ def commit_hpp_stock_consumption(snapshot, committed_by, consumption_date=None, 
             )
             db.session.add(movement)
             db.session.flush()
+            journal_stock_movement(movement, created_by=committed_by)
 
             stock_after = current_stock - qty
             line = OrderHppStockConsumptionLine(

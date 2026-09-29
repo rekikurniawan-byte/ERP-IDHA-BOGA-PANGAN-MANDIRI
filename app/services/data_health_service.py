@@ -768,8 +768,42 @@ def _prepayment_refund_rows(branch_id):
     return rows
 
 
+def _subledger_rows(branch_id):
+    """Buku pembantu vs buku besar, untuk semua cabang (jurnal tidak punya cabang)."""
+    from app.services.subledger_check_service import subledger_lines, unjournaled_stock_movements
+
+    rows = [
+        _row(
+            status="AMAN" if line.ok else "RISIKO",
+            check=f"{line.label} = buku besar {line.accounts}",
+            item=line.source,
+            expected=_money(line.ledger),
+            actual=_money(line.subledger),
+            difference=_money(line.difference),
+            note="Sama." if line.ok else "Ada transaksi tanpa jurnal, jurnal manual di akun ini, atau data lama sebelum jurnal otomatis.",
+        )
+        for line in subledger_lines()
+    ]
+    missing = unjournaled_stock_movements()
+    rows.append(_row(
+        status="WARNING" if missing else "AMAN",
+        check="Pergerakan stok sudah dijurnal",
+        item="Pemakaian, barang rusak, selisih opname",
+        expected="0 tanpa jurnal",
+        actual=f"{len(missing)} tanpa jurnal",
+        note="Barang yang belum pernah dibeli lewat Pembelian Barang tidak punya harga rata-rata, jadi keluarnya tidak bisa dinilai." if missing else "Sama.",
+    ))
+    return rows
+
+
 def get_data_health_report(branch_id):
     sections = [
+        _section(
+            "subledger",
+            "Buku Pembantu vs Buku Besar",
+            "Kas, bank, piutang, hutang supplier, persediaan, dan aset harus sama dengan saldo akunnya di jurnal (semua cabang).",
+            _subledger_rows(branch_id),
+        ),
         _section(
             "invoice",
             "Invoice, Payment, dan Piutang",

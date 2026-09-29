@@ -24,36 +24,6 @@ class _FakeDb:
         self.session = session
 
 
-def test_create_opening_balance_record_delegates_and_commits(monkeypatch):
-    session = _FakeSession()
-    monkeypatch.setattr(cash_bank_service, "db", _FakeDb(session))
-    calls = {}
-    opening = SimpleNamespace(id=11)
-    transaction = SimpleNamespace(id=22)
-
-    def fake_create_opening_balance(**kwargs):
-        calls.update(kwargs)
-        return opening, transaction
-
-    monkeypatch.setattr(cash_bank_service, "create_opening_balance", fake_create_opening_balance)
-
-    result = cash_bank_service.create_opening_balance_record(
-        account_type="CASH",
-        bank_account_id=None,
-        opening_date=date(2026, 1, 1),
-        amount=1000,
-        created_by=7,
-        branch_id=2,
-        notes="Saldo awal",
-    )
-
-    assert result == (opening, transaction)
-    assert calls["commit"] is False
-    assert calls["amount"] == 1000
-    assert session.commit_count == 1
-    assert session.rollback_count == 0
-
-
 def test_create_cash_bank_transfer_record_rolls_back_when_commit_fails(monkeypatch):
     session = _FakeSession(fail_commit=True)
     monkeypatch.setattr(cash_bank_service, "db", _FakeDb(session))

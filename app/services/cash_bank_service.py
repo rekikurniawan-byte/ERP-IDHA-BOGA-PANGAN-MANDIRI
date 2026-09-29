@@ -103,7 +103,6 @@ def create_customer_payment_cash_bank_transaction(payment, created_by, commit=Fa
     return True, "Ledger kas/bank payment berhasil dibuat.", transaction
 
 
-
 PROCUREMENT_REFERENCE_TYPE = "PROCUREMENT"
 
 
@@ -182,7 +181,6 @@ def create_procurement_cash_bank_transaction(procurement, created_by, account_ty
         _commit_or_rollback()
 
     return True, "Ledger kas/bank pembelian tunai berhasil dibuat.", transaction
-
 
 
 SUPPLIER_PAYMENT_REFERENCE_TYPE = "SUPPLIER_PAYMENT"
@@ -270,6 +268,46 @@ OPENING_BALANCE_REFERENCE_TYPE = "OPENING_BALANCE"
 CASH_BANK_TRANSFER_REFERENCE_TYPE = "CASH_BANK_TRANSFER"
 CASH_BANK_ADJUSTMENT_REFERENCE_TYPE = "CASH_BANK_ADJUSTMENT"
 
+# Jenis penyesuaian saldo dan akun lawannya (keputusan owner 2026-09-28, poin 8-9).
+# Kas/bank sendiri memakai akun yang sama dengan jurnal lain: 1001 Kas, 1002 Bank.
+ADJUSTMENT_CATEGORIES = {
+    "SELISIH": {"label": "Selisih hitung kas/bank", "INCREASE": "4004", "DECREASE": "5009", "bank_only": False},
+    "BIAYA_BANK": {"label": "Biaya administrasi bank", "DECREASE": "5008", "bank_only": True},
+    "BUNGA_BANK": {"label": "Bunga / jasa giro bank", "INCREASE": "4004", "bank_only": True},
+}
+# Selisih di atas batas ini hanya boleh dicatat OWNER.
+SELISIH_OWNER_LIMIT = 100000
+
+
+def cash_bank_coa_code(account_type):
+    return "1001" if str(account_type or "").upper() == "CASH" else "1002"
+
+
+def post_cash_bank_journal(*, journal_date, reference_type, reference_id, description, debit_code, credit_code, amount, created_by):
+    """Jurnal dua baris untuk transaksi kas/bank. Gagal kalau akun tidak ada. Tidak commit."""
+    from app.models.accounting import Journal, JournalDetail
+    from app.services.accounting_service import generate_journal_number, get_active_account_by_code
+
+    debit_account = get_active_account_by_code(debit_code)
+    credit_account = get_active_account_by_code(credit_code)
+    missing = [code for code, account in ((debit_code, debit_account), (credit_code, credit_account)) if account is None]
+    if missing:
+        raise Exception(f"Akun {', '.join(missing)} belum ada atau tidak aktif di COA.")
+    journal = Journal(
+        journal_number=generate_journal_number(journal_date),
+        journal_date=journal_date,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        description=description,
+        created_by=created_by,
+    )
+    db.session.add(journal)
+    db.session.flush()
+    db.session.add(JournalDetail(journal_id=journal.id, account_id=debit_account.id, debit=amount, credit=0))
+    db.session.add(JournalDetail(journal_id=journal.id, account_id=credit_account.id, debit=0, credit=amount))
+    db.session.flush()
+    return journal
+
 
 def normalize_cash_bank_account(account_type, bank_account_id=None, branch_id=None):
     """Return normalized account_type, bank_account_id, and stable account_key."""
@@ -356,89 +394,6 @@ def _next_sequence_number(model, field_name, prefix, branch_id=None):
         next_number += 1
 
 
-def create_opening_balance(account_type, bank_account_id, opening_date, amount, created_by, branch_id, notes=None, commit=False):
-    from app.models.finance import CashBankOpeningBalance
-
-    account_type, bank_account_id, account_key = normalize_cash_bank_account(
-        account_type=account_type,
-        bank_account_id=bank_account_id,
-        branch_id=branch_id,
-    )
-
-    amount = float(amount or 0)
-    if amount < 0:
-        raise Exception("Saldo awal tidak boleh negatif.")
-
-    existing = CashBankOpeningBalance.query.filter_by(
-        branch_id=branch_id,
-        account_key=account_key,
-    ).first()
-    if existing:
-        raise Exception("Saldo awal untuk akun ini sudah pernah dibuat. Gunakan penyesuaian saldo jika ada koreksi.")
-
-    bank_account = BankAccount.query.get(bank_account_id) if bank_account_id else None
-    account_label = get_account_label(account_type, bank_account)
-
-    opening = CashBankOpeningBalance(
-        branch_id=branch_id,
-        account_type=account_type,
-        bank_account_id=bank_account_id,
-        account_key=account_key,
-        opening_date=opening_date,
-        amount=amount,
-        notes=notes,
-        created_by=created_by,
-    )
-    db.session.add(opening)
-    db.session.flush()
-
-    transaction = CashBankTransaction(
-        branch_id=branch_id,
-        transaction_date=opening_date,
-        account_type=account_type,
-        bank_account_id=bank_account_id,
-        transaction_type="IN",
-        amount=amount,
-        description=f"Saldo awal {account_label} sebesar {_money(amount)}",
-        reference_type=OPENING_BALANCE_REFERENCE_TYPE,
-        reference_id=opening.id,
-        created_by=created_by,
-    )
-    db.session.add(transaction)
-    db.session.flush()
-
-    opening.ledger_transaction_id = transaction.id
-
-    if commit:
-        _commit_or_rollback()
-
-    return opening, transaction
-
-
-def create_opening_balance_record(
-    *,
-    account_type,
-    bank_account_id,
-    opening_date,
-    amount,
-    created_by,
-    branch_id,
-    notes=None,
-):
-    opening, transaction = create_opening_balance(
-        account_type=account_type,
-        bank_account_id=bank_account_id,
-        opening_date=opening_date,
-        amount=amount,
-        created_by=created_by,
-        branch_id=branch_id,
-        notes=notes,
-        commit=False,
-    )
-    _commit_or_rollback()
-    return opening, transaction
-
-
 def create_cash_bank_transfer(transfer_date, from_account_type, from_bank_account_id, to_account_type, to_bank_account_id, amount, created_by, branch_id, reference_number=None, notes=None, commit=False):
     from app.models.finance import CashBankTransfer
 
@@ -515,6 +470,22 @@ def create_cash_bank_transfer(transfer_date, from_account_type, from_bank_accoun
     )
     db.session.add(out_transaction)
     db.session.add(in_transaction)
+    db.session.flush()
+
+    # Kas <-> bank mengubah posisi di buku besar. Bank ke bank tidak: semua
+    # rekening bank memakai akun 1002 yang sama.
+    debit_code, credit_code = cash_bank_coa_code(to_account_type), cash_bank_coa_code(from_account_type)
+    if debit_code != credit_code:
+        post_cash_bank_journal(
+            journal_date=transfer_date,
+            reference_type=CASH_BANK_TRANSFER_REFERENCE_TYPE,
+            reference_id=transfer.id,
+            description=f"Pindah dana {transfer.transfer_number}: {from_label} ke {to_label}",
+            debit_code=debit_code,
+            credit_code=credit_code,
+            amount=amount,
+            created_by=created_by,
+        )
 
     if commit:
         _commit_or_rollback()
@@ -535,25 +506,30 @@ def create_cash_bank_transfer_record(
     reference_number=None,
     notes=None,
 ):
-    transfer, out_transaction, in_transaction = create_cash_bank_transfer(
-        transfer_date=transfer_date,
-        from_account_type=from_account_type,
-        from_bank_account_id=from_bank_account_id,
-        to_account_type=to_account_type,
-        to_bank_account_id=to_bank_account_id,
-        amount=amount,
-        created_by=created_by,
-        branch_id=branch_id,
-        reference_number=reference_number,
-        notes=notes,
-        commit=False,
-    )
+    try:
+        transfer, out_transaction, in_transaction = create_cash_bank_transfer(
+            transfer_date=transfer_date,
+            from_account_type=from_account_type,
+            from_bank_account_id=from_bank_account_id,
+            to_account_type=to_account_type,
+            to_bank_account_id=to_bank_account_id,
+            amount=amount,
+            created_by=created_by,
+            branch_id=branch_id,
+            reference_number=reference_number,
+            notes=notes,
+            commit=False,
+        )
+    except Exception:
+        db.session.rollback()
+        raise
     _commit_or_rollback()
     return transfer, out_transaction, in_transaction
 
 
-def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, adjustment_type, amount, reason, created_by, branch_id, notes=None, commit=False):
+def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, adjustment_type, amount, reason, created_by, branch_id, notes=None, commit=False, category=None, actor_role=None):
     from app.models.finance import CashBankAdjustment
+    from app.utils.roles import effective_role
 
     account_type, bank_account_id, account_key = normalize_cash_bank_account(
         account_type,
@@ -565,9 +541,22 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
     if adjustment_type not in ["INCREASE", "DECREASE"]:
         raise Exception("Tipe penyesuaian harus INCREASE atau DECREASE.")
 
+    category = str(category or "").strip().upper()
+    rule = ADJUSTMENT_CATEGORIES.get(category)
+    if rule is None:
+        raise Exception("Pilih jenis penyesuaian: selisih hitung, biaya administrasi bank, atau bunga bank.")
+    if rule["bank_only"] and account_type != "BANK":
+        raise Exception(f"{rule['label']} hanya untuk rekening bank.")
+    counter_code = rule.get(adjustment_type)
+    if counter_code is None:
+        direction = "menambah" if adjustment_type == "INCREASE" else "mengurangi"
+        raise Exception(f"{rule['label']} tidak bisa {direction} saldo.")
+
     amount = float(amount or 0)
     if amount <= 0:
         raise Exception("Nominal penyesuaian harus lebih dari 0.")
+    if category == "SELISIH" and amount > SELISIH_OWNER_LIMIT and effective_role(actor_role) != "OWNER":
+        raise Exception(f"Selisih di atas {_money(SELISIH_OWNER_LIMIT)} hanya bisa dicatat OWNER.")
 
     if adjustment_type == "DECREASE":
         current_balance = calculate_account_balance(branch_id, account_type, bank_account_id)
@@ -590,6 +579,7 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
         bank_account_id=bank_account_id,
         account_key=account_key,
         adjustment_type=adjustment_type,
+        adjustment_category=category,
         amount=amount,
         reason=reason,
         notes=notes,
@@ -616,6 +606,18 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
 
     adjustment.ledger_transaction_id = transaction.id
 
+    cash_code = cash_bank_coa_code(account_type)
+    post_cash_bank_journal(
+        journal_date=adjustment_date,
+        reference_type=CASH_BANK_ADJUSTMENT_REFERENCE_TYPE,
+        reference_id=adjustment.id,
+        description=f"{rule['label']} {adjustment.adjustment_number} ({account_label}): {reason}",
+        debit_code=cash_code if adjustment_type == "INCREASE" else counter_code,
+        credit_code=counter_code if adjustment_type == "INCREASE" else cash_code,
+        amount=amount,
+        created_by=created_by,
+    )
+
     if commit:
         _commit_or_rollback()
 
@@ -633,19 +635,27 @@ def create_cash_bank_adjustment_record(
     created_by,
     branch_id,
     notes=None,
+    category=None,
+    actor_role=None,
 ):
-    adjustment, transaction = create_cash_bank_adjustment(
-        adjustment_date=adjustment_date,
-        account_type=account_type,
-        bank_account_id=bank_account_id,
-        adjustment_type=adjustment_type,
-        amount=amount,
-        reason=reason,
-        created_by=created_by,
-        branch_id=branch_id,
-        notes=notes,
-        commit=False,
-    )
+    try:
+        adjustment, transaction = create_cash_bank_adjustment(
+            adjustment_date=adjustment_date,
+            account_type=account_type,
+            bank_account_id=bank_account_id,
+            adjustment_type=adjustment_type,
+            amount=amount,
+            reason=reason,
+            created_by=created_by,
+            branch_id=branch_id,
+            notes=notes,
+            commit=False,
+            category=category,
+            actor_role=actor_role,
+        )
+    except Exception:
+        db.session.rollback()
+        raise
     _commit_or_rollback()
     return adjustment, transaction
 

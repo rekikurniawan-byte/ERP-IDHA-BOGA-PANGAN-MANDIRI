@@ -1,5 +1,4 @@
 from app.extensions import db
-from app.models.accounting import FixedAsset
 from app.models.finance import BankAccount
 from app.models.master import (
     Worker,
@@ -504,64 +503,10 @@ def toggle_bank_account_active(account):
     return account
 
 
-def create_fixed_asset_record(
-    *,
-    branch_id,
-    asset_code,
-    asset_name,
-    asset_category,
-    purchase_date,
-    purchase_value,
-    useful_life_years,
-    residual_value,
-    accumulated_depreciation,
-    book_value,
-    status,
-    notes,
-):
-    asset = FixedAsset(
-        branch_id=branch_id,
-        asset_code=asset_code,
-        asset_name=asset_name,
-        asset_category=asset_category,
-        purchase_date=purchase_date,
-        purchase_value=purchase_value,
-        useful_life_years=useful_life_years,
-        residual_value=residual_value,
-        accumulated_depreciation=accumulated_depreciation,
-        book_value=book_value,
-        status=status,
-        notes=notes,
-    )
-    db.session.add(asset)
-    _commit_or_rollback()
-    return asset
-
-
-def update_fixed_asset_record(
-    asset,
-    *,
-    asset_code,
-    asset_name,
-    asset_category,
-    purchase_date,
-    purchase_value,
-    useful_life_years,
-    residual_value,
-    accumulated_depreciation,
-    book_value,
-    status,
-    notes,
-):
+def update_fixed_asset_record(asset, *, asset_code, asset_name, asset_category, notes):
+    """Nama, kategori, dan catatan saja; nilai aset mengikuti transaksi dan jurnalnya."""
     asset.asset_name = asset_name
     asset.asset_category = asset_category
-    asset.purchase_date = purchase_date
-    asset.purchase_value = purchase_value
-    asset.useful_life_years = useful_life_years
-    asset.residual_value = residual_value
-    asset.accumulated_depreciation = accumulated_depreciation
-    asset.book_value = book_value
-    asset.status = status
     asset.notes = notes
     asset.asset_code = asset.asset_code or asset_code
     _commit_or_rollback()

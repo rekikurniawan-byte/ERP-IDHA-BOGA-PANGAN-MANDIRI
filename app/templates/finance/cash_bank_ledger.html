@@ -8,9 +8,10 @@
     "Saldo buku kas/bank dari saldo awal, pembayaran pelanggan, pembelian, pembayaran supplier, transfer, dan penyesuaian.",
     "Finance",
     actions=[
-        {"label": "Saldo Awal", "url": url_for('finance.cash_bank_opening_balances'), "icon": "bi-wallet2"},
+        {"label": "Saldo Awal", "url": url_for('accounting.opening_balance'), "icon": "bi-wallet2"},
         {"label": "Transfer", "url": url_for('finance.cash_bank_transfers'), "icon": "bi-arrow-left-right"},
         {"label": "Penyesuaian", "url": url_for('finance.cash_bank_adjustments'), "icon": "bi-sliders"},
+    ] + ([{"label": "Modal Pemilik", "url": url_for('finance.owner_capital'), "icon": "bi-person-badge"}] if has_role(["OWNER"]) else []) + [
         {"label": "Download CSV", "url": export_cash_bank_ledger_url, "icon": "bi-download"},
         {"label": "Cetak / Save PDF", "url": url_for('finance.print_cash_bank_ledger', **request.args.to_dict(flat=True)), "icon": "bi-printer"},
         {"label": "Rekening Bank", "url": url_for('master.bank_accounts'), "icon": "bi-bank"},

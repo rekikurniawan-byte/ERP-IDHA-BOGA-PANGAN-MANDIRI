@@ -3,7 +3,6 @@
 Route functions moved out of app.routes.accounting_routes without changing URL rules or endpoint names.
 """
 from app.routes.accounting_routes import *  # noqa: F401,F403
-from app.routes.accounting_routes import _redirect_after_accounting_post, _reserve_accounting_idempotency
 from app.routes.accounting_routes import _journal_total_credit, _journal_total_debit
 from datetime import datetime
 
@@ -49,13 +48,6 @@ def journals():
         total_journal=total_journal,
         balanced_count=balanced_count,
         unbalanced_count=unbalanced_count,
-        idempotency_keys={
-            "period_invoice": uuid4().hex,
-            "payment": uuid4().hex,
-            "warung_payment_correction": uuid4().hex,
-            "hpp_production": uuid4().hex,
-            "procurement": uuid4().hex,
-        },
     )
 
 
@@ -137,145 +129,3 @@ def print_journal_detail(journal_id):
 
 
 # === PATCH_GENERATE_PERIOD_INVOICE_JOURNAL ===
-def _generate_journal_number(journal_date):
-    prefix = f"JRN-{journal_date.strftime('%Y%m%d')}"
-    counter = Journal.query.filter(Journal.journal_number.like(f"{prefix}-%")).count() + 1
-
-    while True:
-        journal_number = f"{prefix}-{counter:03d}"
-        existing = Journal.query.filter_by(journal_number=journal_number).first()
-
-        if not existing:
-            return journal_number
-
-        counter += 1
-
-
-def _get_active_account_by_code(account_code):
-    return Account.query.filter_by(
-        account_code=account_code,
-        is_active=True
-    ).first()
-
-
-@accounting_bp.route("/journals/generate-period-invoice", methods=["POST"])
-@login_required
-@role_required("OWNER", "ACCOUNTING")
-def generate_period_invoice_journals():
-    # ACCOUNTING10B_ALIGN_MANUAL_INVOICE_GENERATOR
-    from flask import flash
-    from flask_login import current_user
-    from app.services.accounting_service import generate_period_invoice_journals_batch
-
-    idempotency_record, idempotency_response = _reserve_accounting_idempotency(
-        "ACCOUNTING_GENERATE_PERIOD_INVOICE_JOURNALS",
-        {"action": "generate_period_invoice_journals"},
-    )
-    if idempotency_response:
-        return idempotency_response
-
-    try:
-        result = generate_period_invoice_journals_batch(created_by=current_user.id)
-        created_count = result["created_count"]
-        skipped_count = result["skipped_count"]
-        skipped_cancelled_count = result["skipped_cancelled_count"]
-
-        if created_count > 0:
-            record_audit_log(
-                module="ACCOUNTING",
-                event_type="JOURNAL_BATCH_PERIOD_INVOICE_CREATED",
-                action="CREATE",
-                table_name="journals",
-                record_id=None,
-                description=f"Batch jurnal invoice dibuat: {created_count} jurnal, {skipped_count} dilewati.",
-                metadata={"created_count": created_count, "skipped_count": skipped_count, "generator": "invoice_revenue_split_4001_4002"},
-            )
-            flash(
-                f"Berhasil membuat {created_count} jurnal invoice melalui service accounting 4001/4002. "
-                f"Skip {skipped_count} invoice.",
-                "success"
-            )
-        else:
-            if skipped_cancelled_count > 0:
-                flash(
-                    f"Tidak ada jurnal invoice baru. Skip {skipped_count} invoice, termasuk "
-                    f"{skipped_cancelled_count} invoice cancelled.",
-                    "info"
-                )
-            else:
-                flash(
-                    "Tidak ada jurnal invoice baru yang dibuat. Semua invoice periode/harian mungkin sudah dijurnal.",
-                    "info"
-                )
-
-        mark_idempotency_completed(
-            idempotency_record,
-            reference_type="JOURNAL_BATCH",
-            reference_id=None,
-            response_payload={"created_count": created_count, "skipped_count": skipped_count},
-            commit=True,
-        )
-
-    except Exception as error:
-        logger.exception("Suppressed unexpected exception in app/routes/accounting_routes.py:405")
-        flash(f"Gagal membuat jurnal invoice 4001/4002: {error}", "danger")
-
-    return _redirect_after_accounting_post()
-
-
-# === PATCH_GENERATE_PAYMENT_JOURNAL ===
-@accounting_bp.route("/journals/generate-payment", methods=["POST"])
-@login_required
-@role_required("OWNER", "ACCOUNTING")
-def generate_payment_journals():
-    # ACCOUNTING11C_ALIGN_MANUAL_PAYMENT_GENERATOR
-    from flask import flash
-    from flask_login import current_user
-    from app.services.accounting_service import generate_payment_journals_batch
-
-    idempotency_record, idempotency_response = _reserve_accounting_idempotency(
-        "ACCOUNTING_GENERATE_PAYMENT_JOURNALS",
-        {"action": "generate_payment_journals"},
-    )
-    if idempotency_response:
-        return idempotency_response
-
-    try:
-        result = generate_payment_journals_batch(created_by=current_user.id)
-        created_count = result["created_count"]
-        skipped_count = result["skipped_count"]
-
-        if created_count > 0:
-            record_audit_log(
-                module="ACCOUNTING",
-                event_type="JOURNAL_BATCH_PAYMENT_CREATED",
-                action="CREATE",
-                table_name="journals",
-                record_id=None,
-                description=f"Batch jurnal pembayaran dibuat: {created_count} jurnal, {skipped_count} dilewati.",
-                metadata={"created_count": created_count, "skipped_count": skipped_count, "generator": "payment"},
-            )
-            flash(
-                f"Berhasil membuat {created_count} jurnal pembayaran melalui service accounting. "
-                f"Skip {skipped_count} payment.",
-                "success"
-            )
-        else:
-            flash(
-                "Tidak ada jurnal pembayaran baru yang perlu dibuat. Semua payment mungkin sudah dijurnal.",
-                "info"
-            )
-
-        mark_idempotency_completed(
-            idempotency_record,
-            reference_type="JOURNAL_BATCH",
-            reference_id=None,
-            response_payload={"created_count": created_count, "skipped_count": skipped_count},
-            commit=True,
-        )
-
-    except Exception as error:
-        logger.exception("Suppressed unexpected exception in app/routes/accounting_routes.py:447")
-        flash(f"Gagal generate jurnal pembayaran: {error}", "danger")
-
-    return _redirect_after_accounting_post()

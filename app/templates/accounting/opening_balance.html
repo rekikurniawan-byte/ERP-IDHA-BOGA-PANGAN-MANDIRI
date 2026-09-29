@@ -1,165 +1,434 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/sensitive_action_guard.html" import sensitive_guard_fields %}
+
+{% macro reason_field() %}
+    {% if data.locked %}
+        <input type="text" name="reason" class="form-control form-control-sm app-input" minlength="8" required placeholder="Alasan koreksi (wajib)">
+    {% endif %}
+{% endmacro %}
+
+{% macro line_actions(section, line, confirm) %}
+    <form method="POST" action="{{ url_for('accounting.opening_balance_remove_line', section=section, key=line.key) }}" class="d-flex gap-1 app-form" data-app-confirm="{{ confirm }}">
+        {% include "components/csrf_token.html" %}
+        {{ reason_field() }}
+        <button type="submit" class="btn btn-sm app-btn-danger"><i class="bi bi-trash"></i> Hapus</button>
+    </form>
+{% endmacro %}
 
 {% block content %}
-<div class="accounting-page-shell" data-ui-accounting-page="UI">
-<!-- ACCOUNTINGUX4B_BUSINESS_LANGUAGE_MAINTENANCE -->
+<div class="accounting-page-shell opening-balance-page">
 {{ page_header(
-    "Saldo Awal & Modal Pemilik",
-    "Input saldo awal usaha agar laporan kas, bank, persediaan, hutang, dan modal lebih masuk akal.",
-    eyebrow="Accounting",
-    actions=[]
+    "Saldo Awal",
+    "Satu pintu untuk semua saldo sebelum sistem dipakai: kas & bank, piutang lama, hutang supplier lama, stok, aset, dan hutang lain. Modal pemilik dihitung otomatis.",
+    eyebrow="Akuntansi",
+    actions=[{"label": "Jurnal Akuntansi", "url": url_for('accounting.journals'), "icon": "bi-journal-check"}]
 ) }}
 
-
-<div class="alert alert-warning border-0 shadow-sm">
-    <strong>Hati-hati:</strong>
-    Saldo awal adalah keputusan owner. Sistem membantu mencatat saldo awal secara seimbang.
-    Jangan isi angka asal hanya supaya kas terlihat besar.
-</div>
-
-<div class="app-stat-grid">
-    <div class="app-stat-card">
-        <div class="app-stat-icon {% if data.cash_balance < 0 %}stat-danger{% else %}stat-success{% endif %}">
-            <i class="bi bi-cash-stack"></i>
-        </div>
-        <div>
-            <p>Saldo Kas Saat Ini</p>
-            <h3>{{ data.cash_balance|rupiah }}</h3>
-            <span class="app-stat-helper">Berdasarkan jurnal yang sudah tercatat</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-warning">
-            <i class="bi bi-lightbulb"></i>
-        </div>
-        <div>
-            <p>Saran Minimal Kas</p>
-            <h3>{{ data.suggested_cash|rupiah }}</h3>
-            <span class="app-stat-helper">Agar saldo kas tidak minus</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon {% if data.existing_opening_journal %}stat-success{% else %}stat-info{% endif %}">
-            <i class="bi bi-shield-check"></i>
-        </div>
-        <div>
-            <p>Status Saldo Awal</p>
-            <h3>{% if data.existing_opening_journal %}SUDAH ADA{% else %}BELUM ADA{% endif %}</h3>
-            <span class="app-stat-helper">Anti double aktif</span>
-        </div>
-    </div>
-</div>
-
-{% if data.existing_opening_journal %}
-<div class="app-card mt-4">
-    <h5>Saldo Awal Sudah Dicatat</h5>
-    <p class="text-muted">
-        Sistem hanya mengizinkan satu catatan saldo awal agar tidak terjadi input dobel.
-    </p>
-    <a href="{{ url_for('accounting.journal_detail', journal_id=data.existing_opening_journal.id) }}" class="btn app-btn-primary">
-        Lihat Jurnal {{ data.existing_opening_journal.journal_number }}
-    </a>
-</div>
-{% else %}
-<div class="app-card mt-4">
+{# --- status ------------------------------------------------------------ #}
+<div class="app-card mb-4">
     <div class="card-header-clean">
         <div>
-            <h5>Form Saldo Awal</h5>
-            <p>Isi nominal yang benar-benar dimiliki/dimiliki sebagai kewajiban pada awal pencatatan.</p>
+            {% if data.locked %}
+                <h5><span class="status-badge success">Terkunci</span> Saldo awal per {{ data.opening.start_date.strftime('%d-%m-%Y') }}</h5>
+                <p>
+                    Jurnal {% if data.opening.journal %}<a href="{{ url_for('accounting.journal_detail', journal_id=data.opening.journal.id) }}">{{ data.opening.journal.journal_number }}</a>{% endif %}
+                    dan semua buku pembantunya sudah dibuat.
+                    {% if data.activity %}
+                        Sudah ada transaksi sejak tanggal mulai ({{ data.activity|join(', ') }}), jadi perubahan dilakukan sebagai <strong>koreksi</strong>:
+                        tulis alasannya di setiap perubahan, buku pembantu dan jurnal koreksinya ikut dibuat.
+                    {% else %}
+                        Belum ada transaksi sejak tanggal mulai: kalau ada yang salah, <strong>Buka Kembali</strong> lalu perbaiki drafnya.
+                    {% endif %}
+                </p>
+            {% else %}
+                <h5><span class="status-badge warning">Draf</span> Belum dikunci</h5>
+                <p>Isi semua bagian di bawah. Angkanya belum masuk buku apa pun sampai OWNER menekan <strong>Kunci Saldo Awal</strong>. Sistem tetap bisa dipakai sebelum dikunci, tapi Cek Kesiapan akan terus mengingatkan.</p>
+            {% endif %}
         </div>
     </div>
-
-    <form method="POST"
-          action="{{ url_for('accounting.opening_balance') }}" data-app-confirm="Catat saldo awal owner? Setelah dibuat, sistem akan mengunci agar tidak dobel." data-ui-form="true" class="app-form">
+    <form method="POST" action="{{ url_for('accounting.opening_balance_start_date') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
         {% include "components/csrf_token.html" %}
-
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Tanggal Saldo Awal</label>
-                <input type="date" name="journal_date" class="form-control app-input" required>
-            </div>
+        <div class="col-md-3">
+            <label class="form-label">Tanggal mulai pakai sistem</label>
+            <input type="date" name="start_date" class="form-control app-input" value="{{ data.opening.start_date.isoformat() if data.opening.start_date else '' }}" {% if data.locked %}disabled{% endif %} required>
         </div>
-
-        <hr>
-
-        <h6>Aset Awal</h6>
-        <div class="row g-3">
-            {% for field in data.asset_fields %}
-            <div class="col-md-4">
-                <label class="form-label">{{ field.code }} - {{ field.label }}</label>
-                <input type="number"
-                       step="0.01"
-                       min="0"
-                       name="{{ field.name }}"
-                       class="form-control app-input"
-                       value="{% if field.name == 'cash' and data.suggested_cash > 0 %}{{ '%.0f'|format(data.suggested_cash) }}{% else %}0{% endif %}">
-            </div>
-            {% endfor %}
+        {% if not data.locked %}
+        <div class="col-md-3">
+            <button type="submit" class="btn app-btn-secondary">Simpan Tanggal</button>
         </div>
-
-        <hr>
-
-        <h6>Hutang Awal</h6>
-        <div class="row g-3">
-            {% for field in data.liability_fields %}
-            <div class="col-md-4">
-                <label class="form-label">{{ field.code }} - {{ field.label }}</label>
-                <input type="number"
-                       step="0.01"
-                       min="0"
-                       name="{{ field.name }}"
-                       class="form-control app-input"
-                       value="0">
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="alert alert-info mt-4">
-            Modal Pemilik akan dihitung otomatis sebagai penyeimbang:
-            <strong>Total Aset Awal - Total Hutang Awal</strong>.
-        </div>
-
-        <button type="submit" class="btn app-btn-primary">
-            <i class="bi bi-save"></i>
-            Catat Saldo Awal
-        </button>
+        {% endif %}
     </form>
 </div>
-{% endif %}
 
-<div class="app-card mt-4">
+{# --- kas & bank --------------------------------------------------------- #}
+<div class="app-card mb-4">
     <div class="card-header-clean">
         <div>
-            <h5>Saldo Akun Saat Ini</h5>
-            <p>Saldo berdasarkan catatan akuntansi yang sudah ada sebelum/sesudah saldo awal.</p>
+            <h5>1. Kas & Bank</h5>
+            <p>Uang tunai di laci/brankas dan saldo tiap rekening bank pada tanggal mulai. Rekening bank ditambahkan di Data Master &gt; Rekening Bank.</p>
         </div>
     </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_cash_bank') }}" class="row g-3 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Kas</label>
+            <input type="text" name="cash" class="form-control app-input" value="{{ data.cash_amount|float|int if data.cash_amount else 0 }}" inputmode="numeric">
+        </div>
+        {% for row in data.bank_rows %}
+        <div class="col-md-3">
+            <label class="form-label">{{ row.bank.bank_name }} - {{ row.bank.account_number }}</label>
+            <input type="text" name="bank_{{ row.bank.id }}" class="form-control app-input" value="{{ row.amount|float|int if row.amount else 0 }}" inputmode="numeric">
+        </div>
+        {% endfor %}
+        <div class="col-md-12 d-flex gap-2">
+            {{ reason_field() }}
+            <button type="submit" class="btn app-btn-primary">Simpan Kas & Bank</button>
+        </div>
+    </form>
+</div>
 
+{# --- piutang lama ------------------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>2. Piutang lama</h5>
+            <p>Tagihan pelanggan yang belum lunas, satu baris per nota (kalau notanya tidak ada, satu baris per pelanggan). Masuk ke daftar piutang dan bisa dibayar seperti invoice biasa, tapi <strong>bukan pendapatan</strong> baru.</p>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>Kode</th>
-                    <th>Nama Akun</th>
-                    <th>Tipe</th>
-                    <th class="text-end">Saldo Normal</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Pelanggan</th><th>Nota</th><th>Tgl nota</th><th>Jatuh tempo</th><th class="text-end">Sisa piutang</th><th></th></tr></thead>
             <tbody>
-                {% for row in data.current_balances %}
+            {% for line in data.payload.receivables %}
                 <tr>
-                    <td><strong>{{ row.account.account_code }}</strong></td>
-                    <td>{{ row.account.account_name }}</td>
-                    <td>{{ row.account.account_type }}</td>
-                    <td class="text-end">{{ row.balance|rupiah }}</td>
+                    <td>{{ line.client_name }}{% if line.mandor_name %} / {{ line.mandor_name }}{% endif %}</td>
+                    <td>{{ line.reference }}</td>
+                    <td>{{ line.invoice_date }}</td>
+                    <td>{{ line.due_date }}</td>
+                    <td class="text-end">
+                        <form method="POST" action="{{ url_for('accounting.opening_balance_update_line', section='receivables', key=line.key) }}" class="d-flex gap-1 justify-content-end app-form">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="amount" class="form-control form-control-sm app-input text-end" value="{{ line.amount|float|int }}" style="max-width: 9rem">
+                            {{ reason_field() }}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Ubah</button>
+                        </form>
+                    </td>
+                    <td>{{ line_actions('receivables', line, 'Hapus piutang ini?') }}</td>
                 </tr>
-                {% endfor %}
+            {% else %}
+                <tr><td colspan="6" class="text-muted">Belum ada piutang lama.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_add_line', section='receivables') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Pelanggan</label>
+            <select name="client_id" class="form-select app-input" required>
+                <option value="">Pilih pelanggan</option>
+                {% for client in data.clients %}<option value="{{ client.id }}">{{ client.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">{{ term('sub_client') }} (opsional)</label>
+            <select name="mandor_id" class="form-select app-input">
+                <option value="">-</option>
+                {% for mandor in data.mandors %}<option value="{{ mandor.id }}">{{ mandor.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">No. nota</label><input type="text" name="reference" class="form-control app-input" placeholder="kosongkan kalau tidak ada"></div>
+        <div class="col-md-2"><label class="form-label">Tgl nota</label><input type="date" name="invoice_date" class="form-control app-input" required></div>
+        <div class="col-md-1"><label class="form-label">Jatuh tempo</label><input type="date" name="due_date" class="form-control app-input"></div>
+        <div class="col-md-2"><label class="form-label">Sisa piutang</label><input type="text" name="amount" class="form-control app-input" inputmode="numeric" required></div>
+        <div class="col-md-12 d-flex gap-2">{{ reason_field() }}<button type="submit" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Piutang</button></div>
+    </form>
+</div>
+
+{# --- hutang supplier lama ----------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>3. Hutang supplier lama</h5>
+            <p>Belanja yang belum dibayar ke supplier sebelum tanggal mulai. Masuk ke daftar hutang supplier dan dibayar dari sana.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Supplier</th><th>Nota</th><th>Tgl nota</th><th>Jatuh tempo</th><th class="text-end">Sisa hutang</th><th></th></tr></thead>
+            <tbody>
+            {% for line in data.payload.payables %}
+                <tr>
+                    <td>{{ line.supplier_name }}</td>
+                    <td>{{ line.reference }}</td>
+                    <td>{{ line.bill_date }}</td>
+                    <td>{{ line.due_date }}</td>
+                    <td class="text-end">
+                        <form method="POST" action="{{ url_for('accounting.opening_balance_update_line', section='payables', key=line.key) }}" class="d-flex gap-1 justify-content-end app-form">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="amount" class="form-control form-control-sm app-input text-end" value="{{ line.amount|float|int }}" style="max-width: 9rem">
+                            {{ reason_field() }}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Ubah</button>
+                        </form>
+                    </td>
+                    <td>{{ line_actions('payables', line, 'Hapus hutang ini?') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="text-muted">Belum ada hutang supplier lama.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_add_line', section='payables') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Supplier</label>
+            <select name="supplier_id" class="form-select app-input">
+                <option value="">Tulis nama di sebelah</option>
+                {% for supplier in data.suppliers %}<option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Nama (kalau tidak di daftar)</label><input type="text" name="supplier_name" class="form-control app-input"></div>
+        <div class="col-md-2"><label class="form-label">No. nota</label><input type="text" name="reference" class="form-control app-input"></div>
+        <div class="col-md-2"><label class="form-label">Tgl nota</label><input type="date" name="bill_date" class="form-control app-input" required></div>
+        <div class="col-md-1"><label class="form-label">Jatuh tempo</label><input type="date" name="due_date" class="form-control app-input"></div>
+        <div class="col-md-2"><label class="form-label">Sisa hutang</label><input type="text" name="amount" class="form-control app-input" inputmode="numeric" required></div>
+        <div class="col-md-12 d-flex gap-2">{{ reason_field() }}<button type="submit" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Hutang</button></div>
+    </form>
+</div>
+
+{# --- stok --------------------------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>4. Stok awal</h5>
+            <p>Jumlah fisik tiap barang pada tanggal mulai dan harga belinya per satuan. Harga ini ikut harga rata-rata untuk menilai barang yang keluar.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Barang</th><th class="text-end">Qty</th><th class="text-end">Harga satuan</th><th class="text-end">Nilai</th><th>Ubah</th><th></th></tr></thead>
+            <tbody>
+            {% for line in data.payload.stock %}
+                <tr>
+                    <td>{{ line.item_name }}</td>
+                    <td class="text-end">{{ line.qty|qty }} {{ line.unit }}</td>
+                    <td class="text-end">{{ line.unit_cost|rupiah }}</td>
+                    <td class="text-end">{{ (line.qty|float * line.unit_cost|float)|rupiah }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('accounting.opening_balance_update_line', section='stock', key=line.key) }}" class="d-flex gap-1 app-form">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="qty" class="form-control form-control-sm app-input" value="{{ line.qty|qty }}" style="max-width: 6rem" title="Qty">
+                            <input type="text" name="unit_cost" class="form-control form-control-sm app-input" value="{{ line.unit_cost|float|int }}" style="max-width: 8rem" title="Harga satuan">
+                            {{ reason_field() }}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Ubah</button>
+                        </form>
+                    </td>
+                    <td>{{ line_actions('stock', line, 'Hapus stok awal barang ini?') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="text-muted">Belum ada stok awal.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_add_line', section='stock') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-4">
+            <label class="form-label">Barang</label>
+            <select name="item_id" class="form-select app-input" required>
+                <option value="">Pilih barang</option>
+                {% for item in data.stock_items %}<option value="{{ item.id }}">{{ item.item_name }} ({{ item.unit }})</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Qty</label><input type="text" name="qty" class="form-control app-input" required></div>
+        <div class="col-md-3"><label class="form-label">Harga beli per satuan</label><input type="text" name="unit_cost" class="form-control app-input" inputmode="numeric" required></div>
+        <div class="col-md-12 d-flex gap-2">{{ reason_field() }}<button type="submit" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Stok</button></div>
+    </form>
+</div>
+
+{# --- aset --------------------------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>5. Aset tetap</h5>
+            <p>Peralatan, kendaraan, dan bangunan yang sudah dimiliki. Isi nilai beli aslinya dan akumulasi penyusutan sampai tanggal mulai; penyusutan berikutnya berlanjut dari situ di menu Penyusutan.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Aset</th><th>Kategori</th><th>Tgl beli</th><th class="text-end">Nilai beli</th><th class="text-end">Akumulasi</th><th class="text-end">Nilai buku</th><th>Ubah</th><th></th></tr></thead>
+            <tbody>
+            {% for line in data.payload.assets %}
+                <tr>
+                    <td>{{ line.name }}</td>
+                    <td>{{ data.asset_categories.get(line.category, line.category) }}</td>
+                    <td>{{ line.purchase_date }}</td>
+                    <td class="text-end">{{ line.purchase_value|rupiah }}</td>
+                    <td class="text-end">{{ line.accumulated|rupiah }}</td>
+                    <td class="text-end">{{ (line.purchase_value|float - line.accumulated|float)|rupiah }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('accounting.opening_balance_update_line', section='assets', key=line.key) }}" class="d-flex gap-1 app-form">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="purchase_value" class="form-control form-control-sm app-input" value="{{ line.purchase_value|float|int }}" style="max-width: 9rem" title="Nilai beli">
+                            <input type="text" name="accumulated" class="form-control form-control-sm app-input" value="{{ line.accumulated|float|int }}" style="max-width: 9rem" title="Akumulasi penyusutan">
+                            {{ reason_field() }}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Ubah</button>
+                        </form>
+                    </td>
+                    <td>{{ line_actions('assets', line, 'Hapus aset ini?') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8" class="text-muted">Belum ada aset.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_add_line', section='assets') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3"><label class="form-label">Nama aset</label><input type="text" name="name" class="form-control app-input" required></div>
+        <div class="col-md-2">
+            <label class="form-label">Kategori</label>
+            <select name="category" class="form-select app-input">
+                {% for key, label in data.asset_categories.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Tgl beli</label><input type="date" name="purchase_date" class="form-control app-input" required></div>
+        <div class="col-md-2"><label class="form-label">Nilai beli</label><input type="text" name="purchase_value" class="form-control app-input" inputmode="numeric" required></div>
+        <div class="col-md-2"><label class="form-label">Akumulasi penyusutan</label><input type="text" name="accumulated" class="form-control app-input" inputmode="numeric" value="0"></div>
+        <div class="col-md-1"><label class="form-label">Umur (thn)</label><input type="number" name="useful_life_years" class="form-control app-input" min="0"></div>
+        <div class="col-md-12 d-flex gap-2">{{ reason_field() }}<button type="submit" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Aset</button></div>
+    </form>
+</div>
+
+{# --- hutang lain -------------------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>6. Hutang lain</h5>
+            <p>Kewajiban selain hutang supplier: pinjaman/pembiayaan, gaji terutang, dan sejenisnya.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Jenis</th><th>Keterangan</th><th class="text-end">Nominal</th><th></th></tr></thead>
+            <tbody>
+            {% for line in data.payload.liabilities %}
+                <tr>
+                    <td>{{ line.account_code }} - {{ data.liability_accounts.get(line.account_code) }}</td>
+                    <td>{{ line.description }}</td>
+                    <td class="text-end">
+                        <form method="POST" action="{{ url_for('accounting.opening_balance_update_line', section='liabilities', key=line.key) }}" class="d-flex gap-1 justify-content-end app-form">
+                            {% include "components/csrf_token.html" %}
+                            <input type="text" name="amount" class="form-control form-control-sm app-input text-end" value="{{ line.amount|float|int }}" style="max-width: 9rem">
+                            {{ reason_field() }}
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Ubah</button>
+                        </form>
+                    </td>
+                    <td>{{ line_actions('liabilities', line, 'Hapus hutang ini?') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-muted">Belum ada hutang lain.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" action="{{ url_for('accounting.opening_balance_add_line', section='liabilities') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Jenis</label>
+            <select name="account_code" class="form-select app-input" required>
+                {% for code, label in data.liability_accounts.items() %}<option value="{{ code }}">{{ code }} - {{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5"><label class="form-label">Keterangan</label><input type="text" name="description" class="form-control app-input"></div>
+        <div class="col-md-2"><label class="form-label">Nominal</label><input type="text" name="amount" class="form-control app-input" inputmode="numeric" required></div>
+        <div class="col-md-12 d-flex gap-2">{{ reason_field() }}<button type="submit" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Hutang</button></div>
+    </form>
+</div>
+
+{# --- neraca ------------------------------------------------------------- #}
+<div class="app-card mb-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Neraca saldo awal</h5>
+            <p>Inilah jurnal yang akan dibuat. Modal pemilik (3001) = total harta - total hutang.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Akun</th><th class="text-end">Debit</th><th class="text-end">Kredit</th></tr></thead>
+            <tbody>
+            {% for row in data.preview.rows %}
+                <tr><td>{{ row.code }} - {{ row.name }}</td><td class="text-end">{{ row.debit|rupiah if row.debit else '' }}</td><td class="text-end">{{ row.credit|rupiah if row.credit else '' }}</td></tr>
+            {% else %}
+                <tr><td colspan="3" class="text-muted">Belum ada saldo yang diisi.</td></tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr><th>Total</th><th class="text-end">{{ data.preview.total_debit|rupiah }}</th><th class="text-end">{{ data.preview.total_credit|rupiah }}</th></tr>
+            </tfoot>
+        </table>
+    </div>
+    {% for problem in data.preview.problems %}
+        <div class="alert alert-warning mb-2">{{ problem }}</div>
+    {% endfor %}
+</div>
+
+{# --- kunci / buka kembali --------------------------------------------- #}
+{% if has_role(["OWNER"]) %}
+    {% if not data.locked %}
+    <div class="app-card mb-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kunci Saldo Awal</h5>
+                <p>Membuat sekaligus: buku kas/bank, piutang lama, hutang supplier lama, stok awal, register aset, dan satu jurnal saldo awal. Semua dari angka di atas, jadi pasti sama.</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('accounting.opening_balance_lock') }}" class="app-form" data-app-confirm="Kunci saldo awal sekarang? Semua buku akan dibuat dari angka di atas.">
+            {% include "components/csrf_token.html" %}
+            {{ sensitive_guard_fields('Kunci saldo awal', 'Contoh: saldo awal sesuai hitung fisik dan rekening koran per tanggal mulai') }}
+            <button type="submit" class="btn app-btn-primary" {% if data.preview.problems or not data.opening.start_date %}disabled{% endif %}><i class="bi bi-lock"></i> Kunci Saldo Awal</button>
+        </form>
+    </div>
+    {% elif not data.activity %}
+    <div class="app-card mb-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Buka Kembali</h5>
+                <p>Menghapus semua catatan dan jurnal saldo awal, drafnya tetap ada untuk diperbaiki lalu dikunci ulang. Hanya bisa selama belum ada transaksi sejak tanggal mulai.</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('accounting.opening_balance_reopen') }}" class="app-form" data-app-confirm="Buka kembali saldo awal?">
+            {% include "components/csrf_token.html" %}
+            {{ sensitive_guard_fields('Buka kembali saldo awal', 'Contoh: salah ketik saldo bank, dibuka untuk diperbaiki') }}
+            <button type="submit" class="btn app-btn-secondary"><i class="bi bi-unlock"></i> Buka Kembali</button>
+        </form>
+    </div>
+    {% endif %}
+{% endif %}
+
+{% if data.corrections %}
+<div class="app-card mb-4">
+    <div class="card-header-clean"><div><h5>Riwayat koreksi</h5></div></div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Waktu</th><th>Bagian</th><th>Perubahan</th><th>Alasan</th><th>Jurnal</th></tr></thead>
+            <tbody>
+            {% for row in data.corrections %}
+                <tr>
+                    <td>{{ row.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>{{ data.section_labels.get(row.section, row.section) }}</td>
+                    <td>{{ {'ADD': 'Tambah', 'UPDATE': 'Ubah', 'REMOVE': 'Hapus'}.get(row.action, row.action) }}</td>
+                    <td>{{ row.reason }}</td>
+                    <td>{% if row.journal %}<a href="{{ url_for('accounting.journal_detail', journal_id=row.journal.id) }}">{{ row.journal.journal_number }}</a>{% else %}-{% endif %}</td>
+                </tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endif %}
 </div>
 {% endblock %}

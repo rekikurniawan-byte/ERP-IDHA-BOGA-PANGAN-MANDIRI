@@ -241,12 +241,9 @@ def create_purchase():
 
             total_amount = round(sum(row["subtotal"] for row in valid_rows), 2)
 
-            same_day_count = Procurement.query.filter_by(
-                branch_id=current_user.branch_id,
-                procurement_date=procurement_date
-            ).count()
+            from app.services.logistics_transaction_service import next_daily_number
 
-            procurement_number = f"PB-{procurement_date.strftime('%Y%m%d')}-{same_day_count + 1:03d}"
+            procurement_number = next_daily_number(Procurement, "procurement_number", "PB", procurement_date)
 
             procurement = Procurement(
                 procurement_number=procurement_number,
@@ -342,6 +339,12 @@ def create_purchase():
                     )
 
                 db.session.flush()
+
+                # Jurnal pembelian ikut di transaksi yang sama: tidak ada lagi
+                # pembelian tanpa jurnal yang harus "disinkronkan" belakangan.
+                from app.services.accounting_service import create_procurement_journal
+
+                create_procurement_journal(procurement, created_by=current_user.id)
 
                 if proof_file and proof_file.filename:
                     attachment = save_digital_attachment(

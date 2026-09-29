@@ -393,8 +393,9 @@ def _require_invoice_journal(invoice):
     Tanpa ini, memotong deposit atau menghapus buku invoice yang belum
     dijurnal akan membuat 1004 Piutang Usaha minus.
     """
-    journal = Journal.query.filter_by(reference_type="INVOICE", reference_id=invoice.id).first()
-    if journal is None:
+    from app.services.accounting_service import receivable_is_journaled
+
+    if not receivable_is_journaled(invoice):
         raise CreditActionError(
             f"Invoice {invoice.invoice_number} belum dijurnal. Posting jurnal invoice dulu, "
             "baru deposit bisa dipotong atau piutangnya dihapus buku."

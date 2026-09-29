@@ -5,7 +5,7 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 {{ page_header(
     "Penyesuaian Saldo Kas/Bank",
-    "Gunakan hanya untuk koreksi saldo yang punya alasan jelas. Penyesuaian masuk buku kas/bank sebagai IN atau OUT.",
+    "Untuk selisih hitung, biaya admin bank, dan bunga bank. Setiap penyesuaian masuk buku kas/bank dan langsung dijurnal.",
     "Finance",
     actions=[{"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-arrow-left"}]
 ) }}
@@ -14,7 +14,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Tambah Penyesuaian</h5>
-            <p>Untuk koreksi kas fisik/rekening, bukan pengganti transaksi pembelian atau pembayaran.</p>
+            <p>Bukan pengganti pembelian, pembayaran, atau setoran modal. Selisih lebih masuk 4004 Pendapatan Lain-lain, selisih kurang 5009 Beban Lain-lain, biaya admin 5008, bunga bank 4004. Selisih di atas {{ selisih_owner_limit|rupiah }} hanya bisa dicatat OWNER.</p>
         </div>
     </div>
 
@@ -40,8 +40,17 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="col-md-4">
+            <label class="form-label">Jenis</label>
+            <select name="adjustment_category" class="form-select app-input" required>
+                <option value="">Pilih jenis penyesuaian</option>
+                {% for key, rule in adjustment_categories.items() %}
+                    <option value="{{ key }}">{{ rule.label }}{{ ' (rekening bank)' if rule.bank_only else '' }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="col-md-2">
-            <label class="form-label">Tipe</label>
+            <label class="form-label">Arah</label>
             <select name="adjustment_type" class="form-select app-input" required>
                 <option value="INCREASE">Tambah Saldo</option>
                 <option value="DECREASE">Kurangi Saldo</option>
@@ -53,7 +62,7 @@
         </div>
         <div class="col-md-4">
             <label class="form-label">Alasan</label>
-            <input type="text" name="reason" class="form-control app-input" placeholder="Contoh: koreksi kas fisik" required>
+            <input type="text" name="reason" class="form-control app-input" placeholder="Contoh: hitung kas sore kurang Rp5.000" required>
         </div>
         <div class="col-md-8">
             <label class="form-label">Catatan</label>
@@ -83,7 +92,8 @@
                     <th>Tanggal</th>
                     <th>Nomor</th>
                     <th>Akun</th>
-                    <th>Tipe</th>
+                    <th>Jenis</th>
+                    <th>Arah</th>
                     <th class="text-end">Nominal</th>
                     <th>Alasan</th>
                     <th>Buku Kas/Bank</th>
@@ -101,6 +111,7 @@
                                 Kas Operasional
                             {% endif %}
                         </td>
+                        <td>{{ adjustment_categories.get(adjustment.adjustment_category, {}).get('label', adjustment.adjustment_category) }}</td>
                         <td>
                             {% if adjustment.adjustment_type == 'INCREASE' %}
                                 <span class="badge bg-success">Tambah</span>
@@ -120,7 +131,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <i class="bi bi-sliders"></i>
                                 <p>Belum ada penyesuaian saldo.</p>

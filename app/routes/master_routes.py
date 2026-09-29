@@ -20,7 +20,6 @@ from app.services.master_data_service import (
     create_client_pic_record,
     create_client_record,
     create_driver_record,
-    create_fixed_asset_record,
     create_item_record,
     create_location_record,
     create_mandor_record,
@@ -130,11 +129,6 @@ def supplier_name_is_used(name, branch_id, exclude_id=None):
         query = query.filter(Supplier.id != exclude_id)
 
     return query.first() is not None
-
-
-def calculate_asset_book_value(purchase_value, accumulated_depreciation):
-    value = float(purchase_value or 0) - float(accumulated_depreciation or 0)
-    return max(value, 0)
 
 
 def mandor_name_is_used(name, branch_id, exclude_id=None):

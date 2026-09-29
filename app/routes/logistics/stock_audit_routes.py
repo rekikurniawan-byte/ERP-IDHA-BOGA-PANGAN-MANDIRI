@@ -191,7 +191,8 @@ def create_audit():
             flash(f"Untuk satuan {item.unit}, stok fisik harus angka bulat.", "warning")
             return redirect(url_for("logistics.create_audit"))
 
-        system_stock = get_item_stock(current_user.branch_id, item.id)
+        # get_item_stock mengembalikan Decimal; stok fisik dari form float.
+        system_stock = float(get_item_stock(current_user.branch_id, item.id))
         difference = round(physical_stock - system_stock, 4)
 
         notes = (

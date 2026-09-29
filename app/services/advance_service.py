@@ -557,7 +557,11 @@ def resolve_settlement_reference(branch_id, settlement_type, reference_id):
 
 def invoice_has_journal(invoice_id):
     """Piutang invoice ini sudah dijurnal (Dr 1004) oleh accounting_service?"""
-    return Journal.query.filter_by(reference_type="INVOICE", reference_id=invoice_id).first() is not None
+    from app.models.finance import Invoice
+    from app.services.accounting_service import receivable_is_journaled
+
+    invoice = db.session.get(Invoice, invoice_id)
+    return invoice is not None and receivable_is_journaled(invoice)
 
 
 def mandor_unpaid_invoice_total(branch_id, mandor_id):

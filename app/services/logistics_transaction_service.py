@@ -1,7 +1,23 @@
 from app.extensions import db
 from app.models.logistics import ItemRequest, ItemRequestDetail, StockMovement
 from app.services.business_logic_guard_service import validate_stock_movement_guard
+from app.services.stock_journal_service import journal_stock_movement
 from app.services.stock_service import get_item_stock_for_update, is_integer_unit
+
+
+def next_daily_number(model, field_name, prefix, day):
+    """Nomor harian PREFIX-YYYYMMDD-001 yang unik di semua cabang.
+
+    Kolom nomornya unik untuk seluruh database. Dulu urutannya dihitung per
+    cabang, jadi cabang kedua yang mencatat di hari yang sama mendapat nomor
+    yang sudah dipakai dan transaksinya gagal disimpan.
+    """
+    column = getattr(model, field_name)
+    base = f"{prefix}-{day.strftime('%Y%m%d')}-"
+    counter = model.query.filter(column.like(f"{base}%")).count() + 1
+    while model.query.filter(column == f"{base}{counter:03d}").first() is not None:
+        counter += 1
+    return f"{base}{counter:03d}"
 
 
 def _commit_or_rollback():
@@ -21,19 +37,27 @@ def create_stock_audit_movement(
     qty,
     notes,
     created_by,
+    reference_type="AUDIT_STOK",
+    reference_id=None,
 ):
     movement = StockMovement(
         branch_id=branch_id,
         item_id=item_id,
         movement_date=movement_date,
         movement_type=movement_type,
-        reference_type="AUDIT_STOK",
-        reference_id=None,
+        reference_type=reference_type,
+        reference_id=reference_id,
         qty=qty,
         notes=notes,
         created_by=created_by,
     )
-    db.session.add(movement)
+    try:
+        db.session.add(movement)
+        db.session.flush()
+        journal_stock_movement(movement, created_by=created_by)
+    except Exception:
+        db.session.rollback()
+        raise
     _commit_or_rollback()
     return movement
 
@@ -131,7 +155,7 @@ def fulfill_item_request_record(item_request, *, branch_id, fulfilled_by, fulfil
             is_integer_unit=is_integer_unit(item.unit),
         )
 
-        db.session.add(StockMovement(
+        movement = StockMovement(
             branch_id=branch_id,
             item_id=item.id,
             movement_date=item_request.request_date,
@@ -141,7 +165,10 @@ def fulfill_item_request_record(item_request, *, branch_id, fulfilled_by, fulfil
             qty=approved_qty,
             notes=notes,
             created_by=fulfilled_by,
-        ))
+        )
+        db.session.add(movement)
+        db.session.flush()
+        journal_stock_movement(movement, created_by=fulfilled_by)
 
         detail.fulfilled_qty = approved_qty
 

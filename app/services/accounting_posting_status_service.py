@@ -121,7 +121,6 @@ def _row(
     detail_url: str | None = None,
     action_url: str | None = None,
     action_label: str | None = None,
-    action_method: str = "GET",
     helper: str = "",
 ) -> dict[str, Any]:
     return {
@@ -134,7 +133,6 @@ def _row(
         "detail_url": detail_url,
         "action_url": action_url,
         "action_label": action_label,
-        "action_method": action_method,
         "helper": helper,
     }
 
@@ -252,9 +250,6 @@ def _invoice_rows(branch_id: int) -> list[dict[str, Any]]:
             amount=invoice.total_amount,
             status=status,
             detail_url=detail_url,
-            action_url=url_for("accounting.generate_period_invoice_journals"),
-            action_label="Sinkronkan Invoice",
-            action_method="POST",
             helper="Membentuk Dr Piutang Usaha dan Cr Pendapatan sesuai sumber invoice.",
         ))
     return rows
@@ -283,9 +278,6 @@ def _payment_rows(branch_id: int) -> list[dict[str, Any]]:
             amount=payment.amount,
             status=status,
             detail_url=detail_url,
-            action_url=url_for("accounting.generate_payment_journals"),
-            action_label="Sinkronkan Payment",
-            action_method="POST",
             helper="Membentuk Dr Kas/Bank dan Cr Piutang Usaha.",
         ))
     return rows
@@ -314,45 +306,45 @@ def _procurement_rows(branch_id: int) -> list[dict[str, Any]]:
             amount=procurement.total_amount,
             status=status,
             detail_url=detail_url,
-            action_url=url_for("accounting.generate_procurement_journals"),
-            action_label="Sinkronkan Pembelian",
-            action_method="POST",
             helper="Membentuk Dr Persediaan dan Cr Kas/Bank/Hutang Supplier.",
         ))
     return rows
 
 
-def _hpp_rows(branch_id: int) -> list[dict[str, Any]]:
+def _stock_rows(branch_id: int) -> list[dict[str, Any]]:
+    """Setiap pergerakan stok yang mengubah nilai persediaan dijurnal saat dicatat
+    (stock_journal_service). Baris tanpa jurnal berarti barangnya belum punya
+    harga pembelian, atau data lama sebelum jurnal otomatis."""
+    from app.services.stock_journal_service import stock_journal_rule, stock_movement_journal
+
     rows = []
     movements = (
         StockMovement.query
         .filter(StockMovement.branch_id == branch_id)
-        .filter(StockMovement.reference_type == "PEMAKAIAN_PRODUKSI")
-        .filter(StockMovement.movement_type == "OUT")
         .order_by(StockMovement.movement_date.desc(), StockMovement.id.desc())
         .all()
     )
     for movement in movements:
-        journal = _journal_for("HPP_PRODUKSI", movement.id)
+        rule = stock_journal_rule(movement)
+        if rule is None:
+            continue
+        journal = stock_movement_journal(movement)
         if journal:
-            status = _status(POSTED, "Pemakaian produksi sudah membentuk jurnal HPP dan pengurang persediaan.", journal)
+            status = _status(POSTED, "Pergerakan stok sudah dijurnal bersama pencatatannya.", journal)
         elif _money(movement.qty) <= 0:
-            status = _status(BLOCKED, "Qty pemakaian produksi 0 atau tidak valid.")
+            status = _status(BLOCKED, "Qty pergerakan stok 0 atau tidak valid.")
         else:
-            status = _status(UNPOSTED, "Pemakaian produksi belum punya jurnal HPP_PRODUKSI.")
+            status = _status(UNPOSTED, "Belum dijurnal: barang ini belum punya harga pembelian, atau data lama sebelum jurnal otomatis.")
         item_name = movement.item.item_name if getattr(movement, "item", None) else f"Item #{movement.item_id}"
         rows.append(_row(
-            source_type="HPP_PRODUKSI",
-            source_label="Pemakaian Bahan Produksi",
-            source_number=f"Stock Movement #{movement.id}",
+            source_type="STOCK_MOVEMENT",
+            source_label="Pergerakan Stok",
+            source_number=f"Stok #{movement.id} ({movement.reference_type})",
             source_date=movement.movement_date,
             amount=0,
             status=status,
             detail_url=url_for("logistics.index"),
-            action_url=url_for("accounting.generate_hpp_production_journals"),
-            action_label="Sinkronkan HPP",
-            action_method="POST",
-            helper=f"{item_name} • qty {_money(movement.qty):g}. Nominal HPP dihitung dari rata-rata nilai stok saat generate.",
+            helper=f"{item_name} - qty {_money(movement.qty):g}. Dr {rule[0]} / Cr {rule[1]}, nilai = qty x harga rata-rata pembelian.",
         ))
     return rows
 
@@ -385,7 +377,6 @@ def _payroll_rows(branch_id: int) -> tuple[list[dict[str, Any]], list[dict[str, 
             detail_url=detail_url,
             action_url=detail_url,
             action_label="Buka Payroll",
-            action_method="GET",
             helper="Payroll FINAL harus diposting menjadi Dr Beban Gaji dan Cr Hutang Gaji.",
         ))
 
@@ -399,7 +390,6 @@ def _payroll_rows(branch_id: int) -> tuple[list[dict[str, Any]], list[dict[str, 
             detail_url=detail_url,
             action_url=detail_url,
             action_label="Buka Payroll",
-            action_method="GET",
             helper="Payroll PAID harus punya jurnal pembayaran Dr Hutang Gaji dan Cr Kas/Bank.",
         ))
     return accrual_rows, payment_rows
@@ -432,7 +422,6 @@ def _depreciation_rows(branch_id: int) -> list[dict[str, Any]]:
             detail_url=url_for("finance.fixed_asset_depreciation"),
             action_url=url_for("finance.fixed_asset_depreciation"),
             action_label="Buka Penyusutan",
-            action_method="GET",
             helper=f"{asset_label} • periode {entry.period_year}-{int(entry.period_month or 0):02d}.",
         ))
     return rows
@@ -472,7 +461,7 @@ def build_accounting_posting_status_report(branch_id: int) -> dict[str, Any]:
     invoice_rows = _invoice_rows(branch_id)
     payment_rows = _payment_rows(branch_id)
     procurement_rows = _procurement_rows(branch_id)
-    hpp_rows = _hpp_rows(branch_id)
+    hpp_rows = _stock_rows(branch_id)
     payroll_accrual_rows, payroll_payment_rows = _payroll_rows(branch_id)
     depreciation_rows = _depreciation_rows(branch_id)
     ledger_rows = _ledger_only_rows(branch_id)

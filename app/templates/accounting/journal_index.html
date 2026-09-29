@@ -38,89 +38,13 @@
     </div>
 </div>
 
-<details class="app-card soft-warning-card accounting-maintenance-collapse mt-4 mb-4">
-    <summary class="accounting-maintenance-summary">
-        <div>
-            <span class="eyebrow">Maintenance</span>
-            <h5 class="mb-1">Alat Maintenance Data Lama</h5>
-            <p class="text-muted mb-0">
-                Default tertutup. Dibuka hanya jika perlu pemulihan data lama yang belum tercatat ke jurnal.
-            </p>
-        </div>
-        <i class="bi bi-chevron-down accounting-maintenance-chevron"></i>
-    </summary>
-
-    <div class="accounting-maintenance-body">
-        <div class="accounting-maintenance-actions">
-            <div class="accounting-maintenance-action">
-                <form method="POST"
-                      action="{{ url_for('accounting.generate_period_invoice_journals') }}" data-app-confirm="Sinkronkan invoice lama yang belum punya jurnal? Sistem akan melewati invoice yang sudah tercatat." data-ui-form="true" class="app-form">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.period_invoice }}">
-                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
-                        <i class="bi bi-journal-plus"></i>
-                        Sinkronkan Invoice Lama 4001/4002
-                    </button>
-                </form>
-            </div>
-
-            <div class="accounting-maintenance-action">
-                <form method="POST"
-                      action="{{ url_for('accounting.generate_payment_journals') }}" data-app-confirm="Sinkronkan pembayaran invoice lama yang belum punya jurnal? Sistem akan melewati pembayaran yang sudah tercatat." data-ui-form="true" class="app-form">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.payment }}">
-                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
-                        <i class="bi bi-credit-card"></i>
-                        Sinkronkan Pembayaran Lama
-                    </button>
-                </form>
-            </div>
-
-            <div class="accounting-maintenance-action">
-                <form method="POST"
-                      action="{{ url_for('accounting.generate_warung_payment_correction_journals') }}" data-app-confirm="Sinkronkan koreksi pembayaran warung lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.warung_payment_correction }}">
-                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
-                        <i class="bi bi-cash-coin"></i>
-                        Sinkronkan Koreksi Pembayaran Warung Lama
-                    </button>
-                </form>
-            </div>
-
-            <div class="accounting-maintenance-action">
-                <form method="POST"
-                      action="{{ url_for('accounting.generate_hpp_production_journals') }}" data-app-confirm="Sinkronkan HPP produksi lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal HPP." data-ui-form="true" class="app-form">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.hpp_production }}">
-                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
-                        <i class="bi bi-calculator"></i>
-                        Sinkronkan HPP Produksi Lama
-                    </button>
-                </form>
-            </div>
-
-            <div class="accounting-maintenance-action">
-                <form method="POST"
-                      action="{{ url_for('accounting.generate_procurement_journals') }}" data-app-confirm="Sinkronkan pembelian barang lama yang belum tercatat? Sistem akan melewati data yang sudah punya jurnal." data-ui-form="true" class="app-form">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="idempotency_key" value="{{ idempotency_keys.procurement }}">
-                    <button type="submit" class="btn app-btn-secondary w-100 text-start">
-                        <i class="bi bi-box-seam"></i>
-                        Sinkronkan Pembelian Lama
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</details>
-
 <div class="app-card soft-warning-card mt-4">
-    <strong>Jurnal Otomatis Aktif</strong>
+    <strong>Semua Jurnal Otomatis</strong>
     <p class="mb-0">
-        Invoice periode (4001), invoice harian (4002), pembayaran invoice, pembelian, HPP produksi, dan koreksi pembayaran warung
-        sudah dicatat otomatis oleh sistem untuk transaksi baru. Tombol sinkronisasi hanya dipakai
-        untuk pemulihan data lama yang belum memiliki jurnal.
+        Setiap transaksi langsung dijurnal saat disimpan: invoice, pembayaran, pembelian barang, pemakaian dan
+        selisih stok, hutang supplier, kas/bank (pindah dana, penyesuaian, modal pemilik), aset, biaya, gaji,
+        dan warung. Tidak ada lagi tombol sinkronisasi. Kalau buku pembantu dan buku besar tidak cocok,
+        Cek Kesehatan Data menandainya.
     </p>
 </div>
 

@@ -30,7 +30,10 @@ def test_db_commit_audit_report_prioritizes_route_commits():
     assert _summary_value(report, "Commit di service") == len([c for c in calls if c.method == "commit" and c.layer == "service"])
     assert "| Fungsi dengan lebih dari satu commit | 0 |" in report
     assert "| Service call ke fungsi ber-commit | 0 |" in report
-    assert explicit_commit_true >= 32
+    # Turun dari 32: rute "sinkronkan jurnal" dan halaman saldo awal lama
+    # (jurnal, kas/bank, stok) dihapus 2026-09-29; transaksinya kini dijurnal
+    # di layanan yang mencatatnya, saldo awal lewat satu pintu.
+    assert explicit_commit_true >= 21
     assert "| P0 | 0 |" in report
     assert all(call.layer != "route" for call in calls if call.method == "commit")
     assert all(call.layer != "route" for call in calls if call.method == "rollback")

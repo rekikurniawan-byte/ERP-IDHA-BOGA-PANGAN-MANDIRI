@@ -40,6 +40,9 @@ pricing_migration = importlib.import_module(
 delivery_migration = importlib.import_module(
     "migrations.versions.d5e6f7a8b9c0_delivery_zones_and_fees"
 )
+opening_balance_migration = importlib.import_module(
+    "migrations.versions.c0d1e2f3a4b5_opening_balance_single_door"
+)
 
 
 def _versioned_model_tables():
@@ -72,6 +75,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(credit_control_migration.VERSIONED_TABLES)
     migration_tables.update(pricing_migration.VERSIONED_TABLES)
     migration_tables.update(delivery_migration.VERSIONED_TABLES)
+    migration_tables.update(opening_balance_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

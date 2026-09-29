@@ -123,10 +123,12 @@ def index():
 @dashboard_bp.route("/dashboard/owner")
 @role_required("OWNER")
 def owner():
+    from app.services.opening_balance_service import branches_without_opening
     from app.services.path_report_service import build_path_summary
 
     data = get_owner_dashboard_data(**_analytics_request_filters())
-    return render_template("dashboard/owner.html", data=data, path_summary=build_path_summary(current_user.branch_id))
+    return render_template("dashboard/owner.html", data=data, path_summary=build_path_summary(current_user.branch_id),
+                           branches_without_opening=branches_without_opening())
 
 
 @dashboard_bp.route("/dashboard/admin")

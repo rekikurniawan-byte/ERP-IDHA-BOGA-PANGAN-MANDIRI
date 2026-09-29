@@ -308,9 +308,8 @@ def create_supplier_bill_payment(bill_id):
     from datetime import datetime
     from app.extensions import db
     from app.models.finance import BankAccount, SupplierBill
-    from app.models.accounting import Journal
     from app.services.accounts_payable_service import create_supplier_payment_for_bill
-    from app.services.accounting_service import create_supplier_payment_journal_for_payment
+    from app.services.accounting_service import create_procurement_journal, create_supplier_payment_journal_for_payment
     from app.services.cash_bank_service import create_supplier_payment_cash_bank_transaction
 
     bill = SupplierBill.query.get_or_404(bill_id)
@@ -321,15 +320,6 @@ def create_supplier_bill_payment(bill_id):
 
     if float(bill.remaining_amount or 0) <= 0 or str(bill.status or "").upper() == "PAID":
         flash("Supplier bill ini sudah lunas.", "warning")
-        return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
-
-    procurement_journal = Journal.query.filter_by(
-        reference_type="PROCUREMENT",
-        reference_id=bill.procurement_id,
-    ).first()
-
-    if not procurement_journal:
-        flash("Jurnal pembelian sumber belum ada. Sinkronkan jurnal pembelian dulu sebelum membayar hutang supplier.", "warning")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 
     payment_date_raw = (request.form.get("payment_date") or "").strip()
@@ -422,6 +412,11 @@ def create_supplier_bill_payment(bill_id):
             branch_id=current_user.branch_id,
             metadata={"supplier_bill_id": bill.id, "amount": amount, "method": payment_method},
         ) as atomic:
+            # Pembelian lama yang belum berjurnal dijurnal dulu di transaksi ini,
+            # supaya hutang supplier di buku besar tidak jadi negatif.
+            if bill.procurement is not None:
+                create_procurement_journal(bill.procurement, created_by=current_user.id)
+
             _, _, supplier_payment = create_supplier_payment_for_bill(
                 bill=bill,
                 payment_date=payment_date,

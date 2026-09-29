@@ -41,6 +41,7 @@ def cash_bank_ledger():
         "OPENING_BALANCE",
         "CASH_BANK_TRANSFER",
         "CASH_BANK_ADJUSTMENT",
+        "OWNER_CAPITAL",
         "FIXED_ASSET_PURCHASE",
         "TRANSPORT_VEHICLE_EXPENSE",
         "OPERATIONAL_EXPENSE",
@@ -320,7 +321,7 @@ def cash_bank_ledger():
             source_label = "Saldo Awal"
             if opening:
                 source_detail = opening.notes or "Saldo awal kas/bank"
-                source_url = url_for("finance.cash_bank_opening_balances")
+                source_url = url_for("accounting.opening_balance")
 
         elif reference_type == "CASH_BANK_TRANSFER":
             transfer = transfer_map.get(transaction.reference_id)
@@ -391,6 +392,7 @@ def cash_bank_ledger():
         {"value": "SUPPLIER_PAYMENT", "label": "Pembayaran Supplier"},
         {"value": "CASH_BANK_TRANSFER", "label": "Transfer Kas/Bank"},
         {"value": "CASH_BANK_ADJUSTMENT", "label": "Penyesuaian Saldo"},
+        {"value": "OWNER_CAPITAL", "label": "Modal Pemilik"},
         {"value": "FIXED_ASSET_PURCHASE", "label": "Pembelian Aset Tetap"},
         {"value": "TRANSPORT_VEHICLE_EXPENSE", "label": "Transport & BBM"},
         {"value": "OPERATIONAL_EXPENSE", "label": "Biaya Operasional Catering"},
@@ -449,58 +451,11 @@ def cash_bank_transaction_detail(transaction_id):
 @finance_bp.route("/cash-bank-opening-balances", methods=["GET", "POST"])
 @role_required("OWNER", "ADMIN", "FINANCE")
 def cash_bank_opening_balances():
-    from datetime import datetime
-    from app.models.finance import BankAccount, CashBankOpeningBalance
-    from app.services.cash_bank_service import create_opening_balance_record
-
-    active_bank_accounts = BankAccount.query.filter_by(
-        branch_id=current_user.branch_id,
-        is_active=True,
-    ).order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc()).all()
-
-    if request.method == "POST":
-        account_type = (request.form.get("account_type") or "").strip().upper()
-        bank_account_id = (request.form.get("bank_account_id") or "").strip() or None
-        opening_date_raw = (request.form.get("opening_date") or "").strip()
-        amount_raw = (request.form.get("amount") or "").strip()
-        notes = (request.form.get("notes") or "").strip()
-
-        try:
-            opening_date = datetime.strptime(opening_date_raw, "%Y-%m-%d").date()
-            amount = _parse_payment_amount(amount_raw)
-            opening, ledger_transaction = create_opening_balance_record(
-                account_type=account_type,
-                bank_account_id=bank_account_id,
-                opening_date=opening_date,
-                amount=amount,
-                created_by=current_user.id,
-                branch_id=current_user.branch_id,
-                notes=notes,
-            )
-            record_audit_log(
-                module="CASH_BANK",
-                event_type="OPENING_BALANCE_CREATED",
-                action="CREATE",
-                table_name="cash_bank_opening_balances",
-                record_id=opening.id,
-                description="Saldo awal kas/bank dibuat.",
-                metadata={"amount": amount, "account_type": account_type, "bank_account_id": bank_account_id, "ledger_transaction_id": ledger_transaction.id},
-            )
-            flash("Saldo awal kas/bank berhasil disimpan dan masuk ledger.", "success")
-            return redirect(url_for("finance.cash_bank_opening_balances"))
-        except Exception as error:
-            logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:4382")
-            flash(f"Gagal menyimpan saldo awal: {error}", "danger")
-
-    openings = CashBankOpeningBalance.query.filter_by(
-        branch_id=current_user.branch_id,
-    ).order_by(CashBankOpeningBalance.opening_date.desc(), CashBankOpeningBalance.id.desc()).all()
-
-    return render_template(
-        "finance/cash_bank_opening_balances.html",
-        openings=openings,
-        active_bank_accounts=active_bank_accounts,
-    )
+    """Saldo awal sekarang satu pintu di Akuntansi > Saldo Awal (keputusan owner
+    2026-09-28): kas, bank, stok, piutang, hutang, dan aset diisi di satu halaman
+    dan dikunci bersama jurnalnya."""
+    flash("Saldo awal sekarang diisi di satu tempat: Akuntansi > Saldo Awal.", "info")
+    return redirect(url_for("accounting.opening_balance"))
 
 
 @finance_bp.route("/cash-bank-transfers", methods=["GET", "POST"])
@@ -583,6 +538,7 @@ def cash_bank_adjustments():
         account_type = (request.form.get("account_type") or "").strip().upper()
         bank_account_id = (request.form.get("bank_account_id") or "").strip() or None
         adjustment_type = (request.form.get("adjustment_type") or "").strip().upper()
+        category = (request.form.get("adjustment_category") or "").strip().upper()
         amount_raw = (request.form.get("amount") or "").strip()
         reason = (request.form.get("reason") or "").strip()
         notes = (request.form.get("notes") or "").strip()
@@ -600,6 +556,8 @@ def cash_bank_adjustments():
                 created_by=current_user.id,
                 branch_id=current_user.branch_id,
                 notes=notes,
+                category=category,
+                actor_role=current_user.role,
             )
             record_audit_log(
                 module="CASH_BANK",
@@ -608,9 +566,10 @@ def cash_bank_adjustments():
                 table_name="cash_bank_adjustments",
                 record_id=adjustment.id,
                 description=f"Penyesuaian saldo dibuat: {adjustment.adjustment_number}.",
-                metadata={"amount": amount, "adjustment_type": adjustment_type, "ledger_transaction_id": ledger_transaction.id},
+                metadata={"amount": amount, "adjustment_type": adjustment_type, "category": category,
+                          "reason": reason, "ledger_transaction_id": ledger_transaction.id},
             )
-            flash("Penyesuaian saldo kas/bank berhasil disimpan dan masuk ledger.", "success")
+            flash("Penyesuaian saldo tersimpan di buku kas/bank dan sudah dijurnal.", "success")
             return redirect(url_for("finance.cash_bank_adjustments"))
         except Exception as error:
             logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:4504")
@@ -620,10 +579,56 @@ def cash_bank_adjustments():
         branch_id=current_user.branch_id,
     ).order_by(CashBankAdjustment.adjustment_date.desc(), CashBankAdjustment.id.desc()).all()
 
+    from app.services.cash_bank_service import ADJUSTMENT_CATEGORIES, SELISIH_OWNER_LIMIT
+
     return render_template(
         "finance/cash_bank_adjustments.html",
         adjustments=adjustments,
         active_bank_accounts=active_bank_accounts,
+        adjustment_categories=ADJUSTMENT_CATEGORIES,
+        selisih_owner_limit=SELISIH_OWNER_LIMIT,
+    )
+
+
+@finance_bp.route("/owner-capital", methods=["GET", "POST"])
+@role_required("OWNER")
+def owner_capital():
+    """Setor / tarik modal pemilik: buku kas/bank dan jurnalnya sekali jalan."""
+    from datetime import datetime
+    from app.models.finance import BankAccount
+    from app.services.owner_capital_service import CAPITAL_KINDS, OwnerCapitalError, list_owner_capital, record_owner_capital
+
+    if request.method == "POST":
+        try:
+            transaction_date = datetime.strptime((request.form.get("transaction_date") or "").strip(), "%Y-%m-%d").date()
+        except ValueError:
+            transaction_date = None
+        try:
+            ledger = record_owner_capital(
+                branch_id=current_user.branch_id,
+                kind=request.form.get("kind"),
+                transaction_date=transaction_date,
+                account_type=(request.form.get("account_type") or "").strip().upper(),
+                bank_account_id=(request.form.get("bank_account_id") or "").strip() or None,
+                amount=_parse_payment_amount((request.form.get("amount") or "").strip()),
+                notes=request.form.get("notes"),
+                created_by=current_user.id,
+                actor_role=current_user.role,
+            )
+            flash(f"{ledger.description} tersimpan di buku kas/bank dan sudah dijurnal.", "success")
+            return redirect(url_for("finance.owner_capital"))
+        except (OwnerCapitalError, ValueError) as error:
+            flash(str(error), "warning")
+        except Exception as error:
+            logger.exception("Gagal mencatat modal pemilik")
+            flash(f"Gagal mencatat modal pemilik: {error}", "danger")
+
+    return render_template(
+        "finance/owner_capital.html",
+        rows=list_owner_capital(current_user.branch_id),
+        kinds=CAPITAL_KINDS,
+        active_bank_accounts=BankAccount.query.filter_by(branch_id=current_user.branch_id, is_active=True)
+        .order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc()).all(),
     )
 
 

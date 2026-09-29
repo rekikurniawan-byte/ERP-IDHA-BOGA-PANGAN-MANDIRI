@@ -156,3 +156,27 @@ kontrak otomatis Kedaluwarsa + pemberitahuan mendesak; termin invoice kembali
 dari 30 ke 7 hari; order Mandor Asep ditahan untuk ADMIN, diteruskan untuk
 OWNER; setelah diperpanjang, order ADMIN jalan lagi dan pemberitahuannya
 selesai sendiri.
+
+## Gladi ulang: satu langkah + saldo awal satu pintu (29-09-2026)
+
+Saldo awal sekarang lewat wizard Akuntansi → Saldo Awal (kas, BCA, piutang lama
+PT Maju, hutang lama Toko Sumber Rejeki, stok Beras dan Minyak dengan harga,
+peralatan dapur dengan akumulasi penyusutan), dikunci OWNER dengan password.
+Tahap baru **D. Pembelian, stok, kas, modal**: beli tunai dan hutang, bayar
+hutang lama, pelunasan piutang lama, stok keluar produksi, barang rusak, audit
+stok, setor kas ke bank, selisih kas (di atas Rp100.000 ditolak untuk ADMIN),
+biaya admin bank, setor dan tarik modal.
+
+Hasil: **149 / 149 langkah OK, 24 / 24 pemeriksaan lulus**. Semua akun cocok
+dengan hitungan manual, debit = kredit, **setiap buku pembantu sama dengan buku
+besar** (kas, bank, piutang, hutang supplier, persediaan, aset, akumulasi
+penyusutan), 0 pergerakan stok tanpa jurnal, `ops-check` 0 FAIL 0 WARN.
+
+Temuan yang ikut diperbaiki:
+
+- Nomor pembelian barang dan permintaan barang dihitung per cabang padahal
+  harus unik di semua cabang: cabang kedua yang belanja di hari yang sama
+  gagal menyimpan.
+- Audit Stok (opname) selalu error saat disimpan (dua bug: argumen tidak
+  diterima, dan stok fisik float dikurangi stok sistem Decimal).
+- Tombol sinkron lama menjurnal pembelian tunai yang dibayar dari bank ke Kas.

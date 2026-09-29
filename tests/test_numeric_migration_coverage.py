@@ -30,6 +30,9 @@ pricing_c4 = importlib.import_module(
 delivery_d5 = importlib.import_module(
     "migrations.versions.d5e6f7a8b9c0_delivery_zones_and_fees"
 )
+opening_c0 = importlib.import_module(
+    "migrations.versions.c0d1e2f3a4b5_opening_balance_single_door"
+)
 
 
 def _migration_columns(module):
@@ -66,6 +69,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(credit_control_a0),
         **_migration_columns(pricing_c4),
         **_migration_columns(delivery_d5),
+        **_migration_columns(opening_c0),
     }
 
     assert migration_columns

@@ -60,58 +60,11 @@ def material_forecast():
 @logistics_bp.route("/stock-in", methods=["GET", "POST"])
 @role_required("OWNER", "LOGISTICS")
 def stock_in():
-    items = get_stock_items()
-
-    if request.method == "POST":
-        item_id = int(request.form.get("item_id"))
-        movement_date = datetime.strptime(request.form.get("movement_date"), "%Y-%m-%d").date()
-        qty = request.form.get("qty")
-
-        purchase_place = (request.form.get("purchase_place") or "").strip()
-        notes_input = (request.form.get("notes") or "").strip()
-
-        if not purchase_place:
-            purchase_place = "Pembelian sendiri"
-
-        notes = f"Tempat belanja: {purchase_place}"
-
-        if notes_input:
-            notes += f" | {notes_input}"
-
-        success, message, movement = create_stock_movement(
-            branch_id=current_user.branch_id,
-            item_id=item_id,
-            movement_date=movement_date,
-            movement_type="IN",
-            reference_type="PEMBELIAN_SENDIRI",
-            qty=qty,
-            notes=notes,
-            created_by=current_user.id
-        )
-
-        if success and movement:
-            record_audit_log(
-                module="LOGISTICS",
-                event_type="STOCK_IN_MANUAL_CREATED",
-                action="CREATE",
-                table_name="stock_movements",
-                record_id=movement.id,
-                description=f"Stok masuk manual dicatat untuk item #{item_id} sebanyak {qty}.",
-                metadata={"item_id": item_id, "qty": qty, "reference_type": "PEMBELIAN_SENDIRI", "purchase_place": purchase_place},
-            )
-
-        flash(message, "success" if success else "warning")
-        return redirect(url_for("logistics.index"))
-
-    return render_template(
-        "logistics/stock_form.html",
-        title="Stok Masuk",
-        description="Catat barang yang dibeli sendiri lalu masuk ke stok.",
-        form_action=url_for("logistics.stock_in"),
-        movement_type="IN",
-        items=items,
-        today=date.today()
-    )
+    """Stok masuk tanpa uang keluar membuat Persediaan di buku besar tidak cocok
+    dengan stok. Barang masuk sekarang hanya lewat Pembelian Barang (tunai,
+    transfer, atau hutang supplier), yang sekaligus mencatat uang dan jurnalnya."""
+    flash("Barang masuk dicatat lewat Pembelian Barang, supaya uang keluar dan jurnalnya ikut tercatat.", "info")
+    return redirect(url_for("logistics.create_purchase"))
 
 
 @logistics_bp.route("/stock-out", methods=["GET", "POST"])
@@ -228,96 +181,11 @@ def adjustment():
 @logistics_bp.route("/opening-balances", methods=["GET", "POST"])
 @role_required("OWNER", "LOGISTICS")
 def stock_opening_balances():
-    from app.models.logistics import StockOpeningBalance
-
-    items = get_stock_items()
-
-    if request.method == "POST":
-        try:
-            item_id = int(request.form.get("item_id"))
-            opening_date = datetime.strptime(request.form.get("opening_date"), "%Y-%m-%d").date()
-        except (TypeError, ValueError):
-            flash("Item atau tanggal saldo awal tidak valid.", "warning")
-            return redirect(url_for("logistics.stock_opening_balances"))
-
-        qty = request.form.get("qty")
-        notes = (request.form.get("notes") or "").strip()
-        idempotency_key = (request.form.get("idempotency_key") or "").strip() or uuid4().hex
-        idempotency_record = None
-
-        try:
-            idempotency_record, reserved = reserve_idempotency_key(
-                scope="LOGISTICS_STOCK_OPENING_BALANCE",
-                key=idempotency_key,
-                branch_id=current_user.branch_id,
-                user_id=current_user.id,
-                request_payload={
-                    "item_id": item_id,
-                    "opening_date": opening_date.isoformat(),
-                    "qty": str(qty or ""),
-                    "notes": notes,
-                },
-            )
-        except IdempotencyConflictError:
-            flash("Submit saldo awal berbeda memakai idempotency key yang sama. Muat ulang halaman lalu coba lagi.", "warning")
-            return redirect(url_for("logistics.stock_opening_balances"))
-
-        if not reserved:
-            flash("Submit saldo awal ini sudah pernah diproses.", "info")
-            return redirect(url_for("logistics.stock_opening_balances"))
-
-        success, message, opening = save_stock_opening_balance(
-            branch_id=current_user.branch_id,
-            item_id=item_id,
-            opening_date=opening_date,
-            qty=qty,
-            notes=notes,
-            created_by=current_user.id,
-        )
-
-        if success and opening:
-            record_audit_log(
-                module="LOGISTICS",
-                event_type="STOCK_OPENING_BALANCE_SAVED",
-                action="UPSERT",
-                table_name="stock_opening_balances",
-                record_id=opening.id,
-                description=f"Saldo awal stok disimpan untuk item #{item_id} sebanyak {qty}.",
-                metadata={"item_id": item_id, "opening_date": opening_date.isoformat(), "qty": str(qty or "")},
-            )
-            mark_idempotency_completed(
-                idempotency_record,
-                reference_type="STOCK_OPENING_BALANCE",
-                reference_id=opening.id,
-                response_payload={"opening_balance_id": opening.id},
-                commit=True,
-            )
-        else:
-            mark_idempotency_failed(idempotency_record, message, commit=True)
-
-        flash(message, "success" if success else "warning")
-        return redirect(url_for("logistics.stock_opening_balances"))
-
-    openings = StockOpeningBalance.query.filter_by(
-        branch_id=current_user.branch_id
-    ).order_by(
-        StockOpeningBalance.opening_date.desc(),
-        StockOpeningBalance.id.desc(),
-    ).all()
-
-    opening_by_item = {
-        opening.item_id: opening
-        for opening in openings
-    }
-
-    return render_template(
-        "logistics/stock_opening_balances.html",
-        items=items,
-        openings=openings,
-        opening_by_item=opening_by_item,
-        today=date.today(),
-        form_idempotency_key=uuid4().hex,
-    )
+    """Saldo awal sekarang satu pintu di Akuntansi > Saldo Awal (keputusan owner
+    2026-09-28): kas, bank, stok, piutang, hutang, dan aset diisi di satu halaman
+    dan dikunci bersama jurnalnya."""
+    flash("Saldo awal sekarang diisi di satu tempat: Akuntansi > Saldo Awal.", "info")
+    return redirect(url_for("accounting.opening_balance"))
 
 
 @logistics_bp.route("/items/<int:item_id>/card")

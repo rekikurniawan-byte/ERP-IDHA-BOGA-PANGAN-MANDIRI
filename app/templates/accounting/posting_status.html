@@ -14,7 +14,7 @@
         more_actions=[
             {"label": "Drilldown Beban", "url": url_for('accounting.expense_drilldown'), "icon": "bi-graph-down-arrow"},
             {"label": "Peta Akun & Mapping", "url": url_for('accounting.coa_mapping'), "icon": "bi-diagram-2"},
-            {"label": "Data Health Check", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
+            {"label": "Cek Kesehatan Data", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
             {"label": "SOP Accounting", "url": url_for('sop.role_sop', slug='accounting'), "icon": "bi-book"},
         ]
     ) }}
@@ -35,7 +35,7 @@
         <div class="app-stat-card">
             <span>Belum Posting</span>
             <h3>{{ report.summary.unposted }}</h3>
-            <p>perlu sinkron/generate</p>
+            <p>data lama / barang tanpa harga beli</p>
         </div>
         <div class="app-stat-card">
             <span>Diblokir</span>
@@ -103,15 +103,7 @@
                                                     <a href="{{ row.detail_url }}" class="btn btn-sm app-btn-secondary">Detail</a>
                                                 {% endif %}
                                                 {% if row.action_url and row.action_label %}
-                                                    {% if row.action_method == 'POST' %}
-                                                        <form method="POST" action="{{ row.action_url }}" class="d-inline app-form" data-ui-form="true" data-app-confirm="Jalankan sinkronisasi/generate jurnal untuk sumber ini? Sistem akan melewati data yang sudah punya jurnal.">
-                                                            {% include "components/csrf_token.html" %}
-                                                            <input type="hidden" name="next" value="{{ url_for('accounting.posting_status') }}">
-                                                            <button type="submit" class="btn btn-sm app-btn-primary">{{ row.action_label }}</button>
-                                                        </form>
-                                                    {% else %}
-                                                        <a href="{{ row.action_url }}" class="btn btn-sm app-btn-primary">{{ row.action_label }}</a>
-                                                    {% endif %}
+                                                    <a href="{{ row.action_url }}" class="btn btn-sm app-btn-primary">{{ row.action_label }}</a>
                                                 {% endif %}
                                             </div>
                                         </td>

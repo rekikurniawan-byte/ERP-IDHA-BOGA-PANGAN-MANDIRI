@@ -265,6 +265,8 @@ class CashBankAdjustment(BaseModel):
     bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_accounts.id"), nullable=True)
     account_key = db.Column(db.String(80), nullable=False, index=True)
     adjustment_type = db.Column(db.String(30), nullable=False)
+    # SELISIH / BIAYA_BANK / BUNGA_BANK, lihat cash_bank_service.ADJUSTMENT_CATEGORIES.
+    adjustment_category = db.Column(db.String(30), nullable=False, default="SELISIH", server_default="SELISIH")
     amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
     reason = db.Column(db.String(150), nullable=False)
     notes = db.Column(db.Text, nullable=True)
@@ -289,7 +291,8 @@ class SupplierBill(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     bill_number = db.Column(db.String(50), nullable=False, unique=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey("suppliers.id"), nullable=True, index=True)
-    procurement_id = db.Column(db.Integer, db.ForeignKey("procurements.id"), nullable=False, unique=True, index=True)
+    # Kosong hanya untuk hutang saldo awal (hutang lama tanpa pembelian di sistem).
+    procurement_id = db.Column(db.Integer, db.ForeignKey("procurements.id"), nullable=True, unique=True, index=True)
     bill_date = db.Column(db.Date, nullable=False, index=True)
     due_date = db.Column(db.Date, nullable=False, index=True)
     supplier_name = db.Column(db.String(150), nullable=False)

@@ -44,15 +44,28 @@ D1, D2 = TODAY + timedelta(days=1), TODAY + timedelta(days=2)
 # ongkir Dekat 10.000 / Jauh 25.000 / kontrak PT Sinar 15.000 per trip).
 # Kurang kirim yang tidak diganti tidak ditagih (keputusan owner 2026-09-28):
 # Gudang Cikarang (Joko) kurang 2 dari 25, Kantor Notaris (Sari) kurang 1 dari 20.
+# Saldo awal (wizard satu pintu): kas 5.000.000, BCA 25.000.000, piutang lama PT Maju
+# 1.500.000, stok Beras 150 x 14.000 + Minyak 70 x 20.000 = 3.500.000, peralatan
+# 36.000.000 dengan akumulasi 6.000.000, hutang lama Toko Sumber Rejeki 2.000.000
+# -> modal 63.000.000.
+# Tahap D (satu langkah): beli Beras 50 x 15.000 tunai, Minyak 30 x 21.000 hutang;
+# harga rata-rata Beras (2.100.000 + 750.000) / 200 = 14.250, Minyak
+# (1.400.000 + 630.000) / 100 = 20.300; pakai Beras 40 = 570.000, Minyak rusak 2 =
+# 40.600, opname Beras kurang 2 = 28.500.
 EXPECTED_BALANCES = {
-    "1001": Decimal("5405000"),     # 5.000.000 awal + 200.000 Joko + 205.000 Dedi D2 tunai
-    "1002": Decimal("28335000"),    # 25.000.000 + 1.271.000 uang muka - 190.000 refund ditolak - 18.000 refund kurang kirim + 2.272.000 Budi
-    "1004": Decimal("1596000"),     # sisa Joko 368.000 - 200.000 + Asep 1.428.000
-    "1006": Decimal("3500000"),
-    "1101": Decimal("30000000"),
-    "2002": Decimal("-2000000"),
+    "1001": Decimal("5150000"),     # 5.000.000 + 200.000 Joko + 205.000 Dedi - 750.000 beli - 500.000 hutang lama - 1.000.000 setor ke bank - 5.000 selisih + 2.000.000 modal
+    "1002": Decimal("30328500"),    # 25.000.000 + 1.271.000 uang muka - 190.000 - 18.000 refund + 2.272.000 Budi + 1.500.000 piutang lama + 1.000.000 dari kas - 6.500 admin - 500.000 prive
+    "1004": Decimal("1596000"),     # sisa Joko 368.000 - 200.000 + Asep 1.428.000 (piutang lama 1.500.000 sudah lunas)
+    "1006": Decimal("4240900"),     # 3.500.000 + 750.000 + 630.000 - 570.000 - 40.600 - 28.500
+    "1101": Decimal("36000000"),
+    "2101": Decimal("-6000000"),
+    "2002": Decimal("-2130000"),    # 2.000.000 lama - 500.000 dibayar + 630.000 beli hutang
     "2008": Decimal("0"),
-    "3001": Decimal("-61500000"),
+    "3001": Decimal("-65000000"),   # 63.000.000 saldo awal + 2.000.000 setor
+    "3003": Decimal("500000"),
+    "5001": Decimal("570000"),
+    "5008": Decimal("6500"),
+    "5009": Decimal("74100"),       # 40.600 rusak + 28.500 opname + 5.000 selisih kas
     "4001": Decimal("-4008000"),    # 142 x 16.000 Budi + 23 x 16.000 Joko + 76 x 18.000 Asep
     "4002": Decimal("-1188000"),    # (15 + 12 + 19 + 10 + 10) x 18.000
     "4005": Decimal("-140000"),     # umum 10.000+25.000+10.000+10.000+25.000, kontrak 4 trip x 15.000
@@ -211,15 +224,42 @@ def stage_setup(run):
             "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, "location_name": location,
             "delivery_zone_id": zones[zone], "address": address, "notes": "gerbang biru"})
 
-    run.step(own, "Akuntansi > Saldo Awal (jurnal)", "/accounting/opening-balance", data={
-        "journal_date": TODAY.isoformat(), "cash": "5000000", "bank1": "25000000", "inventory": "3500000",
-        "equipment": "30000000", "ap_supplier": "2000000"})
+    for name, unit in (("Beras", "kg"), ("Minyak Goreng", "liter")):
+        run.step(adm, f"Barang {name}", "/master/items/create", data={
+            "item_name": name, "category": "RAW_MATERIAL", "unit": unit, "minimum_stock": "10", "is_stock_tracked": "on", "is_active": "on"})
+    run.step(own, "Supplier Toko Sumber Rejeki", "/master/suppliers/create", data={
+        "supplier_name": "Toko Sumber Rejeki", "supplier_type": "RAW_MATERIAL", "default_payment_terms_days": "14", "is_active": "on"})
+
+    from app.models.master import Item, Supplier
+
     bca = run.q(lambda: BankAccount.query.filter_by(account_number="1234567890").one().id)
-    run.step(own, "Finance > Saldo Awal Kas (buku kas, angka sama)", "/finance/cash-bank-opening-balances", data={
-        "account_type": "CASH", "opening_date": TODAY.isoformat(), "amount": "5000000", "notes": "sama dengan jurnal saldo awal"})
-    run.step(own, "Finance > Saldo Awal Bank BCA (buku bank, angka sama)", "/finance/cash-bank-opening-balances", data={
-        "account_type": "BANK", "bank_account_id": bca, "opening_date": TODAY.isoformat(), "amount": "25000000", "notes": "sama dengan jurnal saldo awal"})
-    return {"bca": bca}
+    mandiri = run.q(lambda: BankAccount.query.filter_by(account_number="1400012345678").one().id)
+    beras = run.q(lambda: Item.query.filter_by(item_name="Beras").one().id)
+    minyak = run.q(lambda: Item.query.filter_by(item_name="Minyak Goreng").one().id)
+    supplier = run.q(lambda: Supplier.query.filter_by(supplier_name="Toko Sumber Rejeki").one().id)
+    base = "/accounting/opening-balance"
+    run.step(own, "Saldo Awal: tanggal mulai", f"{base}/start-date", data={"start_date": TODAY.isoformat()})
+    run.step(own, "Saldo Awal: kas 5.000.000, BCA 25.000.000", f"{base}/cash-bank", data={
+        "cash": "5.000.000", f"bank_{bca}": "25000000", f"bank_{mandiri}": "0"})
+    run.step(own, "Saldo Awal: piutang lama PT Maju nota NT-081 Rp1.500.000", f"{base}/receivables/add", data={
+        "client_id": maju, "reference": "NT-081", "invoice_date": (TODAY - timedelta(days=30)).isoformat(), "amount": "1500000"})
+    run.step(own, "Saldo Awal: hutang lama Toko Sumber Rejeki Rp2.000.000", f"{base}/payables/add", data={
+        "supplier_id": supplier, "reference": "F-0912", "bill_date": (TODAY - timedelta(days=10)).isoformat(),
+        "due_date": (TODAY + timedelta(days=4)).isoformat(), "amount": "2000000"})
+    run.step(own, "Saldo Awal: stok Beras 150 kg @14.000", f"{base}/stock/add", data={"item_id": beras, "qty": "150", "unit_cost": "14000"})
+    run.step(own, "Saldo Awal: stok Minyak 70 L @20.000", f"{base}/stock/add", data={"item_id": minyak, "qty": "70", "unit_cost": "20000"})
+    run.step(own, "Saldo Awal: stok Beras dua kali (harus ditolak)", f"{base}/stock/add", data={"item_id": beras, "qty": "1", "unit_cost": "1"},
+             expect=("warning",))
+    run.step(own, "Saldo Awal: peralatan dapur 36.000.000, akumulasi 6.000.000", f"{base}/assets/add", data={
+        "name": "Kompor & peralatan dapur", "category": "KITCHEN_EQUIPMENT", "purchase_date": "2024-03-01",
+        "purchase_value": "36000000", "accumulated": "6000000", "useful_life_years": "5"})
+    run.step(adm, "ADMIN mengunci saldo awal (harus ditolak)", f"{base}/lock", data={
+        "sensitive_reason": "saldo awal sesuai hitung fisik", "confirm_password": USER_PASSWORD}, expect=("danger",))
+    run.step(own, "OWNER kunci dengan password salah (harus ditolak)", f"{base}/lock", data={
+        "sensitive_reason": "saldo awal sesuai hitung fisik", "confirm_password": "salah"}, expect=("danger",))
+    run.step(own, "OWNER kunci saldo awal", f"{base}/lock", data={
+        "sensitive_reason": "saldo awal sesuai hitung fisik dan rekening koran", "confirm_password": OWNER_PASSWORD})
+    return {"bca": bca, "beras": beras, "minyak": minyak, "supplier": supplier}
 
 
 # --- tahap B: setiap hari -------------------------------------------------------
@@ -424,7 +464,56 @@ def stage_billing(run, refs):
     pay(dedi, dedi["total"], "CASH", "(pesanan yang diloloskan OWNER, dibayar tunai saat antar)")
 
 
-# --- tahap D: kontrak berakhir ------------------------------------------------
+# --- tahap D: pembelian, stok, kas, modal (satu langkah) -----------------------
+# Sesudah penagihan, supaya angka tagihan skenario di atas tidak berubah.
+
+def stage_one_step(run, refs):
+    from app.models.finance import Invoice, SupplierBill
+
+    run.stage = "D. Pembelian, stok, kas, modal"
+    own, adm = run.client("owner.pilot"), run.client("admin.pilot")
+    purchase = {"procurement_date": TODAY.isoformat(), "purchase_place": "Pasar Cikarang"}
+    run.step(adm, "Beli tunai Beras 50 kg @15.000 dari kas", "/logistics/purchases/create", data={
+        **purchase, "purchase_type": "CASH", "payment_account_type": "CASH",
+        "item_id[]": [str(refs["beras"])], "qty[]": ["50"], "unit_price[]": ["15000"]})
+    run.step(adm, "Beli hutang Minyak 30 L @21.000 ke Toko Sumber Rejeki", "/logistics/purchases/create", data={
+        **purchase, "purchase_type": "CREDIT", "supplier_id": str(refs["supplier"]), "supplier_bill_due_date": (TODAY + timedelta(days=14)).isoformat(),
+        "item_id[]": [str(refs["minyak"])], "qty[]": ["30"], "unit_price[]": ["21000"]})
+    old_bill = run.q(lambda: SupplierBill.query.filter(SupplierBill.procurement_id.is_(None)).one().id)
+    run.step(own, "Bayar hutang lama Rp500.000 tunai", f"/finance/supplier-bills/{old_bill}/payments/create", data={
+        "idempotency_key": uuid.uuid4().hex, "payment_date": TODAY.isoformat(), "payment_method": "CASH", "amount": "500000"})
+    old_invoice = run.q(lambda: Invoice.query.filter_by(source_type="OPENING_BALANCE").one().id)
+    run.step(adm, "PT Maju melunasi piutang lama Rp1.500.000 transfer", f"/finance/invoices/{old_invoice}/payments/create", data={
+        "idempotency_key": uuid.uuid4().hex, "payment_date": TODAY.isoformat(), "payment_method": "TRANSFER",
+        "bank_account_id": refs["bca"], "amount": "1500000", "notes": "piutang lama"})
+    run.step(adm, "Stok keluar Beras 40 kg untuk produksi", "/logistics/stock-out", data={
+        "item_id": refs["beras"], "movement_date": TODAY.isoformat(), "qty": "40", "usage_purpose": "PRODUKSI"})
+    run.step(adm, "Minyak rusak 2 L", "/logistics/damaged/create", data={
+        "item_id": refs["minyak"], "movement_date": TODAY.isoformat(), "qty": "2", "damage_reason": "jerigen bocor"})
+    run.step(adm, "Audit stok Beras: fisik 158 kg (sistem 160)", "/logistics/audit/create", data={
+        "item_id": refs["beras"], "audit_date": TODAY.isoformat(), "physical_stock": "158", "reason": "hitung fisik mingguan"})
+    run.step(adm, "Setor kas ke BCA Rp1.000.000", "/finance/cash-bank-transfers", data={
+        "transfer_date": TODAY.isoformat(), "from_account_type": "CASH", "to_account_type": "BANK",
+        "to_bank_account_id": refs["bca"], "amount": "1000000"})
+    adjustment = {"adjustment_date": TODAY.isoformat(), "account_type": "CASH", "adjustment_category": "SELISIH", "adjustment_type": "DECREASE"}
+    run.step(adm, "Selisih kas kurang Rp5.000", "/finance/cash-bank-adjustments", data={**adjustment, "amount": "5000", "reason": "hitung kas sore"})
+    run.step(adm, "Selisih kas Rp150.000 oleh ADMIN (harus ditolak)", "/finance/cash-bank-adjustments", data={
+        **adjustment, "amount": "150000", "reason": "hitung kas sore"}, expect=("danger",))
+    run.step(adm, "Biaya admin BCA Rp6.500", "/finance/cash-bank-adjustments", data={
+        "adjustment_date": TODAY.isoformat(), "account_type": "BANK", "bank_account_id": refs["bca"], "adjustment_category": "BIAYA_BANK",
+        "adjustment_type": "DECREASE", "amount": "6500", "reason": "potongan admin bulanan"})
+    capital = {"transaction_date": TODAY.isoformat()}
+    run.step(own, "Setor modal Rp2.000.000 ke kas", "/finance/owner-capital", data={
+        **capital, "kind": "SETOR", "account_type": "CASH", "amount": "2000000", "notes": "tambahan modal belanja"})
+    run.step(own, "Tarik modal Rp500.000 dari BCA", "/finance/owner-capital", data={
+        **capital, "kind": "TARIK", "account_type": "BANK", "bank_account_id": refs["bca"], "amount": "500000", "notes": "keperluan pribadi"})
+    run.step(adm, "ADMIN catat modal (harus ditolak)", "/finance/owner-capital", data={
+        **capital, "kind": "SETOR", "account_type": "CASH", "amount": "1000", "notes": "coba"}, expect=("danger",))
+    run.step(own, "Stok Masuk manual dialihkan ke Pembelian Barang", "/logistics/stock-in", data={"item_id": refs["beras"], "qty": "5"},
+             expect=("info",))
+
+
+# --- tahap E: kontrak berakhir ------------------------------------------------
 # Sesudah penagihan, supaya angka tagihan skenario di atas tidak berubah.
 
 def stage_contracts(run):
@@ -433,7 +522,7 @@ def stage_contracts(run):
     from app.models.system import Notification
     from app.services.credit_control_service import check_internal_order_credit, resolve_due_date
 
-    run.stage = "D. Kontrak berakhir"
+    run.stage = "E. Kontrak berakhir"
     own, adm = run.client("owner.pilot"), run.client("admin.pilot")
     branch_id = run.q(lambda: User.query.filter_by(username="owner.pilot").one().branch_id)
     sinar = run.q(lambda: Client.query.filter_by(name="PT Sinar Beton").one().id)
@@ -478,7 +567,7 @@ def stage_contracts(run):
               state["status"] == "ACTIVE" and state["lapsed"] == "RESOLVED" and admin_gate[0], {**state, "admin_ok": admin_gate[0]})
 
 
-# --- tahap E: pemeriksaan -----------------------------------------------------
+# --- tahap F: pemeriksaan -----------------------------------------------------
 
 def stage_checks(run, backup):
     import csv
@@ -491,7 +580,7 @@ def stage_checks(run, backup):
     from app.services.readiness_service import FAIL, run_readiness_checks
     from tools.audit_financial_invariants import collect_results_from_database
 
-    run.stage = "E. Pemeriksaan"
+    run.stage = "F. Pemeriksaan"
     own = run.client("owner.pilot")
 
     balances = run.q(lambda: {code: Decimal(value) for code, value in db.session.execute(text(
@@ -502,6 +591,14 @@ def stage_checks(run, backup):
     run.check("Saldo buku besar = hitungan manual", not wrong and not extra,
               "semua akun cocok" if not wrong and not extra else f"beda {wrong} lain {extra}")
     run.check("Debit = kredit", sum(balances.values()) == 0, f"selisih {sum(balances.values())}")
+
+    from app.services.subledger_check_service import subledger_lines, unjournaled_stock_movements
+
+    lines = run.q(lambda: [(line.label, line.ok, f"{line.ledger:,.0f}/{line.subledger:,.0f}") for line in subledger_lines()])
+    run.check("Buku pembantu = buku besar (kas, bank, piutang, hutang, stok, aset)", all(ok for _, ok, _ in lines),
+              "; ".join(f"{label} {amounts}" for label, _, amounts in lines))
+    unjournaled = run.q(lambda: len(unjournaled_stock_movements()))
+    run.check("Semua pergerakan stok dijurnal", unjournaled == 0, f"{unjournaled} tanpa jurnal")
 
     violations = sum(len(result.violations) for result in collect_results_from_database())
     run.check("Audit rekonsiliasi mingguan (audit_financial_invariants)", violations == 0, f"{violations} pelanggaran")
@@ -527,6 +624,8 @@ def stage_checks(run, backup):
     run.check("Audit log: perubahan harga punya alasan", price_reasons and all(price_reasons), f"{price_reasons}")
     refund_reasons = [r for r in reasons("ADVANCE_SETTLED") if r and ("ditolak" in r.lower() or "kurang kirim" in r.lower())]
     run.check("Audit log: pengembalian uang muka punya alasan", bool(refund_reasons), f"{refund_reasons}")
+    lock_reasons = reasons("SENSITIVE_OPENING_BALANCE_LOCK_PASS")
+    run.check("Audit log: penguncian saldo awal punya alasan", lock_reasons and all(lock_reasons), f"{lock_reasons}")
     override_reasons = reasons("PREPAYMENT_OVERRIDE")
     run.check("Audit log: pesanan diloloskan sebelum lunas punya alasan", override_reasons and all(override_reasons), f"{override_reasons}")
 
@@ -599,6 +698,7 @@ def main():
     stage_operations(run, D1, shortage={"Gudang Cikarang": 2, "Kantor Notaris": 1})
     stage_operations(run, D2)
     stage_billing(run, refs)
+    stage_one_step(run, refs)
     stage_contracts(run)
     stage_checks(run, args.backup)
 

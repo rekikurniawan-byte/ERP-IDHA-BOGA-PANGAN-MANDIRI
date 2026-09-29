@@ -13,7 +13,6 @@ from app.services.stock_service import (
     get_item_stock,
     get_item_movements,
     create_stock_movement,
-    save_stock_opening_balance,
 )
 from app.utils.decorators import role_required
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query

@@ -411,51 +411,11 @@ def fixed_assets():
 @master_bp.route("/fixed-assets/create", methods=["GET", "POST"])
 @role_required("OWNER")
 def create_fixed_asset():
-    if request.method == "POST":
-        asset_name = (request.form.get("asset_name") or "").strip()
-        asset_category = request.form.get("asset_category") or "OTHER"
-        purchase_date = parse_date(request.form.get("purchase_date"))
-        purchase_value = to_float(request.form.get("purchase_value"))
-        useful_life_years = int(to_float(request.form.get("useful_life_years")))
-        residual_value = to_float(request.form.get("residual_value"))
-        accumulated_depreciation = to_float(request.form.get("accumulated_depreciation"))
-        status = request.form.get("status") or "ACTIVE"
-        notes = (request.form.get("notes") or "").strip()
-
-        if not asset_name or not asset_category or not purchase_date:
-            flash("Nama aset, kategori aset, dan tanggal pembelian wajib diisi.", "warning")
-            return redirect(url_for("master.create_fixed_asset"))
-
-        if asset_category not in ASSET_CATEGORIES:
-            asset_category = "OTHER"
-
-        if status not in ASSET_STATUSES:
-            status = "ACTIVE"
-
-        asset = create_fixed_asset_record(
-            branch_id=current_user.branch_id,
-            asset_code=generate_asset_code(),
-            asset_name=asset_name,
-            asset_category=asset_category,
-            purchase_date=purchase_date,
-            purchase_value=purchase_value,
-            useful_life_years=useful_life_years,
-            residual_value=residual_value,
-            accumulated_depreciation=accumulated_depreciation,
-            book_value=calculate_asset_book_value(purchase_value, accumulated_depreciation),
-            status=status,
-            notes=notes
-        )
-
-        flash(f"Aset tetap berhasil ditambahkan dengan kode {asset.asset_code}.", "success")
-        return redirect(url_for("master.fixed_assets"))
-
-    return render_template(
-        "master/fixed_asset_form.html",
-        asset=None,
-        categories=ASSET_CATEGORIES,
-        statuses=ASSET_STATUSES
-    )
+    """Aset baru selalu lewat transaksinya supaya uang keluar dan jurnalnya ikut:
+    Beli Aset (tunai/bank), Cicilan Aset, atau Saldo Awal untuk aset yang sudah
+    dimiliki sebelum sistem dipakai (keputusan owner 2026-09-28)."""
+    flash("Aset baru dicatat lewat Keuangan > Aset & Cicilan (beli tunai/bank atau cicilan), supaya uang keluar dan jurnalnya ikut tercatat.", "info")
+    return redirect(url_for("finance.create_fixed_asset_purchase"))
 
 
 @master_bp.route("/fixed-assets/<int:asset_id>/edit", methods=["GET", "POST"])
@@ -468,38 +428,24 @@ def edit_fixed_asset(asset_id):
         return redirect(url_for("master.fixed_assets"))
 
     if request.method == "POST":
+        # Hanya nama, kategori, dan catatan. Nilai beli, penyusutan, dan nilai
+        # buku mengikuti transaksi dan jurnalnya, jadi tidak diubah dari sini.
         asset_name = (request.form.get("asset_name") or "").strip()
         asset_category = request.form.get("asset_category") or "OTHER"
-        purchase_date = parse_date(request.form.get("purchase_date"))
-        purchase_value = to_float(request.form.get("purchase_value"))
-        useful_life_years = int(to_float(request.form.get("useful_life_years")))
-        residual_value = to_float(request.form.get("residual_value"))
-        accumulated_depreciation = to_float(request.form.get("accumulated_depreciation"))
-        status = request.form.get("status") or "ACTIVE"
         notes = (request.form.get("notes") or "").strip()
 
-        if not asset_name or not asset_category or not purchase_date:
-            flash("Nama aset, kategori aset, dan tanggal pembelian wajib diisi.", "warning")
+        if not asset_name:
+            flash("Nama aset wajib diisi.", "warning")
             return redirect(url_for("master.edit_fixed_asset", asset_id=asset.id))
 
         if asset_category not in ASSET_CATEGORIES:
             asset_category = "OTHER"
-
-        if status not in ASSET_STATUSES:
-            status = "ACTIVE"
 
         update_fixed_asset_record(
             asset,
             asset_code=asset.asset_code or generate_asset_code(),
             asset_name=asset_name,
             asset_category=asset_category,
-            purchase_date=purchase_date,
-            purchase_value=purchase_value,
-            useful_life_years=useful_life_years,
-            residual_value=residual_value,
-            accumulated_depreciation=accumulated_depreciation,
-            book_value=calculate_asset_book_value(purchase_value, accumulated_depreciation),
-            status=status,
             notes=notes,
         )
 

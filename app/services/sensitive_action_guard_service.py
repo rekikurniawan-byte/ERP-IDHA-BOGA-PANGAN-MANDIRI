@@ -90,6 +90,18 @@ SENSITIVE_ACTION_POLICIES: Dict[str, SensitiveActionPolicy] = {
         module="BACKUP",
         event_type="SENSITIVE_RESTORE_PREVIEW",
     ),
+    "OPENING_BALANCE_LOCK": SensitiveActionPolicy(
+        key="OPENING_BALANCE_LOCK",
+        label="Kunci saldo awal",
+        module="ACCOUNTING",
+        event_type="SENSITIVE_OPENING_BALANCE_LOCK",
+    ),
+    "OPENING_BALANCE_REOPEN": SensitiveActionPolicy(
+        key="OPENING_BALANCE_REOPEN",
+        label="Buka kembali saldo awal",
+        module="ACCOUNTING",
+        event_type="SENSITIVE_OPENING_BALANCE_REOPEN",
+    ),
     "DIGITAL_ATTACHMENT_SOFT_DELETE": SensitiveActionPolicy(
         key="DIGITAL_ATTACHMENT_SOFT_DELETE",
         label="Hapus lunak lampiran digital",

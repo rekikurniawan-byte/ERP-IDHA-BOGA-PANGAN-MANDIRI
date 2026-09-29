@@ -1,5 +1,4 @@
-from datetime import date
-
+from app.models.accounting import FixedAsset
 from app.services import master_data_service
 
 
@@ -766,59 +765,26 @@ def test_toggle_bank_account_active_commits(monkeypatch):
     assert session.rollback_count == 0
 
 
-def test_create_fixed_asset_record_commits_new_asset(monkeypatch):
-    session = _FakeSession()
-    monkeypatch.setattr(master_data_service, "db", _FakeDb(session))
-
-    asset = master_data_service.create_fixed_asset_record(
-        branch_id=2,
-        asset_code="AST-0001",
-        asset_name="Kompor",
-        asset_category="KITCHEN_EQUIPMENT",
-        purchase_date=date(2026, 1, 2),
-        purchase_value=5000000,
-        useful_life_years=5,
-        residual_value=500000,
-        accumulated_depreciation=100000,
-        book_value=4900000,
-        status="ACTIVE",
-        notes="Dapur",
-    )
-
-    assert asset in session.added
-    assert asset.branch_id == 2
-    assert asset.asset_code == "AST-0001"
-    assert asset.asset_name == "Kompor"
-    assert asset.book_value == 4900000
-    assert session.commit_count == 1
-    assert session.rollback_count == 0
-
-
 def test_update_fixed_asset_record_keeps_existing_code_and_commits(monkeypatch):
     session = _FakeSession()
     monkeypatch.setattr(master_data_service, "db", _FakeDb(session))
-    asset = master_data_service.FixedAsset(asset_code="AST-0001")
+    asset = FixedAsset(asset_code="AST-0001")
+
+    asset.book_value = 6800000
 
     updated = master_data_service.update_fixed_asset_record(
         asset,
         asset_code="AST-9999",
         asset_name="Mixer",
         asset_category="KITCHEN_EQUIPMENT",
-        purchase_date=date(2026, 2, 3),
-        purchase_value=7000000,
-        useful_life_years=4,
-        residual_value=700000,
-        accumulated_depreciation=200000,
-        book_value=6800000,
-        status="INACTIVE",
         notes="Gudang",
     )
 
     assert updated is asset
     assert asset.asset_code == "AST-0001"
     assert asset.asset_name == "Mixer"
-    assert asset.status == "INACTIVE"
-    assert asset.book_value == 6800000
+    assert asset.notes == "Gudang"
+    assert asset.book_value == 6800000  # nilai mengikuti transaksi, tidak diubah dari master
     assert session.commit_count == 1
     assert session.rollback_count == 0
 
@@ -826,20 +792,13 @@ def test_update_fixed_asset_record_keeps_existing_code_and_commits(monkeypatch):
 def test_update_fixed_asset_record_generates_missing_code(monkeypatch):
     session = _FakeSession()
     monkeypatch.setattr(master_data_service, "db", _FakeDb(session))
-    asset = master_data_service.FixedAsset(asset_code=None)
+    asset = FixedAsset(asset_code=None)
 
     master_data_service.update_fixed_asset_record(
         asset,
         asset_code="AST-0002",
         asset_name="Freezer",
         asset_category="KITCHEN_EQUIPMENT",
-        purchase_date=date(2026, 3, 4),
-        purchase_value=3000000,
-        useful_life_years=3,
-        residual_value=0,
-        accumulated_depreciation=0,
-        book_value=3000000,
-        status="ACTIVE",
         notes="",
     )
 
@@ -850,7 +809,7 @@ def test_update_fixed_asset_record_generates_missing_code(monkeypatch):
 def test_toggle_fixed_asset_status_commits(monkeypatch):
     session = _FakeSession()
     monkeypatch.setattr(master_data_service, "db", _FakeDb(session))
-    asset = master_data_service.FixedAsset(status="ACTIVE")
+    asset = FixedAsset(status="ACTIVE")
 
     updated = master_data_service.toggle_fixed_asset_status(asset)
 

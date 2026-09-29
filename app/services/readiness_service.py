@@ -147,46 +147,34 @@ def _portal_check():
     return Check(PASS, "Portal", f"Portal aktif; {len(accounts)} akun PT/mandor terhubung.")
 
 
-def _cash_bank_ledger_check():
-    """Buku Kas/Bank harus sama dengan saldo jurnal Kas (1001) dan Bank (1002, 1003).
+def _subledger_check():
+    """Setiap buku pembantu harus sama dengan saldo akunnya di buku besar.
 
-    Saldo awal lewat Akuntansi > Saldo Awal hanya membuat jurnal; Finance →
-    Saldo Awal Kas/Bank hanya mengisi buku kas/bank. Kalau hanya satu yang
-    diisi, cek kas harian membandingkan angka yang salah.
+    Semua transaksi dijurnal bersama pencatatannya, jadi selisih berarti ada
+    yang lolos tanpa jurnal, jurnal manual di akun kontrol, atau data lama.
     """
-    from sqlalchemy import func
+    from app.services.subledger_check_service import subledger_lines
 
-    from app.models.accounting import Account, JournalDetail
-    from app.models.finance import CashBankTransaction
-    from app.utils.money import money
-
-    def ledger(account_type):
-        rows = CashBankTransaction.query.filter(CashBankTransaction.account_type == account_type).all()
-        return sum(
-            (money(row.amount) if str(row.transaction_type or "").upper() == "IN" else -money(row.amount))
-            for row in rows if str(row.transaction_type or "").upper() in {"IN", "OUT"}
-        ) or money(0)
-
-    def journal(codes):
-        debit, credit = (
-            db.session.query(func.coalesce(func.sum(JournalDetail.debit), 0), func.coalesce(func.sum(JournalDetail.credit), 0))
-            .join(Account, Account.id == JournalDetail.account_id)
-            .filter(Account.account_code.in_(codes))
-            .one()
-        )
-        return money(debit) - money(credit)
-
-    differences = []
-    for label, account_type, codes in (("Kas", "CASH", ["1001"]), ("Bank", "BANK", ["1002", "1003"])):
-        book, ledger_total = journal(codes), ledger(account_type)
-        if book != ledger_total:
-            differences.append(f"{label}: jurnal Rp {book:,.0f}, buku kas/bank Rp {ledger_total:,.0f}")
+    differences = [
+        f"{line.label} ({line.accounts}): buku besar Rp {line.ledger:,.0f}, {line.source} Rp {line.subledger:,.0f}"
+        for line in subledger_lines() if not line.ok
+    ]
     if differences:
+        return Check(FAIL, "Buku pembantu vs buku besar", "; ".join(differences) + ". Rinciannya di Cek Kesehatan Data.")
+    return Check(PASS, "Buku pembantu vs buku besar", "Kas, bank, piutang, hutang supplier, persediaan, dan aset sama dengan buku besar.")
+
+
+def _stock_journal_check():
+    from app.services.subledger_check_service import unjournaled_stock_movements
+
+    missing = unjournaled_stock_movements()
+    if missing:
         return Check(
-            WARN, "Buku kas/bank vs jurnal",
-            "; ".join(differences) + ". Saldo awal harus diisi di Akuntansi > Saldo Awal DAN Finance > Saldo Awal Kas/Bank dengan angka yang sama.",
+            WARN, "Jurnal pergerakan stok",
+            f"{len(missing)} pergerakan stok belum dijurnal (barangnya belum punya harga pembelian, atau data lama). "
+            "Lihat Akuntansi > Status Posting.",
         )
-    return Check(PASS, "Buku kas/bank vs jurnal", "Saldo buku kas/bank sama dengan saldo jurnal Kas dan Bank.")
+    return Check(PASS, "Jurnal pergerakan stok", "Semua pergerakan stok yang mengubah nilai persediaan sudah dijurnal.")
 
 
 def _branch_checks(branch_ids=None):
@@ -199,8 +187,17 @@ def _branch_checks(branch_ids=None):
     query = Branch.query.filter(Branch.is_active.is_(True))
     if branch_ids is not None:
         query = query.filter(Branch.id.in_(branch_ids))
+    from app.services.opening_balance_service import is_locked
+
     for branch in query.order_by(Branch.id).all():
         label = f"Cabang {branch.name}"
+        if is_locked(branch.id):
+            checks.append(Check(PASS, f"{label}: saldo awal", "Saldo awal sudah dikunci."))
+        else:
+            checks.append(Check(
+                FAIL, f"{label}: saldo awal",
+                "Saldo awal belum dikunci: kas, piutang, hutang, stok, dan aset lama belum masuk buku. Isi di Akuntansi > Saldo Awal.",
+            ))
         if quote_price(branch.id, None) is None:
             checks.append(Check(FAIL, f"{label}: harga", "Harga standar per porsi belum diatur: pesanan baru ditolak."))
         else:
@@ -247,7 +244,8 @@ def _backup_check(max_age_hours=26):
 def run_readiness_checks(branch_ids=None):
     """branch_ids membatasi cek per cabang (bawaan: semua cabang aktif)."""
     checks = []
-    for step in (_migration_check, _table_owner_check, _account_check, _backup_check, _contract_pic_check, _cash_bank_ledger_check, _portal_check):
+    for step in (_migration_check, _table_owner_check, _account_check, _backup_check, _contract_pic_check, _subledger_check,
+                 _stock_journal_check, _portal_check):
         try:
             checks.append(step())
         except Exception as error:  # noqa: BLE001 - satu cek gagal tidak boleh menghentikan laporan

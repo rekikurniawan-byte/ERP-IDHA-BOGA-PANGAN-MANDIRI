@@ -1,0 +1,116 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+{{ page_header(
+    "Modal Pemilik",
+    "Uang pribadi pemilik yang masuk ke usaha (setor modal) atau diambil dari usaha (tarik modal / prive). Buku kas/bank dan jurnalnya tercatat bersamaan.",
+    "Keuangan",
+    actions=[{"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-arrow-left"}]
+) }}
+
+<div class="app-card">
+    <div class="card-header-clean">
+        <div>
+            <h5>Catat Setor / Tarik Modal</h5>
+            <p>Setor modal: Kas/Bank bertambah, 3001 Modal Pemilik bertambah. Tarik modal: Kas/Bank berkurang, 3003 Prive bertambah. Hanya OWNER.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="row g-3 app-form" data-ui-form="true" data-app-confirm="Catat transaksi modal pemilik ini? Buku kas/bank dan jurnalnya langsung tercatat.">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-2">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="transaction_date" class="form-control app-input" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Jenis</label>
+            <select name="kind" class="form-select app-input" required>
+                {% for key, kind in kinds.items() %}
+                    <option value="{{ key }}">{{ kind.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Akun</label>
+            <select name="account_type" class="form-select app-input" required>
+                <option value="CASH">Kas</option>
+                <option value="BANK">Bank</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Rekening Bank</label>
+            <select name="bank_account_id" class="form-select app-input">
+                <option value="">Kas / tidak pakai rekening</option>
+                {% for account in active_bank_accounts %}
+                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} - {{ account.account_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Nominal</label>
+            <input type="text" name="amount" class="form-control app-input" required>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Keterangan</label>
+            <input type="text" name="notes" class="form-control app-input" placeholder="Contoh: tambahan modal untuk belanja bahan minggu ini" required>
+        </div>
+        <div class="col-md-12">
+            <button type="submit" class="btn app-btn-primary">
+                <i class="bi bi-person-badge"></i>
+                Simpan
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Riwayat</h5>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Jenis</th>
+                    <th>Akun</th>
+                    <th class="text-end">Nominal</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.transaction_date.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            {% if row.transaction_type == 'IN' %}
+                                <span class="badge bg-success">Setor Modal</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Tarik Modal</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.account_type == 'BANK' and row.bank_account %}
+                                {{ row.bank_account.bank_name }} - {{ row.bank_account.account_name }}
+                            {% else %}
+                                Kas
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">{{ row.amount|rupiah }}</td>
+                        <td>{{ row.description }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-muted">Belum ada setor atau tarik modal.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

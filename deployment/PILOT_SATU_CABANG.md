@@ -52,9 +52,14 @@ Peran:
       dibuat OWNER di Pengaturan → User dan **dihubungkan** ke satu PT atau
       satu mandor (daftarnya di Portal → Pengaturan Akses). Pelanggan umum yang
       bersedia ikut mendaftar sendiri di portal.
-- [ ] Saldo awal diisi di **dua** tempat dengan angka yang sama:
-      Akuntansi → Saldo Awal (jurnal) **dan** Finance → Saldo Awal Kas/Bank
-      (buku kas/bank). `ops-check` membandingkan keduanya.
+- [ ] **Saldo awal** di satu tempat: Akuntansi → Saldo Awal. Isi tanggal mulai,
+      kas dan tiap rekening bank, piutang lama per nota, hutang supplier lama,
+      stok per barang dengan harga beli, aset dengan akumulasi penyusutan, dan
+      hutang lain; modal pemilik dihitung otomatis. OWNER menekan **Kunci Saldo
+      Awal** (dengan password): semua buku pembantu dan satu jurnal dibuat
+      sekaligus dari angka yang sama. Salah isi sebelum ada transaksi → Buka
+      Kembali; sesudahnya → koreksi dengan alasan. `ops-check` FAIL selama
+      saldo awal belum dikunci.
 
 **Gerbang mulai:** `flask --app run ops-check` harus **0 FAIL**, dan sebaiknya
 0 WARN.

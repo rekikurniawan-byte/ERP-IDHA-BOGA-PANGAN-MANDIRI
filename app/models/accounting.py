@@ -13,6 +13,41 @@ class Account(BaseModel):
     journal_details = db.relationship("JournalDetail", backref="account", lazy=True)
 
 
+class OpeningBalance(BaseModel):
+    """Saldo awal satu pintu per cabang (lihat opening_balance_service)."""
+    __tablename__ = "opening_balances"
+
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False, unique=True)
+    status = db.Column(db.String(20), nullable=False, default="DRAFT", index=True)
+    start_date = db.Column(db.Date, nullable=True)
+    # Baris draf dan id catatan buku pembantu yang dibuat saat dikunci.
+    payload_json = db.Column(db.Text, nullable=True)
+    journal_id = db.Column(db.Integer, db.ForeignKey("journals.id"), nullable=True)
+    locked_at = db.Column(db.DateTime, nullable=True)
+    locked_by = db.Column(db.Integer, nullable=True)
+    created_by = db.Column(db.Integer, nullable=False)
+    updated_by = db.Column(db.Integer, nullable=True)
+
+    journal = db.relationship("Journal", foreign_keys=[journal_id], lazy=True)
+
+
+class OpeningBalanceCorrection(BaseModel):
+    """Satu koreksi saldo awal sesudah dikunci: alasan, isi sebelum/sesudah, jurnal koreksinya."""
+    __tablename__ = "opening_balance_corrections"
+
+    opening_balance_id = db.Column(db.Integer, db.ForeignKey("opening_balances.id"), nullable=False, index=True)
+    section = db.Column(db.String(30), nullable=False)
+    line_key = db.Column(db.String(40), nullable=False)
+    action = db.Column(db.String(20), nullable=False)
+    reason = db.Column(db.Text, nullable=False)
+    before_json = db.Column(db.Text, nullable=True)
+    after_json = db.Column(db.Text, nullable=True)
+    journal_id = db.Column(db.Integer, db.ForeignKey("journals.id"), nullable=True)
+    created_by = db.Column(db.Integer, nullable=False)
+
+    journal = db.relationship("Journal", foreign_keys=[journal_id], lazy=True)
+
+
 class Journal(BaseModel):
     __tablename__ = "journals"
 

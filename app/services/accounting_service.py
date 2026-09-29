@@ -1,7 +1,7 @@
 import logging
 from app.extensions import db
 from app.models.accounting import Account, Journal, JournalDetail
-from app.models.finance import InvoiceItem, Invoice, Payment, SupplierBill
+from app.models.finance import InvoiceItem, Invoice, SupplierBill
 from datetime import date
 from app.services.audit_log_service import record_audit_log
 from app.utils.money import money
@@ -35,6 +35,28 @@ def commit_accounting_transaction():
 
 def rollback_accounting_transaction():
     db.session.rollback()
+
+
+def receivable_is_journaled(invoice):
+    """Piutang invoice ini sudah ada di 1004? Lewat jurnal invoicenya, atau -- untuk
+    piutang lama -- lewat jurnal saldo awal cabangnya yang sudah dikunci."""
+    if Journal.query.filter_by(reference_type="INVOICE", reference_id=invoice.id).first() is not None:
+        return True
+    return invoice.source_type == "OPENING_BALANCE" and _opening_locked(invoice.branch_id)
+
+
+def payable_is_journaled(bill):
+    """Hutang supplier ini sudah ada di 2002? Lewat jurnal pembeliannya, atau -- untuk
+    hutang lama tanpa pembelian -- lewat jurnal saldo awal cabangnya."""
+    if bill.procurement_id is None:
+        return _opening_locked(bill.branch_id)
+    return Journal.query.filter_by(reference_type="PROCUREMENT", reference_id=bill.procurement_id).first() is not None
+
+
+def _opening_locked(branch_id):
+    from app.services.opening_balance_service import is_locked
+
+    return is_locked(branch_id)
 
 
 def get_active_account_by_code(account_code):
@@ -379,12 +401,7 @@ def create_payment_journal_for_payment(payment, created_by, commit=False):
     if not invoice:
         raise Exception("Invoice pembayaran tidak ditemukan.")
 
-    invoice_journal = Journal.query.filter_by(
-        reference_type="INVOICE",
-        reference_id=invoice.id
-    ).first()
-
-    if not invoice_journal:
+    if not receivable_is_journaled(invoice):
         raise Exception(
             f"Invoice {invoice.invoice_number} belum punya jurnal invoice. "
             "Buat jurnal invoice dulu sebelum jurnal payment."
@@ -464,83 +481,6 @@ def create_payment_journal_for_payment(payment, created_by, commit=False):
     return True, "Jurnal payment berhasil dibuat.", journal
 
 
-def generate_period_invoice_journals_batch(*, created_by):
-    invoices = Invoice.query.filter(
-        Invoice.source_type.in_(["PERIOD_INVOICE", "DAILY_ORDER", "MANUAL_BILLING_RECAP"])
-    ).order_by(
-        Invoice.invoice_date.asc(),
-        Invoice.id.asc()
-    ).all()
-
-    created_count = 0
-    skipped_count = 0
-    skipped_cancelled_count = 0
-
-    try:
-        for invoice in invoices:
-            status = str(getattr(invoice, "status", "") or "").upper()
-
-            if status == "CANCELLED":
-                skipped_count += 1
-                skipped_cancelled_count += 1
-                continue
-
-            success, message, journal = create_invoice_journal_for_invoice(
-                invoice=invoice,
-                created_by=created_by,
-                commit=False
-            )
-
-            if success:
-                created_count += 1
-            else:
-                skipped_count += 1
-
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        raise
-
-    return {
-        "created_count": created_count,
-        "skipped_count": skipped_count,
-        "skipped_cancelled_count": skipped_cancelled_count,
-    }
-
-
-def generate_payment_journals_batch(*, created_by):
-    payments = Payment.query.order_by(
-        Payment.payment_date.asc(),
-        Payment.id.asc()
-    ).all()
-
-    created_count = 0
-    skipped_count = 0
-
-    try:
-        for payment in payments:
-            success, message, journal = create_payment_journal_for_payment(
-                payment=payment,
-                created_by=created_by,
-                commit=False
-            )
-
-            if success:
-                created_count += 1
-            else:
-                skipped_count += 1
-
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        raise
-
-    return {
-        "created_count": created_count,
-        "skipped_count": skipped_count,
-    }
-
-
 def _accounting2e_money(value):
     # Nominal tak terbaca ditolak (ValueError), tidak diam-diam menjadi 0.
     return money(value)
@@ -560,150 +500,67 @@ def _accounting2e_procurement_amount(procurement):
     return total
 
 
-def _accounting2e_purchase_credit_account(procurement):
+def procurement_credit_account_code(procurement):
+    """Akun kredit pembelian barang: hutang supplier, atau kas/bank yang benar-benar dipakai.
+
+    Pembelian tunai yang dibayar dari rekening bank tercatat di buku kas-bank
+    sebagai BANK, jadi jurnalnya harus mengkredit bank (1002), bukan kas.
+    """
+    from app.models.finance import CashBankTransaction
+
     purchase_type = str(getattr(procurement, "purchase_type", "") or "").upper()
-
-    if purchase_type == "CASH":
-        return get_active_account_by_code("1001"), "Kas"
-
     if purchase_type == "CREDIT":
-        return get_active_account_by_code("2002"), "Hutang Supplier"
-
-    if purchase_type in ["TRANSFER", "BANK"]:
-        return get_active_account_by_code("1002"), "Bank 1"
-
-    return None, "UNKNOWN"
-
-
-def build_procurement_journal_candidates():
-    from app.models.logistics import Procurement
-
-    procurements = Procurement.query.order_by(
-        Procurement.procurement_date.asc(),
-        Procurement.id.asc()
-    ).all()
-
-    candidates = []
-
-    for procurement in procurements:
-        existing = Journal.query.filter_by(
-            reference_type="PROCUREMENT",
-            reference_id=procurement.id
-        ).first()
-
-        amount = _accounting2e_procurement_amount(procurement)
-        credit_account, credit_label = _accounting2e_purchase_credit_account(procurement)
-
-        candidates.append({
-            "procurement": procurement,
-            "amount": amount,
-            "purchase_type": str(procurement.purchase_type or "").upper(),
-            "credit_account": credit_account,
-            "credit_label": credit_label,
-            "existing_journal": existing,
-            "can_generate": (
-                existing is None
-                and amount > 0
-                and credit_account is not None
-            ),
-        })
-
-    return candidates
+        return "2002"
+    if purchase_type in ("TRANSFER", "BANK"):
+        return "1002"
+    if purchase_type != "CASH":
+        return None
+    ledger = CashBankTransaction.query.filter_by(
+        reference_type="PROCUREMENT", reference_id=procurement.id
+    ).first()
+    if ledger is not None and str(ledger.account_type or "").upper() == "BANK":
+        return "1002"
+    return "1001"
 
 
-def generate_procurement_journals_batch(*, created_by_id, commit=True):
-    acc_inventory = get_active_account_by_code("1006")
+def create_procurement_journal(procurement, *, created_by):
+    """Jurnal pembelian barang, dibuat dalam transaksi yang sama dengan pembeliannya.
 
-    missing_accounts = []
+    Dr 1006 Persediaan Bahan Baku / Cr 1001 Kas, 1002 Bank, atau 2002 Hutang
+    Supplier. Idempotent: kalau jurnalnya sudah ada, itu yang dikembalikan.
+    Gagal (exception) kalau akun atau nominal tidak valid, supaya pembeliannya
+    ikut batal -- tidak ada pembelian tanpa jurnal. Tidak commit.
+    """
+    existing = Journal.query.filter_by(reference_type="PROCUREMENT", reference_id=procurement.id).first()
+    if existing:
+        return existing
 
-    if not acc_inventory:
-        missing_accounts.append("1006 - Persediaan Bahan Baku")
+    amount = _accounting2e_procurement_amount(procurement)
+    if amount <= 0:
+        raise ValueError(f"Nominal pembelian {procurement.procurement_number} tidak valid untuk jurnal.")
+    credit_code = procurement_credit_account_code(procurement)
+    if credit_code is None:
+        raise ValueError(f"Tipe pembelian {procurement.purchase_type} belum didukung jurnal otomatis.")
+    inventory_account = get_active_account_by_code("1006")
+    credit_account = get_active_account_by_code(credit_code)
+    missing = [code for code, account in (("1006", inventory_account), (credit_code, credit_account)) if account is None]
+    if missing:
+        raise ValueError(f"Akun {', '.join(missing)} belum ada atau tidak aktif di COA.")
 
-    candidates = build_procurement_journal_candidates()
-
-    created = []
-    skipped = []
-
-    if missing_accounts:
-        return {
-            "created": created,
-            "skipped": skipped,
-            "errors": [f"Akun wajib belum ada: {', '.join(missing_accounts)}"],
-        }
-
-    try:
-        for candidate in candidates:
-            procurement = candidate["procurement"]
-            amount = candidate["amount"]
-            credit_account = candidate["credit_account"]
-            purchase_type = candidate["purchase_type"]
-
-            if candidate["existing_journal"]:
-                skipped.append({
-                    "procurement": procurement,
-                    "reason": "Sudah ada jurnal",
-                })
-                continue
-
-            if amount <= 0:
-                skipped.append({
-                    "procurement": procurement,
-                    "reason": "Nominal pembelian tidak valid",
-                })
-                continue
-
-            if credit_account is None:
-                skipped.append({
-                    "procurement": procurement,
-                    "reason": f"Tipe pembelian belum didukung: {purchase_type}",
-                })
-                continue
-
-            journal = Journal(
-                journal_number=generate_journal_number(procurement.procurement_date),
-                journal_date=procurement.procurement_date,
-                reference_type="PROCUREMENT",
-                reference_id=procurement.id,
-                description=f"Jurnal pembelian barang {procurement.procurement_number} - {purchase_type}",
-                created_by=created_by_id
-            )
-
-            db.session.add(journal)
-            db.session.flush()
-
-            db.session.add(JournalDetail(
-                journal_id=journal.id,
-                account_id=acc_inventory.id,
-                debit=amount,
-                credit=0
-            ))
-
-            db.session.add(JournalDetail(
-                journal_id=journal.id,
-                account_id=credit_account.id,
-                debit=0,
-                credit=amount
-            ))
-
-            created.append({
-                "journal": journal,
-                "procurement": procurement,
-                "amount": amount,
-                "debit_account": acc_inventory,
-                "credit_account": credit_account,
-            })
-
-        if commit:
-            db.session.commit()
-    except Exception:
-        db.session.rollback()
-        raise
-
-    return {
-        "created": created,
-        "skipped": skipped,
-        "errors": [],
-    }
+    journal = Journal(
+        journal_number=generate_journal_number(procurement.procurement_date),
+        journal_date=procurement.procurement_date,
+        reference_type="PROCUREMENT",
+        reference_id=procurement.id,
+        description=f"Jurnal pembelian barang {procurement.procurement_number} - {str(procurement.purchase_type or '').upper()}",
+        created_by=created_by,
+    )
+    db.session.add(journal)
+    db.session.flush()
+    db.session.add(JournalDetail(journal_id=journal.id, account_id=inventory_account.id, debit=amount, credit=0))
+    db.session.add(JournalDetail(journal_id=journal.id, account_id=credit_account.id, debit=0, credit=amount))
+    db.session.flush()
+    return journal
 
 
 # ACCOUNTING9D_WARUNG_FUTURE_ACCRUAL_SERVICE
@@ -1106,12 +963,7 @@ def create_supplier_payment_journal_for_payment(supplier_payment, created_by, co
     if not bill:
         raise Exception("Supplier bill pembayaran tidak ditemukan.")
 
-    procurement_journal = Journal.query.filter_by(
-        reference_type="PROCUREMENT",
-        reference_id=bill.procurement_id,
-    ).first()
-
-    if not procurement_journal:
+    if not payable_is_journaled(bill):
         raise Exception(
             f"Pembelian sumber supplier bill {bill.bill_number} belum punya jurnal pembelian. "
             "Sinkronkan jurnal pembelian dulu sebelum pembayaran hutang supplier."

@@ -105,12 +105,9 @@ def create_item_request():
                 flash("Minimal isi 1 item permintaan.", "warning")
                 return redirect(url_for("logistics.create_item_request"))
 
-            same_day_count = ItemRequest.query.filter_by(
-                branch_id=current_user.branch_id,
-                request_date=request_date
-            ).count()
+            from app.services.logistics_transaction_service import next_daily_number
 
-            request_number = f"REQ-{request_date.strftime('%Y%m%d')}-{same_day_count + 1:03d}"
+            request_number = next_daily_number(ItemRequest, "request_number", "REQ", request_date)
 
             item_request = create_item_request_record(
                 request_number=request_number,

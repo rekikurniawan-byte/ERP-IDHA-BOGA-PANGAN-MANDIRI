@@ -1,7 +1,20 @@
 from datetime import date
 from types import SimpleNamespace
 
+import pytest
+
 from app.services import logistics_transaction_service
+
+
+@pytest.fixture(autouse=True)
+def journaled(monkeypatch):
+    """Jurnal stok memakai database; di sini cukup dicatat bahwa ia dipanggil."""
+    calls = []
+    monkeypatch.setattr(
+        logistics_transaction_service, "journal_stock_movement",
+        lambda movement, *, created_by: calls.append((movement, created_by)),
+    )
+    return calls
 
 
 class _FakeSession:
@@ -35,7 +48,7 @@ class _FakeDb:
         self.session = session
 
 
-def test_create_stock_audit_movement_commits(monkeypatch):
+def test_create_stock_audit_movement_commits(monkeypatch, journaled):
     session = _FakeSession()
     monkeypatch.setattr(logistics_transaction_service, "db", _FakeDb(session))
 
@@ -54,6 +67,7 @@ def test_create_stock_audit_movement_commits(monkeypatch):
     assert movement.item_id == 10
     assert movement.reference_type == "AUDIT_STOK"
     assert movement.qty == 3
+    assert journaled == [(movement, 7)]
     assert session.commit_count == 1
     assert session.rollback_count == 0
 

@@ -31,6 +31,16 @@
     </div>
 </div>
 
+{% if branches_without_opening %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" data-dashboard-reminder="opening-balance">
+    <div>
+        <strong>Saldo awal belum dikunci:</strong> {{ branches_without_opening|map(attribute='name')|join(', ') }}.
+        Kas, piutang, hutang, stok, dan aset lama belum masuk buku, jadi laporan keuangan belum lengkap.
+    </div>
+    <a href="{{ url_for('accounting.opening_balance') }}" class="btn btn-sm app-btn-primary">Isi Saldo Awal</a>
+</div>
+{% endif %}
+
 <section class="dashboard-section dashboard-command-decision" data-dashboard-section="command-decision">
     <div class="dashboard-command-hero dashboard-command-hero-compact dashboard-command-hero-{{ command.decision.status_class }}">
         <div>

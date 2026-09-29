@@ -17,7 +17,7 @@
 {% set is_finance_manual_billing = endpoint in ["finance.manual_billing", "finance.create_manual_billing_invoice_route", "finance.manual_billing_backfill_form", "finance.manual_billing_batch_detail"] %}
 {% set is_finance_transport_expense = endpoint in ["finance.transport_expenses", "finance.transport_expense_create", "finance.transport_expense_detail"] %}
 {% set is_finance_operational_expense = endpoint in ["finance.operational_expenses", "finance.operational_expense_create", "finance.operational_expense_detail"] %}
-{% set is_finance_ledger = endpoint in ["finance.cash_bank_ledger", "finance.cash_bank_opening_balances", "finance.cash_bank_transfers", "finance.cash_bank_adjustments", "finance.reconcile_cash_bank_ledger_transaction", "finance.unreconcile_cash_bank_ledger_transaction"] %}
+{% set is_finance_ledger = endpoint in ["finance.cash_bank_ledger", "finance.cash_bank_transfers", "finance.cash_bank_adjustments", "finance.owner_capital", "finance.reconcile_cash_bank_ledger_transaction", "finance.unreconcile_cash_bank_ledger_transaction"] %}
 {% set is_finance_asset_purchase = endpoint in ["finance.fixed_asset_purchases", "finance.create_fixed_asset_purchase", "finance.fixed_asset_purchase_detail"] %}
 {% set is_finance_asset_installment = endpoint in ["finance.fixed_asset_installments", "finance.create_fixed_asset_installment_contract", "finance.fixed_asset_installment_detail", "finance.pay_fixed_asset_installment"] %}
 {% set is_finance_depreciation = endpoint in ["finance.fixed_asset_depreciation", "finance.fixed_asset_depreciation_configure", "finance.fixed_asset_depreciation_post"] %}
@@ -263,6 +263,7 @@
                 {% call nav_group("Stok & Dapur", "bi-box-seam", is_stock_group) %}
                     {% if has_role(["OWNER", "LOGISTICS"]) %}
                         {{ nav_link(url_for('logistics.index'), "Stok Barang", "bi-box-seam", endpoint == "logistics.index") }}
+                        {{ nav_link(url_for('logistics.purchases'), "Pembelian Barang", "bi-bag-plus", endpoint in ["logistics.purchases", "logistics.create_purchase", "logistics.purchase_detail"]) }}
                     {% endif %}
                     {% if can_view_logistics %}
                         {{ nav_link(url_for('logistics.item_requests'), "Permintaan Barang", "bi-cart-plus", endpoint.startswith("logistics.item_request")) }}
@@ -272,9 +273,6 @@
                     {% endif %}
                     {% if can_view_logistics %}
                         {{ nav_link(url_for('logistics.material_forecast'), "Prediksi Bahan", "bi-lightbulb", is_material_forecast) }}
-                    {% endif %}
-                    {% if has_role(["OWNER", "LOGISTICS"]) %}
-                        {{ nav_link(url_for('logistics.stock_opening_balances'), "Saldo Awal Stok", "bi-flag", endpoint == "logistics.stock_opening_balances") }}
                     {% endif %}
                     {% if can_view_costing %}
                         {{ nav_link(url_for('costing.menus'), "Menu & Resep", "bi-journal-richtext", is_menu_recipe) }}

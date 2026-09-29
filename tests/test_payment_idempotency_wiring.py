@@ -59,20 +59,25 @@ def test_manual_backfill_void_is_wired_for_maker_checker():
 
 def test_accounting_batch_actions_are_wired_for_idempotency():
     base_route_source = _read("app/routes/accounting_routes.py")
-    journal_route_source = _read("app/routes/accounting/journal_routes.py")
-    report_route_source = _read("app/routes/accounting/report_routes.py")
-    posting_route_source = _read("app/routes/accounting/posting_routes.py")
     closing_route_source = _read("app/routes/accounting/closing_routes.py")
-    journal_template_source = _read("app/templates/accounting/journal_index.html")
     closing_template_source = _read("app/templates/accounting/period_closing.html")
 
     assert "def _reserve_accounting_idempotency" in base_route_source
-    assert "ACCOUNTING_GENERATE_PERIOD_INVOICE_JOURNALS" in journal_route_source
-    assert "ACCOUNTING_GENERATE_PAYMENT_JOURNALS" in journal_route_source
-    assert "ACCOUNTING_GENERATE_PROCUREMENT_JOURNALS" in report_route_source
-    assert "ACCOUNTING_GENERATE_HPP_PRODUCTION_JOURNALS" in posting_route_source
-    assert "ACCOUNTING_GENERATE_WARUNG_PAYMENT_CORRECTION_JOURNALS" in posting_route_source
     assert "ACCOUNTING_PERIOD_CLOSING_POST" in closing_route_source
-    assert "{{ idempotency_keys.period_invoice }}" in journal_template_source
-    assert "{{ idempotency_keys.procurement }}" in journal_template_source
     assert "{{ post_idempotency_key }}" in closing_template_source
+
+
+def test_manual_journal_sync_buttons_are_gone():
+    """Semua transaksi dijurnal bersama pencatatannya (keputusan owner 2026-09-28):
+    tidak ada lagi rute atau tombol "sinkronkan jurnal"."""
+    routes = "".join(_read(path) for path in (
+        "app/routes/accounting/journal_routes.py",
+        "app/routes/accounting/report_routes.py",
+        "app/routes/accounting/posting_routes.py",
+    ))
+    journal_template_source = _read("app/templates/accounting/journal_index.html")
+
+    for route in ("generate-period-invoice", "generate-payment", "generate-procurement",
+                  "generate-hpp-production", "generate-warung-payment-correction"):
+        assert f"/journals/{route}" not in routes
+    assert "Sinkronkan" not in journal_template_source

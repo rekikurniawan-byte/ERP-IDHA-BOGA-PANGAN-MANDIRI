@@ -56,6 +56,9 @@ class StockOpeningBalance(BaseModel):
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False, index=True)
     opening_date = db.Column(db.Date, nullable=False, index=True)
     qty = db.Column(db.Numeric(18, 4), nullable=False, default=0)
+    # Harga satuan saat saldo awal: nilai stok awal masuk buku besar (1006) dan
+    # ikut harga rata-rata untuk menilai barang keluar.
+    unit_cost = db.Column(db.Numeric(18, 2), nullable=False, default=0, server_default="0")
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, nullable=False)
 
