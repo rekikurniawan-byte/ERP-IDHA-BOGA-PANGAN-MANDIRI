@@ -6,7 +6,7 @@
 {{ page_header(
     "Menu & Resep / BOM",
     "Kelola menu catering dan kebutuhan bahan per porsi. Data ini belum memotong stok, belum membuat jurnal, dan belum mengubah order lama.",
-    eyebrow="HPP Tahap 2",
+    eyebrow="HPP",
     actions=[
         {"label": "Kalkulator HPP", "url": url_for('costing.hpp_calculator'), "icon": "bi-graph-up-arrow"},
         {"label": "Tambah Menu", "url": url_for('costing.create_menu'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -108,32 +108,32 @@
                     <td>{{ menu.default_selling_price|rupiah }} / porsi</td>
                     <td>
                         {% if menu.recipe %}
-                            <span class="status-badge status-locked">ADA</span><br>
+                            <span class="status-badge success">Ada</span><br>
                             <small class="text-muted">{{ menu.recipe.items|length }} item bahan/kemasan</small>
                             {% if menu.recipe.version_label %}<br><small class="text-muted">Versi: {{ menu.recipe.version_label }}</small>{% endif %}
                         {% else %}
-                            <span class="status-badge status-draft">BELUM ADA</span>
+                            <span class="status-badge neutral">Belum Ada</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if menu.recipe %}
                             {% if menu.recipe.recipe_status == "FINAL" %}
-                                <span class="status-badge status-locked">FINAL</span>
+                                <span class="status-badge success">Final</span>
                                 {% if menu.recipe.finalized_at %}<br><small class="text-muted">{{ menu.recipe.finalized_at.strftime('%d-%m-%Y %H:%M') }}</small>{% endif %}
                             {% else %}
-                                <span class="status-badge status-draft">DRAFT</span>
+                                <span class="status-badge neutral">Konsep</span>
                                 <br><small class="text-muted">Cek sebelum dipakai operasional</small>
                             {% endif %}
                             {% if menu.recipe.version_note %}<br><small class="text-muted">{{ menu.recipe.version_note }}</small>{% endif %}
                         {% else %}
-                            <span class="status-badge status-draft">BELUM ADA</span>
+                            <span class="status-badge neutral">Belum Ada</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if menu.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

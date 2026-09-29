@@ -1,127 +1,115 @@
 {% extends "layouts/base.html" %}
-{% from "components/ui_macros.html" import ui_button, ui_search_field, ui_select_field, ui_status_badge, ui_row_actions, ui_empty_state %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-{% set category_options = [('ALL', 'Semua Kategori')] %}
-{% for cat in categories %}
-    {% set _ = category_options.append((cat, cat)) %}
-{% endfor %}
-{% set status_options = [('ALL', 'Semua Status'), ('ACTIVE', 'Aktif'), ('INACTIVE', 'Nonaktif')] %}
+{{ page_header(
+    "Barang",
+    "Kelola barang, satuan, harga jual, dan status penggunaannya dalam operasional.",
+    eyebrow="Data Master",
+    actions=[
+        {"label": "Kembali", "url": url_for('master.index')},
+        {"label": "Tambah Barang", "url": url_for('master.create_item'), "icon": "bi-plus-circle", "variant": "primary"},
+    ]
+) }}
 
-<div class="ui-scope ui-page ui-master-items-page">
-    <header class="ui-page-header">
-        <div class="ui-page-header-copy">
-            <span class="ui-page-eyebrow">Master Data</span>
-            <h1 class="ui-page-title">Barang</h1>
-            <p class="ui-page-description">Kelola barang, satuan, harga jual, dan status penggunaannya dalam operasional.</p>
-        </div>
-        <div class="ui-page-actions" aria-label="Aksi halaman">
-            {{ ui_button('Kembali', 'secondary', url_for('master.index'), 'bi-arrow-left') }}
-            {{ ui_button('Tambah Barang', 'primary', url_for('master.create_item'), 'bi-plus-circle') }}
-        </div>
-    </header>
+<div class="app-card">
+    <form method="GET" action="{{ url_for('master.items') }}" class="filter-bar app-form" aria-label="Filter daftar barang">
+        <input type="search" name="q" class="form-control" value="{{ q }}" placeholder="Cari kode / nama / satuan" aria-label="Pencarian">
 
-    <section class="ui-filter-toolbar" aria-label="Filter daftar barang">
-        <form method="GET" action="{{ url_for('master.items') }}" data-ui-foundation-form>
-            <div class="ui-filter-grid">
-                {{ ui_search_field('ui-master-items-search', 'q', 'Pencarian', q, 'Cari kode / nama / satuan') }}
-                {{ ui_select_field('ui-master-items-category', 'category', 'Kategori', category_options, category) }}
-                {{ ui_select_field('ui-master-items-status', 'status', 'Status', status_options, status) }}
-                <div class="ui-toolbar-actions">
-                    {{ ui_button('Filter', 'primary', '', 'bi-funnel', false, '', '', '', '', true) }}
-                    {{ ui_button('Reset', 'secondary', url_for('master.items'), 'bi-arrow-counterclockwise') }}
-                </div>
-            </div>
-        </form>
-    </section>
+        <select name="category" class="form-select" aria-label="Kategori">
+            <option value="ALL" {% if category == "ALL" %}selected{% endif %}>Semua Kategori</option>
+            {% for cat in categories %}
+                <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
 
-    <section class="ui-data-panel">
-        <div class="ui-data-panel-header">
-            <h2 class="ui-data-panel-title">Daftar barang</h2>
-            <p class="ui-data-panel-description">Informasi master yang dipakai untuk stok, dapur, dan penjualan.</p>
-        </div>
+        <select name="status" class="form-select" aria-label="Status">
+            <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
+            <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
+            <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
+        </select>
 
-        {% if items %}
-        <div class="ui-table-scroll" role="region" aria-label="Daftar barang" tabindex="0" data-ui-table-shell>
-            <table class="ui-data-table" data-ui-table>
-                <colgroup>
-                    <col class="ui-table-col--code">
-                    <col class="ui-table-col--name">
-                    <col class="ui-table-col--category">
-                    <col class="ui-table-col--context">
-                    <col class="ui-table-col--unit">
-                    <col class="ui-table-col--minimum">
-                    <col class="ui-table-col--price">
-                    <col class="ui-table-col--tracking">
-                    <col class="ui-table-col--status">
-                    <col class="ui-table-col--actions">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th class="ui-table-head-cell ui-table-cell--sticky-code">Kode</th>
-                        <th class="ui-table-head-cell ui-table-cell--sticky-name">Nama Barang</th>
-                        <th class="ui-table-head-cell">Kategori</th>
-                        <th class="ui-table-head-cell">Dipakai Untuk</th>
-                        <th class="ui-table-head-cell">Satuan</th>
-                        <th class="ui-table-head-cell ui-table-head-cell--number">Minimum Stok</th>
-                        <th class="ui-table-head-cell ui-table-head-cell--number">Harga Jual</th>
-                        <th class="ui-table-head-cell ui-table-head-cell--status">Tracking Stok</th>
-                        <th class="ui-table-head-cell ui-table-head-cell--status">Status</th>
-                        <th class="ui-table-head-cell ui-table-head-cell--actions ui-table-cell--sticky-actions">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in items %}
-                    <tr class="ui-table-row">
-                        <td class="ui-table-cell ui-table-cell--sticky-code">
-                            <span class="ui-table-code" title="{{ item.item_code }}">{{ item.item_code }}</span>
-                        </td>
-                        <td class="ui-table-cell ui-table-cell--sticky-name">
-                            <span class="ui-table-name">{{ item.item_name }}</span>
-                        </td>
-                        <td class="ui-table-cell"><span class="ui-table-secondary">{{ item.category }}</span></td>
-                        <td class="ui-table-cell">
-                            {% if item.category == "MERCHANDISE" %}
-                                {{ ui_status_badge('WARUNG', 'info') }}
-                            {% elif item.category in ["RAW_MATERIAL", "PACKAGING", "GAS"] %}
-                                {{ ui_status_badge('DAPUR/STOK', 'warning') }}
-                            {% else %}
-                                {{ ui_status_badge('SISTEM', 'neutral') }}
-                            {% endif %}
-                        </td>
-                        <td class="ui-table-cell"><span class="ui-table-unit" title="{{ item.unit }}">{{ item.unit }}</span></td>
-                        <td class="ui-table-cell ui-table-cell--number">{{ item.minimum_stock }}</td>
-                        <td class="ui-table-cell ui-table-cell--number">{{ item.selling_price|rupiah }}</td>
-                        <td class="ui-table-cell ui-table-cell--status">
-                            {{ ui_status_badge('YA', 'success') if item.is_stock_tracked else ui_status_badge('TIDAK', 'neutral') }}
-                        </td>
-                        <td class="ui-table-cell ui-table-cell--status">
-                            {{ ui_status_badge('AKTIF', 'success') if item.is_active else ui_status_badge('NONAKTIF', 'danger') }}
-                        </td>
-                        <td class="ui-table-cell ui-table-cell--actions ui-table-cell--sticky-actions">
-                            {{ ui_row_actions(
-                                url_for('master.edit_item', item_id=item.id),
-                                url_for('master.toggle_item', item_id=item.id),
-                                url_for('master.delete_item', item_id=item.id),
-                                item.item_name,
-                                item.is_active,
-                                'Yakin ingin menghapus item ini? Hanya bisa jika belum pernah dipakai transaksi.'
-                            ) }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-            {{ ui_empty_state(
-                'Belum ada barang',
-                'Tambahkan barang baru atau ubah filter untuk melihat data yang tersedia.',
-                'Tambah Barang',
-                url_for('master.create_item'),
-                'bi-box-seam'
-            ) }}
-        {% endif %}
-    </section>
+        <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+        <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="app-card">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Barang</th>
+                    <th>Dipakai Untuk</th>
+                    <th>Satuan</th>
+                    <th class="num">Minimum Stok</th>
+                    <th class="num">Harga Jual</th>
+                    <th>Lacak Stok</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><strong>{{ item.item_code }}</strong></td>
+                    <td>{{ item.item_name }}</td>
+                    <td>
+                        {% if item.category == "MERCHANDISE" %}
+                            <span class="status-badge info">Warung</span>
+                        {% elif item.category in ["RAW_MATERIAL", "PACKAGING", "GAS"] %}
+                            <span class="status-badge warning">Dapur/Stok</span>
+                        {% else %}
+                            <span class="status-badge neutral">Sistem</span>
+                        {% endif %}
+                        <div class="text-muted small">{{ item.category }}</div>
+                    </td>
+                    <td>{{ item.unit }}</td>
+                    <td class="num">{{ item.minimum_stock|qty }}</td>
+                    <td class="num">{{ item.selling_price|rupiah }}</td>
+                    <td>
+                        {% if item.is_stock_tracked %}
+                            <span class="status-badge success">Ya</span>
+                        {% else %}
+                            <span class="status-badge neutral">Tidak</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.is_active %}
+                            <span class="status-badge success">Aktif</span>
+                        {% else %}
+                            <span class="status-badge neutral">Nonaktif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a href="{{ url_for('master.edit_item', item_id=item.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <form method="POST" action="{{ url_for('master.toggle_item', item_id=item.id) }}">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-secondary">{{ "Nonaktifkan" if item.is_active else "Aktifkan" }}</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('master.delete_item', item_id=item.id) }}" data-app-confirm="Yakin ingin menghapus item ini? Hanya bisa jika belum pernah dipakai transaksi.">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn btn-sm app-btn-danger" aria-label="Hapus barang {{ item.item_name }}">Hapus</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-box-seam"></i>
+                            <strong>Belum ada barang</strong>
+                            <p>Tambahkan barang baru atau ubah filter untuk melihat data yang tersedia.</p>
+                            <a href="{{ url_for('master.create_item') }}" class="btn app-btn-secondary"><i class="bi bi-plus-circle"></i> Tambah Barang</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

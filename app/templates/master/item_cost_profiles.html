@@ -7,7 +7,7 @@
 {{ page_header(
     "Harga Pokok Barang",
     "Atur harga standar, konversi satuan, yield, dan waste per item. Tahap ini belum mengubah stok, jurnal, invoice, atau order lama.",
-    eyebrow="HPP Tahap 1",
+    eyebrow="HPP",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Konversi Satuan", "url": url_for('master.unit_conversions'), "icon": "bi-arrow-left-right", "variant": "primary"},
@@ -132,14 +132,14 @@
                         {% if profile %}
                             {{ profile.effective_cost_per_base_unit|rupiah }} / {{ profile.base_unit }}
                         {% else %}
-                            <span class="status-badge status-draft">BELUM ADA</span>
+                            <span class="status-badge neutral">Belum Ada</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if item.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

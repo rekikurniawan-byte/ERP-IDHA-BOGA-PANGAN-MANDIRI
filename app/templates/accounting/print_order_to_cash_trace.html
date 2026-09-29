@@ -6,13 +6,13 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi | Print Ready</span>
+            <span class="eyebrow">Akuntansi | Siap Cetak</span>
             <h1>Jejak Order sampai Lunas</h1>
-            <p>Halaman print-ready. Gunakan Cetak / Save PDF dari browser.</p>
+            <p>Siap cetak. Gunakan tombol Cetak / Simpan PDF di browser.</p>
         </div>
         <div class="page-actions accounting-header-actions">
             <button type="button" class="btn app-btn-primary" data-app-action="print">
-                <i class="bi bi-printer"></i> Cetak / Save PDF
+                <i class="bi bi-printer"></i> Cetak / Simpan PDF
             </button>
             <a href="{{ url_for('accounting.order_to_cash_trace', order_number=report.selected_order_number) }}" class="btn app-btn-secondary">
                 <i class="bi bi-arrow-left"></i> Kembali
@@ -69,7 +69,7 @@
                 {% for step in report.steps %}
                 <tr>
                     <td><strong>{{ step.name }}</strong></td>
-                    <td>{{ step.status }}</td>
+                    <td>{{ step.status|status_label }}</td>
                     <td>{{ step.note }}</td>
                 </tr>
                 {% endfor %}
@@ -86,8 +86,8 @@
                     <th>{{ term('client') }}</th>
                     <th>PIC/{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
-                    <th>Lunch</th>
-                    <th>Dinner</th>
+                    <th>Siang</th>
+                    <th>Sore</th>
                     <th>Total</th>
                     <th>Harga</th>
                     <th>Subtotal</th>
@@ -120,16 +120,16 @@
                 <tr>
                     <th>Tipe</th>
                     <th>Status</th>
-                    <th>Planned</th>
-                    <th>Actual</th>
+                    <th>Rencana</th>
+                    <th>Realisasi</th>
                     <th>Detail</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in report.production.rows %}
                 <tr>
-                    <td>{{ row.production_type }}</td>
-                    <td>{{ row.status }}</td>
+                    <td>{{ row.production_type|status_label }}</td>
+                    <td>{{ row.status|status_label }}</td>
                     <td>{{ row.planned_qty|round(0) }}</td>
                     <td>{{ row.actual_qty|round(0) }}</td>
                     <td>{{ row.detail_count }} item</td>
@@ -146,11 +146,11 @@
 <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
-                    <th>Nomor Delivery</th>
+                    <th>Nomor Pengiriman</th>
                     <th>Tanggal</th>
                     <th>Tipe</th>
                     <th>Status</th>
-                    <th>Planned</th>
+                    <th>Rencana</th>
                     <th>Terkirim</th>
                     <th>Selisih</th>
                 </tr>
@@ -161,7 +161,7 @@
                     <td>{{ row.delivery_number }}</td>
                     <td>{{ row.delivery_date.strftime('%d-%m-%Y') if row.delivery_date else '-' }}</td>
                     <td>{{ row.delivery_type }}</td>
-                    <td>{{ row.status }}</td>
+                    <td>{{ row.status|status_label }}</td>
                     <td>{{ row.planned_qty }}</td>
                     <td>{{ row.delivered_qty }}</td>
                     <td>{{ row.shortage_qty }}</td>
@@ -191,12 +191,12 @@
                 {% for row in report.invoice.rows %}
                 <tr>
                     <td>{{ row.invoice.invoice_number }}</td>
-                    <td>{{ row.invoice.status }}</td>
+                    <td>{{ row.invoice.status|status_label('invoice') }}</td>
                     <td>{{ row.invoice.bill_to_type }}</td>
                     <td class="text-end">{{ row.total_amount|rupiah }}</td>
                     <td class="text-end">{{ row.paid_amount|rupiah }}</td>
                     <td class="text-end">{{ row.remaining_amount|rupiah }}</td>
-                    <td>{{ row.journal.status }}</td>
+                    <td>{{ row.journal.status|status_label }}</td>
                 </tr>
                 {% else %}
                 <tr><td colspan="7" class="text-center text-muted">Belum ada invoice untuk order ini.</td></tr>
@@ -213,7 +213,7 @@
                     <th>Pembayaran</th>
                     <th>Tanggal</th>
                     <th>Metode</th>
-                    <th>Amount</th>
+                    <th>Jumlah</th>
                     <th>Jurnal</th>
                 </tr>
             </thead>
@@ -224,10 +224,10 @@
                     <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') if row.payment.payment_date else '-' }}</td>
                     <td>{{ row.payment.payment_method }}</td>
                     <td class="text-end">{{ row.amount|rupiah }}</td>
-                    <td>{{ row.journal.status }}</td>
+                    <td>{{ row.journal.status|status_label }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-muted">Belum ada payment untuk invoice aktif order ini.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted">Belum ada pembayaran untuk invoice aktif order ini.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -7,7 +7,7 @@
 {{ page_header(
     "Supplier",
     "Kelola supplier tetap jika memang ada. Pembelian dari toko tidak tetap tetap bisa input manual tanpa memilih supplier.",
-    eyebrow="Master Supplier",
+    eyebrow="Data Supplier",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Tambah Supplier", "url": url_for('master.create_supplier'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -83,9 +83,9 @@
                     </td>
                     <td>
                         {% if supplier.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

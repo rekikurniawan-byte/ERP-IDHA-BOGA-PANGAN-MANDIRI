@@ -43,7 +43,7 @@
                                     <td class="fw-semibold">{{ invoice.invoice_number }}</td>
                                     <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
                                     <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
-                                    <td><span class="status-badge neutral">{{ invoice.status }}</span></td>
+                                    <td><span class="status-badge neutral">{{ invoice.status|status_label('invoice') }}</span></td>
                                     <td class="text-end">{{ invoice.total_amount|rupiah }}</td>
                                     <td class="text-end">{{ invoice.paid_amount|rupiah }}</td>
                                     <td class="text-end">{{ invoice.remaining_amount|rupiah }}</td>

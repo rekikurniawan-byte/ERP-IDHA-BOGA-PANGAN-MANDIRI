@@ -6,7 +6,7 @@
 {{ page_header(
     "Tutup Harian Mode pantau",
     "Ringkasan harian order, produksi, delivery, invoice, payment, warung, stok, dan jurnal.",
-    eyebrow="Daily Closing",
+    eyebrow="Tutup Harian",
     actions_class="accounting-header-actions",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('accounting.print_daily_closing', date=report.selected_date_value), "icon": "bi-printer"},
@@ -34,7 +34,7 @@
 
 <div class="app-card soft-info-card mt-4">
     <strong>Status {{ report.selected_date_label }}:
-        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status }}</span>
+        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status|status_label }}</span>
     </strong>
     <p>
         Halaman ini hanya membaca data. Tidak membuat transaksi, tidak generate invoice/payment/journal,
@@ -88,7 +88,7 @@
             <p>{{ section.description }}</p>
         </div>
 
-        <span class="status-badge {{ section.status_class }}">{{ section.status }}</span>
+        <span class="status-badge {{ section.status_class }}">{{ section.status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
@@ -96,17 +96,17 @@
             <thead>
                 <tr>
                     <th>Status</th>
-                    <th>Check</th>
+                    <th>Pemeriksaan</th>
                     <th>Data</th>
-                    <th>Expected</th>
-                    <th>Actual</th>
+                    <th>Seharusnya</th>
+                    <th>Realisasi</th>
                     <th>Catatan</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in section.rows %}
                 <tr>
-                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status|status_label }}</span></td>
                     <td>{{ row.check }}</td>
                     <td><strong>{{ row.item }}</strong></td>
                     <td>{{ row.expected }}</td>

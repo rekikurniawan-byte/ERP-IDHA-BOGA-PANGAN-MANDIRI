@@ -123,7 +123,7 @@
                             <strong>{{ contract.contract_number }}</strong>
                             <small>{{ contract.title }} | sampai {{ contract.end_date.strftime('%d-%m-%Y') if contract.end_date else "-" }}</small>
                         </span>
-                        <b>{{ contract.status }}</b>
+                        <b>{{ contract.status|status_label }}</b>
                     </article>
                 {% else %}
                     <div class="portal-home-empty">Belum ada kontrak aktif untuk perusahaan ini.</div>

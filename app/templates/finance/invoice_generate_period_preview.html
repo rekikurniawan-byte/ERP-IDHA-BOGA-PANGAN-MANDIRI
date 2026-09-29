@@ -12,7 +12,7 @@
 ) }}
 
 <div class="app-card soft-warning-card">
-    <strong>Step Aman</strong>
+    <strong>Langkah Aman</strong>
     <p>Halaman ini baru preview. Data invoice belum disimpan. Invoice periode akan ditagihkan ke {{ term('client', lower=True) }}, sedangkan {{ term('sub_client', lower=True) }} tetap dicatat sebagai PIC lapangan.</p>
 </div>
 
@@ -200,9 +200,9 @@
                     <td>{{ line.subtotal|rupiah }}</td>
                     <td>
                         {% if line.included %}
-                            <span class="status-badge status-progress">MASUK</span>
+                            <span class="status-badge info">Masuk</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">SKIP</span>
+                            <span class="status-badge neutral">Dilewati</span>
                             <div class="small text-muted mt-1">{{ line.blocked_reason }}</div>
                         {% endif %}
                     </td>

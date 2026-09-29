@@ -3,45 +3,12 @@
 {% set ERROR_MESSAGE = "Akun kamu tidak memiliki izin untuk membuka halaman ini. Hubungi admin kalau akses memang diperlukan." %}
 {% set ERROR_ICON = "bi-shield-lock" %}
 {% extends "layouts/base.html" %}
-
-{% macro error_body(code, title, message, icon) %}
-<section class="app-page-shell error-page-shell" data-final-lock="UI" data-ui-error="UI" data-empty-state="true">
-    <div class="app-page-header">
-        <div>
-            <p class="eyebrow">Status {{ code }}</p>
-            <h1>{{ title }}</h1>
-            <p>{{ message }}</p>
-        </div>
-    </div>
-
-    <div class="app-card app-empty-state app-error-state text-center" data-ui-empty-state="UI" data-ui-error-card="UI">
-        <div class="empty-state-icon">
-            <i class="bi {{ icon }}" aria-hidden="true"></i>
-        </div>
-        <h2>{{ title }}</h2>
-        <p>{{ message }}</p>
-        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2 mt-3 page-actions" data-mobile-actions="UI">
-            <button type="button" class="btn app-btn-secondary" data-app-action="back">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Kembali
-            </button>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-primary">
-                    <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
-                </a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" class="btn app-btn-primary">
-                    <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Login
-                </a>
-            {% endif %}
-        </div>
-    </div>
-</section>
-{% endmacro %}
+{% from "errors/_error_page.html" import error_page with context %}
 
 {% block content %}
-{{ error_body(ERROR_CODE, ERROR_TITLE, ERROR_MESSAGE, ERROR_ICON) }}
+{{ error_page(ERROR_CODE, ERROR_TITLE, ERROR_MESSAGE, ERROR_ICON) }}
 {% endblock %}
 
 {% block content_public %}
-{{ error_body(ERROR_CODE, ERROR_TITLE, ERROR_MESSAGE, ERROR_ICON) }}
+{{ error_page(ERROR_CODE, ERROR_TITLE, ERROR_MESSAGE, ERROR_ICON) }}
 {% endblock %}

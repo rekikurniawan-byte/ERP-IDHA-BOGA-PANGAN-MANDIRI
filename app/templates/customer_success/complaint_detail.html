@@ -21,7 +21,7 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="text-muted small text-uppercase fw-bold">Status</div>
-                            <span class="status-badge neutral">{{ complaint.status }}</span>
+                            <span class="status-badge neutral">{{ complaint.status|status_label }}</span>
                         </div>
                         <div class="col-md-4">
                             <div class="text-muted small text-uppercase fw-bold">Kategori</div>
@@ -87,7 +87,7 @@
                             <textarea class="form-control app-input" name="resolution_note" rows="3"></textarea>
                         </div>
                         <div class="col-12 d-grid">
-                            <button class="btn app-btn-primary" type="submit" {% if complaint.status == 'CLOSED' %}disabled{% endif %}>Update Status</button>
+                            <button class="btn app-btn-primary" type="submit" {% if complaint.status == 'CLOSED' %}disabled{% endif %}>Ubah Status</button>
                         </div>
                     </form>
                 </div>

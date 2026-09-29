@@ -31,14 +31,14 @@
             <thead>
                 <tr>
                     <th>Tanggal</th>
-                    <th>No Delivery</th>
+                    <th>No Pengiriman</th>
                     <th>Tipe</th>
                     <th>Driver</th>
                     <th>Status</th>
                     <th>SLA</th>
-                    <th>Planned</th>
-                    <th>Delivered</th>
-                    <th>Shortage</th>
+                    <th>Rencana</th>
+                    <th>Terkirim</th>
+                    <th>Kurang Kirim</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -55,12 +55,12 @@
                     <td>
                         <strong>{{ delivery.delivery_number }}</strong>
                         {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
-                            <div class="muted-small">Pengganti shortage</div>
+                            <div class="muted-small">Pengganti kekurangan</div>
                         {% endif %}
                     </td>
                     <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
                     <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
-                    <td>{{ delivery.status }}</td>
+                    <td>{{ delivery.status|status_label }}</td>
                     {% set sla = calculate_delivery_sla_summary(delivery) %}
                     <td>
                         <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>

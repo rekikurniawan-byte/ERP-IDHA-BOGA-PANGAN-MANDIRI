@@ -6,7 +6,7 @@
 {{ page_header(
     "Resep / BOM Menu",
     menu.menu_code ~ " - " ~ menu.menu_name ~ ". Isi kebutuhan bahan per porsi. Belum memotong stok dan belum membuat jurnal.",
-    eyebrow="HPP Tahap 2",
+    eyebrow="HPP",
     actions=[
         {"label": "Kembali", "url": url_for('costing.menus')},
         {"label": "Hitung HPP", "url": url_for('costing.hpp_calculator', menu_id=menu.id, portion_qty=100), "icon": "bi-graph-up-arrow", "variant": "primary"},
@@ -146,17 +146,17 @@
                     <td>{{ line.qty_per_portion|qty }} {{ line.unit }}</td>
                     <td>
                         {% if line.item.cost_profile %}
-                            <span class="status-badge status-locked">ADA</span><br>
+                            <span class="status-badge success">Ada</span><br>
                             <small class="text-muted">{{ line.item.cost_profile.effective_cost_per_base_unit|rupiah }} / {{ line.item.cost_profile.base_unit }}</small>
                         {% else %}
-                            <span class="status-badge status-draft">BELUM ADA</span>
+                            <span class="status-badge neutral">Belum Ada</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if recipe and recipe.recipe_status == "FINAL" %}
-                            <span class="status-badge status-locked">FINAL</span>
+                            <span class="status-badge success">Final</span>
                         {% else %}
-                            <span class="status-badge status-draft">DRAFT</span>
+                            <span class="status-badge neutral">Konsep</span>
                         {% endif %}
                     </td>
                     <td>{{ line.notes or '-' }}</td>

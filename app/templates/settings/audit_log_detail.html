@@ -25,11 +25,11 @@
                 </div>
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     {% if log.audit_severity == 'CRITICAL' %}
-                        <span class="badge bg-danger">CRITICAL</span>
+                        <span class="status-badge danger">Kritis</span>
                     {% elif log.audit_severity == 'HIGH' %}
-                        <span class="badge bg-warning text-dark">HIGH</span>
+                        <span class="status-badge warning">Tinggi</span>
                     {% elif log.audit_severity == 'MEDIUM' %}
-                        <span class="badge bg-info text-dark">MEDIUM</span>
+                        <span class="status-badge info">Sedang</span>
                     {% else %}
                         <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
                     {% endif %}
@@ -151,32 +151,32 @@
             </div>
             <div class="list-group list-group-flush">
                 <div class="list-group-item d-flex justify-content-between gap-3">
-                    <span class="text-muted">Module</span>
-                    <span class="fw-semibold text-end">{{ log.module }}</span>
+                    <span class="text-muted">Modul</span>
+                    <span class="fw-semibold text-end text-break">{{ log.module }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
-                    <span class="text-muted">Event Type</span>
-                    <span class="fw-semibold text-end">{{ log.event_type }}</span>
+                    <span class="text-muted">Jenis Kejadian</span>
+                    <span class="fw-semibold text-end text-break">{{ log.event_type }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
-                    <span class="text-muted">Action</span>
-                    <span class="fw-semibold text-end">{{ log.action }}</span>
+                    <span class="text-muted">Aksi</span>
+                    <span class="fw-semibold text-end text-break">{{ log.action }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
-                    <span class="text-muted">Severity</span>
-                    <span class="fw-semibold text-end">{{ log.audit_severity }}</span>
+                    <span class="text-muted">Tingkat</span>
+                    <span class="fw-semibold text-end text-break">{{ log.audit_severity }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
-                    <span class="text-muted">Critical Audit</span>
-                    <span class="fw-semibold text-end">{{ 'Ya' if log.audit_is_critical else 'Tidak' }}</span>
+                    <span class="text-muted">Audit Kritis</span>
+                    <span class="fw-semibold text-end text-break">{{ 'Ya' if log.audit_is_critical else 'Tidak' }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
                     <span class="text-muted">Record ID</span>
-                    <span class="fw-semibold text-end">{{ log.record_id or '-' }}</span>
+                    <span class="fw-semibold text-end text-break">{{ log.record_id or '-' }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
                     <span class="text-muted">IP Address</span>
-                    <span class="fw-semibold text-end">{{ log.ip_address or '-' }}</span>
+                    <span class="fw-semibold text-end text-break">{{ log.ip_address or '-' }}</span>
                 </div>
                 <div class="list-group-item">
                     <div class="text-muted mb-1">User Agent</div>

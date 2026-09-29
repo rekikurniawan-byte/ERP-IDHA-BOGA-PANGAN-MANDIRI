@@ -6,7 +6,7 @@
     {{ page_header(
         "Tutup Periode & Laba Ditahan",
         "Menutup pendapatan dan beban periode ke akun 3002 Laba Ditahan. Closing hanya bisa diposting jika jurnal periode balance dan belum pernah closing.",
-        eyebrow="Accounting • COA 3002",
+        eyebrow="Akuntansi • Laba Ditahan (3002)",
         actions_class="accounting-header-actions",
         actions=[
             {"label": "Laporan Akuntansi", "url": url_for('accounting.reports')},
@@ -183,7 +183,7 @@
                     <tr>
                         <td><strong>{{ closing.closing_number }}</strong></td>
                         <td>{{ '%02d'|format(closing.period_month) }}/{{ closing.period_year }}</td>
-                        <td><span class="status-badge status-success">{{ closing.status }}</span></td>
+                        <td><span class="status-badge status-success">{{ closing.status|status_label }}</span></td>
                         <td class="text-end">{{ closing.net_income|rupiah }}</td>
                         <td class="text-end"><a href="{{ url_for('accounting.period_closing_detail', closing_id=closing.id) }}" class="btn btn-sm app-btn-secondary">Detail</a></td>
                     </tr>

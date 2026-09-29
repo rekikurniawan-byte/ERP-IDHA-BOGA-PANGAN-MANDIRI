@@ -74,7 +74,7 @@
                     <td>{{ dep.amount|rupiah }}</td>
                     <td>{{ dep.settled_amount|rupiah }}</td>
                     <td><strong>{{ dep.remaining_amount|rupiah }}</strong></td>
-                    <td>{{ dep.status }}</td>
+                    <td>{{ dep.status|status_label }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -195,7 +195,7 @@
                     <td>{{ row.invoice.total_amount|rupiah }}</td>
                     <td>{{ row.invoice.remaining_amount|rupiah }}</td>
                     <td>{% if row.unpaid and row.days_overdue %}<span class="text-danger">{{ row.days_overdue }} hari</span>{% else %}-{% endif %}</td>
-                    <td>{{ row.invoice.status }}</td>
+                    <td>{{ row.invoice.status|status_label('invoice') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

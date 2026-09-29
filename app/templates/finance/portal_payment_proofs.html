@@ -4,7 +4,7 @@
 <section class="page-section">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Finance - Portal</p>
+            <p class="page-eyebrow">Keuangan - Portal</p>
             <h1>Bukti Bayar Masuk</h1>
             <p class="page-description">Bukti dari portal masuk sebagai arsip bukti digital ERP. Pembayaran resmi hanya dibuat setelah finance memverifikasi dan memprosesnya ke modul Pembayaran ERP.</p>
         </div>
@@ -116,7 +116,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="status-badge neutral">{{ row.invoice_status }}</span>
+                                    <span class="status-badge neutral">{{ row.invoice_status|status_label('invoice') }}</span>
                                     <div class="small text-muted mt-1">
                                         {% if row.is_invoice_source %}
                                             Total {{ row.invoice_total|rupiah }}

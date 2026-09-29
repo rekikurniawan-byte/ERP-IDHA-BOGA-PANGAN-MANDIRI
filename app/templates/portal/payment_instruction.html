@@ -28,7 +28,7 @@
                 <strong>{{ instruction.amount_due|rupiah }}</strong>
                 <p>{{ data.page_description }}</p>
             </article>
-            <article><span>Tagihan</span><strong>{{ instruction.invoice.invoice_number }}</strong><small>{{ instruction.invoice.status }}</small></article>
+            <article><span>Tagihan</span><strong>{{ instruction.invoice.invoice_number }}</strong><small>{{ instruction.invoice.status|status_label('invoice') }}</small></article>
             <article><span>Sisa</span><strong>{{ instruction.invoice.remaining_amount|rupiah }}</strong><small>Sisa tagihan</small></article>
             <article><span>Bukti</span><strong>{{ instruction.proof_summary.count }}</strong><small>{{ instruction.proof_summary.latest_status }}</small></article>
         </div>

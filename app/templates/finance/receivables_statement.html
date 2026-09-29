@@ -87,20 +87,20 @@
 
 <div class="page-header">
     <div>
-        <span class="eyebrow">Finance</span>
-        <h1>Statement of Account</h1>
+        <span class="eyebrow">Keuangan</span>
+        <h1>Laporan Tagihan Pelanggan</h1>
         <p>Rekap resmi piutang aktif {{ term('client', lower=True) }} berdasarkan invoice yang belum lunas dan tidak berstatus cancelled.</p>
     </div>
 
     <div class="page-actions finance-header-actions" data-finance-actions="UI">
         <button type="button" class="btn app-btn-primary" data-app-action="print">
             <i class="bi bi-printer"></i>
-            Cetak / Save PDF
+            Cetak / Simpan PDF
         </button>
 
         <a href="{{ url_for('finance.export_receivables_statement_csv', client_id=selected_client_id) }}" class="btn app-btn-secondary">
             <i class="bi bi-download"></i>
-            Download CSV
+            Unduh CSV
         </a>
 
         <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
@@ -324,7 +324,7 @@
                     <td>{{ invoice.total_amount|rupiah }}</td>
                     <td>{{ invoice.paid_amount|rupiah }}</td>
                     <td><strong>{{ invoice.remaining_amount|rupiah }}</strong></td>
-                    <td>{{ invoice.status }}</td>
+                    <td>{{ invoice.status|status_label('invoice') }}</td>
                     <td>
                         <span class="status-badge {{ ar.badge_class }}">{{ ar.stage_label }}</span>
                         <div class="text-muted small">{{ ar.action }}</div>

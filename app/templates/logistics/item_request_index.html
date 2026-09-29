@@ -36,7 +36,7 @@
             <i class="bi bi-check-circle"></i>
         </div>
         <div>
-            <p>Approved</p>
+            <p>Disetujui</p>
             <h3>{{ approved_count }}</h3>
             <span class="app-stat-helper">Disetujui</span>
         </div>
@@ -59,7 +59,7 @@
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>Semua Status</option>
             <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Pending</option>
-            <option value="APPROVED" {% if status_filter == "APPROVED" %}selected{% endif %}>Approved</option>
+            <option value="APPROVED" {% if status_filter == "APPROVED" %}selected{% endif %}>Disetujui</option>
             <option value="FULFILLED" {% if status_filter == "FULFILLED" %}selected{% endif %}>Fulfilled</option>
             <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>Rejected</option>
         </select>
@@ -98,15 +98,15 @@
                     <td>{{ row.details|length }}</td>
                     <td>
                         {% if row.status == "PENDING" %}
-                            <span class="status-badge status-progress">PENDING</span>
+                            <span class="status-badge warning">Menunggu</span>
                         {% elif row.status == "APPROVED" %}
-                            <span class="status-badge status-locked">APPROVED</span>
+                            <span class="status-badge success">Disetujui</span>
                         {% elif row.status == "FULFILLED" %}
-                            <span class="status-badge status-locked">FULFILLED</span>
+                            <span class="status-badge success">Terpenuhi</span>
                         {% elif row.status == "REJECTED" %}
-                            <span class="status-badge status-danger">REJECTED</span>
+                            <span class="status-badge danger">Ditolak</span>
                         {% else %}
-                            <span class="status-badge">{{ row.status }}</span>
+                            <span class="status-badge">{{ row.status|status_label }}</span>
                         {% endif %}
                     </td>
                     <td>{{ row.notes or '-' }}</td>

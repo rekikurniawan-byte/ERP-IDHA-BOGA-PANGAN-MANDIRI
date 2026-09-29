@@ -1,0 +1,1308 @@
+/* ==========================================================================
+   Portal pelanggan, mandor, dan PT.
+
+   Semua halaman portal memakai pola markup yang sama, jadi gayanya ditulis
+   per keluarga, bukan per halaman:
+   - kepala halaman   : *-hero (+ .portal-back-link, .portal-hero-status)
+   - panel/kartu      : *-panel, *-card
+   - kepala panel     : *-panel-head, .portal-section-heading
+   - strip angka      : article > span (label) + strong (nilai) + small (ket.)
+   - daftar           : *-list
+   - pill             : *-pill, .portal-chip-row > span
+   - kosong/terkunci  : *-empty*, .portal-blocked-state
+   Warna nada (.tone-* / .level-* / .is-{level}) ada di components.css.
+   ========================================================================== */
+
+/* --- Isian formulir tanpa kelas Bootstrap --------------------------------------- */
+.portal-web-content :where(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"], [type="submit"], [type="button"]), select, textarea):not(.form-control, .form-select) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--control-height);
+    padding: 7px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--text-base);
+}
+
+.portal-web-content :where(input, select, textarea):not(.form-control, .form-select):focus {
+    border-color: var(--brand-500);
+    box-shadow: var(--focus-ring);
+    outline: 0;
+}
+
+.portal-web-content :where(input[type="file"]) {
+    width: 100%;
+    font-size: var(--text-sm);
+}
+
+.portal-form-grid,
+.portal-draft-proof-form,
+.portal-register-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3) var(--space-4);
+    align-items: end;
+}
+
+.portal-form-grid label,
+.portal-form-wide,
+.portal-draft-proof-form label,
+.portal-care-form label,
+.portal-evidence-upload label,
+.portal-payment-upload-card label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+}
+
+.portal-form-grid label > span,
+.portal-form-wide > span,
+.portal-draft-proof-form label > span,
+.portal-care-form label > span,
+.portal-evidence-upload label > span,
+.portal-payment-upload-card label > span {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.portal-form-grid label > small,
+.portal-form-wide > small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-form-wide {
+    margin-top: var(--space-3);
+}
+
+/* --- Halaman dan kepala halaman ---------------------------------------------------- */
+.portal-feature-page,
+.portal-home,
+.portal-command-center {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.portal-feature-hero {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.portal-feature-hero > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.portal-feature-hero > div > p,
+.portal-home-kicker,
+.portal-command-eyebrow {
+    margin: 0 0 2px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-700);
+}
+
+.portal-feature-hero h1 {
+    margin: 0;
+    font-size: var(--text-xl);
+}
+
+.portal-feature-hero > div > span {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.portal-back-link {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+}
+
+.portal-back-link:hover {
+    background: var(--gray-50);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.portal-hero-status {
+    flex: 0 0 auto;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--brand-50);
+    color: var(--brand-800);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+
+/* Beranda portal: sapaan + saldo. */
+.portal-home-hero,
+.portal-command-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.portal-home-hero h1,
+.portal-command-hero h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-2xl);
+}
+
+.portal-home-hero p,
+.portal-command-hero p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.portal-home-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.portal-home-balance-card,
+.portal-pt-executive-card,
+.portal-command-proof {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-100);
+}
+
+.portal-home-balance-card span,
+.portal-pt-executive-card span,
+.portal-home-flow-card > span,
+.portal-command-proof span {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--brand-800);
+}
+
+.portal-home-balance-card strong,
+.portal-pt-executive-card strong,
+.portal-command-proof strong {
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
+.portal-home-balance-card small,
+.portal-pt-executive-card small,
+.portal-command-proof p {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.portal-command-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.portal-command-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--chart-green);
+}
+
+.portal-command-guard {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--success-text);
+}
+
+/* --- Tombol portal ------------------------------------------------------------------ */
+.portal-primary-action,
+.portal-home-primary,
+.portal-secondary-action,
+.portal-home-secondary,
+.portal-action-link,
+.portal-hero-action,
+.portal-register-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--control-height);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.portal-primary-action,
+.portal-home-primary,
+.portal-register-submit {
+    border-color: var(--brand-700);
+    background: var(--brand-700);
+    color: var(--text-on-brand);
+}
+
+.portal-primary-action:hover,
+.portal-home-primary:hover,
+.portal-register-submit:hover {
+    border-color: var(--brand-800);
+    background: var(--brand-800);
+    color: var(--text-on-brand);
+    text-decoration: none;
+}
+
+.portal-secondary-action:hover,
+.portal-home-secondary:hover,
+.portal-action-link:hover,
+.portal-hero-action:hover {
+    background: var(--gray-50);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.portal-action-link.secondary {
+    border-style: dashed;
+    color: var(--text-muted);
+    cursor: default;
+}
+
+/* --- Panel dan kartu ----------------------------------------------------------------- */
+.portal-home-panel,
+.portal-command-panel,
+.portal-workflow-panel,
+.portal-precheck-card,
+.portal-order-builder-main,
+.portal-order-submit-card,
+.portal-location-scope-card,
+.portal-order-conflict-card,
+.portal-record-card,
+.portal-ledger-card,
+.portal-service-card,
+.portal-directory-card,
+.portal-document-card,
+.portal-notification-card,
+.portal-care-card,
+.portal-care-form,
+.portal-calendar-card,
+.portal-calendar-section,
+.portal-payment-card,
+.portal-payment-method-card,
+.portal-payment-upload-card,
+.portal-proof-history-card,
+.portal-contract-health-card,
+.portal-tracking-card,
+.portal-admin-draft-card,
+.portal-admin-gate-card,
+.portal-home-flow-card,
+.portal-form-section,
+.portal-register-card {
+    min-width: 0;
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.portal-home-panel h2,
+.portal-command-panel h2,
+.portal-command-panel h3,
+.portal-workflow-panel h2,
+.portal-precheck-card h2 {
+    font-size: var(--text-md);
+    margin-bottom: var(--space-1);
+}
+
+.portal-home-panel p,
+.portal-workflow-panel p,
+.portal-precheck-card p,
+.portal-location-scope-card p,
+.portal-record-card p,
+.portal-ledger-card p,
+.portal-order-submit-card p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.portal-home-panel-head,
+.portal-command-panel-head,
+.portal-workflow-panel-head,
+.portal-admin-draft-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.portal-home-panel-head > div > span,
+.portal-command-panel-head > div > span,
+.portal-workflow-panel-head > span:first-child:not(.portal-source-pill) {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.portal-home-panel-head > .bi,
+.portal-command-panel-head > .bi {
+    font-size: 20px;
+    color: var(--brand-600);
+}
+
+.portal-home-panel-head > a {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+}
+
+.portal-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+.portal-section-heading h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+}
+
+.portal-section-heading > span {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.portal-muted-note {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: var(--space-2) 0 0;
+}
+
+/* --- Grid ------------------------------------------------------------------------- */
+.portal-home-grid,
+.portal-command-grid,
+.portal-order-command-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+}
+
+.portal-home-grid.two,
+.portal-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portal-command-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portal-order-command-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+}
+
+.portal-location-scope-grid,
+.portal-directory-grid,
+.portal-document-grid,
+.portal-role-focus-grid,
+.portal-payment-method-grid,
+.portal-admin-workqueue-grid,
+.portal-admin-review-grid,
+.portal-admin-gate-grid,
+.portal-calendar-section-grid,
+.portal-tracking-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-3);
+}
+
+/* --- Strip angka: article > span + strong + small --------------------------------- */
+.portal-home-metric-row,
+.portal-workflow-facts,
+.portal-precheck-grid,
+.portal-order-policy-strip,
+.portal-order-mini-ledger,
+.portal-ledger-summary,
+.portal-finance-aging-grid,
+.portal-home-scope-grid,
+.portal-home-mini-ledger,
+.portal-service-summary,
+.portal-directory-summary,
+.portal-notification-summary,
+.portal-document-summary,
+.portal-contract-summary,
+.portal-contract-finance-strip,
+.portal-care-summary,
+.portal-calendar-summary,
+.portal-command-kpis,
+.portal-tracking-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: var(--space-3);
+}
+
+.portal-home-metric-row > *,
+.portal-order-policy-strip > *,
+.portal-order-mini-ledger > *,
+.portal-ledger-summary > *,
+.portal-finance-aging-grid > *,
+.portal-service-summary > *,
+.portal-directory-summary > *,
+.portal-notification-summary > *,
+.portal-document-summary > *,
+.portal-contract-summary > *,
+.portal-care-summary > *,
+.portal-calendar-summary > *,
+.portal-command-kpis > *,
+.portal-tracking-overview > * {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+/* Di dalam kartu: kotak lebih ringan. */
+.portal-workflow-facts > *,
+.portal-precheck-grid > *,
+.portal-home-scope-grid > *,
+.portal-home-mini-ledger > *,
+.portal-contract-finance-strip > *,
+.portal-ledger-amounts > *,
+.portal-finance-proof-strip > * {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius);
+}
+
+:is(.portal-home-metric-row, .portal-workflow-facts, .portal-precheck-grid, .portal-order-policy-strip,
+    .portal-order-mini-ledger, .portal-ledger-summary, .portal-finance-aging-grid, .portal-home-scope-grid,
+    .portal-home-mini-ledger, .portal-service-summary, .portal-directory-summary, .portal-notification-summary,
+    .portal-document-summary, .portal-contract-summary, .portal-contract-finance-strip, .portal-care-summary,
+    .portal-calendar-summary, .portal-tracking-overview, .portal-ledger-amounts, .portal-finance-proof-strip) > * > span {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+:is(.portal-home-metric-row, .portal-workflow-facts, .portal-precheck-grid, .portal-order-policy-strip,
+    .portal-order-mini-ledger, .portal-ledger-summary, .portal-finance-aging-grid, .portal-home-scope-grid,
+    .portal-home-mini-ledger, .portal-service-summary, .portal-directory-summary, .portal-notification-summary,
+    .portal-document-summary, .portal-contract-summary, .portal-contract-finance-strip, .portal-care-summary,
+    .portal-calendar-summary, .portal-tracking-overview, .portal-ledger-amounts, .portal-finance-proof-strip,
+    .portal-command-kpis) > * > strong {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+:is(.portal-home-metric-row, .portal-workflow-facts, .portal-precheck-grid, .portal-order-policy-strip,
+    .portal-order-mini-ledger, .portal-ledger-summary, .portal-finance-aging-grid, .portal-home-scope-grid,
+    .portal-home-mini-ledger, .portal-service-summary, .portal-directory-summary, .portal-notification-summary,
+    .portal-document-summary, .portal-contract-summary, .portal-contract-finance-strip, .portal-care-summary,
+    .portal-calendar-summary, .portal-tracking-overview, .portal-ledger-amounts, .portal-finance-proof-strip,
+    .portal-command-kpis) > * > :is(small, p) {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-ledger-summary > .portal-ledger-total {
+    grid-column: 1 / -1;
+    background: var(--brand-50);
+    border-color: var(--brand-100);
+}
+
+.portal-ledger-summary > .portal-ledger-total strong {
+    font-size: var(--text-2xl);
+}
+
+.portal-ledger-amounts,
+.portal-finance-proof-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-2);
+}
+
+/* KPI pusat portal: ikon + label di atas, nilai besar. */
+.portal-command-kpi > div {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-command-icon,
+.portal-record-icon {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--tone-bg, var(--neutral-bg));
+    color: var(--tone-text, var(--neutral-text));
+    font-size: 15px;
+}
+
+/* --- Daftar ------------------------------------------------------------------------ */
+.portal-home-list,
+.portal-command-list,
+.portal-record-list,
+.portal-ledger-list,
+.portal-service-list,
+.portal-notification-list,
+.portal-care-list,
+.portal-calendar-list,
+.portal-calendar-mini-list,
+.portal-payment-history-list,
+.portal-proof-history-list,
+.portal-contract-health-list,
+.portal-tracking-list,
+.portal-admin-draft-list,
+.portal-order-conflict-list,
+.portal-command-status-list,
+.portal-command-timeline,
+.portal-location-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+/* Baris di dalam panel: ikon, teks, angka di kanan. */
+.portal-home-list > article,
+.portal-command-list > article,
+.portal-command-list > a,
+.portal-command-event {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.portal-home-list > article:last-child,
+.portal-command-list > :last-child,
+.portal-command-timeline > :last-child {
+    border-bottom: 0;
+}
+
+.portal-home-list > article > .bi,
+.portal-command-event > .bi {
+    color: var(--brand-600);
+    font-size: 16px;
+}
+
+.portal-home-list > article > span,
+.portal-command-event > span {
+    flex: 1;
+    min-width: 0;
+}
+
+.portal-home-list strong,
+.portal-command-list strong,
+.portal-command-event strong {
+    display: block;
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+}
+
+.portal-home-list small,
+.portal-command-list span,
+.portal-command-event small,
+.portal-command-event time {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-home-list b,
+.portal-command-list b,
+.portal-command-event b {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.portal-command-list > article {
+    flex-wrap: wrap;
+}
+
+.portal-command-list > article > strong {
+    flex: 1 1 100%;
+}
+
+/* Kartu catatan (riwayat draft, invoice, pembayaran). */
+.portal-record-card,
+.portal-order-conflict-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.portal-record-main,
+.portal-ledger-card-main,
+.portal-care-card-main,
+.portal-contract-health-main,
+.portal-command-status-main {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-width: 0;
+    flex: 1;
+}
+
+.portal-record-main > div,
+.portal-ledger-card-main > div,
+.portal-care-card-main > div,
+.portal-contract-health-main > div,
+.portal-command-status-main > span {
+    min-width: 0;
+    flex: 1;
+}
+
+.portal-record-card h3,
+.portal-ledger-card h3,
+.portal-service-card h3,
+.portal-location-scope-card h3,
+.portal-care-card h3,
+.portal-notification-card h3,
+.portal-document-card h3,
+.portal-directory-card h3,
+.portal-contract-health-card h3,
+.portal-admin-draft-card h3 {
+    font-size: var(--text-md);
+    margin-bottom: 2px;
+}
+
+.portal-ledger-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.portal-ledger-card.is-overdue,
+.portal-order-conflict-card.is-locked {
+    border-left: 3px solid var(--danger-solid);
+}
+
+.portal-order-conflict-card.is-locked {
+    border-left-color: var(--gray-400);
+}
+
+.portal-order-conflict-card > div:last-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-order-conflict-card > div:first-child span {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.portal-ledger-actions,
+.portal-inline-actions,
+.portal-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+/* --- Pill ------------------------------------------------------------------------- */
+.portal-status-pill,
+.portal-source-pill,
+.portal-gate-pill,
+.portal-home-soft-pill,
+.portal-web-content .portal-chip-row > span,
+.portal-command-status-tags > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px;
+    border: 1px solid var(--tone-border, var(--neutral-border));
+    border-radius: var(--radius-pill);
+    background: var(--tone-bg, var(--neutral-bg));
+    color: var(--tone-text, var(--neutral-text));
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.portal-source-pill {
+    background: var(--brand-50);
+    border-color: var(--brand-100);
+    color: var(--brand-800);
+}
+
+.portal-home-soft-pill {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+.portal-chip-row,
+.portal-draft-gate-grid,
+.portal-command-status-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: var(--space-2) 0;
+}
+
+.portal-chip-row > span {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Kartu layanan (notifikasi, dokumen, direktori): ikon di kiri + isi. */
+.portal-service-card,
+.portal-document-card,
+.portal-directory-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.portal-service-card-main,
+.portal-document-body,
+.portal-directory-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.portal-document-pratinjau {
+    font-size: 24px;
+    color: var(--brand-600);
+}
+
+.portal-care-card,
+.portal-contract-health-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.portal-service-card-icon,
+.portal-directory-avatar {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-weight: var(--weight-semibold);
+}
+
+.portal-service-card-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.portal-service-card-title strong {
+    flex: 0 0 auto;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-notification-card.priority-critical {
+    border-left: 3px solid var(--danger-solid);
+}
+
+.portal-notification-card.priority-high,
+.portal-notification-card.priority-warning {
+    border-left: 3px solid var(--chart-amber);
+}
+
+.portal-service-card .portal-inline-actions {
+    justify-content: flex-start;
+}
+
+/* --- Pesan, kosong, terkunci --------------------------------------------------------- */
+.portal-home-alert-strip,
+.portal-command-alerts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-2);
+}
+
+.portal-home-alert,
+.portal-command-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--tone-border, var(--info-border));
+    border-radius: var(--radius);
+    background: var(--tone-bg, var(--info-bg));
+    color: var(--tone-text, var(--info-text));
+}
+
+.portal-command-alert:hover {
+    color: var(--tone-text, var(--info-text));
+    text-decoration: none;
+}
+
+.portal-home-alert strong,
+.portal-command-alert strong {
+    display: block;
+    font-size: var(--text-sm);
+}
+
+.portal-home-alert small,
+.portal-command-alert small {
+    display: block;
+    font-size: var(--text-xs);
+}
+
+.portal-empty-state,
+.portal-home-empty,
+.portal-command-soft-empty,
+.portal-soft-empty,
+.portal-command-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--space-5) var(--space-4);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    text-align: center;
+}
+
+.portal-home-empty,
+.portal-command-soft-empty {
+    padding: var(--space-3);
+    border-radius: var(--radius);
+}
+
+.portal-empty-state .bi {
+    font-size: 22px;
+    color: var(--gray-400);
+}
+
+.portal-empty-state strong {
+    color: var(--text);
+}
+
+.portal-empty-state p {
+    margin: 0;
+}
+
+.portal-blocked-state {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius-lg);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.portal-blocked-state > .bi {
+    font-size: 20px;
+}
+
+.portal-blocked-state h2 {
+    font-size: var(--text-md);
+    color: var(--warning-text);
+    margin-bottom: 2px;
+}
+
+.portal-blocked-state p {
+    margin: 0 0 var(--space-2);
+}
+
+/* --- Aksi cepat: a > i + strong + small ---------------------------------------------- */
+.portal-home-action-grid,
+.portal-home-action-band,
+.portal-command-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: var(--space-2);
+}
+
+.portal-home-action-grid > *,
+.portal-home-action-band > *,
+.portal-command-action,
+.portal-role-focus-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.portal-home-action-grid > *,
+.portal-home-action-band > * {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: center;
+    column-gap: var(--space-3);
+    row-gap: 0;
+}
+
+.portal-home-action-grid > * > .bi,
+.portal-home-action-band > * > .bi {
+    grid-row: span 2;
+}
+
+a:is(.portal-command-action, .portal-role-focus-card):hover,
+.portal-home-action-grid > a:hover,
+.portal-home-action-band > a:hover {
+    border-color: var(--border-strong);
+    background: var(--gray-50);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.portal-home-action-grid .bi,
+.portal-home-action-band .bi,
+.portal-command-action > .bi,
+.portal-role-focus-card > .bi {
+    font-size: 18px;
+    color: var(--tone-text, var(--brand-600));
+}
+
+.portal-home-action-grid strong,
+.portal-home-action-band strong,
+.portal-command-action strong {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+}
+
+.portal-home-action-grid small,
+.portal-home-action-band small,
+.portal-command-action small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-command-action > span,
+.portal-role-focus-card > span {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.portal-command-action > em,
+.portal-role-focus-card > b {
+    color: var(--gray-400);
+    font-style: normal;
+}
+
+.portal-command-action.is-disabled {
+    opacity: 0.6;
+}
+
+.portal-role-focus-card small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-role-focus-card strong {
+    font-size: var(--text-lg);
+    font-variant-numeric: tabular-nums;
+}
+
+.portal-role-focus-card em {
+    font-size: var(--text-xs);
+    font-style: normal;
+    color: var(--text-muted);
+}
+
+.portal-command-status,
+.portal-command-event,
+.portal-precheck-card[class*="tone-"] {
+    border-left: 3px solid var(--tone-solid, var(--border));
+}
+
+.portal-command-event {
+    padding-left: var(--space-3);
+}
+
+.portal-command-status {
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+}
+
+/* --- Pesan catering ------------------------------------------------------------------ */
+.portal-workflow-steps,
+.portal-customer-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.portal-workflow-steps > div,
+.portal-customer-flow > article {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-2);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    text-align: center;
+}
+
+.portal-workflow-steps > div .bi,
+.portal-customer-flow > article .bi {
+    font-size: 18px;
+}
+
+.portal-workflow-steps > .is-active,
+.portal-customer-flow > .done {
+    background: var(--brand-50);
+    color: var(--brand-800);
+    font-weight: var(--weight-semibold);
+}
+
+.portal-precheck-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: var(--space-3) var(--space-5);
+    align-items: start;
+}
+
+.portal-precheck-card > .portal-secondary-action {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
+
+.portal-precheck-card .portal-source-pill {
+    margin-bottom: var(--space-2);
+}
+
+.portal-precheck-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portal-order-builder {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.portal-order-builder .portal-section-heading {
+    margin: 0 0 var(--space-3);
+}
+
+.portal-order-live-preview,
+.portal-pay-instruction {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--info-border);
+    border-radius: var(--radius);
+    background: var(--info-bg);
+    color: var(--info-text);
+    font-size: var(--text-sm);
+}
+
+.portal-order-live-preview span {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.portal-order-live-preview p {
+    margin: 4px 0 0;
+}
+
+.portal-pay-instruction {
+    border-color: var(--warning-border);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.portal-order-submit-card {
+    position: sticky;
+    top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.portal-order-submit-card > .bi {
+    font-size: 24px;
+    color: var(--brand-600);
+}
+
+.portal-order-submit-card h3 {
+    font-size: var(--text-md);
+    margin: 0;
+}
+
+.portal-order-submit-card small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.portal-order-submit-card .portal-primary-action {
+    width: 100%;
+}
+
+.portal-location-scope-card dl {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+}
+
+.portal-location-scope-card dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+}
+
+.portal-location-scope-card dt {
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+.portal-location-scope-card dd {
+    margin: 0;
+    text-align: right;
+}
+
+.portal-draft-proof-form {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+/* --- Layar sempit ---------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    .portal-home-hero,
+    .portal-command-hero,
+    .portal-order-builder,
+    .portal-order-command-grid,
+    .portal-precheck-card,
+    .portal-home-grid.two,
+    .portal-command-grid,
+    .portal-command-grid.three {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .portal-order-submit-card {
+        position: static;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .portal-feature-hero {
+        flex-wrap: wrap;
+        padding: var(--space-4);
+    }
+
+    .portal-feature-hero > div {
+        flex-basis: calc(100% - 52px);
+    }
+
+    .portal-home-hero,
+    .portal-command-hero {
+        padding: var(--space-4);
+    }
+
+    .portal-home-hero h1,
+    .portal-command-hero h2 {
+        font-size: var(--text-xl);
+    }
+
+    .portal-record-card,
+    .portal-order-conflict-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .portal-order-conflict-card > div:last-child {
+        align-items: flex-start;
+    }
+
+    .portal-precheck-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

@@ -35,7 +35,7 @@
                 <tr><th>Tanggal</th><td>{{ contract.contract_date.strftime('%d-%m-%Y') if contract.contract_date else '-' }}</td></tr>
                 <tr><th>Vendor</th><td>{{ contract.vendor_name or '-' }}</td></tr>
                 <tr><th>Leasing</th><td>{{ contract.financing_provider or '-' }}</td></tr>
-                <tr><th>Status</th><td><span class="status-badge status-locked">{{ contract.status }}</span></td></tr>
+                <tr><th>Status</th><td><span class="status-badge status-locked">{{ contract.status|status_label }}</span></td></tr>
                 <tr><th>Jurnal Akuisisi</th><td>{{ contract.acquisition_journal.journal_number if contract.acquisition_journal else '-' }}</td></tr>
                 <tr><th>Catatan</th><td>{{ contract.notes or '-' }}</td></tr>
             </tbody></table>
@@ -51,7 +51,7 @@
                 <tr><th>Kategori</th><td>{{ asset.asset_category }}</td></tr>
                 <tr><th>Nilai Perolehan</th><td>{{ asset.purchase_value|rupiah }}</td></tr>
                 <tr><th>Nilai Buku</th><td>{{ asset.book_value|rupiah }}</td></tr>
-                <tr><th>Status</th><td>{{ asset.status }}</td></tr>
+                <tr><th>Status</th><td>{{ asset.status|status_label }}</td></tr>
             </tbody></table>
             {% else %}<div class="empty-state"><p>Aset tidak ditemukan.</p></div>{% endif %}
         </div>
@@ -72,7 +72,7 @@
                     <td class="text-end">{{ row.interest_amount|rupiah }}</td>
                     <td class="text-end">{{ row.admin_amount|rupiah }}</td>
                     <td class="text-end fw-semibold">{{ row.total_amount|rupiah }}</td>
-                    <td>{% if row.status == 'PAID' %}<span class="status-badge status-locked">Lunas</span>{% else %}<span class="status-badge status-draft">{{ row.status }}</span>{% endif %}</td>
+                    <td>{% if row.status == 'PAID' %}<span class="status-badge status-locked">Lunas</span>{% else %}<span class="status-badge status-draft">{{ row.status|status_label }}</span>{% endif %}</td>
                     <td>
                         {% if row.status != 'PAID' and contract.status == 'ACTIVE' %}
                         <form method="POST" action="{{ url_for('finance.pay_fixed_asset_installment', contract_id=contract.id, schedule_id=row.id) }}" class="row g-2 app-form asset-installment-pay-form" data-ui-form="true">
@@ -110,7 +110,7 @@
                     <td>#{{ payment.schedule.installment_no if payment.schedule else '-' }}</td>
                     <td>{% if payment.account_type == 'BANK' and payment.bank_account %}{{ payment.bank_account.bank_name }} - {{ payment.bank_account.account_name }}{% else %}Kas{% endif %}</td>
                     <td class="text-end">{{ payment.amount|rupiah }}</td>
-                    <td>{% if payment.cash_bank_transaction %}<span class="status-badge status-locked">OUT</span>{% else %}<span class="status-badge status-cancelled">Belum</span>{% endif %}</td>
+                    <td>{% if payment.cash_bank_transaction %}<span class="status-badge neutral">Keluar</span>{% else %}<span class="status-badge status-cancelled">Belum</span>{% endif %}</td>
                     <td>{% if payment.journal %}<a href="{{ url_for('accounting.journal_detail', journal_id=payment.journal.id) }}">{{ payment.journal.journal_number }}</a>{% else %}-{% endif %}</td>
                 </tr>
             {% else %}

@@ -7,7 +7,7 @@
 {{ page_header(
     "Atomic Transaction Audit Map",
     "Atomic transaction map untuk memantau atomic guard, sisa risiko transaksi, dan akses ke failure injection smoke simulation.",
-    eyebrow="Recovery Center",
+    eyebrow="Pusat Pemulihan",
     actions=[
         {"label": "Atomic Smoke", "url": url_for('settings.atomic_smoke_simulation'), "variant": "primary"},
         {"label": "Kesehatan Sistem", "url": url_for('settings.system_health')},
@@ -78,7 +78,7 @@
                 <thead>
                     <tr>
                         <th>Area</th>
-                        <th>Risk</th>
+                        <th>Risiko</th>
                         <th>Commit</th>
                         <th>Begin</th>
                         <th>Patch berikutnya</th>
@@ -142,19 +142,19 @@
 <div class="app-card mb-4">
     <div class="section-title">
         <div>
-            <h3>Top Risk Scope</h3>
+            <h3>Cakupan Risiko Tertinggi</h3>
             <p>Scope tertinggi dari hasil static scan. Ini bukan bukti bug, tapi daftar area yang harus dipatch hati-hati di C2.</p>
         </div>
-        <span class="status-badge warning">READ ONLY</span>
+        <span class="status-badge warning">Hanya Baca</span>
     </div>
 
     <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>File / Scope</th>
+                    <th>File / Cakupan</th>
                     <th>Area</th>
-                    <th>Risk</th>
+                    <th>Risiko</th>
                     <th>Commit</th>
                     <th>Rollback</th>
                     <th>Begin</th>
@@ -227,13 +227,13 @@
                         <td>{{ counts.get("audit", 0) }}</td>
                         <td>
                             {% if file.get("has_commit_without_begin") %}
-                                <span class="status-badge warning">COMMIT TANPA BEGIN</span>
+                                <span class="status-badge warning">Commit Tanpa Begin</span>
                             {% elif counts.get("atomic_guard", 0) > 0 %}
-                                <span class="status-badge success">ATOMIC GUARD</span>
+                                <span class="status-badge success">Terlindungi</span>
                             {% elif counts.get("begin", 0) > 0 %}
-                                <span class="status-badge success">BEGIN ADA</span>
+                                <span class="status-badge success">Begin Ada</span>
                             {% else %}
-                                <span class="status-badge info">NO COMMIT</span>
+                                <span class="status-badge info">Tanpa Commit</span>
                             {% endif %}
                         </td>
                     </tr>

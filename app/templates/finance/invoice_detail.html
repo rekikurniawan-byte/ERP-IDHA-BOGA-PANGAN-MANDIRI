@@ -5,7 +5,7 @@
 <!-- UX2A_FINANCE_BUSINESS_LANGUAGE -->
 <div class="page-header">
     <div>
-        <span class="eyebrow">Finance</span>
+        <span class="eyebrow">Keuangan</span>
         <h1>{{ invoice.invoice_number }}</h1>
         <p>
             Invoice untuk {{ bill_to }}{% if official_identity and official_identity.client_code %} ({{ official_identity.client_code }}){% endif %}
@@ -116,7 +116,7 @@
     </div>
     <div class="posting-row-actions">
         <span class="posting-badge is-{{ posting_status.class }}"><i class="bi {{ posting_status.icon }}"></i>{{ posting_status.label }}</span>
-        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Status Center</a>
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Pusat Status</a>
     </div>
 </div>
 {% endif %}
@@ -189,7 +189,7 @@
             <p>Invoice ini dibuat dari batch rekap tagihan {{ term('sub_client', lower=True) }} yang sumber datanya sudah tercatat di sistem.</p>
             {% endif %}
         </div>
-        <span class="status-badge status-progress">{{ manual_billing_batch.status }}</span>
+        <span class="status-badge status-progress">{{ manual_billing_batch.status|status_label }}</span>
     </div>
     <div class="info-grid">
         <div>
@@ -215,7 +215,7 @@
         {% if manual_billing_batch.input_source == 'MANUAL_BACKFILL' %}
         <div>
             <span>Status Rekap Setelah Bayar</span>
-            <strong>{{ manual_billing_batch.status }}</strong>
+            <strong>{{ manual_billing_batch.status|status_label }}</strong>
         </div>
         {% endif %}
     </div>
@@ -305,7 +305,7 @@
                 {% if invoice.status == 'DRAFT' %}
                     OPEN / BELUM LUNAS
                 {% else %}
-                    {{ invoice.status }}
+                    {{ invoice.status|status_label('invoice') }}
                 {% endif %}
             </strong>
             {% if invoice.status == 'DRAFT' %}
@@ -331,9 +331,9 @@
             {% endif %}
         </div>
         {% if official_identity and official_identity.is_complete %}
-            <span class="status-badge status-locked">RESMI LENGKAP</span>
+            <span class="status-badge success">Resmi Lengkap</span>
         {% else %}
-            <span class="status-badge status-progress">PERLU CEK</span>
+            <span class="status-badge warning">Perlu Cek</span>
         {% endif %}
     </div>
 
@@ -514,7 +514,7 @@
                 {% if active_bank_accounts %}
                     <div class="form-text text-muted small">Dipakai untuk mencatat buku kas/bank pembayaran customer.</div>
                 {% else %}
-                    <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Master Data &gt; Rekening Bank jika menerima transfer.</div>
+                    <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Data Master &gt; Rekening Bank jika menerima transfer.</div>
                 {% endif %}
             </div>
 
@@ -787,7 +787,7 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
 <div class="app-card mt-4">
     <div class="section-title">
         <div>
-            <h3>Riwayat Penagihan / Collection History</h3>
+            <h3>Riwayat Penagihan</h3>
             <p>Catat setiap follow up agar owner tahu perkembangan tagihan {{ term('client', lower=True) }}.</p>
         </div>
     </div>
@@ -827,7 +827,7 @@ function fallbackCopyInvoiceWhatsAppMessage(message) {
                 <select name="collection_status" class="form-select app-input" required>
                     <option value="SENT">Invoice Terkirim</option>
                     <option value="UNPAID">Belum Dibayar</option>
-                    <option value="DUE_SOON">Reminder Jatuh Tempo</option>
+                    <option value="DUE_SOON">Pengingat Jatuh Tempo</option>
                     <option value="OVERDUE">Lewat Jatuh Tempo</option>
                     <option value="FOLLOW_UP" selected>Follow Up</option>
                     <option value="PROMISE_TO_PAY">Janji Bayar</option>
@@ -893,7 +893,7 @@ Invoice sudah lunas, follow up penagihan tidak diperlukan.
                     <td>{{ log.channel }}</td>
                     <td>{{ log.contact_person if log.contact_person else '-' }}</td>
                     <td>
-                        <span class="status-badge status-draft">{{ log.collection_status }}</span>
+                        <span class="status-badge status-draft">{{ log.collection_status|status_label }}</span>
                     </td>
                     <td>
                         {% if log.promise_date %}

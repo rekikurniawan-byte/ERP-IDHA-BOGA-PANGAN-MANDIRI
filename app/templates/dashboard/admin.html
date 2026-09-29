@@ -4,7 +4,7 @@
 {% set command = data.command_center %}
 <div class="page-header dashboard-role-header dashboard-command-header" data-ui-dashboard="admin" data-dashboard-command-center="admin">
     <div class="dashboard-command-title-block">
-        <span class="eyebrow">Command Center</span>
+        <span class="eyebrow">Pusat Kendali</span>
         <h1>{{ command.title }}</h1>
         <p>{{ command.subtitle }}</p>
     </div>
@@ -26,7 +26,7 @@
                 <a class="dropdown-item" href="{{ url_for('canteen.quick_sale') }}"><i class="bi bi-lightning-charge"></i> Warung Cepat</a>
                 {% endif %}
                 <a class="dropdown-item" href="{{ url_for('logistics.index') }}"><i class="bi bi-box-seam"></i> Stok</a>
-                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Reminder Live</a>
+                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Pengingat</a>
             </div>
         </div>
     </div>
@@ -40,9 +40,9 @@
             <p>{{ command.decision.summary }}</p>
         </div>
         <div class="dashboard-command-backup-chip">
-            <span>Backup</span>
+            <span>Cadangan Data</span>
             <strong>{{ command.backup.label }}</strong>
-            <small>Admin hanya melihat sinyal safety.</small>
+            <small>Admin hanya melihat statusnya.</small>
         </div>
     </div>
 </section>
@@ -51,7 +51,7 @@
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
             <h2>Kontrol Hari Ini</h2>
-            <p>Order, produksi, delivery, warung, stok, dan backup signal dalam satu layar.</p>
+            <p>Order, produksi, pengiriman, warung, stok, dan cadangan data dalam satu layar.</p>
         </div>
     </div>
     <div class="dashboard-command-kpi-grid">
@@ -74,7 +74,7 @@
         <div>
             <span class="eyebrow">Prioritas Admin</span>
             <h2>{{ data.delivery_next_action_count }} delivery perlu dibuat</h2>
-            <p>Produksi sudah COMPLETED, tetapi delivery belum/tambahan belum dibuat.</p>
+            <p>Produksi sudah selesai, tetapi pengiriman (atau tambahannya) belum dibuat.</p>
         </div>
         <a href="{{ url_for('delivery.today') }}" class="btn btn-sm app-btn-secondary">
             <i class="bi bi-truck"></i>
@@ -117,10 +117,10 @@
 <section class="dashboard-section" data-dashboard-section="admin-reminder">
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
-            <h2>Reminder Operasional</h2>
-            <p>Hanya reminder yang benar-benar perlu dipantau admin cabang.</p>
+            <h2>Pengingat Operasional</h2>
+            <p>Hanya hal yang perlu dipantau admin cabang.</p>
         </div>
-        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Reminder Live</a>
+        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Pengingat</a>
     </div>
 
     {% if command.reminders %}
@@ -140,7 +140,7 @@
         <div class="dashboard-command-all-clear">
             <i class="bi bi-check2-circle"></i>
             <strong>Operasional cabang terkendali.</strong>
-            <span>Tidak ada delivery pending, stok kritis, atau reminder cabang prioritas.</span>
+            <span>Tidak ada pengiriman tertunda, stok kritis, atau pengingat prioritas cabang.</span>
         </div>
     {% endif %}
 </section>

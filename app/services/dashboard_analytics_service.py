@@ -737,7 +737,7 @@ def get_revenue_explorer_data(
 
     return {
         "key": "revenue_explorer",
-        "title": "Omzet & Revenue Explorer",
+        "title": "Omzet & Kas",
         "subtitle": "Pisahkan omzet akrual, kas masuk, warung lunas, dan piutang agar angka owner tidak bercampur.",
         "period": period,
         "filters": {
@@ -759,7 +759,7 @@ def get_revenue_explorer_data(
                 {"value": "month", "label": "Bulan ini"},
                 {"value": "year", "label": "Tahun ini"},
                 {"value": "all", "label": "Semua"},
-                {"value": "custom", "label": "Custom tanggal"},
+                {"value": "custom", "label": "Pilih tanggal"},
             ],
             "group_by": [
                 {"value": "daily", "label": "Harian"},
@@ -774,9 +774,9 @@ def get_revenue_explorer_data(
         },
         "stat_cards": [
             {"key": "omzet", "label": "Omzet Akrual", "amount": total_invoice_accrual, "icon": "bi-receipt", "tone": "blue", "caption": "Invoice aktif, bukan pembayaran."},
-            {"key": "cash_in", "label": "Kas Masuk", "amount": total_cash_in, "icon": "bi-cash-coin", "tone": "green", "caption": "Payment invoice + warung diterima."},
+            {"key": "cash_in", "label": "Kas Masuk", "amount": total_cash_in, "icon": "bi-cash-coin", "tone": "green", "caption": "Pembayaran invoice + warung diterima."},
             {"key": "canteen_paid", "label": "Warung Lunas", "amount": total_canteen_paid, "icon": "bi-shop", "tone": "purple", "caption": "Cash/QRIS/transfer langsung."},
-            {"key": "outstanding", "label": "Outstanding", "amount": total_outstanding, "icon": "bi-hourglass-split", "tone": "orange", "caption": "Invoice + piutang warung belum lunas."},
+            {"key": "outstanding", "label": "Belum Dibayar", "amount": total_outstanding, "icon": "bi-hourglass-split", "tone": "orange", "caption": "Invoice + piutang warung belum lunas."},
         ],
         "totals": {
             "invoice_accrual": total_invoice_accrual,
@@ -809,8 +809,8 @@ def get_revenue_explorer_data(
         "notes": [
             "Omzet akrual membaca invoice aktif berdasarkan tanggal invoice.",
             "Kas masuk membaca pembayaran invoice, penjualan warung lunas, dan pembayaran hutang warung.",
-            "Warung debt adalah omzet warung yang belum tentu langsung jadi kas.",
-            f"Filter {T.client_lower}/{T.sub_client_lower} hanya berlaku untuk invoice dan payment catering; warung tidak punya relasi {T.client_lower}/{T.sub_client_lower}.",
+            "Penjualan warung secara hutang adalah omzet yang belum tentu langsung jadi kas.",
+            f"Filter {T.client_lower}/{T.sub_client_lower} hanya berlaku untuk invoice dan pembayaran katering; warung tidak punya relasi {T.client_lower}/{T.sub_client_lower}.",
         ],
         "data_contract": {
             "invoice_accrual": "invoices.total_amount where status not cancelled grouped by invoice_date",
@@ -993,8 +993,8 @@ def get_revenue_spending_chart_data(
     return {
         "key": "revenue_vs_spending",
         "chart_type": "bar",
-        "title": "Revenue vs Spending",
-        "subtitle": "Revenue Invoice Aktif dibanding Operational Spending.",
+        "title": "Pendapatan vs Pengeluaran",
+        "subtitle": "Pendapatan invoice aktif dibanding pengeluaran operasional.",
         "period": "monthly",
         "year": selected_year,
         "branch_id": branch_id,
@@ -1005,13 +1005,13 @@ def get_revenue_spending_chart_data(
         "series": [
             {
                 "key": "revenue",
-                "label": "Revenue Invoice Aktif",
+                "label": "Pendapatan Invoice Aktif",
                 "values": revenue_values,
                 "total": total_revenue,
             },
             {
                 "key": "spending",
-                "label": "Operational Spending",
+                "label": "Pengeluaran Operasional",
                 "values": spending_values,
                 "total": total_spending,
             },
@@ -1186,8 +1186,8 @@ def get_operational_efficiency_chart_data(
     segment_specs = [
         (
             "on_time",
-            "On Time / OK",
-            "OK",
+            "Tepat Waktu",
+            "Tepat",
             "success",
             counts["on_time"],
             ok_rate,
@@ -1195,21 +1195,21 @@ def get_operational_efficiency_chart_data(
         ),
         (
             "late",
-            "Late",
-            "Late",
+            "Terlambat",
+            "Terlambat",
             "warning",
             counts["late"],
             late_rate,
-            "Delivery melewati target jam tiba + toleransi SLA atau belum diterima setelah batas SLA.",
+            "Pengiriman melewati target jam tiba + toleransi, atau belum diterima setelah batas waktu.",
         ),
         (
             "issue_shortage",
-            "Issue / Shortage",
-            "Issue",
+            "Masalah / Kurang Kirim",
+            "Masalah",
             "danger",
             counts["issue_shortage"],
             issue_rate,
-            "Ada shortage, mismatch jumlah, atau bukti terima belum lengkap.",
+            "Ada kekurangan, selisih jumlah, atau bukti terima belum lengkap.",
         ),
     ]
 
@@ -1236,8 +1236,8 @@ def get_operational_efficiency_chart_data(
     return {
         "key": "operational_efficiency",
         "chart_type": "donut",
-        "title": "Operational Efficiency",
-        "subtitle": "Kesehatan pengiriman berdasarkan target jam tiba, bukti terima, toleransi SLA, dan shortage.",
+        "title": "Ketepatan Pengiriman",
+        "subtitle": "Berdasarkan target jam tiba, bukti terima, toleransi, dan kekurangan kirim.",
         "period": {
             "start_date": normalized_start,
             "end_date": normalized_end,
@@ -1278,7 +1278,7 @@ def get_operational_efficiency_chart_data(
         "data_contract": {
             "source": "deliveries + delivery_details + delivery_receipts",
             "status_excludes": list(CANCELLED_STATUSES),
-            "accuracy_note": "PRODUCTION membaca on-time/late dari target_arrival_time + late_tolerance_minutes; fallback tanggal hanya untuk data legacy yang belum lengkap.",
+            "accuracy_note": "Tepat waktu dihitung dari target jam tiba + toleransi keterlambatan. Data lama tanpa jam tiba memakai tanggal kirim.",
             "read_only": True,
         },
     }

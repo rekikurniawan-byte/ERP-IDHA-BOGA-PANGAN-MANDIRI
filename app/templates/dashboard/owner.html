@@ -5,7 +5,7 @@
 <div class="dashboard-owner-page-shell" data-ui-dashboard="owner" data-fix73b-outlier-page="dashboard-owner">
 <div class="page-header dashboard-owner-header dashboard-role-header dashboard-command-header" data-ui-dashboard="owner" data-dashboard-command-center="owner">
     <div class="dashboard-command-title-block">
-        <span class="eyebrow">Command Center</span>
+        <span class="eyebrow">Pusat Kendali</span>
         <h1>{{ command.title }}</h1>
         <p>{{ command.subtitle }}</p>
     </div>
@@ -23,9 +23,9 @@
             <div class="dropdown-menu dropdown-menu-end app-action-menu">
                 <a class="dropdown-item" href="{{ url_for('finance.receivables') }}"><i class="bi bi-cash-coin"></i> Piutang {{ term('client') }}</a>
                 <a class="dropdown-item" href="{{ url_for('accounting.expense_drilldown') }}"><i class="bi bi-graph-down-arrow"></i> Rincian Beban</a>
-                <a class="dropdown-item" href="{{ url_for('accounting.posting_status') }}"><i class="bi bi-clipboard-check"></i> Posting Status</a>
-                <a class="dropdown-item" href="{{ url_for('settings.recovery_center') }}"><i class="bi bi-life-preserver"></i> Recovery Center</a>
-                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Reminder Live</a>
+                <a class="dropdown-item" href="{{ url_for('accounting.posting_status') }}"><i class="bi bi-clipboard-check"></i> Status Posting</a>
+                <a class="dropdown-item" href="{{ url_for('settings.recovery_center') }}"><i class="bi bi-life-preserver"></i> Pusat Pemulihan</a>
+                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Pengingat</a>
             </div>
         </div>
     </div>
@@ -44,14 +44,14 @@
 <section class="dashboard-section dashboard-command-decision" data-dashboard-section="command-decision">
     <div class="dashboard-command-hero dashboard-command-hero-compact dashboard-command-hero-{{ command.decision.status_class }}">
         <div>
-            <span class="eyebrow">Keputusan Safety Hari Ini</span>
+            <span class="eyebrow">Status Keamanan Hari Ini</span>
             <h2>{{ command.decision.label }}</h2>
             <p>{{ command.decision.summary }}</p>
         </div>
         <div class="dashboard-command-backup-chip">
-            <span>Backup</span>
+            <span>Cadangan Data</span>
             <strong>{{ command.backup.label }}</strong>
-            <small>Restore dry-run: {{ command.backup.restore_dry_run_status }}</small>
+            <small>Uji pemulihan: {{ command.backup.restore_dry_run_status|status_label }}</small>
         </div>
     </div>
 </section>
@@ -59,7 +59,7 @@
 <section class="dashboard-section" data-dashboard-section="owner-kpi">
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
-            <h2>KPI Owner</h2>
+            <h2>Ringkasan Owner</h2>
             <p>Enam angka paling penting untuk membaca kondisi bisnis tanpa membuka banyak menu.</p>
         </div>
     </div>
@@ -123,10 +123,10 @@
 <section class="dashboard-section" data-dashboard-section="operational-reminder">
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
-            <h2>Reminder Operasional</h2>
-            <p>Hanya risiko penting yang perlu aksi owner/admin. Tidak ada card kosong besar.</p>
+            <h2>Pengingat Operasional</h2>
+            <p>Hanya risiko penting yang perlu tindakan owner/admin.</p>
         </div>
-        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Reminder Live</a>
+        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Pengingat</a>
     </div>
 
     {% if command.reminders %}
@@ -145,8 +145,8 @@
     {% else %}
         <div class="dashboard-command-all-clear">
             <i class="bi bi-check2-circle"></i>
-            <strong>Tidak ada reminder kritis.</strong>
-            <span>Dashboard utama dalam kondisi terkendali. Tetap lakukan backup verified sebelum patch besar.</span>
+            <strong>Tidak ada pengingat kritis.</strong>
+            <span>Semua terkendali. Tetap buat cadangan data sebelum pembaruan besar.</span>
         </div>
     {% endif %}
 </section>
@@ -154,8 +154,8 @@
 <section class="dashboard-section" data-dashboard-section="detail-links">
     <div class="dashboard-section-header dashboard-section-header-compact">
         <div>
-            <h2>Link Detail</h2>
-            <p>Dashboard utama tetap ringkas; detail berat dipindahkan ke explorer, drilldown, health, dan SOP.</p>
+            <h2>Buka Rincian</h2>
+            <p>Halaman lanjutan untuk angka dan pemeriksaan yang lebih detail.</p>
         </div>
     </div>
     <div class="dashboard-command-link-grid">

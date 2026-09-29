@@ -6,7 +6,7 @@
 {{ page_header(
     "HPP per Order",
     "Daftar snapshot HPP order yang sudah dibekukan. Halaman ini Mode pantau, tidak mengubah stok, jurnal, invoice, atau order.",
-    eyebrow="Monitoring HPP",
+    eyebrow="Pantauan HPP",
     actions=[
         {"label": "Order Harian", "url": url_for('operational.orders'), "icon": "bi-journal-text"},
         {"label": "Kalkulator HPP", "url": url_for('costing.hpp_calculator'), "icon": "bi-calculator"},
@@ -119,7 +119,7 @@
                     <th>Snapshot</th>
                     <th>Order</th>
                     <th>Porsi</th>
-                    <th>Revenue</th>
+                    <th>Pendapatan</th>
                     <th>HPP</th>
                     <th>HPP/Porsi</th>
                     <th>Margin</th>
@@ -160,15 +160,15 @@
                             <strong>{{ snapshot.gross_margin_amount|rupiah }}</strong>
                             <div class="muted-small">{{ snapshot.gross_margin_percentage|round(2) }}%</div>
                             {% if margin_label == 'HEALTHY' %}
-                                <span class="status-badge status-locked">SEHAT</span>
+                                <span class="status-badge success">Sehat</span>
                             {% elif margin_label == 'LOW' %}
-                                <span class="status-badge status-progress">RENDAH</span>
+                                <span class="status-badge warning">Rendah</span>
                             {% else %}
-                                <span class="status-badge status-cancelled">MINUS</span>
+                                <span class="status-badge danger">Minus</span>
                             {% endif %}
                         </td>
                         <td>
-                            <span class="status-badge status-locked">{{ snapshot.status }}</span>
+                            <span class="status-badge status-locked">{{ snapshot.status|status_label }}</span>
                         </td>
                         <td>
                             {% if snapshot.daily_order %}

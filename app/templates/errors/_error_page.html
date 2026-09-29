@@ -1,0 +1,26 @@
+{#- Satu tampilan untuk semua halaman error: kode, judul, pesan, dan jalan keluar.
+    Dipakai errors/400_csrf.html, 403.html, 404.html, 500.html. -#}
+{% macro error_page(code, title, message, icon) %}
+<section class="error-page" aria-labelledby="errorTitle">
+    <div class="error-card">
+        <span class="error-icon" aria-hidden="true"><i class="bi {{ icon }}"></i></span>
+        <p class="eyebrow">Kesalahan {{ code }}</p>
+        <h1 id="errorTitle">{{ title }}</h1>
+        <p class="error-message">{{ message }}</p>
+        <div class="error-actions">
+            <button type="button" class="btn app-btn-secondary" data-app-action="back">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> Kembali
+            </button>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-primary">
+                    <i class="bi bi-house" aria-hidden="true"></i> Ke Beranda
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn app-btn-primary">
+                    <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Masuk
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endmacro %}

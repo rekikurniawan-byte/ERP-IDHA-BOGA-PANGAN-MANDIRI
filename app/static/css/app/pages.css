@@ -1,0 +1,966 @@
+/* ==========================================================================
+   Aturan khusus halaman. Hanya untuk tata letak yang benar-benar unik di satu
+   halaman (dashboard, portal, SOP, error). Warna, jarak, dan komponen tetap
+   dari token dan components.css -- jangan menimpa komponen di sini.
+   ========================================================================== */
+
+/* --- Dashboard ---------------------------------------------------------------- */
+.dashboard-section {
+    margin-bottom: var(--space-4);
+    padding: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.dashboard-command-decision {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.dashboard-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.dashboard-section-header h2 {
+    font-size: var(--text-lg);
+    margin-bottom: 2px;
+}
+
+.dashboard-section-header p {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    margin: 0;
+}
+
+/* Status keamanan hari ini: satu strip berwarna, bukan spanduk besar. */
+.dashboard-command-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gray-400);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.dashboard-command-hero h2 {
+    font-size: var(--text-lg);
+    margin: 0 0 2px;
+}
+
+.dashboard-command-hero p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.dashboard-command-hero-danger { border-left-color: var(--danger-solid); background: var(--danger-bg); }
+.dashboard-command-hero-danger h2 { color: var(--danger-text); }
+.dashboard-command-hero-warning { border-left-color: var(--chart-amber); background: var(--warning-bg); }
+.dashboard-command-hero-warning h2 { color: var(--warning-text); }
+.dashboard-command-hero-success { border-left-color: var(--chart-green); background: var(--success-bg); }
+.dashboard-command-hero-success h2 { color: var(--success-text); }
+
+.dashboard-command-backup-chip {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: var(--text-sm);
+}
+
+.dashboard-command-backup-chip span,
+.dashboard-command-backup-chip small {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
+
+/* Kartu KPI. */
+/* Enam angka: 3 x 2 di layar lebar, 2 kolom di tablet, 1 kolom di ponsel. */
+.dashboard-command-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
+.dashboard-command-kpi {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.dashboard-command-kpi > div:last-child {
+    min-width: 0;
+}
+
+.dashboard-command-kpi span {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.dashboard-command-kpi strong {
+    display: block;
+    margin: 2px 0;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dashboard-command-kpi small {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-command-kpi-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--neutral-bg);
+    color: var(--neutral-text);
+    font-size: 17px;
+}
+
+.dashboard-command-kpi-icon-success { background: var(--success-bg); color: var(--success-text); }
+.dashboard-command-kpi-icon-warning { background: var(--warning-bg); color: var(--warning-text); }
+.dashboard-command-kpi-icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+.dashboard-command-kpi-icon-info { background: var(--info-bg); color: var(--info-text); }
+
+/* Pengingat dan tautan detail: daftar baris yang bisa diklik. */
+.dashboard-command-reminder-grid,
+.dashboard-command-link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-2);
+}
+
+.dashboard-command-reminder,
+.dashboard-command-link-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.dashboard-command-reminder:hover,
+.dashboard-command-link-card:hover {
+    text-decoration: none;
+    background: var(--gray-50);
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.dashboard-command-reminder > .bi:first-child,
+.dashboard-command-link-card > .bi {
+    font-size: 18px;
+    color: var(--brand-600);
+}
+
+.dashboard-command-reminder > span,
+.dashboard-command-link-card > span {
+    flex: 1;
+    min-width: 0;
+}
+
+.dashboard-command-reminder strong,
+.dashboard-command-link-card strong {
+    display: block;
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+}
+
+.dashboard-command-reminder small,
+.dashboard-command-link-card small {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-command-reminder-danger > .bi:first-child { color: var(--danger-solid); }
+.dashboard-command-reminder-warning > .bi:first-child { color: var(--chart-amber-strong); }
+
+.dashboard-support-chevron {
+    color: var(--gray-400);
+}
+
+.dashboard-command-all-clear {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+/* Filter kecil di header grafik. */
+.dashboard-analytics-filter-form,
+.revenue-explorer-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-2) var(--space-3);
+}
+
+.revenue-explorer-filter {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+}
+
+.dashboard-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+
+.dashboard-filter-field label {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.dashboard-checkbox-chip,
+.dashboard-period-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--control-height-sm);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+/* Kartu grafik. */
+.dashboard-analytics-grid,
+.revenue-explorer-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: var(--space-4);
+}
+
+.dashboard-analytics-card {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.dashboard-chart-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.dashboard-chart-card-header h3 {
+    font-size: var(--text-md);
+    margin-bottom: 2px;
+}
+
+.dashboard-chart-card-header p {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.dashboard-chart-insight-strip,
+.dashboard-donut-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.dashboard-chart-insight,
+.dashboard-donut-summary-strip > div {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+}
+
+.dashboard-chart-insight span,
+.dashboard-donut-summary-strip span,
+.dashboard-donut-status-card span {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-chart-insight strong,
+.dashboard-donut-summary-strip strong,
+.dashboard-donut-status-card strong {
+    display: block;
+    font-size: var(--text-md);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dashboard-chart-insight small,
+.dashboard-donut-status-card small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-insight-negative strong { color: var(--danger-text); }
+.dashboard-insight-positive strong { color: var(--success-text); }
+
+/* Grafik batang (tinggi dari --bar-height). */
+.dashboard-bar-chart {
+    position: relative;
+}
+
+.dashboard-chart-axis {
+    display: none;
+}
+
+.dashboard-bar-plot,
+.revenue-trend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+    height: 220px;
+    padding-bottom: 40px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-bar-group,
+.revenue-trend-group {
+    flex: 1 0 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    position: relative;
+}
+
+.dashboard-bar-pair,
+.revenue-trend-bars {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+}
+
+.dashboard-bar,
+.revenue-bar {
+    display: block;
+    width: 12px;
+    height: var(--bar-height, 0%);
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+}
+
+.dashboard-bar-revenue,
+.revenue-bar-selected,
+.dashboard-legend-revenue,
+.revenue-legend-selected { background: var(--brand-500); }
+
+.dashboard-bar-spending,
+.dashboard-legend-spending { background: var(--gray-400); }
+
+.revenue-bar-cash,
+.revenue-legend-cash { background: var(--chart-green); }
+
+.revenue-bar-invoice,
+.revenue-legend-invoice { background: var(--chart-blue); }
+
+.dashboard-bar-label,
+.revenue-trend-label {
+    position: absolute;
+    bottom: -22px;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.dashboard-bar-net,
+.revenue-trend-group small {
+    position: absolute;
+    bottom: -38px;
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.dashboard-bar-net-negative { color: var(--danger-text); }
+
+.dashboard-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.dashboard-legend-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 6px;
+    border-radius: 2px;
+    vertical-align: baseline;
+}
+
+.dashboard-legend-line {
+    display: inline-block;
+    width: 14px;
+    height: 2px;
+    margin-right: 6px;
+    background: var(--text-muted);
+    vertical-align: middle;
+}
+
+.dashboard-chart-footnote,
+.dashboard-donut-footnote {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin-top: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.dashboard-donut-footnote small {
+    flex-basis: 100%;
+    color: var(--text-muted);
+}
+
+/* Donat (persentase dari --donut-on-time / --donut-late-stop, --mix-a / --mix-b). */
+.dashboard-donut-hero {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.dashboard-donut-chart,
+.revenue-mix-donut {
+    position: relative;
+    flex: 0 0 150px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-donut-chart {
+    background: conic-gradient(var(--chart-green) 0 var(--donut-on-time, 0%), var(--chart-amber) var(--donut-on-time, 0%) var(--donut-late-stop, 0%), var(--danger-solid) var(--donut-late-stop, 0%) 100%);
+}
+
+.revenue-mix-donut {
+    margin: 0 auto var(--space-4);
+    background: conic-gradient(var(--chart-blue) 0 var(--mix-a, 0%), var(--chart-green) var(--mix-a, 0%) var(--mix-b, 0%), var(--chart-amber) var(--mix-b, 0%) 100%);
+}
+
+.dashboard-donut-hole,
+.revenue-mix-donut > span {
+    width: 108px;
+    height: 108px;
+    padding: 0 var(--space-2);
+    border-radius: 50%;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.dashboard-donut-hole strong,
+.revenue-mix-donut strong {
+    font-size: var(--text-lg);
+    color: var(--text);
+}
+
+.dashboard-donut-hole small,
+.dashboard-donut-hole em,
+.revenue-mix-donut small {
+    font-size: 10.5px;
+    font-style: normal;
+    color: var(--text-muted);
+}
+
+.dashboard-donut-chart:hover {
+    text-decoration: none;
+}
+
+.dashboard-donut-status-card {
+    flex: 1;
+    min-width: 0;
+}
+
+.dashboard-donut-metrics,
+.revenue-mix-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.dashboard-donut-metric,
+.revenue-mix-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    color: var(--text);
+}
+
+.dashboard-donut-metric:hover,
+.revenue-mix-item:hover {
+    background: var(--gray-50);
+    text-decoration: none;
+    color: var(--text);
+}
+
+.dashboard-donut-metric small,
+.revenue-mix-item small {
+    grid-column: 1 / -1;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-donut-metric-success .dashboard-legend-dot { background: var(--chart-green); }
+.dashboard-donut-metric-warning .dashboard-legend-dot { background: var(--chart-amber); }
+.dashboard-donut-metric-danger .dashboard-legend-dot { background: var(--danger-solid); }
+.revenue-mix-item:nth-child(1) .dashboard-legend-dot { background: var(--chart-blue); }
+.revenue-mix-item:nth-child(2) .dashboard-legend-dot { background: var(--chart-green); }
+.revenue-mix-item:nth-child(3) .dashboard-legend-dot { background: var(--chart-amber); }
+
+.revenue-explorer-note-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.revenue-explorer-note {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--info-bg);
+    color: var(--info-text);
+    font-size: var(--text-sm);
+}
+
+/* Dashboard dapur dan pengantar. */
+.dashboard-panel {
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.dashboard-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.dashboard-panel-header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+/* Panel di dalam section tidak perlu bingkai kedua. */
+.dashboard-section > .dashboard-panel {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.dashboard-section > .dashboard-priority-strip {
+    margin-bottom: 0;
+}
+
+.dashboard-mini-card span {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.dashboard-mini-card strong {
+    display: block;
+    font-size: var(--text-md);
+}
+
+.dashboard-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-6) var(--space-4);
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.dashboard-empty-state .bi {
+    font-size: 24px;
+    color: var(--gray-400);
+}
+
+.dashboard-empty-state strong {
+    color: var(--text);
+}
+
+.dashboard-mini-grid,
+.dashboard-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-3);
+}
+
+.dashboard-mini-card {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.dashboard-priority-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-analytics-grid,
+    .revenue-explorer-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-command-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-section {
+        padding: var(--space-4);
+    }
+
+    .dashboard-chart-insight-strip,
+    .dashboard-donut-summary-strip,
+    .dashboard-command-kpi-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-donut-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* --- Warung cepat (kasir) -------------------------------------------------------- */
+.quick-sale-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.quick-sale-layout > :first-child {
+    grid-row: span 2;
+}
+
+.quick-sale-layout > .app-card {
+    margin-bottom: 0;
+}
+
+.quick-item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-2);
+}
+
+.quick-item-grid > .empty-state {
+    grid-column: 1 / -1;
+}
+
+.quick-item-btn,
+.worker-result-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.quick-item-btn:hover,
+.worker-result-item:hover {
+    border-color: var(--brand-200);
+    background: var(--brand-50);
+}
+
+.quick-item-btn:active {
+    transform: translateY(1px);
+}
+
+.quick-item-btn span {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+}
+
+.quick-item-btn strong {
+    font-size: var(--text-base);
+    color: var(--brand-700);
+    font-variant-numeric: tabular-nums;
+}
+
+.worker-result-box {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    max-height: 240px;
+    margin-top: var(--space-2);
+    overflow-y: auto;
+}
+
+.worker-result-item {
+    padding: var(--space-2) var(--space-3);
+}
+
+.selected-worker-box,
+.quick-note {
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.custom-item-box {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.quick-total-box {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    background: var(--brand-50);
+}
+
+.quick-total-box span {
+    font-weight: var(--weight-medium);
+    color: var(--brand-800);
+}
+
+.quick-total-box strong {
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+@media (max-width: 1199.98px) {
+    .quick-sale-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .quick-sale-layout > :first-child {
+        grid-row: auto;
+    }
+}
+
+/* --- Invoice: riwayat pembayaran dengan kolom bukti --------------------------- */
+.payment-history-table {
+    min-width: 1100px;
+}
+
+.payment-history-col-proof {
+    width: 340px;
+}
+
+.payment-proof-cell {
+    min-width: 300px;
+}
+
+.payment-proof-stack,
+.payment-proof-attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.payment-proof-attachment-card {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+}
+
+.payment-proof-attachment-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+}
+
+.payment-proof-attachment-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.payment-proof-empty-badge {
+    align-self: flex-start;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+}
+
+.payment-proof-upload-label {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+}
+
+.payment-proof-upload-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+}
+
+/* --- Buku kas/bank: kolom aksi dengan form cocokkan ---------------------------- */
+.cash-bank-ledger-action-cell {
+    min-width: 220px;
+}
+
+.cash-bank-ledger-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+}
+
+.cash-bank-ledger-reconcile-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1);
+    width: 100%;
+}
+
+/* --- Halaman error ---------------------------------------------------------- */
+.error-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-10) 0;
+}
+
+.error-card {
+    width: min(520px, 100%);
+    padding: var(--space-8);
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.error-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin-bottom: var(--space-4);
+    border-radius: 50%;
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 24px;
+}
+
+.error-card h1 {
+    font-size: var(--text-xl);
+}
+
+.error-message {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-5);
+}
+
+.error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+}
+
+.auth-page .error-page {
+    padding: 0;
+}

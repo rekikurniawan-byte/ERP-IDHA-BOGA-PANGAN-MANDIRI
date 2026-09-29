@@ -100,7 +100,7 @@
                                 <td>{{ complaint.title }}</td>
                                 <td>{{ complaint.category }}</td>
                                 <td>{{ complaint.client.name if complaint.client else '-' }}{% if complaint.mandor %}<br><span class="text-muted small">{{ complaint.mandor.name }}</span>{% endif %}</td>
-                                <td><span class="status-badge neutral">{{ complaint.status }}</span></td>
+                                <td><span class="status-badge neutral">{{ complaint.status|status_label }}</span></td>
                                 <td class="text-end">
                                     <div class="table-actions justify-content-end">
                                         <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.complaint_detail', complaint_id=complaint.id) }}">Detail</a>
@@ -108,7 +108,7 @@
                                 </td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="6" class="text-muted text-center">Belum ada komplain customer.</td></tr>
+                            <tr><td colspan="6" class="text-muted text-center">Belum ada komplain pelanggan.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

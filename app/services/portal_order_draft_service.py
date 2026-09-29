@@ -284,7 +284,7 @@ def _portal_payment_precheck(user, scope):
     return {
         "required": False,
         "allowed_to_process": bool(scope.allowed),
-        "status": "Tempo/Kredit Sesuai Mapping",
+        "status": "Tempo/Kredit Sesuai Perjanjian",
         "tone": "green" if scope.allowed else "red",
         "message": f"{T.sub_client}/{T.client_lower} mengikuti aturan tempo atau kredit yang sudah disetujui. Pembayaran tetap dicatat oleh bagian keuangan.",
         "proof_count": totals.get("proof_count", 0),
@@ -792,9 +792,9 @@ def _daily_order_conflict_cards(scope, limit=12):
         location = detail.delivery_location
         meal_parts = []
         if int(detail.lunch_qty or 0) > 0:
-            meal_parts.append(f"Lunch {int(detail.lunch_qty or 0)}")
+            meal_parts.append(f"Siang {int(detail.lunch_qty or 0)}")
         if int(detail.dinner_qty or 0) > 0:
-            meal_parts.append(f"Dinner {int(detail.dinner_qty or 0)}")
+            meal_parts.append(f"Sore {int(detail.dinner_qty or 0)}")
         cards.append(
             {
                 "daily_order_id": order.id,

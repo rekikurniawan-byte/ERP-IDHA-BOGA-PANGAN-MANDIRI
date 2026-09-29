@@ -87,7 +87,7 @@
     </div>
     <div class="posting-row-actions">
         <span class="posting-badge is-{{ posting_status.class }}"><i class="bi {{ posting_status.icon }}"></i>{{ posting_status.label }}</span>
-        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Status Center</a>
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Pusat Status</a>
     </div>
 </div>
 {% endif %}
@@ -172,7 +172,7 @@
             </div>
             <div class="col-md-2">
                 <div class="text-muted small">Status</div>
-                <span class="status-badge status-progress">{{ supplier_bill.status }}</span>
+                <span class="status-badge status-progress">{{ supplier_bill.status|status_label('supplier_bill') }}</span>
             </div>
         </div>
     {% else %}

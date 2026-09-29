@@ -6,13 +6,13 @@
 <div class="print-report-shell accounting-print-shell" data-ui-accounting-print="UI" data-ui-print-export="UI">
     <div class="page-header no-print">
         <div>
-            <span class="eyebrow">Akuntansi | Print Ready</span>
+            <span class="eyebrow">Akuntansi | Siap Cetak</span>
             <h1>Tutup Harian</h1>
-            <p>Halaman print-ready. Gunakan Cetak / Save PDF dari browser.</p>
+            <p>Siap cetak. Gunakan tombol Cetak / Simpan PDF di browser.</p>
         </div>
         <div class="page-actions accounting-header-actions">
             <button type="button" class="btn app-btn-primary" data-app-action="print">
-                <i class="bi bi-printer"></i> Cetak / Save PDF
+                <i class="bi bi-printer"></i> Cetak / Simpan PDF
             </button>
             <a href="{{ url_for('accounting.daily_closing', date=report.selected_date_value) }}" class="btn app-btn-secondary">
                 <i class="bi bi-arrow-left"></i> Kembali
@@ -48,24 +48,24 @@
         </div>
 
         {% for section in report.sections %}
-        <h5 class="print-section-title">{{ section.title }} €” {{ section.status }}</h5>
+        <h5 class="print-section-title">{{ section.title }} €” {{ section.status|status_label }}</h5>
         <p class="print-note">{{ section.description }}</p>
         <div class="app-table-wrapper print-table-wrapper">
 <table class="print-table app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>
                 <tr>
                     <th>Status</th>
-                    <th>Check</th>
+                    <th>Pemeriksaan</th>
                     <th>Data</th>
-                    <th>Expected</th>
-                    <th>Actual</th>
+                    <th>Seharusnya</th>
+                    <th>Realisasi</th>
                     <th>Catatan</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in section.rows %}
                 <tr>
-                    <td><strong>{{ row.status }}</strong></td>
+                    <td><strong>{{ row.status|status_label }}</strong></td>
                     <td>{{ row.check }}</td>
                     <td>{{ row.item }}</td>
                     <td>{{ row.expected }}</td>

@@ -53,7 +53,7 @@
         <div class="app-stat-icon stat-info"><i class="bi bi-check2-circle"></i></div>
         <div>
             <p>Status</p>
-            <h3>{{ consumption.status }}</h3>
+            <h3>{{ consumption.status|status_label }}</h3>
             <span class="app-stat-helper">{{ consumption.consumption_date.strftime('%d-%m-%Y') }}</span>
         </div>
     </div>
@@ -77,7 +77,7 @@
                     <th>Stok Sesudah</th>
                     <th>Estimasi Biaya</th>
                     <th>Komponen</th>
-                    <th>Stock Movement</th>
+                    <th>Mutasi Stok</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,7 +94,7 @@
                         <td>{{ line.component_count }} komponen</td>
                         <td>
                             {% if line.stock_movement %}
-                                <span class="status-badge status-locked">OUT</span>
+                                <span class="status-badge neutral">Keluar</span>
                                 <div class="muted-small">ID {{ line.stock_movement.id }}</div>
                             {% else %}
                                 <span class="status-badge status-progress">Belum terkait</span>

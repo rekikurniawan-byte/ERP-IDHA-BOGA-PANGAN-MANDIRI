@@ -79,8 +79,8 @@ def test_period_invoice_preview_renders_ready_and_already_invoiced_branches(app)
                 assert response.status_code == 200
                 assert "Rincian Lihat Data Invoice Periode" in html
                 assert order.order_number in html
-                assert "Locked: Lunch 3, Dinner 2" in html
-                assert "MASUK" in html
+                assert "Terkunci: Siang 3, Sore 2" in html
+                assert ">Masuk<" in html
                 assert ">true<" not in html and ">false<" not in html
 
                 invoice = Invoice(
@@ -130,8 +130,8 @@ def test_period_invoice_preview_renders_ready_and_already_invoiced_branches(app)
                 blocked_html = blocked_response.get_data(as_text=True)
                 assert blocked_response.status_code == 200
                 assert order.order_number in blocked_html
-                assert "Locked: Lunch 3, Dinner 2" in blocked_html
-                assert "SKIP" in blocked_html
+                assert "Terkunci: Siang 3, Sore 2" in blocked_html
+                assert ">Dilewati<" in blocked_html
                 assert "Sudah pernah masuk invoice periode" in blocked_html
                 assert ">true<" not in blocked_html and ">false<" not in blocked_html
         finally:

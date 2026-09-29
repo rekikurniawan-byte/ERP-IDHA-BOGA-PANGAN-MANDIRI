@@ -95,23 +95,23 @@ def _backup_signal() -> Dict[str, Any]:
         restore_status = latest_verified.get("restore_dry_run_status") if latest_verified else "BELUM ADA"
         return {
             "status": "PASS" if latest_verified else "WARNING",
-            "label": "VERIFIED" if latest_verified else "BELUM VERIFIED",
+            "label": "Terverifikasi" if latest_verified else "Belum Terverifikasi",
             "verified_count": len(verified),
             "full_backup_count": len(full_backups),
             "latest_verified": latest_verified,
             "restore_dry_run_status": restore_status or "BELUM ADA",
-            "message": "Backup verified tersedia." if latest_verified else "Buat full backup verified sebelum patch besar.",
+            "message": "Cadangan data terverifikasi tersedia." if latest_verified else "Buat cadangan data lengkap sebelum pembaruan besar.",
         }
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/services/dashboard_command_center_service.py:98")
         return {
             "status": "WARNING",
-            "label": "PERLU CEK",
+            "label": "Perlu Cek",
             "verified_count": 0,
             "full_backup_count": 0,
             "latest_verified": None,
             "restore_dry_run_status": "BELUM TERBACA",
-            "message": f"Status backup belum terbaca dari dashboard: {exc}",
+            "message": f"Status cadangan data belum terbaca: {exc}",
         }
 
 
@@ -196,8 +196,8 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         ))
     if not backup.get("verified_count"):
         reminders.append(_reminder(
-            "Backup belum verified",
-            backup.get("message") or "Buat full backup verified sebelum patch besar.",
+            "Cadangan data belum terverifikasi",
+            backup.get("message") or "Buat cadangan data lengkap sebelum pembaruan besar.",
             "danger",
             "settings.backups",
             "bi-database-exclamation",
@@ -207,25 +207,25 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         _kpi("Omzet", _money(finance.get("total_invoice_active")), f"{_int(finance.get('active_invoice_count'))} invoice aktif", "bi-receipt", "info"),
         _kpi("Kas Masuk", _money(finance.get("total_payment") or cash_bank.get("total_in")), f"{_int(finance.get('payment_count'))} pembayaran", "bi-cash-stack", "success"),
         _kpi("Piutang", _money(finance.get("remaining_invoice_active")), f"{_int(finance.get('receivable_invoice_count'))} invoice belum lunas", "bi-cash-coin", "danger" if _num(finance.get("remaining_invoice_active")) else "success"),
-        _kpi("Beban", _money(cash_bank.get("total_out")), "Total cash/bank keluar tercatat", "bi-graph-down-arrow", "warning"),
+        _kpi("Beban", _money(cash_bank.get("total_out")), "Total kas/bank keluar tercatat", "bi-graph-down-arrow", "warning"),
         _kpi("Profit Estimasi", _money(hpp.get("total_margin")), f"Margin {round(_num(hpp.get('margin_percentage')), 1)}%", "bi-graph-up-arrow", "success"),
-        _kpi("Delivery Risk", delivery_risk, "Delivery hari ini belum delivered", "bi-truck", "warning" if delivery_risk else "success"),
+        _kpi("Risiko Pengiriman", delivery_risk, "Pengiriman hari ini belum diterima", "bi-truck", "warning" if delivery_risk else "success"),
     ]
 
     detail_links = [
-        _link("Revenue Explorer", "Analisis omzet, kas masuk, piutang, dan sumber pendapatan.", "dashboard.revenue_explorer", "bi-graph-up-arrow"),
-        _link("Expense Drilldown", "Baca beban per kategori dan akun.", "accounting.expense_drilldown", "bi-graph-down-arrow"),
-        _link("Posting Status", "Cek jurnal otomatis/manual dan status posting.", "accounting.posting_status", "bi-clipboard-check"),
-        _link("Kesehatan Sistem", "Cek DB, backup verified, upload, migration, dan recovery.", "settings.system_health", "bi-heart-pulse", True),
-        _link("Recovery Center", "Pusat keputusan aman sebelum patch/restore.", "settings.recovery_center", "bi-life-preserver", True),
-        _link("SOP Recovery", "Panduan darurat backup, restore, dan drill.", "sop.disaster_recovery", "bi-journal-medical"),
+        _link("Omzet & Kas", "Analisis omzet, kas masuk, piutang, dan sumber pendapatan.", "dashboard.revenue_explorer", "bi-graph-up-arrow"),
+        _link("Rincian Beban", "Baca beban per kategori dan akun.", "accounting.expense_drilldown", "bi-graph-down-arrow"),
+        _link("Status Posting", "Cek jurnal otomatis/manual dan status posting.", "accounting.posting_status", "bi-clipboard-check"),
+        _link("Kesehatan Sistem", "Cek database, cadangan data, unggahan, dan migrasi.", "settings.system_health", "bi-heart-pulse", True),
+        _link("Pusat Pemulihan", "Langkah aman sebelum pembaruan atau pemulihan data.", "settings.recovery_center", "bi-life-preserver", True),
+        _link("SOP Pemulihan", "Panduan darurat cadangan dan pemulihan data.", "sop.disaster_recovery", "bi-journal-medical"),
     ]
 
     return {
         "schema_version": DASHBOARD_COMMAND_CENTER_VERSION,
         "role": "OWNER",
-        "title": "Dashboard Owner Command Center",
-        "subtitle": "Ringkasan bisnis, kas, piutang, beban, delivery, risiko operasional, dan recovery safety.",
+        "title": "Pusat Kendali Owner",
+        "subtitle": "Ringkasan bisnis, kas, piutang, beban, pengiriman, dan risiko operasional.",
         "decision": _decision(reminders, backup),
         "kpis": kpis,
         "reminders": reminders[:8],
@@ -278,8 +278,8 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         ))
     if not backup.get("verified_count"):
         reminders.append(_reminder(
-            "Backup belum verified",
-            backup.get("message") or "Buat full backup verified sebelum patch besar.",
+            "Cadangan data belum terverifikasi",
+            backup.get("message") or "Buat cadangan data lengkap sebelum pembaruan besar.",
             "warning",
             "settings.backups",
             "bi-database-exclamation",
@@ -288,16 +288,16 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
     kpis = [
         _kpi("Order Hari Ini", _int(data.get("today_orders")), "Order cabang sesuai tanggal sistem", "bi-calendar-check", "info"),
         _kpi("Produksi Hari Ini", _int(data.get("today_productions")), "Batch produksi tanggal sistem", "bi-egg-fried", "success"),
-        _kpi("Delivery Aktif", active_delivery, f"{_int(data.get('preparing_delivery'))} preparing · {_int(data.get('on_the_way_delivery'))} on the way", "bi-truck", "warning" if active_delivery else "success"),
-        *([_kpi("Warung Hari Ini", _money(data.get("today_cash_sales")), "Cash sale cabang hari ini", "bi-shop", "success")] if warung_on else []),
+        _kpi("Pengiriman Aktif", active_delivery, f"{_int(data.get('preparing_delivery'))} disiapkan · {_int(data.get('on_the_way_delivery'))} di jalan", "bi-truck", "warning" if active_delivery else "success"),
+        *([_kpi("Warung Hari Ini", _money(data.get("today_cash_sales")), "Penjualan tunai cabang hari ini", "bi-shop", "success")] if warung_on else []),
         _kpi("Stok Kritis", low_stock_count, "Item di/minimum stok", "bi-box-seam", "warning" if low_stock_count else "success"),
-        _kpi("Backup", backup.get("label"), backup.get("message"), "bi-database-check", "success" if backup.get("verified_count") else "warning"),
+        _kpi("Cadangan Data", backup.get("label"), backup.get("message"), "bi-database-check", "success" if backup.get("verified_count") else "warning"),
     ]
 
     detail_links = [
         _link("Input Order Harian", "Input dan cek order cabang.", "operational.orders", "bi-journal-text"),
         _link("Produksi", "Pantau produksi dapur dan realisasi.", "production.index", "bi-egg-fried"),
-        _link("Pengiriman", "Monitoring delivery dan penerimaan.", "delivery.index", "bi-truck"),
+        _link("Pengiriman", "Pantau pengiriman dan penerimaan.", "delivery.index", "bi-truck"),
         *([_link(
             "Warung Cepat",
             f"Input transaksi warung/cash/hutang {T.worker_lower}." if worker_debt_on else "Input transaksi warung.",
@@ -305,14 +305,14 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
             "bi-lightning-charge",
         )] if warung_on else []),
         _link("Stok", "Pantau stok kritis dan pembelian.", "logistics.index", "bi-box-seam"),
-        _link("Reminder Live", "Cek reminder operasional tanpa menyimpan notifikasi.", "settings.live_reminders", "bi-bell"),
+        _link("Pengingat", "Cek pengingat operasional hari ini.", "settings.live_reminders", "bi-bell"),
     ]
 
     return {
         "schema_version": DASHBOARD_COMMAND_CENTER_VERSION,
         "role": "ADMIN",
-        "title": "Dashboard Admin Command Center",
-        "subtitle": "Kontrol cabang untuk order, produksi, delivery, warung, stok, dan reminder operasional.",
+        "title": "Pusat Kendali Admin",
+        "subtitle": "Kontrol cabang untuk order, produksi, pengiriman, warung, stok, dan pengingat operasional.",
         "decision": _decision(reminders, backup),
         "kpis": kpis,
         "reminders": reminders[:8],

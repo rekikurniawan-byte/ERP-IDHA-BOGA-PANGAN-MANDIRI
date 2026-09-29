@@ -6,7 +6,7 @@
 {{ page_header(
     "Aset Tetap",
     "Kelola data aset perusahaan seperti kendaraan, peralatan dapur, dan perlengkapan kantor.",
-    eyebrow="Master Aset",
+    eyebrow="Data Aset",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Beli Aset", "url": url_for('finance.create_fixed_asset_purchase'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -62,11 +62,11 @@
                     <td>{{ asset.book_value|rupiah }}</td>
                     <td>
                         {% if asset.status == "ACTIVE" %}
-                            <span class="status-badge status-locked">ACTIVE</span>
+                            <span class="status-badge success">Aktif</span>
                         {% elif asset.status == "INACTIVE" %}
-                            <span class="status-badge status-cancelled">INACTIVE</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% else %}
-                            <span class="status-badge status-draft">{{ asset.status }}</span>
+                            <span class="status-badge status-draft">{{ asset.status|status_label }}</span>
                         {% endif %}
                     </td>
                     <td>

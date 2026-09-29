@@ -77,11 +77,11 @@
                     <td><strong>{{ movement.item.item_name if movement.item else '-' }}</strong></td>
                     <td>
                         {% if movement.movement_type == "ADJUSTMENT_IN" %}
-                            <span class="status-badge status-locked">STOK DITAMBAH</span>
+                            <span class="status-badge success">Stok Ditambah</span>
                         {% elif movement.movement_type == "ADJUSTMENT_OUT" %}
-                            <span class="status-badge status-danger">STOK DIKURANGI</span>
+                            <span class="status-badge warning">Stok Dikurangi</span>
                         {% else %}
-                            <span class="status-badge status-progress">SESUAI</span>
+                            <span class="status-badge success">Sesuai</span>
                         {% endif %}
                     </td>
                     <td>{{ movement.qty|qty }}</td>

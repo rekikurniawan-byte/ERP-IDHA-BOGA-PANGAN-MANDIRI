@@ -42,7 +42,7 @@
                     <h3>{{ worker.full_name }}</h3>
                     <p>{{ worker.worker_code or "Tanpa kode" }} | {{ worker.mandor_name }}</p>
                     <div class="portal-chip-row">
-                        <span>{{ worker.status or "-" }}</span>
+                        <span>{{ worker.status|status_label }}</span>
                         {% if worker.phone %}<span><i class="bi bi-telephone"></i> {{ worker.phone }}</span>{% endif %}
                     </div>
                     {% if worker.notes %}<p>{{ worker.notes }}</p>{% endif %}

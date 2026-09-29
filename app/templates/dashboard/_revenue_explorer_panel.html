@@ -10,7 +10,7 @@
         <div class="page-actions">
             <a href="{{ url_for('dashboard.revenue_explorer', revenue_period=explorer.filters.period_preset, revenue_start_date=explorer.filters.start_date, revenue_end_date=explorer.filters.end_date, revenue_group_by=explorer.filters.group_by, revenue_source=explorer.filters.source, revenue_client_id=explorer.filters.client_id or '', revenue_mandor_id=explorer.filters.mandor_id or '', revenue_branch_id=explorer.filters.requested_branch_id or '') }}" class="btn app-btn-primary">
                 <i class="bi bi-graph-up-arrow"></i>
-                Buka Explorer
+                Buka Omzet & Kas
             </a>
             <div class="dropdown app-action-dropdown">
                 <button class="btn app-btn-secondary action-more-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    <form method="get" class="revenue-explorer-filter app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter omzet dan revenue explorer">
+    <form method="get" class="revenue-explorer-filter app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter omzet dan kas">
         <div class="dashboard-filter-field">
             <label for="revenuePeriod">Periode</label>
             <select id="revenuePeriod" name="revenue_period" class="form-select form-select-sm dashboard-filter-select">
@@ -47,7 +47,7 @@
             <input id="revenueEndDate" type="date" name="revenue_end_date" value="{{ explorer.filters.end_date }}" class="form-control form-control-sm">
         </div>
         <div class="dashboard-filter-field">
-            <label for="revenueGroupBy">Group by</label>
+            <label for="revenueGroupBy">Kelompokkan</label>
             <select id="revenueGroupBy" name="revenue_group_by" class="form-select form-select-sm dashboard-filter-select">
                 {% for option in explorer.options.group_by %}
                     <option value="{{ option.value }}" {% if option.value == explorer.filters.group_by %}selected{% endif %}>{{ option.label }}</option>
@@ -129,13 +129,13 @@
             <article class="dashboard-analytics-card revenue-trend-card" aria-labelledby="revenueTrendTitle">
                 <div class="dashboard-chart-card-header">
                     <div>
-                        <h3 id="revenueTrendTitle">Trend {{ explorer.filters.source_label }}</h3>
-                        <p>{{ explorer.period.label }} · {{ explorer.filters.group_by|capitalize }} · Top: {{ explorer.top_period.label }}</p>
+                        <h3 id="revenueTrendTitle">Tren {{ explorer.filters.source_label }}</h3>
+                        <p>{{ explorer.period.label }} · {{ {'daily': 'Harian', 'weekly': 'Mingguan', 'monthly': 'Bulanan', 'yearly': 'Tahunan'}.get(explorer.filters.group_by, explorer.filters.group_by) }} · Tertinggi: {{ explorer.top_period.label }}</p>
                     </div>
                     <span class="status-badge status-info">{{ explorer.totals.selected_total|rupiah }}</span>
                 </div>
 
-                <div class="revenue-trend-chart" role="img" aria-label="Trend omzet dan kas masuk">
+                <div class="revenue-trend-chart" role="img" aria-label="Tren omzet dan kas masuk">
                     {% for row in explorer.trend_rows %}
                         <div class="revenue-trend-group {% if row.has_value %}has-chart-value{% endif %}">
                             <div class="revenue-trend-bars">
@@ -158,7 +158,7 @@
             <article class="dashboard-analytics-card revenue-mix-card" aria-labelledby="revenueMixTitle">
                 <div class="dashboard-chart-card-header">
                     <div>
-                        <h3 id="revenueMixTitle">Pie Sumber Omzet</h3>
+                        <h3 id="revenueMixTitle">Sumber Omzet</h3>
                         <p>Komposisi akrual: invoice catering, warung lunas, dan warung hutang.</p>
                     </div>
                     <span class="status-badge status-success">{{ explorer.mix_total|rupiah }}</span>

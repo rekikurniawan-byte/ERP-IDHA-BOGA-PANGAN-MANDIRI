@@ -125,7 +125,7 @@ def build_invoice_ar_warning(invoice):
         if overdue_days <= 7:
             base.update({
                 "stage": "OVERDUE_1_7",
-                "stage_label": "Overdue",
+                "stage_label": "Lewat Jatuh Tempo",
                 "level": "WARNING",
                 "badge_class": "status-cancelled",
                 "message": f"Invoice telat {overdue_days} hari dan belum lunas.",
@@ -275,8 +275,8 @@ def _build_receivables_dashboard_context(args):
 
     filter_labels = {
         "ALL": "Semua Piutang",
-        "OVERDUE": "Overdue",
-        "DUE_SOON": "Due Soon",
+        "OVERDUE": "Lewat Jatuh Tempo",
+        "DUE_SOON": "Segera Jatuh Tempo",
         "FOLLOW_UP": "Butuh Follow Up",
         "PARTIAL_MONITOR": "Pantau Sisa Piutang",
     }

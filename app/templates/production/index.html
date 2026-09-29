@@ -46,20 +46,20 @@
                         <td>{{ production.production_date.strftime('%d-%m-%Y') }}</td>
                         <td>
                             {% if production.production_type == "LUNCH" %}
-                                <span class="status-badge status-locked">LUNCH</span>
+                                <span class="status-badge info">Siang</span>
                             {% else %}
-                                <span class="status-badge status-draft">DINNER</span>
+                                <span class="status-badge neutral">Sore</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if production.status == "COMPLETED" %}
-                                <span class="status-badge status-locked">COMPLETED</span>
+                                <span class="status-badge success">Selesai</span>
                             {% elif production.status == "CANCELLED" %}
-                                <span class="status-badge status-cancelled">CANCELLED</span>
+                                <span class="status-badge status-cancelled">Dibatalkan</span>
                             {% elif production.status == "IN_PROGRESS" %}
-                                <span class="status-badge status-progress">IN_PROGRESS</span>
+                                <span class="status-badge warning">Sedang Berjalan</span>
                             {% else %}
-                                <span class="status-badge status-draft">DRAFT</span>
+                                <span class="status-badge neutral">Konsep</span>
                             {% endif %}
                         </td>
                         {% set sla = calculate_production_sla(production) %}

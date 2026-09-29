@@ -4,25 +4,19 @@
 {% block content %}
 <div class="finance-page-shell receivables-finance-polish-shell" data-ui-finance-page="UI">
 
-<div class="mb-3 d-flex gap-2 flex-wrap receivables-quick-nav">
-    <a href="/finance/payment-history" class="btn app-btn-secondary btn-sm">
-        Riwayat Pembayaran Invoice
-    </a>
-    <a href="/finance/invoices" class="btn app-btn-secondary btn-sm">
-        Daftar Invoice
-    </a>
-</div>
-
 {{ page_header(
     "Piutang",
-    "Monitoring invoice belum lunas dari realtime dan manual backfill tanpa membuat jalur piutang baru.",
-    "Finance",
+    "Invoice yang belum lunas, dari input harian maupun rekap manual.",
+    "Keuangan",
     actions_class="receivables-header-actions",
     actions=[
-        {"label": "Daftar Invoice", "url": url_for('finance.invoices')},
-        {"label": "Statement of Account", "url": url_for('finance.receivables_statement', client_id=selected_client_id), "variant": "primary"},
-        {"label": "Print", "url": url_for('finance.receivables_print', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-printer", "target": "_blank"},
-        {"label": "Export CSV", "url": url_for('finance.export_receivables_csv', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-download"},
+        {"label": "Lainnya", "icon": "bi-three-dots", "dropdown": [
+            {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-receipt"},
+            {"label": "Riwayat Pembayaran Invoice", "url": "/finance/payment-history", "icon": "bi-clock-history"},
+        ]},
+        {"label": "Laporan Tagihan Pelanggan", "url": url_for('finance.receivables_statement', client_id=selected_client_id), "variant": "primary"},
+        {"label": "Cetak", "url": url_for('finance.receivables_print', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-printer", "target": "_blank"},
+        {"label": "Unduh CSV", "url": url_for('finance.export_receivables_csv', filter=selected_filter, client_id=selected_client_id, branch_id=selected_branch_id, bill_to_type=selected_bill_to_type, status=selected_status, period_from=selected_period_from, period_to=selected_period_to), "icon": "bi-download"},
     ]
 ) }}
 
@@ -30,7 +24,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Filter Piutang</h5>
-            <p>Filter existing diperluas untuk tipe pihak, cabang, periode, dan status invoice.</p>
+            <p>Saring menurut tipe pihak, cabang, periode, dan status invoice.</p>
         </div>
     </div>
 
@@ -205,7 +199,7 @@
     <div class="app-card receivables-card">
         <div class="card-header-clean">
             <div>
-                <h5>Rekap Stage Piutang</h5>
+                <h5>Rekap Tahap Piutang</h5>
                 <p>Ringkasan kondisi penagihan berdasarkan warning otomatis.</p>
             </div>
         </div>
@@ -214,14 +208,14 @@
             <table class="table app-table align-middle receivables-stage-table">
                 <thead>
                     <tr>
-                        <th>Stage</th>
+                        <th>Tahap</th>
                         <th>Jumlah Invoice</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in stage_rows %}
                     <tr>
-                        <td><span class="status-badge receivables-stage-badge">{{ row.stage }}</span></td>
+                        <td><span class="status-badge receivables-stage-badge">{{ row.stage|status_label }}</span></td>
                         <td><span class="receivables-count-pill">{{ row.count }}</span></td>
                     </tr>
                     {% else %}
@@ -274,7 +268,7 @@
 
                     <td>
                         <strong class="receivables-invoice-number">{{ invoice.invoice_number }}</strong>
-                        <div class="text-muted small"><span class="status-badge receivables-invoice-status-badge">{{ invoice.status }}</span></div>
+                        <div class="text-muted small"><span class="status-badge receivables-invoice-status-badge">{{ invoice.status|status_label('invoice') }}</span></div>
                     </td>
 
                     <td>

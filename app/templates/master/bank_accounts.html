@@ -6,7 +6,7 @@
 {{ page_header(
     "Rekening Bank",
     "Kelola rekening pembayaran resmi perusahaan/cabang untuk kebutuhan pembayaran dan dokumen finance.",
-    eyebrow="Master Rekening",
+    eyebrow="Data Rekening",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Tambah Rekening", "url": url_for('master.create_bank_account'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -48,9 +48,9 @@
                     <td>{{ account.account_name }}</td>
                     <td>
                         {% if account.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

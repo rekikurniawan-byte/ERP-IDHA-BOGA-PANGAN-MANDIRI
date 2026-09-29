@@ -46,7 +46,7 @@
 
 <div class="app-card soft-info-card mt-4">
     <strong>Status:
-        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status }}</span>
+        <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status|status_label }}</span>
     </strong>
     <p>
         Halaman ini hanya membaca data. Tidak membuat invoice, payment, jurnal, stock movement,
@@ -69,7 +69,7 @@
         <div>
             <p>Order</p>
             <h3>{{ report.order_summary.order.order_number }}</h3>
-            <span class="app-stat-helper">{{ report.order_summary.order.status }}</span>
+            <span class="app-stat-helper">{{ report.order_summary.order.status|status_label }}</span>
         </div>
     </div>
 
@@ -87,7 +87,7 @@
         <div>
             <p>Invoice Aktif</p>
             <h3>{{ report.invoice.total_amount|rupiah }}</h3>
-            <span class="app-stat-helper">{{ report.invoice.status }}</span>
+            <span class="app-stat-helper">{{ report.invoice.status|status_label('invoice') }}</span>
         </div>
     </div>
 
@@ -122,7 +122,7 @@
                 {% for step in report.steps %}
                 <tr>
                     <td><strong>{{ step.name }}</strong></td>
-                    <td><span class="status-badge {{ step.status_class }}">{{ step.status }}</span></td>
+                    <td><span class="status-badge {{ step.status_class }}">{{ step.status|status_label }}</span></td>
                     <td>{{ step.note }}</td>
                 </tr>
                 {% endfor %}
@@ -147,8 +147,8 @@
                     <th>{{ term('client') }}</th>
                     <th>PIC/{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
-                    <th>Lunch</th>
-                    <th>Dinner</th>
+                    <th>Siang</th>
+                    <th>Sore</th>
                     <th>Total</th>
                     <th>Harga</th>
                     <th>Subtotal</th>
@@ -188,7 +188,7 @@
             <h5>Produksi</h5>
             <p>Rencana dan realisasi produksi yang terkait order.</p>
         </div>
-        <span class="status-badge {{ report.production.status_class }}">{{ report.production.status }}</span>
+        <span class="status-badge {{ report.production.status_class }}">{{ report.production.status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
@@ -197,16 +197,16 @@
                 <tr>
                     <th>Tipe</th>
                     <th>Status</th>
-                    <th>Planned</th>
-                    <th>Actual</th>
+                    <th>Rencana</th>
+                    <th>Realisasi</th>
                     <th>Detail</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in report.production.rows %}
                 <tr>
-                    <td>{{ row.production_type }}</td>
-                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td>{{ row.production_type|status_label }}</td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status|status_label }}</span></td>
                     <td>{{ row.planned_qty|round(0) }}</td>
                     <td>{{ row.actual_qty|round(0) }}</td>
                     <td>{{ row.detail_count }} item</td>
@@ -232,18 +232,18 @@
             <h5>Pengiriman</h5>
             <p>Rencana, jumlah terkirim, dan selisih pengiriman.</p>
         </div>
-        <span class="status-badge {{ report.delivery.status_class }}">{{ report.delivery.status }}</span>
+        <span class="status-badge {{ report.delivery.status_class }}">{{ report.delivery.status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>Nomor Delivery</th>
+                    <th>Nomor Pengiriman</th>
                     <th>Tanggal</th>
                     <th>Tipe</th>
                     <th>Status</th>
-                    <th>Planned</th>
+                    <th>Rencana</th>
                     <th>Terkirim</th>
                     <th>Selisih</th>
                 </tr>
@@ -254,7 +254,7 @@
                     <td>{{ row.delivery_number }}</td>
                     <td>{{ row.delivery_date.strftime('%d-%m-%Y') }}</td>
                     <td>{{ row.delivery_type }}</td>
-                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status|status_label }}</span></td>
                     <td>{{ row.planned_qty }}</td>
                     <td>{{ row.delivered_qty }}</td>
                     <td>{{ row.shortage_qty }}</td>
@@ -280,7 +280,7 @@
             <h5>Invoice dan Piutang</h5>
             <p>Invoice aktif, payment, dan sisa piutang.</p>
         </div>
-        <span class="status-badge {{ report.invoice.status_class }}">{{ report.invoice.status }}</span>
+        <span class="status-badge {{ report.invoice.status_class }}">{{ report.invoice.status|status_label('invoice') }}</span>
     </div>
 
     <div class="table-responsive">
@@ -300,12 +300,12 @@
                 {% for row in report.invoice.rows %}
                 <tr>
                     <td>{{ row.invoice.invoice_number }}</td>
-                    <td><span class="status-badge {{ row.status_class }}">{{ row.invoice.status }}</span></td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.invoice.status|status_label('invoice') }}</span></td>
                     <td>{{ row.invoice.bill_to_type }}</td>
                     <td>{{ row.total_amount|rupiah }}</td>
                     <td>{{ row.paid_amount|rupiah }}</td>
                     <td>{{ row.remaining_amount|rupiah }}</td>
-                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span></td>
+                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status|status_label }}</span></td>
                 </tr>
                 {% else %}
                 <tr>
@@ -328,7 +328,7 @@
             <h5>Pembayaran dan Jurnal</h5>
             <p>Pembayaran yang tercatat untuk invoice aktif.</p>
         </div>
-        <span class="status-badge {{ report.payment.status_class }}">{{ report.payment.status }}</span>
+        <span class="status-badge {{ report.payment.status_class }}">{{ report.payment.status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
@@ -338,7 +338,7 @@
                     <th>Pembayaran</th>
                     <th>Tanggal</th>
                     <th>Metode</th>
-                    <th>Amount</th>
+                    <th>Jumlah</th>
                     <th>Jurnal</th>
                 </tr>
             </thead>
@@ -349,14 +349,14 @@
                     <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') }}</td>
                     <td>{{ row.payment.payment_method }}</td>
                     <td>{{ row.amount|rupiah }}</td>
-                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span></td>
+                    <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status|status_label }}</span></td>
                 </tr>
                 {% else %}
                 <tr>
                     <td colspan="5">
                         <div class="empty-state">
                             <i class="bi bi-credit-card"></i>
-                            <p>Belum ada payment untuk invoice aktif order ini.</p>
+                            <p>Belum ada pembayaran untuk invoice aktif order ini.</p>
                         </div>
                     </td>
                 </tr>

@@ -6,7 +6,7 @@
 {{ page_header(
     "Profil Kemasan",
     "Kelola biaya kemasan per porsi untuk kalkulator HPP. Data ini masih Mode pantau dan belum memotong stok.",
-    eyebrow="HPP Tahap 3",
+    eyebrow="HPP",
     actions=[
         {"label": "Kalkulator HPP", "url": url_for('costing.hpp_calculator')},
         {"label": "Tambah Profil Kemasan", "url": url_for('costing.create_packaging_profile'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -67,9 +67,9 @@
                     <td>{{ profile.cost_per_portion|rupiah }}</td>
                     <td>
                         {% if profile.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

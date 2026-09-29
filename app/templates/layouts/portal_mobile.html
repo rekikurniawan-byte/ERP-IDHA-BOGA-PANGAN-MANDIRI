@@ -1,21 +1,10 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light-mono">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }} - Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script>
-        (function () {
-            try {
-                var savedTheme = window.localStorage.getItem("idha_boga_theme") || "light-mono";
-                if (["dark-mono", "light-mono"].indexOf(savedTheme) === -1) { savedTheme = "light-mono"; }
-                document.documentElement.setAttribute("data-theme", savedTheme);
-            } catch (error) {
-                document.documentElement.setAttribute("data-theme", "light-mono");
-            }
-        })();
-    </script>
     <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
@@ -169,7 +158,7 @@
     <main class="portal-mobile-shell portal-web-shell" id="mainContent">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="portal-mobile-flashes">
+                <div class="portal-mobile-flashes" role="status" aria-live="polite">
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }} app-alert" role="alert">{{ message }}</div>
                     {% endfor %}

@@ -127,9 +127,9 @@
                     <td>{{ pic.email if pic.email is defined and pic.email else '-' }}</td>
                     <td>
                         {% if pic.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>
@@ -166,7 +166,7 @@
     {% if direct_unit %}
         <p class="mb-2">
             Aktif lewat unit <strong>{{ direct_unit.name }}</strong>
-            {% if not direct_unit.is_active %}<span class="status-badge status-cancelled">NONAKTIF</span>{% endif %}
+            {% if not direct_unit.is_active %}<span class="status-badge neutral">Nonaktif</span>{% endif %}
             — {{ direct_unit.delivery_locations|length }} {{ term('location', lower=True) }}.
         </p>
         <a href="{{ url_for('master.create_location', mandor_id=direct_unit.id) }}" class="btn btn-sm app-btn-secondary">Tambah {{ term('location') }}</a>

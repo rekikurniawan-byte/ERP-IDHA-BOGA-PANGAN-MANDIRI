@@ -28,7 +28,7 @@ def live_reminders():
             due_days=due_days,
             runtime_warning=f"Ada bagian reminder yang belum bisa dihitung: {exc}",
         )
-        flash("Reminder Live tetap dibuka dalam mode aman. Detail error tercatat di terminal/log Flask.", "warning")
+        flash("Pengingat tetap dibuka dalam mode aman. Detail error tercatat di log server.", "warning")
 
     return render_template(
         "settings/live_reminders.html",

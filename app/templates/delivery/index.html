@@ -17,7 +17,7 @@
 <div class="app-card">
     <div class="card-header-clean">
         <div>
-            <h5>Delivery</h5>
+            <h5>Pengiriman</h5>
             <p>Delivery bukan dasar tagihan, tetapi wajib dicatat untuk kontrol distribusi.</p>
         </div>
     </div>
@@ -26,7 +26,7 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Delivery</th>
+                    <th>No Pengiriman</th>
                     <th>Tanggal</th>
                     <th>Tipe</th>
                     <th>Driver</th>
@@ -44,13 +44,13 @@
                     <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
                     <td>
                         {% if delivery.status == "DELIVERED" %}
-                            <span class="status-badge status-locked">DELIVERED</span>
+                            <span class="status-badge success">Terkirim</span>
                         {% elif delivery.status == "ON_THE_WAY" %}
-                            <span class="status-badge status-progress">ON THE WAY</span>
+                            <span class="status-badge warning">Dalam Perjalanan</span>
                         {% elif delivery.status == "CANCELLED" %}
-                            <span class="status-badge status-cancelled">CANCELLED</span>
+                            <span class="status-badge status-cancelled">Dibatalkan</span>
                         {% else %}
-                            <span class="status-badge status-draft">PREPARING</span>
+                            <span class="status-badge neutral">Disiapkan</span>
                         {% endif %}
                     </td>
                     <td>{{ delivery.details|length }}</td>
@@ -65,7 +65,7 @@
                     <td colspan="7">
                         <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
                             <i class="bi bi-truck"></i>
-                            <h6>Belum ada delivery.</h6>
+                            <h6>Belum ada pengiriman.</h6>
                             <p>Buat dari order locked setelah produksi selesai.</p>
                         </div>
                     </td>

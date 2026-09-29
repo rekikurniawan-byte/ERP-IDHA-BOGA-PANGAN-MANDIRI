@@ -12,7 +12,7 @@
     {{ page_header(
         closing.closing_number,
         "Detail closing periode " ~ ('%02d'|format(closing.period_month)) ~ "/" ~ closing.period_year ~ " dan jurnal retained earnings.",
-        eyebrow="Accounting • Closing Detail",
+        eyebrow="Akuntansi • Detail Tutup Periode",
         actions_class="accounting-header-actions",
         actions=period_closing_detail_actions
     ) }}
@@ -22,7 +22,7 @@
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card"><span>Pendapatan</span><h3>{{ closing.revenue_total|rupiah }}</h3><p>Ditutup dari akun revenue</p></div>
         <div class="app-stat-card"><span>Beban</span><h3>{{ closing.expense_total|rupiah }}</h3><p>Ditutup dari akun expense</p></div>
-        <div class="app-stat-card"><span>Net Income</span><h3>{{ closing.net_income|rupiah }}</h3><p>Efek bersih ke 3002</p></div>
+        <div class="app-stat-card"><span>Laba Bersih</span><h3>{{ closing.net_income|rupiah }}</h3><p>Efek bersih ke 3002</p></div>
     </div>
 
     <div class="app-card mt-4">
@@ -40,7 +40,7 @@
 
     <div class="app-card mt-4">
         <div class="card-header-clean">
-            <div><h5>Detail Jurnal Closing</h5><p>Semua baris harus balance.</p></div>
+            <div><h5>Detail Jurnal Closing</h5><p>Semua baris harus seimbang.</p></div>
             <span class="status-badge {{ 'status-success' if is_balanced else 'status-danger' }}">Debit {{ total_debit|rupiah }} / Kredit {{ total_credit|rupiah }}</span>
         </div>
         {% if journal and journal.details %}

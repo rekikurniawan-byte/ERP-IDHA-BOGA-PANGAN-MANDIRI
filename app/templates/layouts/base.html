@@ -1,39 +1,10 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light-mono">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script>
-        (function () {
-            var allowedThemes = ["dark-mono", "light-mono"];
-            var fallbackTheme = "light-mono";
-            try {
-                var savedTheme = window.localStorage.getItem("idha_boga_theme") || fallbackTheme;
-
-                var legacyThemeMap = {
-                    "dark-enterprise": "dark-mono",
-                    "light-clean": "light-mono",
-                    "clear-focus": "light-mono",
-                    "azure-calm": "light-mono",
-                    "bright": "light-mono",
-                    "clear": "light-mono",
-                    "good": "light-mono"
-                };
-                if (legacyThemeMap[savedTheme]) {
-                    savedTheme = legacyThemeMap[savedTheme];
-                    try { window.localStorage.setItem("idha_boga_theme", savedTheme); } catch (storageError) {}
-                }
-                if (allowedThemes.indexOf(savedTheme) === -1) {
-                    savedTheme = fallbackTheme;
-                }
-                document.documentElement.setAttribute("data-theme", savedTheme);
-            } catch (error) {
-                document.documentElement.setAttribute("data-theme", fallbackTheme);
-            }
-        })();
-    </script>
 
     <link
         href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}"
@@ -46,9 +17,8 @@
     >
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
-    <!-- 20260727-table-action-v1: invoice detail payment proof table guard retained for UI regression compatibility. -->
 </head>
-<body class="{{ 'is-authenticated' if current_user.is_authenticated else 'is-public' }}" data-endpoint="{{ request.endpoint or 'public' }}" data-ui-version="UI" data-ui-catchup="UI" data-mobile-theme-polish="UI">
+<body class="{{ 'is-authenticated' if current_user.is_authenticated else 'is-public' }}" data-endpoint="{{ request.endpoint or 'public' }}">
 
     {% if current_user.is_authenticated %}
         <a class="skip-link" href="#mainContent">Lewati ke konten utama</a>
@@ -63,12 +33,14 @@
                     <div class="container-fluid">
                         {% with messages = get_flashed_messages(with_categories=true) %}
                             {% if messages %}
+                                <div class="app-flashes" role="status" aria-live="polite">
                                 {% for category, message in messages %}
                                     <div class="alert alert-{{ category }} alert-dismissible fade show app-alert" role="alert">
                                         {{ message }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
                                     </div>
                                 {% endfor %}
+                                </div>
                             {% endif %}
                         {% endwith %}
 
@@ -82,7 +54,7 @@
             <div class="container">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
-                        <div class="auth-alert-wrapper">
+                        <div class="auth-alert-wrapper" role="status" aria-live="polite">
                             {% for category, message in messages %}
                                 <div class="alert alert-{{ category }} alert-dismissible fade show app-alert" role="alert">
                                     {{ message }}

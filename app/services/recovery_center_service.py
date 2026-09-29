@@ -204,7 +204,7 @@ def _build_readiness_cards(system_health: Dict[str, Any], atomic_map: Dict[str, 
             "icon": "bi-activity",
         },
         {
-            "title": "SOP Recovery",
+            "title": "SOP Pemulihan",
             "value": "TERSEDIA",
             "detail": "SOP disaster recovery, backup-restore, dan restore drill sudah masuk aplikasi.",
             "status": "PASS",

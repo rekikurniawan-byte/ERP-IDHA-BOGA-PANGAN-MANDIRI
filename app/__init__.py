@@ -415,6 +415,24 @@ def create_app():
         except (ValueError, TypeError):
             return "Rp 0"
 
+    @flask_app.template_filter("rupiah_short")
+    def rupiah_short(value):
+        """Angka ringkas untuk label grafik yang sempit: 3.366.500 -> 3,4 jt."""
+        try:
+            value = float(value or 0)
+        except (ValueError, TypeError):
+            return "0"
+        size = abs(value)
+        if size >= 1_000_000_000:
+            text = f"{value / 1_000_000_000:.1f} M"
+        elif size >= 1_000_000:
+            text = f"{value / 1_000_000:.1f} jt"
+        elif size >= 1_000:
+            text = f"{value / 1_000:.0f} rb"
+        else:
+            text = f"{value:.0f}"
+        return text.replace(".", ",")
+
 
     @flask_app.template_filter("qty")
     def qty(value):
@@ -427,6 +445,11 @@ def create_app():
             return f"{number:.4f}".rstrip("0").rstrip(".")
         except (ValueError, TypeError):
             return "0"
+
+    from app.utils.labels import role_label, status_label
+
+    flask_app.add_template_filter(status_label, "status_label")
+    flask_app.add_template_filter(role_label, "role_label")
 
 
     @flask_app.errorhandler(CSRFError)

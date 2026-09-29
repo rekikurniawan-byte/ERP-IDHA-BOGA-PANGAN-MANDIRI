@@ -6,7 +6,7 @@
 {{ page_header(
     "Cek Kesehatan Data",
     "Audit Mode pantau untuk mengecek angka invoice, payment, jurnal, payroll, stok, dan coverage alur bisnis.",
-    eyebrow="Data Health Check",
+    eyebrow="Cek Kesehatan Data",
     actions_class="accounting-header-actions",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('accounting.print_data_health'), "icon": "bi-printer"},
@@ -17,7 +17,7 @@
 
 
 <div class="app-card soft-info-card">
-    <strong>Status keseluruhan: <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status }}</span></strong>
+    <strong>Status keseluruhan: <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status|status_label }}</span></strong>
     <p>
         Halaman ini hanya membaca data dan menampilkan warning. Tidak ada proses auto-fix, tidak ada perubahan database,
         dan tidak mengubah alur transaksi existing. Terakhir dicek: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}.
@@ -28,7 +28,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-info"><i class="bi bi-clipboard-data"></i></div>
         <div>
-            <p>Total Check</p>
+            <p>Total Pemeriksaan</p>
             <h3>{{ report.summary.total_checks }}</h3>
             <span class="app-stat-helper">Semua baris validasi</span>
         </div>
@@ -70,7 +70,7 @@
             <p>{{ section.description }}</p>
         </div>
 
-        <span class="status-badge {{ section.status_class }}">{{ section.status }}</span>
+        <span class="status-badge {{ section.status_class }}">{{ section.status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
@@ -78,10 +78,10 @@
             <thead>
                 <tr>
                     <th>Status</th>
-                    <th>Check</th>
+                    <th>Pemeriksaan</th>
                     <th>Data</th>
-                    <th>Expected</th>
-                    <th>Actual</th>
+                    <th>Seharusnya</th>
+                    <th>Realisasi</th>
                     <th>Selisih</th>
                     <th>Catatan</th>
                 </tr>
@@ -89,7 +89,7 @@
             <tbody>
                 {% for row in section.rows %}
                 <tr>
-                    <td><span class="status-badge {{ row.status_class }}">{{ row.status }}</span></td>
+                    <td><span class="status-badge {{ row.status_class }}">{{ row.status|status_label }}</span></td>
                     <td>{{ row.check }}</td>
                     <td><strong>{{ row.item }}</strong></td>
                     <td>{{ row.expected }}</td>

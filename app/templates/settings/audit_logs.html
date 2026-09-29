@@ -142,13 +142,13 @@
             <thead class="table app-table-light">
                 <tr>
                     <th>Waktu</th>
-                    <th>User</th>
-                    <th>Module</th>
-                    <th>Event</th>
-                    <th>Action</th>
-                    <th>Severity</th>
+                    <th>Pengguna</th>
+                    <th>Modul</th>
+                    <th>Kejadian</th>
+                    <th>Aksi</th>
+                    <th>Tingkat</th>
                     <th>Target</th>
-                    <th>Reason</th>
+                    <th>Alasan</th>
                     <th>Deskripsi</th>
                     <th>Payload</th>
                     <th>IP</th>
@@ -168,11 +168,11 @@
                         <td><span class="badge bg-light text-dark border">{{ log.action }}</span></td>
                         <td>
                             {% if log.audit_severity == 'CRITICAL' %}
-                                <span class="badge bg-danger">CRITICAL</span>
+                                <span class="status-badge danger">Kritis</span>
                             {% elif log.audit_severity == 'HIGH' %}
-                                <span class="badge bg-warning text-dark">HIGH</span>
+                                <span class="status-badge warning">Tinggi</span>
                             {% elif log.audit_severity == 'MEDIUM' %}
-                                <span class="badge bg-info text-dark">MEDIUM</span>
+                                <span class="status-badge info">Sedang</span>
                             {% else %}
                                 <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
                             {% endif %}

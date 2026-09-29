@@ -183,7 +183,7 @@
                         <td>{{ batch.period_start.strftime('%d-%m-%Y') }} s/d {{ batch.period_end.strftime('%d-%m-%Y') }}</td>
                         <td>{{ batch.mandor.name if batch.mandor else '-' }}</td>
                         <td>{{ batch.total_amount|rupiah }}</td>
-                        <td><span class="status-badge status-progress">{{ batch.status }}</span></td>
+                        <td><span class="status-badge status-progress">{{ batch.status|status_label }}</span></td>
                         <td>
                             {% if batch.invoice %}
                                 <a href="{{ url_for('finance.invoice_detail', invoice_id=batch.invoice.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>

@@ -8,7 +8,7 @@
 <div class="page-header">
     <div>
         <span class="eyebrow">Detail Produksi</span>
-        <h1>Produksi {{ production.production_type }}</h1>
+        <h1>Produksi {{ production.production_type|status_label }}</h1>
         <p>Tanggal produksi: {{ production.production_date.strftime('%d-%m-%Y') }}</p>
     </div>
 
@@ -29,7 +29,7 @@
                 status-draft
             {% endif %}
         ">
-            {{ production.status }}
+            {{ production.status|status_label }}
         </span>
     </div>
 </div>
@@ -46,7 +46,7 @@
 <section class="delivery-next-action-panel mt-4" data-delivery-next-action="production-detail">
     <div class="delivery-next-action-header">
         <div>
-            <span class="eyebrow">Next Action Delivery</span>
+            <span class="eyebrow">Langkah Pengiriman Berikutnya</span>
             <h2>{{ production_delivery_action.title }}</h2>
             <p>{{ production_delivery_action.description }}</p>
         </div>
@@ -101,7 +101,7 @@
         </div>
         <div>
             <p>Tipe Produksi</p>
-            <h3>{{ production.production_type }}</h3>
+            <h3>{{ production.production_type|status_label }}</h3>
             <span class="app-stat-helper">Siang / sore</span>
         </div>
     </div>

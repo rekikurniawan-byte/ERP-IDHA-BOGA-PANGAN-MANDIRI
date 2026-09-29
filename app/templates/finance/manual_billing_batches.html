@@ -107,7 +107,7 @@
                 <h5>Register Rekap Buku</h5>
                 <p>Gunakan halaman detail untuk edit draft, lock, void, atau membuat invoice/piutang.</p>
             </div>
-            <span class="status-badge status-warning">Manual Backfill Only</span>
+            <span class="status-badge status-warning">Hanya Input Manual</span>
         </div>
         <div class="table-responsive">
             <table class="table app-table align-middle">
@@ -148,7 +148,7 @@
                         <td>
                             {% if batch.invoice %}
                             <a href="{{ url_for('finance.invoice_detail', invoice_id=batch.invoice.id) }}">{{ batch.invoice.invoice_number }}</a>
-                            <div class="small text-muted">{{ batch.invoice.status }}</div>
+                            <div class="small text-muted">{{ batch.invoice.status|status_label('invoice') }}</div>
                             {% else %}
                             <span class="text-muted">Belum dibuat</span>
                             {% endif %}

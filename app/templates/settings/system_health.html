@@ -7,7 +7,7 @@
 {{ page_header(
     "Kesehatan Sistem",
     "Pemeriksaan kesehatan database, backup, upload, migration, jurnal, dan ruang disk tanpa mengubah data aktif.",
-    eyebrow="Recovery Center",
+    eyebrow="Pusat Pemulihan",
     actions=[
         {"label": "Recovery Center", "url": url_for('settings.recovery_center'), "variant": "primary"},
         {"label": "Backup & Restore", "url": url_for('settings.backups')},
@@ -51,7 +51,7 @@
 
     {% if overall.get("warnings") %}
         <div class="alert alert-warning mt-3 mb-0">
-            <strong>Warning:</strong>
+            <strong>Peringatan:</strong>
             <ul class="mb-0">
                 {% for message in overall.get("warnings", []) %}<li>{{ message }}</li>{% endfor %}
             </ul>
@@ -63,15 +63,15 @@
 <div class="app-card mb-4">
     <div class="section-title">
         <div>
-            <h3>Recovery Center Ringkas</h3>
+            <h3>Pusat Pemulihan Ringkas</h3>
             <p>Jawaban cepat untuk owner/admin sebelum patch besar, backup manual, atau restore planning.</p>
         </div>
         {% if rc.get("is_system_safe") %}
-            <span class="status-badge success">READY</span>
+            <span class="status-badge success">Siap</span>
         {% elif overall.get("error_count", 0) > 0 %}
-            <span class="status-badge danger">ACTION REQUIRED</span>
+            <span class="status-badge danger">Perlu Tindakan</span>
         {% else %}
-            <span class="status-badge warning">CHECK REQUIRED</span>
+            <span class="status-badge warning">Perlu Cek</span>
         {% endif %}
     </div>
 
@@ -79,8 +79,8 @@
         <div class="col-md-4"><div class="detail-row h-100"><span>Backup bisa dibuat?</span><strong>{{ 'YA' if rc.get("can_create_backup") else 'TIDAK' }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>Ada full backup VERIFIED?</span><strong>{{ 'YA' if rc.get("has_verified_backup") else 'BELUM' }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>Restore dry-run terakhir</span><strong>{{ rc.get("latest_restore_dry_run_status", '-') }}</strong></div></div>
-        <div class="col-md-4"><div class="detail-row h-100"><span>Missing upload</span><strong>{{ rc.get("missing_upload_references", 0) }}</strong></div></div>
-        <div class="col-md-4"><div class="detail-row h-100"><span>Orphan upload</span><strong>{{ rc.get("orphan_upload_files", 0) }}</strong></div></div>
+        <div class="col-md-4"><div class="detail-row h-100"><span>Unggahan hilang</span><strong>{{ rc.get("missing_upload_references", 0) }}</strong></div></div>
+        <div class="col-md-4"><div class="detail-row h-100"><span>File tanpa pemilik</span><strong>{{ rc.get("orphan_upload_files", 0) }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>Jurnal imbalance</span><strong>{{ rc.get("journal_imbalance_count", 0) }}</strong></div></div>
     </div>
 
@@ -167,12 +167,12 @@
             <h3>Panduan Recovery</h3>
             <p>Halaman ini hanya membaca kondisi sistem. Tidak ada restore aktif, tidak ada overwrite database, tidak ada migration, dan tidak ada perubahan data bisnis.</p>
         </div>
-        <span class="status-badge info">Recovery</span>
+        <span class="status-badge info">Pemulihan</span>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">
             <i class="bi bi-life-preserver"></i>
-            SOP Disaster Recovery
+            SOP Pemulihan
         </a>
         <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">
             <i class="bi bi-database-check"></i>

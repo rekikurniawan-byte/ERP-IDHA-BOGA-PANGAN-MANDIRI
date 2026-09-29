@@ -42,7 +42,7 @@
                                     <td class="fw-semibold">{{ debt.worker_name }}</td>
                                     <td>{{ debt.mandor_name }}</td>
                                     <td>{{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else '-' }}</td>
-                                    <td><span class="status-badge neutral">{{ debt.status }}</span></td>
+                                    <td><span class="status-badge neutral">{{ debt.status|status_label }}</span></td>
                                     <td class="text-end">{{ debt.debt_amount|rupiah }}</td>
                                     <td class="text-end">{{ debt.paid_amount|rupiah }}</td>
                                     <td class="text-end">{{ debt.remaining_amount|rupiah }}</td>

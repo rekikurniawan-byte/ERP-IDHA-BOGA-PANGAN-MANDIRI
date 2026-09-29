@@ -40,7 +40,7 @@
             Detail Pemakaian
         </a>
     </div>
-    <span class="status-badge status-locked">COMMITTED</span>
+    <span class="status-badge success">Tersimpan</span>
     <span class="ms-2"><strong>{{ snapshot.stock_consumption.consumption_number }}</strong></span>
     <div class="muted-small mt-2">
         Tanggal {{ snapshot.stock_consumption.consumption_date.strftime('%d-%m-%Y') }} ·
@@ -56,7 +56,7 @@
         <div>
             <p>Total Porsi</p>
             <h3>{{ snapshot.total_portion|qty }}</h3>
-            <span class="app-stat-helper">Status {{ snapshot.status }}</span>
+            <span class="app-stat-helper">Status {{ snapshot.status|status_label }}</span>
         </div>
     </div>
     <div class="app-stat-card">
@@ -70,7 +70,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-purple"><i class="bi bi-cash-stack"></i></div>
         <div>
-            <p>Revenue Estimasi</p>
+            <p>Estimasi Pendapatan</p>
             <h3>{{ snapshot.revenue_total|rupiah }}</h3>
             <span class="app-stat-helper">Dari harga order saat snapshot</span>
         </div>
@@ -104,7 +104,7 @@
                     <th>Kemasan</th>
                     <th>Overhead</th>
                     <th>HPP</th>
-                    <th>Revenue</th>
+                    <th>Pendapatan</th>
                     <th>Margin</th>
                     <th>Status</th>
                 </tr>
@@ -132,9 +132,9 @@
                     </td>
                     <td>
                         {% if line.calculation_status == 'COMPLETE' %}
-                            <span class="status-badge status-locked">COMPLETE</span>
+                            <span class="status-badge success">Lengkap</span>
                         {% else %}
-                            <span class="status-badge status-progress">WARNING</span>
+                            <span class="status-badge warning">Peringatan</span>
                             <div class="muted-small">{{ line.warning_text }}</div>
                         {% endif %}
                     </td>
@@ -161,7 +161,7 @@
                     <th>PIC / {{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Porsi</th>
-                    <th>Revenue</th>
+                    <th>Pendapatan</th>
                     <th>Food</th>
                     <th>Kemasan</th>
                     <th>Overhead</th>

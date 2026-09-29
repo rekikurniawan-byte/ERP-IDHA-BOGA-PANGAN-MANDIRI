@@ -208,7 +208,7 @@
                         </a>
                     </td>
                     <td>
-                        <span class="status-badge {{ 'status-locked' if row.status == 'LOCKED' else 'status-draft' }}">{{ row.status }}</span>
+                        <span class="status-badge {{ 'status-locked' if row.status == 'LOCKED' else 'status-draft' }}">{{ row.status|status_label }}</span>
                     </td>
                     <td>
                         {% if row.lunch_menu %}
@@ -296,9 +296,9 @@
                         <td>{{ detail.required_stock_qty|qty }} {{ row.item_unit }}</td>
                         <td>
                             {% if detail.status == 'OK' %}
-                                <span class="status-badge status-locked">OK</span>
+                                <span class="status-badge success">Aman</span>
                             {% else %}
-                                <span class="status-badge status-progress">{{ detail.status }}</span>
+                                <span class="status-badge status-progress">{{ detail.status|status_label }}</span>
                                 <div class="muted-small mt-1">{{ detail.message }}</div>
                             {% endif %}
                         </td>

@@ -28,14 +28,14 @@
         <p>Nilai awal DP/panjar</p>
     </div>
     <div class="app-stat-card">
-        <span>Sudah Settlement</span>
+        <span>Sudah Diselesaikan</span>
         <h3>{{ advance.settled_amount|rupiah }}</h3>
         <p>Terpakai/ditutup</p>
     </div>
     <div class="app-stat-card">
         <span>Sisa Belum Lunas</span>
         <h3>{{ advance.remaining_amount|rupiah }}</h3>
-        <p>Status {{ advance.status }}</p>
+        <p>Status {{ advance.status|status_label }}</p>
     </div>
 </div>
 
@@ -45,7 +45,7 @@
             <h5>Jejak Akuntansi</h5>
             <p>Advance wajib traceable ke kas/bank dan jurnal COA 1008.</p>
         </div>
-        <span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status }}</span>
+        <span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status|status_label }}</span>
     </div>
     <div class="info-grid">
         <div><span>Tanggal</span><strong>{{ advance.advance_date.strftime('%d-%m-%Y') }}</strong></div>
@@ -63,7 +63,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Settlement Advance</h5>
+            <h5>Penyelesaian Uang Muka</h5>
             <p>Settlement mengurangi outstanding DP. Untuk panjar {{ term('sub_client', lower=True) }}, pilih kategori biaya agar jurnal beban langsung terbentuk.</p>
         </div>
     </div>
@@ -113,7 +113,7 @@
             <input type="date" name="settlement_date" class="form-control" value="{{ today_date }}" required>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Tipe Settlement</label>
+            <label class="form-label">Tipe Penyelesaian</label>
             <select name="settlement_type" class="form-select" required>
                 {% if advance.advance_type == 'CLIENT_DP_RECEIVED' %}
                     <option value="CLIENT_INVOICE">Ke Invoice {{ term('client') }}</option>
@@ -164,7 +164,7 @@
             <textarea name="notes" class="form-control" rows="2" placeholder="Opsional"></textarea>
         </div>
         <div class="col-md-12">
-            <button type="submit" class="btn app-btn-primary">Simpan Settlement</button>
+            <button type="submit" class="btn app-btn-primary">Simpan Penyelesaian</button>
         </div>
     </form>
 </div>
@@ -173,7 +173,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Riwayat Settlement</h5>
+            <h5>Riwayat Penyelesaian</h5>
             <p>Setiap settlement punya trace sendiri dan tidak boleh double posting.</p>
         </div>
     </div>
@@ -182,7 +182,7 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Settlement</th>
+                    <th>No Penyelesaian</th>
                     <th>Tanggal</th>
                     <th>Tipe</th>
                     <th>Referensi</th>
@@ -221,7 +221,7 @@
     {% else %}
     <div class="empty-state">
         <i class="bi bi-journal-check"></i>
-        <h5>Belum ada settlement</h5>
+        <h5>Belum ada penyelesaian</h5>
         <p>Advance masih outstanding sampai ada invoice/bill/bukti pertanggungjawaban yang valid.</p>
     </div>
     {% endif %}

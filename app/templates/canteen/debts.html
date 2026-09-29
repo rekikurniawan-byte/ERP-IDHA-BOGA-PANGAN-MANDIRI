@@ -46,11 +46,11 @@
                     <td><strong>{{ get_debt_remaining_amount(debt)|rupiah }}</strong></td>
                     <td>
                         {% if debt.status == "PAID" %}
-                            <span class="status-badge status-locked">PAID</span>
+                            <span class="status-badge success">Lunas</span>
                         {% elif debt.status == "PARTIAL" %}
-                            <span class="status-badge status-progress">PARTIAL</span>
+                            <span class="status-badge warning">Dibayar Sebagian</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">UNPAID</span>
+                            <span class="status-badge danger">Belum Dibayar</span>
                         {% endif %}
                     </td>
                     <td>
@@ -126,11 +126,11 @@
                     <td><strong>{{ get_external_receivable_remaining_amount(row)|rupiah }}</strong></td>
                     <td>
                         {% if row.status == "PAID" %}
-                            <span class="status-badge status-locked">PAID</span>
+                            <span class="status-badge success">Lunas</span>
                         {% elif row.status == "PARTIAL" %}
-                            <span class="status-badge status-progress">PARTIAL</span>
+                            <span class="status-badge warning">Dibayar Sebagian</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">UNPAID</span>
+                            <span class="status-badge danger">Belum Dibayar</span>
                         {% endif %}
                     </td>
                     <td>

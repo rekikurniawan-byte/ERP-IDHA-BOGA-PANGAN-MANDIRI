@@ -181,13 +181,13 @@
                                 <td>
                                     {% if row.invoice %}
                                         {% if row.invoice.status == "PAID" %}
-                                            <span class="badge bg-success">PAID</span>
+                                            <span class="status-badge success">Lunas</span>
                                         {% elif row.invoice.status == "PARTIAL" %}
-                                            <span class="badge bg-warning text-dark">PARTIAL</span>
+                                            <span class="status-badge warning">Dibayar Sebagian</span>
                                         {% elif row.invoice.status == "CANCELLED" %}
-                                            <span class="badge bg-secondary">CANCELLED</span>
+                                            <span class="status-badge status-cancelled">Dibatalkan</span>
                                         {% else %}
-                                            <span class="badge bg-info text-dark">{{ row.invoice.status }}</span>
+                                            <span class="badge bg-info text-dark">{{ row.invoice.status|status_label('invoice') }}</span>
                                         {% endif %}
                                     {% else %}
                                         -

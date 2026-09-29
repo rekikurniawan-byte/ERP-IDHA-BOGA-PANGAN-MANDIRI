@@ -7,7 +7,7 @@
 {{ page_header(
     "Riwayat Pembayaran Gaji",
     "Jejak pembayaran gaji dari payroll PAID dan jurnal pembayaran gaji. Tidak membuat data ganda.",
-    eyebrow="SDM / PAYMENT HISTORY",
+    eyebrow="SDM / Riwayat Pembayaran Gaji",
     actions_class="hr-master-settings-header-actions",
     actions=[
         {"label": "Kembali ke Payroll", "url": "/hr/payrolls", "icon": "bi-arrow-left", "variant": "primary"},
@@ -71,7 +71,7 @@
                                 <td class="text-end fw-semibold">{{ row.final_salary|rupiah }}</td>
                                 <td class="history-method-col"><span class="hr-soft-badge">{{ row.payment_method }}</span></td>
                                 <td class="history-journal-col"><span class="font-monospace">{{ row.journal_number }}</span></td>
-                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status }}</span></td>
+                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status|status_label }}</span></td>
                                 <td class="text-end"><a href="/hr/payrolls/{{ row.payroll.id }}" class="btn app-btn-secondary btn-sm">Detail</a></td>
                             </tr>
                         {% endfor %}

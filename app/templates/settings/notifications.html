@@ -6,9 +6,9 @@
 {{ page_header(
     "Pusat Notifikasi",
     "Notifikasi permanen yang bisa ditandai sudah dibaca, dikembalikan ke belum dibaca, atau diabaikan. Halaman ini tidak membuat transaksi, jurnal, stok, atau saldo berubah.",
-    eyebrow="Persistent Notification",
+    eyebrow="Notifikasi",
     actions=[
-        {"label": "Reminder Live", "url": url_for('settings.live_reminders'), "icon": "bi-bell"},
+        {"label": "Pengingat", "url": url_for('settings.live_reminders'), "icon": "bi-bell"},
         {"label": "Dashboard", "url": url_for('dashboard.index'), "icon": "bi-grid-1x2"},
     ]
 ) }}
@@ -16,9 +16,9 @@
 <div class="app-card soft-info-card">
     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
         <div>
-            <strong>Generator manual dari Reminder Live sudah aktif.</strong>
+            <strong>Generator manual dari Pengingat sudah aktif.</strong>
             <p class="mb-0">
-                Tombol ini hanya membuat/memperbarui row notifikasi permanen dari Reminder Live.
+                Tombol ini hanya membuat/memperbarui row notifikasi permanen dari Pengingat.
                 Tidak mengubah transaksi, stok, saldo kas/bank, invoice, procurement, atau jurnal.
                 Sistem memakai generated key agar notifikasi yang sama tidak dobel.
             </p>
@@ -42,7 +42,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn app-btn-primary btn-sm" data-app-confirm="Generate notifikasi dari Reminder Live sekarang?">
+                <button type="submit" class="btn app-btn-primary btn-sm" data-app-confirm="Buat notifikasi dari Pengingat sekarang?">
                     <i class="bi bi-arrow-repeat"></i>
                     Generate Notifikasi
                 </button>
@@ -136,7 +136,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Daftar Notifikasi</h5>
-            <p>{{ notifications|length }} data ditampilkan. Notifikasi generated berasal dari Reminder Live dan tetap bisa dibaca/dismiss tanpa mengubah transaksi.</p>
+            <p>{{ notifications|length }} data ditampilkan. Notifikasi dibuat dari Pengingat dan bisa dibaca/ditutup tanpa mengubah transaksi.</p>
         </div>
     </div>
 
@@ -158,22 +158,22 @@
                         <tr class="{% if notification.status == 'UNREAD' %}table app-table-warning{% endif %}">
                             <td>
                                 {% if notification.status == 'UNREAD' %}
-                                    <span class="badge bg-warning-subtle text-warning border">UNREAD</span>
+                                    <span class="status-badge warning">Belum Dibaca</span>
                                 {% elif notification.status == 'READ' %}
-                                    <span class="badge bg-primary-subtle text-primary border">READ</span>
+                                    <span class="status-badge neutral">Dibaca</span>
                                 {% elif notification.status == 'DISMISSED' %}
-                                    <span class="badge bg-secondary-subtle text-secondary border">DISMISSED</span>
+                                    <span class="status-badge neutral">Ditutup</span>
                                 {% elif notification.status == 'RESOLVED' %}
-                                    <span class="badge bg-success-subtle text-success border">RESOLVED</span>
+                                    <span class="status-badge success">Selesai</span>
                                 {% else %}
-                                    <span class="badge bg-light text-muted border">{{ notification.status }}</span>
+                                    <span class="badge bg-light text-muted border">{{ notification.status|status_label }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if notification.priority == 'CRITICAL' %}
                                     <span class="badge bg-danger-subtle text-danger border">Kritis</span>
                                 {% elif notification.priority == 'WARNING' %}
-                                    <span class="badge bg-warning-subtle text-warning border">Warning</span>
+                                    <span class="badge bg-warning-subtle text-warning border">Peringatan</span>
                                 {% else %}
                                     <span class="badge bg-info-subtle text-info border">Info</span>
                                 {% endif %}
@@ -197,7 +197,7 @@
                                     <small class="text-muted">User spesifik</small>
                                 {% elif notification.target_role %}
                                     <div>{{ notification.target_role }}</div>
-                                    <small class="text-muted">Role</small>
+                                    <small class="text-muted">Peran</small>
                                 {% else %}
                                     <div>Branch-wide</div>
                                     <small class="text-muted">OWNER/ADMIN</small>

@@ -43,7 +43,7 @@
         <div><span>Tanggal</span><strong>{{ transaction.transaction_date.strftime('%d-%m-%Y') }}</strong></div>
         <div><span>Tipe Transaksi</span><strong>{{ transaction.transaction_type }}</strong></div>
         <div><span>Sumber Dana</span><strong>{{ transaction.account_type }}</strong></div>
-        <div><span>Bank Account</span><strong>{% if transaction.bank_account %}{{ transaction.bank_account.bank_name }} - {{ transaction.bank_account.account_name }}{% else %}-{% endif %}</strong></div>
+        <div><span>Rekening Bank</span><strong>{% if transaction.bank_account %}{{ transaction.bank_account.bank_name }} - {{ transaction.bank_account.account_name }}{% else %}-{% endif %}</strong></div>
         <div><span>Referensi</span><strong>{{ transaction.reference_type or '-' }} #{{ transaction.reference_id or '-' }}</strong></div>
         <div><span>Rekonsiliasi</span><strong>{{ 'SUDAH' if transaction.is_reconciled else 'BELUM' }}</strong></div>
         <div><span>Catatan Rekonsiliasi</span><strong>{{ transaction.reconciliation_note or '-' }}</strong></div>

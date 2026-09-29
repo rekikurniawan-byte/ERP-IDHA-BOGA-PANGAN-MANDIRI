@@ -27,13 +27,13 @@
 <section class="delivery-next-action-panel mt-4" data-delivery-next-action="delivery-today">
     <div class="delivery-next-action-header">
         <div>
-            <span class="eyebrow">Delivery belum dibuat</span>
+            <span class="eyebrow">Pengiriman belum dibuat</span>
             <h2>Ada produksi selesai yang belum muncul sebagai delivery</h2>
             <p>Pengantar hanya melihat data setelah admin membuat delivery. Buat delivery dari daftar prioritas di bawah ini.</p>
         </div>
         <a href="{{ url_for('sop.role_sop', slug='delivery') }}" class="btn btn-sm app-btn-secondary">
             <i class="bi bi-journal-check"></i>
-            SOP Delivery
+            SOP Pengiriman
         </a>
     </div>
 
@@ -81,15 +81,15 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Delivery</th>
+                    <th>No Pengiriman</th>
                     <th>Tipe</th>
                     <th>Driver</th>
                     <th>Status</th>
                     <th>SLA</th>
                     <th>Lokasi</th>
-                    <th>Planned</th>
-                    <th>Delivered</th>
-                    <th>Shortage</th>
+                    <th>Rencana</th>
+                    <th>Terkirim</th>
+                    <th>Kurang Kirim</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -105,20 +105,20 @@
                     <td>
                         <strong>{{ delivery.delivery_number }}</strong>
                         {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
-                            <div class="muted-small">Pengganti shortage</div>
+                            <div class="muted-small">Pengganti kekurangan</div>
                         {% endif %}
                     </td>
                     <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
                     <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
                     <td>
                         {% if delivery.status == "DELIVERED" %}
-                            <span class="status-badge status-locked">DELIVERED</span>
+                            <span class="status-badge success">Terkirim</span>
                         {% elif delivery.status == "ON_THE_WAY" %}
-                            <span class="status-badge status-progress">ON THE WAY</span>
+                            <span class="status-badge warning">Dalam Perjalanan</span>
                         {% elif delivery.status == "CANCELLED" %}
-                            <span class="status-badge status-danger">CANCELLED</span>
+                            <span class="status-badge status-cancelled">Dibatalkan</span>
                         {% else %}
-                            <span class="status-badge status-draft">{{ delivery.status }}</span>
+                            <span class="status-badge status-draft">{{ delivery.status|status_label }}</span>
                         {% endif %}
                     </td>
                     {% set sla = calculate_delivery_sla_summary(delivery) %}
@@ -141,7 +141,7 @@
                     <td colspan="10">
                         <div class="empty-state">
                             <i class="bi bi-truck"></i>
-                            <p>Belum ada delivery pada tanggal ini.</p>
+                            <p>Belum ada pengiriman pada tanggal ini.</p>
                         </div>
                     </td>
                 </tr>

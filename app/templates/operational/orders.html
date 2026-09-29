@@ -39,16 +39,16 @@
                     <td>{{ order.order_date.strftime('%d-%m-%Y') }}</td>
                     <td>
                         {% if order.status == "LOCKED" %}
-                            <span class="status-badge status-locked">LOCKED</span>
+                            <span class="status-badge success">Terkunci</span>
                         {% else %}
-                            <span class="status-badge status-draft">DRAFT</span>
+                            <span class="status-badge neutral">Konsep</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if order.is_locked %}
-                            <span class="status-badge status-locked">LOCKED</span>
+                            <span class="status-badge success">Terkunci</span>
                         {% else %}
-                            <span class="status-badge status-draft">OPEN</span>
+                            <span class="status-badge info">Terbuka</span>
                         {% endif %}
                     </td>
                     <td>{{ order.details|length }}</td>

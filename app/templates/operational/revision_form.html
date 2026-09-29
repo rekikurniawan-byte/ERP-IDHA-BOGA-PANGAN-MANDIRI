@@ -44,7 +44,7 @@
         <div>
             <p>Status Order</p>
             <h3>{{ "LOCKED" if daily_order.is_locked else "OPEN" }}</h3>
-            <span class="app-stat-helper">{{ daily_order.status }}</span>
+            <span class="app-stat-helper">{{ daily_order.status|status_label }}</span>
         </div>
     </div>
 </div>
@@ -90,8 +90,8 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Status Lock</label>
-                <input type="text" class="form-control app-input" value="{{ 'LOCKED' if daily_order.is_locked else 'OPEN' }}" readonly>
+                <label class="form-label">Status Kunci</label>
+                <input type="text" class="form-control app-input" value="{{ 'Terkunci' if daily_order.is_locked else 'Terbuka' }}" readonly>
             </div>
 
             <div class="col-md-6">

@@ -5,7 +5,7 @@
             <h5>Jejak Proses Tagihan</h5>
             <p>Audit baca-saja dari sumber data → invoice/piutang → pembayaran → jurnal → buku kas/bank.</p>
         </div>
-        <span class="status-badge {{ billing_trace.overall_status_class }}">{{ billing_trace.overall_status }}</span>
+        <span class="status-badge {{ billing_trace.overall_status_class }}">{{ billing_trace.overall_status|status_label }}</span>
     </div>
 
     <div class="table-responsive">
@@ -22,7 +22,7 @@
                 {% for step in billing_trace.steps %}
                 <tr>
                     <td><strong>{{ step.name }}</strong></td>
-                    <td><span class="status-badge {{ step.status_class }}">{{ step.status }}</span></td>
+                    <td><span class="status-badge {{ step.status_class }}">{{ step.status|status_label }}</span></td>
                     <td>
                         {% if step.ref_type == 'INVOICE' and step.ref_id %}
                             <a href="{{ url_for('finance.invoice_detail', invoice_id=step.ref_id) }}">{{ step.ref_number or ('Invoice #' ~ step.ref_id) }}</a>
@@ -58,9 +58,9 @@
         <div class="card-header-clean mb-2">
             <div>
                 <h6>Jurnal Invoice</h6>
-                <p>{{ invoice_trace.invoice_journal.journal.journal_number }} — {{ invoice_trace.invoice_journal.status }}</p>
+                <p>{{ invoice_trace.invoice_journal.journal.journal_number }} — {{ invoice_trace.invoice_journal.status|status_label }}</p>
             </div>
-            <span class="status-badge {{ invoice_trace.invoice_journal.status_class }}">{{ invoice_trace.invoice_journal.status }}</span>
+            <span class="status-badge {{ invoice_trace.invoice_journal.status_class }}">{{ invoice_trace.invoice_journal.status|status_label }}</span>
         </div>
         <div class="table-responsive">
             <table class="table app-table align-middle">
@@ -116,7 +116,7 @@
                         <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') if row.payment.payment_date else '-' }}</td>
                         <td class="text-end">{{ row.payment.amount|rupiah }}</td>
                         <td>
-                            <span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status }}</span>
+                            <span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status|status_label }}</span>
                             {% if row.journal.journal %}
                                 <div class="small mt-1">
                                     <a href="{{ url_for('accounting.journal_detail', journal_id=row.journal.journal.id) }}">{{ row.journal.journal.journal_number }}</a>
@@ -124,7 +124,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="status-badge {{ row.cash_bank.status_class }}">{{ row.cash_bank.status }}</span>
+                            <span class="status-badge {{ row.cash_bank.status_class }}">{{ row.cash_bank.status|status_label }}</span>
                             {% if row.cash_bank.transaction %}
                                 <div class="small mt-1">
                                     {{ row.cash_bank.transaction.transaction_date.strftime('%d-%m-%Y') if row.cash_bank.transaction.transaction_date else '-' }} — {{ row.cash_bank.transaction.account_type }} — {{ row.cash_bank.transaction.amount|rupiah }}

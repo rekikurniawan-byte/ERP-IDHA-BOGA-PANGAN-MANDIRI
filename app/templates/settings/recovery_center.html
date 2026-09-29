@@ -10,11 +10,11 @@
 {% if current_user.role == "OWNER" %}
     {% do recovery_center_actions.append({"label": "Backup", "url": url_for('settings.backups')}) %}
 {% endif %}
-{% do recovery_center_actions.append({"label": "SOP Recovery", "url": url_for('sop.disaster_recovery')}) %}
+{% do recovery_center_actions.append({"label": "SOP Pemulihan", "url": url_for('sop.disaster_recovery')}) %}
 {{ page_header(
     "Recovery Center Final",
     "Recovery center final: satu pusat ringkas untuk status safety, backup verified, restore dry-run, atomic guard, critical audit, dan SOP recovery.",
-    eyebrow="Recovery Center",
+    eyebrow="Pusat Pemulihan",
     actions=recovery_center_actions
 ) }}
 
@@ -62,7 +62,7 @@
 
     {% if overall.get("warnings") %}
         <div class="alert alert-warning mt-3 mb-0">
-            <strong>Warning:</strong>
+            <strong>Peringatan:</strong>
             <ul class="mb-0">
                 {% for message in overall.get("warnings", []) %}<li>{{ message }}</li>{% endfor %}
             </ul>
@@ -134,16 +134,16 @@
                     <h3>SOP & Drill Lock</h3>
                     <p>Versi SOP recovery yang menjadi acuan saat error, backup, atau restore planning.</p>
                 </div>
-                <span class="status-badge success">TERSEDIA</span>
+                <span class="status-badge success">Tersedia</span>
             </div>
             {% set sop = report.get("sop_versions", {}) %}
             <div class="detail-list mb-3">
                 <div class="detail-row"><span>Disaster Recovery</span><strong>{{ sop.get("disaster_recovery") }}</strong></div>
                 <div class="detail-row"><span>Backup & Restore</span><strong>{{ sop.get("backup_restore") }}</strong></div>
-                <div class="detail-row"><span>Restore Drill</span><strong>{{ sop.get("restore_drill") }}</strong></div>
+                <div class="detail-row"><span>Latihan Pemulihan</span><strong>{{ sop.get("restore_drill") }}</strong></div>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">SOP Recovery</a>
+                <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary">SOP Pemulihan</a>
                 <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">SOP Backup</a>
             </div>
         </div>
@@ -154,9 +154,9 @@
             <div class="section-title">
                 <div>
                     <h3>Policy Stack</h3>
-                    <p>Kontrak safety yang aktif pada Recovery Center.</p>
+                    <p>Kontrak safety yang aktif pada Pusat Pemulihan.</p>
                 </div>
-                <span class="status-badge info">Recovery</span>
+                <span class="status-badge info">Pemulihan</span>
             </div>
             {% set stack = report.get("policy_stack", {}) %}
             <div class="detail-list">
@@ -185,10 +185,10 @@
                 <thead>
                     <tr>
                         <th>Waktu</th>
-                        <th>Module</th>
-                        <th>Event</th>
-                        <th>Severity</th>
-                        <th>User</th>
+                        <th>Modul</th>
+                        <th>Kejadian</th>
+                        <th>Tingkat</th>
+                        <th>Pengguna</th>
                         <th>Alasan</th>
                         <th></th>
                     </tr>
@@ -218,7 +218,7 @@
 <div class="app-card soft-info-card mb-0" data-fix70-g2="readonly-safety-rules">
     <div class="section-title mb-2">
         <div>
-            <h3>Aturan Safety Recovery Center</h3>
+            <h3>Aturan Safety Pusat Pemulihan</h3>
             <p>G2 sengaja dibuat sebagai pusat baca status. Tidak ada tombol restore aktif/overwrite database di halaman ini.</p>
         </div>
         <span class="status-badge info">{{ report.get("policy_version") }}</span>

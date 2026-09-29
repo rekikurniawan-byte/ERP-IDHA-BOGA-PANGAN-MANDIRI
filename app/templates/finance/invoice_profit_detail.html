@@ -16,7 +16,7 @@
 
 {% if report.warnings %}
 <div class="app-card soft-warning-card mt-4">
-    <strong>Warning Presisi</strong>
+    <strong>Peringatan Presisi</strong>
     <ul class="mb-0 mt-2">
         {% for warning in report.warnings %}
             <li>{{ warning }}</li>
@@ -32,7 +32,7 @@
         <p>Nilai tagihan invoice</p>
     </div>
     <div class="app-stat-card">
-        <span>Revenue Terhitung HPP</span>
+        <span>Pendapatan Terhitung HPP</span>
         <h3>{{ summary.costed_revenue_total|rupiah }}</h3>
         <p>Coverage {{ summary.coverage_percentage|round(2) }}%</p>
     </div>
@@ -84,7 +84,7 @@
                 <tr>
                     <th>Jenis</th>
                     <th>Deskripsi</th>
-                    <th>Revenue</th>
+                    <th>Pendapatan</th>
                     <th>HPP</th>
                     <th>Laba Kotor</th>
                     <th>Margin</th>
@@ -150,7 +150,7 @@
                     <th>PIC / {{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Porsi</th>
-                    <th>Revenue</th>
+                    <th>Pendapatan</th>
                     <th>HPP</th>
                     <th>Laba Kotor</th>
                     <th>Margin</th>
@@ -168,7 +168,7 @@
                                 -
                             {% endif %}
                         </td>
-                        <td>{{ allocation.meal_type }}</td>
+                        <td>{{ allocation.meal_type|status_label }}</td>
                         <td>{{ allocation.mandor_name_snapshot or '-' }}</td>
                         <td>{{ allocation.delivery_location_name_snapshot or '-' }}</td>
                         <td>{{ allocation.portion_qty|qty }}</td>

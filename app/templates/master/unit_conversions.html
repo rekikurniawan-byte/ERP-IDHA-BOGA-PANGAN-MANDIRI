@@ -7,7 +7,7 @@
 {{ page_header(
     "Master Konversi Satuan",
     "Konversi ini membantu profil HPP item, misalnya 1 KG = 1000 GRAM atau 1 LITER = 1000 ML.",
-    eyebrow="HPP Tahap 1",
+    eyebrow="HPP",
     actions=[
         {"label": "Harga Pokok Barang", "url": url_for('master.item_cost_profiles')},
         {"label": "Kembali", "url": url_for('master.index')},
@@ -89,9 +89,9 @@
                     <td>{{ conversion.notes or '-' }}</td>
                     <td>
                         {% if conversion.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

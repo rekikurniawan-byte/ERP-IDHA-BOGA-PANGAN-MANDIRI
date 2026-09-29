@@ -44,7 +44,7 @@
         <div>
             <p>Sisa Hutang</p>
             <h3>{{ bill.remaining_amount|rupiah }}</h3>
-            <span class="app-stat-helper">Accounts payable aktif</span>
+            <span class="app-stat-helper">Hutang aktif</span>
         </div>
     </div>
 
@@ -71,7 +71,7 @@
     </div>
     <div class="posting-row-actions">
         <span class="posting-badge is-{{ procurement_posting_status.class }}"><i class="bi {{ procurement_posting_status.icon }}"></i>{{ procurement_posting_status.label }}</span>
-        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Status Center</a>
+        <a href="{{ url_for('accounting.posting_status') }}" class="btn btn-sm app-btn-secondary">Pusat Status</a>
     </div>
 </div>
 {% endif %}
@@ -103,7 +103,7 @@
         </div>
         <div class="col-md-2">
             <div class="text-muted small">Status</div>
-            <span class="status-badge {{ aging.badge_class }}">{{ bill.status }}</span>
+            <span class="status-badge {{ aging.badge_class }}">{{ bill.status|status_label('supplier_bill') }}</span>
         </div>
         <div class="col-md-12">
             <div class="text-muted small">Catatan</div>
@@ -216,7 +216,7 @@
                     {% if active_bank_accounts %}
                         <div class="form-text text-muted small">Dipakai untuk mencatat buku kas/bank pembayaran hutang supplier.</div>
                     {% else %}
-                        <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Master Data &gt; Rekening Bank jika membayar via transfer.</div>
+                        <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Data Master &gt; Rekening Bank jika membayar via transfer.</div>
                     {% endif %}
                 </div>
 

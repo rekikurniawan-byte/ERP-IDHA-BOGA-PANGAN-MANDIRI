@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Token desain -- satu-satunya tempat warna, jarak, sudut, bayangan, dan huruf.
+   Komponen lain hanya memakai var(--...). Tidak ada mode gelap (keputusan
+   owner 2026-09-29).
+   ========================================================================== */
+:root {
+    /* Merek: oranye Idha Boga, dipakai hemat (tombol utama, penanda aktif).
+       Latar bertulisan putih memakai 700 ke atas (kontras >= 4.5:1). */
+    --brand-50: #fff7ed;
+    --brand-100: #ffedd5;
+    --brand-200: #fed7aa;
+    --brand-500: #f97316;
+    --brand-600: #ea580c;
+    --brand-700: #c2410c;
+    --brand-800: #9a3412;
+    --brand-900: #7c2d12;
+
+    /* Abu-abu netral untuk permukaan, garis, dan teks. */
+    --gray-25: #fcfcfd;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+
+    --surface-page: #f5f6f8;
+    --surface: #ffffff;
+    --surface-muted: var(--gray-50);
+    --border: #e4e7ec;
+    --border-strong: var(--gray-300);
+
+    --text: #101828;
+    --text-secondary: #475467;
+    --text-muted: #667085;
+    --text-on-brand: #ffffff;
+
+    /* Status: teks gelap di atas latar muda, kontras >= 4.5:1. */
+    --success-text: #166534;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --warning-text: #92400e;
+    --warning-bg: #fffbeb;
+    --warning-border: #fde68a;
+    --danger-text: #b42318;
+    --danger-bg: #fef3f2;
+    --danger-border: #fecdca;
+    --danger-solid: #d92d20;
+    --info-text: #1e40af;
+    --info-bg: #eff6ff;
+    --info-border: #bfdbfe;
+    --neutral-text: #344054;
+    --neutral-bg: #f2f4f7;
+    --neutral-border: #e4e7ec;
+    --violet-text: #5b21b6;
+    --violet-bg: #f5f3ff;
+
+    /* Warna isi grafik dan penanda (bukan teks). */
+    --chart-green: #12b76a;
+    --chart-amber: #f79009;
+    --chart-blue: #2e90fa;
+    --chart-amber-strong: #dc6803;
+
+    /* Jarak berkelipatan 4px. */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+    --shadow-lg: 0 12px 24px -6px rgba(16, 24, 40, 0.12), 0 4px 8px -4px rgba(16, 24, 40, 0.06);
+    --focus-ring: 0 0 0 3px rgba(234, 88, 12, 0.22);
+
+    --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --text-xs: 0.75rem;     /* 12px */
+    --text-sm: 0.8125rem;   /* 13px */
+    --text-base: 0.875rem;  /* 14px */
+    --text-md: 0.9375rem;   /* 15px */
+    --text-lg: 1.0625rem;   /* 17px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px */
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    --control-height: 38px;
+    --control-height-sm: 32px;
+    --sidebar-width: 256px;
+    --topbar-height: 60px;
+
+    /* Bootstrap mengikuti token yang sama. */
+    --bs-body-font-family: var(--font-sans);
+    --bs-body-font-size: var(--text-base);
+    --bs-body-line-height: 1.5;
+    --bs-body-color: var(--text);
+    --bs-body-bg: var(--surface-page);
+    --bs-secondary-color: var(--text-secondary);
+    --bs-tertiary-color: var(--text-muted);
+    --bs-border-color: var(--border);
+    --bs-border-radius: var(--radius);
+    --bs-border-radius-sm: var(--radius-sm);
+    --bs-border-radius-lg: var(--radius-lg);
+    --bs-primary: var(--brand-700);
+    --bs-primary-rgb: 194, 65, 12;
+    --bs-link-color: var(--brand-700);
+    --bs-link-color-rgb: 194, 65, 12;
+    --bs-link-hover-color: var(--brand-800);
+    --bs-link-hover-color-rgb: 154, 52, 18;
+    --bs-heading-color: var(--text);
+    --bs-emphasis-color: var(--text);
+    --bs-focus-ring-color: rgba(234, 88, 12, 0.22);
+    --bs-primary-bg-subtle: var(--brand-50);
+    --bs-primary-border-subtle: var(--brand-200);
+    --bs-primary-text-emphasis: var(--brand-800);
+    --bs-secondary-bg-subtle: var(--neutral-bg);
+    --bs-secondary-border-subtle: var(--neutral-border);
+    --bs-secondary-text-emphasis: var(--neutral-text);
+    --bs-success-bg-subtle: var(--success-bg);
+    --bs-success-border-subtle: var(--success-border);
+    --bs-success-text-emphasis: var(--success-text);
+    --bs-warning-bg-subtle: var(--warning-bg);
+    --bs-warning-border-subtle: var(--warning-border);
+    --bs-warning-text-emphasis: var(--warning-text);
+    --bs-danger-bg-subtle: var(--danger-bg);
+    --bs-danger-border-subtle: var(--danger-border);
+    --bs-danger-text-emphasis: var(--danger-text);
+    --bs-info-bg-subtle: var(--info-bg);
+    --bs-info-border-subtle: var(--info-border);
+    --bs-info-text-emphasis: var(--info-text);
+}

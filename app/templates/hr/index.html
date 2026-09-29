@@ -6,7 +6,7 @@
 {{ page_header(
     "SDM",
     "Manajemen karyawan internal, payroll, posting jurnal gaji, dan pembayaran gaji perusahaan.",
-    eyebrow="SDM / HR ENTERPRISE",
+    eyebrow="SDM",
     actions_class="hr-master-settings-header-actions",
     actions=[
         {"label": "Buat Payroll Bulanan", "url": url_for('hr.generate_payroll_route'), "icon": "bi-calendar-plus", "variant": "primary"},
@@ -75,24 +75,24 @@
         <div class="card-body">
             <div class="hr-section-title">
                 <div>
-                    <span>Lifecycle Payroll</span>
-                    <h2>Draft â†’ Final â†’ Sudah Diposting â†’ Paid</h2>
+                    <span>Tahapan Payroll</span>
+                    <h2>Konsep → Final → Dijurnal → Dibayar</h2>
                 </div>
                 <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary btn-sm">Lihat Payroll</a>
             </div>
             <div class="hr-lifecycle-list compact">
                 <div class="hr-lifecycle-step is-active">
-                    <strong>DRAFT</strong>
+                    <strong>Konsep</strong>
                     <span>{{ payroll_dashboard.lifecycle.DRAFT }} payroll</span>
                     <small>Nominal masih bisa disesuaikan.</small>
                 </div>
                 <div class="hr-lifecycle-step {% if payroll_dashboard.lifecycle.FINAL > 0 %}is-warning{% else %}is-pending{% endif %}">
-                    <strong>FINAL</strong>
+                    <strong>Final</strong>
                     <span>{{ payroll_dashboard.lifecycle.FINAL }} payroll</span>
                     <small>Terkunci, perlu posting jurnal.</small>
                 </div>
                 <div class="hr-lifecycle-step {% if payroll_dashboard.lifecycle.POSTED > 0 %}is-warning{% else %}is-pending{% endif %}">
-                    <strong>POSTED</strong>
+                    <strong>Dijurnal</strong>
                     <span>{{ payroll_dashboard.lifecycle.POSTED }} payroll</span>
                     <small>Hutang gaji tercatat, belum dibayar.</small>
                 </div>
@@ -109,7 +109,7 @@
         <div class="card-body">
             <div class="hr-section-title">
                 <div>
-                    <span>Employee Health</span>
+                    <span>Kelengkapan Data</span>
                     <h2>Kelengkapan Data Karyawan</h2>
                 </div>
                 <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary btn-sm">Cek Data</a>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="hr-health-item {% if employee_summary.inactive > 0 %}is-muted{% else %}is-ok{% endif %}">
                     <i class="bi bi-person-dash"></i>
-                    <div><strong>{{ employee_summary.inactive }}</strong><span>karyawan inactive</span></div>
+                    <div><strong>{{ employee_summary.inactive }}</strong><span>karyawan nonaktif</span></div>
                 </div>
             </div>
         </div>
@@ -136,7 +136,7 @@
     <div class="card-body">
         <div class="hr-section-title">
             <div>
-                <span>Recent Payroll</span>
+                <span>Penggajian Terbaru</span>
                 <h2>Payroll Terbaru</h2>
             </div>
             <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary btn-sm">Lihat Semua</a>
@@ -158,7 +158,7 @@
                         {% for row in latest_payroll_rows %}
                             <tr>
                                 <td><span class="fw-semibold">{{ row.period }}</span></td>
-                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status }}</span></td>
+                                <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status|status_label }}</span></td>
                                 <td class="text-end">{{ row.total|rupiah }}</td>
                                 <td>
                                     <span class="hr-posting-badge is-{{ row.journal_state.class }}">

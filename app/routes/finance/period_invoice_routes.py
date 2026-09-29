@@ -237,7 +237,7 @@ def generate_period_invoice_preview():
                             "item_type": "CATERING",
                             "description": (
                                 f"{order.order_number} | PIC {mandor_name} | {location_name} | "
-                                f"Locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                                f"Terkunci: Siang {lunch_qty}, Sore {dinner_qty}"
                                 f"{shortage_note(short_qty)}"
                             ),
                             "qty": total_qty,
@@ -466,7 +466,7 @@ def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, br
                         "item_type": "CATERING",
                         "description": (
                             f"{order.order_number} | PIC {mandor_name} | {location_name} | "
-                            f"Locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                            f"Terkunci: Siang {lunch_qty}, Sore {dinner_qty}"
                             f"{shortage_note(short_qty)}"
                         ),
                         "qty": total_qty,

@@ -11,14 +11,14 @@
             <h1>{{ data.page_title }}</h1>
             <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
         </div>
-        <strong class="portal-hero-status">{{ model.totals.unread }} unread</strong>
+        <strong class="portal-hero-status">{{ model.totals.unread }} belum dibaca</strong>
     </div>
 
     <div class="portal-service-summary portal-notification-summary">
         <article class="primary"><span>Belum Dibaca</span><strong>{{ model.totals.unread }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Butuh Aksi</span><strong>{{ model.totals.actionable }}</strong><small>Memiliki action_url</small></article>
-        <article><span>Critical</span><strong>{{ model.totals.critical }}</strong><small>Prioritas tinggi</small></article>
-        <article><span>Warning</span><strong>{{ model.totals.warning }}</strong><small>Perlu dipantau</small></article>
+        <article><span>Butuh Tindakan</span><strong>{{ model.totals.actionable }}</strong><small>Punya tautan tindak lanjut</small></article>
+        <article><span>Kritis</span><strong>{{ model.totals.critical }}</strong><small>Prioritas tertinggi</small></article>
+        <article><span>Peringatan</span><strong>{{ model.totals.warning }}</strong><small>Perlu dipantau</small></article>
         <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Semua status</small></article>
     </div>
 
@@ -35,15 +35,12 @@
                     <div class="portal-service-card-main">
                         <div class="portal-service-card-title">
                             <h3>{{ notification.title }}</h3>
-                            <strong>{{ notification.status }}</strong>
+                            <strong>{{ notification.status|status_label }}</strong>
                         </div>
                         <p>{{ notification.message }}</p>
                         <div class="portal-chip-row">
-                            <span>{{ notification.notification_type }}</span>
-                            <span>{{ notification.priority }}</span>
-                            {% if notification.target_role %}<span>Role {{ notification.target_role }}</span>{% endif %}
-                            {% if notification.due_date %}<span>Due {{ notification.due_date.strftime('%d-%m-%Y') }}</span>{% endif %}
-                            {% if notification.reference_type %}<span>{{ notification.reference_type }} #{{ notification.reference_id }}</span>{% endif %}
+                            <span>Prioritas {{ notification.priority|status_label }}</span>
+                            {% if notification.due_date %}<span>Jatuh tempo {{ notification.due_date.strftime('%d-%m-%Y') }}</span>{% endif %}
                         </div>
                         <div class="portal-inline-actions">
                             {% if notification.action_url %}
@@ -71,7 +68,7 @@
                 <div class="portal-empty-state">
                     <i class="bi bi-bell"></i>
                     <strong>Tidak ada {{ section.title|lower }}</strong>
-                    <p>Notifikasi target user atau role akan tampil di sini.</p>
+                    <p>Notifikasi untuk akun ini akan tampil di sini.</p>
                 </div>
             {% endfor %}
         </div>

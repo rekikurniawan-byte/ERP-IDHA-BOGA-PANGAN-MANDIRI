@@ -7,7 +7,7 @@
 {{ page_header(
     "Peta Akun & Mapping Jurnal",
     "Halaman Mode pantau untuk melihat pemakaian COA dan rencana mapping jurnal otomatis bertahap.",
-    eyebrow="Accounting",
+    eyebrow="Akuntansi",
     actions=[]
 ) }}
 
@@ -72,9 +72,9 @@
                 <tr>
                     <th>Tahap</th>
                     <th>Modul</th>
-                    <th>Event Transaksi</th>
+                    <th>Kejadian Transaksi</th>
                     <th>Debit</th>
-                    <th>Credit</th>
+                    <th>Kredit</th>
                     <th>Catatan</th>
                     <th>Risiko</th>
                 </tr>
@@ -84,11 +84,11 @@
                 <tr>
                     <td>
                         {% if item.stage == 'SUDAH BERJALAN' %}
-                            <span class="badge bg-success">{{ item.stage }}</span>
+                            <span class="badge bg-success">{{ item.stage|status_label }}</span>
                         {% elif item.stage == 'TAHAP BERIKUTNYA' %}
-                            <span class="badge bg-warning text-dark">{{ item.stage }}</span>
+                            <span class="badge bg-warning text-dark">{{ item.stage|status_label }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">{{ item.stage }}</span>
+                            <span class="badge bg-secondary">{{ item.stage|status_label }}</span>
                         {% endif %}
                     </td>
                     <td>{{ item.module }}</td>
@@ -138,7 +138,7 @@
                         <th>Nama Akun</th>
                         <th>Status Pakai</th>
                         <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
+                        <th class="text-end">Kredit</th>
                         <th>Calon Penggunaan</th>
                     </tr>
                 </thead>
@@ -149,10 +149,10 @@
                         <td>{{ row.account.account_name }}</td>
                         <td>
                             {% if row.usage.is_used %}
-                                <span class="badge bg-success">TERPAKAI</span>
+                                <span class="status-badge success">Terpakai</span>
                                 <small class="text-muted d-block">{{ row.usage.detail_count }} detail</small>
                             {% else %}
-                                <span class="badge bg-light text-dark">BELUM TERPAKAI</span>
+                                <span class="status-badge neutral">Belum Terpakai</span>
                             {% endif %}
                         </td>
                         <td class="text-end">{{ row.usage.debit_total|rupiah }}</td>

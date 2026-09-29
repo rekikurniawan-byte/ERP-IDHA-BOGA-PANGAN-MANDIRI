@@ -6,7 +6,7 @@
 {{ page_header(
     "Pengantar",
     "Driver dipakai pada modul pengiriman. Driver yang tidak aktif tidak akan dipakai untuk delivery baru.",
-    eyebrow="Master Driver",
+    eyebrow="Data Pengantar",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Tambah Driver", "url": url_for('master.create_driver'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -48,9 +48,9 @@
                     <td>{{ driver.license_number or '-' }}</td>
                     <td>
                         {% if driver.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

@@ -6,7 +6,7 @@
     {{ page_header(
         "Persetujuan",
         "Daftar pengajuan aksi sensitif yang perlu diperiksa checker.",
-        eyebrow="Settings | Maker Checker",
+        eyebrow="Pengaturan | Persetujuan Berlapis",
         actions=[]
     ) }}
 
@@ -42,7 +42,7 @@
                     <td>#{{ approval.id }}</td>
                     <td>{{ approval.action_key }}</td>
                     <td>{{ approval.reference_type }} #{{ approval.reference_id }}</td>
-                    <td><span class="status-badge status-info">{{ approval.status }}</span></td>
+                    <td><span class="status-badge status-info">{{ approval.status|status_label }}</span></td>
                     <td>{{ approval.requested_reason }}</td>
                     <td>{{ approval.reviewed_by or '-' }}</td>
                     <td class="text-end">
@@ -70,7 +70,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Belum ada approval request.</td>
+                    <td colspan="7" class="text-center text-muted py-4">Belum ada permintaan persetujuan.</td>
                 </tr>
                 {% endfor %}
             </tbody>

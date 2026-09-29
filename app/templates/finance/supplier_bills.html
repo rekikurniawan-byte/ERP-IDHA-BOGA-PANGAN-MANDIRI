@@ -104,7 +104,7 @@
                         <span class="status-badge {{ aging.badge_class }}">{{ aging.label }}</span>
                         <div class="text-muted small">{{ aging.days_text }}</div>
                     </td>
-                    <td>{{ bill.status }}</td>
+                    <td>{{ bill.status|status_label('supplier_bill') }}</td>
                     <td>
                         <a href="{{ url_for('finance.supplier_bill_detail', bill_id=bill.id) }}" class="btn btn-sm app-btn-secondary">
                             Detail

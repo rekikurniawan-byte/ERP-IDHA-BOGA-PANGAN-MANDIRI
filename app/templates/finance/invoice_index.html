@@ -91,11 +91,11 @@
                         <td><strong>{{ invoice.invoice_number }}</strong></td>
                         <td>
                             {% if invoice.source_type == "PERIOD_INVOICE" %}
-                                <span class="status-badge status-progress">PERIODE</span>
+                                <span class="status-badge info">Periode</span>
                             {% elif invoice.source_type == "DAILY_ORDER" %}
-                                <span class="status-badge status-locked">ORDER</span>
+                                <span class="status-badge info">Order</span>
                             {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
-                                <span class="status-badge status-progress">REKAP TAGIHAN</span>
+                                <span class="status-badge info">Rekap Tagihan</span>
                             {% else %}
                                 <span class="text-muted">{{ invoice.source_type or "-" }}</span>
                             {% endif %}
@@ -121,13 +121,13 @@
                         {# HYGIENE5C_STATUS_BADGE_CANCELLED #}
                         <td>
                             {% if invoice.status in ["CANCELLED", "CANCELED"] %}
-                                <span class="status-badge status-cancelled">{{ invoice.status }}</span>
+                                <span class="status-badge status-cancelled">{{ invoice.status|status_label('invoice') }}</span>
                             {% elif invoice.status == "PAID" %}
-                                <span class="status-badge status-locked">{{ invoice.status }}</span>
+                                <span class="status-badge status-locked">{{ invoice.status|status_label('invoice') }}</span>
                             {% elif invoice.status == "DRAFT" %}
-                                <span class="status-badge status-draft">{{ invoice.status }}</span>
+                                <span class="status-badge status-draft">{{ invoice.status|status_label('invoice') }}</span>
                             {% else %}
-                                <span class="status-badge status-progress">{{ invoice.status }}</span>
+                                <span class="status-badge status-progress">{{ invoice.status|status_label('invoice') }}</span>
                             {% endif %}
                         </td>
                         {% set ar = finance_ar_warning(invoice) %}

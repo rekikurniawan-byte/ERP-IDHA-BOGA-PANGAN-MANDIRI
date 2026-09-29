@@ -29,9 +29,9 @@
         <p>Semua DP/panjar tercatat</p>
     </div>
     <div class="app-stat-card">
-        <span>Open / Partial</span>
+        <span>Terbuka / Sebagian</span>
         <h3>{{ summary.open }}</h3>
-        <p>Masih perlu settlement</p>
+        <p>Masih perlu diselesaikan</p>
     </div>
     <div class="app-stat-card">
         <span>Sisa Belum Lunas</span>
@@ -55,7 +55,7 @@
             <label class="form-label">Status</label>
             <select name="status" class="form-select">
                 <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
-                <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>OPEN</option>
+                <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>Terbuka</option>
                 <option value="PARTIAL" {% if selected_status == 'PARTIAL' %}selected{% endif %}>PARTIAL</option>
                 <option value="SETTLED" {% if selected_status == 'SETTLED' %}selected{% endif %}>SETTLED</option>
             </select>
@@ -80,12 +80,12 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Advance</th>
+                    <th>No Uang Muka</th>
                     <th>Tanggal</th>
                     <th>Tipe</th>
                     <th>Pihak</th>
                     <th>Nominal</th>
-                    <th>Settled</th>
+                    <th>Selesai</th>
                     <th>Sisa</th>
                     <th>Status</th>
                     <th class="text-end">Aksi</th>
@@ -101,7 +101,7 @@
                     <td>{{ advance.amount|rupiah }}</td>
                     <td>{{ advance.settled_amount|rupiah }}</td>
                     <td><strong>{{ advance.remaining_amount|rupiah }}</strong></td>
-                    <td><span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status }}</span></td>
+                    <td><span class="status-badge status-{{ 'done' if advance.status == 'SETTLED' else 'progress' }}">{{ advance.status|status_label }}</span></td>
                     <td class="text-end">
                         <a href="{{ url_for('finance.advance_detail', advance_id=advance.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
                     </td>

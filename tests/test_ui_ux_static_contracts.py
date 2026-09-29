@@ -1,30 +1,124 @@
+"""Pagar arsitektur UI (keputusan owner 2026-09-29).
+
+CSS dirakit dari satu set sumber kecil di app/static/css/app/, tanpa mode
+gelap, tanpa file tambalan, dengan !important dan warna literal yang dibatasi.
+main.js hanya perilaku; tampilan sepenuhnya urusan CSS.
+"""
 import re
 import runpy
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+TEMPLATES = ROOT / "app" / "templates"
 
 
 def _read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
-def test_global_action_collapse_never_moves_forms_into_dropdowns():
+def _build_namespace():
+    return runpy.run_path(str(ROOT / "tools" / "build_css.py"), run_name="css_build_contract")
+
+
+def test_css_sources_are_the_small_fixed_set():
+    namespace = _build_namespace()
+
+    assert namespace["SOURCE_ORDER"] == [
+        "tokens.css",
+        "base.css",
+        "layout.css",
+        "components.css",
+        "pages.css",
+        "portal.css",
+        "print.css",
+    ]
+    loaded, errors = namespace["load_sources"]()
+    assert errors == []
+    assert [name for name, _ in loaded] == namespace["SOURCE_ORDER"]
+    assert not (ROOT / "app" / "static" / "css" / "src").exists()
+
+
+def test_css_architecture_guard_passes_and_budgets_only_go_down():
+    namespace = _build_namespace()
+    loaded, _ = namespace["load_sources"]()
+    report, errors = namespace["check_sources"](loaded)
+
+    assert errors == []
+    assert namespace["IMPORTANT_BUDGET"] <= 12
+    assert namespace["HEX_OUTSIDE_TOKENS_BUDGET"] <= 40
+    assert report["important_total"] <= namespace["IMPORTANT_BUDGET"]
+
+
+def test_patch_style_filenames_are_rejected():
+    filename_has_forbidden_word = _build_namespace()["filename_has_forbidden_word"]
+
+    for bad in ("200_final_lock.css", "hotfix.css", "portal_override.css", "polish-v2.css"):
+        assert filename_has_forbidden_word(bad), bad
+    for good in ("tokens.css", "components.css", "portal.css", "pages.css"):
+        assert not filename_has_forbidden_word(good), good
+
+
+def test_built_style_css_matches_sources():
+    """style.css adalah hasil rakit; mengeditnya langsung akan tertimpa."""
+    namespace = _build_namespace()
+    loaded, _ = namespace["load_sources"]()
+    expected = namespace["HEADER"] + "".join(f"\n/* --- {name} --- */\n{text}" for name, text in loaded)
+
+    assert _read("app/static/css/style.css") == expected, "Jalankan: python tools/build_css.py"
+
+
+def test_dark_mode_is_gone_everywhere():
+    js = _read("app/static/js/main.js")
+    css = _read("app/static/css/style.css")
+
+    assert "[data-theme" not in css
+    assert "data-theme" not in js
+    for path in TEMPLATES.rglob("*.html"):
+        text = path.read_text(encoding="utf-8")
+        assert "data-theme" not in text, path.relative_to(ROOT)
+        assert "themeToggle" not in text, path.relative_to(ROOT)
+
+
+def test_main_js_is_behavior_only():
     js = _read("app/static/js/main.js")
 
-    assert 'node.matches("a.btn, button.btn, form")' not in js
-    assert 'child.matches && child.matches("form") && child.querySelector("button.btn, .btn")' not in js
-    assert 'if (child.matches && child.matches("form")) return false;' in js
+    # Tidak ada lagi penataan ulang DOM untuk tampilan (select kustom,
+    # penggulung aksi, dsb.) dan tidak ada gaya inline dari JS.
+    assert ".style.cssText" not in js
+    assert "insertAdjacentHTML" not in js
+    assert "window.appConfirm" in js
+    assert "window.appToast" in js
+    assert len(js.splitlines()) < 900
 
 
-def test_text_white_utility_keeps_semantic_white_text():
-    css = _read("app/static/css/src/147_global_ui_ux_density_lock.css")
-    text_white_block = css.split(".bg-white,", 1)[0].rsplit(".text-white,", 1)[-1]
+def test_primary_orange_passes_contrast_with_white_text():
+    tokens = _read("app/static/css/app/tokens.css")
+    components = _read("app/static/css/app/components.css")
 
-    assert ".text-white,\n.text-light" in css
-    assert "color: var(--ux-text) !important;" not in text_white_block
-    assert "color: #ffffff !important;" in text_white_block
+    assert "--brand-700: #c2410c;" in tokens
+    primary_block = components.split(".app-btn-primary {", 1)[1].split("}", 1)[0]
+    assert "--bs-btn-bg: var(--brand-700);" in primary_block
+
+
+def test_status_codes_show_indonesian_labels():
+    from app.utils.labels import status_label
+
+    assert status_label("LOCKED") == "Terkunci"
+    assert status_label("PAID") == "Lunas"
+    assert status_label("DRAFT", "invoice") == "Belum Dibayar"
+    assert status_label("LUNCH") == "Siang"
+    assert status_label("SOMETHING_NEW") == "Something New"
+    assert status_label(None) == "-"
+
+
+def test_badges_do_not_hardcode_english_status_codes():
+    pattern = re.compile(r'class="(?:status-badge|badge)[^"]*"[^>]*>(PAID|UNPAID|PARTIAL|LOCKED|DRAFT|CANCELLED|DELIVERED|ON THE WAY|COMPLETED|ACTIVE|INACTIVE)<')
+    offenders = []
+    for path in TEMPLATES.rglob("*.html"):
+        if pattern.search(path.read_text(encoding="utf-8")):
+            offenders.append(str(path.relative_to(ROOT)))
+    assert offenders == []
 
 
 def test_portal_command_center_uses_real_portal_roles():
@@ -32,182 +126,41 @@ def test_portal_command_center_uses_real_portal_roles():
 
     assert "PORTkL" not in template
     assert "MkNDOR" not in template
+    assert "kksi Portal" not in template
     assert 'current_user.role == "PORTAL_CUSTOMER"' in template
     assert 'current_user.role == "PORTAL_SUBCLIENT"' in template
     assert 'current_user.role == "PORTAL_CLIENT"' in template
 
 
-def test_portal_desktop_dashboard_density_contract_is_present():
-    css = _read("app/static/css/src/162_portal_neutral_metric_card_lock.css")
-
-    assert "portal-dashboard-desktop-density" in css
-    assert "@media (min-width: 1024px)" in css
-    assert "body.portal-web-body .portal-home-hero" in css
-    assert "body.portal-web-body .portal-home-metric-row > article" in css
-
-
-def test_css_architecture_guard_contract_is_present():
-    build_css = _read("tools/build_css.py")
-
-    assert "FORBIDDEN_CSS_FILENAME_WORDS" in build_css
-    assert 'IMPORTANT_COUNT_METHOD = "literal-token-count-in-source-order"' in build_css
-    assert "IMPORTANT_BASELINE_COUNT = 6363" in build_css
-    assert "LEGACY_FORBIDDEN_CSS_SOURCE_NAMES" in build_css
-    assert "_important_guard" in build_css
-    assert "_status_token_report" in build_css
-    assert '"architecture_guard": architecture_report' in build_css
-
-
-def test_css_status_tokens_are_distinct_in_build_order():
-    namespace = runpy.run_path(str(ROOT / "tools" / "build_css.py"), run_name="css_build_contract")
-    source_order = namespace["SOURCE_ORDER"]
-    status_report = namespace["_status_token_report"]
-
-    css = "\n".join(_read(f"app/static/css/src/{filename}") for filename in source_order)
-    report, errors = status_report(css)
-
-    assert errors == []
-    assert report["status_tokens_distinct"] is True
-    assert len(set(report["status_tokens"].values())) == 4
-
-
-def test_css_important_count_uses_literal_tokens_not_matching_lines():
-    namespace = runpy.run_path(str(ROOT / "tools" / "build_css.py"), run_name="css_build_contract")
-    source_order = namespace["SOURCE_ORDER"]
-    occurrences = namespace["_important_occurrences"](
-        [(filename, _read(f"app/static/css/src/{filename}")) for filename in source_order]
-    )
-    css = "\n".join(_read(f"app/static/css/src/{filename}") for filename in source_order)
-
-    assert len(occurrences) == len(re.findall(r"!important", css))
-    # Fase 4: 8728 -> 8499 (drift predating this work) -> 6625 after removing
-    # 1,874 dead !important declarations -- ones a later rule with the same
-    # selector set and at-rule context already beat, so they could never win
-    # -> 6618 after dropping legacy-theme rules -> 6372 after dropping rules
-    # that require a class no element ever carries -> 6363 after dropping the
-    # half of 157_dark_card_contrast_rescue_lock.css whose selectors matched
-    # nothing across 1,984 page visits. The first three steps were verified as
-    # a no-op against a computed-style fingerprint of every element on 27
-    # pages x 2 viewports x 2 themes; the last against selector reachability
-    # as all four roles. Ratchet only downward.
-    assert len(occurrences) == 6363
-
-
-def test_css_forbidden_patch_names_are_legacy_only():
-    namespace = runpy.run_path(str(ROOT / "tools" / "build_css.py"), run_name="css_build_contract")
-    filename_has_forbidden_word = namespace["_filename_has_forbidden_word"]
-    legacy_names = set(namespace["LEGACY_FORBIDDEN_CSS_SOURCE_NAMES"])
-
-    css_files = sorted((ROOT / "app" / "static" / "css" / "src").glob("*.css"))
-    violations = [
-        path.name
-        for path in css_files
-        if filename_has_forbidden_word(path.name) and path.name not in legacy_names
-    ]
-
-    assert violations == []
-
-
-def test_master_items_template_preserves_actions_and_filter_contract():
+def test_master_items_uses_standard_markup():
     template = _read("app/templates/master/items.html")
-    macros = _read("app/templates/components/ui_macros.html")
-    js = _read("app/static/js/main.js")
 
-    assert 'class="ui-scope ui-page ui-master-items-page"' in template
-    assert 'class="ui-filter-grid"' in template
-    assert 'class="ui-table-scroll"' in template
-    assert 'class="ui-data-table" data-ui-table' in template
-    assert "ui-table-cell--sticky-code" in template
-    assert "ui-table-cell--sticky-name" in template
-    assert "ui-table-cell--sticky-actions" in template
-    assert "ui-table-code" in template
-    assert 'title="{{ item.item_code }}"' in template
-    assert 'method="GET" action="{{ url_for(\'master.items\') }}"' in template
-    assert "'q', 'Pencarian'" in template
-    assert "'category', 'Kategori'" in template
-    assert "'status', 'Status'" in template
-    for endpoint in (
-        "master.index",
-        "master.create_item",
-        "master.edit_item",
-        "master.toggle_item",
-        "master.delete_item",
-    ):
+    assert "ui-scope" not in template
+    assert "ui_macros" not in template
+    assert not (TEMPLATES / "components" / "ui_macros.html").exists()
+    assert 'class="table app-table' in template
+    for endpoint in ("master.index", "master.create_item", "master.edit_item", "master.toggle_item", "master.delete_item"):
         assert f"url_for('{endpoint}'" in template
     assert "Yakin ingin menghapus item ini?" in template
-    assert 'data-app-confirm="{{ delete_confirm }}"' in macros
-    assert 'method="POST" action="{{ toggle_url }}"' in macros
-    assert 'method="POST" action="{{ delete_url }}"' in macros
-    assert 'data-ui-foundation-form' in macros
-    assert 'components/csrf_token.html' in macros
-    assert "ui_button('Hapus', 'danger'" in macros
-    assert "data-ui-action-menu-trigger" in macros
-    assert 'table.matches(".ui-data-table, [data-ui-table]")' in js
-    assert 'form.matches("[data-ui-foundation-form]")' in js
-    assert len(re.findall(r"<th(?:\s|>)", template)) == 10
-    assert "'Belum ada barang'" in template
 
 
-def test_master_items_css_is_local_and_has_no_new_important():
-    css = _read("app/static/css/src/29_module_master.css")
+def test_static_assets_are_vendored_locally_with_automatic_cache_busting():
+    """Bootstrap/bootstrap-icons dari app/static/vendor/; style.css dan main.js
+    diberi hash isi saat aplikasi start (app/__init__.py::_static_asset_fingerprint).
+    """
+    for layout_name in ("base.html", "portal_mobile.html"):
+        layout_html = _read(f"app/templates/layouts/{layout_name}")
+        assert "cdn.jsdelivr.net" not in layout_html
+        assert "vendor/bootstrap/css/bootstrap.min.css" in layout_html
+        assert "vendor/bootstrap-icons/font/bootstrap-icons.min.css" in layout_html
+        assert "vendor/bootstrap/js/bootstrap.bundle.min.js" in layout_html
+        assert "v=css_asset_version" in layout_html
+        assert "v=js_asset_version" in layout_html
 
-    assert "!important" not in css
-    assert ".ui-master-items-page" in css
-    assert "--ui-table-min-width: 1740px" in css
-    assert ".master-items-page" not in css
-
-
-def test_atomic_ui_foundation_is_ordered_prefixed_and_important_free():
-    namespace = runpy.run_path(str(ROOT / "tools" / "build_css.py"), run_name="css_build_contract")
-    source_order = namespace["SOURCE_ORDER"]
-    primitives_index = source_order.index("30_ui_primitives.css")
-    patterns_index = source_order.index("31_ui_patterns.css")
-
-    assert source_order[primitives_index - 1] == "29_module_master.css"
-    assert patterns_index == primitives_index + 1
-    assert source_order[patterns_index + 1] == "90_responsive.css"
-
-    for filename in ("30_ui_primitives.css", "31_ui_patterns.css"):
-        css = _read(f"app/static/css/src/{filename}")
-        assert "!important" not in css
-        selector_blocks = re.findall(r"([^{}]+)\{", re.sub(r"/\*.*?\*/", "", css, flags=re.S))
-        selectors = [
-            selector.strip()
-            for block in selector_blocks
-            if not block.strip().startswith("@")
-            for selector in block.split(",")
-        ]
-        assert selectors
-        assert all(".ui-" in selector for selector in selectors)
-
-
-def test_atomic_ui_tokens_and_master_items_opt_in_contract():
-    primitives = _read("app/static/css/src/30_ui_primitives.css")
-    patterns = _read("app/static/css/src/31_ui_patterns.css")
-    template = _read("app/templates/master/items.html")
-
-    # Fase 1 CSS audit rewired these onto the theme contract in
-    # 100_theme_black_white_lock.css (var(--success, <original literal>))
-    # instead of standalone hex, so .ui-scope follows dark mode automatically.
-    # The fallback after the comma is the pre-Fase-1 literal, kept so the
-    # contract still holds if that theme token is ever missing.
-    token_values = dict(re.findall(r"(--ui-(?:primary|warning|danger|info)):\s*([^;]+);", primitives))
-    assert token_values["--ui-primary"] == "var(--success, #166534)"
-    assert token_values["--ui-danger"] == "var(--danger, #b91c1c)"
-    assert len(set(token_values.values())) == 4
-    assert "#f97316" not in primitives
-    assert ".ui-button--primary" in primitives
-    assert ".ui-button--secondary" in primitives
-    assert ".ui-button--ghost" in primitives
-    assert ".ui-button--danger" in primitives
-    assert ".ui-status-badge--success" in primitives
-    assert ".ui-status-badge--warning" in primitives
-    assert ".ui-status-badge--danger" in primitives
-    assert ".ui-status-badge--info" in primitives
-    assert ".ui-status-badge--neutral" in primitives
-    assert ".ui-filter-toolbar" in patterns
-    assert ".ui-data-table" in patterns
-    assert ".ui-row-actions" in patterns
-    assert ".ui-empty-state" in patterns
-    for class_name in ("ui-button", "ui-field", "ui-search-field", "ui-select", "ui-filter-toolbar", "ui-data-table", "ui-status-badge", "ui-empty-state"):
-        assert class_name in template or class_name in _read("app/templates/components/ui_macros.html")
+    for vendored_file in (
+        "app/static/vendor/bootstrap/css/bootstrap.min.css",
+        "app/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "app/static/vendor/bootstrap-icons/font/bootstrap-icons.min.css",
+        "app/static/vendor/bootstrap-icons/font/fonts/bootstrap-icons.woff2",
+    ):
+        assert (ROOT / vendored_file).exists(), f"missing vendored asset: {vendored_file}"

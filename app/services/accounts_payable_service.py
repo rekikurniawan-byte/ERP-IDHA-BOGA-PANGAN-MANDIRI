@@ -149,7 +149,7 @@ def supplier_bill_aging_stage(bill, today):
     if days_to_due < 0:
         return {
             "stage": "OVERDUE",
-            "label": "Overdue",
+            "label": "Lewat Jatuh Tempo",
             "badge_class": "status-danger",
             "days_text": f"Lewat {abs(days_to_due)} hari",
             "days_overdue": abs(days_to_due),

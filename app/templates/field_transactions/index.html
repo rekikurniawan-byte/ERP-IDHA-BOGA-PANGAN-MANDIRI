@@ -30,7 +30,7 @@
         <p>Nominal transaksi arah OUT</p>
     </div>
     <div class="app-stat-card">
-        <span>Menunggu Review</span>
+        <span>Menunggu Pemeriksaan</span>
         <h3>{{ summary.pending_review }}</h3>
         <p>Masih menunggu review/klasifikasi</p>
     </div>
@@ -56,7 +56,7 @@
             </select>
         </div>
         <div class="col-md-4">
-            <label class="form-label">Status Review</label>
+            <label class="form-label">Status Pemeriksaan</label>
             <select name="status" class="form-select">
                 <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
                 {% for status in ['DRAFT', 'RECORDED', 'WAITING_EVIDENCE', 'WAITING_CLASSIFICATION', 'IN_REVIEW', 'WAITING_APPROVAL', 'READY_TO_POST', 'POSTED', 'REJECTED', 'VOID', 'RECONCILED'] %}
@@ -86,7 +86,7 @@
                 <tr>
                     <th>No</th>
                     <th>Tanggal</th>
-                    <th>Event</th>
+                    <th>Kejadian</th>
                     <th>Masuk/Keluar</th>
                     <th>Pihak</th>
                     <th>Nominal</th>
@@ -104,7 +104,7 @@
                     <td><span class="status-badge status-{{ 'done' if transaction.transaction_direction == 'IN' else 'warning' }}">{{ transaction.transaction_direction }}</span></td>
                     <td>{{ transaction.party_snapshot_name or (transaction.counterparty.name if transaction.counterparty else '-') }}</td>
                     <td>{{ transaction.amount|rupiah }}</td>
-                    <td><span class="status-badge status-progress">{{ transaction.review_status }}</span></td>
+                    <td><span class="status-badge status-progress">{{ transaction.review_status|status_label }}</span></td>
                     <td>{{ transaction.evidence_status }}</td>
                     <td class="text-end">
                         <a href="{{ url_for('field_transactions.detail', transaction_id=transaction.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>

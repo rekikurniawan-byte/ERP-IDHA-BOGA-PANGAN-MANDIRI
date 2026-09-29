@@ -77,7 +77,7 @@
                         <h3>{{ complaint.complaint_number }}</h3>
                         <p>{{ complaint.title }} - {{ complaint.category.replace("_", " ") }}</p>
                         <div class="portal-chip-row">
-                            <span>{{ complaint.status }}</span>
+                            <span>{{ complaint.status|status_label }}</span>
                             <span>{{ complaint.submitted_at.strftime('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>
                             {% if complaint.client %}<span>{{ complaint.client.name }}</span>{% endif %}
                             {% if complaint.mandor %}<span>{{ complaint.mandor.name }}</span>{% endif %}

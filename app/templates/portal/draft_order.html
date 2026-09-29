@@ -14,7 +14,7 @@
             <h1>{{ term('client') }} tidak membuat pesanan personal.</h1>
             <span>Akses rekap perusahaan</span>
         </div>
-        <strong class="portal-hero-status">Monitoring</strong>
+        <strong class="portal-hero-status">Pemantauan</strong>
     </div>
 
     <div class="portal-home-grid two">
@@ -103,7 +103,7 @@
     <div class="portal-precheck-card tone-{{ precheck.tone }}">
         <div>
             <span class="portal-source-pill"><i class="bi bi-shield-check"></i> Cek Pembayaran</span>
-            <h2>{{ precheck.status }}</h2>
+            <h2>{{ precheck.status|status_label }}</h2>
             <p>{{ precheck.message }}</p>
         </div>
         <div class="portal-precheck-grid">
@@ -124,7 +124,7 @@
         <article>
             <span>Batas Makan Siang</span>
             <strong>{{ context.cutoff_times.LUNCH }}</strong>
-            <small>Order hari ini setelah jam ini perlu approval admin/checker.</small>
+            <small>Order hari ini setelah jam ini perlu persetujuan admin.</small>
         </article>
         <article>
             <span>Batas Makan Malam</span>
@@ -290,7 +290,7 @@
 
     <div class="portal-section-heading">
         <h2>Pesanan Terhubung</h2>
-        <span>{{ context.daily_order_conflicts|length }} record terbaru</span>
+        <span>{{ context.daily_order_conflicts|length }} pesanan terbaru</span>
     </div>
     <div class="portal-order-conflict-list">
         {% for order in context.daily_order_conflicts %}
@@ -301,7 +301,7 @@
                     <span>{{ order.mandor_name }} - {{ order.portion_label }}</span>
                 </div>
                 <div>
-                    <span class="portal-status-pill">{{ order.status }}</span>
+                    <span class="portal-status-pill">{{ order.status|status_label }}</span>
                     {% if order.is_locked %}
                         <small>Dikunci</small>
                     {% else %}

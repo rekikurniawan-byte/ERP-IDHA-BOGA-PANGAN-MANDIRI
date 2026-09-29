@@ -4,7 +4,7 @@
 <section class="page-section">
     <div class="page-header">
         <div>
-            <span class="eyebrow">Customer Success</span>
+            <span class="eyebrow">Pelanggan</span>
             <h1>Kontrak Pelanggan</h1>
             <p>Kontrak yang lewat tanggal berakhir otomatis Kedaluwarsa; pengingat muncul mulai H-30 dan mendesak di H-7. Sesudah habis, termin kembali ke bawaan dan pesanan baru perlu persetujuan OWNER sampai diperpanjang.</p>
         </div>
@@ -115,7 +115,7 @@
                                 <td>{{ contract.start_date.strftime('%d-%m-%Y') }} - {{ contract.end_date.strftime('%d-%m-%Y') }}</td>
                                 <td>{{ contract.payment_terms }}</td>
                                 <td class="text-end">{{ contract.credit_limit|rupiah }}</td>
-                                <td><span class="status-badge neutral">{% if contract.status == "ACTIVE" %}Aktif{% elif contract.status == "DRAFT" %}Draft{% elif contract.status == "EXPIRED" %}Kedaluwarsa{% else %}{{ contract.status }}{% endif %}</span></td>
+                                <td><span class="status-badge neutral">{% if contract.status == "ACTIVE" %}Aktif{% elif contract.status == "DRAFT" %}Draft{% elif contract.status == "EXPIRED" %}Kedaluwarsa{% else %}{{ contract.status|status_label }}{% endif %}</span></td>
                                 <td class="text-end">
                                     <div class="table-actions justify-content-end">
                                         <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.contract_detail', contract_id=contract.id) }}">Detail</a>

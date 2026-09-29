@@ -6,7 +6,7 @@
 {{ page_header(
     ("Lokasi " ~ term('sub_client')),
     ("Satu " ~ term('sub_client', lower=True) ~ " bisa punya banyak lokasi seperti Mess, Workshop, Forestry, dan lokasi kerja."),
-    eyebrow="Master Lokasi",
+    eyebrow="Data Lokasi",
     actions=[
         {"label": "Kembali", "url": url_for('master.index')},
         {"label": "Tambah Lokasi", "url": url_for('master.create_location'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -48,9 +48,9 @@
                     <td>{{ location.description or '-' }}</td>
                     <td>
                         {% if location.is_active %}
-                            <span class="status-badge status-locked">AKTIF</span>
+                            <span class="status-badge success">Aktif</span>
                         {% else %}
-                            <span class="status-badge status-cancelled">NONAKTIF</span>
+                            <span class="status-badge neutral">Nonaktif</span>
                         {% endif %}
                     </td>
                     <td>

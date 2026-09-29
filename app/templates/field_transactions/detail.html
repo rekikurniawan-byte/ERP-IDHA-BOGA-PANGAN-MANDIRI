@@ -11,7 +11,7 @@
     <div class="page-actions finance-header-actions">
         <a href="{{ url_for('field_transactions.monitoring') }}" class="btn app-btn-secondary">
             <i class="bi bi-activity"></i>
-            Monitoring
+            Pemantauan
         </a>
         {% if detail_state.can_edit %}
         <a href="{{ url_for('field_transactions.edit', transaction_id=transaction.id) }}" class="btn app-btn-secondary">
@@ -59,7 +59,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Aksi Review</h5>
+            <h5>Aksi Pemeriksaan</h5>
             <p>Pilih status review berikutnya sesuai kondisi transaksi. Status sensitif seperti reject, void, dan sudah rekonsiliasi wajib memakai catatan.</p>
         </div>
     </div>
@@ -76,11 +76,11 @@
                 </select>
             </div>
             <div class="col-md-8">
-                <label class="form-label">Catatan Review</label>
+                <label class="form-label">Catatan Pemeriksaan</label>
                 <input type="text" name="note" class="form-control" placeholder="Wajib untuk reject, void, dan sudah rekonsiliasi. Opsional untuk status lain.">
             </div>
             <div class="col-md-12">
-                <button type="submit" class="btn app-btn-primary">Simpan Aksi Review</button>
+                <button type="submit" class="btn app-btn-primary">Simpan Aksi Pemeriksaan</button>
             </div>
         </div>
     </form>
@@ -98,10 +98,10 @@
         <section class="field-detail-panel">
                 <h6 class="mb-3">Status Inti</h6>
                 <div class="d-flex flex-wrap gap-2 mb-3">
-                    <span class="status-badge status-progress">{{ transaction.review_status }}</span>
-                    <span class="status-badge status-{{ 'done' if transaction.posting_status == 'POSTED' else 'warning' }}">{{ transaction.posting_status }}</span>
-                    <span class="status-badge status-{{ 'done' if transaction.evidence_status in ['ATTACHED', 'VERIFIED'] else 'warning' }}">{{ transaction.evidence_status }}</span>
-                    <span class="status-badge status-{{ 'done' if transaction.payment_status == 'PAID' else 'info' }}">{{ transaction.payment_status }}</span>
+                    <span class="status-badge status-progress">{{ transaction.review_status|status_label }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.posting_status == 'POSTED' else 'warning' }}">{{ transaction.posting_status|status_label }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.evidence_status in ['ATTACHED', 'VERIFIED'] else 'warning' }}">{{ transaction.evidence_status|status_label }}</span>
+                    <span class="status-badge status-{{ 'done' if transaction.payment_status == 'PAID' else 'info' }}">{{ transaction.payment_status|status_label }}</span>
                 </div>
                 <div class="detail-grid">
                     <div class="detail-row"><span>Event</span><strong>{{ detail_state.event_label }}</strong><small class="text-muted d-block">{{ transaction.business_event_type }}</small></div>
@@ -229,7 +229,7 @@
                 {% if manual_receivable %}
                     <p class="mb-1"><strong>No:</strong> {{ manual_receivable.receivable_number }}</p>
                     <p class="mb-1"><strong>Jatuh Tempo:</strong> {{ manual_receivable.due_date.strftime('%d-%m-%Y') }}</p>
-                    <p class="mb-1"><strong>Status:</strong> {{ manual_receivable.status }}</p>
+                    <p class="mb-1"><strong>Status:</strong> {{ manual_receivable.status|status_label }}</p>
                     <p class="mb-1"><strong>Total:</strong> {{ manual_receivable.total_amount|rupiah }}</p>
                     <p class="mb-3"><strong>Sisa:</strong> {{ manual_receivable.remaining_amount|rupiah }}</p>
                     {% if manual_receivable_billing_invoice %}
@@ -340,7 +340,7 @@
                 {% if manual_payable %}
                     <p class="mb-1"><strong>No:</strong> {{ manual_payable.payable_number }}</p>
                     <p class="mb-1"><strong>Jatuh Tempo:</strong> {{ manual_payable.due_date.strftime('%d-%m-%Y') }}</p>
-                    <p class="mb-1"><strong>Status:</strong> {{ manual_payable.status }}</p>
+                    <p class="mb-1"><strong>Status:</strong> {{ manual_payable.status|status_label }}</p>
                     <p class="mb-1"><strong>Total:</strong> {{ manual_payable.total_amount|rupiah }}</p>
                     <p class="mb-3"><strong>Sisa:</strong> {{ manual_payable.remaining_amount|rupiah }}</p>
 
@@ -438,7 +438,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Riwayat Review</h5>
+            <h5>Riwayat Pemeriksaan</h5>
             <p>Jejak perubahan status dan aksi dasar pada transaksi lapangan.</p>
         </div>
     </div>
@@ -470,7 +470,7 @@
     {% else %}
     <div class="empty-state">
         <i class="bi bi-clock-history"></i>
-        <h5>Belum ada riwayat review</h5>
+        <h5>Belum ada riwayat pemeriksaan</h5>
         <p>Log review akan tampil setelah transaksi mulai diproses lebih lanjut.</p>
     </div>
     {% endif %}
@@ -544,7 +544,7 @@
                                     </td>
                                     <td>{{ item.attachment_role }}</td>
                                     <td>
-                                        <span class="status-badge status-{{ 'done' if item.status == 'VERIFIED' else 'warning' }}">{{ item.status }}</span>
+                                        <span class="status-badge status-{{ 'done' if item.status == 'VERIFIED' else 'warning' }}">{{ item.status|status_label }}</span>
                                         <div class="small mt-1">
                                             {% if attachment_state.availability == 'READY' %}
                                             <span class="text-success">FILE SIAP</span>
@@ -675,9 +675,9 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Delivery</label>
+                <label class="form-label">Pengiriman</label>
                 <select name="delivery_id" class="form-select">
-                    <option value="">Tanpa delivery</option>
+                    <option value="">Tanpa pengiriman</option>
                     {% for delivery in deliveries %}
                         <option value="{{ delivery.id }}">{{ delivery.delivery_number }}</option>
                     {% endfor %}

@@ -416,7 +416,7 @@
     {% endif %}
 
     <button data-app-action="print" class="btn app-btn-primary">
-        Cetak / Save PDF
+        Cetak / Simpan PDF
     </button>
 </div>
 
@@ -436,7 +436,7 @@
         <div class="invoice-title">
             <h2>INVOICE</h2>
             <p>{{ invoice.invoice_number }}</p>
-            <div class="small-muted">Status: {% if invoice.status == 'DRAFT' %}OPEN / BELUM LUNAS{% else %}{{ invoice.status }}{% endif %}</div>
+            <div class="small-muted">Status: {% if invoice.status == 'DRAFT' %}OPEN / BELUM LUNAS{% else %}{{ invoice.status|status_label('invoice') }}{% endif %}</div>
         </div>
     </div>
 
@@ -553,8 +553,8 @@
                     <th style="width: 13%;">{{ term('sub_client') }}</th>
                     <th style="width: 13%;">Lokasi</th>
                     <th class="text-right" style="width: 7%;">Sarapan</th>
-                    <th class="text-right" style="width: 7%;">Lunch</th>
-                    <th class="text-right" style="width: 7%;">Dinner</th>
+                    <th class="text-right" style="width: 7%;">Siang</th>
+                    <th class="text-right" style="width: 7%;">Sore</th>
                     <th class="text-right" style="width: 7%;">Qty</th>
                     <th class="text-right" style="width: 14%;">Harga</th>
                     <th class="text-right" style="width: 17%;">Subtotal</th>
@@ -829,7 +829,7 @@
     </div>
     {% else %}
     <div class="box official-print-warning">
-        <strong>Rekening pembayaran perusahaan belum diisi.</strong> Lengkapi di Settings â†’ Identitas Perusahaan sebelum invoice resmi dikirim.
+        <strong>Rekening pembayaran perusahaan belum diisi.</strong> Lengkapi di Settings → Identitas Perusahaan sebelum invoice resmi dikirim.
     </div>
     {% endif %}
 

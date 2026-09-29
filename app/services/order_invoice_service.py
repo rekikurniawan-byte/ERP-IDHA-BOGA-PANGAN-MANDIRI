@@ -49,7 +49,7 @@ def build_order_invoice_lines(order, mandor_id):
                 "item_type": "CATERING",
                 "description": (
                     f"{order.order_number} | PIC {mandor_name} | {location_name} | "
-                    f"Porsi locked: Lunch {lunch_qty}, Dinner {dinner_qty}"
+                    f"Porsi terkunci: Siang {lunch_qty}, Sore {dinner_qty}"
                     f"{shortage_note(short_qty)}"
                 ),
                 "qty": total_qty,

@@ -16,7 +16,7 @@
 {% set summary = monitoring.summary %}
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Menunggu Review</span>
+        <span>Menunggu Pemeriksaan</span>
         <h3>{{ summary.pending_review_count }}</h3>
         <p>{{ summary.pending_review_amount|rupiah }} menunggu review</p>
     </div>
@@ -53,7 +53,7 @@
         <div class="app-card monitoring-surface">
             <div class="section-title">
                 <div>
-                    <h3>Menunggu Review</h3>
+                    <h3>Menunggu Pemeriksaan</h3>
                     <p>Draft dan transaksi yang masih menunggu kelengkapan, klasifikasi, atau approval.</p>
                 </div>
                 <span class="status-badge warning">{{ summary.pending_review_count }}</span>
@@ -64,7 +64,7 @@
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Event</th>
+                            <th>Kejadian</th>
                             <th>Nominal</th>
                             <th>Status</th>
                         </tr>
@@ -75,7 +75,7 @@
                             <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
                             <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
                             <td>{{ row.amount|rupiah }}</td>
-                            <td>{{ row.review_status }}</td>
+                            <td>{{ row.review_status|status_label }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -84,7 +84,7 @@
             {% else %}
             <div class="empty-state">
                 <i class="bi bi-check2-circle"></i>
-                <h5>Tidak ada antrean review</h5>
+                <h5>Tidak ada antrean pemeriksaan</h5>
                 <p>Semua transaksi lapangan sudah lanjut ke tahap berikutnya.</p>
             </div>
             {% endif %}
@@ -106,7 +106,7 @@
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Event</th>
+                            <th>Kejadian</th>
                             <th>Masuk/Keluar</th>
                             <th>Nominal</th>
                         </tr>
@@ -176,7 +176,7 @@
             {% else %}
             <div class="empty-state">
                 <i class="bi bi-cash-coin"></i>
-                <h5>Tidak ada open receivable</h5>
+                <h5>Tidak ada piutang terbuka</h5>
                 <p>Semua piutang manual sudah lunas atau belum dibentuk.</p>
             </div>
             {% endif %}
@@ -218,7 +218,7 @@
             {% else %}
             <div class="empty-state">
                 <i class="bi bi-wallet2"></i>
-                <h5>Tidak ada open payable</h5>
+                <h5>Tidak ada hutang terbuka</h5>
                 <p>Semua hutang manual sudah lunas atau belum dibentuk.</p>
             </div>
             {% endif %}
@@ -300,7 +300,7 @@
             <thead>
                 <tr>
                     <th>No</th>
-                    <th>Event</th>
+                    <th>Kejadian</th>
                     <th>Pihak</th>
                     <th>Nominal</th>
                     <th>Status</th>
@@ -313,7 +313,7 @@
                     <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
                     <td>{{ row.party_snapshot_name or (row.counterparty.name if row.counterparty else '-') }}</td>
                     <td>{{ row.amount|rupiah }}</td>
-                    <td>{{ row.review_status }}</td>
+                    <td>{{ row.review_status|status_label }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -80,7 +80,7 @@
                         <td>{{ contract.financing_provider or contract.vendor_name or '-' }}</td>
                         <td class="text-end fw-semibold">{{ contract.principal_amount|rupiah }}</td>
                         <td class="text-end">{{ csum|rupiah }}</td>
-                        <td><span class="status-badge status-locked">{{ contract.status }}</span></td>
+                        <td><span class="status-badge status-locked">{{ contract.status|status_label }}</span></td>
                         <td class="text-end"><a href="{{ url_for('finance.fixed_asset_installment_detail', contract_id=contract.id) }}" class="btn btn-sm app-btn-secondary">Detail</a></td>
                     </tr>
                 {% else %}

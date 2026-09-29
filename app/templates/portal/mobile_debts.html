@@ -49,7 +49,7 @@
                         <h3>{{ debt.worker_name }}</h3>
                         <p>{{ debt.mandor_name }} | {{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else "-" }}</p>
                         <div class="portal-chip-row">
-                            <span>{{ debt.status }}</span>
+                            <span>{{ debt.status|status_label }}</span>
                             <span>{{ debt.payment_count }}x bayar</span>
                             <span>Sale #{{ debt.sale_id or "-" }}</span>
                         </div>

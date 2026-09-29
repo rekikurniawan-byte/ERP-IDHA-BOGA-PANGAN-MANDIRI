@@ -474,7 +474,7 @@ def _receivable_stage(invoice: Invoice) -> Dict[str, Any]:
         if due_date:
             days_to_due = (due_date - today).days
             if days_to_due < 0:
-                return {"stage": "OVERDUE", "stage_label": "Overdue", "level": "URGENT", "message": f"Lewat jatuh tempo {abs(days_to_due)} hari.", "action": "Follow up penagihan."}
+                return {"stage": "OVERDUE", "stage_label": "Lewat Jatuh Tempo", "level": "URGENT", "message": f"Lewat jatuh tempo {abs(days_to_due)} hari.", "action": "Follow up penagihan."}
             if days_to_due <= 3:
                 return {"stage": "DUE_SOON", "stage_label": "Reminder Jatuh Tempo", "level": "REMINDER", "message": f"Jatuh tempo dalam {days_to_due} hari.", "action": "Kirim reminder."}
         return {"stage": "NORMAL_UNPAID", "stage_label": "Belum Jatuh Tempo", "level": "NORMAL", "message": "Belum lunas.", "action": "Pantau."}

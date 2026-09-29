@@ -8,7 +8,7 @@
 {{ page_header(
     "Backup Database & Lampiran Digital",
     "Backup verified: verified tetap wajib melewati sensitive action guard: alasan, password re-confirm, dan audit log.",
-    eyebrow="Production Safety",
+    eyebrow="Keamanan Data",
     actions=[
         {"label": "Recovery Center", "url": url_for('settings.recovery_center'), "variant": "primary"},
         {"label": "Kesehatan Sistem", "url": url_for('settings.system_health')},
@@ -37,7 +37,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ precheck.get("errors", [])|length }}</strong></div></div>
-        <div class="col-md-3"><div class="detail-row"><span>Warning</span><strong>{{ precheck.get("warnings", [])|length }}</strong></div></div>
+        <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ precheck.get("warnings", [])|length }}</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ precheck.get("successes", [])|length }}</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>Migration</span><strong>{{ precheck.get("summary", {}).get("alembic_version") or '-' }}</strong></div></div>
     </div>
@@ -89,9 +89,9 @@
             <p>Audit Mode pantau untuk memastikan folder aman dan pre-backup health check PASS sebelum backup baru dibuat.</p>
         </div>
         {% if baseline.get("baseline_pass") %}
-            <span class="status-badge success">POLICY AMAN</span>
+            <span class="status-badge success">Kebijakan Aman</span>
         {% else %}
-            <span class="status-badge warning">PERLU CEK</span>
+            <span class="status-badge warning">Perlu Cek</span>
         {% endif %}
     </div>
 
@@ -110,8 +110,8 @@
     <div class="row g-3 mb-3">
         <div class="col-md-3"><div class="detail-row"><span>Ref lampiran DB</span><strong>{{ attachment_audit.get("reference_count", 0) }}</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>File fisik upload</span><strong>{{ attachment_audit.get("physical_file_count", 0) }}</strong></div></div>
-        <div class="col-md-3"><div class="detail-row"><span>Missing upload</span><strong>{{ attachment_audit.get("missing_reference_count", 0) }}</strong></div></div>
-        <div class="col-md-3"><div class="detail-row"><span>Orphan upload</span><strong>{{ attachment_audit.get("orphan_file_count", 0) }}</strong></div></div>
+        <div class="col-md-3"><div class="detail-row"><span>Unggahan hilang</span><strong>{{ attachment_audit.get("missing_reference_count", 0) }}</strong></div></div>
+        <div class="col-md-3"><div class="detail-row"><span>File tanpa pemilik</span><strong>{{ attachment_audit.get("orphan_file_count", 0) }}</strong></div></div>
     </div>
 
     {% if baseline.get("errors") %}
@@ -125,7 +125,7 @@
 
     {% if baseline.get("warnings") %}
         <div class="alert alert-warning">
-            <strong>Warning:</strong>
+            <strong>Peringatan:</strong>
             <ul class="mb-0">
                 {% for message in baseline.get("warnings", []) %}<li>{{ message }}</li>{% endfor %}
             </ul>
@@ -287,9 +287,9 @@
                 </div>
             </div>
             {% if restore_validation["is_valid_for_manual_restore"] %}
-                <span class="status-badge success">VALID UNTUK RESTORE MANUAL</span>
+                <span class="status-badge success">Layak Dipulihkan Manual</span>
             {% else %}
-                <span class="status-badge danger">BELUM LAYAK RESTORE</span>
+                <span class="status-badge danger">Belum Layak Dipulihkan</span>
             {% endif %}
         </div>
 
@@ -302,7 +302,7 @@
             </div>
             <div class="col-md-4">
                 <div class="detail-row">
-                    <span>Warning</span>
+                    <span>Peringatan</span>
                     <strong>{{ restore_validation["warnings"]|length }}</strong>
                 </div>
             </div>
@@ -327,7 +327,7 @@
 
         {% if restore_validation["warnings"] %}
             <div class="alert alert-warning">
-                <strong>Warning:</strong>
+                <strong>Peringatan:</strong>
                 <ul class="mb-0">
                     {% for message in restore_validation["warnings"] %}
                         <li>{{ message }}</li>
@@ -363,7 +363,7 @@
                 </div>
                 <div class="row g-3">
                     <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ postcheck.get("summary", {}).get("error_count", postcheck.get("errors", [])|length) }}</strong></div></div>
-                    <div class="col-md-3"><div class="detail-row"><span>Warning</span><strong>{{ postcheck.get("summary", {}).get("warning_count", postcheck.get("warnings", [])|length) }}</strong></div></div>
+                    <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ postcheck.get("summary", {}).get("warning_count", postcheck.get("warnings", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ postcheck.get("summary", {}).get("success_count", postcheck.get("successes", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Restore dry-run</span><strong>{{ postcheck.get("restore_dry_run_status", "DICEK DI PANEL B3") }}</strong></div></div>
                 </div>
@@ -386,7 +386,7 @@
                 </div>
                 <div class="row g-3">
                     <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ dryrun.get("summary", {}).get("error_count", dryrun.get("errors", [])|length) }}</strong></div></div>
-                    <div class="col-md-3"><div class="detail-row"><span>Warning</span><strong>{{ dryrun.get("summary", {}).get("warning_count", dryrun.get("warnings", [])|length) }}</strong></div></div>
+                    <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ dryrun.get("summary", {}).get("warning_count", dryrun.get("warnings", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ dryrun.get("summary", {}).get("success_count", dryrun.get("successes", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Verified</span><strong>{{ 'YA' if dryrun.get("is_verified_backup") else 'BELUM' }}</strong></div></div>
                 </div>
@@ -465,11 +465,11 @@
                 </a>
                 <a href="{{ url_for('sop.disaster_recovery') }}" class="btn app-btn-secondary btn-sm">
                     <i class="bi bi-life-preserver"></i>
-                    SOP Disaster Recovery
+                    SOP Pemulihan
                 </a>
             </div>
         </div>
-        <span class="status-badge warning">MANUAL ONLY</span>
+        <span class="status-badge warning">Hanya Manual</span>
     </div>
 
     {% if restore_sop %}
@@ -512,20 +512,13 @@
             </div>
         </div>
 
-        <div class="restore-steps">
-            {% for step in restore_sop["steps"] %}
-                <div class="app-card mb-3">
-                    <h5>{{ step["title"] }}</h5>
-                    <p class="text-muted mb-2">{{ step["description"] }}</p>
-                    {% if step["commands"] %}
-                        <div class="command-box">
-                            {% for command in step["commands"] %}
-                                <code>{{ command }}</code>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
+        <div class="app-card mb-3 restore-steps">
+            <h5>Langkah restore manual</h5>
+            <ol class="mb-0">
+                {% for step in restore_sop["steps"] %}
+                    <li>{{ step }}</li>
+                {% endfor %}
+            </ol>
         </div>
 
         <div class="app-card soft-info-card mb-0">
@@ -591,7 +584,7 @@
                         </td>
                         <td>
                             {% if backup.is_verified_backup %}
-                                <span class="status-badge success">VERIFIED</span>
+                                <span class="status-badge success">Terverifikasi</span>
                             {% elif backup.post_backup_verification_status == "PASS" %}
                                 <span class="status-badge warning">POST-CHECK PASS</span>
                             {% elif backup.package_status == "PACKAGE_HARDENED_AND_POST_BACKUP_VERIFIED" %}
@@ -599,9 +592,9 @@
                             {% elif backup.package_status == "PACKAGE_HARDENED_PASS" %}
                                 <span class="status-badge warning">PENDING POST-CHECK</span>
                             {% elif backup.verification_status %}
-                                <span class="status-badge warning">{{ backup.verification_status }}</span>
+                                <span class="status-badge warning">{{ backup.verification_status|status_label }}</span>
                             {% else %}
-                                <span class="status-badge warning">LEGACY/PENDING</span>
+                                <span class="status-badge warning">Data Lama</span>
                             {% endif %}
                             {% if backup.app_version %}
                                 <div class="text-muted small mt-1">App: {{ backup.app_version }}</div>

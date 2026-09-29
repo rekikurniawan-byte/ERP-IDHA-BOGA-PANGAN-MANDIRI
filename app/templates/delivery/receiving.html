@@ -59,12 +59,12 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Delivery</th>
+                    <th>No Pengiriman</th>
                     <th>Tipe</th>
                     <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
-                    <th>Planned</th>
-                    <th>Status Delivery</th>
+                    <th>Rencana</th>
+                    <th>Status Pengiriman</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -74,14 +74,14 @@
                     <td>
                         <strong>{{ detail.delivery.delivery_number }}</strong>
                         {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
-                            <div class="muted-small">Pengganti shortage</div>
+                            <div class="muted-small">Pengganti kekurangan</div>
                         {% endif %}
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
                     <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
                     <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
                     <td>{{ detail.planned_qty }}</td>
-                    <td>{{ detail.delivery.status }}</td>
+                    <td>{{ detail.delivery.status|status_label }}</td>
                     <td>
                         <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-primary">
                             Catat Terima
@@ -115,13 +115,13 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>No Delivery</th>
+                    <th>No Pengiriman</th>
                     <th>Tipe</th>
                     <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
-                    <th>Planned</th>
-                    <th>Delivered</th>
-                    <th>Shortage</th>
+                    <th>Rencana</th>
+                    <th>Terkirim</th>
+                    <th>Kurang Kirim</th>
                     <th>Penerima</th>
                     <th>Aksi</th>
                 </tr>
@@ -132,7 +132,7 @@
                     <td>
                         <strong>{{ detail.delivery.delivery_number }}</strong>
                         {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
-                            <div class="muted-small">Pengganti shortage</div>
+                            <div class="muted-small">Pengganti kekurangan</div>
                         {% endif %}
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
@@ -150,7 +150,7 @@
                     <td>{{ detail.receipt.receiver_name if detail.receipt else '-' }}</td>
                     <td>
                         <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
-                            Edit Terima
+                            Ubah Penerimaan
                         </a>
                     </td>
                 </tr>

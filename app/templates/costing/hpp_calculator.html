@@ -6,7 +6,7 @@
 {{ page_header(
     "Kalkulator HPP Mode pantau",
     "Hitung estimasi HPP dari resep/BOM, profil HPP item, kemasan, dan overhead. Belum menyimpan snapshot, belum memotong stok, dan belum membuat jurnal.",
-    eyebrow="HPP Tahap 3",
+    eyebrow="HPP",
     actions=[
         {"label": "Menu & Resep", "url": url_for('costing.menus')},
         {"label": "Profil Kemasan", "url": url_for('costing.packaging_profiles')},
@@ -131,7 +131,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-receipt-cutoff"></i></div>
         <div>
-            <p>Revenue Estimasi</p>
+            <p>Estimasi Pendapatan</p>
             <h3>{{ result.revenue_total|rupiah }}</h3>
             <span class="app-stat-helper">Harga jual dipakai</span>
         </div>
@@ -167,9 +167,9 @@
             <small class="text-muted">Status Data</small>
             <div>
                 {% if result.is_complete %}
-                    <span class="status-badge status-locked">LENGKAP</span>
+                    <span class="status-badge success">Lengkap</span>
                 {% else %}
-                    <span class="status-badge status-draft">PERLU DILENGKAPI</span>
+                    <span class="status-badge warning">Perlu Dilengkapi</span>
                 {% endif %}
             </div>
         </div>
@@ -247,9 +247,9 @@
                     <td>{{ line.cost_total|rupiah }}</td>
                     <td>
                         {% if line.status == "OK" %}
-                            <span class="status-badge status-locked">OK</span>
+                            <span class="status-badge success">Aman</span>
                         {% else %}
-                            <span class="status-badge status-draft">{{ line.status }}</span><br>
+                            <span class="status-badge status-draft">{{ line.status|status_label }}</span><br>
                             <small class="text-muted">{{ line.message }}</small>
                         {% endif %}
                     </td>

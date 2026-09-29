@@ -42,9 +42,9 @@
                     <td>{{ purchase.procurement_date.strftime('%d-%m-%Y') }}</td>
                     <td>
                         {% if purchase.purchase_type == "CREDIT" %}
-                            <span class="status-badge status-progress">HUTANG</span>
+                            <span class="status-badge warning">Hutang</span>
                         {% else %}
-                            <span class="status-badge status-locked">TUNAI</span>
+                            <span class="status-badge success">Tunai</span>
                         {% endif %}
                     </td>
                     <td>
@@ -82,7 +82,7 @@
                         {% set supplier_bill = supplier_bill_by_procurement.get(purchase.id) if supplier_bill_by_procurement else None %}
                         {% if purchase.purchase_type == "CREDIT" %}
                             {% if supplier_bill %}
-                                <span class="status-badge status-progress">{{ supplier_bill.status }}</span>
+                                <span class="status-badge status-progress">{{ supplier_bill.status|status_label('supplier_bill') }}</span>
                                 <div class="text-muted small">
                                     {{ supplier_bill.bill_number }} | Sisa {{ supplier_bill.remaining_amount|rupiah }}
                                 </div>

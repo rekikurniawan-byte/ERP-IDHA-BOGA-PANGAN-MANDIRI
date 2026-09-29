@@ -59,16 +59,16 @@
                                 {% endfor %}
                             </select>
                         {% else %}
-                            <span class="status-badge status-cancelled">PIC BELUM ADA</span>
+                            <span class="status-badge danger">PIC Belum Ada</span>
                         {% endif %}
                     </td>
                     <td>{{ row.line_count }}</td>
                     <td>{{ row.total_amount|rupiah }}</td>
                     <td>
                         {% if row.existing_invoice %}
-                            <span class="status-badge status-locked">SUDAH ADA</span>
+                            <span class="status-badge success">Sudah Ada</span>
                         {% else %}
-                            <span class="status-badge status-progress">BELUM DIBUAT</span>
+                            <span class="status-badge warning">Belum Dibuat</span>
                         {% endif %}
                     </td>
                     <td>
@@ -82,7 +82,7 @@
                                       action="{{ url_for('finance.generate_order_invoice', order_id=row.order.id, mandor_id=row.mandor_id) }}" data-app-confirm="Buat invoice resmi ke client dan kunci PIC resmi + rekening pembayaran saat ini?" data-ui-form="true" class="app-form">
                                     {% include "components/csrf_token.html" %}
                                     <button type="submit" class="btn btn-sm app-btn-primary">
-                                        Generate
+                                        Buat
                                     </button>
                                 </form>
                             {% else %}

@@ -175,7 +175,7 @@ def supplier_bills():
 
     filter_options = [
         {"value": "OPEN", "label": "Belum Lunas"},
-        {"value": "OVERDUE", "label": "Overdue"},
+        {"value": "OVERDUE", "label": "Lewat Jatuh Tempo"},
         {"value": "DUE_SOON", "label": "Segera Jatuh Tempo"},
         {"value": "PAID", "label": "Lunas"},
         {"value": "ALL", "label": "Semua"},

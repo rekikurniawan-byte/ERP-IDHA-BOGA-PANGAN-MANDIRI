@@ -108,7 +108,7 @@
 </head>
 <body>
     <div class="print-toolbar">
-        <button data-app-action="print">Print / Save PDF</button>
+        <button data-app-action="print">Cetak / Simpan PDF</button>
         <button data-app-action="close">Tutup</button>
     </div>
 
@@ -127,7 +127,7 @@
         <div class="report-meta">
             <strong>PT Idha Boga Pangan Mandiri</strong><br>
             Dicetak dari Finance / Piutang<br>
-            Mode: Print / Save PDF Browser
+            Mode: Cetak / Simpan PDF dari browser
         </div>
     </header>
 
@@ -180,7 +180,7 @@
                 <th class="right">Total</th>
                 <th class="right">Dibayar</th>
                 <th class="right">Sisa</th>
-                <th>Stage</th>
+                <th>Tahap</th>
             </tr>
         </thead>
         <tbody>
@@ -198,7 +198,7 @@
                     {{ invoice.period_end.strftime('%d-%m-%Y') if invoice.period_end else '-' }}
                 </td>
                 <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else '-' }}</td>
-                <td>{{ invoice.status }}</td>
+                <td>{{ invoice.status|status_label('invoice') }}</td>
                 <td class="right">{{ invoice.total_amount|rupiah }}</td>
                 <td class="right">{{ invoice.paid_amount|rupiah }}</td>
                 <td class="right">{{ invoice.remaining_amount|rupiah }}</td>

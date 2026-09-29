@@ -54,7 +54,7 @@
     <div class="expense-rule-grid">
         <div><strong>Jurnal</strong><span>{{ 'Tersedia' if expense.journal_id else 'Belum ada jurnal beban' }}</span></div>
         <div><strong>Buku Kas/Bank</strong><span>{{ 'Tersedia' if expense.cash_bank_transaction_id else 'Belum ada buku kas/bank' }}</span></div>
-        <div><strong>Drilldown</strong><span><a href="{{ url_for('accounting.expense_drilldown') }}">Buka Rincian Beban</a></span></div>
+        <div><strong>Rincian</strong><span><a href="{{ url_for('accounting.expense_drilldown') }}">Buka Rincian Beban</a></span></div>
     </div>
 </div>
 
@@ -71,7 +71,7 @@
         <div><span>Sumber Dana</span><strong>{{ 'Kas' if expense.account_type == 'CASH' else 'Bank' }}</strong></div>
         <div><span>Supplier / Vendor</span><strong>{{ get_supplier_label(expense) }}</strong></div>
         <div><span>Referensi</span><strong>{{ expense.reference_number or '-' }}</strong></div>
-        <div><span>Status Posting</span><strong>{{ expense.posting_status }}</strong></div>
+        <div><span>Status Posting</span><strong>{{ expense.posting_status|status_label }}</strong></div>
         <div><span>ID Buku Kas/Bank</span><strong>{{ expense.cash_bank_transaction_id or '-' }}</strong></div>
         <div><span>ID Jurnal</span><strong>{{ expense.journal_id or '-' }}</strong></div>
     </div>

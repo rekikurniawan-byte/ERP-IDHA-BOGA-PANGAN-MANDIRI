@@ -6,7 +6,7 @@
 {{ page_header(
     snapshot.snapshot_number,
     daily_order.order_number ~ " · simulasi dari komponen FOOD snapshot HPP.",
-    eyebrow="Dry-run Pemakaian Stok",
+    eyebrow="Simulasi Pemakaian Stok",
     actions=[
         {"label": "Kembali ke Snapshot", "url": url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id), "icon": "bi-arrow-left"},
         {"label": "Detail Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-journal-text"},
@@ -66,9 +66,9 @@
         </div>
         <div class="table-actions">
             {% if dry_run.summary.is_ready_for_commit %}
-                <span class="status-badge status-locked">SIAP UNTUK TAHAP COMMIT</span>
+                <span class="status-badge success">Siap Disimpan</span>
             {% else %}
-                <span class="status-badge status-progress">BELUM SIAP COMMIT</span>
+                <span class="status-badge warning">Belum Siap Disimpan</span>
             {% endif %}
         </div>
     </div>

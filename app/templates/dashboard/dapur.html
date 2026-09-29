@@ -5,7 +5,7 @@
     <div class="dashboard-command-title-block">
         <span class="eyebrow">Dashboard Dapur</span>
         <h1>Produksi Dapur</h1>
-        <p>Fokus pada produksi lunch, dinner, realisasi porsi, dan status pekerjaan dapur hari ini.</p>
+        <p>Produksi siang dan sore, realisasi porsi, dan status pekerjaan dapur hari ini.</p>
     </div>
 
     <div class="page-actions dashboard-page-actions">
@@ -15,7 +15,7 @@
         </a>
         <a href="{{ url_for('settings.live_reminders') }}" class="btn app-btn-secondary">
             <i class="bi bi-bell"></i>
-            Reminder
+            Pengingat
             {% if global_live_reminder_badge.total > 0 %}
                 <span class="badge {{ global_live_reminder_badge.badge_class }} ms-1">{{ global_live_reminder_badge.total }}</span>
             {% endif %}
@@ -27,7 +27,7 @@
     <div class="dashboard-section-header">
         <div>
             <h2>Status Produksi</h2>
-            <p>Ringkasan dapur dibuat langsung terbaca untuk layar laptop maupun HP.</p>
+            <p>Jumlah produksi menurut statusnya.</p>
         </div>
     </div>
 
@@ -37,14 +37,14 @@
             <div>
                 <p>Produksi Hari Ini</p>
                 <h3>{{ data.today_productions|length }}</h3>
-                <span class="app-stat-helper">Lunch dan dinner</span>
+                <span class="app-stat-helper">Siang dan sore</span>
             </div>
         </div>
 
         <div class="app-stat-card dashboard-stat-card">
             <div class="app-stat-icon {% if data.draft_count > 0 %}stat-warning{% else %}stat-success{% endif %}"><i class="bi bi-pencil-square"></i></div>
             <div>
-                <p>Draft</p>
+                <p>Konsep</p>
                 <h3>{{ data.draft_count }}</h3>
                 <span class="app-stat-helper">Belum mulai produksi</span>
             </div>
@@ -53,7 +53,7 @@
         <div class="app-stat-card dashboard-stat-card">
             <div class="app-stat-icon stat-info"><i class="bi bi-hourglass-split"></i></div>
             <div>
-                <p>In Progress</p>
+                <p>Sedang Berjalan</p>
                 <h3>{{ data.in_progress_count }}</h3>
                 <span class="app-stat-helper">Sedang diproses</span>
             </div>
@@ -62,7 +62,7 @@
         <div class="app-stat-card dashboard-stat-card">
             <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
             <div>
-                <p>Completed</p>
+                <p>Selesai</p>
                 <h3>{{ data.completed_count }}</h3>
                 <span class="app-stat-helper">Selesai produksi</span>
             </div>
@@ -77,7 +77,7 @@
             <strong>{{ data.draft_count + data.in_progress_count }} produksi perlu dipantau</strong>
         </div>
         <div class="dashboard-mini-card">
-            <span>Reminder Live</span>
+            <span>Pengingat</span>
             <strong>{{ global_live_reminder_badge.total }} catatan aktif</strong>
         </div>
     </div>
@@ -100,8 +100,8 @@
                         <th>Tanggal</th>
                         <th>Tipe</th>
                         <th>Status</th>
-                        <th>Planned</th>
-                        <th>Actual</th>
+                        <th>Rencana</th>
+                        <th>Realisasi</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -110,10 +110,10 @@
                         {% set detail = production.details[0] if production.details else none %}
                         <tr>
                             <td>{{ production.production_date.strftime('%d-%m-%Y') }}</td>
-                            <td>{{ production.production_type }}</td>
-                            <td><span class="badge bg-secondary-subtle text-secondary border">{{ production.status }}</span></td>
-                            <td>{{ detail.planned_qty|int if detail else 0 }}</td>
-                            <td>{{ detail.actual_qty|int if detail else 0 }}</td>
+                            <td>{{ production.production_type|status_label }}</td>
+                            <td><span class="status-badge {{ 'success' if production.status == 'COMPLETED' else ('warning' if production.status == 'IN_PROGRESS' else 'neutral') }}">{{ production.status|status_label }}</span></td>
+                            <td class="num">{{ detail.planned_qty|int if detail else 0 }}</td>
+                            <td class="num">{{ detail.actual_qty|int if detail else 0 }}</td>
                             <td>
                                 <a href="{{ url_for('production.detail', production_id=production.id) }}" class="btn btn-sm app-btn-secondary">
                                     Detail

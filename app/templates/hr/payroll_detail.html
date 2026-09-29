@@ -4,9 +4,9 @@
 <div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payroll-detail">
 <div class="page-header">
     <div>
-        <span class="eyebrow">SDM / PAYROLL DETAIL</span>
+        <span class="eyebrow">SDM / Detail Penggajian</span>
         <h1>Detail Payroll</h1>
-        <p>Periode {{ "%02d"|format(payroll.period_month) }}-{{ payroll.period_year }} · Status <strong>{{ payroll.status }}</strong></p>
+        <p>Periode {{ "%02d"|format(payroll.period_month) }}-{{ payroll.period_year }} · Status <strong>{{ payroll.status|status_label }}</strong></p>
     </div>
     <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
         {% if payroll.status == "DRAFT" %}
@@ -67,7 +67,7 @@
                 <span>Payroll Lifecycle</span>
                 <h2>DRAFT → FINAL → POSTED → PAID</h2>
             </div>
-            <span class="hr-status-badge is-{{ payroll.status|lower }}">{{ payroll.status }}</span>
+            <span class="hr-status-badge is-{{ payroll.status|lower }}">{{ payroll.status|status_label }}</span>
         </div>
         <div class="hr-lifecycle-list detail">
             {% for step in lifecycle_steps %}
@@ -120,7 +120,7 @@
             {% else %}
                 <div class="hr-inline-status is-muted">
                     <i class="bi bi-info-circle"></i>
-                    <span>Pembayaran aktif setelah payroll berstatus <strong>POSTED</strong>. Status sekarang: {{ payroll.status }}.</span>
+                    <span>Pembayaran aktif setelah payroll berstatus <strong>POSTED</strong>. Status sekarang: {{ payroll.status|status_label }}.</span>
                 </div>
             {% endif %}
         </div>

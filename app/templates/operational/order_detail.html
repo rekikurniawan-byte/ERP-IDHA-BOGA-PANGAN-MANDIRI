@@ -93,7 +93,7 @@
 <section class="delivery-next-action-panel mt-4" data-delivery-next-action="order-detail">
     <div class="delivery-next-action-header">
         <div>
-            <span class="eyebrow">Next Action Delivery</span>
+            <span class="eyebrow">Langkah Pengiriman Berikutnya</span>
             <h2>Produksi selesai, delivery belum masuk ke pengantar</h2>
             <p>Action ini muncul hanya kalau order LOCKED, produksi batch sudah COMPLETED, masih ada sisa porsi, dan delivery belum/tambahan belum dibuat.</p>
         </div>
@@ -231,7 +231,7 @@
                     <tr>
                         <th>No Snapshot</th>
                         <th>Porsi</th>
-                        <th>Revenue</th>
+                        <th>Pendapatan</th>
                         <th>HPP</th>
                         <th>Margin</th>
                         <th>Aksi</th>
@@ -339,8 +339,8 @@
             <i class="bi bi-lock-fill"></i>
         </div>
         <div>
-            <p>Status Lock</p>
-            <h3>{% if daily_order.is_locked %}LOCKED{% else %}OPEN{% endif %}</h3>
+            <p>Status Kunci</p>
+            <h3>{% if daily_order.is_locked %}Terkunci{% else %}Terbuka{% endif %}</h3>
             <span class="app-stat-helper">
                 {% if daily_order.is_locked %}
                     Order sudah dikunci
@@ -444,14 +444,14 @@
                 <tr>
                     <th>Tipe</th>
                     <th>Total Order</th>
-                    <th>Sudah Masuk Delivery</th>
-                    <th>Sisa Belum Delivery</th>
-                    <th>Jumlah Delivery</th>
+                    <th>Sudah Masuk Pengiriman</th>
+                    <th>Sisa Belum Dikirim</th>
+                    <th>Jumlah Pengiriman</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>LUNCH</strong></td>
+                    <td><strong>Siang</strong></td>
                     <td>{{ lunch_delivery_data.total_order_qty }}</td>
                     <td>{{ lunch_delivery_data.total_planned_delivery_qty }}</td>
                     <td>
@@ -464,7 +464,7 @@
                     <td>{{ lunch_delivery_data.delivery_count }}</td>
                 </tr>
                 <tr>
-                    <td><strong>DINNER</strong></td>
+                    <td><strong>Sore</strong></td>
                     <td>{{ dinner_delivery_data.total_order_qty }}</td>
                     <td>{{ dinner_delivery_data.total_planned_delivery_qty }}</td>
                     <td>
