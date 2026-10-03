@@ -16,10 +16,12 @@
 
 
 <div class="app-card">
-    <form method="GET" action="{{ url_for('delivery.receiving') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('delivery.receiving') }}" class="app-filter app-form" data-ui-form="true">
         <input type="date" name="date" class="form-control app-input" value="{{ selected_date_text }}">
-        <button type="submit" class="btn app-btn-primary">Tampilkan</button>
-        <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">Hari Ini</a>
+        <div class="app-filter-actions">
+            <button type="submit" class="btn app-btn-primary">Tampilkan</button>
+            <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">Hari Ini</a>
+        </div>
     </form>
 </div>
 

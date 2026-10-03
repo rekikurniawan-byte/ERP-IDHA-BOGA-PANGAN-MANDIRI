@@ -29,6 +29,16 @@
         {% if description %}<p>{{ description }}</p>{% endif %}
     </div>
     {% if actions %}
+    {#- Lebih dari 3 tombol biasa: tombol utama + 2 pertama tetap tampil, sisanya
+       masuk menu "Lainnya" supaya header tidak jadi deretan tombol panjang. #}
+    {% set plain = actions|rejectattr("dropdown", "defined")|list %}
+    {% if collapse and plain|length > 3 %}
+        {% set primary = plain|selectattr("variant", "defined")|selectattr("variant", "equalto", "primary")|list %}
+        {% set secondary = plain|reject("in", primary)|list %}
+        {% set visible = secondary[:2] %}
+        {% set overflow = secondary[2:] %}
+        {% set actions = visible + (actions|selectattr("dropdown", "defined")|list) + ([{"label": "Lainnya", "icon": "bi-three-dots", "dropdown": overflow}] if overflow else []) + primary %}
+    {% endif %}
     <div class="page-actions{% if collapse %} finance-header-actions{% endif %}{% if actions_class %} {{ actions_class }}{% endif %}" data-page-actions>
         {% for action in actions %}
             {% if action.dropdown is defined %}
@@ -41,7 +51,7 @@
                     <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="{{ dropdown_id }}">
                         {% for item in action.dropdown %}
                             <li>
-                                <a class="dropdown-item" href="{{ item.url }}">
+                                <a class="dropdown-item" href="{{ item.url }}"{% if item.target is defined and item.target %} target="{{ item.target }}"{% endif %}>
                                     {% if item.icon is defined and item.icon %}<i class="bi {{ item.icon }}" aria-hidden="true"></i>{% endif %}
                                     {{ item.label }}
                                 </a>

@@ -23,19 +23,28 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Akun COA</span>
-        <h3>{{ expense.account_code }}</h3>
-        <p>{{ rule.get('account_label', '-') }}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-journal-check"></i></div>
+        <div>
+            <span>Akun COA</span>
+            <h3>{{ expense.account_code }}</h3>
+            <p>{{ rule.get('account_label', '-') }}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Nominal</span>
-        <h3>{{ expense.amount|rupiah }}</h3>
-        <p>Kas/bank keluar</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Nominal</span>
+            <h3>{{ expense.amount|rupiah }}</h3>
+            <p>Kas/bank keluar</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Jejak Proses</span>
-        <h3>{{ 'OK' if expense.cash_bank_transaction_id and expense.journal_id else 'Cek' }}</h3>
-        <p>Buku Kas/Bank dan jurnal wajib tersedia</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-diagram-3"></i></div>
+        <div>
+            <span>Jejak Proses</span>
+            <h3>{{ 'OK' if expense.cash_bank_transaction_id and expense.journal_id else 'Cek' }}</h3>
+            <p>Buku Kas/Bank dan jurnal wajib tersedia</p>
+        </div>
     </div>
 </div>
 

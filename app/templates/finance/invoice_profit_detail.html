@@ -7,7 +7,7 @@
 {{ page_header(
     "Profit Invoice " ~ invoice.invoice_number,
     "Mode pantau report dari HPP allocation snapshot untuk " ~ bill_to ~ ".",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Detail Invoice", "url": url_for('finance.invoice_detail', invoice_id=invoice.id), "icon": "bi-arrow-left"},
         {"label": "Semua Profit Invoice", "url": url_for('finance.invoice_profit_report'), "icon": "bi-bar-chart-line", "variant": "primary"},
@@ -27,47 +27,71 @@
 
 <div class="app-stat-grid mt-4">
     <div class="app-stat-card">
-        <span>Total Invoice</span>
-        <h3>{{ summary.invoice_total|rupiah }}</h3>
-        <p>Nilai tagihan invoice</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Total Invoice</span>
+            <h3>{{ summary.invoice_total|rupiah }}</h3>
+            <p>Nilai tagihan invoice</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Pendapatan Terhitung HPP</span>
-        <h3>{{ summary.costed_revenue_total|rupiah }}</h3>
-        <p>Coverage {{ summary.coverage_percentage|round(2) }}%</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Pendapatan Terhitung HPP</span>
+            <h3>{{ summary.costed_revenue_total|rupiah }}</h3>
+            <p>Coverage {{ summary.coverage_percentage|round(2) }}%</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>HPP Allocation</span>
-        <h3>{{ summary.hpp_total|rupiah }}</h3>
-        <p>{{ summary.allocation_count }} baris alokasi</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-egg-fried"></i></div>
+        <div>
+            <span>HPP Allocation</span>
+            <h3>{{ summary.hpp_total|rupiah }}</h3>
+            <p>{{ summary.allocation_count }} baris alokasi</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Laba Kotor Terhitung</span>
-        <h3>{{ summary.gross_profit_total|rupiah }}</h3>
-        <p>Margin {{ summary.gross_margin_percentage|round(2) }}%</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+            <span>Laba Kotor Terhitung</span>
+            <h3>{{ summary.gross_profit_total|rupiah }}</h3>
+            <p>Margin {{ summary.gross_margin_percentage|round(2) }}%</p>
+        </div>
     </div>
 </div>
 
 <div class="app-stat-grid mt-4">
     <div class="app-stat-card">
-        <span>Food Cost</span>
-        <h3>{{ summary.food_cost_total|rupiah }}</h3>
-        <p>Dari bahan baku snapshot</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-basket"></i></div>
+        <div>
+            <span>Food Cost</span>
+            <h3>{{ summary.food_cost_total|rupiah }}</h3>
+            <p>Dari bahan baku snapshot</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Kemasan</span>
-        <h3>{{ summary.packaging_cost_total|rupiah }}</h3>
-        <p>Dari profil kemasan snapshot</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-box"></i></div>
+        <div>
+            <span>Kemasan</span>
+            <h3>{{ summary.packaging_cost_total|rupiah }}</h3>
+            <p>Dari profil kemasan snapshot</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Overhead</span>
-        <h3>{{ summary.overhead_cost_total|rupiah }}</h3>
-        <p>Dari profil overhead snapshot</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-gear"></i></div>
+        <div>
+            <span>Overhead</span>
+            <h3>{{ summary.overhead_cost_total|rupiah }}</h3>
+            <p>Dari profil overhead snapshot</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Belum Terhitung HPP</span>
-        <h3>{{ summary.no_hpp_revenue_total|rupiah }}</h3>
-        <p>Item invoice belum matched</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Belum Terhitung HPP</span>
+            <h3>{{ summary.no_hpp_revenue_total|rupiah }}</h3>
+            <p>Item invoice belum matched</p>
+        </div>
     </div>
 </div>
 

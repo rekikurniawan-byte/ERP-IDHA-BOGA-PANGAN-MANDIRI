@@ -57,15 +57,17 @@
 </div>
 
 <div class="app-card mb-3">
-    <form method="GET" action="{{ url_for('master.unit_conversions') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('master.unit_conversions') }}" class="app-filter app-form" data-ui-form="true">
         <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari satuan / catatan">
         <select name="status" class="form-select app-input">
             <option value="ACTIVE" {% if status == "ACTIVE" %}selected{% endif %}>Aktif</option>
             <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua</option>
         </select>
-        <button class="btn app-btn-primary" type="submit">Filter</button>
-        <a href="{{ url_for('master.unit_conversions') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit">Filter</button>
+            <a href="{{ url_for('master.unit_conversions') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

@@ -6,7 +6,7 @@
     {{ page_header(
         "Pusat Keuangan",
         "Hub lintas invoice, piutang, rekap manual, buku kas/bank, dan input harian.",
-        "Finance",
+        "Keuangan",
         actions=[
             {"label": "Tagihan Manual", "url": url_for('finance.manual_billing'), "icon": "bi-receipt-cutoff", "variant": "primary"},
             {"label": "Input Cepat", "url": url_for('finance.finance_transactions'), "icon": "bi-ui-checks-grid"},
@@ -16,24 +16,36 @@
 
     <div class="app-stat-grid">
         <div class="app-stat-card">
-            <span>Piutang Invoice</span>
-            <h3>{{ summary.invoice_remaining|rupiah }}</h3>
-            <p>{{ summary.invoice_count }} invoice aktif</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Piutang Invoice</span>
+                <h3>{{ summary.invoice_remaining|rupiah }}</h3>
+                <p>{{ summary.invoice_count }} invoice aktif</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Piutang Manual Terbuka</span>
-            <h3>{{ summary.manual_receivable_remaining|rupiah }}</h3>
-            <p>{{ summary.manual_receivable_count }} dokumen manual</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Piutang Manual Terbuka</span>
+                <h3>{{ summary.manual_receivable_remaining|rupiah }}</h3>
+                <p>{{ summary.manual_receivable_count }} dokumen manual</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Tagihan Manual</span>
-            <h3>{{ summary.manual_batch_count }}</h3>
-            <p>batch rekap tercatat</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Tagihan Manual</span>
+                <h3>{{ summary.manual_batch_count }}</h3>
+                <p>batch rekap tercatat</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Sumber Belum Ditagih</span>
-            <h3>{{ summary.manual_source_unbilled_total|rupiah }}</h3>
-            <p>{{ summary.manual_source_unbilled_count }} sumber manual belum naik invoice</p>
+            <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <span>Sumber Belum Ditagih</span>
+                <h3>{{ summary.manual_source_unbilled_total|rupiah }}</h3>
+                <p>{{ summary.manual_source_unbilled_count }} sumber manual belum naik invoice</p>
+            </div>
         </div>
     </div>
 
@@ -87,26 +99,38 @@
                 <p>Ringkasan ini membantu finance melihat mana sumber yang masih menunggu invoice resmi.</p>
             </div>
         </div>
-        <div class="finance-hub-status-grid">
-            <div class="finance-hub-status-card">
-                <span>Belum Naik Invoice</span>
-                <strong>{{ summary.manual_source_unbilled_count }} sumber</strong>
-                <small>Masih menunggu rekap formal</small>
+        <div class="app-stat-grid finance-hub-status-grid">
+            <div class="app-stat-card finance-hub-status-card">
+                <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <span>Belum Naik Invoice</span>
+                    <strong>{{ summary.manual_source_unbilled_count }} sumber</strong>
+                    <small>Masih menunggu rekap formal</small>
+                </div>
             </div>
-            <div class="finance-hub-status-card">
-                <span>Sudah Naik Invoice</span>
-                <strong>{{ summary.manual_source_billed_count }} sumber</strong>
-                <small>Sudah masuk invoice resmi</small>
+            <div class="app-stat-card finance-hub-status-card">
+                <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <span>Sudah Naik Invoice</span>
+                    <strong>{{ summary.manual_source_billed_count }} sumber</strong>
+                    <small>Sudah masuk invoice resmi</small>
+                </div>
             </div>
-            <div class="finance-hub-status-card">
-                <span>Piutang Manual Terbuka</span>
-                <strong>{{ summary.manual_receivable_count }} dokumen</strong>
-                <small>Masih aktif di level manual</small>
+            <div class="app-stat-card finance-hub-status-card">
+                <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+                <div>
+                    <span>Piutang Manual Terbuka</span>
+                    <strong>{{ summary.manual_receivable_count }} dokumen</strong>
+                    <small>Masih aktif di level manual</small>
+                </div>
             </div>
-            <div class="finance-hub-status-card finance-hub-status-action">
-                <span>Tindak Lanjut</span>
-                <strong>Tagihan Manual</strong>
-                <a href="{{ url_for('finance.manual_billing') }}" class="btn btn-sm app-btn-secondary">Buka Rekap</a>
+            <div class="app-stat-card finance-hub-status-card finance-hub-status-action">
+                <div class="app-stat-icon stat-warning"><i class="bi bi-bell"></i></div>
+                <div>
+                    <span>Tindak Lanjut</span>
+                    <strong>Tagihan Manual</strong>
+                    <a href="{{ url_for('finance.manual_billing') }}" class="btn btn-sm app-btn-secondary">Buka Rekap</a>
+                </div>
             </div>
         </div>
     </div>

@@ -40,8 +40,7 @@
 }
 
 .portal-form-grid,
-.portal-draft-proof-form,
-.portal-register-grid {
+.portal-draft-proof-form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: var(--space-3) var(--space-4);
@@ -330,11 +329,8 @@
 .portal-proof-history-card,
 .portal-contract-health-card,
 .portal-tracking-card,
-.portal-admin-draft-card,
-.portal-admin-gate-card,
 .portal-home-flow-card,
-.portal-form-section,
-.portal-register-card {
+.portal-form-section {
     min-width: 0;
     padding: var(--space-4) var(--space-5);
     background: var(--surface);
@@ -365,8 +361,7 @@
 
 .portal-home-panel-head,
 .portal-command-panel-head,
-.portal-workflow-panel-head,
-.portal-admin-draft-head {
+.portal-workflow-panel-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -447,11 +442,7 @@
 .portal-document-grid,
 .portal-role-focus-grid,
 .portal-payment-method-grid,
-.portal-admin-workqueue-grid,
-.portal-admin-review-grid,
-.portal-admin-gate-grid,
-.portal-calendar-section-grid,
-.portal-tracking-detail-grid {
+.portal-calendar-section-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--space-3);
@@ -492,6 +483,7 @@
 .portal-notification-summary > *,
 .portal-document-summary > *,
 .portal-contract-summary > *,
+.portal-contract-finance-strip > *,
 .portal-care-summary > *,
 .portal-calendar-summary > *,
 .portal-command-kpis > *,
@@ -511,7 +503,6 @@
 .portal-precheck-grid > *,
 .portal-home-scope-grid > *,
 .portal-home-mini-ledger > *,
-.portal-contract-finance-strip > *,
 .portal-ledger-amounts > *,
 .portal-finance-proof-strip > * {
     display: flex;
@@ -611,7 +602,6 @@
 .portal-proof-history-list,
 .portal-contract-health-list,
 .portal-tracking-list,
-.portal-admin-draft-list,
 .portal-order-conflict-list,
 .portal-command-status-list,
 .portal-command-timeline,
@@ -725,8 +715,7 @@
 .portal-notification-card h3,
 .portal-document-card h3,
 .portal-directory-card h3,
-.portal-contract-health-card h3,
-.portal-admin-draft-card h3 {
+.portal-contract-health-card h3 {
     font-size: var(--text-md);
     margin-bottom: 2px;
 }
@@ -761,8 +750,7 @@
 }
 
 .portal-ledger-actions,
-.portal-inline-actions,
-.portal-admin-actions {
+.portal-inline-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -1252,6 +1240,175 @@ a:is(.portal-command-action, .portal-role-focus-card):hover,
     margin-top: var(--space-3);
     padding-top: var(--space-3);
     border-top: 1px solid var(--border);
+}
+
+/* --- Lacak pesanan --------------------------------------------------------------- */
+.portal-tracking-stage-strip,
+.portal-order-progress {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-2);
+}
+
+.portal-tracking-stage-strip > div,
+.portal-order-progress > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-2);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    text-align: center;
+}
+
+.portal-tracking-stage-strip > div .bi,
+.portal-order-progress > div .bi {
+    font-size: 18px;
+}
+
+.portal-tracking-stage-strip > div span,
+.portal-order-progress > div span {
+    font-weight: var(--weight-semibold);
+}
+
+.portal-order-progress > div small {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.portal-tracking-stage-strip > .is-active,
+.portal-order-progress > .is-active {
+    background: var(--brand-50);
+    color: var(--brand-800);
+}
+
+.portal-tracking-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.portal-tracking-card > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.portal-tracking-card > header small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-tracking-card > header h3 {
+    margin: 2px 0;
+    font-size: var(--text-md);
+}
+
+.portal-tracking-card > header p {
+    margin: 0;
+}
+
+.portal-tracking-card.stage-delivered {
+    border-left: 3px solid var(--chart-green);
+}
+
+.portal-tracking-card.stage-rejected {
+    border-left: 3px solid var(--danger-solid);
+}
+
+.portal-tracking-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+}
+
+.portal-tracking-detail-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.portal-tracking-detail-grid span,
+.portal-tracking-detail-grid small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.portal-tracking-detail-grid strong {
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+}
+
+.portal-tracking-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--info-bg);
+    color: var(--info-text);
+    font-size: var(--text-sm);
+}
+
+.portal-tracking-note > span {
+    flex: 1;
+}
+
+.portal-tracking-note.is-warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+@media (max-width: 767.98px) {
+    .portal-tracking-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-order-progress > div small {
+        display: none;
+    }
+}
+
+/* 7 kartu angka -> 4 + 3, bukan 6 + 1. */
+@media (min-width: 992px) {
+    :is(.portal-service-summary, .portal-calendar-summary, .portal-document-summary, .portal-contract-summary,
+        .portal-care-summary, .portal-notification-summary, .portal-directory-summary, .portal-ledger-summary,
+        .portal-command-kpis):has(> :nth-child(7):last-child) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* Keterangan kecil di kanan kepala halaman (ikon + teks). */
+.portal-hero-proof {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 0 1 auto;
+    max-width: 320px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.portal-hero-proof .bi {
+    color: var(--brand-600);
+}
+
+/* Judul bagian di dalam kartu formulir. */
+:is(.portal-care-form, .portal-order-builder-main, .portal-form-section) > .portal-section-heading,
+.portal-care-form .portal-section-heading {
+    margin: 0 0 var(--space-3);
 }
 
 /* --- Layar sempit ---------------------------------------------------------------------- */

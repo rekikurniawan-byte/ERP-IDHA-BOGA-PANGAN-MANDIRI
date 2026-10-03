@@ -330,6 +330,9 @@ document.addEventListener("DOMContentLoaded", function () {
 // --- 5. Tabel ----------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
     const moneyOrNumber = /^(-\s*)?(rp\.?\s*)?-?[\d.,]+(\s*(%|porsi|kg|pcs|liter|l|x))?$/i;
+    // Nomor dokumen (JRN-20260929-037, INV-..., DLV-...-LUNCH-001) dan tanggal:
+    // jangan dipatah di tanda hubung.
+    const codeOrDate = /^([A-Z]{2,6}-[A-Z0-9-]+|\d{2}-\d{2}-\d{4}( \d{2}:\d{2})?)$/;
 
     document.querySelectorAll("main table.table, main table.app-table, main table.app-data-table, main table.print-table, main table.ui-data-table").forEach(function (table) {
         if (table.classList.contains("table") && !table.closest(".table-responsive, .app-table-wrap, .app-table-wrapper, .print-table-wrapper, .ui-table-scroll")) {
@@ -346,6 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
         Array.prototype.forEach.call(headRow.cells, function (headCell, index) {
             if (headCell.colSpan > 1) return;
             let numeric = 0;
+            let coded = 0;
             let filled = 0;
             bodyRows.forEach(function (row) {
                 const cell = row.cells[index];
@@ -354,7 +358,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!text || text === "-") return;
                 filled += 1;
                 if (moneyOrNumber.test(text) && !cell.querySelector("a.btn, button, form")) numeric += 1;
+                if (codeOrDate.test(text)) coded += 1;
             });
+            if (filled && coded / filled >= 0.8) {
+                headCell.classList.add("nowrap");
+                bodyRows.forEach(function (row) {
+                    const cell = row.cells[index];
+                    if (cell && cell.colSpan === 1) cell.classList.add("nowrap");
+                });
+            }
             if (filled && numeric / filled >= 0.8) {
                 headCell.classList.add("num");
                 bodyRows.forEach(function (row) {

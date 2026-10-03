@@ -41,7 +41,7 @@
         </div>
     </div>
     <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-cleanup-check"></i></div>
+        <div class="app-stat-icon stat-success"><i class="bi bi-patch-check"></i></div>
         <div>
             <p>Resep Final</p>
             <h3>{{ recipe_final_count }}</h3>
@@ -55,7 +55,7 @@
         <strong>Aman:</strong> Menu & resep ini adalah master HPP. Belum otomatis mengurangi stok, belum membuat jurnal HPP, dan belum masuk invoice/order lama.
     </div>
 
-    <form method="GET" action="{{ url_for('costing.menus') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('costing.menus') }}" class="app-filter app-form" data-ui-form="true">
         <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama menu / catatan">
 
         <select name="menu_type" class="form-select app-input">
@@ -77,8 +77,10 @@
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status Menu</option>
         </select>
 
-        <button class="btn app-btn-primary" type="submit">Filter</button>
-        <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit">Filter</button>
+            <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

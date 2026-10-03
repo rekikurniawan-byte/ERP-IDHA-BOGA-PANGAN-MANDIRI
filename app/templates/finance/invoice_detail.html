@@ -80,28 +80,37 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Invoice</span>
-        <h3>{{ invoice.total_amount|rupiah }}</h3>
-        <p>Nilai tagihan</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Total Invoice</span>
+            <h3>{{ invoice.total_amount|rupiah }}</h3>
+            <p>Nilai tagihan</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Sudah Dibayar</span>
-        <h3>{{ invoice.paid_amount|rupiah }}</h3>
-        <p>Total pembayaran</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Sudah Dibayar</span>
+            <h3>{{ invoice.paid_amount|rupiah }}</h3>
+            <p>Total pembayaran</p>
+        </div>
     </div>
 
     {# HYGIENE7A_CANCELLED_REMAINING_CARD #}
     <div class="app-stat-card">
-        {% if invoice.status in ['CANCELLED', 'CANCELED'] %}
-            <span>Nilai Arsip</span>
-            <h3>{{ invoice.remaining_amount|rupiah }}</h3>
-            <p>Tidak dihitung piutang aktif</p>
-        {% else %}
-            <span>Sisa</span>
-            <h3>{{ invoice.remaining_amount|rupiah }}</h3>
-            <p>Piutang tersisa</p>
-        {% endif %}
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            {% if invoice.status in ['CANCELLED', 'CANCELED'] %}
+                <span>Nilai Arsip</span>
+                <h3>{{ invoice.remaining_amount|rupiah }}</h3>
+                <p>Tidak dihitung piutang aktif</p>
+            {% else %}
+                <span>Sisa</span>
+                <h3>{{ invoice.remaining_amount|rupiah }}</h3>
+                <p>Piutang tersisa</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 

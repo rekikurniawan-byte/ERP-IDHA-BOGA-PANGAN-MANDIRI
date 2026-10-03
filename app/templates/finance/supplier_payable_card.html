@@ -6,7 +6,7 @@
 {{ page_header(
     "Kartu Hutang Supplier",
     "Kartu hutang menampilkan mutasi bill dan pembayaran per supplier/toko. Halaman ini Mode pantau.",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('finance.print_supplier_payable_card', supplier_key=selected_supplier_key or '', start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else ''), "icon": "bi-printer", "variant": "primary"},
         {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
@@ -19,27 +19,39 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Saldo Awal Periode</span>
-        <h3>{{ report.summary.opening_balance|rupiah }}</h3>
-        <p>Saldo sebelum tanggal awal filter</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Saldo Awal Periode</span>
+            <h3>{{ report.summary.opening_balance|rupiah }}</h3>
+            <p>Saldo sebelum tanggal awal filter</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Bill Periode Ini</span>
-        <h3>{{ report.summary.total_bill_in_period|rupiah }}</h3>
-        <p>Hutang bertambah</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+            <span>Bill Periode Ini</span>
+            <h3>{{ report.summary.total_bill_in_period|rupiah }}</h3>
+            <p>Hutang bertambah</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Pembayaran Periode Ini</span>
-        <h3>{{ report.summary.total_payment_in_period|rupiah }}</h3>
-        <p>Hutang berkurang</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Pembayaran Periode Ini</span>
+            <h3>{{ report.summary.total_payment_in_period|rupiah }}</h3>
+            <p>Hutang berkurang</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Saldo Akhir</span>
-        <h3>{{ report.summary.ending_balance|rupiah }}</h3>
-        <p>Saldo hutang supplier terpilih</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Saldo Akhir</span>
+            <h3>{{ report.summary.ending_balance|rupiah }}</h3>
+            <p>Saldo hutang supplier terpilih</p>
+        </div>
     </div>
 </div>
 
@@ -51,7 +63,7 @@
         </div>
     </div>
 
-    <form method="GET" class="form-grid app-form" data-ui-form="true">
+    <form method="GET" class="app-filter app-form" data-ui-form="true">
         <div class="form-group">
             <label>Supplier / Tempat</label>
             <select name="supplier_key" class="form-control">

@@ -14,7 +14,7 @@
 {{ page_header(
     "Pembelian Aset Tetap",
     "Catat pembelian aset tetap yang benar-benar mengurangi kas/bank, membuat buku kas/bank OUT, dan jurnal aset otomatis.",
-    "Finance",
+    "Keuangan",
     actions=header_actions
 ) }}
 
@@ -24,29 +24,41 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Pembelian</span>
-        <h3>{{ summary.total_amount|rupiah }}</h3>
-        <p>Jumlah nilai pembelian aset sesuai filter.</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-building"></i></div>
+        <div>
+            <span>Total Pembelian</span>
+            <h3>{{ summary.total_amount|rupiah }}</h3>
+            <p>Jumlah nilai pembelian aset sesuai filter.</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Dari Kas</span>
-        <h3>{{ summary.cash_amount|rupiah }}</h3>
-        <p>Buku Kas/Bank OUT kas.</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Dari Kas</span>
+            <h3>{{ summary.cash_amount|rupiah }}</h3>
+            <p>Buku Kas/Bank OUT kas.</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Dari Bank</span>
-        <h3>{{ summary.bank_amount|rupiah }}</h3>
-        <p>Buku Kas/Bank OUT bank.</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Dari Bank</span>
+            <h3>{{ summary.bank_amount|rupiah }}</h3>
+            <p>Buku Kas/Bank OUT bank.</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Jumlah Transaksi</span>
-        <h3>{{ summary.count }}</h3>
-        <p>Transaksi pembelian aset.</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
+        <div>
+            <span>Jumlah Transaksi</span>
+            <h3>{{ summary.count }}</h3>
+            <p>Transaksi pembelian aset.</p>
+        </div>
     </div>
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('finance.fixed_asset_purchases') }}" class="row g-3 app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.fixed_asset_purchases') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-5">
             <label class="form-label">Cari</label>
             <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Nomor / vendor / kode aset / nama aset">

@@ -166,12 +166,15 @@ def main():
                 for account, pages in by_account.items():
                     context = browser.new_context(viewport=VIEWPORTS[viewport_name], reduced_motion="reduce")
                     page = context.new_page()
+                    js_errors = []
+                    page.on("pageerror", lambda error: js_errors.append(str(error)[:200]))
                     page.goto(f"{BASE}/auth/login")
                     page.fill("input[name=username]", account)
                     page.fill("input[name=password]", ACCOUNTS[account])
                     page.click("button[type=submit]")
                     page.wait_for_load_state("networkidle")
                     for endpoint, url in pages:
+                        js_errors.clear()
                         try:
                             response = page.goto(f"{BASE}{url}")
                             page.wait_for_load_state("networkidle")
@@ -182,7 +185,8 @@ def main():
                             page.screenshot(path=str(out_dir / f"{endpoint}.png"), full_page=args.full)
                         except Exception as error:  # halaman yang gagal dibuka tetap dilaporkan
                             status, final, result = 0, "", {"error": str(error)[:200], "issues": [], "issue_count": 0, "overflow_px": 0}
-                        report.setdefault(endpoint, {})[viewport_name] = {"url": url, "status": status, "final_url": final, **result}
+                        report.setdefault(endpoint, {})[viewport_name] = {"url": url, "status": status, "final_url": final,
+                                                                          "js_errors": list(js_errors), **result}
                     context.close()
                     time.sleep(1)
         finally:
@@ -195,9 +199,12 @@ def main():
     contrast = sum(vp.get("issue_count", 0) for row in report.values() for vp in row.values())
     invisible = sum(1 for row in report.values() for vp in row.values() for issue in vp.get("issues", []) if issue["kind"] == "invisible")
     overflow = sum(1 for row in report.values() for vp in row.values() if vp.get("overflow_px"))
+    js_broken = sorted({endpoint for endpoint, row in report.items() for vp in row.values() if vp.get("js_errors")})
     errors = [(endpoint, vp_name, vp.get("status")) for endpoint, row in report.items() for vp_name, vp in row.items() if vp.get("status") not in (200, 302)]
     print(f"{len(report)} halaman, {pages_ok} tampil (200). Kontras rendah: {contrast} teks ({invisible} nyaris tak terlihat). "
-          f"Meluber ke samping: {overflow} tampilan. Gagal dibuka: {len(errors)}")
+          f"Meluber ke samping: {overflow} tampilan. Gagal dibuka: {len(errors)}. Error JavaScript: {len(js_broken)} halaman")
+    for endpoint in js_broken:
+        print("  error JS:", endpoint, next(vp["js_errors"][0] for vp in report[endpoint].values() if vp.get("js_errors")))
     for row in errors[:30]:
         print("  gagal:", *row)
 

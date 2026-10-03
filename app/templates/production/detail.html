@@ -112,7 +112,7 @@
         </div>
         <div>
             <p>Rencana</p>
-            <h3>{{ first_detail.planned_qty if first_detail else 0 }}</h3>
+            <h3>{{ (first_detail.planned_qty if first_detail else 0)|qty }}</h3>
             <span class="app-stat-helper">Porsi direncanakan</span>
         </div>
     </div>
@@ -123,7 +123,7 @@
         </div>
         <div>
             <p>Realisasi</p>
-            <h3>{{ first_detail.actual_qty if first_detail else 0 }}</h3>
+            <h3>{{ (first_detail.actual_qty if first_detail else 0)|qty }}</h3>
             <span class="app-stat-helper">Porsi selesai</span>
         </div>
     </div>
@@ -177,8 +177,8 @@
                             {% endif %}
                         </strong>
                     </td>
-                    <td>{{ detail.planned_qty }} PORSI</td>
-                    <td>{{ detail.actual_qty }} PORSI</td>
+                    <td>{{ detail.planned_qty|qty }} porsi</td>
+                    <td>{{ detail.actual_qty|qty }} porsi</td>
                     <td>
                         {% set diff = detail.actual_qty - detail.planned_qty %}
                         {% if diff > 0 %}
@@ -221,7 +221,7 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label app-label">Rencana Produksi</label>
-                    <input type="text" class="form-control app-input" value="{{ first_detail.planned_qty }} PORSI" readonly>
+                    <input type="text" class="form-control app-input" value="{{ first_detail.planned_qty|qty }} porsi" readonly>
                 </div>
 
                 <div class="col-md-4">

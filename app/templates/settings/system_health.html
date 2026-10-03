@@ -30,11 +30,15 @@
     <div class="row g-3">
         {% for metric in health.get("metrics", []) %}
             <div class="col-xl-3 col-md-6">
-                <div class="stat-card h-100">
-                    <div class="stat-label">{{ metric.get("label") }}</div>
-                    <div class="stat-value">{{ metric.get("value") }}</div>
-                    <div class="text-muted small">{{ metric.get("detail") }}</div>
-                    <span class="status-badge {{ metric.get('status_class', 'warning') }} mt-2">{{ metric.get('status_class', 'warning')|upper }}</span>
+                <div class="app-stat-card">
+                    {% set metric_tone = metric.get('status_class', 'warning') %}
+                    <div class="app-stat-icon stat-{{ metric_tone }}"><i class="bi {{ 'bi-check2-circle' if metric_tone == 'success' else ('bi-exclamation-triangle' if metric_tone == 'danger' else 'bi-hourglass-split') }}"></i></div>
+                    <div>
+                        <div class="stat-label">{{ metric.get("label") }}</div>
+                        <div class="stat-value">{{ metric.get("value") }}</div>
+                        <div class="text-muted small">{{ metric.get("detail") }}</div>
+                        <span class="status-badge {{ metric_tone }} mt-2">{{ {'success': 'Aman', 'danger': 'Bahaya'}.get(metric_tone, 'Perlu Cek') }}</span>
+                    </div>
                 </div>
             </div>
         {% endfor %}
@@ -114,7 +118,7 @@
                         <div class="detail-row">
                             <span>{{ item.get("label") }}</span>
                             <strong class="text-break">{{ item.get("value") }}</strong>
-                            <span class="status-badge {{ item.get('status_class', 'warning') }} mt-2">{{ item.get("status") }}</span>
+                            <span class="status-badge {{ item.get('status_class', 'warning') }} mt-2">{{ item.get("status")|status_label }}</span>
                             {% if item.get("message") %}
                                 <small class="text-muted d-block mt-1">{{ item.get("message") }}</small>
                             {% endif %}

@@ -492,6 +492,16 @@
     max-width: 480px;
 }
 
+/* Landing dan pendaftaran memakai lebar penuh, mulai dari atas. */
+.auth-page:has(.public-landing, .portal-register-shell) {
+    align-items: flex-start;
+    padding-top: var(--space-6);
+}
+
+.auth-page > .container:has(.public-landing, .portal-register-shell) {
+    max-width: 1120px;
+}
+
 .auth-wrapper {
     width: 100%;
 }
@@ -516,7 +526,7 @@
     font-size: var(--text-md);
 }
 
-.auth-clean-brand span {
+.auth-clean-brand span:not(.company-logo-mark) {
     display: block;
     font-size: var(--text-sm);
     color: var(--text-muted);

@@ -11,7 +11,7 @@
 {{ page_header(
     "Detail Cicilan Aset",
     contract.contract_number ~ " · " ~ (asset.asset_name if asset else '-'),
-    "Finance",
+    "Keuangan",
     actions=header_actions
 ) }}
 
@@ -20,10 +20,30 @@
 </div>
 
 <div class="app-stat-grid asset-installment-summary-grid">
-    <div class="app-stat-card"><span>Nilai Aset / Pokok</span><h3>{{ contract.principal_amount|rupiah }}</h3><p>{{ contract.asset_account_code }} / {{ contract.liability_account_code }}</p></div>
-    <div class="app-stat-card"><span>Total Kontrak</span><h3>{{ contract.total_contract_amount|rupiah }}</h3><p>Pokok + bunga/admin.</p></div>
-    <div class="app-stat-card"><span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>{{ summary.paid_count }} jadwal lunas.</p></div>
-    <div class="app-stat-card"><span>Sisa</span><h3>{{ summary.remaining|rupiah }}</h3><p>{{ summary.unpaid_count }} jadwal belum lunas.</p></div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-building"></i></div>
+        <div>
+    <span>Nilai Aset / Pokok</span><h3>{{ contract.principal_amount|rupiah }}</h3><p>{{ contract.asset_account_code }} / {{ contract.liability_account_code }}</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+    <span>Total Kontrak</span><h3>{{ contract.total_contract_amount|rupiah }}</h3><p>Pokok + bunga/admin.</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+    <span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>{{ summary.paid_count }} jadwal lunas.</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+    <span>Sisa</span><h3>{{ summary.remaining|rupiah }}</h3><p>{{ summary.unpaid_count }} jadwal belum lunas.</p>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4 mt-1">

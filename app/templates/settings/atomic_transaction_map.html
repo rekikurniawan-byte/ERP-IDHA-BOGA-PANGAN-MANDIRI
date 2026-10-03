@@ -23,36 +23,48 @@
             <h3>Status Atomic Map</h3>
             <p>{{ summary.get("summary") }}</p>
         </div>
-        <span class="status-badge {{ summary.get('status_class', 'warning') }}">{{ summary.get("status", "PERLU REVIEW") }}</span>
+        <span class="status-badge {{ summary.get('status_class', 'warning') }}">{{ summary.get("status", "PERLU REVIEW")|status_label }}</span>
     </div>
 
     <div class="row g-3">
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">Commit ditemukan</div>
-                <div class="stat-value">{{ summary.get("commit_total", 0) }}</div>
-                <div class="text-muted small">Route: {{ summary.get("route_commit_total", 0) }} · Service: {{ summary.get("service_commit_total", 0) }}</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
+                <div>
+                    <div class="stat-label">Commit ditemukan</div>
+                    <div class="stat-value">{{ summary.get("commit_total", 0) }}</div>
+                    <div class="text-muted small">Route: {{ summary.get("route_commit_total", 0) }} · Service: {{ summary.get("service_commit_total", 0) }}</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">Rollback ditemukan</div>
-                <div class="stat-value">{{ summary.get("rollback_total", 0) }}</div>
-                <div class="text-muted small">Rollback eksplisit yang terdeteksi di source.</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
+                <div>
+                    <div class="stat-label">Rollback ditemukan</div>
+                    <div class="stat-value">{{ summary.get("rollback_total", 0) }}</div>
+                    <div class="text-muted small">Rollback eksplisit yang terdeteksi di source.</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">Atomic guard</div>
-                <div class="stat-value">{{ summary.get("atomic_guard_total", 0) }}</div>
-                <div class="text-muted small">Begin: {{ summary.get("begin_total", 0) }} · file tanpa begin: {{ summary.get("file_without_begin_count", 0) }}</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-success"><i class="bi bi-shield-check"></i></div>
+                <div>
+                    <div class="stat-label">Atomic guard</div>
+                    <div class="stat-value">{{ summary.get("atomic_guard_total", 0) }}</div>
+                    <div class="text-muted small">Begin: {{ summary.get("begin_total", 0) }} · file tanpa begin: {{ summary.get("file_without_begin_count", 0) }}</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">High/Critical scope</div>
-                <div class="stat-value">{{ summary.get("critical_record_count", 0) + summary.get("high_record_count", 0) }}</div>
-                <div class="text-muted small">Critical: {{ summary.get("critical_record_count", 0) }} · High: {{ summary.get("high_record_count", 0) }}</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-warning"><i class="bi bi-exclamation-triangle"></i></div>
+                <div>
+                    <div class="stat-label">High/Critical scope</div>
+                    <div class="stat-value">{{ summary.get("critical_record_count", 0) + summary.get("high_record_count", 0) }}</div>
+                    <div class="text-muted small">Critical: {{ summary.get("critical_record_count", 0) }} · High: {{ summary.get("high_record_count", 0) }}</div>
+                </div>
             </div>
         </div>
     </div>

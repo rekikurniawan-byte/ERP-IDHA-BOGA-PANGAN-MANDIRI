@@ -21,7 +21,7 @@
                     <label class="form-label">Kategori</label>
                     <select class="form-select app-input" name="category" required>
                         {% for category in data.category_options %}
-                            <option value="{{ category }}">{{ category }}</option>
+                            <option value="{{ category }}">{{ category|status_label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -71,14 +71,16 @@
 
     <div class="app-card">
         <div class="card-body">
-            <form method="get" class="filter-bar app-form mb-3">
+            <form method="get" class="app-filter app-form mb-3">
                 <select class="form-select app-input" name="status">
                     {% for status in data.status_options %}
                         <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>{{ status }}</option>
                     {% endfor %}
                 </select>
-                <button class="btn app-btn-secondary" type="submit">Filter</button>
-                <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Reset</a>
+                <div class="app-filter-actions">
+                    <button class="btn app-btn-secondary" type="submit">Filter</button>
+                    <a class="btn app-btn-secondary" href="{{ url_for('customer_success.complaints') }}">Reset</a>
+                </div>
             </form>
 
             <div class="table-responsive app-table-wrapper">
@@ -98,7 +100,7 @@
                             <tr>
                                 <td class="fw-semibold">{{ complaint.complaint_number }}</td>
                                 <td>{{ complaint.title }}</td>
-                                <td>{{ complaint.category }}</td>
+                                <td>{{ complaint.category|status_label }}</td>
                                 <td>{{ complaint.client.name if complaint.client else '-' }}{% if complaint.mandor %}<br><span class="text-muted small">{{ complaint.mandor.name }}</span>{% endif %}</td>
                                 <td><span class="status-badge neutral">{{ complaint.status|status_label }}</span></td>
                                 <td class="text-end">

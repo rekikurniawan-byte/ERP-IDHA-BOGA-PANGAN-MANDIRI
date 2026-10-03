@@ -16,34 +16,52 @@
 
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card">
-            <span>Total Rekap Tampil</span>
-            <h3>{{ summary.total_count }}</h3>
-            <p>Maksimal 300 data terbaru sesuai filter</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Total Rekap Tampil</span>
+                <h3>{{ summary.total_count }}</h3>
+                <p>Maksimal 300 data terbaru sesuai filter</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Total Aktif</span>
-            <h3>{{ summary.active_total_amount|rupiah }}</h3>
-            <p>Nilai selain status VOID</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <span>Total Aktif</span>
+                <h3>{{ summary.active_total_amount|rupiah }}</h3>
+                <p>Nilai selain status VOID</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Siap Invoice</span>
-            <h3>{{ summary.invoice_ready_count }}</h3>
-            <p>LOCKED dan belum dibuat invoice</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Siap Invoice</span>
+                <h3>{{ summary.invoice_ready_count }}</h3>
+                <p>LOCKED dan belum dibuat invoice</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Piutang Berjalan</span>
-            <h3>{{ summary.receivable_count }}</h3>
-            <p>Status INVOICED / PARTIALLY_PAID</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Piutang Berjalan</span>
+                <h3>{{ summary.receivable_count }}</h3>
+                <p>Status INVOICED / PARTIALLY_PAID</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Lunas</span>
-            <h3>{{ summary.paid_count }}</h3>
-            <p>Invoice sudah lunas</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <span>Lunas</span>
+                <h3>{{ summary.paid_count }}</h3>
+                <p>Invoice sudah lunas</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Void</span>
-            <h3>{{ summary.void_count }}</h3>
-            <p>Dibatalkan sebelum invoice</p>
+            <div class="app-stat-icon stat-neutral"><i class="bi bi-x-circle"></i></div>
+            <div>
+                <span>Void</span>
+                <h3>{{ summary.void_count }}</h3>
+                <p>Dibatalkan sebelum invoice</p>
+            </div>
         </div>
     </div>
 
@@ -55,7 +73,7 @@
             </div>
         </div>
         <form method="GET" action="{{ url_for('finance.manual_billing_batches_list') }}" class="app-form" data-ui-form="true">
-            <div class="row g-3 align-items-end">
+            <div class="app-filter">
                 <div class="col-md-3">
                     <label class="form-label">Cari</label>
                     <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="No rekap / nama / catatan">

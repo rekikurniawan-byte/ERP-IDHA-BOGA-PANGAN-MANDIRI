@@ -23,19 +23,28 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Nominal Advance</span>
-        <h3>{{ advance.amount|rupiah }}</h3>
-        <p>Nilai awal DP/panjar</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-coin"></i></div>
+        <div>
+            <span>Nominal Advance</span>
+            <h3>{{ advance.amount|rupiah }}</h3>
+            <p>Nilai awal DP/panjar</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Sudah Diselesaikan</span>
-        <h3>{{ advance.settled_amount|rupiah }}</h3>
-        <p>Terpakai/ditutup</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Sudah Diselesaikan</span>
+            <h3>{{ advance.settled_amount|rupiah }}</h3>
+            <p>Terpakai/ditutup</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Sisa Belum Lunas</span>
-        <h3>{{ advance.remaining_amount|rupiah }}</h3>
-        <p>Status {{ advance.status|status_label }}</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Sisa Belum Lunas</span>
+            <h3>{{ advance.remaining_amount|rupiah }}</h3>
+            <p>Status {{ advance.status|status_label }}</p>
+        </div>
     </div>
 </div>
 

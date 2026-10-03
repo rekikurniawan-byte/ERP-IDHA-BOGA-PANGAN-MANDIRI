@@ -127,19 +127,28 @@
 
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card">
-            <span>Total Siap Invoice</span>
-            <h3>{{ preview.total_amount|rupiah }}</h3>
-            <p>{{ preview.rows|length }} item valid</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Total Siap Invoice</span>
+                <h3>{{ preview.total_amount|rupiah }}</h3>
+                <p>{{ preview.rows|length }} item valid</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Piutang Manual</span>
-            <h3>{{ preview.manual_receivable_total|rupiah }}</h3>
-            <p>Sumber transaksi lapangan</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Piutang Manual</span>
+                <h3>{{ preview.manual_receivable_total|rupiah }}</h3>
+                <p>Sumber transaksi lapangan</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Hutang Warung</span>
-            <h3>{{ preview.warung_total|rupiah }}</h3>
-            <p>Sumber hutang warung {{ term('worker', lower=True) }}</p>
+            <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <span>Hutang Warung</span>
+                <h3>{{ preview.warung_total|rupiah }}</h3>
+                <p>Sumber hutang warung {{ term('worker', lower=True) }}</p>
+            </div>
         </div>
     </div>
 

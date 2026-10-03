@@ -7,7 +7,7 @@
 {{ page_header(
     "Laba per Invoice",
     "Report Mode pantau yang membandingkan nilai invoice dengan HPP allocation dari snapshot order.",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"},
         {"label": "Download CSV", "url": url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value), "icon": "bi-download"},
@@ -55,24 +55,36 @@
 
 <div class="app-stat-grid mt-4">
     <div class="app-stat-card">
-        <span>Total Invoice</span>
-        <h3>{{ totals.invoice_total|rupiah }}</h3>
-        <p>{{ totals.invoice_count }} invoice</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Total Invoice</span>
+            <h3>{{ totals.invoice_total|rupiah }}</h3>
+            <p>{{ totals.invoice_count }} invoice</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Pendapatan Terhitung HPP</span>
-        <h3>{{ totals.costed_revenue_total|rupiah }}</h3>
-        <p>Coverage {{ totals.coverage_percentage|round(2) }}%</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Pendapatan Terhitung HPP</span>
+            <h3>{{ totals.costed_revenue_total|rupiah }}</h3>
+            <p>Coverage {{ totals.coverage_percentage|round(2) }}%</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Total HPP Allocation</span>
-        <h3>{{ totals.hpp_total|rupiah }}</h3>
-        <p>Dari snapshot HPP order</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-egg-fried"></i></div>
+        <div>
+            <span>Total HPP Allocation</span>
+            <h3>{{ totals.hpp_total|rupiah }}</h3>
+            <p>Dari snapshot HPP order</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Laba Kotor Terhitung</span>
-        <h3>{{ totals.gross_profit_total|rupiah }}</h3>
-        <p>Margin {{ totals.gross_margin_percentage|round(2) }}%</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+            <span>Laba Kotor Terhitung</span>
+            <h3>{{ totals.gross_profit_total|rupiah }}</h3>
+            <p>Margin {{ totals.gross_margin_percentage|round(2) }}%</p>
+        </div>
     </div>
 </div>
 

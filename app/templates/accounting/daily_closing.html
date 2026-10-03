@@ -17,7 +17,7 @@
 
 
 <div class="app-card">
-    <form method="GET" action="{{ url_for('accounting.daily_closing') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('accounting.daily_closing') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-4">
             <label class="form-label app-label">Tanggal Closing</label>
             <input type="date" name="date" value="{{ report.selected_date_value }}" class="form-control app-input">
@@ -55,7 +55,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
         <div>
-            <p>AMAN</p>
+            <p>Aman</p>
             <h3>{{ report.summary.AMAN }}</h3>
             <span class="app-stat-helper">Baris aman</span>
         </div>
@@ -64,7 +64,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-warning"><i class="bi bi-exclamation-triangle"></i></div>
         <div>
-            <p>WARNING</p>
+            <p>Peringatan</p>
             <h3>{{ report.summary.WARNING }}</h3>
             <span class="app-stat-helper">Perlu dipantau</span>
         </div>
@@ -73,7 +73,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-x-octagon"></i></div>
         <div>
-            <p>RISIKO</p>
+            <p>Risiko</p>
             <h3>{{ report.summary.RISIKO }}</h3>
             <span class="app-stat-helper">Perlu investigasi</span>
         </div>

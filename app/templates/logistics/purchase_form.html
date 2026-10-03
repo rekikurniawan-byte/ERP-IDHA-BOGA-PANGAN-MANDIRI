@@ -60,7 +60,7 @@
 
             <div class="col-md-7">
                 <label class="form-label app-label">Status Supplier</label>
-                <div id="supplierLihat Data" class="form-control app-input bg-light form-preview-box">
+                <div id="supplierPreview" class="form-control app-input bg-light form-preview-box">
                     Manual / toko tidak tetap. Supplier master tidak dipakai untuk pembelian ini.
                 </div>
             </div>
@@ -95,7 +95,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div id="cashLedgerLihat Data" class="form-control app-input bg-light form-preview-box">
+                            <div id="cashLedgerPreview" class="form-control app-input bg-light form-preview-box">
                                 Buku Kas/Bank OUT akan dicatat dari Kas.
                             </div>
                         </div>
@@ -116,7 +116,7 @@
                             <div class="form-text">Wajib untuk pembelian hutang. Jika supplier punya tempo default, sistem bantu isi otomatis.</div>
                         </div>
                         <div class="col-md-3">
-                            <div id="apLihat Data" class="form-control app-input bg-light form-preview-box">
+                            <div id="apPreview" class="form-control app-input bg-light form-preview-box">
                                 Supplier bill/AP akan dibuat saat disimpan.
                             </div>
                         </div>
@@ -254,14 +254,14 @@ function isIntegerUnit(unit) {
 function handleSupplierChange() {
     const supplierSelect = document.getElementById('supplierSelect');
     const purchasePlaceInput = document.getElementById('purchasePlaceInput');
-    const supplierLihat Data = document.getElementById('supplierLihat Data');
+    const supplierPreview = document.getElementById('supplierPreview');
     const selectedOption = supplierSelect.options[supplierSelect.selectedIndex];
     const supplierName = selectedOption.getAttribute('data-name') || '';
     const terms = selectedOption.getAttribute('data-terms') || '0';
     const currentPlace = (purchasePlaceInput.value || '').trim();
 
     if (!supplierName) {
-        supplierLihat Data.innerText = 'Manual / toko tidak tetap. Supplier master tidak dipakai untuk pembelian ini.';
+        supplierPreview.innerText = 'Manual / toko tidak tetap. Supplier master tidak dipakai untuk pembelian ini.';
         syncCreditDueDate(false);
         return;
     }
@@ -270,7 +270,7 @@ function handleSupplierChange() {
         purchasePlaceInput.value = supplierName;
     }
 
-    supplierLihat Data.innerText = 'Supplier tetap: ' + supplierName + ' | Tempo default: ' + terms + ' hari. Tempat Belanja tetap bisa diedit sesuai nota.';
+    supplierPreview.innerText = 'Supplier tetap: ' + supplierName + ' | Tempo default: ' + terms + ' hari. Tempat Belanja tetap bisa diedit sesuai nota.';
     syncCreditDueDate(true);
 }
 
@@ -285,7 +285,7 @@ function syncCreditDueDate(forceUpdate) {
     const procurementDateInput = document.getElementById('procurementDateInput');
     const dueDateInput = document.getElementById('supplierBillDueDate');
     const supplierSelect = document.getElementById('supplierSelect');
-    const apLihat Data = document.getElementById('apLihat Data');
+    const apPreview = document.getElementById('apPreview');
 
     if (!purchaseTypeSelect || !dueDateInput || purchaseTypeSelect.value !== 'CREDIT') {
         return;
@@ -301,8 +301,8 @@ function syncCreditDueDate(forceUpdate) {
         dueDateInput.value = suggestedDate;
     }
 
-    if (apLihat Data) {
-        apLihat Data.innerText = 'AP untuk ' + supplierName + ' | Tempo ' + terms + ' hari | Jatuh tempo: ' + dueDateInput.value;
+    if (apPreview) {
+        apPreview.innerText = 'AP untuk ' + supplierName + ' | Tempo ' + terms + ' hari | Jatuh tempo: ' + dueDateInput.value;
     }
 }
 
@@ -334,7 +334,7 @@ function handlePembayaranAccountChange() {
     const paymentAccountType = document.getElementById('paymentAccountType');
     const bankAccountBox = document.getElementById('bankAccountBox');
     const bankSelect = document.getElementById('purchaseBankAccountId');
-    const preview = document.getElementById('cashLedgerLihat Data');
+    const preview = document.getElementById('cashLedgerPreview');
     const selectedType = paymentAccountType ? paymentAccountType.value : 'CASH';
 
     if (selectedType === 'BANK') {

@@ -23,24 +23,33 @@
     {% else %}
     <div class="app-stat-grid">
         <div class="app-stat-card">
-            <span>Total Aset</span>
-            <h3>{{ summary.asset_count }}</h3>
-            <p>Aset tetap cabang aktif</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-building"></i></div>
+            <div>
+                <span>Total Aset</span>
+                <h3>{{ summary.asset_count }}</h3>
+                <p>Aset tetap cabang aktif</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Terkonfigurasi</span>
-            <h3>{{ summary.configured_count }}</h3>
-            <p>Penyusutan siap/aktif/paused</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <span>Terkonfigurasi</span>
+                <h3>{{ summary.configured_count }}</h3>
+                <p>Penyusutan siap/aktif/paused</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Jurnal Penyusutan</span>
-            <h3>{{ summary.posted_count }}</h3>
-            <p>Total {{ summary.posted_total|rupiah }}</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-journal-check"></i></div>
+            <div>
+                <span>Jurnal Penyusutan</span>
+                <h3>{{ summary.posted_count }}</h3>
+                <p>Total {{ summary.posted_total|rupiah }}</p>
+            </div>
         </div>
     </div>
 
     <div class="app-card mt-4">
-        <form method="GET" action="{{ url_for('finance.fixed_asset_depreciation') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <form method="GET" action="{{ url_for('finance.fixed_asset_depreciation') }}" class="app-filter app-form" data-ui-form="true">
             <div class="col-md-4">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">

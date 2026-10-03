@@ -20,7 +20,7 @@
 
 <div class="app-stat-grid hr-kpi-grid">
     <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div><div><p>Total Payroll</p><h3>{{ payroll_summary.total_rows }}</h3><span class="app-stat-helper">Semua periode</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-pencil-square"></i></div><div><p>Draft</p><h3>{{ payroll_summary.draft }}</h3><span class="app-stat-helper">Belum final</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-pencil-square"></i></div><div><p>Konsep</p><h3>{{ payroll_summary.draft }}</h3><span class="app-stat-helper">Belum final</span></div></div>
     <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-journal-x"></i></div><div><p>Belum Posting</p><h3>{{ payroll_summary.final }}</h3><span class="app-stat-helper">FINAL menunggu jurnal</span></div></div>
     <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div><div><p>Belum Dibayar</p><h3>{{ payroll_summary.posted }}</h3><span class="app-stat-helper">POSTED menunggu pembayaran</span></div></div>
     <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Gaji</p><h3>{{ payroll_summary.total_salary|rupiah }}</h3><span class="app-stat-helper">Akumulasi semua payroll</span></div></div>
@@ -28,7 +28,7 @@
 
 <div class="card app-card">
     <div class="card-body">
-        <form method="get" class="app-filter-form hr-filter-form" data-ui-form="true" data-form-kind="filter">
+        <form method="get" class="app-filter hr-filter-form" data-ui-form="true" data-form-kind="filter">
             <div>
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
@@ -56,7 +56,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="hr-filter-actions">
+            <div class="hr-filter-actions app-filter-actions">
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
                 <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Reset</a>
             </div>

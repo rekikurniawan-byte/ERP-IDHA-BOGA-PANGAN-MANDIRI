@@ -82,7 +82,7 @@
 
     <div class="app-card">
         <div class="card-body">
-            <form method="get" class="filter-bar app-form mb-3">
+            <form method="get" class="app-filter app-form mb-3">
                 <select class="form-select app-input" name="status">
                     {% for status in data.status_options %}
                         <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>
@@ -90,8 +90,10 @@
                         </option>
                     {% endfor %}
                 </select>
-                <button class="btn app-btn-secondary" type="submit">Filter</button>
-                <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Reset</a>
+                <div class="app-filter-actions">
+                    <button class="btn app-btn-secondary" type="submit">Filter</button>
+                    <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Reset</a>
+                </div>
             </form>
 
             <div class="table-responsive app-table-wrapper">

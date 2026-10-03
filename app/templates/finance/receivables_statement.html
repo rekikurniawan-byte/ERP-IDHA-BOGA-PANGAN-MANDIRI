@@ -119,7 +119,7 @@
             <p>Pilih {{ term('client', lower=True) }} tertentu jika ingin mencetak rekap piutang per {{ term('client', lower=True) }}.</p>
         </div>
     </div>
-    <form method="GET" action="{{ url_for('finance.receivables_statement') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.receivables_statement') }}" class="app-filter app-form" data-ui-form="true">
         <input type="hidden" name="period_preset" value="{{ request.args.get('period_preset') or 'all' }}">
         <input type="hidden" name="start_date" value="{{ filter_bar.start_value }}">
         <input type="hidden" name="end_date" value="{{ filter_bar.end_value }}">
@@ -157,33 +157,48 @@
 
     <div class="app-stat-grid">
         <div class="app-stat-card">
-            <span>{{ term('client') }}</span>
-            <h3>{{ summary.client_count }}</h3>
-            <p>{{ term('client') }} dengan piutang aktif</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <span>{{ term('client') }}</span>
+                <h3>{{ summary.client_count }}</h3>
+                <p>{{ term('client') }} dengan piutang aktif</p>
+            </div>
         </div>
 
         <div class="app-stat-card">
-            <span>Invoice Aktif</span>
-            <h3>{{ summary.invoice_count }}</h3>
-            <p>Invoice belum lunas</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Invoice Aktif</span>
+                <h3>{{ summary.invoice_count }}</h3>
+                <p>Invoice belum lunas</p>
+            </div>
         </div>
 
         <div class="app-stat-card">
-            <span>Total Tagihan</span>
-            <h3>{{ summary.total_amount|rupiah }}</h3>
-            <p>Nilai invoice aktif</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Total Tagihan</span>
+                <h3>{{ summary.total_amount|rupiah }}</h3>
+                <p>Nilai invoice aktif</p>
+            </div>
         </div>
 
         <div class="app-stat-card">
-            <span>Sudah Dibayar</span>
-            <h3>{{ summary.paid_amount|rupiah }}</h3>
-            <p>Total pembayaran masuk</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <span>Sudah Dibayar</span>
+                <h3>{{ summary.paid_amount|rupiah }}</h3>
+                <p>Total pembayaran masuk</p>
+            </div>
         </div>
 
         <div class="app-stat-card">
-            <span>Sisa Piutang</span>
-            <h3>{{ summary.remaining_total|rupiah }}</h3>
-            <p>Tagihan belum lunas</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Sisa Piutang</span>
+                <h3>{{ summary.remaining_total|rupiah }}</h3>
+                <p>Tagihan belum lunas</p>
+            </div>
         </div>
     </div>
 </div>

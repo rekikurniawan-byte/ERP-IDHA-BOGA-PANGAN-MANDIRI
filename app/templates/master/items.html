@@ -13,7 +13,7 @@
 ) }}
 
 <div class="app-card">
-    <form method="GET" action="{{ url_for('master.items') }}" class="filter-bar app-form" aria-label="Filter daftar barang">
+    <form method="GET" action="{{ url_for('master.items') }}" class="app-filter app-form" aria-label="Filter daftar barang">
         <input type="search" name="q" class="form-control" value="{{ q }}" placeholder="Cari kode / nama / satuan" aria-label="Pencarian">
 
         <select name="category" class="form-select" aria-label="Kategori">
@@ -29,8 +29,10 @@
             <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
         </select>
 
-        <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Filter</button>
-        <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+            <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

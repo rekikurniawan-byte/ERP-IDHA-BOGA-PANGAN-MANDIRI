@@ -223,33 +223,16 @@
     color: var(--success-text);
 }
 
-/* Filter kecil di header grafik. */
-.dashboard-analytics-filter-form,
-.revenue-explorer-filter {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--space-2) var(--space-3);
+/* Filter grafik memakai .app-filter; di header ia turun ke baris sendiri. */
+.dashboard-section-header > .app-filter {
+    flex: 1 1 100%;
+    margin: 0;
 }
 
 .revenue-explorer-filter {
-    margin-bottom: var(--space-4);
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     border-radius: var(--radius);
     background: var(--gray-50);
-}
-
-.dashboard-filter-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 140px;
-}
-
-.dashboard-filter-field label {
-    font-size: var(--text-xs);
-    font-weight: var(--weight-medium);
-    color: var(--text-secondary);
 }
 
 .dashboard-checkbox-chip,
@@ -700,6 +683,886 @@
     .dashboard-donut-hero {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+/* --- Halaman publik: landing ------------------------------------------------------ */
+.public-landing {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding-bottom: var(--space-10);
+}
+
+.public-landing-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.public-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text);
+}
+
+.public-brand:hover {
+    color: var(--text);
+}
+
+.public-brand strong {
+    display: block;
+    font-size: var(--text-md);
+    line-height: 1.2;
+}
+
+.public-brand small {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.public-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.public-nav a {
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.public-nav a.public-nav-login,
+.public-primary-action,
+.public-secondary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 42px;
+    padding: 0 var(--space-5);
+    border: 1px solid var(--brand-700);
+    border-radius: var(--radius);
+    background: var(--brand-700);
+    color: var(--text-on-brand);
+    font-weight: var(--weight-semibold);
+}
+
+.public-nav a.public-nav-login:hover,
+.public-primary-action:hover {
+    border-color: var(--brand-800);
+    background: var(--brand-800);
+    color: var(--text-on-brand);
+}
+
+.public-secondary-action {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.public-secondary-action:hover {
+    background: var(--gray-50);
+    color: var(--text);
+}
+
+.public-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.public-eyebrow,
+.public-integrated-strip > div:first-child > span,
+.public-final-cta > div > span {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-700);
+}
+
+.public-hero h1 {
+    margin-bottom: var(--space-3);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    line-height: 1.15;
+}
+
+.public-hero p {
+    max-width: 56ch;
+    font-size: var(--text-md);
+    color: var(--text-secondary);
+}
+
+.public-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+}
+
+.public-order-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-100);
+}
+
+.public-order-card > span {
+    display: block;
+    margin-bottom: var(--space-3);
+    font-weight: var(--weight-semibold);
+    color: var(--brand-800);
+}
+
+.public-order-flow,
+.portal-register-flow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+}
+
+.public-order-flow article,
+.portal-register-flow article {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.public-order-flow .bi,
+.portal-register-flow .bi {
+    grid-row: span 2;
+    font-size: 20px;
+    color: var(--brand-600);
+}
+
+.public-order-flow strong,
+.portal-register-flow strong {
+    font-size: var(--text-sm);
+}
+
+.public-order-flow small,
+.portal-register-flow article > span {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.public-role-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.public-role-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.public-role-card > .bi {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 19px;
+}
+
+.public-role-card h2 {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-lg);
+}
+
+.public-role-card p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.public-step-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: var(--space-2);
+}
+
+.public-step-row span {
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--gray-100);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.public-integrated-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: var(--space-6);
+    align-items: center;
+    padding: var(--space-6) var(--space-8);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.public-integrated-strip h2,
+.public-final-cta h2 {
+    margin: 0;
+    font-size: var(--text-xl);
+}
+
+.public-rule-list {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.public-rule-list article {
+    display: flex;
+    gap: var(--space-2);
+    color: var(--text-secondary);
+}
+
+.public-rule-list .bi {
+    color: var(--chart-green);
+}
+
+.public-final-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-8);
+    border-radius: var(--radius-lg);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-100);
+}
+
+.public-final-cta p {
+    max-width: 70ch;
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+}
+
+/* --- Halaman publik: daftar pelanggan ------------------------------------------ */
+.portal-register-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: var(--space-5);
+    align-items: start;
+    padding-bottom: var(--space-10);
+}
+
+.portal-register-card {
+    min-width: 0;
+    padding: var(--space-8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.portal-register-brand {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.portal-register-brand > div > span {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-700);
+}
+
+.portal-register-brand h1 {
+    margin: 2px 0;
+    font-size: var(--text-2xl);
+}
+
+.portal-register-brand p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.portal-register-form .portal-form-section {
+    margin-bottom: var(--space-4);
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--gray-50);
+}
+
+.portal-register-form .portal-form-section h2 {
+    margin-bottom: var(--space-3);
+    font-size: var(--text-md);
+}
+
+.portal-register-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-3) var(--space-4);
+}
+
+.portal-register-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    min-width: 0;
+}
+
+.portal-register-grid label > span {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.portal-register-grid label.wide {
+    grid-column: 1 / -1;
+}
+
+.portal-register-note {
+    display: flex;
+    gap: var(--space-2);
+    margin: var(--space-4) 0;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    background: var(--info-bg);
+    color: var(--info-text);
+    font-size: var(--text-sm);
+}
+
+.portal-register-submit {
+    width: 100%;
+    min-height: 44px;
+}
+
+.portal-register-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    position: sticky;
+    top: var(--space-4);
+}
+
+.portal-register-login {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--brand-100);
+    border-radius: var(--radius-lg);
+    background: var(--brand-50);
+    color: var(--brand-800);
+    font-weight: var(--weight-semibold);
+}
+
+.portal-register-flow {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.portal-register-flow h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-md);
+}
+
+.portal-register-flow article {
+    background: var(--gray-50);
+}
+
+@media (max-width: 991.98px) {
+    .public-hero,
+    .public-integrated-strip,
+    .portal-register-shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .public-role-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .public-final-cta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .portal-register-aside {
+        position: static;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .public-hero,
+    .public-integrated-strip,
+    .public-final-cta,
+    .portal-register-card {
+        padding: var(--space-5);
+    }
+
+    .portal-register-grid,
+    .public-order-flow {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* --- Panel ajakan (judul + penjelasan + satu tombol) ------------------------------ */
+.logistics-process-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.logistics-process-copy h2 {
+    margin: 2px 0;
+    font-size: var(--text-md);
+}
+
+.logistics-process-copy p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+/* --- Pusat Keuangan -------------------------------------------------------------- */
+.finance-portal-proof-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.finance-portal-proof-overview > article {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+}
+
+.finance-portal-proof-overview span,
+.finance-portal-proof-overview small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.finance-portal-proof-overview strong {
+    font-size: var(--text-lg);
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-erp-integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-2);
+}
+
+.finance-erp-integration-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gray-300);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.finance-erp-integration-card:hover {
+    background: var(--gray-50);
+    color: var(--text);
+}
+
+.finance-erp-integration-card.status-ok { border-left-color: var(--chart-green); }
+.finance-erp-integration-card.status-warning { border-left-color: var(--chart-amber); }
+.finance-erp-integration-card.status-error,
+.finance-erp-integration-card.status-blocked { border-left-color: var(--danger-solid); }
+
+.finance-erp-integration-card span {
+    grid-column: 1 / -1;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.finance-erp-integration-card strong {
+    font-size: var(--text-sm);
+}
+
+.finance-erp-integration-card b {
+    grid-row: 2 / span 2;
+    grid-column: 2;
+    align-self: center;
+    font-size: var(--text-lg);
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-erp-integration-card small {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finance-erp-integration-card em {
+    grid-column: 1 / -1;
+    font-size: var(--text-xs);
+    font-style: normal;
+    color: var(--text-secondary);
+}
+
+/* Tautan alur terkait: ikon + teks dalam kotak. */
+.unified-finance-related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-2);
+}
+
+.unified-finance-related-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: var(--weight-medium);
+}
+
+.unified-finance-related-link:hover {
+    border-color: var(--brand-200);
+    background: var(--brand-50);
+    color: var(--text);
+}
+
+.unified-finance-related-link > .bi {
+    color: var(--brand-600);
+    font-size: 17px;
+}
+
+/* --- Rincian beban: kartu per komponen -------------------------------------------- */
+.expense-component-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-3);
+}
+
+.expense-component-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.expense-component-item.is-empty {
+    background: var(--gray-50);
+}
+
+.expense-component-top {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.expense-component-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--neutral-bg);
+    color: var(--neutral-text);
+    font-size: 17px;
+}
+
+.expense-component-top h6 {
+    margin: 0 0 2px;
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+}
+
+.expense-component-top p {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.expense-component-amount {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+
+.expense-progress {
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--gray-100);
+    overflow: hidden;
+}
+
+.expense-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--brand-500);
+}
+
+.expense-component-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* --- Pesanan portal (review admin) ------------------------------------------------
+   Satu kartu selebar layar per draft: kepala, fakta sebaris, pemeriksaan dalam
+   grid, lalu satu baris aksi [catatan][Konfirmasi] [alasan][Tolak]. */
+.admin-draft-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.admin-draft-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: 0;
+    padding: var(--space-5);
+    border-left: 4px solid var(--chart-green);
+}
+
+.admin-draft-card.is-blocked {
+    border-left-color: var(--danger-solid);
+}
+
+.admin-draft-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.admin-draft-title h3 {
+    margin: var(--space-2) 0 2px;
+    font-size: var(--text-lg);
+}
+
+.admin-draft-title p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.admin-draft-target {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 0 0 auto;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    text-align: right;
+}
+
+.admin-draft-target span,
+.admin-draft-target small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.admin-draft-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-draft-facts dt {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+.admin-draft-facts dd {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    overflow-wrap: anywhere;
+}
+
+.admin-draft-note {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.admin-draft-gates {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-2);
+}
+
+.admin-draft-gate {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--tone-solid, var(--border-strong));
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.admin-draft-gate > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.admin-draft-gate span {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+.admin-draft-gate strong {
+    font-size: var(--text-sm);
+    color: var(--tone-text, var(--text));
+    text-align: right;
+}
+
+.admin-draft-gate small {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.admin-draft-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.admin-draft-alert {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--tone-border);
+    border-radius: var(--radius);
+    background: var(--tone-bg);
+    color: var(--tone-text);
+    font-size: var(--text-sm);
+}
+
+.admin-draft-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.admin-draft-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.admin-draft-action .form-control {
+    flex: 1 1 200px;
+    width: auto;
+}
+
+.admin-draft-action .btn {
+    flex: 0 0 auto;
+    min-width: 128px;
+}
+
+.admin-draft-override {
+    flex: 1 1 100%;
+    font-size: var(--text-sm);
+    color: var(--warning-text);
+}
+
+.admin-draft-empty {
+    padding: var(--space-4);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    text-align: center;
+}
+
+@media (max-width: 991.98px) {
+    .admin-draft-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-draft-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .admin-draft-head {
+        flex-direction: column;
+    }
+
+    .admin-draft-target {
+        align-items: flex-start;
+        text-align: left;
     }
 }
 

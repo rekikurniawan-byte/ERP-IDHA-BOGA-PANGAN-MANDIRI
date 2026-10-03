@@ -15,29 +15,41 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Draft/Transaksi</span>
-        <h3>{{ summary.total }}</h3>
-        <p>Semua transaksi lapangan cabang ini</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
+        <div>
+            <span>Total Draft/Transaksi</span>
+            <h3>{{ summary.total }}</h3>
+            <p>Semua transaksi lapangan cabang ini</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Total Masuk</span>
-        <h3>{{ summary.total_in|rupiah }}</h3>
-        <p>Nominal transaksi arah IN</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Total Masuk</span>
+            <h3>{{ summary.total_in|rupiah }}</h3>
+            <p>Nominal transaksi arah IN</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Total Keluar</span>
-        <h3>{{ summary.total_out|rupiah }}</h3>
-        <p>Nominal transaksi arah OUT</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Total Keluar</span>
+            <h3>{{ summary.total_out|rupiah }}</h3>
+            <p>Nominal transaksi arah OUT</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Menunggu Pemeriksaan</span>
-        <h3>{{ summary.pending_review }}</h3>
-        <p>Masih menunggu review/klasifikasi</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Menunggu Pemeriksaan</span>
+            <h3>{{ summary.pending_review }}</h3>
+            <p>Masih menunggu review/klasifikasi</p>
+        </div>
     </div>
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('field_transactions.index') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('field_transactions.index') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-4">
             <label class="form-label">Jenis Transaksi</label>
             <select name="event" class="form-select">

@@ -157,9 +157,9 @@
                 <tr>
                     <td>{{ movement.movement_date.strftime('%d-%m-%Y') }}</td>
                     <td>{{ movement.item.item_name if movement.item else '-' }}</td>
-                    <td>{{ movement.movement_type }}</td>
+                    <td>{{ movement.movement_type|status_label }}</td>
                     <td>{{ movement.qty|qty }}</td>
-                    <td>{{ movement.reference_type }}</td>
+                    <td>{{ movement.reference_type|status_label }}</td>
                 </tr>
                 {% else %}
                 <tr>

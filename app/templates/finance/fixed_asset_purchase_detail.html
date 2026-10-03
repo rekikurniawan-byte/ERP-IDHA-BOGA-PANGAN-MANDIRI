@@ -10,28 +10,40 @@
 {% if journal %}
     {% do header_actions.append({"label": "Detail Jurnal", "url": url_for('accounting.journal_detail', journal_id=journal.id), "icon": "bi-journal-check"}) %}
 {% endif %}
-{{ page_header("Detail Pembelian Aset", purchase.purchase_number, "Finance", actions=header_actions) }}
+{{ page_header("Detail Pembelian Aset", purchase.purchase_number, "Keuangan", actions=header_actions) }}
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Nominal Pembelian</span>
-        <h3>{{ purchase.amount|rupiah }}</h3>
-        <p>{{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Nominal Pembelian</span>
+            <h3>{{ purchase.amount|rupiah }}</h3>
+            <p>{{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Aset</span>
-        <h3>{{ asset.asset_code if asset else '-' }}</h3>
-        <p>{{ asset.asset_name if asset else '-' }}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-building"></i></div>
+        <div>
+            <span>Aset</span>
+            <h3>{{ asset.asset_code if asset else '-' }}</h3>
+            <p>{{ asset.asset_name if asset else '-' }}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Buku Kas/Bank</span>
-        <h3>{% if ledger_transaction %}OUT{% else %}Belum{% endif %}</h3>
-        <p>{% if ledger_transaction %}{{ ledger_transaction.amount|rupiah }}{% else %}-{% endif %}</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Buku Kas/Bank</span>
+            <h3>{% if ledger_transaction %}OUT{% else %}Belum{% endif %}</h3>
+            <p>{% if ledger_transaction %}{{ ledger_transaction.amount|rupiah }}{% else %}-{% endif %}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Jurnal</span>
-        <h3>{% if journal %}Balance{% else %}Belum{% endif %}</h3>
-        <p>{% if journal %}{{ journal.journal_number }}{% else %}-{% endif %}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-journal-check"></i></div>
+        <div>
+            <span>Jurnal</span>
+            <h3>{% if journal %}Balance{% else %}Belum{% endif %}</h3>
+            <p>{% if journal %}{{ journal.journal_number }}{% else %}-{% endif %}</p>
+        </div>
     </div>
 </div>
 

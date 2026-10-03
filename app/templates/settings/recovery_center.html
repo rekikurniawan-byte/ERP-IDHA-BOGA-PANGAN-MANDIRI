@@ -31,20 +31,18 @@
     <div class="row g-3">
         {% for card in report.get("readiness_cards", []) %}
             <div class="col-xl-4 col-md-6">
-                <div class="stat-card h-100">
-                    <div class="d-flex justify-content-between align-items-start gap-2">
-                        <div>
-                            <div class="stat-label">{{ card.get("title") }}</div>
-                            <div class="stat-value">{{ card.get("value") }}</div>
+                <div class="app-stat-card">
+                    <div class="app-stat-icon stat-{{ card.get('status_class', 'warning') }}"><i class="bi {{ card.get('icon', 'bi-shield-check') }}"></i></div>
+                    <div>
+                        <div class="stat-label">{{ card.get("title") }}</div>
+                        <div class="stat-value">{{ card.get("value") }}</div>
+                        <div class="text-muted small mt-2">{{ card.get("detail") }}</div>
+                        <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                            <span class="status-badge {{ card.get('status_class', 'warning') }}">{{ card.get("status")|status_label }}</span>
+                            {% if card.get("endpoint") and (not card.get("owner_only") or current_user.role == "OWNER") %}
+                                <a href="{{ url_for(card.get('endpoint')) }}" class="btn app-btn-secondary btn-sm">{{ card.get("action_label", "Buka") }}</a>
+                            {% endif %}
                         </div>
-                        <i class="bi {{ card.get('icon', 'bi-shield-check') }} text-muted"></i>
-                    </div>
-                    <div class="text-muted small mt-2">{{ card.get("detail") }}</div>
-                    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
-                        <span class="status-badge {{ card.get('status_class', 'warning') }}">{{ card.get("status") }}</span>
-                        {% if card.get("endpoint") and (not card.get("owner_only") or current_user.role == "OWNER") %}
-                            <a href="{{ url_for(card.get('endpoint')) }}" class="btn app-btn-secondary btn-sm">{{ card.get("action_label", "Buka") }}</a>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -87,7 +85,7 @@
                         <span>{{ loop.index }}. {{ item.get("title") }}</span>
                         <strong class="text-break">{{ item.get("description") }}</strong>
                         <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
-                            <span class="status-badge {{ item.get('level', 'info') }}">{{ item.get("level", "info")|upper }}</span>
+                            <span class="status-badge {{ item.get('level', 'info') }}">{{ item.get("level", "info")|status_label }}</span>
                             {% if item.get("endpoint") and (not item.get("owner_only") or current_user.role == "OWNER") %}
                                 <a href="{{ url_for(item.get('endpoint')) }}" class="btn app-btn-secondary btn-sm">{{ item.get("action_label", "Buka") }}</a>
                             {% endif %}

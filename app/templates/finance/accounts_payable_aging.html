@@ -6,7 +6,7 @@
 {{ page_header(
     "AP Aging Hutang Supplier",
     "Analisis umur hutang supplier berdasarkan tanggal jatuh tempo. Halaman ini hanya membaca data supplier bill, tidak membuat transaksi.",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('finance.print_accounts_payable_aging', as_of_date=as_of_date.isoformat(), supplier_id=selected_supplier_id or ''), "icon": "bi-printer", "variant": "primary"},
         {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
@@ -19,27 +19,39 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Hutang Terbuka</span>
-        <h3>{{ report.summary.total_open|rupiah }}</h3>
-        <p>{{ report.summary.open_count }} bill belum lunas</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Total Hutang Terbuka</span>
+            <h3>{{ report.summary.total_open|rupiah }}</h3>
+            <p>{{ report.summary.open_count }} bill belum lunas</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Total Lewat Jatuh Tempo</span>
-        <h3>{{ report.summary.overdue_total|rupiah }}</h3>
-        <p>{{ report.summary.overdue_count }} bill lewat jatuh tempo</p>
+        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <span>Total Lewat Jatuh Tempo</span>
+            <h3>{{ report.summary.overdue_total|rupiah }}</h3>
+            <p>{{ report.summary.overdue_count }} bill lewat jatuh tempo</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Belum Jatuh Tempo</span>
-        <h3>{{ report.buckets.CURRENT.total|rupiah }}</h3>
-        <p>{{ report.buckets.CURRENT.count }} bill</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Belum Jatuh Tempo</span>
+            <h3>{{ report.buckets.CURRENT.total|rupiah }}</h3>
+            <p>{{ report.buckets.CURRENT.count }} bill</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Bill Lunas</span>
-        <h3>{{ report.summary.paid_count }}</h3>
-        <p>Tidak masuk aging terbuka</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Bill Lunas</span>
+            <h3>{{ report.summary.paid_count }}</h3>
+            <p>Tidak masuk aging terbuka</p>
+        </div>
     </div>
 </div>
 
@@ -51,7 +63,7 @@
         </div>
     </div>
 
-    <form method="GET" class="form-grid app-form" data-ui-form="true">
+    <form method="GET" class="app-filter app-form" data-ui-form="true">
         <div class="form-group">
             <label>Tanggal Acuan</label>
             <input type="date" name="as_of_date" class="form-control" value="{{ as_of_date.isoformat() }}">
@@ -82,27 +94,39 @@
 
 <div class="app-stat-grid mt-4">
     <div class="app-stat-card">
-        <span>0-30 Hari</span>
-        <h3>{{ report.buckets.DAYS_0_30.total|rupiah }}</h3>
-        <p>{{ report.buckets.DAYS_0_30.count }} bill overdue</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+            <span>0-30 Hari</span>
+            <h3>{{ report.buckets.DAYS_0_30.total|rupiah }}</h3>
+            <p>{{ report.buckets.DAYS_0_30.count }} bill overdue</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>31-60 Hari</span>
-        <h3>{{ report.buckets.DAYS_31_60.total|rupiah }}</h3>
-        <p>{{ report.buckets.DAYS_31_60.count }} bill overdue</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+            <span>31-60 Hari</span>
+            <h3>{{ report.buckets.DAYS_31_60.total|rupiah }}</h3>
+            <p>{{ report.buckets.DAYS_31_60.count }} bill overdue</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>61-90 Hari</span>
-        <h3>{{ report.buckets.DAYS_61_90.total|rupiah }}</h3>
-        <p>{{ report.buckets.DAYS_61_90.count }} bill overdue</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+            <span>61-90 Hari</span>
+            <h3>{{ report.buckets.DAYS_61_90.total|rupiah }}</h3>
+            <p>{{ report.buckets.DAYS_61_90.count }} bill overdue</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>&gt; 90 Hari</span>
-        <h3>{{ report.buckets.DAYS_OVER_90.total|rupiah }}</h3>
-        <p>{{ report.buckets.DAYS_OVER_90.count }} bill overdue</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+            <span>&gt; 90 Hari</span>
+            <h3>{{ report.buckets.DAYS_OVER_90.total|rupiah }}</h3>
+            <p>{{ report.buckets.DAYS_OVER_90.count }} bill overdue</p>
+        </div>
     </div>
 </div>
 

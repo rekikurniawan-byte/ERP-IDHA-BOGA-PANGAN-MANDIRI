@@ -16,35 +16,53 @@
 {% set summary = monitoring.summary %}
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Menunggu Pemeriksaan</span>
-        <h3>{{ summary.pending_review_count }}</h3>
-        <p>{{ summary.pending_review_amount|rupiah }} menunggu review</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Menunggu Pemeriksaan</span>
+            <h3>{{ summary.pending_review_count }}</h3>
+            <p>{{ summary.pending_review_amount|rupiah }} menunggu review</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Siap Diposting</span>
-        <h3>{{ summary.ready_to_post_count }}</h3>
-        <p>{{ summary.ready_to_post_amount|rupiah }} siap diposting</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-send-check"></i></div>
+        <div>
+            <span>Siap Diposting</span>
+            <h3>{{ summary.ready_to_post_count }}</h3>
+            <p>{{ summary.ready_to_post_amount|rupiah }} siap diposting</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Piutang Terbuka</span>
-        <h3>{{ summary.open_receivable_count }}</h3>
-        <p>{{ summary.open_receivable_total|rupiah }} belum tertagih</p>
-        <small class="text-muted">{{ summary.open_receivable_unbilled_count }} belum invoice | {{ summary.open_receivable_billed_count }} sudah invoice</small>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Piutang Terbuka</span>
+            <h3>{{ summary.open_receivable_count }}</h3>
+            <p>{{ summary.open_receivable_total|rupiah }} belum tertagih</p>
+            <small class="text-muted">{{ summary.open_receivable_unbilled_count }} belum invoice | {{ summary.open_receivable_billed_count }} sudah invoice</small>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Hutang Terbuka</span>
-        <h3>{{ summary.open_payable_count }}</h3>
-        <p>{{ summary.open_payable_total|rupiah }} belum dibayar</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Hutang Terbuka</span>
+            <h3>{{ summary.open_payable_count }}</h3>
+            <p>{{ summary.open_payable_total|rupiah }} belum dibayar</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Selisih Integrasi</span>
-        <h3>{{ summary.mismatch_count }}</h3>
-        <p>Butuh investigasi trace posting</p>
+        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <span>Selisih Integrasi</span>
+            <h3>{{ summary.mismatch_count }}</h3>
+            <p>Butuh investigasi trace posting</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Dokumen Manual Kurang</span>
-        <h3>{{ summary.manual_doc_gap_count }}</h3>
-        <p>Event manual belum dibentuk dokumen</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-paperclip"></i></div>
+        <div>
+            <span>Dokumen Manual Kurang</span>
+            <h3>{{ summary.manual_doc_gap_count }}</h3>
+            <p>Event manual belum dibentuk dokumen</p>
+        </div>
     </div>
 </div>
 

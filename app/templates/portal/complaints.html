@@ -34,7 +34,7 @@
                     <span>Kategori</span>
                     <select name="category" required>
                         {% for category in model.categories %}
-                            <option value="{{ category }}">{{ category.replace("_", " ") }}</option>
+                            <option value="{{ category }}">{{ category|status_label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -75,7 +75,7 @@
                     <span class="portal-record-icon"><i class="bi bi-chat-square-text"></i></span>
                     <div>
                         <h3>{{ complaint.complaint_number }}</h3>
-                        <p>{{ complaint.title }} - {{ complaint.category.replace("_", " ") }}</p>
+                        <p>{{ complaint.title }} - {{ complaint.category|status_label }}</p>
                         <div class="portal-chip-row">
                             <span>{{ complaint.status|status_label }}</span>
                             <span>{{ complaint.submitted_at.strftime('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>

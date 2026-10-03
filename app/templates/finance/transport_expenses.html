@@ -24,24 +24,33 @@
 {% else %}
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Transaksi</span>
-        <h3>{{ summary.count }}</h3>
-        <p>Biaya transport/BBM tercatat</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
+        <div>
+            <span>Total Transaksi</span>
+            <h3>{{ summary.count }}</h3>
+            <p>Biaya transport/BBM tercatat</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>BBM Kendaraan</span>
-        <h3>{{ summary.fuel_total|rupiah }}</h3>
-        <p>Posting ke 5011</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-fuel-pump"></i></div>
+        <div>
+            <span>BBM Kendaraan</span>
+            <h3>{{ summary.fuel_total|rupiah }}</h3>
+            <p>Posting ke 5011</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Transportasi</span>
-        <h3>{{ summary.transport_total|rupiah }}</h3>
-        <p>Posting ke 5003</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-truck"></i></div>
+        <div>
+            <span>Transportasi</span>
+            <h3>{{ summary.transport_total|rupiah }}</h3>
+            <p>Posting ke 5003</p>
+        </div>
     </div>
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('finance.transport_expenses') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.transport_expenses') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-4">
             <label class="form-label">Jenis Biaya</label>
             <select name="type" class="form-select">

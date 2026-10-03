@@ -6,7 +6,7 @@
 {{ page_header(
     "Buku Kas/Bank",
     "Saldo buku kas/bank dari saldo awal, pembayaran pelanggan, pembelian, pembayaran supplier, transfer, dan penyesuaian.",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Saldo Awal", "url": url_for('accounting.opening_balance'), "icon": "bi-wallet2"},
         {"label": "Transfer", "url": url_for('finance.cash_bank_transfers'), "icon": "bi-arrow-left-right"},
@@ -20,47 +20,68 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Uang Masuk</span>
-        <h3>{{ summary.total_in|rupiah }}</h3>
-        <p>Termasuk saldo awal, pembayaran pelanggan, transfer masuk, dan adjustment tambah.</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Total Uang Masuk</span>
+            <h3>{{ summary.total_in|rupiah }}</h3>
+            <p>Termasuk saldo awal, pembayaran pelanggan, transfer masuk, dan adjustment tambah.</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Total Uang Keluar</span>
-        <h3>{{ summary.total_out|rupiah }}</h3>
-        <p>Pembelian tunai, pembayaran supplier, transfer keluar, dan adjustment kurang.</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Total Uang Keluar</span>
+            <h3>{{ summary.total_out|rupiah }}</h3>
+            <p>Pembelian tunai, pembayaran supplier, transfer keluar, dan adjustment kurang.</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Saldo Buku Kas/Bank</span>
-        <h3>{{ summary.net|rupiah }}</h3>
-        <p>Saldo awal + IN - OUT sesuai filter aktif.</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-bank"></i></div>
+        <div>
+            <span>Saldo Buku Kas/Bank</span>
+            <h3>{{ summary.net|rupiah }}</h3>
+            <p>Saldo awal + IN - OUT sesuai filter aktif.</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Jumlah Transaksi</span>
-        <h3>{{ summary.count }}</h3>
-        <p>{{ summary.reconciled_count }} rekonsiliasi | {{ summary.unreconciled_count }} belum.</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
+        <div>
+            <span>Jumlah Transaksi</span>
+            <h3>{{ summary.count }}</h3>
+            <p>{{ summary.reconciled_count }} rekonsiliasi | {{ summary.unreconciled_count }} belum.</p>
+        </div>
     </div>
 </div>
 
 <div class="app-stat-grid mt-3">
     <div class="app-stat-card">
-        <span>Saldo Kas</span>
-        <h3>{{ summary.cash_net|rupiah }}</h3>
-        <p>Masuk {{ summary.cash_in|rupiah }} | Keluar {{ summary.cash_out|rupiah }}</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Saldo Kas</span>
+            <h3>{{ summary.cash_net|rupiah }}</h3>
+            <p>Masuk {{ summary.cash_in|rupiah }} | Keluar {{ summary.cash_out|rupiah }}</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Saldo Bank</span>
-        <h3>{{ summary.bank_net|rupiah }}</h3>
-        <p>Masuk {{ summary.bank_in|rupiah }} | Keluar {{ summary.bank_out|rupiah }}</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Saldo Bank</span>
+            <h3>{{ summary.bank_net|rupiah }}</h3>
+            <p>Masuk {{ summary.bank_in|rupiah }} | Keluar {{ summary.bank_out|rupiah }}</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Rekonsiliasi</span>
-        <h3>{{ summary.reconciled_count }}</h3>
-        <p>Transaksi sudah ditandai cocok dengan bukti/kas fisik.</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Rekonsiliasi</span>
+            <h3>{{ summary.reconciled_count }}</h3>
+            <p>Transaksi sudah ditandai cocok dengan bukti/kas fisik.</p>
+        </div>
     </div>
 </div>
 
@@ -72,7 +93,7 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ url_for('finance.cash_bank_ledger') }}" class="row g-3 app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.cash_bank_ledger') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-2">
             <label class="form-label">Tipe</label>
             <select name="transaction_type" class="form-select app-input">

@@ -19,24 +19,36 @@
 
     <div class="app-stat-grid app-stat-grid-compact app-stat-grid-4">
         <div class="app-stat-card">
-            <p>Periode</p>
-            <h3>{{ report.start_date.strftime('%d/%m') }} - {{ report.end_date.strftime('%d/%m') }}</h3>
-            <span class="app-stat-helper">{{ report.summary.locked_order_count }} order locked dari {{ report.summary.order_count }} order</span>
+            <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+            <div>
+                <p>Periode</p>
+                <h3>{{ report.start_date.strftime('%d/%m') }} - {{ report.end_date.strftime('%d/%m') }}</h3>
+                <span class="app-stat-helper">{{ report.summary.locked_order_count }} order locked dari {{ report.summary.order_count }} order</span>
+            </div>
         </div>
         <div class="app-stat-card">
-            <p>Total Porsi</p>
-            <h3>{{ report.summary.total_qty|qty }}</h3>
-            <span class="app-stat-helper">{{ report.summary.mandor_count }} {{ term('sub_client', lower=True) }} · {{ report.summary.location_count }} lokasi</span>
+            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+            <div>
+                <p>Total Porsi</p>
+                <h3>{{ report.summary.total_qty|qty }}</h3>
+                <span class="app-stat-helper">{{ report.summary.mandor_count }} {{ term('sub_client', lower=True) }} · {{ report.summary.location_count }} lokasi</span>
+            </div>
         </div>
         <div class="app-stat-card">
-            <p>Nilai Catering</p>
-            <h3>{{ report.summary.base_amount|rupiah }}</h3>
-            <span class="app-stat-helper">Revisi tambah {{ report.summary.revision_amount|rupiah }}</span>
+            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <p>Nilai Catering</p>
+                <h3>{{ report.summary.base_amount|rupiah }}</h3>
+                <span class="app-stat-helper">Revisi tambah {{ report.summary.revision_amount|rupiah }}</span>
+            </div>
         </div>
         <div class="app-stat-card">
-            <p>Kandidat Invoice</p>
-            <h3>{{ report.summary.invoice_candidate_amount|rupiah }}</h3>
-            <span class="app-stat-helper">{{ report.summary.ready_to_bill_count }} siap · {{ report.summary.invoiced_count }} sudah invoice</span>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <p>Kandidat Invoice</p>
+                <h3>{{ report.summary.invoice_candidate_amount|rupiah }}</h3>
+                <span class="app-stat-helper">{{ report.summary.ready_to_bill_count }} siap · {{ report.summary.invoiced_count }} sudah invoice</span>
+            </div>
         </div>
     </div>
 

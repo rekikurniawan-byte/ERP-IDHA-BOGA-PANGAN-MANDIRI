@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    <form method="get" class="revenue-explorer-filter app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter omzet dan kas">
+    <form method="get" class="revenue-explorer-filter app-filter app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter omzet dan kas">
         <div class="dashboard-filter-field">
             <label for="revenuePeriod">Periode</label>
             <select id="revenuePeriod" name="revenue_period" class="form-select form-select-sm dashboard-filter-select">
@@ -93,12 +93,14 @@
         </div>
         <input type="hidden" name="analytics_year" value="{{ analytics.year if analytics is defined else '' }}">
         <input type="hidden" name="analytics_month" value="{{ analytics.month if analytics is defined else '' }}">
-        <button type="submit" class="btn btn-sm app-btn-primary dashboard-filter-submit">
-            <i class="bi bi-funnel"></i> Terapkan
-        </button>
-        <a href="{{ url_for('dashboard.revenue_explorer') }}" class="btn btn-sm app-btn-secondary dashboard-filter-reset">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
-        </a>
+        <div class="app-filter-actions">
+            <button type="submit" class="btn btn-sm app-btn-primary dashboard-filter-submit">
+                <i class="bi bi-funnel"></i> Terapkan
+            </button>
+            <a href="{{ url_for('dashboard.revenue_explorer') }}" class="btn btn-sm app-btn-secondary dashboard-filter-reset">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </a>
+        </div>
     </form>
 
     <div class="app-stat-grid revenue-explorer-stat-grid">

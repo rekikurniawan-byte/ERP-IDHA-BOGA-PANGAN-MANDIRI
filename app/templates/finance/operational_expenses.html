@@ -24,24 +24,33 @@
 {% else %}
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Transaksi</span>
-        <h3>{{ summary.count }}</h3>
-        <p>Biaya operasional tercatat</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
+        <div>
+            <span>Total Transaksi</span>
+            <h3>{{ summary.count }}</h3>
+            <p>Biaya operasional tercatat</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Total Biaya</span>
-        <h3>{{ summary.total|rupiah }}</h3>
-        <p>Posting ke COA beban</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Total Biaya</span>
+            <h3>{{ summary.total|rupiah }}</h3>
+            <p>Posting ke COA beban</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Gas + Kemasan</span>
-        <h3>{{ (summary.gas_total + summary.packaging_total)|rupiah }}</h3>
-        <p>Biaya dapur dan packing</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-fire"></i></div>
+        <div>
+            <span>Gas + Kemasan</span>
+            <h3>{{ (summary.gas_total + summary.packaging_total)|rupiah }}</h3>
+            <p>Biaya dapur dan packing</p>
+        </div>
     </div>
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('finance.operational_expenses') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.operational_expenses') }}" class="app-filter app-form" data-ui-form="true">
         <div class="col-md-4">
             <label class="form-label">Kategori Biaya</label>
             <select name="category" class="form-select">

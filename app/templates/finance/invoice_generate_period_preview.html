@@ -7,7 +7,7 @@
 {{ page_header(
     ("Lihat Data Buat Invoice Periode " ~ term('client')),
     ("Lihat Data tagihan resmi ke " ~ term('client', lower=True) ~ " yang berisi catering, revisi tambah, dan hutang warung dalam satu periode."),
-    "Finance",
+    "Keuangan",
     actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"}]
 ) }}
 
@@ -83,35 +83,50 @@
 {% if preview_ready %}
 <div class="app-stat-grid mt-4">
     <div class="app-stat-card">
-        <span>Catering Locked</span>
-        <h3>{{ total_catering|rupiah }}</h3>
-        <p>Order locked dalam periode</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Catering Locked</span>
+            <h3>{{ total_catering|rupiah }}</h3>
+            <p>Order locked dalam periode</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Revisi Tambah</span>
-        <h3>{{ total_revision|rupiah }}</h3>
-        <p>AFTER_LOCK INCREASE</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-plus-circle"></i></div>
+        <div>
+            <span>Revisi Tambah</span>
+            <h3>{{ total_revision|rupiah }}</h3>
+            <p>AFTER_LOCK INCREASE</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Warung Belum Lunas</span>
-        <h3>{{ total_warung|rupiah }}</h3>
-        <p>Hutang {{ term('worker', lower=True) }} dalam periode</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <span>Warung Belum Lunas</span>
+            <h3>{{ total_warung|rupiah }}</h3>
+            <p>Hutang {{ term('worker', lower=True) }} dalam periode</p>
+        </div>
     </div>
 
     {% if total_delivery %}
     <div class="app-stat-card">
-        <span>Ongkos Kirim</span>
-        <h3>{{ total_delivery|rupiah }}</h3>
-        <p>Pengiriman berbayar dalam periode</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-truck"></i></div>
+        <div>
+            <span>Ongkos Kirim</span>
+            <h3>{{ total_delivery|rupiah }}</h3>
+            <p>Pengiriman berbayar dalam periode</p>
+        </div>
     </div>
     {% endif %}
 
     <div class="app-stat-card">
-        <span>Grand Total</span>
-        <h3>{{ grand_total|rupiah }}</h3>
-        <p>Calon nilai invoice periode</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Grand Total</span>
+            <h3>{{ grand_total|rupiah }}</h3>
+            <p>Calon nilai invoice periode</p>
+        </div>
     </div>
 </div>
 

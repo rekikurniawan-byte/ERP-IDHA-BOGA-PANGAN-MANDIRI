@@ -117,11 +117,11 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <small class="text-muted">Estimasi Qty Dasar Setelah Yield</small>
-                    <div><strong id="usableQtyLihat Data">-</strong></div>
+                    <div><strong id="usableQtyPreview">-</strong></div>
                 </div>
                 <div class="col-md-4">
                     <small class="text-muted">Estimasi Biaya Efektif</small>
-                    <div><strong id="effectiveCostLihat Data">-</strong></div>
+                    <div><strong id="effectiveCostPreview">-</strong></div>
                 </div>
                 <div class="col-md-4">
                     <small class="text-muted">Rumus Sederhana</small>
@@ -144,8 +144,8 @@
     const yieldEl = document.getElementById('yieldPercentage');
     const baseUnitEl = document.getElementById('baseUnit');
     const purchaseUnitEl = document.getElementById('purchaseUnit');
-    const usableLihat Data = document.getElementById('usableQtyLihat Data');
-    const costLihat Data = document.getElementById('effectiveCostLihat Data');
+    const usablePreview = document.getElementById('usableQtyPreview');
+    const costPreview = document.getElementById('effectiveCostPreview');
     const conversionPicker = document.getElementById('conversionPicker');
 
     function numberValue(el) {
@@ -160,7 +160,7 @@
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 2 }).format(value || 0);
     }
 
-    function updateLihat Data() {
+    function updatePreview() {
         const price = numberValue(priceEl);
         const qty = numberValue(qtyEl);
         const factor = numberValue(factorEl);
@@ -169,12 +169,12 @@
         const effectiveCost = usableQty > 0 ? price / usableQty : 0;
         const baseUnit = (baseUnitEl.value || '').toUpperCase();
 
-        usableLihat Data.textContent = formatNumber(usableQty) + (baseUnit ? ' ' + baseUnit : '');
-        costLihat Data.textContent = formatRupiah(effectiveCost) + (baseUnit ? ' / ' + baseUnit : '');
+        usablePreview.textContent = formatNumber(usableQty) + (baseUnit ? ' ' + baseUnit : '');
+        costPreview.textContent = formatRupiah(effectiveCost) + (baseUnit ? ' / ' + baseUnit : '');
     }
 
     [priceEl, qtyEl, factorEl, yieldEl, baseUnitEl].forEach(function (el) {
-        if (el) el.addEventListener('input', updateLihat Data);
+        if (el) el.addEventListener('input', updatePreview);
     });
 
     if (conversionPicker) {
@@ -185,11 +185,11 @@
             purchaseUnitEl.value = parts[0];
             baseUnitEl.value = parts[1];
             factorEl.value = parts[2];
-            updateLihat Data();
+            updatePreview();
         });
     }
 
-    updateLihat Data();
+    updatePreview();
 })();
 </script>
 </div>

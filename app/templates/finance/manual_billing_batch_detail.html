@@ -71,37 +71,55 @@
 
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card">
-            <span>Total Rekap</span>
-            <h3>{{ batch.total_amount|rupiah }}</h3>
-            <p>{{ batch.items|length }} item</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Total Rekap</span>
+                <h3>{{ batch.total_amount|rupiah }}</h3>
+                <p>{{ batch.items|length }} item</p>
+            </div>
         </div>
         {% if batch.invoice %}
         <div class="app-stat-card">
-            <span>Sudah Dibayar</span>
-            <h3>{{ batch.invoice.paid_amount|rupiah }}</h3>
-            <p>Status invoice: {{ batch.invoice.status|status_label('invoice') }}</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <span>Sudah Dibayar</span>
+                <h3>{{ batch.invoice.paid_amount|rupiah }}</h3>
+                <p>Status invoice: {{ batch.invoice.status|status_label('invoice') }}</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Sisa Piutang</span>
-            <h3>{{ batch.invoice.remaining_amount|rupiah }}</h3>
-            <p>Status rekap: {{ status_context.label }}</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+            <div>
+                <span>Sisa Piutang</span>
+                <h3>{{ batch.invoice.remaining_amount|rupiah }}</h3>
+                <p>Status rekap: {{ status_context.label }}</p>
+            </div>
         </div>
         {% endif %}
         <div class="app-stat-card">
-            <span>Total Catering</span>
-            <h3>{{ catering_total|rupiah }}</h3>
-            <p>Data porsi dari buku/manual</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+            <div>
+                <span>Total Catering</span>
+                <h3>{{ catering_total|rupiah }}</h3>
+                <p>Data porsi dari buku/manual</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Total Warung/Kasbon</span>
-            <h3>{{ warung_total|rupiah }}</h3>
-            <p>Data {{ term('worker', lower=True) }} dari buku/manual</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-shop"></i></div>
+            <div>
+                <span>Total Warung/Kasbon</span>
+                <h3>{{ warung_total|rupiah }}</h3>
+                <p>Data {{ term('worker', lower=True) }} dari buku/manual</p>
+            </div>
         </div>
         {% if other_total %}
         <div class="app-stat-card">
-            <span>Total Lainnya</span>
-            <h3>{{ other_total|rupiah }}</h3>
-            <p>Item non catering/warung</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-three-dots"></i></div>
+            <div>
+                <span>Total Lainnya</span>
+                <h3>{{ other_total|rupiah }}</h3>
+                <p>Item non catering/warung</p>
+            </div>
         </div>
         {% endif %}
     </div>

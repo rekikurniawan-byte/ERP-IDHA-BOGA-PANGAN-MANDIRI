@@ -25,7 +25,7 @@
             <h3>Status Atomic Smoke</h3>
             <p>{{ report.get("summary") }}</p>
         </div>
-        <span class="status-badge {{ report.get('status_class', 'warning') }}">{{ report.get("status", "UNKNOWN") }}</span>
+        <span class="status-badge {{ report.get('status_class', 'warning') }}">{{ report.get("status", "UNKNOWN")|status_label }}</span>
     </div>
 
     {% if report.get("error_message") %}
@@ -36,31 +36,43 @@
 
     <div class="row g-3">
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">Scenario</div>
-                <div class="stat-value">{{ summary.get("total", 0) }}</div>
-                <div class="text-muted small">Failure injection dry-run.</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
+                <div>
+                    <div class="stat-label">Scenario</div>
+                    <div class="stat-value">{{ summary.get("total", 0) }}</div>
+                    <div class="text-muted small">Failure injection dry-run.</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">PASS</div>
-                <div class="stat-value">{{ summary.get("pass", 0) }}</div>
-                <div class="text-muted small">Scenario lolos rollback/cleanup.</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="stat-label">PASS</div>
+                    <div class="stat-value">{{ summary.get("pass", 0) }}</div>
+                    <div class="text-muted small">Scenario lolos rollback/cleanup.</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">FAIL</div>
-                <div class="stat-value">{{ summary.get("fail", 0) }}</div>
-                <div class="text-muted small">Harus 0 sebelum lanjut patch besar.</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+                <div>
+                    <div class="stat-label">FAIL</div>
+                    <div class="stat-value">{{ summary.get("fail", 0) }}</div>
+                    <div class="text-muted small">Harus 0 sebelum lanjut patch besar.</div>
+                </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card h-100">
-                <div class="stat-label">DB Aktif</div>
-                <div class="stat-value">{{ "AMAN" if active_db.get("unchanged") else "CEK" }}</div>
-                <div class="text-muted small">Hash sebelum/sesudah harus sama.</div>
+            <div class="app-stat-card">
+                <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="stat-label">DB Aktif</div>
+                    <div class="stat-value">{{ "AMAN" if active_db.get("unchanged") else "CEK" }}</div>
+                    <div class="text-muted small">Hash sebelum/sesudah harus sama.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -154,7 +166,7 @@
                                 <strong class="d-block">{{ item.get("title") }}</strong>
                                 <code class="small text-break">{{ item.get("name") }}</code>
                             </td>
-                            <td><span class="status-badge {{ item.get('status_class', 'warning') }}">{{ item.get("status") }}</span></td>
+                            <td><span class="status-badge {{ item.get('status_class', 'warning') }}">{{ item.get("status")|status_label }}</span></td>
                             <td class="text-muted small">{{ item.get("message") }}</td>
                             <td class="small text-muted">
                                 {% if item.get("injected_error") %}<div>Injected: {{ item.get("injected_error") }}</div>{% endif %}

@@ -12,7 +12,7 @@
             <h2 id="dashboardAnalyticsTitle">Grafik Bisnis</h2>
             <p>Grafik kesehatan uang dan operasional untuk owner/admin.</p>
         </div>
-        <form method="get" class="dashboard-analytics-filter-form app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter grafik bisnis">
+        <form method="get" class="dashboard-analytics-filter-form app-filter app-form" data-ui-form="true" data-form-kind="filter" aria-label="Filter grafik bisnis">
             <div class="dashboard-filter-field">
                 <label for="analyticsYear">Tahun</label>
                 <select id="analyticsYear" name="analytics_year" class="form-select form-select-sm dashboard-filter-select">
@@ -33,10 +33,11 @@
                 <input type="checkbox" name="include_asset_purchase" value="1" {% if revenue_chart.include_asset_purchase %}checked{% endif %}>
                 <span>Sertakan aset</span>
             </label>
-            <button type="submit" class="btn btn-sm app-btn-primary dashboard-filter-submit">
-                <i class="bi bi-funnel"></i> Terapkan
-            </button>
-            <span class="dashboard-period-chip"><i class="bi bi-shield-check"></i> Owner/Admin</span>
+            <div class="app-filter-actions">
+                <button type="submit" class="btn btn-sm app-btn-primary dashboard-filter-submit">
+                    <i class="bi bi-funnel"></i> Terapkan
+                </button>
+            </div>
         </form>
     </div>
 

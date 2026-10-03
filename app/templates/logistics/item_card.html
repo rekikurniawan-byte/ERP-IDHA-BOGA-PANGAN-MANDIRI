@@ -59,7 +59,7 @@
                 {% for movement in movements %}
                 <tr>
                     <td>{{ movement.movement_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ movement.movement_type }}</td>
+                    <td>{{ movement.movement_type|status_label }}</td>
                     <td>
                         {% if movement.movement_type in ["IN", "ADJUSTMENT_IN"] %}
                             {{ movement.qty|qty }}
@@ -74,7 +74,7 @@
                             -
                         {% endif %}
                     </td>
-                    <td>{{ movement.notes or movement.reference_type }}</td>
+                    <td>{{ movement.notes or (movement.reference_type|status_label) }}</td>
                 </tr>
                 {% else %}
                 <tr>

@@ -16,7 +16,7 @@
 {{ page_header(
     "Invoice",
     "Daftar invoice catering dan warung. Invoice periode menjadi arah final sistem.",
-    "Finance",
+    "Keuangan",
     actions=[
         {"label": "Download CSV", "url": url_for('finance.export_invoices_csv'), "icon": "bi-download"},
         {"label": "Buat Invoice Periode", "url": url_for('finance.generate_period_invoice_preview'), "icon": "bi-plus-circle", "variant": "primary"},
@@ -26,27 +26,36 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Invoice</span>
-        <h3>{{ total_invoice|rupiah }}</h3>
-        {# HYGIENE7A_ACTIVE_INVOICE_LABEL #}
-        <p>
-            {{ active_invoice_count if active_invoice_count is defined else invoices|length }} invoice aktif
-            {% if cancelled_count is defined and cancelled_count > 0 %}
-                - {{ cancelled_count }} invoice dibatalkan/arsip
-            {% endif %}
-        </p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Total Invoice</span>
+            <h3>{{ total_invoice|rupiah }}</h3>
+            {# HYGIENE7A_ACTIVE_INVOICE_LABEL #}
+            <p>
+                {{ active_invoice_count if active_invoice_count is defined else invoices|length }} invoice aktif
+                {% if cancelled_count is defined and cancelled_count > 0 %}
+                    - {{ cancelled_count }} invoice dibatalkan/arsip
+                {% endif %}
+            </p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Sudah Dibayar</span>
-        <h3>{{ total_paid|rupiah }}</h3>
-        <p>{{ paid_count }} lunas</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Sudah Dibayar</span>
+            <h3>{{ total_paid|rupiah }}</h3>
+            <p>{{ paid_count }} lunas</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Sisa Piutang</span>
-        <h3>{{ total_remaining|rupiah }}</h3>
-        <p>{{ unpaid_count }} belum lunas</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div>
+            <span>Sisa Piutang</span>
+            <h3>{{ total_remaining|rupiah }}</h3>
+            <p>{{ unpaid_count }} belum lunas</p>
+        </div>
     </div>
 </div>
 

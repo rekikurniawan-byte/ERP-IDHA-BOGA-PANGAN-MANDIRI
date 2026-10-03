@@ -42,7 +42,7 @@
         </div>
     </div>
     <div class="app-stat-card">
-        <div class="app-stat-icon stat-danger"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="app-stat-icon stat-info"><i class="bi bi-arrow-left-right"></i></div>
         <div>
             <p>Konversi Aktif</p>
             <h3>{{ conversion_count }}</h3>
@@ -56,7 +56,7 @@
         <strong>Aman:</strong> halaman ini hanya master biaya. Data HPP belum memotong stok, belum membuat jurnal, dan belum mengubah transaksi lama.
     </div>
 
-    <form method="GET" action="{{ url_for('master.item_cost_profiles') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('master.item_cost_profiles') }}" class="app-filter app-form" data-ui-form="true">
         <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama item / satuan">
 
         <select name="category" class="form-select app-input">
@@ -75,8 +75,10 @@
             <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Item Nonaktif</option>
         </select>
 
-        <button class="btn app-btn-primary" type="submit">Filter</button>
-        <a href="{{ url_for('master.item_cost_profiles') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit">Filter</button>
+            <a href="{{ url_for('master.item_cost_profiles') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

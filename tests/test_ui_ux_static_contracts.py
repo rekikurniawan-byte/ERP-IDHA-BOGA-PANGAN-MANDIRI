@@ -164,3 +164,66 @@ def test_static_assets_are_vendored_locally_with_automatic_cache_busting():
         "app/static/vendor/bootstrap-icons/font/fonts/bootstrap-icons.woff2",
     ):
         assert (ROOT / vendored_file).exists(), f"missing vendored asset: {vendored_file}"
+
+
+# --- Aturan tampilan yang diminta owner (2026-09-30) -------------------------------
+
+_GET_FORM = re.compile(r"<form\b([^>]*)>(.*?)</form>", re.S | re.I)
+
+
+def test_every_filter_form_uses_the_single_filter_pattern():
+    """Semua formulir filter (GET dengan isian) memakai .app-filter: kolom sama
+    lebar dan sejajar, bukan campuran row/col-md-*/flex yang lebarnya acak."""
+    offenders = []
+    for path in TEMPLATES.rglob("*.html"):
+        rel = path.relative_to(TEMPLATES).as_posix()
+        if rel.startswith("prediction/") or "print" in path.name:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for match in _GET_FORM.finditer(text):
+            attrs, body = match.group(1), match.group(2)
+            if "post" in attrs.lower():
+                continue
+            if not re.search(r"<(select|input)\b(?![^>]*hidden)", body):
+                continue
+            if "app-filter" not in attrs and not re.search(r'class="[^"]*\bapp-filter\b', body):
+                offenders.append(rel)
+    assert offenders == []
+
+
+def test_templates_have_no_identifiers_broken_by_translation():
+    """Terjemahan lama pernah mengganti "Preview" -> "Lihat Data" di dalam
+    nama variabel/id JS (const supplierLihat Data = ...), membuat script mati."""
+    offenders = []
+    for path in TEMPLATES.rglob("*.html"):
+        text = path.read_text(encoding="utf-8")
+        if re.search(r"[A-Za-z0-9_]Lihat Data", text) or re.search(r'id="[^"{}]*\s[^"{}]*"', text):
+            offenders.append(path.relative_to(TEMPLATES).as_posix())
+    assert offenders == []
+
+
+def test_buttons_and_component_links_are_not_underlined_on_hover():
+    base = _read("app/static/css/app/base.css")
+
+    hover_block = base.split("a:hover {", 1)[1].split("}", 1)[0]
+    assert "text-decoration: none;" in hover_block
+    assert "a:not([class]):hover" in base
+
+
+def test_screen_stat_cards_have_an_icon_like_the_dashboard():
+    """Kartu ringkasan di halaman layar memakai ikon seperti dashboard
+    (halaman cetak dikecualikan)."""
+    offenders = []
+    card = re.compile(r'<div\s+class="(?:[^"]*\s)?app-stat-card(?:\s[^"]*)?"[^>]*>')
+    for path in TEMPLATES.rglob("*.html"):
+        rel = path.relative_to(TEMPLATES).as_posix()
+        if "print" in path.name or rel.startswith("prediction/"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        for match in card.finditer(text):
+            if "print-box" in match.group(0):
+                continue
+            window = text[match.end(): match.end() + 260]
+            if "app-stat-icon" not in window and '<i class="bi' not in window[:160]:
+                offenders.append(rel)
+    assert offenders == []

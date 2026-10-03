@@ -20,9 +20,24 @@
 {% set precision_key = 'closing' %}
 
     <div class="app-stat-grid mt-4">
-        <div class="app-stat-card"><span>Pendapatan</span><h3>{{ closing.revenue_total|rupiah }}</h3><p>Ditutup dari akun revenue</p></div>
-        <div class="app-stat-card"><span>Beban</span><h3>{{ closing.expense_total|rupiah }}</h3><p>Ditutup dari akun expense</p></div>
-        <div class="app-stat-card"><span>Laba Bersih</span><h3>{{ closing.net_income|rupiah }}</h3><p>Efek bersih ke 3002</p></div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+            <div>
+    <span>Pendapatan</span><h3>{{ closing.revenue_total|rupiah }}</h3><p>Ditutup dari akun revenue</p>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+            <div>
+    <span>Beban</span><h3>{{ closing.expense_total|rupiah }}</h3><p>Ditutup dari akun expense</p>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
+            <div>
+    <span>Laba Bersih</span><h3>{{ closing.net_income|rupiah }}</h3><p>Efek bersih ke 3002</p>
+            </div>
+        </div>
     </div>
 
     <div class="app-card mt-4">

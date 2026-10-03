@@ -24,7 +24,7 @@
     {% endif %}
 
     <div class="app-card mt-4">
-        <form method="GET" action="{{ url_for('accounting.period_closing') }}" class="row g-3 align-items-end app-form" data-ui-form="true">
+        <form method="GET" action="{{ url_for('accounting.period_closing') }}" class="app-filter app-form" data-ui-form="true">
             <div class="col-md-3">
                 <label class="form-label app-label">Tahun</label>
                 <select name="year" class="form-select app-input">
@@ -50,19 +50,28 @@
 
     <div class="app-stat-grid mt-4">
         <div class="app-stat-card">
-            <span>Pendapatan Ditutup</span>
-            <h3>{{ preview.revenue_total|rupiah }}</h3>
-            <p>Saldo credit akun revenue periode</p>
+            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <span>Pendapatan Ditutup</span>
+                <h3>{{ preview.revenue_total|rupiah }}</h3>
+                <p>Saldo credit akun revenue periode</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>Beban Ditutup</span>
-            <h3>{{ preview.expense_total|rupiah }}</h3>
-            <p>Saldo debit akun expense periode</p>
+            <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <span>Beban Ditutup</span>
+                <h3>{{ preview.expense_total|rupiah }}</h3>
+                <p>Saldo debit akun expense periode</p>
+            </div>
         </div>
         <div class="app-stat-card">
-            <span>{{ preview.net_status }}</span>
-            <h3>{{ preview.net_income|rupiah }}</h3>
-            <p>Net dipindahkan ke 3002 Laba Ditahan</p>
+            <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
+            <div>
+                <span>{{ preview.net_status }}</span>
+                <h3>{{ preview.net_income|rupiah }}</h3>
+                <p>Net dipindahkan ke 3002 Laba Ditahan</p>
+            </div>
         </div>
     </div>
 

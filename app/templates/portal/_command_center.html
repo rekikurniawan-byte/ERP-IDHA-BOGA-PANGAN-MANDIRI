@@ -345,7 +345,7 @@
                     {% for complaint in models.complaints.rows[:5] %}
                         <article>
                             <strong>{{ complaint.complaint_number }}</strong>
-                            <span>{{ complaint.title }} | {{ complaint.category|replace("_", " ")|title }}</span>
+                            <span>{{ complaint.title }} | {{ complaint.category|status_label }}</span>
                             <b>{{ complaint.status|replace("_", " ")|title }}</b>
                         </article>
                     {% else %}

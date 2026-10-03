@@ -24,6 +24,7 @@ from app.services.portal_financial_visibility_service import build_portal_invoic
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
 from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT
 from app.services.operational_service import generate_order_number
+from app.utils.labels import status_label as shared_status_label
 from app.utils.terms import T
 
 
@@ -72,7 +73,9 @@ def _clean_text(value):
 
 def _label_status(value):
     key = str(value or "").strip().upper()
-    return STATUS_LABELS.get(key, key.replace("_", " ").title() if key else "-")
+    if not key:
+        return "-"
+    return STATUS_LABELS.get(key) or shared_status_label(key)
 
 
 def _meal_label(value):

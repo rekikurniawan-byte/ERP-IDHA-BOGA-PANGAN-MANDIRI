@@ -31,7 +31,7 @@
         <strong>Aman:</strong> Profil kemasan hanya master biaya. Belum otomatis mengurangi stok kemasan, belum membuat jurnal, dan belum mengubah order lama.
     </div>
 
-    <form method="GET" action="{{ url_for('costing.packaging_profiles') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('costing.packaging_profiles') }}" class="app-filter app-form" data-ui-form="true">
         <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama profil / catatan">
 
         <select name="status" class="form-select app-input">
@@ -40,8 +40,10 @@
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
         </select>
 
-        <button class="btn app-btn-primary" type="submit">Filter</button>
-        <a href="{{ url_for('costing.packaging_profiles') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit">Filter</button>
+            <a href="{{ url_for('costing.packaging_profiles') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

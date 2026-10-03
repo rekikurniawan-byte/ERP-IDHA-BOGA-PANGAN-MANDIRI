@@ -13,7 +13,7 @@
 {{ page_header(
     "Cicilan Aset & Kendaraan",
     "Kelola kontrak pembiayaan aset. Pokok cicilan mengurangi hutang, bunga/admin menjadi beban, bukan semua cicilan dianggap beban.",
-    "Finance",
+    "Keuangan",
     actions=header_actions
 ) }}
 
@@ -27,14 +27,34 @@
 </div>
 
 <div class="app-stat-grid asset-installment-summary-grid">
-    <div class="app-stat-card"><span>Total Kontrak</span><h3>{{ summary.total_contract|rupiah }}</h3><p>Nilai pokok + bunga/admin.</p></div>
-    <div class="app-stat-card"><span>Sisa Cicilan</span><h3>{{ summary.remaining|rupiah }}</h3><p>Jadwal cicilan belum lunas.</p></div>
-    <div class="app-stat-card"><span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>Buku Kas/Bank OUT tercatat.</p></div>
-    <div class="app-stat-card"><span>Kontrak Aktif</span><h3>{{ summary.active_count }}</h3><p>Dari {{ summary.count }} kontrak.</p></div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+    <span>Total Kontrak</span><h3>{{ summary.total_contract|rupiah }}</h3><p>Nilai pokok + bunga/admin.</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-building"></i></div>
+        <div>
+    <span>Sisa Cicilan</span><h3>{{ summary.remaining|rupiah }}</h3><p>Jadwal cicilan belum lunas.</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+    <span>Sudah Dibayar</span><h3>{{ summary.paid|rupiah }}</h3><p>Buku Kas/Bank OUT tercatat.</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+    <span>Kontrak Aktif</span><h3>{{ summary.active_count }}</h3><p>Dari {{ summary.count }} kontrak.</p>
+        </div>
+    </div>
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('finance.fixed_asset_installments') }}" class="row g-3 app-form global-filter-bar-v2" data-ui-form="true">
+    <form method="GET" action="{{ url_for('finance.fixed_asset_installments') }}" class="app-filter app-form global-filter-bar-v2" data-ui-form="true">
         <div class="col-md-5">
             <label class="form-label">Cari</label>
             <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Nomor kontrak / aset / vendor / leasing">

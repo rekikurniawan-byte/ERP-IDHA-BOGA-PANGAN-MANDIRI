@@ -55,7 +55,7 @@
 </div>
 
 <div class="app-card mt-4">
-    <form method="GET" action="{{ url_for('logistics.item_requests') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('logistics.item_requests') }}" class="app-filter app-form" data-ui-form="true">
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>Semua Status</option>
             <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Pending</option>
@@ -63,8 +63,10 @@
             <option value="FULFILLED" {% if status_filter == "FULFILLED" %}selected{% endif %}>Fulfilled</option>
             <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>Rejected</option>
         </select>
-        <button type="submit" class="btn app-btn-primary">Filter</button>
-        <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button type="submit" class="btn app-btn-primary">Filter</button>
+            <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

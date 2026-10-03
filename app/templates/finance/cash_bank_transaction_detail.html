@@ -16,19 +16,28 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Nominal</span>
-        <h3>{{ transaction.amount|rupiah }}</h3>
-        <p>{{ transaction.transaction_type }} • {{ transaction.account_type }}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Nominal</span>
+            <h3>{{ transaction.amount|rupiah }}</h3>
+            <p>{{ transaction.transaction_type }} • {{ transaction.account_type }}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Status Rekonsiliasi</span>
-        <h3>{{ 'Sudah' if transaction.is_reconciled else 'Belum' }}</h3>
-        <p>{{ transaction.reference_type or '-' }}</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <span>Status Rekonsiliasi</span>
+            <h3>{{ 'Sudah' if transaction.is_reconciled else 'Belum' }}</h3>
+            <p>{{ transaction.reference_type or '-' }}</p>
+        </div>
     </div>
     <div class="app-stat-card">
-        <span>Referensi Sumber</span>
-        <h3>{{ transaction.reference_id or '-' }}</h3>
-        <p>{{ transaction.reference_type or '-' }}</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-link-45deg"></i></div>
+        <div>
+            <span>Referensi Sumber</span>
+            <h3>{{ transaction.reference_id or '-' }}</h3>
+            <p>{{ transaction.reference_type or '-' }}</p>
+        </div>
     </div>
 </div>
 

@@ -22,21 +22,30 @@
 
 <div class="app-stat-grid">
     <div class="app-stat-card">
-        <span>Total Debit</span>
-        <h3>{{ total_debit|rupiah }}</h3>
-        <p>nilai debit</p>
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Total Debit</span>
+            <h3>{{ total_debit|rupiah }}</h3>
+            <p>nilai debit</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Total Kredit</span>
-        <h3>{{ total_credit|rupiah }}</h3>
-        <p>nilai kredit</p>
+        <div class="app-stat-icon stat-warning"><i class="bi bi-wallet2"></i></div>
+        <div>
+            <span>Total Kredit</span>
+            <h3>{{ total_credit|rupiah }}</h3>
+            <p>nilai kredit</p>
+        </div>
     </div>
 
     <div class="app-stat-card">
-        <span>Status</span>
-        <h3>{% if is_balanced %}Seimbang{% else %}Tidak Seimbang{% endif %}</h3>
-        <p>validasi debit kredit</p>
+        <div class="app-stat-icon stat-info"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+            <span>Status</span>
+            <h3>{% if is_balanced %}Seimbang{% else %}Tidak Seimbang{% endif %}</h3>
+            <p>validasi debit kredit</p>
+        </div>
     </div>
 </div>
 

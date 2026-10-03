@@ -17,7 +17,7 @@
 
 
 <div class="app-card">
-    <form method="GET" action="{{ url_for('master.suppliers') }}" class="filter-bar app-form" data-ui-form="true">
+    <form method="GET" action="{{ url_for('master.suppliers') }}" class="app-filter app-form" data-ui-form="true">
         <input type="text" name="q" class="form-control app-input" value="{{ q }}" placeholder="Cari kode / nama supplier / PIC / nomor HP">
 
         <select name="supplier_type" class="form-select app-input">
@@ -33,8 +33,10 @@
             <option value="INACTIVE" {% if status == "INACTIVE" %}selected{% endif %}>Nonaktif</option>
         </select>
 
-        <button class="btn app-btn-primary" type="submit">Filter</button>
-        <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Reset</a>
+        <div class="app-filter-actions">
+            <button class="btn app-btn-primary" type="submit">Filter</button>
+            <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Reset</a>
+        </div>
     </form>
 </div>
 

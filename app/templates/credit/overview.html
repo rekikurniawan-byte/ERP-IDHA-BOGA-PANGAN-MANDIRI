@@ -13,10 +13,30 @@
 {% set counts = {"AKTIF": 0, "PANTAU": 0, "TAHAN": 0, "BLOKIR": 0, "HAPUS_BUKU": 0} %}
 {% for row in rows %}{% do counts.update({row.decision.status: counts.get(row.decision.status, 0) + 1}) %}{% endfor %}
 <div class="app-stat-grid">
-    <div class="app-stat-card"><span>Lancar</span><h3>{{ counts["AKTIF"] }}</h3><p>Order jalan normal</p></div>
-    <div class="app-stat-card"><span>Pantau</span><h3>{{ counts["PANTAU"] }}</h3><p>Wajib isi log penagihan</p></div>
-    <div class="app-stat-card"><span>Ditahan</span><h3>{{ counts["TAHAN"] }}</h3><p>Order butuh persetujuan OWNER</p></div>
-    <div class="app-stat-card"><span>Diblokir</span><h3>{{ counts["BLOKIR"] + counts["HAPUS_BUKU"] }}</h3><p>Order baru ditolak</p></div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-check2-circle"></i></div>
+        <div>
+    <span>Lancar</span><h3>{{ counts["AKTIF"] }}</h3><p>Order jalan normal</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-eye"></i></div>
+        <div>
+    <span>Pantau</span><h3>{{ counts["PANTAU"] }}</h3><p>Wajib isi log penagihan</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-pause-circle"></i></div>
+        <div>
+    <span>Ditahan</span><h3>{{ counts["TAHAN"] }}</h3><p>Order butuh persetujuan OWNER</p>
+        </div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-danger"><i class="bi bi-slash-circle"></i></div>
+        <div>
+    <span>Diblokir</span><h3>{{ counts["BLOKIR"] + counts["HAPUS_BUKU"] }}</h3><p>Order baru ditolak</p>
+        </div>
+    </div>
 </div>
 
 <div class="app-card mt-4">
