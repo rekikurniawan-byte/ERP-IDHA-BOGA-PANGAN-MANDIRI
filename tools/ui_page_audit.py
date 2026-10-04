@@ -15,7 +15,9 @@ Ringkasan ditulis ke <out>/report.json dan dicetak.
     python tools/ui_page_audit.py --out instance/ui_audit/before
     python tools/ui_page_audit.py --out instance/ui_audit/after --only dashboard.owner finance.invoices
 
-Butuh database gladi yang sudah diisi tools/pilot_dry_run.py.
+Butuh database gladi (tools/pilot_dry_run.py) atau database demo
+(tools/seed_demo_data.py, --db idha_boga_demotest). Halaman detail dibuka
+dengan id nyata dari data (DETAIL_IDS), bukan id 1.
 """
 from __future__ import annotations
 
@@ -35,11 +37,80 @@ if str(ROOT) not in sys.path:
 PORT = 5099
 BASE = f"http://127.0.0.1:{PORT}"
 VIEWPORTS = {"desktop": {"width": 1440, "height": 900}, "mobile": {"width": 390, "height": 844}}
-ACCOUNTS = {
-    "owner.pilot": os.environ.get("PILOT_OWNER_PASSWORD", "PilotOwner#2026"),
-    "portal.maju": "PilotUser#2026",
-    "mandor.budi": "PilotUser#2026",
-    "rina.cust": "PilotUser#2026",
+# Peran -> (username, password) per jenis database.
+ACCOUNT_SETS = {
+    "pilot": {
+        "owner": ("owner.pilot", os.environ.get("PILOT_OWNER_PASSWORD", "PilotOwner#2026")),
+        "pt": ("portal.maju", "PilotUser#2026"),
+        "mandor": ("mandor.budi", "PilotUser#2026"),
+        "customer": ("rina.cust", "PilotUser#2026"),
+    },
+    "demo": {
+        "owner": ("owner", os.environ.get("DEMO_OWNER_PASSWORD", "DemoOwner#2026")),
+        "pt": ("portal.pt.local", "IdhaBoga#2026"),
+        "mandor": ("portal.mandor.local", "IdhaBoga#2026"),
+        "customer": ("portal.customer.local", "IdhaBoga#2026"),
+    },
+}
+# Halaman detail: SQL yang mengembalikan id (urut sesuai argumen route) dari
+# data yang representatif. Endpoint yang tidak terdaftar mencoba id 1.
+DETAIL_IDS = {
+    "accounting.journal_detail": "SELECT max(id) FROM journals",
+    "accounting.period_closing_detail": "SELECT max(id) FROM period_closings",
+    "canteen.debt_payment": "SELECT max(id) FROM worker_debts WHERE status <> 'PAID'",
+    "canteen.external_receivable_payment": "SELECT max(id) FROM canteen_external_receivables",
+    "costing.edit_menu": "SELECT min(id) FROM menus",
+    "costing.menu_recipe": "SELECT min(id) FROM menus",
+    "costing.edit_overhead_profile": "SELECT min(id) FROM overhead_profiles",
+    "costing.edit_packaging_profile": "SELECT min(id) FROM packaging_profiles",
+    "credit.account_detail": "SELECT min(id) FROM credit_accounts",
+    "credit.mandor_settings": "SELECT min(id) FROM mandors",
+    "customer_success.complaint_detail": "SELECT max(id) FROM customer_complaints",
+    "customer_success.contract_detail": "SELECT min(id) FROM customer_contracts",
+    "delivery.detail": "SELECT max(delivery_id) FROM delivery_details",
+    "delivery.receive": "SELECT max(id) FROM delivery_details",
+    "field_transactions.detail": "SELECT max(id) FROM field_transactions",
+    "field_transactions.edit": "SELECT max(id) FROM field_transactions",
+    "finance.advance_detail": "SELECT max(id) FROM advance_transactions",
+    "finance.cash_bank_transaction_detail": "SELECT max(id) FROM cash_bank_transactions",
+    "finance.fixed_asset_depreciation_configure": "SELECT min(id) FROM fixed_assets",
+    "finance.fixed_asset_installment_detail": "SELECT min(id) FROM asset_financing_contracts",
+    "finance.fixed_asset_purchase_detail": "SELECT min(id) FROM fixed_asset_purchases",
+    "finance.invoice_detail": "SELECT max(invoice_id) FROM payments",
+    "finance.invoice_profit_detail": "SELECT max(id) FROM invoices WHERE source_type = 'PERIOD_INVOICE'",
+    "finance.manual_billing_batch_detail": "SELECT max(id) FROM manual_billing_batches",
+    "finance.edit_manual_billing_backfill_batch": "SELECT max(id) FROM manual_billing_batches",
+    "finance.operational_expense_detail": "SELECT max(id) FROM operational_expenses",
+    "finance.payment_receipt": "SELECT max(id) FROM payments",
+    "finance.supplier_bill_detail": "SELECT max(id) FROM supplier_bills",
+    "finance.transport_expense_detail": "SELECT max(id) FROM transport_vehicle_expenses",
+    "hr.edit_employee": "SELECT min(id) FROM employees",
+    "hr.payroll_detail": "SELECT max(id) FROM payrolls",
+    "logistics.item_request_detail": "SELECT max(id) FROM item_requests",
+    "logistics.item_card": "SELECT min(id) FROM items",
+    "logistics.purchase_detail": "SELECT max(id) FROM procurements",
+    "master.edit_bank_account": "SELECT min(id) FROM bank_accounts",
+    "master.edit_client": "SELECT min(id) FROM clients",
+    "master.edit_driver": "SELECT min(id) FROM drivers",
+    "master.edit_fixed_asset": "SELECT min(id) FROM fixed_assets",
+    "master.edit_item_cost_profile": "SELECT min(id) FROM items",
+    "master.edit_item": "SELECT min(id) FROM items",
+    "master.edit_location": "SELECT min(id) FROM delivery_locations",
+    "master.edit_mandor": "SELECT min(id) FROM mandors",
+    "master.edit_supplier": "SELECT min(id) FROM suppliers",
+    "master.edit_worker": "SELECT min(id) FROM workers",
+    "operational.create_revision": "SELECT max(id) FROM daily_order_details",
+    "operational.order_detail": "SELECT max(daily_order_id) FROM order_hpp_snapshots",
+    "operational.add_order_detail": "SELECT max(id) FROM daily_orders WHERE status = 'DRAFT'",
+    "operational.update_order_hpp_defaults_route": "SELECT max(id) FROM daily_orders WHERE status = 'DRAFT'",
+    "operational.order_hpp_snapshot_detail": "SELECT daily_order_id, id FROM order_hpp_snapshots ORDER BY id DESC LIMIT 1",
+    "operational.order_hpp_snapshot_stock_dry_run": "SELECT daily_order_id, id FROM order_hpp_snapshots ORDER BY id DESC LIMIT 1",
+    "operational.create_order_hpp_snapshot_route": "SELECT max(id) FROM daily_orders WHERE status = 'LOCKED'",
+    "portal.invoice_payment_instruction": "SELECT max(id) FROM invoices WHERE customer_path = 'KONTRAK'",
+    "production.detail": "SELECT max(id) FROM productions",
+    "settings.audit_log_detail": "SELECT max(id) FROM audit_logs",
+    "settings.digital_attachment_detail": "SELECT max(id) FROM digital_attachments",
+    "settings.edit_user_page": "SELECT min(id) FROM users WHERE role <> 'OWNER'",
 }
 # Route yang tidak dibuka: unduhan, keluar, aksi GET yang mengubah sesuatu, API.
 SKIP = re.compile(r"(export|download|logout|print|\.csv|\.json|/api/|static|toggle|delete|generate|confirm|lock|reset|restore|backup/create|/view$|preview$|healthz?)", re.I)
@@ -99,8 +170,25 @@ AUDIT_JS = r"""
 """
 
 
+def _detail_ids(app, endpoint):
+    from sqlalchemy import text
+
+    from app.extensions import db
+
+    sql = DETAIL_IDS.get(endpoint)
+    if not sql:
+        return None
+    with app.app_context():
+        try:
+            row = db.session.execute(text(sql)).first()
+        except Exception:
+            db.session.rollback()
+            return None
+    return [str(value) for value in row] if row and all(value is not None for value in row) else None
+
+
 def _routes(app):
-    """Route GET yang bisa dibuka: tanpa parameter, atau dengan id angka (dicoba 1)."""
+    """Route GET yang bisa dibuka: tanpa parameter, atau dengan id angka dari data."""
     rows = []
     for rule in app.url_map.iter_rules():
         if "GET" not in rule.methods or SKIP.search(rule.rule) or SKIP.search(rule.endpoint):
@@ -109,20 +197,21 @@ def _routes(app):
         if any(rule._converters[a].__class__.__name__ != "IntegerConverter" for a in args):
             continue
         url = rule.rule
-        for arg in args:
-            url = url.replace(f"<int:{arg}>", "1")
+        ids = _detail_ids(app, rule.endpoint) if args else None
+        for index, arg in enumerate(re.findall(r"<int:(\w+)>", rule.rule)):
+            url = url.replace(f"<int:{arg}>", ids[index] if ids and index < len(ids) else "1")
         rows.append((rule.endpoint, url))
     return sorted(set(rows))
 
 
 def _account_for(endpoint):
-    if endpoint.startswith("portal.pt") or endpoint in ("portal.client_dashboard",):
-        return "portal.maju"
+    if endpoint.startswith("portal.pt") or endpoint in ("portal.client_dashboard", "portal.invoice_payment_instruction"):
+        return "pt"
     if endpoint.startswith("portal.mandor") or endpoint in ("portal.order_status", "portal.draft_order"):
-        return "mandor.budi"
+        return "mandor"
     if endpoint.startswith("portal.customer"):
-        return "rina.cust"
-    return "owner.pilot"
+        return "customer"
+    return "owner"
 
 
 def main():
@@ -133,8 +222,9 @@ def main():
     parser.add_argument("--viewports", nargs="*", default=list(VIEWPORTS))
     parser.add_argument("--full", action="store_true", help="Potret satu halaman penuh, bukan hanya layar pertama.")
     args = parser.parse_args()
-    if not re.search(r"pilot|gladi", args.db):
-        raise SystemExit("Hanya untuk database gladi.")
+    if not re.search(r"pilot|gladi|demo", args.db):
+        raise SystemExit("Hanya untuk database gladi/demo.")
+    accounts = ACCOUNT_SETS["demo" if "demo" in args.db else "pilot"]
 
     from dotenv import dotenv_values
 
@@ -169,8 +259,8 @@ def main():
                     js_errors = []
                     page.on("pageerror", lambda error: js_errors.append(str(error)[:200]))
                     page.goto(f"{BASE}/auth/login")
-                    page.fill("input[name=username]", account)
-                    page.fill("input[name=password]", ACCOUNTS[account])
+                    page.fill("input[name=username]", accounts[account][0])
+                    page.fill("input[name=password]", accounts[account][1])
                     page.click("button[type=submit]")
                     page.wait_for_load_state("networkidle")
                     for endpoint, url in pages:
