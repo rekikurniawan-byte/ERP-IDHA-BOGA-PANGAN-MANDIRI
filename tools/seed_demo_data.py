@@ -312,6 +312,13 @@ def stage_setup(run):
         run.step(adm, f"Barang warung {name}", "/master/items/create", data={
             "item_name": name, "category": "MERCHANDISE", "unit": unit, "minimum_stock": "30", "selling_price": str(sell),
             "is_stock_tracked": "on", "is_active": "on"})
+    for unit_from, unit_to, multiplier, note in (("karung", "kg", "25", "Beras karung 25 kg"),
+                                                 ("dus", "botol", "24", "Air mineral 600 ml isi 24"),
+                                                 ("renteng", "sachet", "10", "Kopi sachet per renteng"),
+                                                 ("dus", "bungkus", "40", "Mi instan isi 40"),
+                                                 ("pak", "pcs", "50", "Box nasi per pak")):
+        run.step(adm, f"Konversi {unit_from} -> {unit_to}", "/master/unit-conversions", data={
+            "unit_from": unit_from, "unit_to": unit_to, "multiplier": multiplier, "notes": note})
     for supplier, kind, terms in (("Toko Sumber Rejeki", "RAW_MATERIAL", "14"), ("Agen Gas Makmur", "GAS", "7"), ("CV Kemasan Jaya", "PACKAGING", "30")):
         run.step(own, f"Supplier {supplier}", "/master/suppliers/create", data={
             "supplier_name": supplier, "supplier_type": kind, "default_payment_terms_days": terms, "contact_person": "Bagian Penjualan",
@@ -624,6 +631,24 @@ def warung_day(run, plan, ref, day):
             run.step(adm, "Warung hutang pekerja", "/canteen/quick", data={
                 "buyer_type": "REGISTERED_WORKER", "worker_id": worker_id, "payment_method": "DEBT", "sale_type": "DEBT",
                 "cart_json": json.dumps(cart), "notes": "Kasbon pekerja"})
+    daily_cash(run, ref, day)
+
+
+def daily_cash(run, ref, day):
+    """Tutup kas warung harian: saldo awal = saldo akhir kemarin, hitung fisik di laci."""
+    from app.services.daily_cash_service import build_reference_totals, get_last_closing_balance
+
+    run.travel(at(day, 20, 30))
+    totals = run.q(lambda: build_reference_totals(ref["branch_id"], day))
+    opening = run.q(lambda: get_last_closing_balance(ref["branch_id"], day)) or 0
+    closing = float(opening) + float(totals["cash_sales_total"]) + float(totals["debt_payment_total"])
+    # Sesekali laci kurang uang kembalian Rp 2.000 (tercatat sebagai selisih).
+    actual = closing - (2000 if day.day % 9 == 0 else 0)
+    run.step(run.client("admin"), "Tutup kas warung", "/finance/daily-cash", data={
+        "cash_date": day.isoformat(), "opening_balance": f"{float(opening):.0f}",
+        "cash_sales": f"{float(totals['cash_sales_total']):.0f}", "debt_payments": f"{float(totals['debt_payment_total']):.0f}",
+        "other_income": "0", "expenses": "0", "actual_cash": f"{actual:.0f}", "status": "CLOSED",
+        "notes": "Selisih uang kembalian" if actual != closing else "Cocok dengan hitung fisik"})
 
 
 def purchase_day(run, plan, ref, day, upcoming_portions):
@@ -1019,8 +1044,119 @@ def stage_today(run, ref, plan):
     if NOW_DAY.weekday() != 6:
         request_items(run, ref, NOW_DAY, plan, (("Minyak Goreng", "2"),), fulfill=False)
     field_expense(run, NOW_DAY, "SITE_OPERATION_EXPENSE", "75000", "Warung Bu Darmi", "Air galon untuk pekerja proyek", post=False)
+    stage_extras(run, ref, monday)
     stage_partnerships(run)
     run.stop_clock()
+
+
+def stage_extras(run, ref, next_day):
+    """Modul yang tidak tersentuh operasi harian: kredit, koreksi saldo awal,
+    rekap manual dari buku, piutang/hutang manual lapangan, revisi order,
+    dan tutup buku bulan pertama."""
+    from calendar import monthrange
+
+    from app.models.credit import CreditAccount
+    from app.models.field_transaction import FieldTransaction, ManualPayable, ManualReceivable
+    from app.models.finance import ManualBillingBatch
+    from app.models.operational import DailyOrder, DailyOrderDetail
+    from app.models.master import DeliveryLocation
+
+    run.stage = "Modul lain"
+    guard = {"sensitive_action_confirmed": "1", "confirm_password": OWNER_PASSWORD}
+
+    # Kontrol kredit: syarat kredit dua mandor, deposit jaminan, status pantau.
+    run.travel(at(NOW_DAY, 9, 5))
+    own = run.client("owner")
+    run.step(own, "Syarat kredit Mandor Asep", f"/credit/sub-client/{ref['mandors']['Mandor Asep']}/settings", data={
+        "billing_mode": "VIA_CLIENT", "credit_limit": "0", "payment_terms_days": "30", "deposit_percent": "0",
+        "notes": "Mandor batching plant, tagihan lewat PT Sinar"})
+    # Mandor Hendra mulai ditagih langsung (kredit pribadi) dengan deposit jaminan.
+    run.step(own, "Syarat kredit langsung Mandor Hendra", f"/credit/sub-client/{ref['mandors']['Mandor Hendra']}/settings", data={
+        "billing_mode": "DIRECT", "credit_limit": "15000000", "payment_terms_days": "14", "deposit_percent": "10",
+        "id_number": "1602031204850007", "address": "Desa Simpang Tiga, Kec. Air Sugihan, OKI",
+        "guarantor_name": "Sutini (istri)", "guarantor_phone": "0813-6700-9921", "guarantor_id_number": "1602034408880002",
+        "notes": "Order tambahan di luar kontrak PT Bumi ditagih langsung"})
+    hendra = run.q(lambda: CreditAccount.query.filter_by(party_id=ref["mandors"]["Mandor Hendra"]).first().id)
+    run.step(run.client("admin"), "Deposit jaminan Mandor Hendra", f"/credit/accounts/{hendra}/deposit", data={
+        "amount": "1500000", "deposit_date": NOW_DAY.isoformat(), "payment_method": "TRANSFER",
+        "bank_account_id": ref["mandiri"], "reference_number": "TRF-HENDRA-01", "notes": "Deposit 10% dari limit"})
+    asep = run.q(lambda: CreditAccount.query.filter_by(party_id=ref["mandors"]["Mandor Asep"]).first().id)
+    run.step(own, "Status kredit Mandor Asep dipantau", f"/credit/accounts/{asep}/status", data={
+        "status": "PANTAU", "reason": "Invoice September PT Sinar belum dibayar, pantau sampai jatuh tempo."})
+
+    # Koreksi saldo awal: nota lama yang tercecer.
+    run.step(own, "Koreksi saldo awal: nota lama PT Sinar", "/accounting/opening-balance/receivables/add", data={
+        "client_id": ref["clients"]["PT Sinar Beton Utama"], "reference": "NT-0705",
+        "invoice_date": (OPEN_DATE - timedelta(days=20)).isoformat(), "amount": "850000",
+        "reason": "Nota lama ketemu di map arsip, belum tercatat saat saldo awal"})
+
+    # Rekap manual dari buku: tamu luar sistem, dikunci lalu jadi invoice.
+    adm = run.client("admin")
+    for label, bill_to, name, phone, start_days, span, lunch, void in (
+            ("Bengkel Las Harun", "PERORANGAN", "Pak Harun (Bengkel Las Harun)", "0812-7344-1020", 20, 5, 8, False),
+            ("Rombongan survei lahan", "KELOMPOK", "Rombongan Survei Lahan PT Rawa", "0813-7788-2001", 10, 2, 12, True)):
+        start = NOW_DAY - timedelta(days=start_days)
+        dates = [start + timedelta(days=i) for i in range(span)]
+        run.step(adm, f"Rekap buku {label}", "/finance/manual-billing/input-buku", data={
+            "bill_to_type": bill_to, "bill_to_name_snapshot": name, "bill_to_phone_snapshot": phone,
+            "bill_to_address_snapshot": "Simpang Tiga, Air Sugihan", "bill_to_notes": "Dicatat di buku kas dapur",
+            "period_start": dates[0].isoformat(), "period_end": dates[-1].isoformat(), "notes": f"Rekap buku {label}",
+            "catering_date[]": [x.isoformat() for x in dates], "catering_breakfast_qty[]": ["0"] * span,
+            "catering_lunch_qty[]": [str(lunch)] * span, "catering_dinner_qty[]": ["0"] * span,
+            "catering_unit_price[]": ["18000"] * span, "catering_note[]": [""] * span,
+            "warung_worker_name[]": [], "warung_amount[]": [], "warung_note[]": []})
+        batch = run.q(lambda: ManualBillingBatch.query.filter_by(bill_to_name_snapshot=name).order_by(ManualBillingBatch.id.desc()).first().id)
+        run.step(adm, f"Kunci rekap {label}", f"/finance/manual-billing/batches/{batch}/lock", data={})
+        if void:
+            # Batal setelah dikunci butuh persetujuan OWNER (maker-checker): menunggu di Persetujuan.
+            run.step(adm, f"Ajukan batal rekap {label}", f"/finance/manual-billing/batches/{batch}/void", data={
+                "void_reason": "Rombongan ternyata dibayar tunai di tempat, tercatat dobel"})
+        else:
+            run.step(adm, f"Invoice dari rekap {label}", f"/finance/manual-billing/batches/{batch}/create-invoice", data={
+                "notes": "Tagihan dari rekap buku"})
+
+    # Piutang & hutang manual dari lapangan, dengan pelunasan.
+    for event, direction, party, phone, amount, days_ago, doc, pay_days, pay_amount, note in (
+            ("MANUAL_RECEIVABLE_CREATED", "IN", "Koperasi Karyawan Sektor 2", "0812-7000-5511", "450000", 12, "receivable", 5, "200000",
+             "Nasi kotak rapat koperasi, bayar akhir bulan"),
+            ("UNFORMAL_VENDOR_PAYABLE", "OUT", "Pak Darto (sayur keliling)", "0813-6700-4421", "380000", 6, "payable", 4, "380000",
+             "Sayur & cabai bon, bayar Jumat")):
+        day = NOW_DAY - timedelta(days=days_ago)
+        run.travel(at(day, 15, 10))
+        adm = run.client("admin")
+        run.step(adm, f"Lapangan: {party}", "/field-transactions/create", data={
+            "business_event_type": event, "transaction_direction": direction, "transaction_date": day.isoformat(),
+            "entry_date": day.isoformat(), "amount": amount, "field_channel": "MANUAL", "site_location": "Dapur Air Sugihan",
+            "party_snapshot_name": party, "party_snapshot_phone": phone, "register_counterparty": "1",
+            "new_counterparty_type": "LAINNYA", "notes": note})
+        ft = run.q(lambda: FieldTransaction.query.filter_by(party_snapshot_name=party).order_by(FieldTransaction.id.desc()).first().id)
+        run.step(adm, f"Dokumen {doc} manual {party}", f"/field-transactions/{ft}/manual-{doc}/create", data={
+            "due_date": (day + timedelta(days=14)).isoformat(), "notes": note})
+        model = ManualReceivable if doc == "receivable" else ManualPayable
+        doc_id = run.q(lambda: model.query.filter_by(field_transaction_id=ft).one().id)
+        pay_day = day + timedelta(days=pay_days)
+        run.travel(at(pay_day, 10, 30))
+        run.step(run.client("admin"), f"Bayar {doc} manual {party}", f"/field-transactions/manual-{doc}s/{doc_id}/payments/create", data={
+            "payment_date": pay_day.isoformat(), "payment_method": "CASH", "amount": pay_amount, "notes": "Dibayar tunai"})
+
+    # Revisi order: mandor minta tambah porsi lewat WhatsApp.
+    run.travel(at(NOW_DAY, 11, 15))
+    detail_id = run.q(lambda: (DailyOrderDetail.query.join(DailyOrder, DailyOrder.id == DailyOrderDetail.daily_order_id)
+                   .join(DeliveryLocation, DeliveryLocation.id == DailyOrderDetail.delivery_location_id)
+                   .filter(DailyOrder.order_date == next_day, DeliveryLocation.location_name == "Mes Pekerja Sektor 3")
+                   .with_entities(DailyOrderDetail.id).scalar()))
+    if detail_id:
+        run.step(run.client("admin"), "Revisi order tambah 5 porsi", f"/operational/order-details/{detail_id}/revision", data={
+            "revision_type": "WHATSAPP", "revision_direction": "INCREASE", "lunch_qty_change": "5", "dinner_qty_change": "0",
+            "reason": "Mandor Joko: ada 5 pekerja baru masuk hari Senin"})
+
+    # Tutup buku bulan pertama.
+    run.travel(at(NOW_DAY, 16, 0))
+    last = monthrange(OPEN_DATE.year, OPEN_DATE.month)[1]
+    run.step(run.client("owner"), "Tutup buku bulan pertama", "/accounting/period-closing/post", data={
+        "year": str(OPEN_DATE.year), "month": str(OPEN_DATE.month),
+        "closing_date": OPEN_DATE.replace(day=last).isoformat(), "notes": "Tutup buku setelah rekonsiliasi bank",
+        "sensitive_reason": "Tutup buku bulanan setelah rekonsiliasi", **guard})
 
 
 # Pengajuan kerja sama dari halaman publik /kerja-sama/ajukan, lalu ditindaklanjuti owner.
