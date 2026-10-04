@@ -9,7 +9,7 @@
     <div>
         <p class="text-muted small mb-1">Sistem</p>
         <h1 class="h3 mb-1">Audit Log Sistem</h1>
-        <p class="text-muted mb-0">Jejak aktivitas penting, sensitive action guard, backup, restore preview, user security, transaksi, jurnal, dan perubahan data kritis.</p>
+        <p class="text-muted mb-0">Jejak aktivitas penting, pengaman aksi sensitif, cadangan, pratinjau pemulihan, keamanan pengguna, transaksi, jurnal, dan perubahan data kritis.</p>
     </div>
     <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
         <i class="bi bi-arrow-left"></i> Dashboard
@@ -103,7 +103,7 @@
                 <select name="severity" class="form-select">
                     <option value="">Semua</option>
                     {% for severity in options.severity_levels %}
-                        <option value="{{ severity }}" {{ 'selected' if filters.severity == severity else '' }}>{{ severity }}</option>
+                        <option value="{{ severity }}" {{ 'selected' if filters.severity == severity else '' }}>{{ severity|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -119,7 +119,7 @@
             </div>
             <div class="col-12 d-flex gap-2">
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
-                <a class="btn app-btn-secondary" href="{{ url_for('settings.audit_logs') }}">Reset</a>
+                <a class="btn app-btn-secondary" href="{{ url_for('settings.audit_logs') }}">Atur Ulang</a>
                 <a class="btn app-btn-secondary" href="{{ url_for('settings.export_audit_logs_csv') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}">
                     <i class="bi bi-download"></i>
                     Export CSV
@@ -174,7 +174,7 @@
                             {% elif log.audit_severity == 'MEDIUM' %}
                                 <span class="status-badge info">Sedang</span>
                             {% else %}
-                                <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
+                                <span class="badge bg-light text-dark border">{{ log.audit_severity|status_label }}</span>
                             {% endif %}
                             {% if log.audit_is_critical %}
                                 <div class="small text-danger mt-1">critical</div>

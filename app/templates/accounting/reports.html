@@ -65,7 +65,7 @@
         </div>
         <div>
             <p>Status Jurnal</p>
-            <h3>{% if data.is_period_balanced %}BALANCE{% else %}TIDAK BALANCE{% endif %}</h3>
+            <h3>{% if data.is_period_balanced %}Seimbang{% else %}Tidak Seimbang{% endif %}</h3>
             <span class="app-stat-helper">Debit dan credit harus sama</span>
         </div>
     </div>
@@ -107,8 +107,8 @@
         </div>
         <div>
             <p>Neraca Saldo</p>
-            <h3>{% if data.is_trial_balanced %}BALANCE{% else %}CEK ULANG{% endif %}</h3>
-            <span class="app-stat-helper">Saldo debit dan credit</span>
+            <h3>{% if data.is_trial_balanced %}Seimbang{% else %}CEK ULANG{% endif %}</h3>
+            <span class="app-stat-helper">Saldo debit dan kredit</span>
         </div>
     </div>
 </div>
@@ -140,7 +140,7 @@
                 <tr>
                     <td><strong>{{ row.account.account_code }}</strong></td>
                     <td>{{ row.account.account_name }}</td>
-                    <td>{{ row.account.account_type }}</td>
+                    <td>{{ row.account.account_type|status_label }}</td>
                     <td class="text-end">{{ row.period_debit|rupiah }}</td>
                     <td class="text-end">{{ row.period_credit|rupiah }}</td>
                     <td class="text-end">{{ row.trial_debit|rupiah }}</td>
@@ -180,7 +180,7 @@
         <div class="mb-4">
             <h6 class="mb-2">
                 {{ row.account.account_code }} - {{ row.account.account_name }}
-                <span class="text-muted">({{ row.account.account_type }})</span>
+                <span class="text-muted">({{ row.account.account_type|status_label }})</span>
             </h6>
 
             <div class="table-responsive">

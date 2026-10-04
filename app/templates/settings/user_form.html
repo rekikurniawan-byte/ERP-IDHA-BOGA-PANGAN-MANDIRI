@@ -48,7 +48,7 @@
                 <label class="form-label">Peran <span class="text-danger">*</span></label>
                 <select name="role" class="form-select app-input" {% if is_edit and target_user.id == current_user.id %}disabled{% endif %}>
                     {% for role in roles %}
-                        <option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>{{ role_labels.get(role, role) }} — {{ role }}</option>
+                        <option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>{{ role_labels.get(role, role) }} — {{ role|role_label }}</option>
                     {% endfor %}
                 </select>
                 {% if is_edit and target_user.id == current_user.id %}
@@ -155,7 +155,7 @@
                 <div class="col-md-6 col-xl-3">
                     <div class="border rounded-3 p-3 h-100 bg-light">
                         <div class="fw-semibold">{{ role_labels.get(role, role) }}</div>
-                        <div class="text-muted small mb-2">{{ role }}</div>
+                        <div class="text-muted small mb-2">{{ role|role_label }}</div>
                         <div class="small">{{ role_descriptions.get(role, '-') }}</div>
                     </div>
                 </div>

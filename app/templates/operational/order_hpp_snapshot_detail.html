@@ -149,7 +149,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Alokasi HPP per {{ term('sub_client') }} / Lokasi</h5>
-            <p>Biaya snapshot dialokasikan proporsional per detail order dan waktu makan. Ini disiapkan untuk laporan profit/invoice berikutnya, tanpa mengubah invoice lama.</p>
+            <p>Biaya snapshot dialokasikan proporsional per detail order dan waktu makan. Ini disiapkan untuk laporan laba/invoice berikutnya, tanpa mengubah invoice lama.</p>
         </div>
     </div>
 
@@ -175,7 +175,7 @@
                     <td><strong>{{ 'Siang' if allocation.meal_type == 'LUNCH' else 'Sore' if allocation.meal_type == 'DINNER' else allocation.meal_type }}</strong></td>
                     <td>
                         {{ allocation.mandor_name_snapshot or '-' }}
-                        <div class="muted-small">Source {{ allocation.source_type }} #{{ allocation.source_id }}</div>
+                        <div class="muted-small">Sumber {{ allocation.source_type|status_label }} #{{ allocation.source_id }}</div>
                     </td>
                     <td>{{ allocation.delivery_location_name_snapshot or '-' }}</td>
                     <td>{{ allocation.portion_qty|qty }}</td>
@@ -235,7 +235,7 @@
             <tbody>
                 {% for component in line.components %}
                 <tr>
-                    <td>{{ component.component_type }}</td>
+                    <td>{{ component.component_type|status_label }}</td>
                     <td>{{ component.item_name_snapshot or '-' }}</td>
                     <td>{{ component.qty_per_portion|qty }}</td>
                     <td>{{ component.recipe_unit or '-' }}</td>

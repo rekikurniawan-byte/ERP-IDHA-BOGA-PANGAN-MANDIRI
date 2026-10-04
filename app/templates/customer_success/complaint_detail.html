@@ -63,11 +63,11 @@
                             <label class="form-label">Status Baru</label>
                             <select class="form-select app-input" name="new_status" required>
                                 {% if complaint.status == 'OPEN' %}
-                                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                    <option value="IN_PROGRESS">{{ "IN_PROGRESS"|status_label }}</option>
                                 {% elif complaint.status == 'IN_PROGRESS' %}
-                                    <option value="RESOLVED">RESOLVED</option>
+                                    <option value="RESOLVED">{{ "RESOLVED"|status_label }}</option>
                                 {% elif complaint.status == 'RESOLVED' %}
-                                    <option value="CLOSED">CLOSED</option>
+                                    <option value="CLOSED">{{ "CLOSED"|status_label }}</option>
                                 {% else %}
                                     <option value="">Tidak ada transisi</option>
                                 {% endif %}
@@ -103,7 +103,7 @@
                 <div class="col-md-3">
                     <select class="form-select app-input" name="attachment_type">
                         {% for type in data.attachment_types %}
-                            <option value="{{ type }}">{{ type }}</option>
+                            <option value="{{ type }}">{{ type|status_label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -114,7 +114,7 @@
                     <input class="form-control app-input" name="notes" placeholder="Catatan bukti">
                 </div>
                 <div class="col-md-2 d-grid">
-                    <button class="btn app-btn-primary" type="submit">Upload</button>
+                    <button class="btn app-btn-primary" type="submit">Unggah</button>
                 </div>
             </form>
 
@@ -132,7 +132,7 @@
                         {% for item in data.evidence %}
                             <tr>
                                 <td class="fw-semibold">{{ item.original_filename }}</td>
-                                <td>{{ item.attachment_type }}</td>
+                                <td>{{ item.attachment_type|status_label }}</td>
                                 <td>{{ item.file_size }} byte</td>
                                 <td>{{ item.notes or '-' }}</td>
                             </tr>

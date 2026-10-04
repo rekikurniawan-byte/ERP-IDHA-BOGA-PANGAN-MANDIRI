@@ -4,7 +4,7 @@
 {% block content %}
 <div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="employee-form">
 {{ page_header(
-    ("Edit" if employee else "Tambah") ~ " Karyawan",
+    ("Ubah" if employee else "Tambah") ~ " Karyawan",
     "Input data karyawan internal perusahaan. Data gaji dipakai untuk generate payroll bulanan.",
     eyebrow="SDM / Form Karyawan",
     actions_class="hr-master-settings-header-actions",
@@ -61,8 +61,8 @@
                         <div>
                             <label class="form-label">Status</label>
                             <select name="status" class="form-select">
-                                <option value="ACTIVE" {% if employee.status == "ACTIVE" %}selected{% endif %}>ACTIVE</option>
-                                <option value="INACTIVE" {% if employee.status == "INACTIVE" %}selected{% endif %}>INACTIVE</option>
+                                <option value="ACTIVE" {% if employee.status == "ACTIVE" %}selected{% endif %}>{{ "ACTIVE"|status_label }}</option>
+                                <option value="INACTIVE" {% if employee.status == "INACTIVE" %}selected{% endif %}>{{ "INACTIVE"|status_label }}</option>
                             </select>
                         </div>
                     {% endif %}
@@ -84,7 +84,7 @@
                 </div>
             </div>
             <div class="hr-health-list">
-                <div class="hr-health-item is-ok"><i class="bi bi-check-circle"></i><div><strong>Karyawan internal</strong><span>Hanya {{ term('worker', lower=True) }} yang masuk payroll perusahaan.</span></div></div>
+                <div class="hr-health-item is-ok"><i class="bi bi-check-circle"></i><div><strong>Karyawan internal</strong><span>Hanya {{ term('worker', lower=True) }} yang masuk penggajian perusahaan.</span></div></div>
                 <div class="hr-health-item is-muted"><i class="bi bi-person-badge"></i><div><strong>{{ term('sub_client') }} bukan payroll</strong><span>{{ term('sub_client') }} tetap PIC lapangan/partner, bukan karyawan internal.</span></div></div>
                 <div class="hr-health-item is-warning"><i class="bi bi-cash"></i><div><strong>Salary history</strong><span>Gaji aktif dipakai saat generate payroll bulanan.</span></div></div>
             </div>

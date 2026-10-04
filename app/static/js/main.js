@@ -2,8 +2,9 @@
 // main.js -- perilaku halaman, bukan tampilan.
 //
 // Ditulis ulang 2026-09-29 bersama CSS baru (app/static/css/app/). Tampilan
-// sepenuhnya urusan CSS dan template; skrip ini TIDAK menulis ulang markup,
-// tidak mengganti select/tanggal bawaan browser, dan tidak memindahkan tombol.
+// sepenuhnya urusan CSS dan template; skrip ini TIDAK menulis ulang markup
+// dan tidak memindahkan tombol. Dropdown, kalender, dan grafik ada di
+// controls.js (Tom Select, Flatpickr, ApexCharts dari app/static/vendor).
 // Isinya hanya perilaku:
 //   1. sidebar (laci di layar kecil, satu grup terbuka);
 //   2. dialog konfirmasi + toast (window.appConfirm / window.appToast);

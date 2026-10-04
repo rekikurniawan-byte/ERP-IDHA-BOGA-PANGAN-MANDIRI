@@ -182,9 +182,9 @@
                                 <div class="fw-semibold">{{ notification.title }}</div>
                                 <div class="text-muted small">{{ notification.message }}</div>
                                 <div class="d-flex flex-wrap gap-2 mt-2">
-                                    <span class="badge bg-light text-dark border">{{ notification.notification_type }}</span>
+                                    <span class="badge bg-light text-dark border">{{ notification.notification_type|status_label }}</span>
                                     {% if notification.reference_type %}
-                                        <span class="badge bg-light text-dark border">{{ notification.reference_type }}{% if notification.reference_id %} #{{ notification.reference_id }}{% endif %}</span>
+                                        <span class="badge bg-light text-dark border">{{ notification.reference_type|status_label }}{% if notification.reference_id %} #{{ notification.reference_id }}{% endif %}</span>
                                     {% endif %}
                                     {% if notification.generated_key %}
                                         <span class="badge bg-light text-muted border">generated</span>
@@ -196,7 +196,7 @@
                                     <div>{{ notification.target_user.username }}</div>
                                     <small class="text-muted">User spesifik</small>
                                 {% elif notification.target_role %}
-                                    <div>{{ notification.target_role }}</div>
+                                    <div>{{ notification.target_role|role_label }}</div>
                                     <small class="text-muted">Peran</small>
                                 {% else %}
                                     <div>Branch-wide</div>
@@ -206,7 +206,7 @@
                             <td>
                                 <div>{{ notification.created_at.strftime('%d/%m/%Y %H:%M') if notification.created_at else '-' }}</div>
                                 {% if notification.due_date %}
-                                    <small class="text-muted">Due: {{ notification.due_date.strftime('%d/%m/%Y') }}</small>
+                                    <small class="text-muted">Jatuh tempo: {{ notification.due_date.strftime('%d/%m/%Y') }}</small>
                                 {% endif %}
                             </td>
                             <td class="text-end">

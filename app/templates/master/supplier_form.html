@@ -5,9 +5,9 @@
 <div class="hr-master-settings-page-shell" data-ui-section="true">
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="supplier_form">
 {{ page_header(
-    "Edit Supplier Tetap" if supplier else "Input Supplier Tetap",
+    "Ubah Supplier Tetap" if supplier else "Tambah Supplier Tetap",
     "Supplier bersifat opsional. Pembelian dari toko tidak tetap tetap bisa dicatat tanpa data supplier.",
-    eyebrow="Edit Supplier" if supplier else "Tambah Supplier",
+    eyebrow="Ubah Supplier" if supplier else "Tambah Supplier",
     actions=[{"label": "Kembali", "url": url_for('master.suppliers')}]
 ) }}
 
@@ -26,7 +26,7 @@
                 <label class="form-label">Jenis Supplier</label>
                 <select name="supplier_type" class="form-select app-input" required>
                     {% for type in supplier_types %}
-                        <option value="{{ type }}" {% if supplier and supplier.supplier_type == type %}selected{% endif %}>{{ type }}</option>
+                        <option value="{{ type }}" {% if supplier and supplier.supplier_type == type %}selected{% endif %}>{{ type|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>

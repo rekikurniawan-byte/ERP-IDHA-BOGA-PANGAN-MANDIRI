@@ -1,66 +1,67 @@
 {% extends "layouts/base.html" %}
 
-{% block auth_content %}
-<div class="auth-wrapper auth-entry-wrapper" data-ui-auth="UI">
-    <div class="auth-panel">
-        <div class="auth-card">
-            <div class="auth-clean-brand">
-                {% with class_name="auth-logo company-logo-mark" %}
-                    {% include "components/company_logo.html" %}
-                {% endwith %}
-                <div>
-                    <strong>PT Idha Boga Pangan Mandiri</strong>
-                    <span>Portal Catering</span>
-                </div>
-            </div>
-            <div class="auth-card-header">
-                <span class="auth-page-kicker">Masuk akun</span>
-                <h5>Masuk</h5>
-                <p>Gunakan akun pelanggan, {{ term('sub_client', lower=True) }}, {{ term('client') }}, atau tim internal.</p>
-            </div>
+{% block public_page %}
+{% set company = global_company_settings %}
+{% set company_name = company.company_name or "PT Idha Boga Pangan Mandiri" %}
+<div class="pub pub-auth" data-public-page="login">
+    <aside class="pub-auth-side">
+        <a class="pub-brand" href="{{ url_for('dashboard.index') }}">
+            {% with class_name="company-logo-mark" %}
+                {% include "components/company_logo.html" %}
+            {% endwith %}
+            <span>
+                <strong>{{ company_name }}</strong>
+                <small>{{ company.company_subtitle or "Katering harian" }}</small>
+            </span>
+        </a>
 
-            <form method="POST" action="{{ url_for('auth.login') }}" data-ui-form="true" data-form-kind="auth" data-ui-auth-form="UI" class="app-form">
+        <div class="pub-auth-side-body">
+            <h1>Satu sistem untuk pesanan, dapur, pengiriman, dan tagihan.</h1>
+            <ul class="pub-auth-list">
+                <li><strong>Tim internal</strong><span>Owner, admin, dapur, dan pengantar mencatat pekerjaan masing-masing.</span></li>
+                <li><strong>{{ term('client') }} &amp; {{ term('sub_client', lower=True) }}</strong><span>Pesanan harian, tagihan, pembayaran, dan masa kontrak.</span></li>
+                <li><strong>Pelanggan umum</strong><span>Pesan, bayar di muka, lalu lacak pesanan sampai diterima.</span></li>
+            </ul>
+        </div>
+
+        <p class="pub-auth-help">
+            Lupa kata sandi? Kata sandi diatur ulang oleh admin{% if site and site.whatsapp_url %} &mdash;
+            <a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">hubungi lewat WhatsApp</a>{% endif %}.
+        </p>
+    </aside>
+
+    <main class="pub-auth-main" id="mainContent">
+        {% include "components/public_flashes.html" %}
+        <div class="pub-auth-card">
+            <h2>Masuk</h2>
+            <p>Gunakan nama pengguna dari admin, atau yang Anda buat saat mendaftar.</p>
+
+            <form method="POST" action="{{ url_for('auth.login') }}" class="app-form" data-ui-form="true" data-form-kind="auth">
                 {% include "components/csrf_token.html" %}
                 <div class="mb-3">
-                    <label class="form-label">Nama pengguna</label>
-                    <input 
-                        type="text" 
-                        name="username" 
-                        class="form-control app-input"
-                        autocomplete="username"
-                        aria-describedby="loginUsernameHelp" 
-                        placeholder="Contoh: agus"
-                        required
-                    >
+                    <label class="form-label" for="loginUsername">Nama pengguna</label>
+                    <input type="text" id="loginUsername" name="username" class="form-control"
+                           autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
                 </div>
-
                 <div class="mb-3">
-                    <label class="form-label">Kata sandi</label>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        class="form-control app-input"
-                        autocomplete="current-password" 
-                        placeholder="Masukkan kata sandi"
-                        required
-                    >
+                    <label class="form-label" for="loginPassword">Kata sandi</label>
+                    <input type="password" id="loginPassword" name="password" class="form-control"
+                           autocomplete="current-password" required>
                 </div>
-
-                <button type="submit" class="btn app-btn-primary w-100" data-submit-loading="Masuk...">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                    Masuk
+                <button type="submit" class="pub-btn pub-btn-primary pub-btn-lg" data-submit-loading="Memeriksa...">
+                    Masuk <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </button>
             </form>
 
-            <div class="auth-note">
-                <span>Pelanggan baru?</span>
-                <a href="{{ url_for('portal.register') }}">Daftar akun pelanggan</a>
-            </div>
-            <a class="auth-back-home" href="{{ url_for('dashboard.index') }}">
-                <i class="bi bi-arrow-left"></i>
-                Kembali ke halaman utama
-            </a>
+            {% if site and site.portal_enabled %}
+                <div class="pub-auth-alt">
+                    Belum punya akun? <a href="{{ url_for('portal.register') }}">Daftar sebagai pelanggan</a>
+                </div>
+            {% endif %}
         </div>
-    </div>
+        <a class="pub-auth-back" href="{{ url_for('dashboard.index') }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Kembali ke beranda
+        </a>
+    </main>
 </div>
 {% endblock %}

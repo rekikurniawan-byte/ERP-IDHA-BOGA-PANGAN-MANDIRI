@@ -684,12 +684,12 @@ def upload_customer_payment_attachment(payment_id):
             uploaded_by=current_user.id,
             notes=request.form.get("proof_notes") or None,
         )
-        flash("Bukti transfer/payment customer berhasil diunggah.", "success")
+        flash("Bukti transfer/pembayaran pelanggan berhasil diunggah.", "success")
     except AttachmentValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:3755")
-        flash(f"Bukti transfer/payment customer gagal diunggah: {exc}", "danger")
+        flash(f"Bukti transfer/pembayaran pelanggan gagal diunggah: {exc}", "danger")
 
     return redirect(url_for("finance.invoice_detail", invoice_id=payment.invoice_id))
 

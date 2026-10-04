@@ -34,7 +34,7 @@
                 <select name="status" class="form-select">
                     <option value="" {% if not status_filter %}selected{% endif %}>Semua Status</option>
                     {% for status in ['DRAFT', 'FINAL', 'POSTED', 'PAID'] %}
-                        <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status }}</option>
+                        <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -58,7 +58,7 @@
             </div>
             <div class="hr-filter-actions app-filter-actions">
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
-                <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Reset</a>
+                <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Atur Ulang</a>
             </div>
         </form>
     </div>
@@ -114,10 +114,10 @@
             <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
                 <div class="empty-state-icon"><i class="bi bi-cash-coin"></i></div>
                 <h3>Belum ada payroll sesuai filter.</h3>
-                <p>Buat payroll bulanan atau reset filter untuk melihat semua periode yang sudah dibuat.</p>
+                <p>Buat gaji bulanan atau atur ulang filter untuk melihat semua periode yang sudah dibuat.</p>
                 <div class="d-flex flex-wrap gap-2 justify-content-center">
                     <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
-                    <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Reset Filter</a>
+                    <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Atur Ulang Filter</a>
                 </div>
             </div>
         {% endif %}

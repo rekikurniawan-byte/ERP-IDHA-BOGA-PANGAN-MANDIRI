@@ -4,7 +4,7 @@
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="menu_form">
 {{ page_header(
-    "Edit Menu" if menu else "Tambah Menu",
+    "Ubah Menu" if menu else "Tambah Menu",
     "Menu ini dipakai sebagai dasar resep/BOM dan kalkulator HPP Mode pantau.",
     eyebrow="HPP",
     actions=[{"label": "Kembali", "url": url_for('costing.menus')}]
@@ -25,7 +25,7 @@
                 <label class="form-label">Jenis Menu</label>
                 <select name="menu_type" class="form-select app-input">
                     {% for type in menu_types %}
-                    <option value="{{ type }}" {% if menu and menu.menu_type == type %}selected{% endif %}>{{ type }}</option>
+                    <option value="{{ type }}" {% if menu and menu.menu_type == type %}selected{% endif %}>{{ type|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>

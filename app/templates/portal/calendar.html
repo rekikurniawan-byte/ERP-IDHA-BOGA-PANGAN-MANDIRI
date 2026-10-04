@@ -64,7 +64,7 @@
                             </time>
                             <div>
                                 <h3>{{ item.title }}</h3>
-                                <p>{{ item.source }} | {{ item.type.replace("_", " ") }}</p>
+                                <p>{{ item.source|status_label }} | {{ item.type.replace("_", " ") }}</p>
                                 <div class="portal-chip-row">
                                     <span>{{ item.status|status_label }}</span>
                                     {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}
@@ -93,7 +93,7 @@
                 </time>
                 <div>
                     <h3>{{ item.title }}</h3>
-                    <p>{{ item.source }} | {{ item.type.replace("_", " ") }}</p>
+                    <p>{{ item.source|status_label }} | {{ item.type.replace("_", " ") }}</p>
                     <div class="portal-chip-row">
                         <span>{{ item.status|status_label }}</span>
                         {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}

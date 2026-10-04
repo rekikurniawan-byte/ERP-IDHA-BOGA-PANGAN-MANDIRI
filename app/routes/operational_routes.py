@@ -448,7 +448,7 @@ def create_order():
 
         if daily_order.is_locked:
             flash(
-                "Order untuk tanggal ini sudah LOCKED. Gunakan tombol Tambah Revisi Setelah Lock dari halaman Kelola Order.",
+                "Order untuk tanggal ini sudah dikunci. Gunakan tombol Tambah Revisi Setelah Lock dari halaman Kelola Order.",
                 "warning"
             )
             return redirect(url_for("operational.order_detail", order_id=daily_order.id))
@@ -501,7 +501,7 @@ def add_order_detail(order_id):
         return redirect(url_for("operational.orders"))
 
     if daily_order.is_locked:
-        flash(f"Order sudah LOCKED. Tambah lokasi/{T.sub_client_lower} biasa tidak bisa dilakukan. Gunakan revisi tambah jika diperlukan.", "warning")
+        flash(f"Order sudah dikunci. Tambah lokasi/{T.sub_client_lower} biasa tidak bisa dilakukan. Gunakan revisi tambah jika diperlukan.", "warning")
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     mandors, locations = get_form_master_data()
@@ -564,7 +564,7 @@ def add_increase_after_lock_route(order_id):
         return redirect(url_for("operational.orders"))
 
     if not daily_order.is_locked:
-        flash(f"Order belum LOCKED. Gunakan tambah lokasi/{T.sub_client_lower} biasa.", "warning")
+        flash(f"Order belum dikunci. Gunakan tambah lokasi/{T.sub_client_lower} biasa.", "warning")
         return redirect(url_for("operational.add_order_detail", order_id=daily_order.id))
 
     mandors, locations = get_form_master_data()
@@ -607,7 +607,7 @@ def add_increase_after_lock_route(order_id):
             )
 
             if production_success:
-                flash("Revisi tambah setelah lock berhasil disimpan dan produksi otomatis disinkronkan.", "success")
+                flash("Revisi tambah setelah dikunci berhasil disimpan dan rencana produksi ikut diperbarui.", "success")
             else:
                 flash(f"Revisi tambah tersimpan, tetapi produksi belum tersinkron: {production_message}", "warning")
         else:
@@ -829,7 +829,7 @@ def create_order_hpp_snapshot_route(order_id):
         return redirect(url_for("operational.orders"))
 
     if not daily_order.is_locked:
-        flash("Snapshot HPP hanya bisa dibuat setelah order LOCKED.", "warning")
+        flash("Snapshot HPP hanya bisa dibuat setelah order dikunci.", "warning")
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     menus, packaging_profiles, overhead_profiles = get_active_hpp_master_data(current_user.branch_id)

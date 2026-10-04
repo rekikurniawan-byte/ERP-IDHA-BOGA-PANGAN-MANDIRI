@@ -15,7 +15,7 @@
             {"label": "Supplier", "url": url_for('master.suppliers'), "icon": "bi-shop"},
             {"label": "Buku Kas/Bank", "url": url_for('finance.cash_bank_ledger'), "icon": "bi-wallet2"},
             {"label": "Kartu Hutang", "url": url_for('finance.supplier_payable_card'), "icon": "bi-journal-text"},
-            {"label": "Download CSV", "url": url_for('finance.export_supplier_bills_csv', filter=selected_filter), "icon": "bi-download"},
+            {"label": "Unduh CSV", "url": url_for('finance.export_supplier_bills_csv', filter=selected_filter), "icon": "bi-download"},
         ]},
     ]
 ) }}
@@ -33,7 +33,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
         <div>
-            <span>Overdue</span>
+            <span>Lewat Jatuh Tempo</span>
             <h3>{{ summary.overdue_total|rupiah }}</h3>
             <p>{{ summary.overdue_count }} bill lewat jatuh tempo</p>
         </div>
@@ -80,7 +80,7 @@
                     <th>Total</th>
                     <th>Dibayar</th>
                     <th>Sisa</th>
-                    <th>Aging</th>
+                    <th>Umur</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>

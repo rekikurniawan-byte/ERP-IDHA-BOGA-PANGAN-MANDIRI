@@ -109,7 +109,7 @@ def detail(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     shortage_replacement_map = {}
@@ -172,15 +172,15 @@ def mark_dispatch(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     if delivery.status == "CANCELLED":
-        flash("Delivery CANCELLED tidak bisa diberangkatkan.", "warning")
+        flash("Pengiriman yang dibatalkan tidak bisa diberangkatkan.", "warning")
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
     if delivery.status == "DELIVERED":
-        flash("Delivery sudah DELIVERED.", "info")
+        flash("Pengiriman sudah diterima.", "info")
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
     try:
@@ -196,10 +196,10 @@ def mark_dispatch(delivery_id):
         ):
             delivery.actual_departure_time = datetime.utcnow()
             delivery.status = "ON_THE_WAY"
-        flash("Jam berangkat delivery berhasil dicatat secara atomic.", "success")
+        flash("Jam berangkat pengiriman berhasil dicatat.", "success")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:198")
-        flash(f"Gagal mencatat jam berangkat delivery secara atomic: {error}", "danger")
+        flash(f"Gagal mencatat jam berangkat pengiriman: {error}", "danger")
     return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
 
@@ -209,7 +209,7 @@ def update_sla(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     target_dispatch = _parse_delivery_sla_datetime(delivery, "target_dispatch_time")
@@ -248,10 +248,10 @@ def update_sla(delivery_id):
             delivery.target_arrival_time = target_arrival
             delivery.late_tolerance_minutes = tolerance
 
-        flash("Target SLA delivery berhasil diperbarui secara atomic.", "success")
+        flash("Target jam tiba pengiriman berhasil diperbarui.", "success")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:249")
-        flash(f"Gagal update SLA delivery secara atomic: {error}", "danger")
+        flash(f"Gagal memperbarui target jam tiba: {error}", "danger")
     return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
 
@@ -262,11 +262,11 @@ def receive(detail_id):
     delivery = delivery_detail.delivery
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     if delivery.status == "CANCELLED":
-        flash("Delivery sudah CANCELLED. Penerimaan tidak bisa dicatat.", "warning")
+        flash("Pengiriman sudah dibatalkan. Penerimaan tidak bisa dicatat.", "warning")
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
     if request.method == "POST":
@@ -356,7 +356,7 @@ def create_shortage_replacement(detail_id):
     delivery = delivery_detail.delivery
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     success, message, replacement_delivery = create_shortage_replacement_delivery(
@@ -447,7 +447,7 @@ def delete_attachment(attachment_id):
     attachment, receipt = _delivery_attachment_or_404(attachment_id)
     note = (request.form.get("delete_note") or "Bukti delivery salah upload.").strip()
     soft_delete_attachment(attachment, deleted_by=current_user.id, note=note or None)
-    flash("Bukti digital delivery berhasil dihapus lunak. File fisik tetap tersimpan untuk audit.", "success")
+    flash("Bukti digital pengiriman berhasil dihapus lunak. File fisik tetap tersimpan untuk audit.", "success")
     return redirect(url_for("delivery.receive", detail_id=receipt.delivery_detail_id))
 
 
@@ -611,7 +611,7 @@ def cancel(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
     if delivery.branch_id != current_user.branch_id:
-        flash("Data delivery tidak sesuai cabang user.", "danger")
+        flash("Data pengiriman tidak sesuai cabang pengguna.", "danger")
         return redirect(url_for("delivery.index"))
 
     reason = request.form.get("cancel_reason") or "Delivery dibatalkan sebelum penerimaan."

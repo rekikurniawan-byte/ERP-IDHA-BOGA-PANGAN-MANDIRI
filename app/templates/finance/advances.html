@@ -65,13 +65,13 @@
             <select name="status" class="form-select">
                 <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
                 <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>Terbuka</option>
-                <option value="PARTIAL" {% if selected_status == 'PARTIAL' %}selected{% endif %}>PARTIAL</option>
-                <option value="SETTLED" {% if selected_status == 'SETTLED' %}selected{% endif %}>SETTLED</option>
+                <option value="PARTIAL" {% if selected_status == 'PARTIAL' %}selected{% endif %}>{{ "PARTIAL"|status_label('advance') }}</option>
+                <option value="SETTLED" {% if selected_status == 'SETTLED' %}selected{% endif %}>{{ "SETTLED"|status_label('advance') }}</option>
             </select>
         </div>
         <div class="col-md-4 d-flex gap-2">
             <button type="submit" class="btn app-btn-primary">Filter</button>
-            <a href="{{ url_for('finance.advances') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('finance.advances') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>

@@ -66,7 +66,7 @@
             <article>
                 <span>Bukti Diverifikasi</span>
                 <strong>{{ portal_payment_status.counts.verified }}</strong>
-                <small>Siap dibuat payment resmi</small>
+                <small>Siap dibuat pembayaran resmi</small>
             </article>
             <article>
                 <span>Sudah Pembayaran</span>
@@ -84,7 +84,7 @@
                 <a class="finance-erp-integration-card status-{{ card.status|lower }}" href="{{ card.href }}">
                     <span>{{ card.owner }}</span>
                     <strong>{{ card.title }}</strong>
-                    <small>{{ card.source }}</small>
+                    <small>{{ card.source|status_label }}</small>
                     <b>{{ card.count }}</b>
                     <em>{{ card.status_label }}</em>
                 </a>
@@ -254,7 +254,7 @@
                         <tbody>
                             {% for row in pending_manual_sources %}
                             <tr>
-                                <td><span class="status-badge status-progress">{{ row.kind }}</span></td>
+                                <td><span class="status-badge status-progress">{{ row.kind|status_label }}</span></td>
                                 <td>
                                     <strong>{{ row.label }}</strong>
                                     <div class="small text-muted">{{ row.date.strftime('%d-%m-%Y') if row.date else '-' }}</div>
@@ -302,13 +302,13 @@
                             <tr>
                                 <td>{{ row.transaction_date.strftime('%d-%m-%Y') }}</td>
                                 <td>
-                                    <strong>{{ row.transaction_type }}</strong>
-                                    <div class="small text-muted">{{ row.account_type }}</div>
+                                    <strong>{{ row.transaction_type|status_label }}</strong>
+                                    <div class="small text-muted">{{ row.account_type|status_label('account') }}</div>
                                 </td>
                                 <td class="buku kas/bank-description-cell">
                                     {{ row.description }}
                                     {% if row.reference_type and row.reference_id %}
-                                    <div class="small text-muted">{{ row.reference_type }} #{{ row.reference_id }}</div>
+                                    <div class="small text-muted">{{ row.reference_type|status_label }} #{{ row.reference_id }}</div>
                                     {% endif %}
                                 </td>
                                 <td>

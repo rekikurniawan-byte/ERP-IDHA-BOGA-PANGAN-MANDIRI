@@ -86,13 +86,13 @@
                 <select class="form-select app-input" name="status">
                     {% for status in data.status_options %}
                         <option value="{{ status }}" {% if data.status_filter == status %}selected{% endif %}>
-                            {% if status == "ALL" %}Semua{% elif status == "ACTIVE" %}Aktif{% elif status == "DRAFT" %}Draft{% elif status == "EXPIRED" %}Kedaluwarsa{% else %}{{ status }}{% endif %}
+                            {% if status == "ALL" %}Semua{% elif status == "ACTIVE" %}Aktif{% elif status == "DRAFT" %}Draft{% elif status == "EXPIRED" %}Kedaluwarsa{% else %}{{ status|status_label }}{% endif %}
                         </option>
                     {% endfor %}
                 </select>
                 <div class="app-filter-actions">
                     <button class="btn app-btn-secondary" type="submit">Filter</button>
-                    <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Reset</a>
+                    <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Atur Ulang</a>
                 </div>
             </form>
 

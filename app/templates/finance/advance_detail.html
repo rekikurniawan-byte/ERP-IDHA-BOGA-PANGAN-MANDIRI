@@ -60,7 +60,7 @@
         <div><span>Tanggal</span><strong>{{ advance.advance_date.strftime('%d-%m-%Y') }}</strong></div>
         <div><span>Tipe</span><strong>{{ rule.get('label', advance.advance_type) }}</strong></div>
         <div><span>Pihak</span><strong>{{ get_party_label(advance) }}</strong></div>
-        <div><span>Kas/Bank</span><strong>{{ advance.account_type }}</strong></div>
+        <div><span>Kas/Bank</span><strong>{{ advance.account_type|status_label('account') }}</strong></div>
         <div><span>ID Buku Kas/Bank</span><strong>{{ advance.cash_bank_transaction_id or '-' }}</strong></div>
         <div><span>ID Jurnal</span><strong>{{ advance.journal_id or '-' }}</strong></div>
         <div><span>Referensi</span><strong>{{ advance.reference_number or '-' }}</strong></div>
@@ -144,7 +144,7 @@
                 </select>
             {% elif advance.advance_type == 'SUPPLIER_ADVANCE_PAID' %}
                 <select name="reference_id" class="form-select" required>
-                    <option value="">Pilih supplier bill</option>
+                    <option value="">Pilih tagihan supplier</option>
                     {% for bill in reference_options.supplier_bills %}
                         <option value="{{ bill.id }}">{{ bill.bill_number }} - {{ bill.remaining_amount|rupiah }}</option>
                     {% endfor %}
@@ -183,7 +183,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Riwayat Penyelesaian</h5>
-            <p>Setiap settlement punya trace sendiri dan tidak boleh double posting.</p>
+            <p>Setiap penyelesaian punya jejak sendiri dan tidak boleh dijurnal dua kali.</p>
         </div>
     </div>
     {% if settlements %}
@@ -205,7 +205,7 @@
                 <tr>
                     <td><strong>{{ settlement.settlement_number }}</strong></td>
                     <td>{{ settlement.settlement_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ settlement.settlement_type }}</td>
+                    <td>{{ settlement.settlement_type|status_label }}</td>
                     <td>{{ settlement.reference_type or '-' }} #{{ settlement.reference_id or '-' }}</td>
                     <td>{{ settlement.amount|rupiah }}</td>
                     <td>

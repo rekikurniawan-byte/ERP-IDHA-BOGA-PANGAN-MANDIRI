@@ -119,7 +119,7 @@
             <tbody>
                 {% for row in report.item_rows %}
                     <tr>
-                        <td><strong>{{ row.item.item_type }}</strong></td>
+                        <td><strong>{{ row.item.item_type|status_label }}</strong></td>
                         <td>
                             {{ row.item.description }}
                             <div class="text-muted small mt-1">{{ row.note }}</div>
@@ -162,7 +162,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Detail Alokasi HPP Snapshot</h5>
-            <p>Baris ini berasal dari order_hpp_snapshot_allocations dan tidak mengubah invoice.</p>
+            <p>Baris ini berasal dari alokasi snapshot HPP dan tidak mengubah invoice.</p>
         </div>
     </div>
     <div class="table-responsive">

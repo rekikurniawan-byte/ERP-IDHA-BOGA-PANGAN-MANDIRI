@@ -31,7 +31,7 @@
 
         <div class="app-filter-actions">
             <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Filter</button>
-            <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('master.items') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -65,7 +65,7 @@
                         {% else %}
                             <span class="status-badge neutral">Sistem</span>
                         {% endif %}
-                        <div class="text-muted small">{{ item.category }}</div>
+                        <div class="text-muted small">{{ item.category|status_label }}</div>
                     </td>
                     <td>{{ item.unit }}</td>
                     <td class="num">{{ item.minimum_stock|qty }}</td>
@@ -86,7 +86,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            <a href="{{ url_for('master.edit_item', item_id=item.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <a href="{{ url_for('master.edit_item', item_id=item.id) }}" class="btn btn-sm app-btn-secondary">Ubah</a>
                             <form method="POST" action="{{ url_for('master.toggle_item', item_id=item.id) }}">
                                 {% include "components/csrf_token.html" %}
                                 <button type="submit" class="btn btn-sm app-btn-secondary">{{ "Nonaktifkan" if item.is_active else "Aktifkan" }}</button>

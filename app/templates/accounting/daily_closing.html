@@ -10,7 +10,7 @@
     actions_class="accounting-header-actions",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('accounting.print_daily_closing', date=report.selected_date_value), "icon": "bi-printer"},
-        {"label": "Download CSV", "url": url_for('accounting.export_daily_closing_csv', date=report.selected_date_value), "icon": "bi-download"},
+        {"label": "Unduh CSV", "url": url_for('accounting.export_daily_closing_csv', date=report.selected_date_value), "icon": "bi-download"},
         {"label": "Data Health", "url": url_for('accounting.data_health'), "icon": "bi-clipboard-pulse"},
     ]
 ) }}
@@ -37,7 +37,7 @@
         <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status|status_label }}</span>
     </strong>
     <p>
-        Halaman ini hanya membaca data. Tidak membuat transaksi, tidak generate invoice/payment/journal,
+        Halaman ini hanya membaca data. Tidak membuat transaksi, tidak membuat invoice/pembayaran/jurnal,
         dan tidak mengubah data. Terakhir dicek: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}.
     </p>
 </div>

@@ -17,8 +17,8 @@ def test_invoice_detail_payment_history_uses_fixed_proof_column_contract():
     assert 'payment-history-table' in template
     assert 'payment-history-col-proof' in template
     assert 'class="payment-proof-cell"' in template
-    assert "Upload bukti tambahan" not in template
-    assert ">Upload bukti<" in template
+    assert "Unggah bukti tambahan" not in template
+    assert ">Unggah bukti<" in template
     assert "Bukti Transfer Customer" not in template
     assert "Bukti Transfer" in template
 

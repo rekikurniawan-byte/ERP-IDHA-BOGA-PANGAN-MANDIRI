@@ -70,7 +70,7 @@
 
         <div>
             <span>Referensi</span>
-            <strong>{{ journal.reference_type }} #{{ journal.reference_id }}</strong>
+            <strong>{{ journal.reference_type|status_label }} #{{ journal.reference_id }}</strong>
         </div>
 
         <div>
@@ -104,7 +104,7 @@
                 <tr>
                     <td><strong>{{ detail.account.account_code }}</strong></td>
                     <td>{{ detail.account.account_name }}</td>
-                    <td>{{ detail.account.account_type }}</td>
+                    <td>{{ detail.account.account_type|status_label }}</td>
                     <td>{{ detail.debit|rupiah }}</td>
                     <td>{{ detail.credit|rupiah }}</td>
                 </tr>

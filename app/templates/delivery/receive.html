@@ -78,7 +78,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Form Penerimaan</h5>
-            <p>Jam terima otomatis dicatat saat form disimpan dan dipakai untuk hitung ON_TIME/LATE/SHORTAGE.</p>
+            <p>Jam terima otomatis dicatat saat form disimpan dan dipakai untuk hitung tepat waktu/terlambat/kurang kirim.</p>
         </div>
     </div>
 
@@ -171,7 +171,7 @@
             <div class="col-md-2">
                 <button type="submit" class="btn app-btn-primary w-100">
                     <i class="bi bi-upload"></i>
-                    Upload
+                    Unggah
                 </button>
             </div>
         </div>
@@ -185,14 +185,14 @@
                     <th>File</th>
                     <th>Ukuran</th>
                     <th>Catatan</th>
-                    <th>Upload</th>
+                    <th>Unggah</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for attachment in receipt_attachments %}
                 <tr>
-                    <td><span class="status-badge status-info">{{ attachment.attachment_type }}</span></td>
+                    <td><span class="status-badge status-info">{{ attachment.attachment_type|status_label }}</span></td>
                     <td><strong>{{ attachment.original_filename }}</strong></td>
                     <td>{{ format_file_size(attachment.file_size) }}</td>
                     <td>{{ attachment.notes or '-' }}</td>
@@ -200,7 +200,7 @@
                     <td>
                         <div class="d-flex flex-wrap gap-2">
                             <a href="{{ url_for('delivery.view_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
-                            <a href="{{ url_for('delivery.download_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                            <a href="{{ url_for('delivery.download_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Unduh</a>
                             {% if current_user.role in ['OWNER', 'ADMIN'] %}
                             <form method="POST" action="{{ url_for('delivery.delete_attachment', attachment_id=attachment.id) }}" data-app-confirm="Hapus lunak bukti digital ini? File fisik tetap tersimpan untuk audit." data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}

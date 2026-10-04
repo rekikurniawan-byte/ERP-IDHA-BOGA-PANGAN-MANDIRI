@@ -79,7 +79,7 @@
                 <tr>
                     <td><strong>{{ invoice.invoice_number }}</strong></td>
                     <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
-                    <td>{{ invoice.source_type or '-' }}</td>
+                    <td>{{ invoice.source_type|status_label }}</td>
                     <td>{{ row.bill_to }}</td>
                     <td class="text-end">{{ summary.invoice_total|rupiah }}</td>
                     <td class="text-end">{{ summary.costed_revenue_total|rupiah }}</td>
@@ -98,7 +98,7 @@
         </table>
 </div>
 
-        <p class="print-note">Dokumen ini membaca HPP allocation dari snapshot order. Angka tidak mengubah invoice, payment, jurnal, atau stok.</p>
+        <p class="print-note">Dokumen ini membaca alokasi HPP dari snapshot order. Angka tidak mengubah invoice, pembayaran, jurnal, atau stok.</p>
     </div>
 </div>
 </div>

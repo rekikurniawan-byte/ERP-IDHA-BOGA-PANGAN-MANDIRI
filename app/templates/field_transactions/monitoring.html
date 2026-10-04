@@ -20,7 +20,7 @@
         <div>
             <span>Menunggu Pemeriksaan</span>
             <h3>{{ summary.pending_review_count }}</h3>
-            <p>{{ summary.pending_review_amount|rupiah }} menunggu review</p>
+            <p>{{ summary.pending_review_amount|rupiah }} menunggu pemeriksaan</p>
         </div>
     </div>
     <div class="app-stat-card">
@@ -53,7 +53,7 @@
         <div>
             <span>Selisih Integrasi</span>
             <h3>{{ summary.mismatch_count }}</h3>
-            <p>Butuh investigasi trace posting</p>
+            <p>Perlu ditelusuri: jejak penjurnalan belum lengkap</p>
         </div>
     </div>
     <div class="app-stat-card">
@@ -61,7 +61,7 @@
         <div>
             <span>Dokumen Manual Kurang</span>
             <h3>{{ summary.manual_doc_gap_count }}</h3>
-            <p>Event manual belum dibentuk dokumen</p>
+            <p>Transaksi manual belum dibentuk dokumen</p>
         </div>
     </div>
 </div>
@@ -72,7 +72,7 @@
             <div class="section-title">
                 <div>
                     <h3>Menunggu Pemeriksaan</h3>
-                    <p>Draft dan transaksi yang masih menunggu kelengkapan, klasifikasi, atau approval.</p>
+                    <p>Transaksi yang masih menunggu kelengkapan, klasifikasi, atau persetujuan.</p>
                 </div>
                 <span class="status-badge warning">{{ summary.pending_review_count }}</span>
             </div>
@@ -91,7 +91,7 @@
                         {% for row in monitoring.pending_review %}
                         <tr>
                             <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
-                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
+                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type|event_label }}</div></td>
                             <td>{{ row.amount|rupiah }}</td>
                             <td>{{ row.review_status|status_label }}</td>
                         </tr>
@@ -133,8 +133,8 @@
                         {% for row in monitoring.ready_to_post %}
                         <tr>
                             <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
-                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
-                            <td>{{ row.transaction_direction }}</td>
+                            <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type|event_label }}</div></td>
+                            <td>{{ row.transaction_direction|status_label }}</td>
                             <td>{{ row.amount|rupiah }}</td>
                         </tr>
                         {% endfor %}
@@ -144,8 +144,8 @@
             {% else %}
             <div class="empty-state">
                 <i class="bi bi-journal-check"></i>
-                <h5>Tidak ada antrean posting</h5>
-                <p>Belum ada transaksi ready-to-post yang tertahan.</p>
+                <h5>Tidak ada antrean penjurnalan</h5>
+                <p>Belum ada transaksi siap dijurnal yang tertahan.</p>
             </div>
             {% endif %}
         </div>
@@ -250,7 +250,7 @@
             <div class="section-title">
                 <div>
                     <h3>Selisih Integrasi</h3>
-                    <p>Transaksi berstatus sudah diposting tetapi belum punya jejak ke dokumen finansial atau bridge legacy.</p>
+                    <p>Transaksi sudah dijurnal tetapi belum punya jejak ke dokumen keuangan atau modul lama.</p>
                 </div>
                 <span class="status-badge danger">{{ summary.mismatch_count }}</span>
             </div>
@@ -259,7 +259,7 @@
                 {% for item in monitoring.mismatches %}
                 <div class="detail-row">
                     <span><a href="{{ url_for('field_transactions.detail', transaction_id=item.transaction.id) }}" class="btn btn-sm app-btn-secondary">{{ item.transaction.transaction_number }}</a></span>
-                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type }}</div></div>
+                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type|event_label }}</div></div>
                     <small class="text-muted d-block mt-1">{{ item.reason }}</small>
                 </div>
                 {% endfor %}
@@ -268,7 +268,7 @@
             <div class="empty-state">
                 <i class="bi bi-shield-check"></i>
                 <h5>Tidak ada mismatch</h5>
-                <p>Jejak posting inti untuk transaksi sudah diposting terlihat sehat.</p>
+                <p>Jejak jurnal untuk transaksi yang sudah dijurnal terlihat sehat.</p>
             </div>
             {% endif %}
         </div>
@@ -279,7 +279,7 @@
             <div class="section-title">
                 <div>
                     <h3>Dokumen Manual Kurang</h3>
-                    <p>Event manual yang belum dibentuk menjadi dokumen piutang/hutang sesuai desain.</p>
+                    <p>Transaksi manual yang belum dibentuk menjadi dokumen piutang/hutang.</p>
                 </div>
                 <span class="status-badge warning">{{ summary.manual_doc_gap_count }}</span>
             </div>
@@ -288,7 +288,7 @@
                 {% for item in monitoring.manual_doc_gaps %}
                 <div class="detail-row">
                     <span><a href="{{ url_for('field_transactions.detail', transaction_id=item.transaction.id) }}" class="btn btn-sm app-btn-secondary">{{ item.transaction.transaction_number }}</a></span>
-                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type }}</div></div>
+                    <div><strong>{{ event_labels.get(item.transaction.business_event_type, item.transaction.business_event_type) }}</strong><div class="text-muted small">{{ item.transaction.business_event_type|event_label }}</div></div>
                     <small class="text-muted d-block mt-1">{{ item.reason }}</small>
                 </div>
                 {% endfor %}
@@ -297,7 +297,7 @@
             <div class="empty-state">
                 <i class="bi bi-journal-plus"></i>
                 <h5>Tidak ada gap dokumen</h5>
-                <p>Event manual yang relevan sudah dibentuk ke dokumen turunannya.</p>
+                <p>Transaksi manual yang relevan sudah dibentuk ke dokumen turunannya.</p>
             </div>
             {% endif %}
         </div>
@@ -328,7 +328,7 @@
                 {% for row in monitoring.bridge_candidates %}
                 <tr>
                     <td><a href="{{ url_for('field_transactions.detail', transaction_id=row.id) }}" class="btn btn-sm app-btn-secondary">{{ row.transaction_number }}</a></td>
-                    <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type }}</div></td>
+                    <td><div class="fw-semibold">{{ event_labels.get(row.business_event_type, row.business_event_type) }}</div><div class="text-muted small">{{ row.business_event_type|event_label }}</div></td>
                     <td>{{ row.party_snapshot_name or (row.counterparty.name if row.counterparty else '-') }}</td>
                     <td>{{ row.amount|rupiah }}</td>
                     <td>{{ row.review_status|status_label }}</td>
@@ -340,8 +340,8 @@
     {% else %}
     <div class="empty-state">
         <i class="bi bi-diagram-3"></i>
-        <h5>Tidak ada bridge candidate</h5>
-        <p>Belum ada transaksi yang menunggu promosi ke modul legacy.</p>
+        <h5>Tidak ada kandidat untuk modul lama</h5>
+        <p>Belum ada transaksi yang menunggu dipindahkan ke modul lama.</p>
     </div>
     {% endif %}
 </div>

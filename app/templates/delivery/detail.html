@@ -6,7 +6,7 @@
     <div>
         <span class="eyebrow">Detail Pengiriman</span>
         <h1>{{ delivery.delivery_number }}</h1>
-        <p>{{ delivery.delivery_date.strftime('%d-%m-%Y') }} | {{ delivery_type }}</p>
+        <p>{{ delivery.delivery_date.strftime('%d-%m-%Y') }} | {{ delivery_type|status_label }}</p>
     </div>
 
     <div class="page-actions">
@@ -26,7 +26,7 @@
         {% endif %}
 
         {% if can_cancel_delivery %}
-        <form method="POST" action="{{ url_for('delivery.cancel', delivery_id=delivery.id) }}" data-app-confirm="Yakin ingin membatalkan delivery ini? Delivery yang dibatalkan tidak akan dihitung sebagai pengiriman aktif." data-ui-form="true" class="app-form">
+        <form method="POST" action="{{ url_for('delivery.cancel', delivery_id=delivery.id) }}" data-app-confirm="Yakin ingin membatalkan pengiriman ini? Pengiriman yang dibatalkan tidak akan dihitung sebagai pengiriman aktif." data-ui-form="true" class="app-form">
             {% include "components/csrf_token.html" %}
             <input type="hidden" name="cancel_reason" value="Delivery dibatalkan sebelum penerimaan.">
             <button type="submit" class="btn app-btn-danger">
@@ -42,14 +42,14 @@
 {% if delivery.status == "CANCELLED" %}
 <div class="app-card soft-danger-card">
     <strong>Pengiriman Dibatalkan</strong>
-    <p>Delivery ini sudah dibatalkan dan tidak dihitung sebagai pengiriman aktif. Jika perlu, buat ulang delivery dari detail order.</p>
+    <p>Pengiriman ini sudah dibatalkan dan tidak dihitung sebagai pengiriman aktif. Jika perlu, buat ulang pengiriman dari detail order.</p>
 </div>
 {% endif %}
 
 {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
 <div class="app-card soft-warning-card">
     <strong>Pengiriman Pengganti Kekurangan</strong>
-    <p>Delivery ini dibuat untuk mengganti kekurangan pengiriman sebelumnya. Delivery ini bukan order baru dan bukan dasar invoice.</p>
+    <p>Pengiriman ini dibuat untuk mengganti kekurangan pengiriman sebelumnya. Pengiriman ini bukan order baru dan bukan dasar invoice.</p>
 </div>
 {% endif %}
 
@@ -61,7 +61,7 @@
         <div>
             <p>Status Pengiriman</p>
             <h3>{{ delivery.status|status_label }}</h3>
-            <span class="app-stat-helper">{{ delivery_type }}</span>
+            <span class="app-stat-helper">{{ delivery_type|status_label }}</span>
         </div>
     </div>
 
@@ -225,7 +225,7 @@
                                     <span class="status-badge status-success">{{ proof_list|length }} bukti</span>
                                     {% for attachment in proof_list[:2] %}
                                         <a href="{{ url_for('delivery.view_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">
-                                            {{ attachment.attachment_type }}
+                                            {{ attachment.attachment_type|status_label }}
                                         </a>
                                     {% endfor %}
                                 </div>

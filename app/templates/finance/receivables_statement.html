@@ -136,7 +136,7 @@
         </div>
         <div class="col-md-4 d-flex gap-2">
             <button type="submit" class="btn app-btn-primary">Terapkan {{ term('client') }}</button>
-            <a href="{{ url_for('finance.receivables_statement') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('finance.receivables_statement') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -267,7 +267,7 @@
                         - {{ group.wa_target_phone }}
                     {% endif %}
                     <br>
-                    Sumber nomor: {{ group.wa_target_source }}
+                    Sumber nomor: {{ group.wa_target_source|status_label }}
                 </p>
             </div>
 
@@ -331,7 +331,7 @@
                 <tr>
                     <td>
                         <strong>{{ invoice.invoice_number }}</strong>
-                        <div class="text-muted small">{{ invoice.source_type or '-' }}</div>
+                        <div class="text-muted small">{{ invoice.source_type|status_label }}</div>
                     </td>
                     <td>{{ row.mandor_name }}</td>
                     <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else '-' }}</td>
@@ -351,7 +351,7 @@
                             <strong>{{ payment.payment_number }}</strong>
                             <div class="text-muted small">
                                 {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else '-' }}
-                                - {{ payment.payment_method or '-' }}
+                                - {{ payment.payment_method|status_label }}
                             </div>
                             <div class="text-muted small">
                                 {{ payment.amount|rupiah }}
@@ -370,7 +370,7 @@
                     <td>
                         {% if latest %}
                             {# SOA5D2_CHANNEL_IN_FOLLOWUP_CELL #}
-                            <strong>{{ latest.channel or '-' }} - {{ latest.collection_status }}</strong>
+                            <strong>{{ latest.channel or '-' }} - {{ latest.collection_status|status_label }}</strong>
                             <div class="text-muted small">
                                 {{ latest.follow_up_date.strftime('%d-%m-%Y') if latest.follow_up_date else '-' }}
                                 - {{ latest.contact_person or '-' }}

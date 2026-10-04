@@ -30,7 +30,7 @@
             </article>
             <article><span>Tagihan</span><strong>{{ instruction.invoice.invoice_number }}</strong><small>{{ instruction.invoice.status|status_label('invoice') }}</small></article>
             <article><span>Sisa</span><strong>{{ instruction.invoice.remaining_amount|rupiah }}</strong><small>Sisa tagihan</small></article>
-            <article><span>Bukti</span><strong>{{ instruction.proof_summary.count }}</strong><small>{{ instruction.proof_summary.latest_status }}</small></article>
+            <article><span>Bukti</span><strong>{{ instruction.proof_summary.count }}</strong><small>{{ instruction.proof_summary.latest_status|status_label }}</small></article>
         </div>
 
         <div class="portal-payment-method-grid">
@@ -67,7 +67,7 @@
         </div>
 
         <div class="portal-section-heading">
-            <h2>Upload Bukti</h2>
+            <h2>Unggah Bukti</h2>
             <span>Attachment only, finance verify</span>
         </div>
 
@@ -84,7 +84,7 @@
                 </label>
                 <button class="portal-primary-action" type="submit" data-app-temp-label="Mengupload...">
                     <i class="bi bi-cloud-upload"></i>
-                    <span>Upload Bukti</span>
+                    <span>Unggah Bukti</span>
                 </button>
                 <p>Unggahan ini akan diperiksa terlebih dahulu. Setelah sesuai, pembayaran akan tercatat.</p>
             </form>
@@ -110,7 +110,7 @@
                         <h3>{{ proof.filename }}</h3>
                         <p>{{ proof.uploaded_at.strftime('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} | {{ proof.file_size }} byte</p>
                         <div class="portal-chip-row">
-                            <span>{{ proof.attachment_type }}</span>
+                            <span>{{ proof.attachment_type|status_label }}</span>
                             {% if proof.notes %}<span>{{ proof.notes }}</span>{% endif %}
                         </div>
                     </div>

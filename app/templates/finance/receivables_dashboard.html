@@ -104,7 +104,7 @@
             </button>
 
             <a href="{{ url_for('finance.receivables') }}" class="btn app-btn-secondary">
-                Reset
+                Atur Ulang
             </a>
         </div>
     </form>
@@ -115,8 +115,8 @@
         <span>{{ selected_filter_label }}</span>
         {% if selected_branch_name %}<span>{{ selected_branch_name }}</span>{% endif %}
         {% if selected_client_name %}<span>{{ selected_client_name }}</span>{% endif %}
-        {% if selected_bill_to_type %}<span>{{ selected_bill_to_type|replace('_', ' ')|title }}</span>{% endif %}
-        {% if selected_status %}<span>{{ selected_status|replace('_', ' ')|title }}</span>{% endif %}
+        {% if selected_bill_to_type %}<span>{{ selected_bill_to_type|status_label }}</span>{% endif %}
+        {% if selected_status %}<span>{{ selected_status|status_label }}</span>{% endif %}
         {% if selected_period_from or selected_period_to %}<span>Periode {{ selected_period_from or '-' }} s/d {{ selected_period_to or '-' }}</span>{% endif %}
     </div>
     {% endif %}
@@ -141,7 +141,7 @@
 
     <div class="app-stat-card receivables-kpi-card">
         <i class="bi bi-exclamation-triangle"></i>
-        <span>Overdue</span>
+        <span>Lewat Jatuh Tempo</span>
         <h3>{{ summary.overdue_count }}</h3>
         <p>Lewat jatuh tempo</p>
     </div>
@@ -294,7 +294,7 @@
 
                     <td>
                         {% if row.latest_log %}
-                            <strong>{{ row.latest_log.collection_status }}</strong>
+                            <strong>{{ row.latest_log.collection_status|status_label }}</strong>
                             <div class="text-muted small">
                                 {{ row.latest_log.follow_up_date.strftime('%d-%m-%Y') }}
                                 - {{ row.latest_log.contact_person or '-' }}

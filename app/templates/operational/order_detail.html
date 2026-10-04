@@ -15,7 +15,7 @@
                 {% include "components/csrf_token.html" %}
                 <button type="submit" class="btn app-btn-primary">
                     <i class="bi bi-lock-fill"></i>
-                    Lock Order
+                    Kunci Order
                 </button>
             </form>
 
@@ -81,10 +81,10 @@
 
 {% if daily_order.is_locked %}
 <div class="app-card soft-warning-card">
-    <strong>Catatan alur revisi setelah lock:</strong>
+    <strong>Catatan alur revisi setelah dikunci:</strong>
     <p>
-        Jika ada revisi tambah setelah produksi atau delivery selesai, sistem akan menaikkan rencana produksi.
-        Dapur harus menyelesaikan tambahan produksi dulu sebelum delivery tambahan bisa dibuat.
+        Jika ada revisi tambah setelah produksi atau pengiriman selesai, sistem akan menaikkan rencana produksi.
+        Dapur harus menyelesaikan tambahan produksi dulu sebelum pengiriman tambahan bisa dibuat.
     </p>
 </div>
 {% endif %}
@@ -94,8 +94,8 @@
     <div class="delivery-next-action-header">
         <div>
             <span class="eyebrow">Langkah Pengiriman Berikutnya</span>
-            <h2>Produksi selesai, delivery belum masuk ke pengantar</h2>
-            <p>Action ini muncul hanya kalau order LOCKED, produksi batch sudah COMPLETED, masih ada sisa porsi, dan delivery belum/tambahan belum dibuat.</p>
+            <h2>Produksi selesai, pengiriman belum masuk ke pengantar</h2>
+            <p>Tombol ini muncul hanya kalau order terkunci, produksi sudah selesai, masih ada sisa porsi, dan pengiriman (atau tambahannya) belum dibuat.</p>
         </div>
         <a href="{{ url_for('sop.role_sop', slug='admin') }}" class="btn btn-sm app-btn-secondary">
             <i class="bi bi-journal-check"></i>
@@ -113,7 +113,7 @@
                     <div class="delivery-next-action-meta">
                         <span>Order: {{ action.order_number }}</span>
                         <span>Sisa: {{ action.remaining_qty }} porsi</span>
-                        <span>Driver: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                        <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
                     </div>
                 </div>
                 <div class="delivery-next-action-controls">
@@ -130,7 +130,7 @@
                     {% endif %}
                     {% if action.latest_delivery %}
                         <a href="{{ url_for('delivery.detail', delivery_id=action.latest_delivery.id) }}" class="btn app-btn-secondary">
-                            Lihat Delivery Terakhir
+                            Lihat Pengiriman Terakhir
                         </a>
                     {% endif %}
                 </div>
@@ -328,7 +328,7 @@
             <p>Total Porsi Siang</p>
             <h3>{{ total_lunch }}</h3>
             <span class="app-stat-helper">
-                Delivery planned: {{ lunch_delivery_data.total_planned_delivery_qty }} dari {{ lunch_delivery_data.total_order_qty }}
+                Pengiriman direncanakan: {{ lunch_delivery_data.total_planned_delivery_qty }} dari {{ lunch_delivery_data.total_order_qty }}
             </span>
         </div>
     </div>
@@ -341,7 +341,7 @@
             <p>Total Porsi Sore</p>
             <h3>{{ total_dinner }}</h3>
             <span class="app-stat-helper">
-                Delivery planned: {{ dinner_delivery_data.total_planned_delivery_qty }} dari {{ dinner_delivery_data.total_order_qty }}
+                Pengiriman direncanakan: {{ dinner_delivery_data.total_planned_delivery_qty }} dari {{ dinner_delivery_data.total_order_qty }}
             </span>
         </div>
     </div>
@@ -368,7 +368,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Detail {{ term('sub_client') }} & Lokasi</h5>
-            <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat lock. Jika ada harga berbeda setelah lock, lihat Riwayat Revisi.</p>
+            <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat dikunci. Jika ada harga berbeda setelah dikunci, lihat Riwayat Revisi.</p>
         </div>
     </div>
 
@@ -430,21 +430,21 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Status Delivery Order</h5>
-            <p>Menunjukkan apakah masih ada sisa porsi yang belum dibuat delivery.</p>
+            <h5>Status Pengiriman Order</h5>
+            <p>Menunjukkan apakah masih ada sisa porsi yang belum dibuat pengiriman.</p>
         </div>
 
         <div class="table-actions">
             {% if lunch_delivery_data.latest_delivery %}
                 <a href="{{ url_for('delivery.detail', delivery_id=lunch_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
                     <i class="bi bi-truck"></i>
-                    Lihat Delivery Siang
+                    Lihat Pengiriman Siang
                 </a>
             {% endif %}
             {% if dinner_delivery_data.latest_delivery %}
                 <a href="{{ url_for('delivery.detail', delivery_id=dinner_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
                     <i class="bi bi-truck"></i>
-                    Lihat Delivery Sore
+                    Lihat Pengiriman Sore
                 </a>
             {% endif %}
         </div>
@@ -527,8 +527,8 @@
                             <td>{{ revision.revision_time.strftime('%d-%m-%Y %H:%M') }}</td>
                             <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
                             <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
-                            <td>{{ revision.revision_type }}</td>
-                            <td>{{ revision.revision_direction }}</td>
+                            <td>{{ revision.revision_type|status_label }}</td>
+                            <td>{{ revision.revision_direction|status_label }}</td>
                             <td>{{ revision.lunch_qty_change }}</td>
                             <td>{{ revision.dinner_qty_change }}</td>
                             <td>{{ revision.price_per_portion|rupiah if revision.price_per_portion else detail.price_per_portion|rupiah }}</td>

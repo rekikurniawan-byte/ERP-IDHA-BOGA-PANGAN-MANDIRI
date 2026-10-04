@@ -10,7 +10,7 @@
     actions_class="accounting-header-actions",
     actions=[
         {"label": "Cetak / Save PDF", "url": url_for('accounting.print_order_to_cash_trace', order_number=report.selected_order_number), "icon": "bi-printer"},
-        {"label": "Download CSV", "url": url_for('accounting.export_order_to_cash_trace_csv', order_number=report.selected_order_number), "icon": "bi-download"},
+        {"label": "Unduh CSV", "url": url_for('accounting.export_order_to_cash_trace_csv', order_number=report.selected_order_number), "icon": "bi-download"},
         {"label": "Laporan Akuntansi", "url": url_for('accounting.reports'), "icon": "bi-bar-chart-line"},
     ]
 ) }}
@@ -49,7 +49,7 @@
         <span class="status-badge {{ report.overall_status_class }}">{{ report.overall_status|status_label }}</span>
     </strong>
     <p>
-        Halaman ini hanya membaca data. Tidak membuat invoice, payment, jurnal, stock movement,
+        Halaman ini hanya membaca data. Tidak membuat invoice, pembayaran, jurnal, pergerakan stok,
         cash daily, dan tidak mengubah database. Terakhir dicek: {{ report.generated_at.strftime('%d-%m-%Y %H:%M') }}.
     </p>
 </div>
@@ -59,7 +59,7 @@
     <div class="empty-state">
         <i class="bi bi-search"></i>
         <h5>{{ report.empty_message }}</h5>
-        <p>Input atau pilih nomor order untuk melihat jejak order sampai lunas.</p>
+        <p>Masukkan atau pilih nomor order untuk melihat jejak order sampai lunas.</p>
     </div>
 </div>
 {% else %}
@@ -96,7 +96,7 @@
         <div>
             <p>Piutang</p>
             <h3>{{ report.invoice.remaining_amount|rupiah }}</h3>
-            <span class="app-stat-helper">{{ report.receivable_status }}</span>
+            <span class="app-stat-helper">{{ report.receivable_status|status_label }}</span>
         </div>
     </div>
 </div>
@@ -253,7 +253,7 @@
                 <tr>
                     <td>{{ row.delivery_number }}</td>
                     <td>{{ row.delivery_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ row.delivery_type }}</td>
+                    <td>{{ row.delivery_type|status_label }}</td>
                     <td><span class="status-badge {{ row.status_class }}">{{ row.status|status_label }}</span></td>
                     <td>{{ row.planned_qty }}</td>
                     <td>{{ row.delivered_qty }}</td>
@@ -278,7 +278,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Invoice dan Piutang</h5>
-            <p>Invoice aktif, payment, dan sisa piutang.</p>
+            <p>Invoice aktif, pembayaran, dan sisa piutang.</p>
         </div>
         <span class="status-badge {{ report.invoice.status_class }}">{{ report.invoice.status|status_label('invoice') }}</span>
     </div>
@@ -301,7 +301,7 @@
                 <tr>
                     <td>{{ row.invoice.invoice_number }}</td>
                     <td><span class="status-badge {{ row.status_class }}">{{ row.invoice.status|status_label('invoice') }}</span></td>
-                    <td>{{ row.invoice.bill_to_type }}</td>
+                    <td>{{ row.invoice.bill_to_type|status_label }}</td>
                     <td>{{ row.total_amount|rupiah }}</td>
                     <td>{{ row.paid_amount|rupiah }}</td>
                     <td>{{ row.remaining_amount|rupiah }}</td>
@@ -347,7 +347,7 @@
                 <tr>
                     <td>{{ row.payment.payment_number }}</td>
                     <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ row.payment.payment_method }}</td>
+                    <td>{{ row.payment.payment_method|status_label }}</td>
                     <td>{{ row.amount|rupiah }}</td>
                     <td><span class="status-badge {{ row.journal.status_class }}">{{ row.journal.status|status_label }}</span></td>
                 </tr>

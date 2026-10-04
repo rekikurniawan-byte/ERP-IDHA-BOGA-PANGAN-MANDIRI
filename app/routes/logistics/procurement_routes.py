@@ -419,10 +419,10 @@ def create_purchase():
                 )
 
             if proof_uploaded:
-                flash("Nota/struk pembelian berhasil diunggah dalam transaksi atomic.", "success")
+                flash("Nota/struk pembelian berhasil diunggah.", "success")
 
             if purchase_type == "CASH":
-                flash("Pembelian tunai berhasil disimpan, stok bertambah, dan ledger kas/bank keluar dibuat.", "success")
+                flash("Pembelian tunai berhasil disimpan, stok bertambah, dan buku kas/bank keluar dicatat.", "success")
             else:
                 bill_number = supplier_bill.bill_number if supplier_bill else "supplier bill"
                 flash(f"Pembelian hutang berhasil disimpan, stok bertambah, dan {bill_number} otomatis masuk Hutang Supplier/AP.", "success")

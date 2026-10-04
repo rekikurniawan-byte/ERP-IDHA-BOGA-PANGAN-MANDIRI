@@ -503,14 +503,14 @@
                     {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
                         Invoice Tagihan Manual
                     {% else %}
-                        {{ invoice.source_type or "-" }}
+                        {{ invoice.source_type|status_label }}
                     {% endif %}
                 </strong>
             </div>
 
             <div class="row">
                 <span>Tipe</span>
-                <strong>{{ invoice.bill_to_type }}</strong>
+                <strong>{{ invoice.bill_to_type|status_label }}</strong>
             </div>
         </div>
 
@@ -536,7 +536,7 @@
 
             <div class="row">
                 <span>Sumber</span>
-                <strong>{{ invoice.source_type or "-" }}</strong>
+                <strong>{{ invoice.source_type|status_label }}</strong>
             </div>
         </div>
     </div>
@@ -742,7 +742,7 @@
             <tbody>
                 {% for row in print_data.other %}
                 <tr>
-                    <td>{{ row.item_type }}</td>
+                    <td>{{ row.item_type|status_label }}</td>
                     <td>{{ row.description }}</td>
                     <td class="text-right">{{ row.qty|int }}</td>
                     <td class="text-right">{{ row.unit_price|rupiah }}</td>
@@ -859,7 +859,7 @@
                 <tr>
                     <td>{{ payment.payment_number }}</td>
                     <td>{{ payment.payment_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ payment.payment_method }}</td>
+                    <td>{{ payment.payment_method|status_label }}</td>
                     <td class="text-right">{{ payment.amount|rupiah }}</td>
                 </tr>
                 {% endfor %}

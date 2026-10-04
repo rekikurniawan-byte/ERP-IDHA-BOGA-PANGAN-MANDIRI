@@ -31,7 +31,7 @@
                     {% elif log.audit_severity == 'MEDIUM' %}
                         <span class="status-badge info">Sedang</span>
                     {% else %}
-                        <span class="badge bg-light text-dark border">{{ log.audit_severity }}</span>
+                        <span class="badge bg-light text-dark border">{{ log.audit_severity|status_label }}</span>
                     {% endif %}
                     {% if log.audit_is_critical %}<span class="badge bg-danger-subtle text-danger border">critical audit</span>{% endif %}
                     <span class="badge bg-light text-dark border">#{{ log.id }}</span>
@@ -164,7 +164,7 @@
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
                     <span class="text-muted">Tingkat</span>
-                    <span class="fw-semibold text-end text-break">{{ log.audit_severity }}</span>
+                    <span class="fw-semibold text-end text-break">{{ log.audit_severity|status_label }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between gap-3">
                     <span class="text-muted">Audit Kritis</span>

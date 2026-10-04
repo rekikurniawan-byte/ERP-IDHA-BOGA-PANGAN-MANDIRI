@@ -46,7 +46,7 @@
                 <label class="form-label">Status Resep</label>
                 <select name="recipe_status" class="form-select app-input">
                     {% for status in recipe_statuses %}
-                    <option value="{{ status }}" {% if (recipe and recipe.recipe_status == status) or (not recipe and status == "DRAFT") %}selected{% endif %}>{{ status }}</option>
+                    <option value="{{ status }}" {% if (recipe and recipe.recipe_status == status) or (not recipe and status == "DRAFT") %}selected{% endif %}>{{ status|status_label }}</option>
                     {% endfor %}
                 </select>
                 <small class="text-muted">FINAL = siap jadi acuan.</small>
@@ -92,7 +92,7 @@
                 <select name="item_id" class="form-select app-input" required>
                     <option value="">- Pilih item -</option>
                     {% for item in items %}
-                    <option value="{{ item.id }}">{{ item.item_code }} - {{ item.item_name }} ({{ item.category }})</option>
+                    <option value="{{ item.id }}">{{ item.item_code }} - {{ item.item_name }} ({{ item.category|status_label }})</option>
                     {% endfor %}
                 </select>
                 <small class="text-muted">Item boleh belum punya profil HPP, tapi kalkulator akan memberi warning.</small>
@@ -142,7 +142,7 @@
                         <strong>{{ line.item.item_code }}</strong><br>
                         <span>{{ line.item.item_name }}</span>
                     </td>
-                    <td>{{ line.item.category }}</td>
+                    <td>{{ line.item.category|status_label }}</td>
                     <td>{{ line.qty_per_portion|qty }} {{ line.unit }}</td>
                     <td>
                         {% if line.item.cost_profile %}

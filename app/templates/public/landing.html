@@ -1,93 +1,285 @@
 {% extends "layouts/base.html" %}
 
-{% block content_public %}
-<section class="public-landing">
-    <header class="public-landing-topbar">
-        <a class="public-brand" href="{{ url_for('dashboard.index') }}" aria-label="PT Idha Boga Pangan Mandiri">
-            {% with class_name="public-brand-mark company-logo-mark" %}
-                {% include "components/company_logo.html" %}
-            {% endwith %}
-            <span>
-                <strong>Idha Boga</strong>
-                <small>Pangan Mandiri</small>
-            </span>
-        </a>
-        <nav class="public-nav" aria-label="Aksi pengunjung">
-            <a href="#akses">Layanan</a>
-            <a class="public-nav-login" href="{{ data.primary_url }}">Masuk</a>
-        </nav>
-    </header>
-
-    <div class="public-hero">
-        <div class="public-hero-copy">
-            <span class="public-eyebrow">Catering harian perusahaan</span>
-            <h1>{{ data.title }}</h1>
-            <p>{{ data.description }}</p>
-            <div class="public-hero-actions">
-                <a class="public-primary-action" href="{{ data.primary_url }}">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                    <span>Masuk</span>
-                </a>
-                {% if data.portal_enabled %}
-                    <a class="public-secondary-action" href="{{ data.secondary_url }}">
-                        <i class="bi bi-person-plus"></i>
-                        <span>Daftar pelanggan</span>
-                    </a>
+{% block public_page %}
+{% set company = global_company_settings %}
+{% set company_name = company.company_name or "PT Idha Boga Pangan Mandiri" %}
+{% set perf = site.performance %}
+{% set pricing = site.pricing %}
+{% set cutoffs = site.cutoffs %}
+{% set contact_url = site.whatsapp_url or "#kontak" %}
+<div class="pub" data-public-page="landing">
+    <header class="pub-header" data-pub-header>
+        <div class="pub-wrap pub-header-inner">
+            <a class="pub-brand" href="{{ url_for('dashboard.index') }}">
+                {% with class_name="company-logo-mark" %}
+                    {% include "components/company_logo.html" %}
+                {% endwith %}
+                <span>
+                    <strong>{{ company_name }}</strong>
+                    <small>{{ company.company_subtitle or "Katering harian" }}</small>
+                </span>
+            </a>
+            <nav class="pub-nav" aria-label="Bagian halaman">
+                <a href="#layanan">Layanan</a>
+                <a href="#alur">Cara kerja</a>
+                {% if pricing and pricing.price %}<a href="#biaya">Hitung biaya</a>{% endif %}
+                {% if site.menus %}<a href="#menu">Menu</a>{% endif %}
+                <a href="#kontak">Kontak</a>
+            </nav>
+            <div class="pub-header-actions">
+                <a class="pub-btn pub-btn-ghost" href="{{ url_for('auth.login') }}">Masuk</a>
+                {% if site.portal_enabled %}
+                    <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar</a>
                 {% endif %}
             </div>
         </div>
+    </header>
 
-        <aside class="public-order-card" id="alur">
-            <span>Alur pesanan</span>
-            <div class="public-order-flow">
-                <article><i class="bi bi-person"></i><strong>Masuk</strong><small>Akun aktif</small></article>
-                <article><i class="bi bi-bag-plus"></i><strong>Pesan</strong><small>Pilih porsi</small></article>
-                <article><i class="bi bi-credit-card"></i><strong>Bayar</strong><small>Unggah bukti</small></article>
-                <article><i class="bi bi-truck"></i><strong>Diproses</strong><small>Dikirim</small></article>
-            </div>
-        </aside>
-    </div>
+    {% include "components/public_flashes.html" %}
 
-    <section class="public-role-grid" id="akses" aria-label="Akses berdasarkan role">
-        {% for role in data.roles %}
-            <article class="public-role-card">
-                <i class="bi {{ role.icon }}"></i>
-                <h2>{{ role.title }}</h2>
-                <p>{{ role.description }}</p>
-                <div class="public-step-row">
-                    {% for step in role.steps %}
-                        <span>{{ step }}</span>
-                    {% endfor %}
+    <main id="mainContent">
+        <section class="pub-hero">
+            <div class="pub-wrap pub-hero-grid">
+                <div>
+                    <h1>Makan siang dan sore untuk pekerja proyek, <em>tiba sebelum jam makan.</em></h1>
+                    <p class="pub-lead">
+                        Kami memasak dan mengantar katering harian ke proyek konstruksi, gudang, dan kantor &mdash;
+                        juga untuk acara keluarga. Pesanan, pengiriman, dan tagihan tercatat di satu sistem
+                        yang bisa Anda pantau sendiri dari portal.
+                    </p>
+                    <div class="pub-hero-actions">
+                        {% if site.portal_enabled %}
+                            <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">
+                                Pesan untuk acara <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            </a>
+                        {% endif %}
+                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>
+                            Kerja sama untuk proyek
+                        </a>
+                    </div>
+                    <ul class="pub-facts" aria-label="Aturan pemesanan">
+                        {% if cutoffs.LUNCH %}<li><strong>{{ cutoffs.LUNCH }}</strong>batas pesan makan siang</li>{% endif %}
+                        {% if cutoffs.DINNER %}<li><strong>{{ cutoffs.DINNER }}</strong>batas pesan makan sore</li>{% endif %}
+                        {% if pricing and pricing.min_portions %}<li><strong>{{ pricing.min_portions }} porsi</strong>minimal per pesanan</li>{% endif %}
+                        {% if pricing and pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi</li>{% endif %}
+                    </ul>
                 </div>
-            </article>
-        {% endfor %}
-    </section>
 
-    <section class="public-integrated-strip" aria-label="Aturan utama">
-        <div>
-            <span>Terintegrasi</span>
-            <h2>Satu akun, satu data, satu alur operasional.</h2>
-        </div>
-        <div class="public-rule-list">
-            {% for rule in data.rules %}
-                <article>
-                    <i class="bi bi-check2-circle"></i>
-                    <span>{{ rule }}</span>
-                </article>
-            {% endfor %}
-        </div>
-    </section>
+                {% if perf %}
+                    {% set spark_spec = {
+                        "kind": "spark", "format": "count", "height": 110, "unit": "porsi",
+                        "categories": perf.series|map(attribute="label")|list,
+                        "series": [{"name": "Porsi terkirim", "color": "brand-600", "data": perf.series|map(attribute="qty")|list}],
+                    } %}
+                    <aside class="pub-stats" aria-labelledby="pubStatsTitle">
+                        <div class="pub-stats-head">
+                            <h2 id="pubStatsTitle">30 hari terakhir</h2>
+                            <span>Langsung dari catatan pengiriman</span>
+                        </div>
+                        <div class="pub-stats-grid">
+                            <div>
+                                <strong data-count="{{ perf.delivered_qty }}">{{ "{:,}".format(perf.delivered_qty)|replace(",", ".") }}</strong>
+                                <span>porsi terkirim</span>
+                            </div>
+                            {% if perf.on_time_rate is not none %}
+                                <div>
+                                    <strong>{{ perf.on_time_rate|string|replace(".", ",") }}%</strong>
+                                    <span>tiba tepat waktu</span>
+                                </div>
+                            {% endif %}
+                            <div>
+                                {% if site.locations %}
+                                    <strong data-count="{{ site.locations }}">{{ site.locations }}</strong>
+                                    <span>lokasi dilayani</span>
+                                {% else %}
+                                    <strong>{{ perf.days_served }}</strong>
+                                    <span>hari beroperasi</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="app-chart pub-spark" data-apex-chart role="img" aria-label="Porsi terkirim per hari selama 30 hari terakhir">
+                            <script type="application/json">{{ spark_spec|tojson }}</script>
+                        </div>
+                        <p class="pub-stats-foot">Tepat waktu: tiba sebelum target jam makan dengan jumlah sesuai pesanan.</p>
+                    </aside>
+                {% endif %}
+            </div>
+        </section>
 
-    <section class="public-final-cta">
-        <div>
-            <span>Mulai</span>
-            <h2>Masuk untuk memesan dan memantau tagihan.</h2>
-            <p>Pelanggan umum bisa daftar sendiri. Akun {{ term('client') }} dan {{ term('sub_client', lower=True) }} dibuat oleh admin agar terhubung ke perusahaan, {{ term('sub_client', lower=True) }}, dan kontrak yang benar.</p>
+        <section class="pub-section pub-section-alt" id="layanan">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Dua cara bekerja sama</h2>
+                    <p>Proyek dan perusahaan memakai kontrak dengan tagihan berkala. Pelanggan umum memesan sendiri dan membayar di muka.</p>
+                </div>
+                <div class="pub-tracks">
+                    <article class="pub-track pub-track-dark">
+                        <div class="pub-track-label">Proyek &amp; perusahaan</div>
+                        <h3>Katering harian dengan kontrak dan tagihan per periode</h3>
+                        <ul>
+                            <li><strong>Harga per porsi sesuai kontrak</strong>, tagihan dikirim per periode dan bisa dicicil sesuai termin.</li>
+                            <li>Pesanan harian lewat admin atau langsung dari portal {{ term('sub_client', lower=True) }} di lapangan.</li>
+                            <li>Pengiriman siang dan sore dengan <strong>jam tiba dan nama penerima</strong> tercatat di lokasi.</li>
+                            <li>Portal {{ term('client') }}: pantau pesanan, tagihan, pembayaran, dan masa kontrak.</li>
+                        </ul>
+                        <a class="pub-btn pub-btn-light" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>Ajukan kerja sama</a>
+                    </article>
+                    <article class="pub-track">
+                        <div class="pub-track-label">Acara, kantor, &amp; rumah</div>
+                        <h3>Pesan sendiri dari portal, bayar di muka</h3>
+                        <ul>
+                            <li>Daftar akun, pilih tanggal, waktu makan, dan jumlah porsi.</li>
+                            <li><strong>Bayar di muka</strong> lewat transfer lalu unggah bukti; pesanan diproses setelah pembayaran diperiksa.</li>
+                            {% if pricing %}
+                                <li>Minimal <strong>{{ pricing.min_portions }} porsi</strong>{% if pricing.free_delivery_min %}; gratis ongkir mulai <strong>{{ pricing.free_delivery_min }} porsi</strong> per pengiriman{% endif %}.</li>
+                            {% endif %}
+                            <li>Lacak status pesanan dan ajukan komplain dari portal yang sama.</li>
+                        </ul>
+                        {% if site.portal_enabled %}
+                            <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar sebagai pelanggan</a>
+                        {% endif %}
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="pub-section" id="alur">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Dari pesanan sampai tagihan, semuanya tercatat</h2>
+                    <p>Setiap langkah dicatat oleh orang yang mengerjakannya, jadi angka di tagihan sama dengan yang dimasak dan diantar.</p>
+                </div>
+                <ol class="pub-flow">
+                    <li>
+                        <h3>Pesanan dikunci</h3>
+                        <p>Pesanan siang ditutup pukul {{ cutoffs.LUNCH or "10.00" }}, sore pukul {{ cutoffs.DINNER or "15.00" }}. Porsi yang dikunci menjadi rencana masak dapur.</p>
+                    </li>
+                    <li>
+                        <h3>Dapur memasak</h3>
+                        <p>Bahan keluar dari gudang sesuai resep, jumlah masak dicatat per waktu makan.</p>
+                    </li>
+                    <li>
+                        <h3>Diantar &amp; diterima</h3>
+                        <p>Pengantar mencatat jam tiba, jumlah yang diterima, dan nama penerima di lokasi.</p>
+                    </li>
+                    <li>
+                        <h3>Tagihan &amp; pembayaran</h3>
+                        <p>Tagihan dibuat dari porsi yang benar-benar diterima, lalu tampil di portal bersama riwayat pembayarannya.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        {% if pricing and pricing.price %}
+            <section class="pub-section pub-section-alt" id="biaya">
+                <div class="pub-wrap pub-estimate">
+                    <div>
+                        <div class="pub-section-head">
+                            <h2>Hitung perkiraan biaya</h2>
+                            <p>Untuk pelanggan umum dengan harga standar hari ini. Harga proyek mengikuti kontrak masing-masing.</p>
+                        </div>
+                        <ul class="pub-rules">
+                            <li><span>Harga standar per porsi</span><strong>{{ pricing.price|rupiah }}</strong></li>
+                            {% for zone in pricing.zones %}
+                                <li><span>Ongkir zona {{ zone.name }}</span><strong>{{ zone.fee|rupiah }} / kiriman</strong></li>
+                            {% endfor %}
+                            {% if pricing.free_delivery_min %}
+                                <li><span>Gratis ongkir</span><strong>mulai {{ pricing.free_delivery_min }} porsi / kiriman</strong></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <div class="pub-estimate-card" data-estimate
+                          data-price="{{ pricing.price }}"
+                          data-min="{{ pricing.min_portions }}"
+                          data-free="{{ pricing.free_delivery_min }}"
+>
+                        <div class="pub-field">
+                            <label for="estimateQty">Jumlah porsi per waktu makan</label>
+                            <div class="pub-qty">
+                                <input type="range" id="estimateRange" min="{{ pricing.min_portions }}" max="300" step="5" value="50" aria-label="Geser jumlah porsi">
+                                <input type="number" id="estimateQty" class="form-control" min="{{ pricing.min_portions }}" max="2000" value="50" inputmode="numeric">
+                            </div>
+                        </div>
+                        <div class="pub-field">
+                            <span class="pub-field-label">Waktu makan</span>
+                            <div class="pub-segmented" role="radiogroup" aria-label="Waktu makan">
+                                <input type="radio" name="estimateMeals" id="mealLunch" value="1" checked><label for="mealLunch">Siang</label>
+                                <input type="radio" name="estimateMeals" id="mealDinner" value="1"><label for="mealDinner">Sore</label>
+                                <input type="radio" name="estimateMeals" id="mealBoth" value="2"><label for="mealBoth">Siang &amp; sore</label>
+                            </div>
+                        </div>
+                        {% if pricing.zones %}
+                            <div class="pub-field">
+                                <label for="estimateZone">Zona pengiriman</label>
+                                <select id="estimateZone" class="form-select">
+                                    {% for zone in pricing.zones %}
+                                        <option value="{{ zone.fee }}">{{ zone.name }} &mdash; ongkir {{ zone.fee|rupiah }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
+                        <div class="pub-estimate-result" aria-live="polite">
+                            <dl>
+                                <dt data-estimate-food-label>Makanan</dt><dd data-estimate-food>-</dd>
+                                <dt data-estimate-fee-label>Ongkir</dt><dd data-estimate-fee>-</dd>
+                            </dl>
+                            <div class="pub-estimate-total"><span>Perkiraan total</span><strong data-estimate-total>-</strong></div>
+                            <div class="pub-free-note" data-estimate-free>Gratis ongkir untuk jumlah ini.</div>
+                        </div>
+                        {% if site.portal_enabled %}
+                            <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">Lanjut ke pemesanan</a>
+                        {% endif %}
+                        <p class="pub-fine" style="margin-top: 12px;">Perkiraan, bukan tagihan. Total pasti tampil di portal saat memesan.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if site.menus %}
+            <section class="pub-section" id="menu">
+                <div class="pub-wrap">
+                    <div class="pub-section-head">
+                        <h2>Menu yang sedang disajikan</h2>
+                        <p>Daftar dari dapur kami saat ini. Menu dirotasi; untuk pesanan khusus silakan hubungi kami.</p>
+                    </div>
+                    <ul class="pub-menu">
+                        {% for menu in site.menus %}
+                            <li><strong>{{ menu.name }}</strong><span>{{ menu.type }}</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <footer class="pub-contact" id="kontak">
+        <div class="pub-wrap">
+            <div class="pub-contact-grid">
+                <div>
+                    <h2>Butuh katering untuk proyek atau acara?</h2>
+                    <p>Ceritakan lokasi, jumlah pekerja, dan jadwal makan. Kami bantu hitung porsi dan jadwal pengirimannya.</p>
+                    <div class="pub-hero-actions">
+                        {% if site.whatsapp_url %}
+                            <a class="pub-btn pub-btn-light pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">
+                                <i class="bi bi-whatsapp" aria-hidden="true"></i> Chat WhatsApp
+                            </a>
+                        {% endif %}
+                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ url_for('auth.login') }}">Masuk ke portal</a>
+                    </div>
+                </div>
+                <dl>
+                    <div><dt>Perusahaan</dt><dd>{{ company_name }}</dd></div>
+                    {% if company.company_address %}<div><dt>Alamat</dt><dd>{{ company.company_address }}</dd></div>{% endif %}
+                    {% if site.whatsapp_url %}<div><dt>Telepon / WhatsApp</dt><dd><a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">{{ company.company_phone }}</a></dd></div>{% endif %}
+                    {% if company.company_email %}<div><dt>Email</dt><dd><a href="mailto:{{ company.company_email }}">{{ company.company_email }}</a></dd></div>{% endif %}
+                </dl>
+            </div>
+            <div class="pub-footer">
+                <span>&copy; {{ site.year }} {{ company_name }}</span>
+                <span><a href="{{ url_for('auth.login') }}">Masuk</a>{% if site.portal_enabled %} &middot; <a href="{{ url_for('portal.register') }}">Daftar pelanggan</a>{% endif %}</span>
+            </div>
         </div>
-        <a class="public-primary-action" href="{{ data.primary_url }}">
-            <i class="bi bi-box-arrow-in-right"></i>
-                    <span>Masuk</span>
-        </a>
-    </section>
-</section>
+    </footer>
+</div>
 {% endblock %}

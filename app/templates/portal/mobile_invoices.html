@@ -77,7 +77,7 @@
                 <div class="portal-finance-proof-strip">
                     <div>
                         <span>Bukti pembayaran</span>
-                        <strong>{{ invoice.proof_summary.latest_status }}</strong>
+                        <strong>{{ invoice.proof_summary.latest_status|status_label }}</strong>
                         <small>
                             {{ invoice.proof_summary.count }} file
                             {% if invoice.proof_summary.latest_uploaded_at %}
@@ -88,7 +88,7 @@
                     <div>
                         <span>Pembayaran</span>
                         <strong>{{ invoice.payment_count }}</strong>
-                        <small>Total payment {{ invoice.payment_total|rupiah }}</small>
+                        <small>Total pembayaran {{ invoice.payment_total|rupiah }}</small>
                     </div>
                 </div>
                 <div class="portal-ledger-actions">

@@ -13,8 +13,8 @@
         {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
             {"label": "Drilldown Beban", "url": url_for('accounting.expense_drilldown'), "icon": "bi-graph-down-arrow"},
             {"label": "Cetak / Save PDF", "url": url_for('accounting.print_journals'), "icon": "bi-printer"},
-            {"label": "Download CSV Jurnal", "url": url_for('accounting.export_journals_csv'), "icon": "bi-download"},
-            {"label": "Download Detail CSV", "url": url_for('accounting.export_journal_details_csv'), "icon": "bi-table"},
+            {"label": "Unduh CSV Jurnal", "url": url_for('accounting.export_journals_csv'), "icon": "bi-download"},
+            {"label": "Unduh Detail CSV", "url": url_for('accounting.export_journal_details_csv'), "icon": "bi-table"},
         ]},
     ]
 ) }}
@@ -87,7 +87,7 @@
                         <td>{{ journal.journal_date.strftime('%d-%m-%Y') if journal.journal_date else '-' }}</td>
                         <td>
                             {% if journal.reference_type and journal.reference_id %}
-                                {{ journal.reference_type }} #{{ journal.reference_id }}
+                                {{ journal.reference_type|status_label }} #{{ journal.reference_id }}
                             {% else %}
                                 -
                             {% endif %}

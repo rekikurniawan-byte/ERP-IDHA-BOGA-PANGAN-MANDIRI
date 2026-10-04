@@ -24,7 +24,7 @@
 
     <div class="col-md-6"><label class="form-label">Aset Existing Placeholder</label><select name="asset_id" class="form-select app-input"><option value="">Tidak pakai / buat baru</option>{% for asset in existing_assets %}<option value="{{ asset.id }}">{{ asset.asset_code }} - {{ asset.asset_name }} · {{ asset.purchase_value|rupiah }}</option>{% endfor %}</select><small class="text-muted">Existing hanya untuk aset ACTIVE bernilai 0.</small></div>
     <div class="col-md-4"><label class="form-label">Nama Aset Baru</label><input type="text" name="asset_name" class="form-control app-input" placeholder="Contoh: Mobil Operasional / Freezer Besar"></div>
-    <div class="col-md-2"><label class="form-label">Kategori</label><select name="asset_category" class="form-select app-input">{% for category in asset_categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">Kategori</label><select name="asset_category" class="form-select app-input">{% for category in asset_categories %}<option value="{{ category }}">{{ category|status_label }}</option>{% endfor %}</select></div>
 
     <div class="col-md-3"><label class="form-label">Nilai Aset / Pokok</label><input type="text" name="principal_amount" class="form-control app-input" placeholder="Contoh: 150000000" required></div>
     <div class="col-md-3"><label class="form-label">Total Bunga</label><input type="text" name="total_interest_amount" class="form-control app-input" value="0"></div>

@@ -98,7 +98,7 @@
                 <i class="bi bi-funnel"></i> Terapkan
             </button>
             <a href="{{ url_for('dashboard.revenue_explorer') }}" class="btn btn-sm app-btn-secondary dashboard-filter-reset">
-                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                <i class="bi bi-arrow-counterclockwise"></i> Atur Ulang
             </a>
         </div>
     </form>
@@ -137,23 +137,18 @@
                     <span class="status-badge status-info">{{ explorer.totals.selected_total|rupiah }}</span>
                 </div>
 
-                <div class="revenue-trend-chart" role="img" aria-label="Tren omzet dan kas masuk">
-                    {% for row in explorer.trend_rows %}
-                        <div class="revenue-trend-group {% if row.has_value %}has-chart-value{% endif %}">
-                            <div class="revenue-trend-bars">
-                                <span class="revenue-bar revenue-bar-selected" style="--bar-height: {{ row.selected_percent }}%;" title="{{ row.label }} {{ explorer.filters.source_label }}: {{ row.selected_total|rupiah }}"></span>
-                                <span class="revenue-bar revenue-bar-cash" style="--bar-height: {{ row.cash_in_percent }}%;" title="{{ row.label }} kas masuk: {{ row.cash_in|rupiah }}"></span>
-                                <span class="revenue-bar revenue-bar-invoice" style="--bar-height: {{ row.invoice_percent }}%;" title="{{ row.label }} invoice: {{ row.invoice_accrual|rupiah }}"></span>
-                            </div>
-                            <span class="revenue-trend-label">{{ row.label }}</span>
-                            <small>{{ row.selected_total|rupiah }}</small>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="dashboard-chart-legend dashboard-chart-legend-pro">
-                    <span><i class="dashboard-legend-dot revenue-legend-selected"></i>{{ explorer.filters.source_label }}</span>
-                    <span><i class="dashboard-legend-dot revenue-legend-cash"></i>Kas Masuk</span>
-                    <span><i class="dashboard-legend-dot revenue-legend-invoice"></i>Invoice Aktif</span>
+                {% set rows = explorer.trend_rows %}
+                {% set trend_spec = {
+                    "kind": "area", "format": "rupiah", "height": 300,
+                    "categories": rows|map(attribute="label")|list,
+                    "series": [
+                        {"name": explorer.filters.source_label, "color": "brand-500", "data": rows|map(attribute="selected_total")|map("float")|list},
+                        {"name": "Kas Masuk", "type": "line", "color": "chart-green", "data": rows|map(attribute="cash_in")|map("float")|list},
+                        {"name": "Invoice Aktif", "type": "line", "color": "chart-blue", "data": rows|map(attribute="invoice_accrual")|map("float")|list},
+                    ],
+                } %}
+                <div class="app-chart" data-apex-chart style="--chart-height: 300px;" role="img" aria-label="Tren {{ explorer.filters.source_label }}, kas masuk, dan invoice aktif {{ explorer.period.label }}">
+                    <script type="application/json">{{ trend_spec|tojson }}</script>
                 </div>
             </article>
 
@@ -165,11 +160,20 @@
                     </div>
                     <span class="status-badge status-success">{{ explorer.mix_total|rupiah }}</span>
                 </div>
-                <div class="revenue-mix-donut" style="--mix-a: {{ explorer.mix_segments[0].percent|default(0) }}%; --mix-b: {{ (explorer.mix_segments[0].percent|default(0) + explorer.mix_segments[1].percent|default(0)) }}%;" aria-label="Komposisi sumber omzet">
-                    <span>
-                        <strong>{{ explorer.mix_segments[0].percent_label }}</strong>
-                        <small>Invoice</small>
-                    </span>
+                {% set mix_colors = ["chart-blue", "chart-green", "chart-amber"] %}
+                {% set mix_series = [] %}
+                {% set mix_links = [] %}
+                {% for segment in explorer.mix_segments %}
+                    {% do mix_series.append({"name": segment.label, "value": segment.amount|float, "color": mix_colors[loop.index0 % 3]}) %}
+                    {% do mix_links.append(url_for(segment.endpoint)) %}
+                {% endfor %}
+                {% set mix_spec = {
+                    "kind": "donut", "format": "rupiah", "height": 230,
+                    "center_label": "Total omzet", "center_value": "Rp " ~ explorer.mix_total|rupiah_short,
+                    "series": mix_series, "point_links": mix_links,
+                } %}
+                <div class="app-chart revenue-mix-apex" data-apex-chart style="--chart-height: 230px;" role="img" aria-label="Komposisi sumber omzet: {% for segment in explorer.mix_segments %}{{ segment.label }} {{ segment.percent_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                    <script type="application/json">{{ mix_spec|tojson }}</script>
                 </div>
                 <div class="revenue-mix-list">
                     {% for segment in explorer.mix_segments %}

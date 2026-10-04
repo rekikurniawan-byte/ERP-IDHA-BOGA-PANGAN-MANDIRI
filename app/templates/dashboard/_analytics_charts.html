@@ -49,7 +49,7 @@
                     <p>{{ revenue_chart.subtitle }}</p>
                 </div>
                 <div class="dropdown app-action-dropdown dashboard-chart-menu">
-                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi chart revenue spending">
+                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi grafik pendapatan dan pengeluaran">
                         <i class="bi bi-three-dots"></i>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end app-action-menu">
@@ -59,7 +59,7 @@
                 </div>
             </div>
 
-            <div class="dashboard-chart-insight-strip" aria-label="Ringkasan revenue spending">
+            <div class="dashboard-chart-insight-strip" aria-label="Ringkasan pendapatan dan pengeluaran">
                 <div class="dashboard-chart-insight dashboard-insight-revenue">
                     <span>Total Pendapatan</span>
                     <strong>{{ revenue_chart.totals.revenue|rupiah }}</strong>
@@ -84,33 +84,19 @@
                     <p>{{ revenue_chart.empty_message }}</p>
                 </div>
             {% else %}
-                <div class="dashboard-bar-chart dashboard-bar-chart-pro" role="img" aria-label="Pendapatan dan pengeluaran per bulan tahun {{ analytics.year }}">
-                    <div class="dashboard-chart-axis" aria-hidden="true">
-                        {% for axis_value in revenue_chart.axis_steps %}
-                            <span>{{ axis_value|rupiah }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="dashboard-bar-plot dashboard-bar-plot-pro" aria-label="Plot bulanan revenue dan spending">
-                        {% for month in revenue_chart.months %}
-                            <div class="dashboard-bar-group dashboard-bar-group-pro {% if month.has_value %}has-chart-value{% endif %}">
-                                <div class="dashboard-bar-pair dashboard-bar-pair-pro">
-                                    <a href="{{ url_for(revenue_chart.drilldown.revenue_endpoint) }}" class="dashboard-bar dashboard-bar-revenue" style="--bar-height: {{ month.revenue_percent }}%;" title="{{ month.label }} pendapatan: {{ month.revenue|rupiah }}" aria-label="{{ month.label }} pendapatan {{ month.revenue|rupiah }}">
-                                        <span class="visually-hidden">{{ month.label }} pendapatan {{ month.revenue|rupiah }}</span>
-                                    </a>
-                                    <a href="{{ url_for(revenue_chart.drilldown.spending_endpoint) }}" class="dashboard-bar dashboard-bar-spending" style="--bar-height: {{ month.spending_percent }}%;" title="{{ month.label }} pengeluaran: {{ month.spending|rupiah }}" aria-label="{{ month.label }} pengeluaran {{ month.spending|rupiah }}">
-                                        <span class="visually-hidden">{{ month.label }} pengeluaran {{ month.spending|rupiah }}</span>
-                                    </a>
-                                </div>
-                                <span class="dashboard-bar-label">{{ month.label }}</span>
-                                <span class="dashboard-bar-net dashboard-bar-net-{{ month.net_tone }}" title="Selisih {{ month.net|rupiah }}">{{ month.net|rupiah_short }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="dashboard-chart-legend dashboard-chart-legend-pro" aria-label="Legenda pendapatan dan pengeluaran">
-                        <span><i class="dashboard-legend-dot dashboard-legend-revenue"></i> Pendapatan</span>
-                        <span><i class="dashboard-legend-dot dashboard-legend-spending"></i> Pengeluaran</span>
-                        <span><i class="dashboard-legend-line"></i> Selisih per bulan</span>
-                    </div>
+                {% set months = revenue_chart.months %}
+                {% set revenue_spec = {
+                    "kind": "bar", "format": "rupiah", "height": 320,
+                    "categories": months|map(attribute="label")|list,
+                    "series": [
+                        {"name": "Pendapatan", "color": "brand-500", "data": months|map(attribute="revenue")|map("float")|list},
+                        {"name": "Pengeluaran", "color": "gray-300", "data": months|map(attribute="spending")|map("float")|list},
+                        {"name": "Selisih", "type": "line", "color": "gray-700", "data": months|map(attribute="net")|map("float")|list},
+                    ],
+                    "links": [url_for(revenue_chart.drilldown.revenue_endpoint), url_for(revenue_chart.drilldown.spending_endpoint)],
+                } %}
+                <div class="app-chart" data-apex-chart style="--chart-height: 320px;" role="img" aria-label="Pendapatan dan pengeluaran per bulan tahun {{ analytics.year }}. Klik batang untuk rincian.">
+                    <script type="application/json">{{ revenue_spec|tojson }}</script>
                 </div>
                 <div class="dashboard-chart-footnote">
                     <span><i class="bi bi-trophy"></i> Pendapatan tertinggi: <strong>{{ revenue_chart.best_revenue_month.label }}</strong></span>
@@ -126,7 +112,7 @@
                     <p>{{ efficiency_chart.period_label }} · {{ efficiency_chart.subtitle }}</p>
                 </div>
                 <div class="dropdown app-action-dropdown dashboard-chart-menu">
-                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi chart operational efficiency">
+                    <button class="btn btn-sm app-btn-ghost btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi grafik ketepatan pengiriman">
                         <i class="bi bi-three-dots"></i>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end app-action-menu">
@@ -144,16 +130,23 @@
                     <small>{{ efficiency_chart.data_contract.accuracy_note }}</small>
                 </div>
             {% else %}
-                {% set on_time = efficiency_chart.donut_style.on_time_percent|default(0, true) %}
-                {% set late_stop = efficiency_chart.donut_style.late_stop_percent|default(0, true) %}
-                <div class="dashboard-donut-hero" aria-label="Ringkasan operational efficiency {{ efficiency_chart.period_label }}">
-                    <a href="{{ url_for('delivery.history', date_from=efficiency_chart.period.start_date, date_to=efficiency_chart.period.end_date) }}" class="dashboard-donut-chart dashboard-donut-chart-pro" style="--donut-on-time: {{ on_time|round(2) }}%; --donut-late-stop: {{ late_stop|round(2) }}%;" aria-label="Operational efficiency: on time {{ efficiency_chart.ok_rate|round(1) }} persen, late {{ efficiency_chart.late_rate|round(1) }} persen, issue {{ efficiency_chart.issue_rate|round(1) }} persen">
-                        <span class="dashboard-donut-hole dashboard-donut-hole-pro">
-                            <strong>{{ efficiency_chart.ok_rate|round(1) }}%</strong>
-                            <small>Tepat waktu</small>
-                            <em>{{ efficiency_chart.total }} baris</em>
-                        </span>
-                    </a>
+                {% set tone_colors = {"success": "chart-green", "warning": "chart-amber", "danger": "danger-solid"} %}
+                {% set efficiency_series = [] %}
+                {% set efficiency_links = [] %}
+                {% for segment in efficiency_chart.segments %}
+                    {% do efficiency_series.append({"name": segment.label, "value": segment.count, "color": tone_colors.get(segment.tone, "gray-400")}) %}
+                    {% do efficiency_links.append(url_for(segment.endpoint, date_from=efficiency_chart.period.start_date, date_to=efficiency_chart.period.end_date)) %}
+                {% endfor %}
+                {% set efficiency_spec = {
+                    "kind": "donut", "format": "count", "height": 210, "center_format": "percent",
+                    "center_label": "Tepat waktu",
+                    "center_value": ("%.1f"|format(efficiency_chart.ok_rate|float))|replace(".", ",") ~ "%",
+                    "series": efficiency_series, "point_links": efficiency_links,
+                } %}
+                <div class="dashboard-donut-hero" aria-label="Ringkasan ketepatan pengiriman {{ efficiency_chart.period_label }}">
+                    <div class="app-chart dashboard-donut-apex" data-apex-chart style="--chart-height: 210px;" role="img" aria-label="Tepat waktu {{ efficiency_chart.ok_rate|round(1) }} persen, terlambat {{ efficiency_chart.late_rate|round(1) }} persen, masalah {{ efficiency_chart.issue_rate|round(1) }} persen dari {{ efficiency_chart.total }} pengiriman">
+                        <script type="application/json">{{ efficiency_spec|tojson }}</script>
+                    </div>
                     <div class="dashboard-donut-status-card">
                         <span>Status dominan</span>
                         <strong>{{ efficiency_chart.dominant_segment.label }}</strong>
@@ -161,7 +154,7 @@
                     </div>
                 </div>
 
-                <div class="dashboard-donut-summary-strip" aria-label="Ringkasan porsi delivery">
+                <div class="dashboard-donut-summary-strip" aria-label="Ringkasan porsi pengiriman">
                     <div>
                         <span>Rencana</span>
                         <strong>{{ efficiency_chart.totals.planned_qty }}</strong>

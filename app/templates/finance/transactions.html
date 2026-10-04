@@ -64,7 +64,7 @@
                         <option value="TRANSPORT" {{ 'selected' if selected_tx == 'transport' else '' }}>Transport & BBM</option>
                         <option value="OPERATIONAL_EXPENSE" {{ 'selected' if selected_tx == 'operational_expense' else '' }}>Biaya Operasional Catering</option>
                     </select>
-                    <div class="form-text">Invoice, payment supplier, aset, dan closing tetap punya workflow khusus karena dokumennya berbeda.</div>
+                    <div class="form-text">Invoice, pembayaran supplier, aset, dan tutup buku tetap punya alur kerja khusus karena dokumennya berbeda.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Tanggal</label>
@@ -139,14 +139,14 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Kendaraan / Armada</label>
-                    <input type="text" name="vehicle_label" class="form-control" placeholder="Opsional: mobil box / plat / motor driver">
+                    <input type="text" name="vehicle_label" class="form-control" placeholder="Opsional: mobil box / plat / motor pengantar">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Vendor / SPBU / Transport</label>
                     <input type="text" name="transport_vendor_name" class="form-control" placeholder="Opsional">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Driver</label>
+                    <label class="form-label">Pengantar</label>
                     <select name="driver_id" class="form-select">
                         <option value="">Opsional</option>
                         {% for driver in drivers %}<option value="{{ driver.id }}">{{ driver.name }}</option>{% endfor %}

@@ -12,7 +12,7 @@
         {"label": "Aksi lainnya", "icon": "bi-three-dots", "dropdown": [
             {"label": "Hutang Supplier", "url": url_for('finance.supplier_bills'), "icon": "bi-wallet"},
             {"label": "AP Aging", "url": url_for('finance.accounts_payable_aging'), "icon": "bi-hourglass-split"},
-            {"label": "Download CSV", "url": url_for('finance.export_supplier_payable_card_csv', supplier_key=selected_supplier_key or '', start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else ''), "icon": "bi-download"},
+            {"label": "Unduh CSV", "url": url_for('finance.export_supplier_payable_card_csv', supplier_key=selected_supplier_key or '', start_date=start_date.isoformat() if start_date else '', end_date=end_date.isoformat() if end_date else ''), "icon": "bi-download"},
         ]},
     ]
 ) }}
@@ -59,7 +59,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Filter Kartu Hutang</h5>
-            <p>Pilih supplier tetap atau toko manual yang pernah punya supplier bill.</p>
+            <p>Pilih supplier tetap atau toko manual yang pernah punya tagihan supplier.</p>
         </div>
     </div>
 
@@ -74,7 +74,7 @@
                 {% endfor %}
             </select>
             {% if not report.groups %}
-                <div class="form-text text-muted small">Belum ada supplier bill. Kartu hutang akan tampil setelah ada pembelian CREDIT.</div>
+                <div class="form-text text-muted small">Belum ada tagihan supplier. Kartu hutang akan tampil setelah ada pembelian kredit.</div>
             {% endif %}
         </div>
 
@@ -93,7 +93,7 @@
                 <i class="bi bi-search"></i>
                 Terapkan
             </button>
-            <a href="{{ url_for('finance.supplier_payable_card') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('finance.supplier_payable_card') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -146,7 +146,7 @@
                         <td colspan="7">
                             <div class="empty-state">
                                 <i class="bi bi-journal-text"></i>
-                                <p>Belum ada kartu hutang supplier karena belum ada supplier bill.</p>
+                                <p>Belum ada kartu hutang supplier karena belum ada tagihan supplier.</p>
                             </div>
                         </td>
                     </tr>

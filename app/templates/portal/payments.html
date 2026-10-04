@@ -38,7 +38,7 @@
                                 <tr>
                                     <td class="fw-semibold">{{ payment.payment_number }}</td>
                                     <td>{{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else '-' }}</td>
-                                    <td>{{ payment.payment_method }}</td>
+                                    <td>{{ payment.payment_method|status_label }}</td>
                                     <td>{{ payment.invoice_number or '-' }}</td>
                                     <td>{{ payment.reference_number or '-' }}</td>
                                     <td class="text-end">{{ payment.amount|rupiah }}</td>

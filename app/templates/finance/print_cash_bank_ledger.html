@@ -37,10 +37,10 @@
         </div>
 
         <div class="print-meta-grid">
-            <div class="app-stat-card print-box"><span>Tipe Transaksi</span><strong>{{ filters.transaction_type }}</strong></div>
-            <div class="app-stat-card print-box"><span>Akun</span><strong>{{ filters.account_type }}</strong></div>
-            <div class="app-stat-card print-box"><span>Sumber</span><strong>{{ filters.reference_type }}</strong></div>
-            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ filters.reconciliation_status }}</strong></div>
+            <div class="app-stat-card print-box"><span>Tipe Transaksi</span><strong>{{ filters.transaction_type|status_label }}</strong></div>
+            <div class="app-stat-card print-box"><span>Akun</span><strong>{{ filters.account_type|status_label('account') }}</strong></div>
+            <div class="app-stat-card print-box"><span>Sumber</span><strong>{{ filters.reference_type|status_label }}</strong></div>
+            <div class="app-stat-card print-box"><span>Rekonsiliasi</span><strong>{{ filters.reconciliation_status|status_label }}</strong></div>
             <div class="app-stat-card print-box"><span>Rekening</span><strong>{{ filters.bank_account }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Awal</span><strong>{{ filters.start_date.strftime('%d-%m-%Y') if filters.start_date else 'Semua' }}</strong></div>
             <div class="app-stat-card print-box"><span>Tanggal Akhir</span><strong>{{ filters.end_date.strftime('%d-%m-%Y') if filters.end_date else 'Semua' }}</strong></div>
@@ -109,7 +109,7 @@
                 {% set trx = row.transaction %}
                 <tr>
                     <td>{{ trx.transaction_date.strftime('%d-%m-%Y') if trx.transaction_date else '-' }}</td>
-                    <td>{{ trx.account_type or '-' }} / {{ trx.transaction_type or '-' }}</td>
+                    <td>{{ trx.account_type|status_label }} / {{ trx.transaction_type|status_label }}</td>
                     <td>{{ row.account_display }}</td>
                     <td>{{ trx.reference_type or '-' }}<br><strong>{{ row.source_label }}</strong></td>
                     <td>{{ row.source_detail }}</td>
@@ -127,7 +127,7 @@
         </table>
 </div>
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat Mode pantau. Angka mengikuti filter aktif saat halaman print dibuka.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari sistem dan bersifat Mode pantau. Angka mengikuti filter aktif saat halaman cetak dibuka.</p>
     </div>
 </div>
 </div>

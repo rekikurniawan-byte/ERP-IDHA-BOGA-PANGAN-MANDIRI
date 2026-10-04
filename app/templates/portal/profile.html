@@ -17,7 +17,7 @@
             <div class="row g-3">
                 <div class="col-12 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Peran</div>
-                    <div class="fw-semibold">{{ data.profile.role }}</div>
+                    <div class="fw-semibold">{{ data.profile.role|role_label }}</div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Cabang</div>
@@ -90,8 +90,8 @@
                     <tbody>
                         {% for row in data.profile.mapping_rows %}
                             <tr>
-                                <td>{{ row.principal_type }}</td>
-                                <td>{{ row.access_level }}</td>
+                                <td>{{ row.principal_type|status_label }}</td>
+                                <td>{{ row.access_level|status_label }}</td>
                                 <td>{{ row.client }}</td>
                                 <td>{{ row.mandor }}</td>
                                 <td>{{ row.client_pic }}</td>

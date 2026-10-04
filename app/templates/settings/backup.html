@@ -18,18 +18,18 @@
 
 <div class="app-card soft-info-card mb-4">
     <strong>Catatan penting:</strong>
-    backup DB-only hanya menyimpan database. Setelah fitur bukti digital dipakai, gunakan <strong>Full Backup DB + Uploads</strong> agar file nota, bukti transfer, dan bukti delivery ikut aman. Mulai versi backup verified, full backup wajib PASS pre-backup health check dan membawa <code>manifest.json</code>, <code>backup_info.json</code>, <code>checksums.sha256</code>, <code>validation_result.json</code>, <code>alembic_version.txt</code>, <code>app_version.txt</code>, dan <code>restore_readme.txt</code>, plus status post-backup verification dan restore preview dry-run di <code>validation_result.json</code>. Restore aktif tetap manual/terkendali agar database aktif tidak tertimpa tanpa kontrol owner.
+    cadangan DB-only hanya menyimpan database. Setelah fitur bukti digital dipakai, gunakan <strong>Cadangan Penuh (Database + Unggahan)</strong> agar file nota, bukti transfer, dan bukti pengiriman ikut aman. Mulai versi cadangan terverifikasi, cadangan penuh wajib LOLOS cek kesehatan sebelum cadangan dan membawa <code>manifest.json</code>, <code>backup_info.json</code>, <code>checksums.sha256</code>, <code>validation_result.json</code>, <code>alembic_version.txt</code>, <code>app_version.txt</code>, dan <code>restore_readme.txt</code>, plus status post-backup verification dan pratinjau pemulihan (uji coba) di <code>validation_result.json</code>. Restore aktif tetap manual/terkendali agar database aktif tidak tertimpa tanpa kontrol owner.
 </div>
 
 {% set precheck = status.get("pre_backup_health", {}) %}
 <div class="app-card mb-4">
     <div class="section-title">
         <div>
-            <h3>Pre-backup Health Check</h3>
-            <p>Gate wajib sebelum backup dibuat. Kalau ada error, tombol backup tetap bisa tampil, tetapi service akan menolak membuat backup baru sampai masalah diperbaiki.</p>
+            <h3>Cek Kesehatan Sebelum Cadangan</h3>
+            <p>Pemeriksaan wajib sebelum cadangan dibuat. Kalau ada error, tombol cadangan tetap bisa tampil, tetapi sistem akan menolak membuat cadangan baru sampai masalah diperbaiki.</p>
         </div>
         {% if precheck.get("can_create_backup") %}
-            <span class="status-badge success">PRE-CHECK PASS</span>
+            <span class="status-badge success">CEK AWAL LOLOS</span>
         {% else %}
             <span class="status-badge danger">PRE-CHECK FAIL</span>
         {% endif %}
@@ -38,7 +38,7 @@
     <div class="row g-3 mb-3">
         <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ precheck.get("errors", [])|length }}</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ precheck.get("warnings", [])|length }}</strong></div></div>
-        <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ precheck.get("successes", [])|length }}</strong></div></div>
+        <div class="col-md-3"><div class="detail-row"><span>LOLOS</span><strong>{{ precheck.get("successes", [])|length }}</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>Migration</span><strong>{{ precheck.get("summary", {}).get("alembic_version") or '-' }}</strong></div></div>
     </div>
 
@@ -48,7 +48,7 @@
                 <div class="detail-row h-100">
                     <span>{{ check.get("label") }}</span>
                     {% if check.get("status") == "PASS" %}
-                        <strong class="text-success">PASS</strong>
+                        <strong class="text-success">LOLOS</strong>
                     {% elif check.get("status") == "WARNING" %}
                         <strong class="text-warning">WARNING</strong>
                     {% else %}
@@ -86,7 +86,7 @@
     <div class="section-title">
         <div>
             <h3>Backup Baseline, Package Policy & Pre-check</h3>
-            <p>Audit Mode pantau untuk memastikan folder aman dan pre-backup health check PASS sebelum backup baru dibuat.</p>
+            <p>Audit Mode pantau untuk memastikan folder aman dan cek kesehatan sebelum cadangan LOLOS sebelum cadangan baru dibuat.</p>
         </div>
         {% if baseline.get("baseline_pass") %}
             <span class="status-badge success">Kebijakan Aman</span>
@@ -100,10 +100,10 @@
             <div class="detail-row"><span>Backup aktif</span><code class="small text-break">{{ folder_policy.get("backup_dir", "-") }}</code></div>
         </div>
         <div class="col-lg-4">
-            <div class="detail-row"><span>Upload aktif</span><code class="small text-break">{{ folder_policy.get("upload_dir", "-") }}</code></div>
+            <div class="detail-row"><span>Unggahan aktif</span><code class="small text-break">{{ folder_policy.get("upload_dir", "-") }}</code></div>
         </div>
         <div class="col-lg-4">
-            <div class="detail-row"><span>Legacy root backup</span><strong>{{ baseline.get("legacy_backup_count", 0) }} file</strong></div>
+            <div class="detail-row"><span>Legacy root cadangan</span><strong>{{ baseline.get("legacy_backup_count", 0) }} file</strong></div>
         </div>
     </div>
 
@@ -175,13 +175,13 @@
             <div class="section-title">
                 <div>
                     <h3>Status Lampiran Digital</h3>
-                    <p>Folder file fisik untuk bukti transfer, nota, delivery, dan lampiran transaksi.</p>
+                    <p>Folder file fisik untuk bukti transfer, nota, pengiriman, dan lampiran transaksi.</p>
                 </div>
             </div>
 
             <div class="detail-list">
                 <div class="detail-row">
-                    <span>Lokasi Upload</span>
+                    <span>Lokasi Unggah</span>
                     <strong>{{ status.upload_dir }}</strong>
                 </div>
                 <div class="detail-row">
@@ -212,12 +212,12 @@
                 {{ sensitive_guard_fields("Buat full backup DB + uploads", "Contoh: backup sebelum patch besar / restore drill mingguan", compact=True) }}
                 <button type="submit" class="btn app-btn-primary">
                     <i class="bi bi-archive"></i>
-                    Buat Full Backup DB + Uploads
+                    Buat Cadangan Penuh (Database + Unggahan)
                 </button>
             </form>
 
             <div class="text-muted small mt-3">
-                Disarankan untuk backup utama production karena metadata lampiran di database dan file fisiknya harus selalu sepaket. Status B3 berarti pre-backup health check PASS + metadata contract locked + post-backup verification PASS + restore preview dry-run PASS. Backup baru boleh diberi label VERIFIED, tetapi active restore tetap manual dan wajib SOP.
+                Disarankan untuk cadangan utama produksi karena metadata lampiran di database dan file fisiknya harus selalu sepaket. Status B3 berarti cek kesehatan sebelum cadangan LOLOS + metadata contract locked + post-backup verification LOLOS + pratinjau pemulihan (uji coba) LOLOS. Backup baru boleh diberi label VERIFIED, tetapi active restore tetap manual dan wajib SOP.
             </div>
         </div>
     </div>
@@ -251,7 +251,7 @@
     <div class="section-title">
         <div>
             <h3>Validasi Restore / Lihat Data Only</h3>
-            <p>Upload file backup untuk dicek tanpa memulihkan dan tanpa menimpa database aktif.</p>
+            <p>Unggah file cadangan untuk dicek tanpa memulihkan dan tanpa menimpa database aktif.</p>
         </div>
     </div>
 
@@ -260,10 +260,10 @@
         {{ sensitive_guard_fields("Validasi restore preview backup", "Contoh: cek file backup sebelum restore drill manual") }}
         <div class="row g-3 align-items-end">
         <div class="col-lg-8">
-            <label class="form-label">File backup</label>
+            <label class="form-label">File cadangan</label>
             <input type="file" name="restore_backup_file" class="form-control" accept=".zip,.db" required>
             <div class="form-text">
-                Mendukung full backup <code>.zip</code> dan DB-only <code>.db</code>. Proses ini hanya validasi; tidak restore data.
+                Mendukung cadangan penuh <code>.zip</code> dan DB-only <code>.db</code>. Proses ini hanya validasi; tidak memulihkan data.
             </div>
         </div>
         <div class="col-lg-4 d-grid">
@@ -308,7 +308,7 @@
             </div>
             <div class="col-md-4">
                 <div class="detail-row">
-                    <span>PASS</span>
+                    <span>LOLOS</span>
                     <strong>{{ restore_validation["successes"]|length }}</strong>
                 </div>
             </div>
@@ -338,7 +338,7 @@
 
         {% if restore_validation["successes"] %}
             <div class="alert alert-success">
-                <strong>PASS:</strong>
+                <strong>LOLOS:</strong>
                 <ul class="mb-0">
                     {% for message in restore_validation["successes"] %}
                         <li>{{ message }}</li>
@@ -356,7 +356,7 @@
                         <p class="mb-0">Cek ulang ZIP final: testzip, required members, checksum coverage, DB integrity/FK, upload count/size, dan metadata consistency.</p>
                     </div>
                     {% if postcheck.get("status") == "PASS" %}
-                        <span class="status-badge success">POST-CHECK PASS</span>
+                        <span class="status-badge success">CEK AKHIR LOLOS</span>
                     {% else %}
                         <span class="status-badge danger">POST-CHECK FAIL</span>
                     {% endif %}
@@ -364,7 +364,7 @@
                 <div class="row g-3">
                     <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ postcheck.get("summary", {}).get("error_count", postcheck.get("errors", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ postcheck.get("summary", {}).get("warning_count", postcheck.get("warnings", [])|length) }}</strong></div></div>
-                    <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ postcheck.get("summary", {}).get("success_count", postcheck.get("successes", [])|length) }}</strong></div></div>
+                    <div class="col-md-3"><div class="detail-row"><span>LOLOS</span><strong>{{ postcheck.get("summary", {}).get("success_count", postcheck.get("successes", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Restore dry-run</span><strong>{{ postcheck.get("restore_dry_run_status", "DICEK DI PANEL B3") }}</strong></div></div>
                 </div>
             </div>
@@ -379,7 +379,7 @@
                         <p class="mb-0">ZIP diekstrak ke folder preview sementara, DB hasil restore dicek integrity/FK/journal, uploads dicocokkan checksum, dan database aktif tidak disentuh.</p>
                     </div>
                     {% if dryrun.get("status") == "PASS" %}
-                        <span class="status-badge success">DRY-RUN PASS</span>
+                        <span class="status-badge success">UJI COBA LOLOS</span>
                     {% else %}
                         <span class="status-badge danger">DRY-RUN FAIL</span>
                     {% endif %}
@@ -387,7 +387,7 @@
                 <div class="row g-3">
                     <div class="col-md-3"><div class="detail-row"><span>Error</span><strong>{{ dryrun.get("summary", {}).get("error_count", dryrun.get("errors", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Peringatan</span><strong>{{ dryrun.get("summary", {}).get("warning_count", dryrun.get("warnings", [])|length) }}</strong></div></div>
-                    <div class="col-md-3"><div class="detail-row"><span>PASS</span><strong>{{ dryrun.get("summary", {}).get("success_count", dryrun.get("successes", [])|length) }}</strong></div></div>
+                    <div class="col-md-3"><div class="detail-row"><span>LOLOS</span><strong>{{ dryrun.get("summary", {}).get("success_count", dryrun.get("successes", [])|length) }}</strong></div></div>
                     <div class="col-md-3"><div class="detail-row"><span>Verified</span><strong>{{ 'YA' if dryrun.get("is_verified_backup") else 'BELUM' }}</strong></div></div>
                 </div>
                 <div class="text-muted small mt-3">
@@ -457,7 +457,7 @@
     <div class="section-title">
         <div>
             <h3>Restore Manual-Assisted SOP</h3>
-            <p>Panduan pulihkan backup secara aman. Bagian ini hanya instruksi; tidak ada tombol overwrite database otomatis.</p>
+            <p>Panduan pulihkan cadangan secara aman. Bagian ini hanya instruksi; tidak ada tombol overwrite database otomatis.</p>
             <div class="d-flex flex-wrap gap-2 mt-2 sop-no-print">
                 <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary btn-sm">
                     <i class="bi bi-database-check"></i>
@@ -474,7 +474,7 @@
 
     {% if restore_sop %}
         <div class="alert alert-warning">
-            <strong>Safety:</strong> {{ restore_sop["safety_status"] }} Restore hanya boleh dilakukan setelah backup PASS validasi dan server Flask dihentikan.
+            <strong>Safety:</strong> {{ restore_sop["safety_status"] }} Pemulihan hanya boleh dilakukan setelah cadangan LOLOS validasi dan server Flask dihentikan.
         </div>
 
         <div class="row g-3 mb-3">
@@ -485,7 +485,7 @@
                 <div class="detail-row"><span>Folder lampiran aktif</span><code class="small text-break">{{ restore_sop["active_upload_dir"] }}</code></div>
             </div>
             <div class="col-lg-4">
-                <div class="detail-row"><span>Folder backup</span><code class="small text-break">{{ restore_sop["backup_dir"] }}</code></div>
+                <div class="detail-row"><span>Folder cadangan</span><code class="small text-break">{{ restore_sop["backup_dir"] }}</code></div>
             </div>
         </div>
 
@@ -530,15 +530,15 @@
             </ul>
         </div>
     {% else %}
-        <div class="alert alert-danger mb-0">SOP restore gagal dimuat. Jangan lakukan restore sampai status backup bisa dibaca normal.</div>
+        <div class="alert alert-danger mb-0">SOP pemulihan gagal dimuat. Jangan lakukan pemulihan sampai status cadangan bisa dibaca normal.</div>
     {% endif %}
 </div>
 
 <div class="app-card mb-4">
     <div class="section-title">
         <div>
-            <h3>Daftar Full Backup DB + Uploads</h3>
-            <p>Download paket ZIP full backup dan checksum ZIP.</p>
+            <h3>Daftar Cadangan Penuh (Database + Unggahan)</h3>
+            <p>Unduh paket ZIP cadangan penuh dan checksum ZIP.</p>
         </div>
     </div>
 
@@ -586,11 +586,11 @@
                             {% if backup.is_verified_backup %}
                                 <span class="status-badge success">Terverifikasi</span>
                             {% elif backup.post_backup_verification_status == "PASS" %}
-                                <span class="status-badge warning">POST-CHECK PASS</span>
+                                <span class="status-badge warning">CEK AKHIR LOLOS</span>
                             {% elif backup.package_status == "PACKAGE_HARDENED_AND_POST_BACKUP_VERIFIED" %}
                                 <span class="status-badge success">B3 VERIFIED</span>
                             {% elif backup.package_status == "PACKAGE_HARDENED_PASS" %}
-                                <span class="status-badge warning">PENDING POST-CHECK</span>
+                                <span class="status-badge warning">MENUNGGU CEK AKHIR</span>
                             {% elif backup.verification_status %}
                                 <span class="status-badge warning">{{ backup.verification_status|status_label }}</span>
                             {% else %}
@@ -603,13 +603,13 @@
                                 <div class="text-muted small mt-1">Schema: {{ backup.manifest_schema_version }}</div>
                             {% endif %}
                             {% if backup.pre_backup_health_status %}
-                                <div class="text-muted small mt-1">Pre-check: {{ backup.pre_backup_health_status }}{% if backup.pre_backup_warning_count %} | {{ backup.pre_backup_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Pre-check: {{ backup.pre_backup_health_status|status_label }}{% if backup.pre_backup_warning_count %} | {{ backup.pre_backup_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.post_backup_verification_status %}
-                                <div class="text-muted small mt-1">Post-check: {{ backup.post_backup_verification_status }}{% if backup.post_backup_warning_count %} | {{ backup.post_backup_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Post-check: {{ backup.post_backup_verification_status|status_label }}{% if backup.post_backup_warning_count %} | {{ backup.post_backup_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.restore_dry_run_status %}
-                                <div class="text-muted small mt-1">Restore dry-run: {{ backup.restore_dry_run_status }}{% if backup.restore_dry_run_warning_count %} | {{ backup.restore_dry_run_warning_count }} warning{% endif %}</div>
+                                <div class="text-muted small mt-1">Restore dry-run: {{ backup.restore_dry_run_status|status_label }}{% if backup.restore_dry_run_warning_count %} | {{ backup.restore_dry_run_warning_count }} warning{% endif %}</div>
                             {% endif %}
                             {% if backup.restore_dry_run_schema_version %}
                                 <div class="text-muted small mt-1">Dry-run schema: {{ backup.restore_dry_run_schema_version }}</div>
@@ -634,8 +634,8 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <h3>Belum ada full backup.</h3>
-            <p>Klik <strong>Buat Full Backup DB + Uploads</strong> sebelum mulai upload bukti digital real.</p>
+            <h3>Belum ada cadangan penuh.</h3>
+            <p>Klik <strong>Buat Cadangan Penuh (Database + Unggahan)</strong> sebelum mulai upload bukti digital real.</p>
         </div>
     {% endif %}
 </div>
@@ -644,7 +644,7 @@
     <div class="section-title">
         <div>
             <h3>Daftar Backup DB-only</h3>
-            <p>Download file database backup dan checksum untuk verifikasi.</p>
+            <p>Unduh file database cadangan dan checksum untuk verifikasi.</p>
         </div>
     </div>
 
@@ -695,8 +695,8 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <h3>Belum ada backup DB-only.</h3>
-            <p>Backup DB-only tetap tersedia, tapi untuk production dengan bukti digital lebih aman pakai full backup.</p>
+            <h3>Belum ada cadangan DB-only.</h3>
+            <p>Cadangan khusus database tetap tersedia, tapi untuk produksi dengan bukti digital lebih aman pakai cadangan penuh.</p>
         </div>
     {% endif %}
 </div>

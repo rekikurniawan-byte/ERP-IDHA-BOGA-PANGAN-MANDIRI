@@ -53,7 +53,7 @@
             <i class="bi bi-calendar-event"></i>
         </div>
         <div>
-            <p>Aging</p>
+            <p>Umur</p>
             <h3>{{ aging.label }}</h3>
             <span class="app-stat-helper">{{ aging.days_text }}</span>
         </div>
@@ -80,7 +80,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Info Supplier Bill</h5>
-            <p>Bill ini adalah snapshot hutang dari pembelian CREDIT. Supplier tetap tetap opsional.</p>
+            <p>Tagihan ini adalah snapshot hutang dari pembelian kredit. Supplier tetap tetap opsional.</p>
         </div>
     </div>
 
@@ -180,13 +180,13 @@
     <div class="card-header-clean">
         <div>
             <h5>Bayar Hutang Supplier</h5>
-            <p>Catat pembayaran keluar untuk mengurangi sisa hutang supplier. Sistem akan membuat jurnal Dr Hutang Supplier / Cr Kas-Bank dan buku kas/bank OUT.</p>
+            <p>Catat pembayaran keluar untuk mengurangi sisa hutang supplier. Sistem akan membuat jurnal Dr Hutang Supplier / Cr Kas-Bank dan buku kas/bank keluar.</p>
         </div>
     </div>
 
         <form method="POST"
               enctype="multipart/form-data"
-              action="{{ url_for('finance.create_supplier_bill_payment', bill_id=bill.id) }}" data-app-confirm="Bayar hutang supplier ini? Sistem akan mencatat supplier payment, jurnal, dan buku kas/bank keluar." data-ui-form="true" class="app-form">
+              action="{{ url_for('finance.create_supplier_bill_payment', bill_id=bill.id) }}" data-app-confirm="Bayar hutang supplier ini? Sistem akan mencatat pembayaran supplier, jurnal, dan buku kas/bank keluar." data-ui-form="true" class="app-form">
             {% include "components/csrf_token.html" %}
             <input type="hidden" name="idempotency_key" value="{{ supplier_payment_form_idempotency_key }}">
 
@@ -253,7 +253,7 @@
                 <div class="card-header-clean">
                     <div>
                         <h6 class="mb-1">Bukti Digital Pembayaran Supplier</h6>
-                        <p class="mb-0">Opsional. Upload bukti transfer/screenshot pembayaran hutang supplier kalau tersedia.</p>
+                        <p class="mb-0">Opsional. Unggah bukti transfer/tangkapan layar pembayaran hutang supplier kalau tersedia.</p>
                     </div>
                 </div>
                 <div class="form-grid">
@@ -297,7 +297,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Riwayat Pembayaran Supplier</h5>
-            <p>Pembayaran yang sudah mengurangi hutang supplier bill ini.</p>
+            <p>Pembayaran yang sudah mengurangi hutang tagihan supplier ini.</p>
         </div>
     </div>
 
@@ -323,7 +323,7 @@
                 <tr>
                     <td><strong>{{ payment.payment_number }}</strong></td>
                     <td>{{ payment.payment_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ payment.payment_method }}</td>
+                    <td>{{ payment.payment_method|status_label }}</td>
                     <td>
                         {% if payment.payment_method == 'TRANSFER' and payment.bank_account %}
                             <strong>{{ payment.bank_account.bank_name }}</strong>
@@ -345,14 +345,14 @@
                                         <div class="d-flex justify-content-between gap-2 align-items-start">
                                             <div>
                                                 <strong class="small">{{ attachment.original_filename }}</strong>
-                                                <div class="text-muted small">{{ attachment.attachment_type }} · {{ format_file_size(attachment.file_size) }}</div>
+                                                <div class="text-muted small">{{ attachment.attachment_type|status_label }} · {{ format_file_size(attachment.file_size) }}</div>
                                             </div>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="{{ url_for('finance.view_supplier_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn app-btn-secondary">Lihat</a>
-                                                <a href="{{ url_for('finance.download_supplier_payment_attachment', attachment_id=attachment.id) }}" class="btn app-btn-secondary">Download</a>
+                                                <a href="{{ url_for('finance.download_supplier_payment_attachment', attachment_id=attachment.id) }}" class="btn app-btn-secondary">Unduh</a>
                                             </div>
                                         </div>
-                                        <form method="POST" action="{{ url_for('finance.delete_supplier_payment_attachment', attachment_id=attachment.id) }}" class="mt-2 app-form" data-app-confirm="Hapus lunak bukti payment supplier ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
+                                        <form method="POST" action="{{ url_for('finance.delete_supplier_payment_attachment', attachment_id=attachment.id) }}" class="mt-2 app-form" data-app-confirm="Hapus lunak bukti pembayaran supplier ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
                                             {% include "components/csrf_token.html" %}
                                             <input type="hidden" name="delete_note" value="Bukti payment supplier salah upload.">
                                             <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
@@ -366,7 +366,7 @@
 
                         <form method="POST" enctype="multipart/form-data" action="{{ url_for('finance.upload_supplier_payment_attachment', payment_id=payment.id) }}" class="border rounded p-2 bg-white app-form" data-ui-form="true">
                             {% include "components/csrf_token.html" %}
-                            <div class="small fw-semibold mb-1">Upload bukti tambahan</div>
+                            <div class="small fw-semibold mb-1">Unggah bukti tambahan</div>
                             <select name="proof_type" class="form-control form-control-sm mb-1">
                                 <option value="BUKTI_TRANSFER_SUPPLIER">Bukti Transfer Supplier</option>
                                 <option value="SCREENSHOT_PAYMENT">Screenshot Pembayaran</option>
@@ -375,7 +375,7 @@
                             </select>
                             <input type="file" name="proof_file" class="form-control form-control-sm mb-1" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
                             <input type="text" name="proof_notes" class="form-control form-control-sm mb-2" placeholder="Catatan bukti, opsional">
-                            <button type="submit" class="btn btn-sm app-btn-secondary">Upload Bukti</button>
+                            <button type="submit" class="btn btn-sm app-btn-secondary">Unggah Bukti</button>
                         </form>
                     </td>
                     <td>
@@ -398,7 +398,7 @@
                     <td colspan="9">
                         <div class="empty-state">
                             <i class="bi bi-wallet2"></i>
-                            <p>Belum ada pembayaran untuk supplier bill ini.</p>
+                            <p>Belum ada pembayaran untuk tagihan supplier ini.</p>
                         </div>
                     </td>
                 </tr>

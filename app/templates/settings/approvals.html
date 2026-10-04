@@ -43,7 +43,7 @@
                 <tr>
                     <td>#{{ approval.id }}</td>
                     <td>{{ approval.action_key }}</td>
-                    <td>{{ approval.reference_type }} #{{ approval.reference_id }}</td>
+                    <td>{{ approval.reference_type|status_label }} #{{ approval.reference_id }}</td>
                     <td><span class="status-badge status-info">{{ approval.status|status_label }}</span></td>
                     <td>{{ approval.requested_reason }}</td>
                     <td>{{ approval.reviewed_by or '-' }}</td>
@@ -62,7 +62,7 @@
                             <input type="text" name="review_note" class="form-control app-input d-inline-block w-auto" placeholder="Alasan reject" required>
                             <button type="submit" class="btn btn-sm app-btn-danger">
                                 <i class="bi bi-x-circle"></i>
-                                Reject
+                                Tolak
                             </button>
                         </form>
                         {% else %}

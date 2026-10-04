@@ -27,13 +27,13 @@
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status == "ALL" %}selected{% endif %}>Semua Status</option>
             {% for item_status in statuses %}
-            <option value="{{ item_status }}" {% if status == item_status %}selected{% endif %}>{{ item_status }}</option>
+            <option value="{{ item_status }}" {% if status == item_status %}selected{% endif %}>{{ item_status|status_label }}</option>
             {% endfor %}
         </select>
 
         <div class="app-filter-actions">
             <button class="btn app-btn-primary" type="submit">Filter</button>
-            <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('master.fixed_assets') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -58,7 +58,7 @@
                 <tr>
                     <td><strong>{{ asset.asset_code }}</strong></td>
                     <td>{{ asset.asset_name }}</td>
-                    <td>{{ asset.asset_category }}</td>
+                    <td>{{ asset.asset_category|status_label }}</td>
                     <td>{{ asset.purchase_date.strftime('%d-%m-%Y') if asset.purchase_date else '-' }}</td>
                     <td>{{ asset.purchase_value|rupiah }}</td>
                     <td>{{ asset.book_value|rupiah }}</td>
@@ -73,7 +73,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            <a href="{{ url_for('master.edit_fixed_asset', asset_id=asset.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <a href="{{ url_for('master.edit_fixed_asset', asset_id=asset.id) }}" class="btn btn-sm app-btn-secondary">Ubah</a>
 
                             <form method="POST" action="{{ url_for('master.toggle_fixed_asset', asset_id=asset.id) }}" data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}

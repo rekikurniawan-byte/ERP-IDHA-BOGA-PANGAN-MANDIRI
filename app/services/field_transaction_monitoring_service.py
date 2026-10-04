@@ -72,7 +72,7 @@ def build_field_transaction_monitoring(branch_id):
         if not has_financial_trace:
             mismatches.append({
                 "transaction": row,
-                "reason": "Status POSTED tetapi belum punya trace ledger/journal/bridge legacy.",
+                "reason": "Sudah dijurnal tetapi belum punya jejak buku kas/bank, jurnal, atau modul lama.",
             })
 
     manual_doc_gaps = []

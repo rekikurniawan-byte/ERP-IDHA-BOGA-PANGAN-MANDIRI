@@ -10,6 +10,7 @@ from app.services.user_management_service import (
     PORTAL_EXTERNAL_ROLES,
     get_portal_role_landing_endpoint,
 )
+from app.services.public_site_service import auth_context
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -54,7 +55,7 @@ def login():
                 username_snapshot=username,
             )
             flash(error, "danger")
-            return render_template("auth/login.html")
+            return render_template("auth/login.html", site=auth_context())
 
         login_user(user)
         record_audit_log(
@@ -72,7 +73,7 @@ def login():
         flash("Login berhasil.", "success")
         return _post_login_redirect_for(user)
 
-    return render_template("auth/login.html")
+    return render_template("auth/login.html", site=auth_context())
 
 
 @auth_bp.route("/logout", methods=["POST"])

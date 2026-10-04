@@ -1,0 +1,1144 @@
+/* ==========================================================================
+   Halaman publik: beranda, masuk, daftar pelanggan.
+   Kertas hangat + tinta gelap + oranye merek; huruf Plus Jakarta Sans lokal
+   (app/static/vendor/fonts, lisensi OFL). Isi angka berasal dari ERP
+   (app/services/public_site_service.py), bukan teks pemasaran.
+   ========================================================================== */
+@font-face {
+    font-family: "Plus Jakarta Sans";
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url("../vendor/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2");
+}
+
+html:has(.pub) {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+}
+
+.pub {
+    min-height: 100vh;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    background: var(--paper);
+}
+
+.pub h1,
+.pub h2,
+.pub h3 {
+    font-family: var(--font-display);
+    color: var(--ink);
+    letter-spacing: -0.015em;
+}
+
+.pub a:not([class]) {
+    color: var(--brand-700);
+    font-weight: var(--weight-semibold);
+}
+
+/* Tautan di navigasi, kontak, dan kaki halaman mengikuti warna wadahnya. */
+.pub .pub-nav a,
+.pub .pub-contact dd a,
+.pub .pub-footer a {
+    font-weight: var(--weight-medium);
+}
+
+.pub-wrap {
+    width: min(1180px, 100% - 48px);
+    margin-inline: auto;
+}
+
+/* --- Tombol ---------------------------------------------------------------------- */
+.pub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 18px;
+    font-size: 0.9375rem;
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.pub-btn:hover {
+    text-decoration: none;
+}
+
+.pub-btn:active {
+    transform: translateY(1px);
+}
+
+.pub-btn:focus-visible {
+    outline: 0;
+    box-shadow: var(--focus-ring);
+}
+
+.pub-btn-lg {
+    min-height: 50px;
+    padding: 0 24px;
+    font-size: 1rem;
+}
+
+.pub-btn-primary {
+    color: var(--text-on-brand);
+    background: var(--brand-700);
+}
+
+.pub-btn-primary:hover {
+    color: var(--text-on-brand);
+    background: var(--brand-800);
+}
+
+.pub-btn-outline {
+    color: var(--ink);
+    background: transparent;
+    border-color: var(--ink);
+}
+
+.pub-btn-outline:hover {
+    color: var(--on-ink);
+    background: var(--ink);
+}
+
+.pub-btn-ghost {
+    color: var(--ink);
+    background: transparent;
+}
+
+.pub-btn-ghost:hover {
+    color: var(--ink);
+    background: var(--paper-strong);
+}
+
+.pub-btn-light {
+    color: var(--ink);
+    background: var(--on-ink);
+}
+
+.pub-btn-light:hover {
+    color: var(--ink);
+    background: var(--surface);
+}
+
+/* --- Kepala halaman -------------------------------------------------------------- */
+.pub-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--paper);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pub-header.is-scrolled {
+    border-bottom-color: var(--paper-line);
+    box-shadow: 0 6px 18px -14px rgba(28, 25, 23, 0.45);
+}
+
+.pub-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    min-height: 72px;
+}
+
+.pub-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    color: var(--ink);
+}
+
+.pub-brand:hover {
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.pub-brand .company-logo-mark {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 10px;
+}
+
+.pub-brand strong {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.pub-brand small {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+.pub-nav {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.pub .pub-nav a {
+    padding: 8px 12px;
+    font-size: 0.9375rem;
+    font-weight: var(--weight-medium);
+    color: var(--ink-soft);
+    border-radius: 8px;
+}
+
+.pub .pub-nav a:hover {
+    color: var(--ink);
+    background: var(--paper-strong);
+    text-decoration: none;
+}
+
+.pub-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pub .auth-alert-wrapper {
+    width: min(1180px, 100% - 48px);
+    max-width: none;
+    margin: 16px auto 0;
+}
+
+/* --- Pembuka --------------------------------------------------------------------- */
+.pub-hero {
+    padding: 56px 0 72px;
+}
+
+.pub-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+    gap: 56px;
+    align-items: center;
+}
+
+.pub-hero h1 {
+    max-width: 15ch;
+    margin: 0 0 20px;
+    font-size: clamp(2.25rem, 1.35rem + 2.9vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+}
+
+.pub-hero h1 em {
+    font-style: normal;
+    color: var(--brand-700);
+}
+
+.pub-lead {
+    max-width: 56ch;
+    margin: 0 0 28px;
+    font-size: 1.125rem;
+    color: var(--ink-soft);
+}
+
+.pub-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pub-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0;
+    margin: 40px 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--paper-line);
+}
+
+.pub-facts li {
+    padding: 16px 16px 0 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+.pub-facts strong {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 750;
+    color: var(--ink);
+}
+
+/* Kartu kinerja 30 hari. */
+.pub-stats {
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 20px;
+    box-shadow: 0 24px 48px -32px rgba(28, 25, 23, 0.35);
+}
+
+.pub-stats-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-bottom: 18px;
+}
+
+.pub-stats-head h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.pub-stats-head span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+.pub-stats-head span::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--chart-green);
+    box-shadow: 0 0 0 3px rgba(18, 183, 106, 0.18);
+}
+
+.pub-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.pub-stats-grid > div {
+    padding: 14px;
+    background: var(--paper);
+    border-radius: 12px;
+}
+
+.pub-stats-grid strong {
+    display: block;
+    font-size: clamp(1.4rem, 1rem + 1vw, 1.9rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-stats-grid span {
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+.pub-spark {
+    --chart-height: 110px;
+    margin: 12px -8px 0;
+}
+
+.pub-stats-foot {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+/* --- Bagian umum ------------------------------------------------------------------- */
+.pub-section {
+    padding: 80px 0;
+}
+
+.pub-section-alt {
+    background: var(--surface);
+    border-block: 1px solid var(--paper-line);
+}
+
+.pub-section-head {
+    max-width: 640px;
+    margin-bottom: 40px;
+}
+
+.pub-section-head h2 {
+    margin: 0 0 12px;
+    font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.pub-section-head p {
+    margin: 0;
+    font-size: 1.0625rem;
+}
+
+/* Dua jalur kerja sama. */
+.pub-tracks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.pub-track {
+    display: flex;
+    flex-direction: column;
+    padding: 32px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+}
+
+.pub-track-dark {
+    color: var(--on-ink-muted);
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
+.pub-track-dark h3 {
+    color: var(--on-ink);
+}
+
+.pub-track-label {
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--brand-700);
+}
+
+.pub-track-dark .pub-track-label {
+    color: var(--brand-200);
+}
+
+.pub-track h3 {
+    margin: 0 0 20px;
+    font-size: 1.5rem;
+    font-weight: 750;
+    line-height: 1.25;
+}
+
+.pub-track ul {
+    display: grid;
+    gap: 14px;
+    margin: 0 0 28px;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-track li {
+    position: relative;
+    padding-left: 30px;
+}
+
+.pub-track li::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 2px;
+    width: 14px;
+    height: 8px;
+    border-left: 2px solid var(--brand-600);
+    border-bottom: 2px solid var(--brand-600);
+    transform: rotate(-45deg);
+}
+
+.pub-track-dark li::before {
+    border-color: var(--brand-200);
+}
+
+.pub-track strong {
+    color: var(--ink);
+}
+
+.pub-track-dark strong {
+    color: var(--on-ink);
+}
+
+.pub-track .pub-btn {
+    align-self: flex-start;
+    margin-top: auto;
+}
+
+/* Alur dari pesanan sampai tagihan. */
+.pub-flow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: flow;
+}
+
+.pub-flow li {
+    position: relative;
+    padding-top: 56px;
+    counter-increment: flow;
+}
+
+.pub-flow li::before {
+    content: counter(flow);
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    font-weight: 800;
+    color: var(--brand-800);
+    background: var(--brand-100);
+    border-radius: 50%;
+}
+
+.pub-flow li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 20px;
+    left: 52px;
+    right: -12px;
+    border-top: 2px dashed var(--paper-line);
+}
+
+.pub-flow h3 {
+    margin: 0 0 6px;
+    font-size: 1.0625rem;
+    font-weight: 700;
+}
+
+.pub-flow p {
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+/* Kalkulator perkiraan biaya. */
+.pub-estimate {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.pub-estimate-card {
+    padding: 28px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 20px;
+    box-shadow: 0 24px 48px -36px rgba(28, 25, 23, 0.4);
+}
+
+.pub-field {
+    margin-bottom: 20px;
+}
+
+.pub-field > label,
+.pub-field > .pub-field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+
+.pub-qty {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 16px;
+    align-items: center;
+}
+
+.pub-qty input[type="range"] {
+    width: 100%;
+    accent-color: var(--brand-700);
+}
+
+.pub-qty .form-control {
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-segmented {
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    background: var(--paper-strong);
+    border-radius: 12px;
+}
+
+.pub-segmented input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pub-segmented label {
+    padding: 9px 12px;
+    font-size: 0.9375rem;
+    font-weight: var(--weight-semibold);
+    text-align: center;
+    color: var(--ink-soft);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pub-segmented input:checked + label {
+    color: var(--ink);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.12);
+}
+
+.pub-segmented input:focus-visible + label {
+    box-shadow: var(--focus-ring);
+}
+
+.pub-estimate-result {
+    margin: 8px 0 20px;
+    padding: 18px 20px;
+    background: var(--paper);
+    border-radius: 14px;
+}
+
+.pub-estimate-result dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 16px;
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+.pub-estimate-result dd {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-estimate-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--paper-line);
+}
+
+.pub-estimate-total span {
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+
+.pub-estimate-total strong {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-free-note {
+    display: none;
+    margin-top: 8px;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--success-text);
+}
+
+.pub-free-note.is-visible {
+    display: block;
+}
+
+.pub-fine {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+.pub-rules {
+    display: grid;
+    gap: 0;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-rules li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--paper-line);
+}
+
+.pub-rules strong {
+    flex: none;
+    color: var(--ink);
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Menu yang sedang disajikan: papan menu dengan garis titik. */
+.pub-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 48px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-menu li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 14px 0;
+}
+
+.pub-menu strong {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.pub-menu li::after {
+    content: "";
+    order: 1;
+    flex: 1;
+    border-bottom: 2px dotted var(--paper-line);
+    transform: translateY(-4px);
+}
+
+.pub-menu span {
+    order: 2;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+/* Kontak & kaki halaman. */
+.pub-contact {
+    padding: 72px 0 40px;
+    color: var(--on-ink-muted);
+    background: var(--ink);
+}
+
+.pub-contact-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.pub-contact h2 {
+    margin: 0 0 12px;
+    font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--on-ink);
+}
+
+.pub-contact p {
+    max-width: 52ch;
+}
+
+.pub-contact .pub-hero-actions {
+    margin-top: 24px;
+}
+
+.pub-contact .pub-btn-outline {
+    color: var(--on-ink);
+    border-color: var(--on-ink-muted);
+}
+
+.pub-contact .pub-btn-outline:hover {
+    color: var(--ink);
+    background: var(--on-ink);
+}
+
+.pub-contact dl {
+    display: grid;
+    gap: 18px;
+    margin: 0;
+}
+
+.pub-contact dt {
+    font-size: 0.8125rem;
+    font-weight: var(--weight-semibold);
+    color: var(--on-ink-muted);
+}
+
+.pub-contact dd {
+    margin: 2px 0 0;
+    font-size: 1.0625rem;
+    color: var(--on-ink);
+}
+
+.pub .pub-contact dd a {
+    color: var(--on-ink);
+}
+
+.pub-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 56px;
+    padding-top: 24px;
+    font-size: 0.875rem;
+    border-top: 1px solid var(--ink-soft);
+}
+
+.pub .pub-footer a {
+    color: var(--on-ink-muted);
+}
+
+.pub .pub-footer a:hover {
+    color: var(--on-ink);
+}
+
+/* Angka yang dihitung naik saat terlihat. */
+.pub [data-count] {
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Masuk & daftar: panel tinta + form ---------------------------------------------- */
+.pub-auth {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.85fr) minmax(0, 1.15fr);
+    min-height: 100vh;
+}
+
+.pub-auth-side {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    height: 100vh;
+    padding: 40px 48px;
+    color: var(--on-ink-muted);
+    background: var(--ink);
+}
+
+.pub-auth-side .pub-brand,
+.pub-auth-side .pub-brand:hover {
+    color: var(--on-ink);
+}
+
+.pub-auth-side .pub-brand small {
+    color: var(--on-ink-muted);
+}
+
+.pub-auth-side-body {
+    margin: auto 0;
+}
+
+.pub-auth-side h1 {
+    max-width: 18ch;
+    margin: 0 0 28px;
+    font-size: clamp(1.75rem, 1.2rem + 1.4vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.12;
+    color: var(--on-ink);
+}
+
+.pub-auth-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-auth-list li {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--ink-soft);
+}
+
+.pub-auth-list strong {
+    color: var(--on-ink);
+}
+
+.pub-auth-help {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.pub .pub-auth-help a,
+.pub .pub-auth-help a:hover {
+    color: var(--brand-200);
+}
+
+.pub-auth-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 48px;
+}
+
+.pub-auth-card {
+    width: min(440px, 100%);
+    margin: 0 auto;
+}
+
+.pub-auth-wide .pub-auth-card {
+    width: min(680px, 100%);
+}
+
+.pub-auth-card h2 {
+    margin: 0 0 6px;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.pub-auth-card > p {
+    margin: 0 0 28px;
+    color: var(--ink-muted);
+}
+
+.pub-auth-card .form-label,
+.pub-auth-card label > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+
+.pub-auth-card .form-control,
+.pub-auth-card .ts-wrapper .ts-control {
+    min-height: 46px;
+    font-size: 1rem;
+    border-radius: 10px;
+}
+
+.pub-auth-card .input-group > .form-control {
+    border-radius: 10px 0 0 10px;
+}
+
+.pub-auth-card .input-group > .btn {
+    border-radius: 0 10px 10px 0;
+}
+
+.pub-auth-card .pub-btn-primary {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.pub-auth-alt {
+    margin-top: 24px;
+    padding-top: 20px;
+    font-size: 0.9375rem;
+    text-align: center;
+    border-top: 1px solid var(--paper-line);
+}
+
+.pub-auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 28px auto 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+.pub-auth-back:hover {
+    color: var(--ink);
+}
+
+.pub-auth .auth-alert-wrapper {
+    width: min(440px, 100%);
+    margin: 0 auto 16px;
+}
+
+.pub-form-section + .pub-form-section {
+    margin-top: 28px;
+}
+
+.pub-auth-card .pub-form-section + .pub-btn {
+    margin-top: 28px;
+}
+
+.pub-form-section h3 {
+    margin: 0 0 14px;
+    font-size: 1.0625rem;
+    font-weight: 700;
+}
+
+.pub-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.pub-form-grid label {
+    display: block;
+    margin: 0;
+}
+
+.pub-form-grid .is-wide {
+    grid-column: 1 / -1;
+}
+
+.pub-form-note {
+    display: flex;
+    gap: 10px;
+    margin: 24px 0 0;
+    padding: 14px 16px;
+    font-size: 0.875rem;
+    background: var(--paper-strong);
+    border-radius: 12px;
+}
+
+/* --- Layar sempit ------------------------------------------------------------------- */
+@media (max-width: 1023.98px) {
+    .pub-hero-grid,
+    .pub-estimate,
+    .pub-contact-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 40px;
+    }
+
+    .pub-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pub-flow li:nth-child(2n)::after {
+        display: none;
+    }
+
+    .pub-auth {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pub-auth-side {
+        position: static;
+        height: auto;
+        gap: 24px;
+        padding: 28px 24px;
+    }
+
+    .pub-auth-side h1 {
+        margin-bottom: 16px;
+        font-size: 1.5rem;
+    }
+
+    .pub-auth-main {
+        padding: 32px 24px 48px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pub-wrap,
+    .pub .auth-alert-wrapper {
+        width: calc(100% - 32px);
+    }
+
+    .pub-header-inner {
+        gap: 12px;
+        min-height: 64px;
+    }
+
+    .pub-nav,
+    .pub-brand small {
+        display: none;
+    }
+
+    .pub-header-actions {
+        margin-left: auto;
+    }
+
+    .pub-header-actions .pub-btn {
+        min-height: 38px;
+        padding: 0 12px;
+    }
+
+    .pub-hero {
+        padding: 32px 0 48px;
+    }
+
+    .pub-section {
+        padding: 56px 0;
+    }
+
+    .pub-stats-grid,
+    .pub-tracks,
+    .pub-menu,
+    .pub-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pub-stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .pub-stats-grid > div {
+        padding: 10px;
+    }
+
+    .pub-track {
+        padding: 24px;
+    }
+
+    .pub-flow {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pub-flow li::after {
+        display: none;
+    }
+
+    .pub-qty {
+        grid-template-columns: 1fr 92px;
+    }
+
+    .pub-rules li {
+        font-size: 0.9375rem;
+    }
+
+    .pub-segmented label {
+        padding-inline: 6px;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .pub-estimate-card {
+        padding: 20px;
+    }
+
+    .pub-estimate-total strong {
+        font-size: 1.5rem;
+        white-space: nowrap;
+    }
+
+    .pub-auth-list li {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+    }
+
+    .pub-auth-side-body .pub-auth-list {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html:has(.pub) {
+        scroll-behavior: auto;
+    }
+}

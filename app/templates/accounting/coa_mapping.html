@@ -97,7 +97,7 @@
                         {% for account in item.debit_accounts %}
                             <div>
                                 <strong>{{ account.code }}</strong> - {{ account.name }}
-                                <small class="text-muted">({{ account.type }})</small>
+                                <small class="text-muted">({{ account.type|status_label }})</small>
                             </div>
                         {% endfor %}
                     </td>
@@ -105,7 +105,7 @@
                         {% for account in item.credit_accounts %}
                             <div>
                                 <strong>{{ account.code }}</strong> - {{ account.name }}
-                                <small class="text-muted">({{ account.type }})</small>
+                                <small class="text-muted">({{ account.type|status_label }})</small>
                             </div>
                         {% endfor %}
                     </td>
@@ -128,7 +128,7 @@
 
     {% for account_type, rows in data.accounts_by_type.items() %}
     <div class="mb-4">
-        <h6 class="mb-2">{{ account_type }}</h6>
+        <h6 class="mb-2">{{ account_type|status_label }}</h6>
 
         <div class="table-responsive">
             <table class="table table-sm align-middle">
@@ -178,7 +178,7 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Account Code yang Sudah Dipakai di Source Code</h5>
+            <h5>Kode Akun yang Sudah Dipakai di Kode Program</h5>
             <p>Referensi kode akun yang sudah dipanggil oleh route/service saat ini.</p>
         </div>
     </div>
@@ -198,7 +198,7 @@
                 {% for item in data.source_code_accounts %}
                 <tr>
                     <td><strong>{{ item.code }}</strong></td>
-                    <td>{{ item.account.name }} <small class="text-muted">({{ item.account.type }})</small></td>
+                    <td>{{ item.account.name }} <small class="text-muted">({{ item.account.type|status_label }})</small></td>
                     <td>{{ item.refs|length }}</td>
                     <td>
                         {% for ref in item.refs[:3] %}
@@ -215,7 +215,7 @@
     {% else %}
     <div class="empty-state">
         <i class="bi bi-inbox"></i>
-        <p>Belum ada account code yang terdeteksi di source code.</p>
+        <p>Belum ada kode akun yang terdeteksi di kode program.</p>
     </div>
     {% endif %}
 </div>

@@ -37,8 +37,8 @@
         </div>
 
         <div class="print-app-stat-grid">
-            <div class="app-stat-card print-box"><span>Status Overall</span><strong>{{ report.overall_status }}</strong></div>
-            <div class="app-stat-card print-box"><span>Status Piutang</span><strong>{{ report.receivable_status }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Overall</span><strong>{{ report.overall_status|status_label }}</strong></div>
+            <div class="app-stat-card print-box"><span>Status Piutang</span><strong>{{ report.receivable_status|status_label }}</strong></div>
             <div class="app-stat-card print-box"><span>Order Dipilih</span><strong>{{ report.selected_order_number or '-' }}</strong></div>
             <div class="app-stat-card print-box"><span>Status Dokumen</span><strong>Mode pantau</strong></div>
         </div>
@@ -49,7 +49,7 @@
             <tbody>
                 <tr>
                     <td><strong>{{ report.empty_message }}</strong></td>
-                    <td>Input atau pilih nomor order untuk melihat jejak order sampai lunas.</td>
+                    <td>Masukkan atau pilih nomor order untuk melihat jejak order sampai lunas.</td>
                 </tr>
             </tbody>
         </table>
@@ -160,7 +160,7 @@
                 <tr>
                     <td>{{ row.delivery_number }}</td>
                     <td>{{ row.delivery_date.strftime('%d-%m-%Y') if row.delivery_date else '-' }}</td>
-                    <td>{{ row.delivery_type }}</td>
+                    <td>{{ row.delivery_type|status_label }}</td>
                     <td>{{ row.status|status_label }}</td>
                     <td>{{ row.planned_qty }}</td>
                     <td>{{ row.delivered_qty }}</td>
@@ -192,7 +192,7 @@
                 <tr>
                     <td>{{ row.invoice.invoice_number }}</td>
                     <td>{{ row.invoice.status|status_label('invoice') }}</td>
-                    <td>{{ row.invoice.bill_to_type }}</td>
+                    <td>{{ row.invoice.bill_to_type|status_label }}</td>
                     <td class="text-end">{{ row.total_amount|rupiah }}</td>
                     <td class="text-end">{{ row.paid_amount|rupiah }}</td>
                     <td class="text-end">{{ row.remaining_amount|rupiah }}</td>
@@ -222,7 +222,7 @@
                 <tr>
                     <td>{{ row.payment.payment_number }}</td>
                     <td>{{ row.payment.payment_date.strftime('%d-%m-%Y') if row.payment.payment_date else '-' }}</td>
-                    <td>{{ row.payment.payment_method }}</td>
+                    <td>{{ row.payment.payment_method|status_label }}</td>
                     <td class="text-end">{{ row.amount|rupiah }}</td>
                     <td>{{ row.journal.status|status_label }}</td>
                 </tr>
@@ -234,7 +234,7 @@
 </div>
         {% endif %}
 
-        <p class="print-note">Dokumen ini dibuat otomatis dari order-to-cash trace dan bersifat Mode pantau.</p>
+        <p class="print-note">Dokumen ini dibuat otomatis dari jejak order sampai kas dan bersifat Mode pantau.</p>
     </div>
 </div>
 {% endblock %}

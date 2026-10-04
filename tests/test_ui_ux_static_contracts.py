@@ -31,6 +31,7 @@ def test_css_sources_are_the_small_fixed_set():
         "components.css",
         "pages.css",
         "portal.css",
+        "public.css",
         "print.css",
     ]
     loaded, errors = namespace["load_sources"]()

@@ -257,7 +257,7 @@
                     <article>
                         <strong>{{ notification.title }}</strong>
                         <span>{{ notification.message }}</span>
-                        <b>{{ notification.priority }}</b>
+                        <b>{{ notification.priority|status_label }}</b>
                     </article>
                 {% else %}
                     <div class="portal-command-soft-empty">Belum ada notifikasi aktif.</div>
@@ -279,7 +279,7 @@
                 {% for document in models.documents.rows[:4] %}
                     <article>
                         <strong>{{ document.original_filename }}</strong>
-                        <span>{{ document.module }} | {{ document.attachment_type }}</span>
+                        <span>{{ document.module }} | {{ document.attachment_type|status_label }}</span>
                         <b>{{ document.file_size }} B</b>
                     </article>
                 {% else %}
@@ -300,8 +300,8 @@
                 {% for event in models.calendar.rows[:4] %}
                     <article>
                         <strong>{{ event.title }}</strong>
-                        <span>{{ event.source }} | {{ event.date.strftime('%d-%m-%Y') if event.date else "-" }}</span>
-                        <b>{{ event.type|replace("_", " ")|title }}</b>
+                        <span>{{ event.source|status_label }} | {{ event.date.strftime('%d-%m-%Y') if event.date else "-" }}</span>
+                        <b>{{ event.type|status_label }}</b>
                     </article>
                 {% else %}
                     <div class="portal-command-soft-empty">Belum ada agenda dalam 45 hari.</div>
@@ -320,9 +320,9 @@
             <div class="portal-command-list">
                 {% for approval in models.approvals.rows[:4] %}
                     <article>
-                        <strong>{{ approval.action_key|replace("_", " ")|title }}</strong>
-                        <span>{{ approval.reference_type }} #{{ approval.reference_id }}</span>
-                        <b>{{ approval.status|replace("_", " ")|title }}</b>
+                        <strong>{{ approval.action_key|status_label }}</strong>
+                        <span>{{ approval.reference_type|status_label }} #{{ approval.reference_id }}</span>
+                        <b>{{ approval.status|status_label }}</b>
                     </article>
                 {% else %}
                     <div class="portal-command-soft-empty">Belum ada permintaan persetujuan.</div>
@@ -346,7 +346,7 @@
                         <article>
                             <strong>{{ complaint.complaint_number }}</strong>
                             <span>{{ complaint.title }} | {{ complaint.category|status_label }}</span>
-                            <b>{{ complaint.status|replace("_", " ")|title }}</b>
+                            <b>{{ complaint.status|status_label }}</b>
                         </article>
                     {% else %}
                         <div class="portal-command-soft-empty">Belum ada komplain pelanggan.</div>
@@ -396,7 +396,7 @@
                         <article>
                             <strong>{{ contract.contract_number }}</strong>
                             <span>{{ contract.title }} | limit {{ contract.credit_limit|rupiah }}</span>
-                            <b>{{ contract.status|replace("_", " ")|title }}</b>
+                            <b>{{ contract.status|status_label }}</b>
                         </article>
                     {% else %}
                         <div class="portal-command-soft-empty">Belum ada kontrak {{ term('client') }} dalam akses ini.</div>
@@ -416,7 +416,7 @@
                         <article>
                             <strong>{{ invoice.invoice_number }}</strong>
                             <span>{{ invoice.remaining_amount|rupiah }} tersisa dari {{ invoice.total_amount|rupiah }}</span>
-                            <b>{{ invoice.status|replace("_", " ")|title }}</b>
+                            <b>{{ invoice.status|status_label('invoice') }}</b>
                         </article>
                     {% else %}
                         <div class="portal-command-soft-empty">Belum ada piutang aktif.</div>
@@ -438,7 +438,7 @@
             {% for source in center.data_sources %}
                 <article>
                     <strong>{{ source.label }}</strong>
-                    <span>{{ source.source }}</span>
+                    <span>{{ source.source|status_label }}</span>
                     <em>{{ source.status|status_label }}</em>
                     <b>{{ source.count }}</b>
                 </article>

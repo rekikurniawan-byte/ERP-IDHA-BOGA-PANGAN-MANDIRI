@@ -77,7 +77,7 @@
         <div class="portal-blocked-state">
             <i class="bi bi-lock"></i>
             <div>
-                <h2>{{ "Upload bukti bayar belum tersedia" if is_customer else "Riwayat pembayaran belum dibuka" }}</h2>
+                <h2>{{ "Unggah bukti bayar belum tersedia" if is_customer else "Riwayat pembayaran belum dibuka" }}</h2>
                 <p>{{ "Buat pesanan terlebih dahulu, lalu unggah bukti pembayaran awal dari detail pesanan yang tersedia." if is_customer else model.reason }}</p>
             </div>
         </div>
@@ -97,7 +97,7 @@
                         <h3>{{ payment.payment_number }}</h3>
                         <p>
                             {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }}
-                            | {{ payment.payment_method }}
+                            | {{ payment.payment_method|status_label }}
                             | {{ "Referensi" if is_customer else "Tagihan" }} {{ payment.invoice_number or payment.reference_number or "-" }}
                         </p>
                         <div class="portal-chip-row">

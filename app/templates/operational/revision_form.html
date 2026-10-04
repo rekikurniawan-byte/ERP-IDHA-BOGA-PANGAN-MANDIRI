@@ -54,9 +54,9 @@
         <div>
             <h5>Form Revisi Order</h5>
             {% if daily_order.is_locked %}
-                <p>Order sudah lock. Sistem hanya mengizinkan revisi tambah.</p>
+                <p>Order sudah dikunci. Sistem hanya mengizinkan revisi tambah.</p>
             {% else %}
-                <p>Order belum lock. Sistem mengizinkan revisi tambah atau kurang.</p>
+                <p>Order belum dikunci. Sistem mengizinkan revisi tambah atau kurang.</p>
             {% endif %}
         </div>
     </div>
@@ -68,9 +68,9 @@
                 <label class="form-label">Jenis Konfirmasi</label>
                 <select name="revision_type" class="form-select app-input" required>
                     <option value="">Pilih Jenis</option>
-                    <option value="PHONE">PHONE</option>
-                    <option value="WHATSAPP">WHATSAPP</option>
-                    <option value="MANUAL">MANUAL</option>
+                    <option value="PHONE">{{ "PHONE"|status_label }}</option>
+                    <option value="WHATSAPP">{{ "WHATSAPP"|status_label }}</option>
+                    <option value="MANUAL">{{ "MANUAL"|status_label }}</option>
                 </select>
             </div>
 
@@ -85,7 +85,7 @@
                     {% endif %}
                 </select>
                 {% if daily_order.is_locked %}
-                    <small class="text-muted">Pengurangan tidak tersedia karena order sudah lock.</small>
+                    <small class="text-muted">Pengurangan tidak tersedia karena order sudah dikunci.</small>
                 {% endif %}
             </div>
 

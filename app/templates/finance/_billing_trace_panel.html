@@ -127,7 +127,7 @@
                             <span class="status-badge {{ row.cash_bank.status_class }}">{{ row.cash_bank.status|status_label }}</span>
                             {% if row.cash_bank.transaction %}
                                 <div class="small mt-1">
-                                    {{ row.cash_bank.transaction.transaction_date.strftime('%d-%m-%Y') if row.cash_bank.transaction.transaction_date else '-' }} — {{ row.cash_bank.transaction.account_type }} — {{ row.cash_bank.transaction.amount|rupiah }}
+                                    {{ row.cash_bank.transaction.transaction_date.strftime('%d-%m-%Y') if row.cash_bank.transaction.transaction_date else '-' }} — {{ row.cash_bank.transaction.account_type|status_label('account') }} — {{ row.cash_bank.transaction.amount|rupiah }}
                                 </div>
                             {% endif %}
                         </td>

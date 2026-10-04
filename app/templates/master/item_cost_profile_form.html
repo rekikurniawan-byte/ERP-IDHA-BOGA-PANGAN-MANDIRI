@@ -20,7 +20,7 @@
     <div class="row g-3">
         <div class="col-md-3">
             <small class="text-muted">Kategori</small>
-            <div><strong>{{ item.category }}</strong></div>
+            <div><strong>{{ item.category|status_label }}</strong></div>
         </div>
         <div class="col-md-3">
             <small class="text-muted">Satuan Stok Saat Ini</small>
@@ -58,7 +58,7 @@
                 <label class="form-label">Sumber Harga</label>
                 <select name="cost_source" class="form-select app-input">
                     {% for source in cost_sources %}
-                    <option value="{{ source }}" {% if profile and profile.cost_source == source %}selected{% endif %}>{{ source }}</option>
+                    <option value="{{ source }}" {% if profile and profile.cost_source == source %}selected{% endif %}>{{ source|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>

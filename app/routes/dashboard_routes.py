@@ -77,41 +77,9 @@ def _role_landing_endpoint(role):
 @dashboard_bp.route("/")
 def index():
     if not current_user.is_authenticated:
-        data = {
-            "title": "PT Idha Boga Pangan Mandiri",
-            "subtitle": "Portal pemesanan catering dan sistem operasional terintegrasi.",
-            "description": f"Pelanggan umum membuat pesanan dan membayar di awal. {T.sub_client} mengelola pesanan, {T.worker_lower}, hutang, tagihan, dan pembayaran. {T.client} memantau seluruh {T.sub_client_lower}, invoice, piutang, pembayaran, dan kontrak dalam satu ERP.",
-            "primary_url": url_for("auth.login"),
-            "secondary_url": url_for("portal.register") if current_app.config.get("PORTAL_ENABLED", False) else url_for("auth.login"),
-            "portal_enabled": bool(current_app.config.get("PORTAL_ENABLED", False)),
-            "roles": [
-                {
-                    "title": "Pelanggan Umum",
-                    "description": "Pesan catering, upload bukti bayar, lacak pesanan, komplain, dan retur. Tidak ada kredit.",
-                    "icon": "bi-bag-check",
-                    "steps": ["Pesan", "Bayar", "Diverifikasi", "Diproses"],
-                },
-                {
-                    "title": T.sub_client,
-                    "description": f"Kelola order, {T.worker_lower}, hutang catering, hutang warung, cicilan, invoice, dan pembayaran.",
-                    "icon": "bi-people",
-                    "steps": ["Order", T.worker, "Hutang", "Bayar"],
-                },
-                {
-                    "title": T.client,
-                    "description": f"Pantau seluruh {T.sub_client_lower}, total hutang, invoice diterbitkan, invoice belum lunas, riwayat pembayaran, dan rekap tagihan.",
-                    "icon": "bi-building-check",
-                    "steps": [T.sub_client, "Piutang", "Invoice", "Kontrak"],
-                },
-            ],
-            "rules": [
-                "ERP tetap menjadi satu sumber data.",
-                "Akun portal terhubung ke data perusahaan yang sama.",
-                "Customer umum bayar dulu sebelum pesanan diproses.",
-                f"{T.sub_client} dan {T.client_lower} mengikuti aturan tempo/kredit yang sudah disetujui.",
-            ],
-        }
-        return render_template("public/landing.html", data=data)
+        from app.services.public_site_service import landing_context
+
+        return render_template("public/landing.html", site=landing_context())
 
     endpoint = _role_landing_endpoint(current_user.role)
     if not endpoint:

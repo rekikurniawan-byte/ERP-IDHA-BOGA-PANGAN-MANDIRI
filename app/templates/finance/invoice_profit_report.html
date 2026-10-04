@@ -10,7 +10,7 @@
     "Keuangan",
     actions=[
         {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"},
-        {"label": "Download CSV", "url": url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value), "icon": "bi-download"},
+        {"label": "Unduh CSV", "url": url_for('finance.export_invoice_profit_report_csv', start_date=start_value, end_date=end_value), "icon": "bi-download"},
         {"label": "Cetak / Save PDF", "url": url_for('finance.print_invoice_profit_report', start_date=start_value, end_date=end_value), "icon": "bi-printer"},
     ]
 ) }}
@@ -120,7 +120,7 @@
                     <tr>
                         <td><strong>{{ invoice.invoice_number }}</strong></td>
                         <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') }}</td>
-                        <td>{{ invoice.source_type or '-' }}</td>
+                        <td>{{ invoice.source_type|status_label }}</td>
                         <td>{{ row.bill_to }}</td>
                         <td>{{ summary.invoice_total|rupiah }}</td>
                         <td>{{ summary.costed_revenue_total|rupiah }}</td>

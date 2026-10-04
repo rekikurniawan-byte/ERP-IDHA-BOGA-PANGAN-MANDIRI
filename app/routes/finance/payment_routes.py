@@ -137,11 +137,11 @@ def create_invoice_payment(invoice_id):
             },
         )
     except IdempotencyConflictError:
-        flash("Submit pembayaran berbeda memakai idempotency key yang sama. Muat ulang invoice lalu coba lagi.", "warning")
+        flash("Formulir pembayaran ini sudah kedaluwarsa. Muat ulang halaman invoice lalu coba lagi.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
     if not reserved:
-        flash("Submit pembayaran ini sudah pernah diproses.", "info")
+        flash("Pembayaran ini sudah pernah diproses.", "info")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
     payment = Payment(
@@ -307,9 +307,9 @@ def create_invoice_payment(invoice_id):
         )
 
         if proof_uploaded:
-            flash("Bukti transfer/payment customer berhasil diunggah dalam transaksi atomic.", "success")
+            flash("Bukti transfer/pembayaran pelanggan berhasil diunggah.", "success")
 
-        flash("Pembayaran invoice berhasil disimpan, jurnal otomatis dicatat, dan ledger kas/bank masuk dibuat.", "success")
+        flash("Pembayaran invoice berhasil disimpan, jurnal otomatis dicatat, dan buku kas/bank masuk dicatat.", "success")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
     except Exception as error:
@@ -550,7 +550,7 @@ def create_payment_from_portal_proof(attachment_id):
         return redirect(url_for("finance.portal_payment_proofs", status="VERIFIED"))
 
     flash(
-        f"Payment {result['payment_number']} berhasil dibuat dari bukti portal invoice {result['invoice_number']}.",
+        f"Pembayaran {result['payment_number']} berhasil dibuat dari bukti portal invoice {result['invoice_number']}.",
         "success",
     )
     return redirect(url_for("finance.invoice_detail", invoice_id=result["invoice_id"]))

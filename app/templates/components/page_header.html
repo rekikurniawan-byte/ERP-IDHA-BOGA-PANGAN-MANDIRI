@@ -148,14 +148,14 @@
         <a href="{{ detail_url }}" class="btn btn-sm app-btn-secondary" data-action-tier="secondary">Detail</a>
     {% endif %}
     {% if edit_url and not more_actions %}
-        <a href="{{ edit_url }}" class="btn btn-sm app-btn-ghost" data-action-tier="ghost">Edit</a>
+        <a href="{{ edit_url }}" class="btn btn-sm app-btn-ghost" data-action-tier="ghost">Ubah</a>
     {% elif edit_url or more_actions %}
         <div class="dropdown row-action-more">
             <button class="btn btn-sm app-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Aksi lainnya">
                 <i class="bi bi-three-dots" aria-hidden="true"></i>
             </button>
             <div class="dropdown-menu dropdown-menu-end app-action-menu">
-                {% if edit_url %}<a href="{{ edit_url }}" class="dropdown-item">Edit</a>{% endif %}
+                {% if edit_url %}<a href="{{ edit_url }}" class="dropdown-item">Ubah</a>{% endif %}
                 {% for action in more_actions %}
                     <a href="{{ action.url }}" class="dropdown-item {{ action.class if action.class is defined else '' }}">
                         {% if action.icon is defined and action.icon %}<i class="bi {{ action.icon }}" aria-hidden="true"></i>{% endif %}

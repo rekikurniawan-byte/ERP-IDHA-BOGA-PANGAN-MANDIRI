@@ -25,7 +25,7 @@
             <i class="bi bi-hourglass-split"></i>
         </div>
         <div>
-            <p>Pending</p>
+            <p>Menunggu</p>
             <h3>{{ pending_count }}</h3>
             <span class="app-stat-helper">Menunggu owner</span>
         </div>
@@ -58,14 +58,14 @@
     <form method="GET" action="{{ url_for('logistics.item_requests') }}" class="app-filter app-form" data-ui-form="true">
         <select name="status" class="form-select app-input">
             <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>Semua Status</option>
-            <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Pending</option>
+            <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Menunggu</option>
             <option value="APPROVED" {% if status_filter == "APPROVED" %}selected{% endif %}>Disetujui</option>
             <option value="FULFILLED" {% if status_filter == "FULFILLED" %}selected{% endif %}>Fulfilled</option>
-            <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>Rejected</option>
+            <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>Ditolak</option>
         </select>
         <div class="app-filter-actions">
             <button type="submit" class="btn app-btn-primary">Filter</button>
-            <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('logistics.item_requests') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>

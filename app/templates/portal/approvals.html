@@ -31,7 +31,7 @@
                     </div>
                     <p>{{ approval.requested_reason }}</p>
                     <div class="portal-chip-row">
-                        <span>{{ approval.reference_type }} #{{ approval.reference_id }}</span>
+                        <span>{{ approval.reference_type|status_label }} #{{ approval.reference_id }}</span>
                         <span>{{ approval.created_at.strftime('%d-%m-%Y') if approval.created_at else "-" }}</span>
                         {% if approval.reviewed_at %}<span>Direview {{ approval.reviewed_at.strftime('%d-%m-%Y') }}</span>{% endif %}
                     </div>

@@ -12,7 +12,7 @@
         {"label": "Transfer", "url": url_for('finance.cash_bank_transfers'), "icon": "bi-arrow-left-right"},
         {"label": "Penyesuaian", "url": url_for('finance.cash_bank_adjustments'), "icon": "bi-sliders"},
     ] + ([{"label": "Modal Pemilik", "url": url_for('finance.owner_capital'), "icon": "bi-person-badge"}] if has_role(["OWNER"]) else []) + [
-        {"label": "Download CSV", "url": export_cash_bank_ledger_url, "icon": "bi-download"},
+        {"label": "Unduh CSV", "url": export_cash_bank_ledger_url, "icon": "bi-download"},
         {"label": "Cetak / Save PDF", "url": url_for('finance.print_cash_bank_ledger', **request.args.to_dict(flat=True)), "icon": "bi-printer"},
         {"label": "Rekening Bank", "url": url_for('master.bank_accounts'), "icon": "bi-bank"},
     ]
@@ -157,7 +157,7 @@
                 <i class="bi bi-search"></i>
                 Terapkan Filter
             </button>
-            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('finance.cash_bank_ledger') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -167,7 +167,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Ringkasan Per Rekening Bank</h5>
-            <p>Saldo bank dihitung dari saldo awal dan seluruh IN/OUT sesuai filter aktif.</p>
+            <p>Saldo bank dihitung dari saldo awal dan seluruh uang masuk/keluar sesuai filter aktif.</p>
         </div>
     </div>
 
@@ -247,7 +247,7 @@
                                 <strong>Kas</strong>
                                 <div class="text-muted small">Kas operasional</div>
                             {% else %}
-                                {{ transaction.account_type or '-' }}
+                                {{ transaction.account_type|status_label }}
                             {% endif %}
                         </td>
                         <td>
@@ -256,7 +256,7 @@
                             {% elif transaction.transaction_type == 'OUT' %}
                                 <span class="status-badge neutral">Keluar</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ transaction.transaction_type or '-' }}</span>
+                                <span class="badge bg-secondary">{{ transaction.transaction_type|status_label }}</span>
                             {% endif %}
                         </td>
                         <td>

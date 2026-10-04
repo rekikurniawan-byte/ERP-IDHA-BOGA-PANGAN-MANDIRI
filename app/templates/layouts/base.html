@@ -16,6 +16,8 @@
         href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}"
     >
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tom-select/tom-select.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
 <body class="{{ 'is-authenticated' if current_user.is_authenticated else 'is-public' }}" data-endpoint="{{ request.endpoint or 'public' }}">
@@ -50,31 +52,26 @@
             </div>
         </div>
     {% else %}
+        {# Halaman publik (beranda, masuk, daftar) mengisi public_page dengan tata letak sendiri. #}
+        {% block public_page %}
         <main class="auth-page">
             <div class="container">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="auth-alert-wrapper" role="status" aria-live="polite">
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show app-alert" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-
+                {% include "components/public_flashes.html" %}
                 {% block auth_content %}{% endblock %}
                 {% block content_public %}{% endblock %}
             </div>
         </main>
+        {% endblock %}
     {% endif %}
 
     <script
         src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}">
     </script>
 
+    <script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 
     <script data-csrf-fetch-guard>

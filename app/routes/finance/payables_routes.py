@@ -24,7 +24,7 @@ def accounts_payable_aging():
         as_of_date = datetime.strptime(as_of_raw, "%Y-%m-%d").date() if as_of_raw else date.today()
     except Exception:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:4591")
-        flash("Tanggal aging tidak valid. Sistem memakai tanggal hari ini.", "warning")
+        flash("Tanggal umur hutang tidak valid. Sistem memakai tanggal hari ini.", "warning")
         as_of_date = date.today()
 
     supplier_id = None
@@ -392,11 +392,11 @@ def create_supplier_bill_payment(bill_id):
             },
         )
     except IdempotencyConflictError:
-        flash("Submit pembayaran supplier berbeda memakai idempotency key yang sama. Muat ulang bill lalu coba lagi.", "warning")
+        flash("Formulir pembayaran ini sudah kedaluwarsa. Muat ulang halaman tagihan lalu coba lagi.", "warning")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 
     if not reserved:
-        flash("Submit pembayaran supplier ini sudah pernah diproses.", "info")
+        flash("Pembayaran supplier ini sudah pernah diproses.", "info")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 
     try:
@@ -496,9 +496,9 @@ def create_supplier_bill_payment(bill_id):
         )
 
         if proof_uploaded:
-            flash("Bukti transfer/payment supplier berhasil diunggah dalam transaksi atomic.", "success")
+            flash("Bukti transfer/pembayaran supplier berhasil diunggah.", "success")
 
-        flash("Pembayaran hutang supplier berhasil disimpan, jurnal otomatis dicatat, dan ledger kas/bank OUT dibuat.", "success")
+        flash("Pembayaran hutang supplier berhasil disimpan, jurnal otomatis dicatat, dan buku kas/bank keluar dicatat.", "success")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 
     except Exception as error:
@@ -524,12 +524,12 @@ def upload_supplier_payment_attachment(payment_id):
             uploaded_by=current_user.id,
             notes=request.form.get("proof_notes") or None,
         )
-        flash("Bukti transfer/payment supplier berhasil diunggah.", "success")
+        flash("Bukti transfer/pembayaran supplier berhasil diunggah.", "success")
     except AttachmentValidationError as exc:
         flash(str(exc), "warning")
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:5063")
-        flash(f"Bukti transfer/payment supplier gagal diunggah: {exc}", "danger")
+        flash(f"Bukti transfer/pembayaran supplier gagal diunggah: {exc}", "danger")
 
     return redirect(url_for("finance.supplier_bill_detail", bill_id=supplier_payment.supplier_bill_id))
 
@@ -543,7 +543,7 @@ def view_supplier_payment_attachment(attachment_id):
         file_path = get_attachment_file_path(attachment)
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:5076")
-        flash(f"File bukti payment supplier tidak bisa dibuka: {exc}", "danger")
+        flash(f"File bukti pembayaran supplier tidak bisa dibuka: {exc}", "danger")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=supplier_payment.supplier_bill_id))
 
     return send_file(
@@ -563,7 +563,7 @@ def download_supplier_payment_attachment(attachment_id):
         file_path = get_attachment_file_path(attachment)
     except Exception as exc:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:5095")
-        flash(f"File bukti payment supplier tidak bisa diunduh: {exc}", "danger")
+        flash(f"File bukti pembayaran supplier tidak bisa diunduh: {exc}", "danger")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=supplier_payment.supplier_bill_id))
 
     return send_file(
@@ -580,5 +580,5 @@ def delete_supplier_payment_attachment(attachment_id):
     attachment, supplier_payment = _supplier_payment_attachment_or_404(attachment_id)
     note = (request.form.get("delete_note") or "Bukti payment supplier salah upload.").strip()
     soft_delete_attachment(attachment, deleted_by=current_user.id, note=note or None)
-    flash("Bukti payment supplier berhasil dihapus lunak. File fisik tetap tersimpan untuk audit.", "success")
+    flash("Bukti pembayaran supplier berhasil dihapus lunak. File fisik tetap tersimpan untuk audit.", "success")
     return redirect(url_for("finance.supplier_bill_detail", bill_id=supplier_payment.supplier_bill_id))

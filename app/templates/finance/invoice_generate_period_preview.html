@@ -87,7 +87,7 @@
         <div>
             <span>Catering Locked</span>
             <h3>{{ total_catering|rupiah }}</h3>
-            <p>Order locked dalam periode</p>
+            <p>Order terkunci dalam periode</p>
         </div>
     </div>
 
@@ -96,7 +96,7 @@
         <div>
             <span>Revisi Tambah</span>
             <h3>{{ total_revision|rupiah }}</h3>
-            <p>AFTER_LOCK INCREASE</p>
+            <p>Tambahan setelah dikunci</p>
         </div>
     </div>
 
@@ -208,7 +208,7 @@
                 {% for line in lines %}
                 <tr>
                     <td>{{ line.date.strftime('%d-%m-%Y') }}</td>
-                    <td><strong>{{ line.item_type }}</strong></td>
+                    <td><strong>{{ line.item_type|status_label }}</strong></td>
                     <td>{{ line.description }}</td>
                     <td>{{ line.qty|qty }}</td>
                     <td>{{ line.unit_price|rupiah }}</td>

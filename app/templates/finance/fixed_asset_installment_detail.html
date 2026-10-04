@@ -68,7 +68,7 @@
             <table class="table app-table"><tbody>
                 <tr><th>Kode</th><td>{{ asset.asset_code }}</td></tr>
                 <tr><th>Nama</th><td>{{ asset.asset_name }}</td></tr>
-                <tr><th>Kategori</th><td>{{ asset.asset_category }}</td></tr>
+                <tr><th>Kategori</th><td>{{ asset.asset_category|status_label }}</td></tr>
                 <tr><th>Nilai Perolehan</th><td>{{ asset.purchase_value|rupiah }}</td></tr>
                 <tr><th>Nilai Buku</th><td>{{ asset.book_value|rupiah }}</td></tr>
                 <tr><th>Status</th><td>{{ asset.status|status_label }}</td></tr>
@@ -102,7 +102,7 @@
                             <div class="col-12"><select name="bank_account_id" class="form-select app-input"><option value="">Kas / tidak pakai rekening</option>{% for account in active_bank_accounts %}<option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }}</option>{% endfor %}</select></div>
                             <div class="col-12"><input type="text" name="reference_number" class="form-control app-input" placeholder="No. ref pembayaran opsional"></div>
                             <div class="col-12"><input type="text" name="notes" class="form-control app-input" placeholder="Catatan opsional"></div>
-                            <div class="col-12"><button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Bayar cicilan jadwal ini? Buku Kas/Bank OUT dan jurnal akan dibuat.">Bayar {{ row.remaining_amount|rupiah }}</button></div>
+                            <div class="col-12"><button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Bayar cicilan jadwal ini? Buku Kas/Bank keluar dan jurnal akan dibuat.">Bayar {{ row.remaining_amount|rupiah }}</button></div>
                         </form>
                         {% else %}
                             <span class="text-muted small">Tidak ada aksi</span>

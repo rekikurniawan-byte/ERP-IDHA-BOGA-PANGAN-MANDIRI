@@ -8,7 +8,7 @@
     <div>
         <p class="text-muted small mb-1">Sistem</p>
         <h1 class="h3 mb-1">Lampiran Digital</h1>
-        <p class="text-muted mb-0">Pondasi bukti digital untuk delivery, pembelian, customer payment, dan supplier payment.</p>
+        <p class="text-muted mb-0">Pondasi bukti digital untuk pengiriman, pembelian, pembayaran pelanggan, dan pembayaran supplier.</p>
     </div>
     <a href="{{ url_for('dashboard.index') }}" class="btn app-btn-secondary">
         <i class="bi bi-arrow-left"></i> Dashboard
@@ -18,7 +18,7 @@
 <div class="alert alert-info border-0 shadow-sm">
     <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Foundation aktif</div>
     <div class="small">
-        Halaman ini baru monitoring lampiran umum. Upload bukti akan dipasang bertahap ke delivery, pembelian, dan payment pada cleanup berikutnya.
+        Halaman ini baru pemantauan lampiran umum. Unggah bukti akan dipasang bertahap ke pengiriman, pembelian, dan pembayaran pada pembaruan berikutnya.
         Format aman: {{ allowed_extensions|join(', ') }}. Maksimal {{ max_upload_mb }} MB per file.
     </div>
 </div>
@@ -40,7 +40,7 @@
                 <select name="reference_type" class="form-select">
                     <option value="">Semua</option>
                     {% for reference_type in options.reference_types %}
-                        <option value="{{ reference_type }}" {{ 'selected' if filters.reference_type == reference_type else '' }}>{{ reference_type }}</option>
+                        <option value="{{ reference_type }}" {{ 'selected' if filters.reference_type == reference_type else '' }}>{{ reference_type|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -49,7 +49,7 @@
                 <select name="attachment_type" class="form-select">
                     <option value="">Semua</option>
                     {% for attachment_type in options.attachment_types %}
-                        <option value="{{ attachment_type }}" {{ 'selected' if filters.attachment_type == attachment_type else '' }}>{{ attachment_type }}</option>
+                        <option value="{{ attachment_type }}" {{ 'selected' if filters.attachment_type == attachment_type else '' }}>{{ attachment_type|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -67,7 +67,7 @@
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-search"></i></button>
             </div>
             <div class="col-12">
-                <a class="btn app-btn-secondary btn-sm" href="{{ url_for('settings.digital_attachments') }}">Reset Filter</a>
+                <a class="btn app-btn-secondary btn-sm" href="{{ url_for('settings.digital_attachments') }}">Atur Ulang Filter</a>
             </div>
         </form>
     </div>
@@ -105,8 +105,8 @@
                             <div class="text-muted small">SHA256: {{ attachment.sha256_hash[:12] }}...</div>
                         </td>
                         <td><span class="badge bg-primary-subtle text-primary border">{{ attachment.module }}</span></td>
-                        <td class="small">{{ attachment.reference_type }} #{{ attachment.reference_id }}</td>
-                        <td><span class="badge bg-light text-dark border">{{ attachment.attachment_type }}</span></td>
+                        <td class="small">{{ attachment.reference_type|status_label }} #{{ attachment.reference_id }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ attachment.attachment_type|status_label }}</span></td>
                         <td class="small">{{ format_file_size(attachment.file_size) }}</td>
                         <td class="small">{{ attachment.uploader.username if attachment.uploader else '-' }}</td>
                         <td>

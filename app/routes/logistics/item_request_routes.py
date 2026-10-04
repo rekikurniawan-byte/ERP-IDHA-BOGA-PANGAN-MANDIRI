@@ -129,7 +129,7 @@ def create_item_request():
                 metadata={"request_number": item_request.request_number, "item_count": len(valid_rows), "purpose": purpose},
             )
 
-            flash("Permintaan barang berhasil dibuat. Status masih PENDING dan belum mengurangi stok.", "success")
+            flash("Permintaan barang berhasil dibuat. Statusnya menunggu persetujuan dan belum mengurangi stok.", "success")
             return redirect(url_for("logistics.item_request_detail", request_id=item_request.id))
 
         except Exception as error:
@@ -183,7 +183,7 @@ def approve_item_request(request_id):
         return redirect(url_for("logistics.item_requests"))
 
     if item_request.status != "PENDING":
-        flash("Permintaan hanya bisa disetujui jika status masih PENDING.", "warning")
+        flash("Permintaan hanya bisa disetujui selama masih menunggu.", "warning")
         return redirect(url_for("logistics.item_request_detail", request_id=item_request.id))
 
     owner_note = (request.form.get("owner_note") or "").strip()
@@ -216,7 +216,7 @@ def reject_item_request(request_id):
         return redirect(url_for("logistics.item_requests"))
 
     if item_request.status != "PENDING":
-        flash("Permintaan hanya bisa ditolak jika status masih PENDING.", "warning")
+        flash("Permintaan hanya bisa ditolak selama masih menunggu.", "warning")
         return redirect(url_for("logistics.item_request_detail", request_id=item_request.id))
 
     reject_reason = (request.form.get("reject_reason") or "").strip()
@@ -299,11 +299,11 @@ def fulfill_item_request(request_id):
                 request_payload={"request_id": item_request.id, "fulfill_note": fulfill_note},
             )
         except IdempotencyConflictError:
-            flash("Submit fulfill berbeda memakai idempotency key yang sama. Muat ulang halaman lalu coba lagi.", "warning")
+            flash("Formulir ini sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.", "warning")
             return redirect(url_for("logistics.item_request_detail", request_id=item_request.id))
 
         if not reserved:
-            flash("Submit fulfill permintaan ini sudah pernah diproses.", "info")
+            flash("Penyerahan barang untuk permintaan ini sudah pernah diproses.", "info")
             return redirect(url_for("logistics.item_request_detail", request_id=item_request.id))
 
         fulfill_item_request_record(

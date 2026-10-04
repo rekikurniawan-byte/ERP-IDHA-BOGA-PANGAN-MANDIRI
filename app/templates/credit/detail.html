@@ -241,7 +241,7 @@
         <div class="app-card mt-4">
             <div class="card-header-clean"><div><h5>Pembayaran</h5></div></div>
             {% for payment in detail.payments %}
-                <p class="mb-1 small">{{ payment.payment_date.strftime('%d-%m-%Y') }} — {{ payment.amount|rupiah }} ({{ payment.payment_method }})</p>
+                <p class="mb-1 small">{{ payment.payment_date.strftime('%d-%m-%Y') }} — {{ payment.amount|rupiah }} ({{ payment.payment_method|status_label }})</p>
             {% else %}
                 <p class="mb-0 small">Belum ada pembayaran.</p>
             {% endfor %}
@@ -255,7 +255,7 @@
     {% for event in detail.events %}
         <p class="mb-1 small">
             <strong>{{ event.changed_at.strftime('%d-%m-%Y %H:%M') }}</strong>
-            {{ event.from_status or "-" }} → {{ event.to_status }}
+            {{ event.from_status or "-" }} → {{ event.to_status|status_label }}
             ({{ "otomatis" if event.trigger == "SWEEP" else event.trigger|lower }})
             — {{ event.reason }}
             {% if event.exposure_amount is not none %}· exposure {{ event.exposure_amount|rupiah }}{% endif %}

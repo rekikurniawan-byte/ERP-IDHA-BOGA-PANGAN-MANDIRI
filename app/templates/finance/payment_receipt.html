@@ -274,7 +274,7 @@
                 <div>
                     <div class="receipt-row">
                         <div class="receipt-label">Metode Pembayaran</div>
-                        <div class="receipt-value">{{ payment.payment_method or '-' }}</div>
+                        <div class="receipt-value">{{ payment.payment_method|status_label }}</div>
                     </div>
                     <div class="receipt-row">
                         <div class="receipt-label">Rekening / Kas</div>
@@ -354,11 +354,11 @@
                         <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
                             <div>
                                 <strong>{{ attachment.original_filename }}</strong>
-                                <div class="text-muted small">{{ attachment.attachment_type }} · {{ format_file_size(attachment.file_size) }}</div>
+                                <div class="text-muted small">{{ attachment.attachment_type|status_label }} · {{ format_file_size(attachment.file_size) }}</div>
                             </div>
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('finance.view_customer_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn app-btn-secondary">Lihat</a>
-                                <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn app-btn-secondary">Download</a>
+                                <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn app-btn-secondary">Unduh</a>
                             </div>
                         </div>
                     {% endfor %}

@@ -68,7 +68,7 @@
     <div class="section-title">
         <div>
             <h3>Pusat Pemulihan Ringkas</h3>
-            <p>Jawaban cepat untuk owner/admin sebelum patch besar, backup manual, atau restore planning.</p>
+            <p>Jawaban cepat untuk owner/admin sebelum patch besar, cadangan manual, atau perencanaan pemulihan.</p>
         </div>
         {% if rc.get("is_system_safe") %}
             <span class="status-badge success">Siap</span>
@@ -81,7 +81,7 @@
 
     <div class="row g-3">
         <div class="col-md-4"><div class="detail-row h-100"><span>Backup bisa dibuat?</span><strong>{{ 'YA' if rc.get("can_create_backup") else 'TIDAK' }}</strong></div></div>
-        <div class="col-md-4"><div class="detail-row h-100"><span>Ada full backup VERIFIED?</span><strong>{{ 'YA' if rc.get("has_verified_backup") else 'BELUM' }}</strong></div></div>
+        <div class="col-md-4"><div class="detail-row h-100"><span>Ada cadangan penuh terverifikasi?</span><strong>{{ 'YA' if rc.get("has_verified_backup") else 'BELUM' }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>Restore dry-run terakhir</span><strong>{{ rc.get("latest_restore_dry_run_status", '-') }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>Unggahan hilang</span><strong>{{ rc.get("missing_upload_references", 0) }}</strong></div></div>
         <div class="col-md-4"><div class="detail-row h-100"><span>File tanpa pemilik</span><strong>{{ rc.get("orphan_upload_files", 0) }}</strong></div></div>
@@ -97,7 +97,7 @@
         </div>
     {% else %}
         <div class="alert alert-warning mt-3 mb-0">
-            Belum ada full backup VERIFIED. Buat full backup dari halaman Backup & Restore setelah semua check PASS.
+            Belum ada cadangan penuh terverifikasi. Buat cadangan penuh dari halaman Backup & Restore setelah semua pemeriksaan LOLOS.
         </div>
     {% endif %}
 </div>
@@ -159,7 +159,7 @@
             <div class="detail-row"><span>Backup engine</span><strong>{{ health.get("backup_engine_version") }}</strong></div>
         </div>
         <div class="col-md-3"><div class="detail-row"><span>DB size</span><strong>{{ ((db.get("size_bytes", 0) or 0) / 1024)|round(2) }} KB</strong></div></div>
-        <div class="col-md-3"><div class="detail-row"><span>Upload size</span><strong>{{ ((uploads.get("total_size_bytes", 0) or 0) / 1024)|round(2) }} KB</strong></div></div>
+        <div class="col-md-3"><div class="detail-row"><span>Ukuran unggahan</span><strong>{{ ((uploads.get("total_size_bytes", 0) or 0) / 1024)|round(2) }} KB</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>Disk free</span><strong>{{ ((disk.get("free_bytes", 0) or 0) / 1024 / 1024)|round(2) }} MB</strong></div></div>
         <div class="col-md-3"><div class="detail-row"><span>Migration head</span><strong>{{ migration.get("head_revision") or (migration.get("head_revisions") or ["-"])[0] }}</strong></div></div>
     </div>

@@ -84,7 +84,7 @@
                 <tbody>
                     <tr><th>Kode</th><td>{{ asset.asset_code }}</td></tr>
                     <tr><th>Nama</th><td>{{ asset.asset_name }}</td></tr>
-                    <tr><th>Kategori</th><td>{{ asset.asset_category }}</td></tr>
+                    <tr><th>Kategori</th><td>{{ asset.asset_category|status_label }}</td></tr>
                     <tr><th>Nilai Beli</th><td>{{ asset.purchase_value|rupiah }}</td></tr>
                     <tr><th>Nilai Buku</th><td>{{ asset.book_value|rupiah }}</td></tr>
                     <tr><th>Umur Manfaat</th><td>{{ asset.useful_life_years }} tahun</td></tr>
@@ -102,7 +102,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Jejak Buku Kas/Bank & Jurnal</h5>
-            <p>Guard integrasi: satu pembelian aset punya satu buku kas/bank OUT dan satu jurnal balanced.</p>
+            <p>Pengaman integrasi: satu pembelian aset punya satu buku kas/bank keluar dan satu jurnal seimbang.</p>
         </div>
     </div>
     <div class="table-responsive">
@@ -117,7 +117,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>Cash/Bank Buku Kas/Bank OUT</td>
+                    <td>Buku kas/bank (uang keluar)</td>
                     <td>{% if ledger_transaction %}<span class="status-badge status-locked">Ada</span>{% else %}<span class="status-badge status-cancelled">Belum</span>{% endif %}</td>
                     <td>{{ ledger_transaction.description if ledger_transaction else '-' }}</td>
                     <td class="text-end">{{ ledger_transaction.amount|rupiah if ledger_transaction else '-' }}</td>

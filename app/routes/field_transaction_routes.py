@@ -75,11 +75,11 @@ REVIEW_ACTION_LABELS = {
     "RECORDED": "Tandai Tercatat",
     "WAITING_EVIDENCE": "Minta Bukti",
     "WAITING_CLASSIFICATION": "Minta Klasifikasi",
-    "IN_REVIEW": "Kirim Ke Review",
-    "WAITING_APPROVAL": "Minta Approval",
-    "READY_TO_POST": "Tandai Siap Diposting",
-    "REJECTED": "Reject",
-    "VOID": "Void",
+    "IN_REVIEW": "Kirim untuk Diperiksa",
+    "WAITING_APPROVAL": "Minta Persetujuan",
+    "READY_TO_POST": "Tandai Siap Dijurnal",
+    "REJECTED": "Tolak",
+    "VOID": "Batalkan",
     "RECONCILED": "Tandai Sudah Rekonsiliasi",
 }
 
@@ -153,23 +153,23 @@ def _build_detail_state(transaction, manual_receivable=None, manual_payable=None
     next_actions = []
     supports_auto_post = bool(event_policy.get("supports_auto_post"))
     if review_status not in {"READY_TO_POST", "POSTED", "RECONCILED", "VOID", "REJECTED"} and supports_auto_post:
-        next_actions.append("Lengkapi bukti dan klasifikasi, lalu tandai transaksi sebagai READY_TO_POST.")
+        next_actions.append("Lengkapi bukti dan klasifikasi, lalu tandai transaksi siap dijurnal.")
     if review_status == "READY_TO_POST" and posting_status != "POSTED" and supports_auto_post:
-        next_actions.append("Lakukan posting untuk membentuk ledger dan jurnal langsung dari transaksi lapangan ini.")
+        next_actions.append("Jurnal transaksi ini untuk membentuk buku kas/bank dan jurnal langsung dari transaksi lapangan ini.")
     if event_type == "MANUAL_RECEIVABLE_CREATED" and not manual_receivable:
         next_actions.append("Buat dokumen piutang manual agar transaksi yang belum lunas bisa ditagih bertahap.")
     if event_type == "UNFORMAL_VENDOR_PAYABLE" and not manual_payable:
         next_actions.append("Buat dokumen hutang manual agar kewajiban ke vendor lapangan bisa dilacak dan dibayar parsial.")
     if event_type in {"SITE_OPERATION_EXPENSE", "KITCHEN_OPERATION_EXPENSE"} and "OPERATIONAL_EXPENSE" not in link_roles and posting_status != "POSTED":
-        next_actions.append("Bila perlu kompatibilitas dengan flow lama, bridge transaksi ini ke modul Operational Expense.")
+        next_actions.append("Bila perlu, hubungkan transaksi ini ke modul Biaya Operasional.")
     if event_type in {"TRANSPORT_TRIP_EXPENSE", "FUEL_EXPENSE"} and "TRANSPORT_EXPENSE" not in link_roles and posting_status != "POSTED":
-        next_actions.append("Bila biaya ini perlu masuk ke flow transport legacy, jalankan bridge ke Transport Expense.")
+        next_actions.append("Bila perlu, hubungkan biaya ini ke modul Biaya Transport.")
     if event_type == "MANDOR_OPERATIONAL_ADVANCE" and "ADVANCE_TRANSACTION" not in link_roles and posting_status != "POSTED":
-        next_actions.append(f"Hubungkan ke advance {T.sub_client_lower} jika panjar ini perlu ikut lifecycle settlement legacy.")
+        next_actions.append(f"Hubungkan ke uang muka {T.sub_client_lower} bila panjar ini perlu diselesaikan lewat modul uang muka.")
     if event_type == "MANDOR_ADVANCE_SETTLEMENT" and posting_status != "POSTED":
-        next_actions.append(f"Cek detail advance untuk memastikan settlement panjar {T.sub_client_lower} sudah punya jurnal beban dan trace field transaction.")
+        next_actions.append(f"Cek detail uang muka untuk memastikan penyelesaian panjar {T.sub_client_lower} sudah punya jurnal beban dan jejak transaksi lapangan.")
     if event_type in {"OWNER_CASH_INJECTION", "OWNER_DRAWING"} and review_status == "WAITING_APPROVAL":
-        next_actions.append("Lanjutkan approval owner/finance sebelum transaksi ekuitas ini diposting ke ledger dan jurnal.")
+        next_actions.append("Minta persetujuan owner sebelum transaksi modal ini dijurnal ke buku kas/bank dan jurnal.")
     if event_type not in {
         "CATERING_DAILY_CASH_SALE",
         "CATERING_PERIOD_RECAP_REVENUE",

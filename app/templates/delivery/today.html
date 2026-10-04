@@ -30,8 +30,8 @@
     <div class="delivery-next-action-header">
         <div>
             <span class="eyebrow">Pengiriman belum dibuat</span>
-            <h2>Ada produksi selesai yang belum muncul sebagai delivery</h2>
-            <p>Pengantar hanya melihat data setelah admin membuat delivery. Buat delivery dari daftar prioritas di bawah ini.</p>
+            <h2>Ada produksi selesai yang belum muncul sebagai pengiriman</h2>
+            <p>Pengantar hanya melihat data setelah admin membuat pengiriman. Buat pengiriman dari daftar prioritas di bawah ini.</p>
         </div>
         <a href="{{ url_for('sop.role_sop', slug='delivery') }}" class="btn btn-sm app-btn-secondary">
             <i class="bi bi-journal-check"></i>
@@ -48,7 +48,7 @@
                     <p>{{ action.order_number }} · {{ action.label }} · sisa {{ action.remaining_qty }} porsi.</p>
                     <div class="delivery-next-action-meta">
                         <span>Order: {{ action.order_date.strftime('%d-%m-%Y') }}</span>
-                        <span>Driver: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                        <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
                     </div>
                 </div>
                 <div class="delivery-next-action-controls">
@@ -75,7 +75,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Daftar Pengiriman</h5>
-            <p>Fokus halaman ini adalah delivery yang harus dibawa pada tanggal {{ selected_date.strftime('%d-%m-%Y') }}.</p>
+            <p>Fokus halaman ini adalah pengiriman yang harus dibawa pada tanggal {{ selected_date.strftime('%d-%m-%Y') }}.</p>
         </div>
     </div>
 
@@ -85,7 +85,7 @@
                 <tr>
                     <th>No Pengiriman</th>
                     <th>Tipe</th>
-                    <th>Driver</th>
+                    <th>Pengantar</th>
                     <th>Status</th>
                     <th>SLA</th>
                     <th>Lokasi</th>

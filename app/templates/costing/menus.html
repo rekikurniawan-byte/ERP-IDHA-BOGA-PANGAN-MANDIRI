@@ -61,7 +61,7 @@
         <select name="menu_type" class="form-select app-input">
             <option value="ALL" {% if menu_type == "ALL" %}selected{% endif %}>Semua Jenis</option>
             {% for type in menu_types %}
-            <option value="{{ type }}" {% if menu_type == type %}selected{% endif %}>{{ type }}</option>
+            <option value="{{ type }}" {% if menu_type == type %}selected{% endif %}>{{ type|status_label }}</option>
             {% endfor %}
         </select>
 
@@ -79,7 +79,7 @@
 
         <div class="app-filter-actions">
             <button class="btn app-btn-primary" type="submit">Filter</button>
-            <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -106,7 +106,7 @@
                         <span>{{ menu.menu_name }}</span>
                         {% if menu.notes %}<br><small class="text-muted">{{ menu.notes }}</small>{% endif %}
                     </td>
-                    <td>{{ menu.menu_type }}</td>
+                    <td>{{ menu.menu_type|status_label }}</td>
                     <td>{{ menu.default_selling_price|rupiah }} / porsi</td>
                     <td>
                         {% if menu.recipe %}
@@ -142,7 +142,7 @@
                         <div class="table-actions">
                             <a href="{{ url_for('costing.menu_recipe', menu_id=menu.id) }}" class="btn btn-sm app-btn-primary">Resep</a>
                             <a href="{{ url_for('costing.hpp_calculator', menu_id=menu.id, portion_qty=100) }}" class="btn btn-sm app-btn-secondary">Hitung</a>
-                            <a href="{{ url_for('costing.edit_menu', menu_id=menu.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <a href="{{ url_for('costing.edit_menu', menu_id=menu.id) }}" class="btn btn-sm app-btn-secondary">Ubah</a>
                             <form method="POST" action="{{ url_for('costing.toggle_menu', menu_id=menu.id) }}" class="d-inline app-form" data-ui-form="true">
                                 {% include "components/csrf_token.html" %}
                                 <button type="submit" class="btn btn-sm app-btn-secondary">

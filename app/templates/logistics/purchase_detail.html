@@ -142,8 +142,8 @@
 <div class="app-card mt-4">
     <div class="card-header-clean">
         <div>
-            <h5>Hutang Supplier / Accounts Payable</h5>
-            <p>Supplier bill dibuat otomatis dari pembelian hutang. Pembayaran hutang supplier dikerjakan pada tahap berikutnya.</p>
+            <h5>Hutang Supplier</h5>
+            <p>Tagihan supplier dibuat otomatis dari pembelian hutang. Pembayaran hutang supplier dikerjakan pada tahap berikutnya.</p>
         </div>
         {% if supplier_bill %}
             <a href="{{ url_for('finance.supplier_bill_detail', bill_id=supplier_bill.id) }}" class="btn app-btn-secondary">
@@ -177,7 +177,7 @@
         </div>
     {% else %}
         <div class="alert alert-warning mb-0">
-            Pembelian CREDIT ini belum punya supplier bill/AP. Ini biasanya data lama sebelum modul hutang supplier otomatis aktif atau perlu dicek ulang.
+            Pembelian kredit ini belum punya tagihan supplier. Ini biasanya data lama sebelum modul hutang supplier otomatis aktif atau perlu dicek ulang.
         </div>
     {% endif %}
 </div>
@@ -200,7 +200,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">Tipe</div>
-                    <strong>{{ ledger_transaction.transaction_type }} {{ ledger_transaction.account_type }}</strong>
+                    <strong>{{ ledger_transaction.transaction_type|status_label }} {{ ledger_transaction.account_type|status_label('account') }}</strong>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">Rekening / Kas</div>
@@ -223,12 +223,12 @@
             </div>
         {% else %}
             <div class="alert alert-warning mb-0">
-                Pembelian tunai ini belum punya buku kas/bank OUT. Ini biasanya data lama sebelum modul buku kas/bank otomatis aktif atau perlu dicek ulang.
+                Pembelian tunai ini belum punya buku kas/bank keluar. Ini biasanya data lama sebelum modul buku kas/bank otomatis aktif atau perlu dicek ulang.
             </div>
         {% endif %}
     {% else %}
         <div class="alert alert-info mb-0">
-            Pembelian ini bertipe hutang/credit, jadi tidak membuat buku kas/bank keluar sekarang. Buku Kas/Bank OUT dibuat saat pembayaran hutang supplier pada tahap AP berikutnya.
+            Pembelian ini bertipe hutang/kredit, jadi tidak membuat buku kas/bank keluar sekarang. Buku Kas/Bank keluar dibuat saat pembayaran hutang supplier pada tahap AP berikutnya.
         </div>
     {% endif %}
 </div>
@@ -313,7 +313,7 @@
                         <th>Jenis</th>
                         <th>Ukuran</th>
                         <th>Catatan</th>
-                        <th>Upload</th>
+                        <th>Unggah</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -324,7 +324,7 @@
                             <strong>{{ attachment.original_filename }}</strong>
                             <div class="text-muted small">{{ attachment.mime_type or '-' }}</div>
                         </td>
-                        <td><span class="status-badge status-progress">{{ attachment.attachment_type }}</span></td>
+                        <td><span class="status-badge status-progress">{{ attachment.attachment_type|status_label }}</span></td>
                         <td>{{ format_file_size(attachment.file_size) }}</td>
                         <td>{{ attachment.notes or '-' }}</td>
                         <td>
@@ -334,7 +334,7 @@
                         <td>
                             <div class="d-flex flex-wrap gap-2">
                                 <a href="{{ url_for('logistics.view_procurement_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
-                                <a href="{{ url_for('logistics.download_procurement_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
+                                <a href="{{ url_for('logistics.download_procurement_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Unduh</a>
                                 <form method="post" action="{{ url_for('logistics.delete_procurement_attachment', attachment_id=attachment.id) }}" data-app-confirm="Hapus lunak bukti pembelian ini? File fisik tetap tersimpan untuk audit." data-ui-form="true" class="app-form">
                                     {% include "components/csrf_token.html" %}
                                     <input type="hidden" name="delete_note" value="Nota/struk pembelian salah upload.">

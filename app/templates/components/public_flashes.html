@@ -1,0 +1,12 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="auth-alert-wrapper" role="status" aria-live="polite">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show app-alert" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}

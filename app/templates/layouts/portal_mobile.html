@@ -7,6 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tom-select/tom-select.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
 <body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
@@ -173,6 +175,10 @@
     </main>
 
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 </body>
 </html>

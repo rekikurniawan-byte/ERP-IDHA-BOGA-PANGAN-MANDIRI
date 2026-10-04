@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>Laporan Piutang Finance</title>
+    <title>Laporan Piutang Keuangan</title>
     <style>
         :root {
             --ink: #111827;
@@ -114,13 +114,13 @@
 
     <header class="report-header">
         <div>
-            <h1>Laporan Piutang Finance</h1>
+            <h1>Laporan Piutang Keuangan</h1>
             <div class="muted">Gabungan piutang realtime dan manual backfill dari halaman finance existing.</div>
             <div class="filter-line">
                 <span>Cabang: {{ selected_branch_name or '-' }}</span>
                 <span>Stage: {{ selected_filter_label }}</span>
-                <span>Tipe: {{ selected_bill_to_type|replace('_', ' ')|title if selected_bill_to_type else 'Semua' }}</span>
-                <span>Status: {{ selected_status|replace('_', ' ')|title if selected_status else 'Semua' }}</span>
+                <span>Tipe: {{ selected_bill_to_type|status_label if selected_bill_to_type else 'Semua' }}</span>
+                <span>Status: {{ selected_status|status_label if selected_status else 'Semua' }}</span>
                 <span>Periode: {{ selected_period_from or '-' }} s/d {{ selected_period_to or '-' }}</span>
             </div>
         </div>
@@ -134,7 +134,7 @@
     <div class="summary">
         <div class="box"><span>Total Piutang Aktif</span><strong>{{ summary.total_receivable|rupiah }}</strong></div>
         <div class="box"><span>Invoice Belum Lunas</span><strong>{{ summary.invoice_count }}</strong></div>
-        <div class="box"><span>Overdue</span><strong>{{ summary.overdue_count }}</strong></div>
+        <div class="box"><span>Lewat Jatuh Tempo</span><strong>{{ summary.overdue_count }}</strong></div>
         <div class="box"><span>Butuh Follow Up</span><strong>{{ summary.follow_up_count }}</strong></div>
     </div>
 

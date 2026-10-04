@@ -45,7 +45,7 @@
             <label class="form-label">Status Order</label>
             <select name="status" class="form-select app-input">
                 <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>Semua</option>
-                <option value="LOCKED" {% if status_filter == 'LOCKED' %}selected{% endif %}>Locked</option>
+                <option value="LOCKED" {% if status_filter == 'LOCKED' %}selected{% endif %}>Terkunci</option>
                 <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>Draft / belum locked</option>
             </select>
         </div>
@@ -89,7 +89,7 @@
         </div>
         <div>
             <p>Status Prediksi</p>
-            <h3>{{ forecast.overall_status }}</h3>
+            <h3>{{ forecast.overall_status|status_label }}</h3>
             <span class="app-stat-helper">{{ forecast.summary.blocked_count }} butuh cek, {{ forecast.summary.order_warning_count }} order warning</span>
         </div>
     </div>
@@ -262,7 +262,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Rincian Per Order/Menu</h5>
-            <p>Trace kebutuhan bahan dari menu dan porsi order.</p>
+            <p>Telusuri kebutuhan bahan dari menu dan porsi order.</p>
         </div>
     </div>
 

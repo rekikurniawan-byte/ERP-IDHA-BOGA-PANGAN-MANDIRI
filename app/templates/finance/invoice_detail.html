@@ -153,7 +153,7 @@
     <div class="info-grid">
         <div>
             <span>Level</span>
-            <strong>{{ ar.level }}</strong>
+            <strong>{{ ar.level|status_label }}</strong>
         </div>
 
         <div>
@@ -163,7 +163,7 @@
 
         <div>
             <span>Status Collection Terakhir</span>
-            <strong>{{ ar.latest_status }}</strong>
+            <strong>{{ ar.latest_status|status_label }}</strong>
         </div>
 
         <div>
@@ -255,7 +255,7 @@
                 {% elif invoice.source_type == "MANUAL_BILLING_RECAP" %}
                     Invoice Tagihan Manual
                 {% else %}
-                    {{ invoice.source_type or "-" }}
+                    {{ invoice.source_type|status_label }}
                 {% endif %}
             </strong>
         </div>
@@ -324,7 +324,7 @@
 
         <div>
             <span>Sumber Sistem</span>
-            <strong>{{ invoice.source_type or "-" }}</strong>
+            <strong>{{ invoice.source_type|status_label }}</strong>
         </div>
     </div>
 </div>
@@ -446,14 +446,14 @@
             <tbody>
                 {% for item in invoice.items %}
                 <tr>
-                    <td><strong>{{ item.item_type }}</strong></td>
+                    <td><strong>{{ item.item_type|status_label }}</strong></td>
                     <td>{{ item.description }}</td>
                     <td>{{ item.qty|qty }}</td>
                     <td>{{ item.unit_price|rupiah }}</td>
                     <td>{{ item.subtotal|rupiah }}</td>
                     <td>
                         {% if item.source_type %}
-                            <span class="status-badge status-progress">{{ item.source_type }}</span>
+                            <span class="status-badge status-progress">{{ item.source_type|status_label }}</span>
                             <div class="small text-muted mt-1">ID: {{ item.source_id }}</div>
                             {% set source_ref = manual_billing_source_refs.get(item.id) if manual_billing_source_refs else none %}
                             {% if source_ref %}
@@ -521,7 +521,7 @@
                     {% endfor %}
                 </select>
                 {% if active_bank_accounts %}
-                    <div class="form-text text-muted small">Dipakai untuk mencatat buku kas/bank pembayaran customer.</div>
+                    <div class="form-text text-muted small">Dipakai untuk mencatat buku kas/bank pembayaran pelanggan.</div>
                 {% else %}
                     <div class="form-text text-danger small">Belum ada rekening bank aktif. Tambahkan di Data Master &gt; Rekening Bank jika menerima transfer.</div>
                 {% endif %}
@@ -560,7 +560,7 @@
             <div class="card-header-clean">
                 <div>
                     <h6 class="mb-1">Bukti Digital Pembayaran</h6>
-                    <p class="mb-0">Opsional. Upload bukti transfer/screenshot pembayaran kalau tersedia.</p>
+                    <p class="mb-0">Opsional. Unggah bukti transfer/tangkapan layar pembayaran kalau tersedia.</p>
                 </div>
             </div>
             <div class="form-grid">
@@ -643,7 +643,7 @@
                                     </a>
                                 </div></strong></td>
                     <td>{{ payment.payment_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ payment.payment_method }}</td>
+                    <td>{{ payment.payment_method|status_label }}</td>
                     <td>
                         {% if payment.payment_method == 'TRANSFER' and payment.bank_account %}
                             <strong>{{ payment.bank_account.bank_name }}</strong>
@@ -666,12 +666,12 @@
                                             <div class="payment-proof-attachment-main">
                                                 <div>
                                                     <strong>{{ attachment.original_filename }}</strong>
-                                                    <span>{{ attachment.attachment_type }} - {{ format_file_size(attachment.file_size) }}</span>
+                                                    <span>{{ attachment.attachment_type|status_label }} - {{ format_file_size(attachment.file_size) }}</span>
                                                 </div>
                                                 <div class="payment-proof-attachment-actions">
                                                     <a href="{{ url_for('finance.view_customer_payment_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
-                                                    <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Download</a>
-                                                    <form method="POST" action="{{ url_for('finance.delete_customer_payment_attachment', attachment_id=attachment.id) }}" class="app-form payment-proof-delete-form" data-app-confirm="Hapus lunak bukti payment ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
+                                                    <a href="{{ url_for('finance.download_customer_payment_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Unduh</a>
+                                                    <form method="POST" action="{{ url_for('finance.delete_customer_payment_attachment', attachment_id=attachment.id) }}" class="app-form payment-proof-delete-form" data-app-confirm="Hapus lunak bukti pembayaran ini? File fisik tetap disimpan untuk audit." data-ui-form="true">
                                                         {% include "components/csrf_token.html" %}
                                                         <input type="hidden" name="delete_note" value="Bukti pembayaran pelanggan salah upload.">
                                                         <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
@@ -687,7 +687,7 @@
 
                             <form method="POST" enctype="multipart/form-data" action="{{ url_for('finance.upload_customer_payment_attachment', payment_id=payment.id) }}" class="app-form payment-proof-upload-form" data-ui-form="true">
                                 {% include "components/csrf_token.html" %}
-                                <div class="payment-proof-upload-label">Upload bukti</div>
+                                <div class="payment-proof-upload-label">Unggah bukti</div>
                                 <div class="payment-proof-upload-grid">
                                     <select name="proof_type" class="form-select form-select-sm">
                                         <option value="BUKTI_TRANSFER_CUSTOMER">Bukti Transfer</option>
@@ -697,7 +697,7 @@
                                     </select>
                                     <input type="file" name="proof_file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
                                     <input type="text" name="proof_notes" class="form-control form-control-sm" placeholder="Catatan opsional">
-                                    <button type="submit" class="btn btn-sm app-btn-secondary">Upload Bukti</button>
+                                    <button type="submit" class="btn btn-sm app-btn-secondary">Unggah Bukti</button>
                                 </div>
                             </form>
                         </div>

@@ -108,7 +108,7 @@
                 <div class="col-md-3">
                     <select class="form-select app-input" name="attachment_type">
                         {% for type in data.attachment_types %}
-                            <option value="{{ type }}">{{ type }}</option>
+                            <option value="{{ type }}">{{ type|status_label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -119,7 +119,7 @@
                     <input class="form-control app-input" name="notes" placeholder="Catatan dokumen">
                 </div>
                 <div class="col-md-2 d-grid">
-                    <button class="btn app-btn-primary" type="submit">Upload</button>
+                    <button class="btn app-btn-primary" type="submit">Unggah</button>
                 </div>
             </form>
 
@@ -137,7 +137,7 @@
                         {% for document in data.documents %}
                             <tr>
                                 <td class="fw-semibold">{{ document.original_filename }}</td>
-                                <td>{{ document.attachment_type }}</td>
+                                <td>{{ document.attachment_type|status_label }}</td>
                                 <td>{{ document.file_size }} byte</td>
                                 <td>{{ document.notes or '-' }}</td>
                             </tr>

@@ -23,7 +23,7 @@
         <select name="supplier_type" class="form-select app-input">
             <option value="ALL" {% if supplier_type == "ALL" %}selected{% endif %}>Semua Jenis</option>
             {% for type in supplier_types %}
-                <option value="{{ type }}" {% if supplier_type == type %}selected{% endif %}>{{ type }}</option>
+                <option value="{{ type }}" {% if supplier_type == type %}selected{% endif %}>{{ type|status_label }}</option>
             {% endfor %}
         </select>
 
@@ -35,7 +35,7 @@
 
         <div class="app-filter-actions">
             <button class="btn app-btn-primary" type="submit">Filter</button>
-            <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('master.suppliers') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -65,7 +65,7 @@
                             <div class="text-muted small">{{ supplier.address }}</div>
                         {% endif %}
                     </td>
-                    <td>{{ supplier.supplier_type }}</td>
+                    <td>{{ supplier.supplier_type|status_label }}</td>
                     <td>
                         {{ supplier.contact_person or '-' }}
                         {% if supplier.phone or supplier.whatsapp %}
@@ -96,7 +96,7 @@
                                 <a href="{{ url_for('logistics.create_purchase', supplier_id=supplier.id) }}" class="btn btn-sm app-btn-primary">Buat Pembelian</a>
                             {% endif %}
 
-                            <a href="{{ url_for('master.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm app-btn-secondary">Edit</a>
+                            <a href="{{ url_for('master.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm app-btn-secondary">Ubah</a>
 
                             <form method="POST" action="{{ url_for('master.toggle_supplier', supplier_id=supplier.id) }}" data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}

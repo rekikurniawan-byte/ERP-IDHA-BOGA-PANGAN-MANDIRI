@@ -159,7 +159,7 @@ FIELD_EVENT_POLICIES = {
         "advance_account_code": "1008",
     },
     "MANDOR_ADVANCE_SETTLEMENT": {
-        "label": L("Settlement Panjar {sub_client}"),
+        "label": L("Penyelesaian Panjar {sub_client}"),
         "direction": "OUT",
         "cash_flow": "NON_CASH",
         "payment_status": "PARTIAL",

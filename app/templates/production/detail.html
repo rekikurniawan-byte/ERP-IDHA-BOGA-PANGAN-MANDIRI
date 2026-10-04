@@ -59,11 +59,11 @@
         <div class="delivery-next-action-icon"><i class="bi bi-truck-front"></i></div>
         <div class="delivery-next-action-body">
             <strong>Order {{ production_delivery_action.order_number }}</strong>
-            <p>Batch {{ production_delivery_action.label }} masih punya {{ production_delivery_action.remaining_qty }} porsi yang belum masuk delivery aktif.</p>
+            <p>Batch {{ production_delivery_action.label }} masih punya {{ production_delivery_action.remaining_qty }} porsi yang belum masuk pengiriman aktif.</p>
             <div class="delivery-next-action-meta">
                 <span>Total order: {{ production_delivery_action.total_order_qty }}</span>
-                <span>Sudah delivery: {{ production_delivery_action.total_planned_delivery_qty }}</span>
-                <span>Driver: {{ production_delivery_action.driver.name if production_delivery_action.driver else 'Belum tersedia' }}</span>
+                <span>Sudah dikirim: {{ production_delivery_action.total_planned_delivery_qty }}</span>
+                <span>Pengantar: {{ production_delivery_action.driver.name if production_delivery_action.driver else 'Belum tersedia' }}</span>
             </div>
         </div>
         <div class="delivery-next-action-controls">
@@ -133,7 +133,7 @@
     <div class="card-header-clean">
         <div>
             <h5>SLA Produksi</h5>
-            <p>Produksi dinilai dari target siap batch. Status ini membantu membaca risiko delivery sebelum terlambat.</p>
+            <p>Produksi dinilai dari target siap batch. Status ini membantu membaca risiko pengiriman sebelum terlambat.</p>
         </div>
         <span class="status-badge {{ production_sla.badge_class }}">{{ production_sla.label }}</span>
     </div>
@@ -150,7 +150,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Detail Rencana Produksi</h5>
-            <p>Rencana produksi dibuat otomatis dari order harian yang sudah locked.</p>
+            <p>Rencana produksi dibuat otomatis dari order harian yang sudah dikunci.</p>
         </div>
     </div>
 
@@ -232,10 +232,10 @@
                 <div class="col-md-4">
                     <label class="form-label app-label">Status</label>
                     <select name="status" class="form-select app-input">
-                        <option value="DRAFT" {% if production.status == "DRAFT" %}selected{% endif %}>DRAFT</option>
-                        <option value="IN_PROGRESS" {% if production.status == "IN_PROGRESS" %}selected{% endif %}>IN_PROGRESS</option>
-                        <option value="COMPLETED" {% if production.status == "COMPLETED" %}selected{% endif %}>COMPLETED</option>
-                        <option value="CANCELLED" {% if production.status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
+                        <option value="DRAFT" {% if production.status == "DRAFT" %}selected{% endif %}>{{ "DRAFT"|status_label }}</option>
+                        <option value="IN_PROGRESS" {% if production.status == "IN_PROGRESS" %}selected{% endif %}>{{ "IN_PROGRESS"|status_label }}</option>
+                        <option value="COMPLETED" {% if production.status == "COMPLETED" %}selected{% endif %}>{{ "COMPLETED"|status_label }}</option>
+                        <option value="CANCELLED" {% if production.status == "CANCELLED" %}selected{% endif %}>{{ "CANCELLED"|status_label }}</option>
                     </select>
                 </div>
 

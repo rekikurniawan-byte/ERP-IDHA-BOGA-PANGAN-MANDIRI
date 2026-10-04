@@ -43,7 +43,7 @@
             </div>
             <div class="col-md-4 d-flex gap-2">
                 <button type="submit" class="btn app-btn-primary">Lihat Data Closing</button>
-                <a href="{{ url_for('accounting.period_closing') }}" class="btn app-btn-secondary">Reset</a>
+                <a href="{{ url_for('accounting.period_closing') }}" class="btn app-btn-secondary">Atur Ulang</a>
             </div>
         </form>
     </div>
@@ -68,7 +68,7 @@
         <div class="app-stat-card">
             <div class="app-stat-icon stat-info"><i class="bi bi-bar-chart"></i></div>
             <div>
-                <span>{{ preview.net_status }}</span>
+                <span>{{ preview.net_status|status_label }}</span>
                 <h3>{{ preview.net_income|rupiah }}</h3>
                 <p>Net dipindahkan ke 3002 Laba Ditahan</p>
             </div>

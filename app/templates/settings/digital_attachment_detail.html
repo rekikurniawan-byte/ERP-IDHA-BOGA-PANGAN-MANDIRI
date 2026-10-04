@@ -38,10 +38,10 @@
                     <dd class="col-sm-8">{{ attachment.module }}</dd>
 
                     <dt class="col-sm-4">Referensi</dt>
-                    <dd class="col-sm-8">{{ attachment.reference_type }} #{{ attachment.reference_id }}</dd>
+                    <dd class="col-sm-8">{{ attachment.reference_type|status_label }} #{{ attachment.reference_id }}</dd>
 
                     <dt class="col-sm-4">Jenis Bukti</dt>
-                    <dd class="col-sm-8">{{ attachment.attachment_type }}</dd>
+                    <dd class="col-sm-8">{{ attachment.attachment_type|status_label }}</dd>
 
                     <dt class="col-sm-4">MIME Type</dt>
                     <dd class="col-sm-8">{{ attachment.mime_type or '-' }}</dd>
@@ -55,7 +55,7 @@
                     <dt class="col-sm-4">Uploader</dt>
                     <dd class="col-sm-8">{{ attachment.uploader.username if attachment.uploader else '-' }}</dd>
 
-                    <dt class="col-sm-4">Waktu Upload</dt>
+                    <dt class="col-sm-4">Waktu Unggah</dt>
                     <dd class="col-sm-8">{{ attachment.created_at.strftime('%d-%m-%Y %H:%M:%S') if attachment.created_at else '-' }}</dd>
 
                     <dt class="col-sm-4">Catatan</dt>
@@ -74,7 +74,7 @@
                         <i class="bi bi-box-arrow-up-right"></i> Buka / Lihat Data
                     </a>
                     <a href="{{ url_for('settings.download_digital_attachment', attachment_id=attachment.id) }}" class="btn app-btn-primary">
-                        <i class="bi bi-download"></i> Download
+                        <i class="bi bi-download"></i> Unduh
                     </a>
                 {% elif attachment.is_deleted %}
                     <div class="alert alert-warning mb-0">Lampiran ini sudah dihapus lunak, jadi tidak bisa dibuka dari UI operasional.</div>

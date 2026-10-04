@@ -1,110 +1,120 @@
 {% extends "layouts/base.html" %}
 
-{% block content_public %}
+{% block public_page %}
 {% set form = data.form %}
-<div class="portal-register-shell">
-    <section class="portal-register-card">
-        <div class="portal-register-brand">
-            {% with class_name="auth-logo company-logo-mark" %}
+{% set company = global_company_settings %}
+{% set company_name = company.company_name or "PT Idha Boga Pangan Mandiri" %}
+{% set pricing = site.pricing if site else none %}
+{% set cutoffs = site.cutoffs if site else {} %}
+<div class="pub pub-auth pub-auth-wide" data-public-page="register">
+    <aside class="pub-auth-side">
+        <a class="pub-brand" href="{{ url_for('dashboard.index') }}">
+            {% with class_name="company-logo-mark" %}
                 {% include "components/company_logo.html" %}
             {% endwith %}
-            <div>
-                <span>Daftar pelanggan</span>
-                <h1>Daftar Pelanggan</h1>
-                <p>Buat akun untuk memesan catering dan mengirim bukti pembayaran.</p>
-            </div>
-        </div>
-
-        <form method="post" action="{{ url_for('portal.register') }}" class="portal-register-form app-form">
-            {% include "components/csrf_token.html" %}
-
-            <div class="portal-form-section">
-                <h2>Data akun</h2>
-                <div class="portal-register-grid">
-                    <label>
-                        <span>Nama lengkap</span>
-                        <input class="form-control app-input" type="text" name="full_name" value="{{ form.get('full_name', '') }}" autocomplete="name" required>
-                    </label>
-                    <label>
-                        <span>Nomor HP</span>
-                        <input class="form-control app-input" type="tel" name="phone" value="{{ form.get('phone', '') }}" autocomplete="tel" placeholder="08..." required>
-                    </label>
-                    <label>
-                        <span>Nama pengguna</span>
-                        <input class="form-control app-input" type="text" name="username" value="{{ form.get('username', '') }}" autocomplete="username" required>
-                    </label>
-                    <label>
-                        <span>Cabang</span>
-                        <select class="form-select app-input" name="branch_id" required>
-                            {% for branch in data.branches %}
-                                <option value="{{ branch.id }}" {% if form.get('branch_id')|string == branch.id|string %}selected{% endif %}>{{ branch.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        <span>Kata sandi</span>
-                        <input class="form-control app-input" type="password" name="password" autocomplete="new-password" minlength="8" required>
-                    </label>
-                    <label>
-                        <span>Ulangi kata sandi</span>
-                        <input class="form-control app-input" type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required>
-                    </label>
-                </div>
-            </div>
-
-            <div class="portal-form-section">
-                <h2>Alamat pengiriman</h2>
-                <div class="portal-register-grid">
-                    <label>
-                        <span>Nama lokasi</span>
-                        <input class="form-control app-input" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, proyek, atau acara">
-                    </label>
-                    {% if data.zones %}
-                    <label>
-                        <span>Zona pengiriman</span>
-                        <select class="form-select app-input" name="delivery_zone_id" required>
-                            <option value="">Pilih zona</option>
-                            {% for branch, zone in data.zones %}
-                                <option value="{{ zone.id }}" {% if form.get('delivery_zone_id')|string == zone.id|string %}selected{% endif %}>{{ zone.name }}{% if data.branches|length > 1 %} ({{ branch.name }}){% endif %}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    {% endif %}
-                    <label class="wide">
-                        <span>Alamat lengkap</span>
-                        <textarea class="form-control app-input" name="address" rows="4" required data-no-textarea-footer>{{ form.get('address', '') }}</textarea>
-                    </label>
-                    <label class="wide">
-                        <span>Catatan lokasi</span>
-                        <input class="form-control app-input" type="text" name="notes" value="{{ form.get('notes', '') }}" placeholder="Patokan, nama penerima, atau catatan lain">
-                    </label>
-                </div>
-            </div>
-
-            <div class="portal-register-note">
-                <i class="bi bi-info-circle"></i>
-                <span>Akun {{ term('client') }} dan {{ term('sub_client', lower=True) }} dibuat admin agar kontrak, lokasi, tagihan, dan pembayaran tersambung tepat.</span>
-            </div>
-
-            <button class="btn app-btn-primary portal-register-submit" type="submit">
-                <i class="bi bi-person-plus"></i>
-                <span>Buat Akun Pelanggan</span>
-            </button>
-        </form>
-    </section>
-
-    <aside class="portal-register-aside">
-        <a class="portal-register-login" href="{{ data.login_url }}">
-            <i class="bi bi-box-arrow-in-right"></i>
-            <span>Sudah punya akun? Masuk</span>
+            <span>
+                <strong>{{ company_name }}</strong>
+                <small>{{ company.company_subtitle or "Katering harian" }}</small>
+            </span>
         </a>
-        <div class="portal-register-flow">
-            <h2>Alur pelanggan</h2>
-            <article><i class="bi bi-person-check"></i><strong>Daftar</strong><span>Akun aktif</span></article>
-            <article><i class="bi bi-bag-plus"></i><strong>Pesan</strong><span>Pilih tanggal dan porsi</span></article>
-            <article><i class="bi bi-credit-card"></i><strong>Bayar</strong><span>Unggah bukti</span></article>
-            <article><i class="bi bi-truck"></i><strong>Diproses</strong><span>Dicek admin</span></article>
+
+        <div class="pub-auth-side-body">
+            <h1>Pesan katering untuk acara, kantor, atau rumah.</h1>
+            <ul class="pub-auth-list">
+                <li><strong>Bayar di muka</strong><span>Transfer lalu unggah bukti; pesanan diproses setelah pembayaran diperiksa.</span></li>
+                {% if cutoffs.LUNCH %}
+                    <li><strong>Batas pesan</strong><span>Makan siang sampai pukul {{ cutoffs.LUNCH }}{% if cutoffs.DINNER %}, makan sore sampai {{ cutoffs.DINNER }}{% endif %} di hari yang sama.</span></li>
+                {% endif %}
+                {% if pricing %}
+                    <li><strong>Jumlah porsi</strong><span>Minimal {{ pricing.min_portions }} porsi{% if pricing.free_delivery_min %}; gratis ongkir mulai {{ pricing.free_delivery_min }} porsi per kiriman{% endif %}.</span></li>
+                {% endif %}
+                <li><strong>Untuk proyek</strong><span>Akun {{ term('client') }} dan {{ term('sub_client', lower=True) }} dibuat admin agar tersambung ke kontrak dan tagihan.</span></li>
+            </ul>
         </div>
+
+        <p class="pub-auth-help">Sudah punya akun? <a href="{{ data.login_url }}">Masuk di sini</a>.</p>
     </aside>
+
+    <main class="pub-auth-main" id="mainContent">
+        {% include "components/public_flashes.html" %}
+        <div class="pub-auth-card">
+            <h2>Daftar pelanggan</h2>
+            <p>Buat akun untuk memesan katering dan mengirim bukti pembayaran.</p>
+
+            <form method="post" action="{{ url_for('portal.register') }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+
+                <section class="pub-form-section">
+                    <h3>Data akun</h3>
+                    <div class="pub-form-grid">
+                        <label>
+                            <span>Nama lengkap</span>
+                            <input class="form-control" type="text" name="full_name" value="{{ form.get('full_name', '') }}" autocomplete="name" required>
+                        </label>
+                        <label>
+                            <span>Nomor HP</span>
+                            <input class="form-control" type="tel" name="phone" value="{{ form.get('phone', '') }}" autocomplete="tel" placeholder="08..." required>
+                        </label>
+                        <label>
+                            <span>Nama pengguna</span>
+                            <input class="form-control" type="text" name="username" value="{{ form.get('username', '') }}" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+                        </label>
+                        <label>
+                            <span>Cabang</span>
+                            <select class="form-select" name="branch_id" required>
+                                {% for branch in data.branches %}
+                                    <option value="{{ branch.id }}" {% if form.get('branch_id')|string == branch.id|string %}selected{% endif %}>{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Kata sandi</span>
+                            <input class="form-control" type="password" name="password" autocomplete="new-password" minlength="8" required>
+                        </label>
+                        <label>
+                            <span>Ulangi kata sandi</span>
+                            <input class="form-control" type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="pub-form-section">
+                    <h3>Alamat pengiriman</h3>
+                    <div class="pub-form-grid">
+                        <label>
+                            <span>Nama lokasi</span>
+                            <input class="form-control" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, atau tempat acara">
+                        </label>
+                        {% if data.zones %}
+                            <label>
+                                <span>Zona pengiriman</span>
+                                <select class="form-select" name="delivery_zone_id" required>
+                                    <option value="">Pilih zona</option>
+                                    {% for branch, zone in data.zones %}
+                                        <option value="{{ zone.id }}" {% if form.get('delivery_zone_id')|string == zone.id|string %}selected{% endif %}>{{ zone.name }}{% if data.branches|length > 1 %} ({{ branch.name }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                        {% endif %}
+                        <label class="is-wide">
+                            <span>Alamat lengkap</span>
+                            <textarea class="form-control" name="address" rows="3" required data-no-textarea-footer>{{ form.get('address', '') }}</textarea>
+                        </label>
+                        <label class="is-wide">
+                            <span>Catatan lokasi</span>
+                            <input class="form-control" type="text" name="notes" value="{{ form.get('notes', '') }}" placeholder="Patokan, nama penerima, atau catatan lain">
+                        </label>
+                    </div>
+                </section>
+
+                <button class="pub-btn pub-btn-primary pub-btn-lg" type="submit" data-submit-loading="Membuat akun...">
+                    Buat akun pelanggan <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </button>
+            </form>
+        </div>
+        <a class="pub-auth-back" href="{{ url_for('dashboard.index') }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Kembali ke beranda
+        </a>
+    </main>
 </div>
 {% endblock %}

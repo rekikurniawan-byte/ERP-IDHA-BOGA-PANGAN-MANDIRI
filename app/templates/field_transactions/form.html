@@ -18,7 +18,7 @@
     <div class="app-card mt-4">
             <div class="card-header-clean">
                 <div>
-                    <h5>Event Inti</h5>
+                    <h5>Jenis Transaksi</h5>
                     <p>Pilih kejadian bisnis yang paling dekat dengan kejadian lapangan. Hanya event yang sudah siap end-to-end yang ditampilkan agar tidak menimbulkan dead end di UI.</p>
                 </div>
             </div>
@@ -40,7 +40,7 @@
                     <select name="business_event_type" class="form-select" required>
                         <option value="">Pilih event</option>
                         {% for event in event_choices %}
-                            <option value="{{ event.value }}" {% if form_data.get('business_event_type') == event.value %}selected{% endif %}>{{ event.label }} | {{ event.direction }} | {{ event.cash_flow }}</option>
+                            <option value="{{ event.value }}" {% if form_data.get('business_event_type') == event.value %}selected{% endif %}>{{ event.label }} | {{ event.direction|status_label }} | {{ event.cash_flow }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -64,23 +64,23 @@
         </div>
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">Pihak Existing</label>
+                <label class="form-label">Pihak Terdaftar</label>
                 <select name="counterparty_id" class="form-select">
-                    <option value="">Tanpa pihak existing</option>
+                    <option value="">Tanpa pihak terdaftar</option>
                     {% for counterparty in counterparties %}
-                        <option value="{{ counterparty.id }}" {% if form_data.get('counterparty_id')|string == counterparty.id|string %}selected{% endif %}>{{ counterparty.name }} | {{ counterparty.counterparty_type }}</option>
+                        <option value="{{ counterparty.id }}" {% if form_data.get('counterparty_id')|string == counterparty.id|string %}selected{% endif %}>{{ counterparty.name }} | {{ counterparty.counterparty_type|status_label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Tipe Pihak Baru</label>
                 <select name="new_counterparty_type" class="form-select">
-                    <option value="LAINNYA" {% if form_data.get('new_counterparty_type', 'LAINNYA') == 'LAINNYA' %}selected{% endif %}>LAINNYA</option>
-                    <option value="MANDOR_NON_PT" {% if form_data.get('new_counterparty_type') == 'MANDOR_NON_PT' %}selected{% endif %}>MANDOR_NON_PT</option>
-                    <option value="PEMBELI_UMUM" {% if form_data.get('new_counterparty_type') == 'PEMBELI_UMUM' %}selected{% endif %}>PEMBELI_UMUM</option>
-                    <option value="VENDOR_NONFORMAL" {% if form_data.get('new_counterparty_type') == 'VENDOR_NONFORMAL' %}selected{% endif %}>VENDOR_NONFORMAL</option>
-                    <option value="BUYER_EKSTERNAL" {% if form_data.get('new_counterparty_type') == 'BUYER_EKSTERNAL' %}selected{% endif %}>BUYER_EKSTERNAL</option>
-                    <option value="PEKERJA_LAPANGAN" {% if form_data.get('new_counterparty_type') == 'PEKERJA_LAPANGAN' %}selected{% endif %}>PEKERJA_LAPANGAN</option>
+                    <option value="LAINNYA" {% if form_data.get('new_counterparty_type', 'LAINNYA') == 'LAINNYA' %}selected{% endif %}>{{ "LAINNYA"|status_label }}</option>
+                    <option value="MANDOR_NON_PT" {% if form_data.get('new_counterparty_type') == 'MANDOR_NON_PT' %}selected{% endif %}>{{ "MANDOR_NON_PT"|status_label }}</option>
+                    <option value="PEMBELI_UMUM" {% if form_data.get('new_counterparty_type') == 'PEMBELI_UMUM' %}selected{% endif %}>{{ "PEMBELI_UMUM"|status_label }}</option>
+                    <option value="VENDOR_NONFORMAL" {% if form_data.get('new_counterparty_type') == 'VENDOR_NONFORMAL' %}selected{% endif %}>{{ "VENDOR_NONFORMAL"|status_label }}</option>
+                    <option value="BUYER_EKSTERNAL" {% if form_data.get('new_counterparty_type') == 'BUYER_EKSTERNAL' %}selected{% endif %}>{{ "BUYER_EKSTERNAL"|status_label }}</option>
+                    <option value="PEKERJA_LAPANGAN" {% if form_data.get('new_counterparty_type') == 'PEKERJA_LAPANGAN' %}selected{% endif %}>{{ "PEKERJA_LAPANGAN"|status_label }}</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -105,7 +105,7 @@
                         <input type="checkbox" name="register_counterparty" value="1" {% if form_data.get('register_counterparty') in [True, '1', 1, 'on'] %}checked{% endif %}>
                         <span>Simpan sebagai pihak baru</span>
                     </label>
-                    <div class="small text-muted">Untuk tipe {{ term('sub_client', lower=True) }}, nama dan no HP yang cocok akan diarahkan ke entitas existing bila sudah ada.</div>
+                    <div class="small text-muted">Untuk tipe {{ term('sub_client', lower=True) }}, nama dan no HP yang cocok akan diarahkan ke data pihak yang sudah ada.</div>
                 </div>
             </div>
         </div>
@@ -123,9 +123,9 @@
                     <label class="form-label">Metode Pembayaran</label>
                     <select name="payment_method" class="form-select">
                         <option value="" {% if not form_data.get('payment_method') %}selected{% endif %}>Belum ditentukan</option>
-                        <option value="CASH" {% if form_data.get('payment_method') == 'CASH' %}selected{% endif %}>CASH</option>
-                        <option value="TRANSFER" {% if form_data.get('payment_method') == 'TRANSFER' %}selected{% endif %}>TRANSFER</option>
-                        <option value="QRIS" {% if form_data.get('payment_method') == 'QRIS' %}selected{% endif %}>QRIS</option>
+                        <option value="CASH" {% if form_data.get('payment_method') == 'CASH' %}selected{% endif %}>{{ "CASH"|status_label }}</option>
+                        <option value="TRANSFER" {% if form_data.get('payment_method') == 'TRANSFER' %}selected{% endif %}>{{ "TRANSFER"|status_label }}</option>
+                        <option value="QRIS" {% if form_data.get('payment_method') == 'QRIS' %}selected{% endif %}>{{ "QRIS"|status_label }}</option>
                     </select>
                 </div>
                 <div class="col-md-4">

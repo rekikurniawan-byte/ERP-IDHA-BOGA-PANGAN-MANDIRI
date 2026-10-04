@@ -173,7 +173,7 @@ def update_realization(production_id):
                 production.notes = notes
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/production_routes.py:172")
-        flash(f"Gagal menyimpan realisasi produksi secara atomic: {error}", "danger")
+        flash(f"Gagal menyimpan realisasi produksi: {error}", "danger")
         return redirect(url_for("production.detail", production_id=production.id))
 
     if production.status == "COMPLETED":

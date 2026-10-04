@@ -69,7 +69,7 @@ def test_portal_invoice_payment_instruction_route_renders_owned_invoice(app):
     assert invoice_number in html
     assert "Bank Portal" in html
     assert "123456789" in html
-    assert "Upload Bukti" in html
+    assert "Unggah Bukti" in html
     assert "Attachment only, finance verify" in html
     assert payment_count_after == payment_count_before
 
@@ -137,4 +137,4 @@ def test_portal_customer_payment_instruction_route_is_blocked(app):
 
     assert response.status_code == 200
     assert "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3." in html
-    assert "Upload Bukti" not in html
+    assert "Unggah Bukti" not in html

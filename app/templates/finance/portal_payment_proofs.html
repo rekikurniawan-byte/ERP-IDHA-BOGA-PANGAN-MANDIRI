@@ -62,7 +62,7 @@
                 <a class="finance-erp-integration-card status-{{ card.status|lower }}" href="{{ card.href }}">
                     <span>{{ card.owner }}</span>
                     <strong>{{ card.title }}</strong>
-                    <small>{{ card.source }}</small>
+                    <small>{{ card.source|status_label }}</small>
                     <b>{{ card.count }}</b>
                     <em>{{ card.status_label }} - {{ card.detail }}</em>
                 </a>
@@ -110,7 +110,7 @@
                                         <div class="small text-muted">Draft pesanan portal #{{ row.draft_id }}</div>
                                         <div class="small text-muted mt-1">
                                             {{ row.draft_date.strftime('%d-%m-%Y') if row.draft_date else '-' }}
-                                            | {{ row.draft_meal_type or '-' }}
+                                            | {{ row.draft_meal_type|status_label }}
                                             | {{ row.draft_portion_qty or 0 }} porsi
                                         </div>
                                     {% endif %}
@@ -170,7 +170,7 @@
                                                 <span>Metode</span>
                                                 <select name="payment_method" class="form-select form-select-sm" required>
                                                     {% for method in payment_methods %}
-                                                        <option value="{{ method }}" {{ 'selected' if method == 'TRANSFER' else '' }}>{{ method }}</option>
+                                                        <option value="{{ method }}" {{ 'selected' if method == 'TRANSFER' else '' }}>{{ method|status_label }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </label>
@@ -204,7 +204,7 @@
                                                 <span>Metode</span>
                                                 <select name="payment_method" class="form-select form-select-sm" required>
                                                     {% for method in ['TRANSFER', 'QRIS', 'CASH'] %}
-                                                        <option value="{{ method }}">{{ method }}</option>
+                                                        <option value="{{ method }}">{{ method|status_label }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </label>

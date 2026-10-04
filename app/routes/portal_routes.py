@@ -73,6 +73,7 @@ from app.services.user_management_service import (
 from app.utils.decorators import module_required, role_required
 from app.services.branch_module_service import WORKER_DEBT
 from app.utils.terms import T
+from app.services.public_site_service import auth_context
 
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
@@ -114,13 +115,13 @@ def register():
             flash(str(exc), "danger")
             data = _customer_register_page_data()
             data["form"] = request.form
-            return render_template("portal/register.html", data=data), 400
+            return render_template("portal/register.html", data=data, site=auth_context()), 400
 
         flash("Akun pelanggan berhasil dibuat. Silakan masuk untuk mulai memesan.", "success")
         current_app.logger.info("Registrasi pelanggan portal berhasil untuk user_id=%s", user.id)
         return redirect(url_for("auth.login"))
 
-    return render_template("portal/register.html", data=_customer_register_page_data())
+    return render_template("portal/register.html", data=_customer_register_page_data(), site=auth_context())
 
 
 def _customer_register_page_data():
@@ -929,9 +930,9 @@ def draft_order():
             ), 400
 
         if created:
-            flash("Draft order portal berhasil dikirim dan menunggu konfirmasi admin.", "success")
+            flash("Draf pesanan portal berhasil dikirim dan menunggu konfirmasi admin.", "success")
         else:
-            flash("Draft order yang sama sudah pernah diterima. Tidak dibuat duplikat.", "info")
+            flash("Draf pesanan yang sama sudah pernah diterima. Tidak dibuat duplikat.", "info")
         return redirect(url_for("portal.draft_order"))
 
     context = build_portal_draft_order_context(current_user)
@@ -963,7 +964,7 @@ def upload_draft_payment_proof(draft_id):
     except (PortalPaymentProofError, AttachmentValidationError) as exc:
         flash(str(exc), "danger")
     else:
-        flash(f"Bukti pembayaran awal draft #{result['draft_id']} berhasil diunggah dan menunggu finance.", "success")
+        flash(f"Bukti pembayaran awal draft #{result['draft_id']} berhasil diunggah dan menunggu pemeriksaan keuangan.", "success")
     return redirect(url_for("portal.order_status"))
 
 
@@ -1025,9 +1026,9 @@ def confirm_order_draft(draft_id):
     if error:
         flash(error, "warning")
     elif converted:
-        flash("Draft order portal berhasil dikonfirmasi ke order harian.", "success")
+        flash("Draf pesanan portal berhasil dikonfirmasi ke order harian.", "success")
     else:
-        flash("Draft order sudah pernah dikonfirmasi. Tidak dibuat duplikat.", "info")
+        flash("Draf pesanan sudah pernah dikonfirmasi. Tidak dibuat duplikat.", "info")
     return redirect(url_for("portal.admin_order_drafts"))
 
 
@@ -1042,7 +1043,7 @@ def reject_order_draft(draft_id):
     if error:
         flash(error, "warning")
     elif rejected:
-        flash("Draft order portal ditolak.", "success")
+        flash("Draf pesanan portal ditolak.", "success")
         # Kalau pelanggan sudah membayar, uangnya harus dikembalikan (keputusan OWNER).
         from app.services.prepaid_order_service import draft_prepayments, rupiah
 
@@ -1052,7 +1053,7 @@ def reject_order_draft(draft_id):
             total = sum(float(advance.remaining_amount or 0) for advance in paid)
             flash(
                 f"Pelanggan sudah membayar {rupiah(total)} untuk draft ini ({numbers}). "
-                "OWNER perlu mengembalikannya di Finance → Uang Muka.",
+                "Owner perlu mengembalikannya di Keuangan → Uang Muka.",
                 "warning",
             )
     return redirect(url_for("portal.admin_order_drafts"))

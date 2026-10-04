@@ -54,6 +54,7 @@ def create_app():
 
     flask_app.config["CSS_ASSET_VERSION"] = _static_asset_fingerprint(flask_app, "css/style.css")
     flask_app.config["JS_ASSET_VERSION"] = _static_asset_fingerprint(flask_app, "js/main.js")
+    flask_app.config["CONTROLS_JS_ASSET_VERSION"] = _static_asset_fingerprint(flask_app, "js/controls.js")
 
     # Lets templates build conditional page_header()/macro action lists with
     # `{% do actions.append(...) %}` instead of verbose `{% set x = x + [...] %}`.
@@ -284,6 +285,18 @@ def create_app():
                         ttl_seconds=30,
                     )
                 }
+            # Pengunjung (beranda, masuk, daftar): identitas cabang utama.
+            from app.services.public_site_service import main_branch_id
+
+            branch_id = get_cached_value(("public_branch_id",), main_branch_id, ttl_seconds=300)
+            if branch_id:
+                return {
+                    "global_company_settings": get_cached_value(
+                        ("company_settings", branch_id),
+                        lambda: get_company_settings(branch_id),
+                        ttl_seconds=30,
+                    )
+                }
         except Exception:
             flask_app.logger.exception("Gagal memuat company settings global.")
 
@@ -405,6 +418,7 @@ def create_app():
         return {
             "css_asset_version": flask_app.config["CSS_ASSET_VERSION"],
             "js_asset_version": flask_app.config["JS_ASSET_VERSION"],
+            "controls_js_asset_version": flask_app.config["CONTROLS_JS_ASSET_VERSION"],
         }
 
     @flask_app.template_filter("rupiah")
@@ -446,9 +460,10 @@ def create_app():
         except (ValueError, TypeError):
             return "0"
 
-    from app.utils.labels import role_label, status_label
+    from app.utils.labels import event_label, role_label, status_label
 
     flask_app.add_template_filter(status_label, "status_label")
+    flask_app.add_template_filter(event_label, "event_label")
     flask_app.add_template_filter(role_label, "role_label")
 
 

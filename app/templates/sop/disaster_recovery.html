@@ -6,7 +6,7 @@
         <div class="page-header-main">
             <span class="eyebrow">{{ sop.eyebrow }}</span>
             <h1 class="page-title">{{ sop.title }}</h1>
-            <p class="page-description">Panduan final saat sistem error, database bermasalah, backup perlu dipakai, atau patch besar akan dilakukan. Halaman ini Mode pantau dan tidak melakukan restore otomatis.</p>
+            <p class="page-description">Panduan final saat sistem error, database bermasalah, cadangan perlu dipakai, atau patch besar akan dilakukan. Halaman ini Mode pantau dan tidak melakukan restore otomatis.</p>
         </div>
         <div class="page-actions sop-no-print">
             <a href="{{ url_for('sop.backup_restore') }}" class="btn app-btn-secondary">
@@ -34,7 +34,7 @@
             <div>
                 <p>Restore Aman</p>
                 <h3>Verified</h3>
-                <span class="app-stat-helper">Wajib preview dry-run PASS</span>
+                <span class="app-stat-helper">Wajib uji coba pemulihan LOLOS</span>
             </div>
         </div>
         <div class="app-stat-card">
@@ -77,7 +77,7 @@
                 <div class="detail-row"><span>Database</span><code class="small text-break">{{ db.path }}</code></div>
                 <div class="detail-row"><span>DB SHA256</span><code class="small text-break">{{ db.sha256 }}</code></div>
                 <div class="detail-row"><span>Backup dir</span><code class="small text-break">{{ rt.backup_dir }}</code></div>
-                <div class="detail-row"><span>Upload dir</span><code class="small text-break">{{ rt.upload_dir }}</code></div>
+                <div class="detail-row"><span>Folder unggahan</span><code class="small text-break">{{ rt.upload_dir }}</code></div>
             </div>
         </div>
     </div>
@@ -93,7 +93,7 @@
             {% for item in sop.incident_levels %}
                 <div class="col-lg-4">
                     <div class="detail-row h-100">
-                        <span>{{ item.level }} | {{ item.name }}</span>
+                        <span>{{ item.level|status_label }} | {{ item.name }}</span>
                         <strong><span class="status-badge {{ item.status_class }}">{{ item.name|status_label }}</span></strong>
                         <ul class="small text-muted mb-2 mt-2">
                             {% for example in item.examples %}<li>{{ example }}</li>{% endfor %}
@@ -141,7 +141,7 @@
         <div class="section-title">
             <div>
                 <h3>Langkah Emergency Restore Manual-Assisted</h3>
-                <p>Dipakai hanya jika database aktif benar-benar rusak/hilang dan backup VERIFIED tersedia.</p>
+                <p>Dipakai hanya jika database aktif benar-benar rusak/hilang dan cadangan terverifikasi tersedia.</p>
             </div>
             <span class="status-badge warning">Hanya Manual</span>
         </div>

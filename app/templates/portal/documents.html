@@ -52,9 +52,9 @@
                     </div>
                     <div class="portal-document-body">
                         <h3>{{ document.original_filename }}</h3>
-                        <p>{{ document.module }} | {{ document.reference_type }} #{{ document.reference_id }}</p>
+                        <p>{{ document.module }} | {{ document.reference_type|status_label }} #{{ document.reference_id }}</p>
                         <div class="portal-chip-row">
-                            <span>{{ document.attachment_type }}</span>
+                            <span>{{ document.attachment_type|status_label }}</span>
                             <span>{{ document.mime_type or "-" }}</span>
                             <span>{{ document.file_size }} B</span>
                             <span>{{ document.created_at.strftime('%d-%m-%Y') if document.created_at else "-" }}</span>

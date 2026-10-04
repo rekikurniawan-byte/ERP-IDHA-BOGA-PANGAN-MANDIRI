@@ -18,7 +18,7 @@
 <div class="app-card soft-warning-card">
     <strong>Mode pantau.</strong>
     <p>
-        Monitoring ini hanya membaca data dari snapshot HPP yang sudah dibuat manual dari order locked.
+        Pemantauan ini hanya membaca data dari snapshot HPP yang sudah dibuat manual dari order terkunci.
         Angka snapshot tidak ikut berubah saat master harga, resep, kemasan, atau overhead diperbarui.
     </p>
 </div>
@@ -83,9 +83,9 @@
             <label class="form-label">Status Snapshot</label>
             <select name="status" class="form-select app-input">
                 <option value="ALL" {% if status == 'ALL' %}selected{% endif %}>Semua</option>
-                <option value="LOCKED" {% if status == 'LOCKED' %}selected{% endif %}>LOCKED</option>
-                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>DRAFT</option>
-                <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
+                <option value="LOCKED" {% if status == 'LOCKED' %}selected{% endif %}>{{ "LOCKED"|status_label }}</option>
+                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>{{ "DRAFT"|status_label }}</option>
+                <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>{{ "CANCELLED"|status_label }}</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -198,7 +198,7 @@
                             <i class="bi bi-clipboard-data"></i>
                             <h5>Belum ada snapshot HPP order</h5>
                             <p>
-                                Ini normal kalau data real belum diisi. Snapshot HPP baru muncul setelah order locked dibuatkan snapshot HPP manual.
+                                Ini normal kalau data asli belum diisi. Snapshot HPP baru muncul setelah order terkunci dibuatkan snapshot HPP manual.
                             </p>
                         </div>
                     </td>

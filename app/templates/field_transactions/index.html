@@ -17,7 +17,7 @@
     <div class="app-stat-card">
         <div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div>
         <div>
-            <span>Total Draft/Transaksi</span>
+            <span>Total Transaksi</span>
             <h3>{{ summary.total }}</h3>
             <p>Semua transaksi lapangan cabang ini</p>
         </div>
@@ -43,7 +43,7 @@
         <div>
             <span>Menunggu Pemeriksaan</span>
             <h3>{{ summary.pending_review }}</h3>
-            <p>Masih menunggu review/klasifikasi</p>
+            <p>Masih menunggu pemeriksaan/klasifikasi</p>
         </div>
     </div>
 </div>
@@ -63,8 +63,8 @@
             <label class="form-label">Masuk/Keluar</label>
             <select name="direction" class="form-select">
                 <option value="ALL" {% if selected_direction == 'ALL' %}selected{% endif %}>Semua arah</option>
-                <option value="IN" {% if selected_direction == 'IN' %}selected{% endif %}>IN</option>
-                <option value="OUT" {% if selected_direction == 'OUT' %}selected{% endif %}>OUT</option>
+                <option value="IN" {% if selected_direction == 'IN' %}selected{% endif %}>{{ "IN"|status_label }}</option>
+                <option value="OUT" {% if selected_direction == 'OUT' %}selected{% endif %}>{{ "OUT"|status_label }}</option>
             </select>
         </div>
         <div class="col-md-4">
@@ -72,13 +72,13 @@
             <select name="status" class="form-select">
                 <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua status</option>
                 {% for status in ['DRAFT', 'RECORDED', 'WAITING_EVIDENCE', 'WAITING_CLASSIFICATION', 'IN_REVIEW', 'WAITING_APPROVAL', 'READY_TO_POST', 'POSTED', 'REJECTED', 'VOID', 'RECONCILED'] %}
-                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|status_label }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-12 d-flex gap-2">
             <button type="submit" class="btn app-btn-primary">Filter</button>
-            <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">Reset</a>
+            <a href="{{ url_for('field_transactions.index') }}" class="btn app-btn-secondary">Atur Ulang</a>
         </div>
     </form>
 </div>
@@ -102,7 +102,7 @@
                     <th>Masuk/Keluar</th>
                     <th>Pihak</th>
                     <th>Nominal</th>
-                    <th>Review</th>
+                    <th>Pemeriksaan</th>
                     <th>Bukti</th>
                     <th class="text-end">Aksi</th>
                 </tr>
@@ -112,12 +112,12 @@
                 <tr>
                     <td><strong>{{ transaction.transaction_number }}</strong></td>
                     <td>{{ transaction.transaction_date.strftime('%d-%m-%Y') }}</td>
-                    <td><div class="fw-semibold">{{ event_labels.get(transaction.business_event_type, transaction.business_event_type) }}</div><div class="text-muted small">{{ transaction.business_event_type }}</div></td>
-                    <td><span class="status-badge status-{{ 'done' if transaction.transaction_direction == 'IN' else 'warning' }}">{{ transaction.transaction_direction }}</span></td>
+                    <td><div class="fw-semibold">{{ event_labels.get(transaction.business_event_type, transaction.business_event_type) }}</div><div class="text-muted small">{{ transaction.business_event_type|event_label }}</div></td>
+                    <td><span class="status-badge status-{{ 'done' if transaction.transaction_direction == 'IN' else 'warning' }}">{{ transaction.transaction_direction|status_label }}</span></td>
                     <td>{{ transaction.party_snapshot_name or (transaction.counterparty.name if transaction.counterparty else '-') }}</td>
                     <td>{{ transaction.amount|rupiah }}</td>
                     <td><span class="status-badge status-progress">{{ transaction.review_status|status_label }}</span></td>
-                    <td>{{ transaction.evidence_status }}</td>
+                    <td>{{ transaction.evidence_status|status_label }}</td>
                     <td class="text-end">
                         <a href="{{ url_for('field_transactions.detail', transaction_id=transaction.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
                     </td>
@@ -131,7 +131,7 @@
         <i class="bi bi-journal-text"></i>
         <h5>Belum ada transaksi lapangan</h5>
         <p>Mulai dari draft pertama untuk pendapatan/pengeluaran manual lapangan sebelum masuk ke alur formal.</p>
-        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">Buat Draft Pertama</a>
+        <a href="{{ url_for('field_transactions.create') }}" class="btn app-btn-primary">Buat Transaksi Pertama</a>
     </div>
     {% endif %}
 </div>

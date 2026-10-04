@@ -15,7 +15,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Daftar Order</h5>
-            <p>Order yang sudah lock otomatis menjadi dasar produksi. Delivery dibuat dari halaman Kelola Order.</p>
+            <p>Order yang sudah dikunci otomatis menjadi dasar produksi. Pengiriman dibuat dari halaman Kelola Order.</p>
         </div>
     </div>
 
@@ -26,7 +26,7 @@
                     <th>No Order</th>
                     <th>Tanggal</th>
                     <th>Status</th>
-                    <th>Lock</th>
+                    <th>Kunci</th>
                     <th>Total Lokasi</th>
                     <th>Total Porsi</th>
                     <th>Aksi</th>
@@ -73,7 +73,7 @@
                                 <form method="POST" action="{{ url_for('operational.lock_order', order_id=order.id) }}" data-ui-form="true" class="app-form">
                                     {% include "components/csrf_token.html" %}
                                     <button type="submit" class="btn btn-sm app-btn-primary">
-                                        Lock
+                                        Kunci
                                     </button>
                                 </form>
                             {% else %}

@@ -148,7 +148,7 @@
                         <span class="status-badge {% if conflict.status_label == 'PAID' %}status-success{% elif conflict.status_label == 'DRAFT' %}status-warning{% elif conflict.status_label == 'LOCKED' %}status-success{% else %}status-info{% endif %}">
                             {{ conflict.status_label }}
                         </span>
-                        - sumber {{ conflict.input_source }}
+                        - sumber {{ conflict.input_source|status_label }}
                         {% if conflict.kind == 'REKAP' and conflict.invoice_id %}
                             <div class="small mt-1">
                                 Terkait invoice:
@@ -310,7 +310,7 @@
             </div>
             <div class="col-md-4">
                 <div class="detail-field">
-                    <span>Lock Rekap</span>
+                    <span>Rekap Dikunci</span>
                     <strong>{{ 'Sudah dikunci' if batch.locked_at else 'Belum dikunci' }}</strong>
                 </div>
             </div>
@@ -359,11 +359,11 @@
                     {% for item in batch.items %}
                     <tr>
                         <td>{{ item.source_date.strftime('%d-%m-%Y') if item.source_date else '-' }}</td>
-                        <td><strong>{{ item.item_type }}</strong></td>
+                        <td><strong>{{ item.item_type|status_label }}</strong></td>
                         <td>{{ item.description }}</td>
                         <td>
-                            <span class="status-badge status-warning">{{ item.input_source }}</span>
-                            <div class="small text-muted">{{ item.source_type }} #{{ item.source_id }}</div>
+                            <span class="status-badge status-warning">{{ item.input_source|status_label }}</span>
+                            <div class="small text-muted">{{ item.source_type|status_label }} #{{ item.source_id }}</div>
                             {% if item.source_label %}<div class="small text-muted">{{ item.source_label }}</div>{% endif %}
                         </td>
                         <td class="text-end">{{ item.qty|qty }}</td>

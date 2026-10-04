@@ -8,7 +8,7 @@
         <div>
             <span class="eyebrow">Akuntansi | Siap Cetak</span>
             <h1>Buku Besar</h1>
-            <p>Halaman print-ready buku besar berdasarkan periode aktif.</p>
+            <p>Halaman siap cetak buku besar berdasarkan periode aktif.</p>
         </div>
         <div class="page-actions accounting-header-actions">
             <button type="button" class="btn app-btn-primary" data-app-action="print">
@@ -47,7 +47,7 @@
         </div>
 
         {% for row in data.ledger_rows %}
-        <h5 class="print-section-title">{{ row.account.account_code }} - {{ row.account.account_name }} <small>({{ row.account.account_type }})</small></h5>
+        <h5 class="print-section-title">{{ row.account.account_code }} - {{ row.account.account_name }} <small>({{ row.account.account_type|status_label }})</small></h5>
         <div class="app-table-wrapper print-table-wrapper">
 <table class="print-table{% if not loop.first %} mt-2{% endif %} app-data-table" data-mobile-table="scroll" data-ui-cleanup="UI">
             <thead>

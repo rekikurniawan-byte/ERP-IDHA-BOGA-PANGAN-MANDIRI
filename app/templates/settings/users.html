@@ -12,7 +12,7 @@
 
 <div class="app-card soft-info-card mb-4">
     <strong>Catatan keamanan:</strong>
-    password hash tidak pernah ditampilkan. Reset password hanya mengganti password, tidak mengubah transaksi, invoice, payment, jurnal, stok, cash daily, atau data production lain. Role detail FINANCE/ACCOUNTING/LOGISTICS/HR sudah disiapkan sebagai opsi akun baru, tanpa mengubah user existing.
+    hash kata sandi tidak pernah ditampilkan. Atur ulang kata sandi hanya mengganti kata sandi, tidak mengubah transaksi, invoice, pembayaran, jurnal, stok, cash daily, atau data production lain. Role detail FINANCE/ACCOUNTING/LOGISTICS/HR sudah disiapkan sebagai opsi akun baru, tanpa mengubah user existing.
 </div>
 
 <div class="app-card">
@@ -38,7 +38,7 @@
                         </td>
                         <td>
                             <span class="status-badge neutral">{{ role_labels.get(item.role, item.role) }}</span>
-                            <div class="text-muted small">{{ item.role }}</div>
+                            <div class="text-muted small">{{ item.role|role_label }}</div>
                         </td>
                         <td>{{ item.branch.name if item.branch else '-' }}</td>
                         <td>
@@ -52,7 +52,7 @@
                         <td>
                             <div class="d-flex justify-content-end gap-2 flex-wrap">
                                 <a href="{{ url_for('settings.edit_user_page', user_id=item.id) }}" class="btn btn-sm app-btn-secondary">
-                                    Edit
+                                    Ubah
                                 </a>
 
                                 {% if item.id != current_user.id %}

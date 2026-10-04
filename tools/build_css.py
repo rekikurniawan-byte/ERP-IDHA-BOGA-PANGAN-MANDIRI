@@ -34,6 +34,7 @@ SOURCE_ORDER = [
     "components.css",
     "pages.css",
     "portal.css",
+    "public.css",
     "print.css",
 ]
 FORBIDDEN_FILENAME_WORDS = ("final", "lock", "fix", "override", "repair", "cleanup", "polish", "patch", "hotfix")

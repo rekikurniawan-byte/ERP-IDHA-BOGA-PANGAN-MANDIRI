@@ -174,10 +174,10 @@
                     {% for row in preview.rows %}
                     <tr>
                         <td>{{ row.date.strftime('%d-%m-%Y') }}</td>
-                        <td><strong>{{ row.item_type }}</strong></td>
+                        <td><strong>{{ row.item_type|status_label }}</strong></td>
                         <td>{{ row.description }}</td>
                         <td>
-                            <span class="status-badge status-progress">{{ row.source_type }}</span>
+                            <span class="status-badge status-progress">{{ row.source_type|status_label }}</span>
                             <div class="small text-muted">ID: {{ row.source_id }}</div>
                             <div class="small text-muted">Input: Realtime</div>
                         </td>
@@ -220,7 +220,7 @@
                     {% for row in preview.blocked_rows %}
                     <tr>
                         <td>{{ row.date.strftime('%d-%m-%Y') }}</td>
-                        <td>{{ row.source_type }} #{{ row.source_id }}</td>
+                        <td>{{ row.source_type|status_label }} #{{ row.source_id }}</td>
                         <td>{{ row.description }}</td>
                         <td>{{ row.blocked_reason }}</td>
                     </tr>

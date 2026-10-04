@@ -10,7 +10,7 @@
     ("Pantau pembayaran " ~ term('client', lower=True) ~ ", bukti digital, status invoice, buku kas/bank, dan nomor jurnal dalam satu halaman."),
     "Keuangan",
     actions=[
-        {"label": "Download CSV", "url": url_for('finance.export_payment_history_csv'), "icon": "bi-download"},
+        {"label": "Unduh CSV", "url": url_for('finance.export_payment_history_csv'), "icon": "bi-download"},
         {"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-arrow-left"},
         {"label": ("Piutang " ~ term('client')), "url": url_for('finance.receivables')},
         {"label": "Statement Tagihan", "url": url_for('finance.receivables_statement')},
@@ -130,7 +130,7 @@
 
                                 <td>
                                     <span class="badge bg-light text-dark border">
-                                        {{ row.payment.payment_method or "-" }}
+                                        {{ row.payment.payment_method|status_label }}
                                     </span>
                                 </td>
 
@@ -172,7 +172,7 @@
                                 <td>
                                     {% if row.ledger_transaction %}
                                         <span class="badge bg-success">Tercatat</span>
-                                        <div class="text-muted small">{{ row.ledger_transaction.account_type }} {{ row.ledger_transaction.transaction_type }}</div>
+                                        <div class="text-muted small">{{ row.ledger_transaction.account_type|status_label('account') }} {{ row.ledger_transaction.transaction_type|status_label }}</div>
                                     {% else %}
                                         <span class="badge bg-danger">Belum ada</span>
                                     {% endif %}
