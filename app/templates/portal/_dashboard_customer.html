@@ -1,3 +1,4 @@
+{% from "portal/_home_kit.html" import ph_kpi, ph_track %}
 {% set center = data.center %}
 {% set models = center.models %}
 {% set orders = models.orders %}
@@ -5,148 +6,81 @@
 {% set payments = models.payments.totals %}
 {% set complaints = models.complaints.totals %}
 {% set notifications = models.notifications.totals %}
+{% set on_the_way = orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|length %}
+{% set received = orders.rows|selectattr("stage", "equalto", "DELIVERED")|list|length %}
 
 <!-- {{ data.scope.scope_mode }} -->
-<section class="portal-home portal-home-customer">
-    <div class="portal-home-hero customer">
-        <div class="portal-home-hero-copy">
-            <span class="portal-home-kicker">Portal Pelanggan</span>
-            <h1>Pesan catering, bayar, lalu kami proses.</h1>
-            <p>Untuk pelanggan umum, pesanan diproses setelah bukti pembayaran diperiksa.</p>
-            <div class="portal-home-cta-row">
-                <a class="portal-home-primary" href="{{ url_for('portal.customer_order') }}">
-                    <i class="bi bi-bag-plus"></i>
-                    <span>Pesan Sekarang</span>
-                </a>
-                <a class="portal-home-secondary" href="{{ url_for('portal.customer_tracking') }}">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>Lacak Pesanan</span>
-                </a>
+<section class="ph">
+    <header class="ph-hero">
+        <div class="ph-hero-text">
+            <p>Portal Pelanggan</p>
+            <h1>Halo, {{ current_user.full_name }}</h1>
+            <ul class="ph-facts">
+                <li><i class="bi bi-hourglass"></i>{{ orders.pending }} menunggu konfirmasi</li>
+                <li><i class="bi bi-truck"></i>{{ on_the_way }} sedang diantar</li>
+                <li><i class="bi bi-check2-all"></i>{{ received }} sudah diterima</li>
+            </ul>
+        </div>
+        <div class="ph-hero-kpi">
+            <span>Mau pesan lagi?</span>
+            <strong class="ph-hero-cta-title">Tanpa minimal porsi</strong>
+            <small>Pesan sebelum batas jam, bayar di muka, kami antar ke titik alamat Anda.</small>
+            <div class="ph-hero-actions">
+                <a class="btn app-btn-primary" href="{{ url_for('portal.customer_order') }}"><i class="bi bi-bag-plus"></i> Pesan sekarang</a>
+                <a class="btn ph-btn-ghost" href="{{ url_for('portal.customer_tracking') }}"><i class="bi bi-geo-alt"></i> Lacak</a>
             </div>
         </div>
-        <div class="portal-home-flow-card">
-            <span>Alur pelanggan umum</span>
-            <div class="portal-customer-flow">
-                <article class="done"><i class="bi bi-person-check"></i><strong>Masuk</strong></article>
-                <article class="{{ 'done' if orders.total else '' }}"><i class="bi bi-bag-plus"></i><strong>Pesan</strong></article>
-                <article class="{{ 'done' if invoices.proof_count else '' }}"><i class="bi bi-credit-card"></i><strong>Bayar</strong></article>
-                <article class="{{ 'done' if orders.confirmed else '' }}"><i class="bi bi-shield-check"></i><strong>Admin</strong></article>
-                <article class="{{ 'done' if orders.completed else '' }}"><i class="bi bi-truck"></i><strong>Selesai</strong></article>
-            </div>
-        </div>
+    </header>
+
+    <div class="ph-kpis">
+        {{ ph_kpi("bi-bag-check", "brand", "Pesanan saya", orders.total, orders.pending ~ " menunggu admin", url_for('portal.customer_order_history')) }}
+        {{ ph_kpi("bi-hourglass-split", "warning", "Menunggu admin", orders.pending, "dicek setelah bayar", url_for('portal.customer_order')) }}
+        {{ ph_kpi("bi-truck", "success", "Sudah diterima", received, (on_the_way ~ " sedang diantar"), url_for('portal.customer_tracking')) }}
+        {{ ph_kpi("bi-chat-square-text", "info", "Komplain aktif", complaints.open_count or 0, (notifications.unread or 0) ~ " notifikasi baru", url_for('portal.customer_complaints')) }}
     </div>
 
-    {% if center.alerts %}
-        <div class="portal-home-alert-strip">
-            {% for alert in center.alerts[:3] %}
-                <article class="portal-home-alert level-{{ alert.level }}">
-                    <i class="bi {{ alert.icon }}"></i>
-                    <span>
-                        <strong>{{ alert.title }}</strong>
-                        <small>{{ alert.message }}</small>
-                    </span>
-                </article>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="portal-home-metric-row customer">
-        <article>
-            <span>Pesanan Saya</span>
-            <strong>{{ orders.total }}</strong>
-            <small>{{ orders.pending }} menunggu admin</small>
-        </article>
-        <article>
-            <span>Bukti Bayar</span>
-            <strong>{{ invoices.proof_count or 0 }}</strong>
-            <small>{{ invoices.pending_proof_count or 0 }} menunggu pemeriksaan</small>
-        </article>
-        <article>
-            <span>Menunggu Cek</span>
-            <strong>{{ invoices.pending_proof_count or 0 }}</strong>
-            <small>bukti pembayaran</small>
-        </article>
-        <article>
-            <span>Komplain Aktif</span>
-            <strong>{{ complaints.open_count or 0 }}</strong>
-            <small>{{ notifications.unread or 0 }} notifikasi belum dibaca</small>
-        </article>
-    </div>
-
-    <div class="portal-home-grid customer-main">
-        <section class="portal-home-panel order-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Pesan Cepat</span>
-                    <h2>Mulai dari lokasi dan porsi.</h2>
-                </div>
-                <i class="bi bi-bag-heart"></i>
-            </div>
-            <div class="portal-home-action-grid">
-                <a href="{{ url_for('portal.customer_order') }}"><i class="bi bi-plus-circle"></i><strong>Buat Pesanan</strong><small>Menunggu admin</small></a>
-                <a href="{{ url_for('portal.customer_payments') }}"><i class="bi bi-credit-card"></i><strong>Bayar / Bukti</strong><small>Unggah pembayaran</small></a>
-                <a href="{{ url_for('portal.customer_tracking') }}"><i class="bi bi-truck"></i><strong>Status Kirim</strong><small>Lacak proses</small></a>
-                <a href="{{ url_for('portal.customer_complaints') }}"><i class="bi bi-chat-square-text"></i><strong>Komplain</strong><small>Layanan pelanggan</small></a>
-            </div>
-            <div class="portal-home-rule-note">
-                <i class="bi bi-lock"></i>
-                <span>Bayar di muka tetap wajib. Pelanggan umum tidak memakai kredit; pesanan diproses setelah pembayaran diperiksa.</span>
-            </div>
-        </section>
-
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Pesanan Terakhir</span>
-                    <h2>Riwayat singkat.</h2>
-                </div>
-                <a href="{{ url_for('portal.customer_order_history') }}">Lihat semua</a>
-            </div>
-            <div class="portal-home-list">
-                {% for order in models.orders.rows[:4] %}
-                    <article>
-                        <i class="bi bi-bag-check"></i>
-                        <span>
-                            <strong>{{ order.meal_type_label }} - {{ order.location_name }}</strong>
-                            <small>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} | {{ order.portion_qty }} porsi</small>
-                        </span>
-                        <b>{{ order.stage_label }}</b>
+    <div class="ph-grid">
+        <section class="ph-panel">
+            <header class="ph-panel-head">
+                <div><h2>Pesanan terbaru</h2><p>Pantau sampai makanan diterima.</p></div>
+                <a href="{{ url_for('portal.customer_order_history') }}">Semua <i class="bi bi-arrow-right"></i></a>
+            </header>
+            <div class="ph-list">
+                {% for order in orders.rows[:5] %}
+                    <article class="ph-order">
+                        <div class="ph-order-top">
+                            <div>
+                                <strong>{{ order.meal_type_label }} · {{ order.portion_qty }} porsi</strong>
+                                <small>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} · {{ order.location_name }}</small>
+                            </div>
+                            <span class="ph-pill tone-{{ 'success' if order.stage == 'DELIVERED' else ('danger' if order.stage == 'REJECTED' else ('warning' if order.stage == 'WAITING_ADMIN' else 'info')) }}">{{ order.stage_label }}</span>
+                        </div>
+                        {{ ph_track(order.stage) }}
                     </article>
                 {% else %}
-                    <div class="portal-home-empty">Belum ada pesanan. Mulai dari tombol Pesan Sekarang.</div>
+                    <div class="ph-empty"><i class="bi bi-bag"></i><span>Belum ada pesanan. <a href="{{ url_for('portal.customer_order') }}">Pesan sekarang</a>.</span></div>
                 {% endfor %}
             </div>
         </section>
-    </div>
 
-    <div class="portal-home-grid two">
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Pembayaran Awal</span>
-                    <h2>Bayar dulu, baru diproses.</h2>
-                </div>
-                <a href="{{ url_for('portal.customer_payments') }}">Buka</a>
-            </div>
-            <div class="portal-home-mini-ledger">
-                <div><span>Bukti Masuk</span><strong>{{ invoices.proof_count or 0 }}</strong></div>
-                <div><span>Menunggu Cek</span><strong>{{ invoices.pending_proof_count or 0 }}</strong></div>
-                <div><span>Pembayaran Tercatat</span><strong>{{ payments.payment_amount|rupiah }}</strong></div>
-            </div>
-        </section>
+        <aside class="ph-side">
+            <section class="ph-panel">
+                <header class="ph-panel-head"><div><h2>Cara pesan</h2></div></header>
+                <ol class="ph-howto">
+                    <li><strong>Pilih tanggal &amp; porsi</strong><span>Gratis ongkir mulai 10 porsi; di bawahnya ongkir dihitung dari jarak.</span></li>
+                    <li><strong>Bayar di muka</strong><span>Bayar di muka tetap wajib: transfer, lalu unggah bukti di halaman Pesan.</span></li>
+                    <li><strong>Kami antar</strong><span>Pengantar memakai titik peta alamat Anda.</span></li>
+                </ol>
+                <a class="btn app-btn-secondary w-100" href="{{ url_for('portal.addresses') }}"><i class="bi bi-pin-map"></i> Atur alamat &amp; titik peta</a>
+            </section>
 
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Layanan</span>
-                    <h2>Komplain dan retur.</h2>
+            <section class="ph-panel">
+                <header class="ph-panel-head"><div><h2>Butuh bantuan?</h2><p>Makanan kurang, terlambat, atau tidak sesuai.</p></div></header>
+                <div class="ph-help">
+                    <a class="btn app-btn-secondary" href="{{ url_for('portal.customer_complaints') }}"><i class="bi bi-chat-square-text"></i> Kirim komplain{% if complaints.open_count %} <span class="ph-pill tone-warning">{{ complaints.open_count }} aktif</span>{% endif %}</a>
+                    <a class="btn app-btn-secondary" href="{{ url_for('portal.customer_payments') }}"><i class="bi bi-credit-card"></i> Riwayat pembayaran</a>
                 </div>
-            </div>
-            <div class="portal-home-mini-ledger">
-                <div><span>Komplain</span><strong>{{ complaints.complaint_count or 0 }}</strong></div>
-                <div><span>Terbuka</span><strong>{{ complaints.open_count or 0 }}</strong></div>
-                <div><span>Pembayaran</span><strong>{{ payments.payment_count or 0 }}</strong></div>
-            </div>
-        </section>
+            </section>
+        </aside>
     </div>
 </section>

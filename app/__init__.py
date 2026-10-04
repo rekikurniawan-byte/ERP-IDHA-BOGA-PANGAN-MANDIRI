@@ -463,12 +463,13 @@ def create_app():
             return "0"
 
     from app.utils.labels import event_label, role_label, status_label
-    from app.utils.clock import format_wib
+    from app.utils.clock import format_wib, today_wib
 
     flask_app.add_template_filter(status_label, "status_label")
     flask_app.add_template_filter(event_label, "event_label")
     flask_app.add_template_filter(role_label, "role_label")
     flask_app.add_template_filter(format_wib, "wib")
+    flask_app.jinja_env.globals["today_wib"] = today_wib
 
 
     @flask_app.errorhandler(CSRFError)

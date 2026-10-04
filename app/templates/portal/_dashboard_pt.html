@@ -1,3 +1,4 @@
+{% from "portal/_home_kit.html" import ph_kpi, ph_invoice %}
 {% set center = data.center %}
 {% set models = center.models %}
 {% set invoices = models.invoices.totals %}
@@ -5,148 +6,96 @@
 {% set contracts = models.contracts.totals %}
 {% set debts = models.debts.totals %}
 {% set scope = models.scope %}
+{% set invoice_rows = models.invoices.invoices %}
+{% set company_name = (invoice_rows[0].party.client_name if invoice_rows and invoice_rows[0].party.client_name else term('client')) %}
+{% set open_rows = invoice_rows|rejectattr("status", "equalto", "PAID")|list %}
 
 <!-- {{ data.scope.scope_mode }} -->
-<section class="portal-home portal-home-pt">
-    <div class="portal-home-hero pt">
-        <div class="portal-home-hero-copy">
-            <span class="portal-home-kicker">Portal {{ term('client') }}</span>
-            <h1>Rekap {{ term('sub_client', lower=True) }}, invoice, piutang, dan kontrak perusahaan.</h1>
-            <p>{{ term('client') }} melihat rangkuman perusahaan, bukan pesanan pribadi satu {{ term('sub_client', lower=True) }}.</p>
-            <div class="portal-home-cta-row">
+<section class="ph">
+    <header class="ph-hero">
+        <div class="ph-hero-text">
+            <p>Portal {{ term('client') }}</p>
+            <h1>{{ company_name }}</h1>
+            <ul class="ph-facts">
+                <li><i class="bi bi-diagram-3"></i>{{ scope.mandor_ids|length }} {{ term('sub_client', lower=True) }}</li>
+                <li><i class="bi bi-geo-alt"></i>{{ scope.delivery_location_ids|length }} lokasi</li>
+                <li><i class="bi bi-file-earmark-check"></i>{{ contracts.active_count or 0 }} kontrak aktif</li>
+            </ul>
+        </div>
+        <div class="ph-hero-kpi">
+            <span>Sisa tagihan perusahaan</span>
+            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
+            <small>{{ invoices.active_invoice_count or 0 }} invoice aktif · {{ invoices.overdue_invoice_count or 0 }} lewat jatuh tempo</small>
+            <div class="ph-hero-actions">
+                <a class="btn app-btn-primary" href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i> Lihat piutang</a>
                 {% if direct_ordering_enabled %}
-                <a class="portal-home-primary" href="{{ url_for('portal.draft_order') }}">
-                    <i class="bi bi-bag-check"></i>
-                    <span>Pesan Catering</span>
-                </a>
+                    <a class="btn ph-btn-ghost" href="{{ url_for('portal.draft_order') }}"><i class="bi bi-bag-plus"></i> Pesan</a>
+                {% else %}
+                    <a class="btn ph-btn-ghost" href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i> Invoice</a>
                 {% endif %}
-                <a class="portal-home-primary" href="{{ url_for('portal.pt_receivables') }}">
-                    <i class="bi bi-cash-stack"></i>
-                    <span>Cek Piutang</span>
-                </a>
-                <a class="portal-home-secondary" href="{{ url_for('portal.pt_mandors') }}">
-                    <i class="bi bi-diagram-3"></i>
-                    <span>Lihat {{ term('sub_client') }}</span>
-                </a>
             </div>
         </div>
-        <div class="portal-pt-executive-card">
-            <span>Sisa Tagihan {{ term('client') }}</span>
-            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
-            <small>{{ invoices.active_invoice_count or invoices.invoice_count }} invoice aktif perusahaan.</small>
-        </div>
+    </header>
+
+    <div class="ph-kpis">
+        {{ ph_kpi("bi-receipt", "brand", "Total ditagihkan", invoices.total_amount|rupiah, invoices.invoice_count ~ " invoice", url_for('portal.pt_invoices')) }}
+        {{ ph_kpi("bi-check2-circle", "success", "Sudah dibayar", invoices.paid_amount|rupiah, (payments.payment_count or 0) ~ " pembayaran", url_for('portal.pt_payments')) }}
+        {{ ph_kpi("bi-hourglass-split", "warning", "Belum dibayar", invoices.active_outstanding_amount|rupiah, (invoices.payable_invoice_count or 0) ~ " bisa dibayar", url_for('portal.pt_receivables')) }}
+        {{ ph_kpi("bi-people", "info", term('sub_client') ~ " aktif", scope.mandor_ids|length, "hutang " ~ term('worker', lower=True) ~ " " ~ (debts.active_remaining_amount or 0)|rupiah, url_for('portal.pt_mandors')) }}
     </div>
 
-    {% if center.alerts %}
-        <div class="portal-home-alert-strip">
-            {% for alert in center.alerts[:4] %}
-                <article class="portal-home-alert level-{{ alert.level }}">
-                    <i class="bi {{ alert.icon }}"></i>
-                    <span>
-                        <strong>{{ alert.title }}</strong>
-                        <small>{{ alert.message }}</small>
-                    </span>
-                </article>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="portal-home-metric-row pt">
-        <article>
-            <span>{{ term('sub_client') }}</span>
-            <strong>{{ scope.mandor_ids|length }}</strong>
-            <small>di bawah {{ term('client') }}</small>
-        </article>
-        <article>
-            <span>Total Piutang</span>
-            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
-            <small>{{ invoices.overdue_invoice_count or 0 }} lewat jatuh tempo</small>
-        </article>
-        <article>
-            <span>Invoice</span>
-            <strong>{{ invoices.invoice_count }}</strong>
-            <small>{{ invoices.payable_invoice_count or 0 }} masih bisa dibayar</small>
-        </article>
-        <article>
-            <span>Kontrak Aktif</span>
-            <strong>{{ contracts.active_count or 0 }}</strong>
-            <small>{{ contracts.expiring_soon_count or 0 }} hampir berakhir</small>
-        </article>
-    </div>
-
-    <div class="portal-home-action-band pt">
-        <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh {{ term('sub_client') }}</strong><small>Perusahaan</small></a>
-        <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Seluruh Invoice</strong><small>Diterbitkan</small></a>
-        <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Sisa tagihan</small></a>
-        <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Riwayat Pembayaran</strong><small>Pembayaran</small></a>
-        <a href="{{ url_for('portal.pt_contracts') }}"><i class="bi bi-file-earmark-text"></i><strong>Kontrak</strong><small>Perjanjian</small></a>
-    </div>
-
-    <div class="portal-home-grid two">
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Invoice Terbaru</span>
-                    <h2>Tagihan perusahaan.</h2>
-                </div>
-                <a href="{{ url_for('portal.pt_invoices') }}">Semua</a>
-            </div>
-            <div class="portal-home-list money">
-                {% for invoice in models.invoices.invoices[:6] %}
-                    <article>
-                        <i class="bi bi-file-earmark-spreadsheet"></i>
-                        <span>
-                            <strong>{{ invoice.invoice_number }}</strong>
-                            <small>{{ invoice.party.label }} | {{ invoice.status_label }}</small>
-                        </span>
-                        <b>{{ invoice.remaining_amount|rupiah }}</b>
-                    </article>
+    <div class="ph-grid">
+        <section class="ph-panel">
+            <header class="ph-panel-head">
+                <div><h2>Tagihan berjalan</h2><p>Progres pembayaran tiap invoice.</p></div>
+                <a href="{{ url_for('portal.pt_invoices') }}">Semua invoice <i class="bi bi-arrow-right"></i></a>
+            </header>
+            <div class="ph-list">
+                {% for invoice in (open_rows or invoice_rows)[:5] %}
+                    {{ ph_invoice(invoice) }}
                 {% else %}
-                    <div class="portal-home-empty">Belum ada invoice perusahaan.</div>
+                    <div class="ph-empty"><i class="bi bi-receipt"></i><span>Belum ada invoice perusahaan.</span></div>
                 {% endfor %}
             </div>
         </section>
 
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Kontrak</span>
-                    <h2>Status kontrak {{ term('client') }}.</h2>
+        <aside class="ph-side">
+            <section class="ph-panel">
+                <header class="ph-panel-head"><div><h2>Komposisi tagihan</h2><p>Arahkan kursor untuk detail.</p></div></header>
+                {% set donut = {"kind": "donut", "format": "rupiah", "height": 230, "center_label": "Ditagihkan",
+                                "center_value": "Rp " ~ (invoices.total_amount|rupiah_short),
+                                "series": [{"name": "Sudah dibayar", "value": invoices.paid_amount|float, "color": "chart-green"},
+                                           {"name": "Belum dibayar", "value": invoices.active_outstanding_amount|float, "color": "brand-600"}]} %}
+                <div class="app-chart ph-chart" data-apex-chart role="img" aria-label="Sudah dibayar dibanding belum dibayar">
+                    <script type="application/json">{{ donut|tojson }}</script>
                 </div>
-                <a href="{{ url_for('portal.pt_contracts') }}">Detail</a>
-            </div>
-            <div class="portal-home-list">
-                {% for contract in models.contracts.rows[:6] %}
-                    <article>
-                        <i class="bi bi-file-earmark-text"></i>
-                        <span>
+                <ul class="ph-legend">
+                    <li><i class="dot tone-success"></i>Sudah dibayar<strong>{{ invoices.paid_amount|rupiah }}</strong></li>
+                    <li><i class="dot tone-brand"></i>Belum dibayar<strong>{{ invoices.active_outstanding_amount|rupiah }}</strong></li>
+                </ul>
+            </section>
+
+            <section class="ph-panel">
+                <header class="ph-panel-head">
+                    <div><h2>Kontrak</h2></div>
+                    <a href="{{ url_for('portal.pt_contracts') }}">Detail <i class="bi bi-arrow-right"></i></a>
+                </header>
+                {% for contract in models.contracts.rows[:3] %}
+                    {% set days_left = (contract.end_date - today_wib()).days if contract.end_date else none %}
+                    <article class="ph-contract">
+                        <div>
                             <strong>{{ contract.contract_number }}</strong>
-                            <small>{{ contract.title }} | sampai {{ contract.end_date.strftime('%d-%m-%Y') if contract.end_date else "-" }}</small>
-                        </span>
-                        <b>{{ contract.status|status_label }}</b>
+                            <small>{{ contract.title }}</small>
+                        </div>
+                        <div class="ph-contract-end">
+                            <span class="ph-pill tone-{{ 'success' if contract.status == 'ACTIVE' else 'neutral' }}">{{ contract.status|status_label }}</span>
+                            {% if days_left is not none %}<small>{{ "berakhir " ~ contract.end_date.strftime('%d-%m-%Y') if days_left >= 0 else "berakhir" }}{% if 0 <= days_left <= 60 %} · {{ days_left }} hari lagi{% endif %}</small>{% endif %}
+                        </div>
                     </article>
                 {% else %}
-                    <div class="portal-home-empty">Belum ada kontrak aktif untuk perusahaan ini.</div>
+                    <div class="ph-empty"><i class="bi bi-file-earmark-text"></i><span>Belum ada kontrak.</span></div>
                 {% endfor %}
-            </div>
-        </section>
+            </section>
+        </aside>
     </div>
-
-    <section class="portal-home-panel full">
-        <div class="portal-home-panel-head">
-            <div>
-                <span>Rekap Keuangan {{ term('client') }}</span>
-                <h2>Ringkasan pembayaran dan sisa tagihan.</h2>
-            </div>
-            <span class="portal-home-soft-pill">Aktif</span>
-        </div>
-        <div class="portal-home-scope-grid finance">
-            <article><span>Total Invoice</span><strong>{{ invoices.total_amount|rupiah }}</strong></article>
-            <article><span>Sudah Dibayar</span><strong>{{ invoices.paid_amount|rupiah }}</strong></article>
-            <article><span>Sisa Invoice</span><strong>{{ invoices.active_outstanding_amount|rupiah }}</strong></article>
-            <article><span>Pembayaran Masuk</span><strong>{{ payments.payment_amount|rupiah }}</strong></article>
-            <article><span>Hutang {{ term('worker') }}</span><strong>{{ debts.active_remaining_amount|rupiah }}</strong></article>
-            <article><span>Lokasi</span><strong>{{ scope.delivery_location_ids|length }}</strong></article>
-        </div>
-    </section>
 </section>

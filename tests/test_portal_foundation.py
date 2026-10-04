@@ -690,7 +690,7 @@ def test_portal_draft_order_submit_is_idempotent_and_does_not_create_operational
         ).all()
 
         assert get_response.status_code == 200
-        assert "Kirim Draft" in get_response.get_data(as_text=True)
+        assert "Kirim pesanan" in get_response.get_data(as_text=True)
         assert first_response.status_code == 302
         assert second_response.status_code == 302
         assert len(drafts) == 1

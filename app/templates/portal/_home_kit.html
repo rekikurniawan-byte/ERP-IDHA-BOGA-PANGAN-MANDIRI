@@ -1,0 +1,44 @@
+{# Komponen beranda portal (PT, mandor, pelanggan): kartu angka, pelacak tahap pesanan, baris invoice. #}
+
+{% macro ph_kpi(icon, tone, label, value, note="", href=none) -%}
+<{{ 'a' if href else 'article' }} class="ph-kpi tone-{{ tone }}"{% if href %} href="{{ href }}"{% endif %}>
+    <span class="ph-kpi-icon"><i class="bi {{ icon }}" aria-hidden="true"></i></span>
+    <span class="ph-kpi-body">
+        <span>{{ label }}</span>
+        <strong>{{ value }}</strong>
+        {% if note %}<small>{{ note }}</small>{% endif %}
+    </span>
+</{{ 'a' if href else 'article' }}>
+{%- endmacro %}
+
+{# Tahap pesanan: Dikirim → Dikonfirmasi → Dimasak → Diantar → Diterima. #}
+{% macro ph_track(stage) -%}
+{% set index = {"WAITING_ADMIN": 0, "CONFIRMED": 1, "ADMIN_CONFIRMED": 1, "LOCKED": 1, "PRODUCTION": 2,
+                "PRODUCTION_DONE": 2, "DELIVERY": 3, "DELIVERED": 5}.get(stage, -1) %}
+<ol class="ph-track{{ ' is-rejected' if stage == 'REJECTED' else '' }}" aria-label="Tahap pesanan">
+    {% for label in ("Dikirim", "Dikonfirmasi", "Dimasak", "Diantar", "Diterima") %}
+        <li class="{{ 'is-done' if loop.index0 < index else ('is-now' if loop.index0 == index else '') }}"><span>{{ label }}</span></li>
+    {% endfor %}
+</ol>
+{%- endmacro %}
+
+{% macro ph_invoice(invoice) -%}
+{% set total = invoice.total_amount or 0 %}
+{% set paid = invoice.paid_amount or 0 %}
+{% set ratio = ((paid / total * 100) if total else 0)|round|int %}
+{% set overdue = (invoice.days_overdue or 0) > 0 %}
+<article class="ph-inv{{ ' is-overdue' if overdue else '' }}">
+    <div class="ph-inv-top">
+        <div>
+            <strong>{{ invoice.invoice_number }}</strong>
+            <small>{{ invoice.party.mandor_name or invoice.party.label }}{% if invoice.due_date %} · jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') }}{% endif %}</small>
+        </div>
+        <span class="ph-pill tone-{{ 'success' if invoice.status == 'PAID' else ('danger' if overdue else ('info' if paid else 'warning')) }}">{{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}</span>
+    </div>
+    <div class="ph-inv-bar" role="img" aria-label="Terbayar {{ ratio }} persen"><span style="width: {{ ratio }}%"></span></div>
+    <div class="ph-inv-foot">
+        <span>Dibayar {{ paid|rupiah }} dari {{ total|rupiah }}</span>
+        <strong>{{ "Lunas" if invoice.status == 'PAID' else "Sisa " ~ (invoice.remaining_amount or 0)|rupiah }}</strong>
+    </div>
+</article>
+{%- endmacro %}

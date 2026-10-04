@@ -420,3 +420,18 @@ def test_rekening_bank_memakai_akun_coa_sendiri_dan_terkunci_setelah_dipakai(ctx
     with pytest.raises(Exception, match="terkunci"):
         validate_bank_coa_code(bank, "1002")
     assert validate_bank_coa_code(bank, "1003") == "1003"
+
+
+# --- aksi atomik bersarang: yang di dalam tidak boleh menutup transaksi luar --
+
+def test_aksi_atomik_bersarang_tidak_menutup_transaksi_luar(ctx):
+    """Dulu bayar piutang/hutang manual gagal: transaksi lapangan turunan
+    (aksi atomik di dalam) meng-commit sesi sehingga aksi luar tertutup."""
+    from sqlalchemy import text
+
+    from app.services.atomic_transaction_service import atomic_business_action
+
+    with atomic_business_action(module="TEST", action="OUTER", description="luar", audit_success=False):
+        with atomic_business_action(module="TEST", action="INNER", description="dalam", audit_success=False):
+            ctx.session.execute(text("SELECT 1"))
+        assert ctx.session.execute(text("SELECT 1")).scalar() == 1

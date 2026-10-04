@@ -587,6 +587,112 @@
         document.querySelectorAll("[data-geo-picker]").forEach(setupGeoPicker);
     });
 
+    // --- Halaman pesan portal: stepper porsi + ringkasan biaya langsung -------
+    // Ongkir mengikuti server: per kiriman, gratis bila porsi >= ambang lokasi.
+    function setupOrderBuilder(form) {
+        const qty = form.querySelector("[name=portion_qty]");
+        const out = function (name) { return form.querySelector("[data-sum-" + name + "]"); };
+        const hint = form.querySelector("[data-free-hint]");
+        const dateInput = form.querySelector("[name=order_date]");
+        const quick = form.querySelectorAll("[data-qty-set]");
+
+        function selectedLocation() { return form.querySelector("[name=delivery_location_id]:checked"); }
+        function selectedMeal() { return form.querySelector("[name=meal_type]:checked"); }
+
+        function update() {
+            const loc = selectedLocation();
+            const meal = selectedMeal();
+            const portions = Math.max(Math.round(Number(qty.value) || 0), 0);
+            quick.forEach(function (button) { button.classList.toggle("is-active", Number(button.dataset.qtySet) === portions); });
+            if (!loc) {
+                out("title").textContent = "Pilih lokasi pengiriman";
+                return;
+            }
+            const price = Number(loc.dataset.price) || 0;
+            const feeRaw = loc.dataset.fee;
+            const freeFrom = Number(loc.dataset.freeFrom) || 0;
+            const included = loc.dataset.included === "1";
+            const free = freeFrom > 0 && portions >= freeFrom;
+            const fee = feeRaw === "" ? null : (free ? 0 : Number(feeRaw) || 0);
+            const food = price * portions;
+            const mealLabel = meal ? meal.dataset.mealLabel : "";
+            const dateText = dateInput && dateInput.value
+                ? new Date(dateInput.value + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })
+                : "tanggal belum dipilih";
+            out("title").textContent = portions + " porsi " + mealLabel.toLowerCase() + " · " + loc.dataset.name + ", " + dateText;
+            out("food-label").textContent = NUMBER.format(portions) + " × " + rupiah(price);
+            out("food").textContent = rupiah(food);
+            out("fee").textContent = included ? "Termasuk" : (fee === null ? "Belum tersedia" : (fee === 0 ? "Gratis" : rupiah(fee)));
+            out("total").textContent = rupiah(food + (fee || 0));
+            if (hint) {
+                hint.classList.toggle("is-free", free);
+                if (included || !freeFrom || feeRaw === "") hint.textContent = "";
+                else if (free) hint.textContent = "Gratis ongkir untuk " + portions + " porsi.";
+                else hint.textContent = "Tambah " + (freeFrom - portions) + " porsi lagi untuk gratis ongkir (mulai " + freeFrom + " porsi).";
+            }
+        }
+
+        form.querySelectorAll("[data-qty-step]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const min = Number(qty.min) || 1;
+                qty.value = Math.max(min, (Math.round(Number(qty.value) || 0)) + Number(button.dataset.qtyStep));
+                update();
+            });
+        });
+        quick.forEach(function (button) {
+            button.addEventListener("click", function () { qty.value = button.dataset.qtySet; update(); });
+        });
+        form.addEventListener("input", update);
+        form.addEventListener("change", update);
+        update();
+    }
+
+    // Tab sederhana: [data-tabs] > button[data-tab] + [data-tab-panel].
+    function setupTabs(root) {
+        const buttons = root.querySelectorAll("[data-tab]");
+        buttons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                buttons.forEach(function (other) {
+                    const active = other === button;
+                    other.classList.toggle("is-active", active);
+                    other.setAttribute("aria-selected", active ? "true" : "false");
+                });
+                root.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
+                    const active = panel.dataset.tabPanel === button.dataset.tab;
+                    panel.hidden = !active;
+                    panel.classList.toggle("is-active", active);
+                });
+            });
+        });
+    }
+
+    // Saring daftar di tempat: [data-filter-group] > button[data-filter],
+    // item [data-filter-item] dalam [data-filter-list] berikutnya.
+    function setupFilterGroup(group) {
+        const list = group.parentElement.querySelector("[data-filter-list]");
+        if (!list) return;
+        const empty = list.querySelector("[data-filter-empty]");
+        group.querySelectorAll("[data-filter]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const key = button.dataset.filter;
+                group.querySelectorAll("[data-filter]").forEach(function (other) { other.classList.toggle("is-active", other === button); });
+                let shown = 0;
+                list.querySelectorAll("[data-filter-item]").forEach(function (item) {
+                    const visible = key === "all" || item.dataset.filterItem === key;
+                    item.hidden = !visible;
+                    if (visible) shown += 1;
+                });
+                if (empty) empty.hidden = shown > 0;
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-order-builder]").forEach(setupOrderBuilder);
+        document.querySelectorAll("[data-tabs]").forEach(setupTabs);
+        document.querySelectorAll("[data-filter-group]").forEach(setupFilterGroup);
+    });
+
     // --- Halaman publik ----------------------------------------------------------
     function setupPublicPage() {
         const header = document.querySelector("[data-pub-header]");

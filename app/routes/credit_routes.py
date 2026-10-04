@@ -91,7 +91,7 @@ def sweep():
     return redirect(url_for("credit.overview"))
 
 
-@credit_bp.route(f"/{T.sub_client_lower}/<int:mandor_id>/settings", methods=["GET", "POST"])
+@credit_bp.route("/sub-client/<int:mandor_id>/settings", methods=["GET", "POST"])
 @role_required("OWNER")
 def mandor_settings(mandor_id):
     mandor = _own_branch_or_404(db.session.get(Mandor, mandor_id))

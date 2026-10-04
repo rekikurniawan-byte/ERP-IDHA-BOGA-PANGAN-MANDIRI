@@ -312,6 +312,30 @@ def generate_field_settlement_number(settlement_date, settlement_type):
         counter += 1
 
 
+MANUAL_RECEIVABLE_JOURNAL_REFERENCE = "MANUAL_RECEIVABLE"
+MANUAL_PAYABLE_JOURNAL_REFERENCE = "MANUAL_PAYABLE"
+MANUAL_RECEIVABLE_REVENUE_CODE = "4004"  # Pendapatan Lain-Lain
+MANUAL_PAYABLE_EXPENSE_CODE = "5002"  # Beban Operasional Dapur
+
+
+def _post_document_journal(*, journal_date, reference_type, reference_id, description, debit_code, credit_code, amount, created_by):
+    from app.services.cash_bank_service import post_cash_bank_journal
+
+    try:
+        return post_cash_bank_journal(
+            journal_date=journal_date,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            description=description,
+            debit_code=debit_code,
+            credit_code=credit_code,
+            amount=amount,
+            created_by=created_by,
+        )
+    except Exception as error:
+        raise FieldTransactionSettlementError(str(error)) from error
+
+
 def _ensure_receivable_event(field_transaction):
     event_type = str(getattr(field_transaction, "business_event_type", "") or "").strip().upper()
     if event_type != "MANUAL_RECEIVABLE_CREATED":
@@ -399,6 +423,20 @@ def create_manual_receivable_for_field_transaction(
             receivable.id,
             created_by,
         )
+        # Piutang baru masuk buku besar saat dibuat; pembayarannya nanti
+        # mengkredit 1004. Tanpa ini 1004 di buku besar lebih kecil dari
+        # buku pembantu piutang.
+        journal = _post_document_journal(
+            journal_date=receivable_date,
+            reference_type=MANUAL_RECEIVABLE_JOURNAL_REFERENCE,
+            reference_id=receivable.id,
+            description=f"Piutang manual {receivable.receivable_number} - {party_name}",
+            debit_code="1004",
+            credit_code=MANUAL_RECEIVABLE_REVENUE_CODE,
+            amount=amount,
+            created_by=created_by,
+        )
+        _ensure_unique_link(field_transaction.id, "JOURNAL", "JOURNAL", journal.id, created_by)
         field_transaction.payment_status = "UNPAID"
         field_transaction.needs_follow_up = True
 
@@ -505,6 +543,18 @@ def create_manual_payable_for_field_transaction(
             payable.id,
             created_by,
         )
+        # Hutang ke vendor nonformal masuk buku besar saat dibuat (beban dapur).
+        journal = _post_document_journal(
+            journal_date=payable_date,
+            reference_type=MANUAL_PAYABLE_JOURNAL_REFERENCE,
+            reference_id=payable.id,
+            description=f"Hutang manual {payable.payable_number} - {party_name}",
+            debit_code=MANUAL_PAYABLE_EXPENSE_CODE,
+            credit_code="2002",
+            amount=amount,
+            created_by=created_by,
+        )
+        _ensure_unique_link(field_transaction.id, "JOURNAL", "JOURNAL", journal.id, created_by)
         field_transaction.payment_status = "UNPAID"
         field_transaction.needs_follow_up = True
 

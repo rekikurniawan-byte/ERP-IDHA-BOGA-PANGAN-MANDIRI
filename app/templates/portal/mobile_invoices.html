@@ -3,35 +3,46 @@
 {% block portal_content %}
 {% set model = data.invoice_model %}
 {% set totals = model.totals %}
-<section class="portal-feature-page portal-ledger-page portal-finance-page">
-    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
+{% set aging = totals.aging %}
+{% set aging_total = (aging.CURRENT or 0) + (aging.DUE_1_7 or 0) + (aging.DUE_8_30 or 0) + (aging.DUE_OVER_30 or 0) %}
+{% set rows = model.invoices %}
+{% set open_rows = rows|rejectattr("status", "in", ["PAID", "CANCELLED", "CANCELED", "VOID", "CLOSED"])|list %}
+{% set overdue_rows = rows|selectattr("days_overdue", "gt", 0)|list %}
+<section class="portal-feature-page portal-finance-page po">
+    <header class="po-head">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}" aria-label="Kembali"><i class="bi bi-arrow-left"></i></a>
+        <div class="po-head-text">
             <p>{{ data.persona.eyebrow }}</p>
             <h1>{{ data.page_title }}</h1>
-            <span>Daftar tagihan</span>
         </div>
-        <strong class="portal-hero-status">{{ "Aktif" if model.allowed else "Belum aktif" }}</strong>
-    </div>
+        <ul class="po-rules">
+            <li><i class="bi bi-receipt"></i><span>Tagihan</span><strong>{{ totals.invoice_count }}</strong></li>
+            <li><i class="bi bi-upload"></i><span>Bukti diperiksa</span><strong>{{ totals.pending_proof_count or 0 }}</strong></li>
+        </ul>
+    </header>
 
-    <div class="portal-ledger-summary portal-finance-summary">
-        <article class="portal-ledger-total">
-            <span>Sisa Tagihan Aktif</span>
+    <section class="pi-summary">
+        <div class="pi-summary-main">
+            <span>Sisa tagihan aktif</span>
             <strong>{{ totals.active_outstanding_amount|rupiah }}</strong>
-            <p>{{ data.page_description }}</p>
-        </article>
-        <article><span>Tagihan</span><strong>{{ totals.invoice_count }}</strong><small>Total dokumen tagihan</small></article>
-        <article><span>Bisa Dibayar</span><strong>{{ totals.payable_invoice_count }}</strong><small>Masih bisa dibayar</small></article>
-        <article><span>Jatuh Tempo</span><strong>{{ totals.overdue_invoice_count }}</strong><small>{{ totals.overdue_outstanding_amount|rupiah }}</small></article>
-        <article><span>Bukti Bayar</span><strong>{{ totals.proof_count }}</strong><small>{{ totals.pending_proof_count }} menunggu cek</small></article>
-    </div>
-
-    <div class="portal-finance-aging-grid">
-        <article><span>Belum Jatuh Tempo</span><strong>{{ totals.aging.CURRENT|rupiah }}</strong></article>
-        <article><span>1-7 Hari</span><strong>{{ totals.aging.DUE_1_7|rupiah }}</strong></article>
-        <article><span>8-30 Hari</span><strong>{{ totals.aging.DUE_8_30|rupiah }}</strong></article>
-        <article><span>>30 Hari</span><strong>{{ totals.aging.DUE_OVER_30|rupiah }}</strong></article>
-    </div>
+            <small>{{ totals.payable_invoice_count or 0 }} invoice bisa dibayar · {{ totals.overdue_invoice_count or 0 }} lewat jatuh tempo ({{ (totals.overdue_outstanding_amount or 0)|rupiah }})</small>
+        </div>
+        <div class="pi-aging">
+            <span class="pi-aging-title">Umur tagihan</span>
+            <div class="pi-aging-bar" role="img" aria-label="Komposisi umur tagihan">
+                {% for key, tone in (("CURRENT", "ok"), ("DUE_1_7", "warn"), ("DUE_8_30", "late"), ("DUE_OVER_30", "bad")) %}
+                    {% set value = aging[key] or 0 %}
+                    {% if value and aging_total %}<span class="seg-{{ tone }}" style="width: {{ (value / aging_total * 100)|round(1) }}%" title="{{ value|rupiah }}"></span>{% endif %}
+                {% endfor %}
+            </div>
+            <ul class="pi-aging-legend">
+                <li><i class="seg-ok"></i>Belum jatuh tempo<strong>{{ (aging.CURRENT or 0)|rupiah }}</strong></li>
+                <li><i class="seg-warn"></i>Lewat 1-7 hari<strong>{{ (aging.DUE_1_7 or 0)|rupiah }}</strong></li>
+                <li><i class="seg-late"></i>Lewat 8-30 hari<strong>{{ (aging.DUE_8_30 or 0)|rupiah }}</strong></li>
+                <li><i class="seg-bad"></i>Lewat &gt;30 hari<strong>{{ (aging.DUE_OVER_30 or 0)|rupiah }}</strong></li>
+            </ul>
+        </div>
+    </section>
 
     {% if not model.allowed %}
         <div class="portal-blocked-state">
@@ -43,62 +54,46 @@
         </div>
     {% endif %}
 
-    <div class="portal-section-heading">
-        <h2>Daftar Tagihan</h2>
-        <span>Daftar aktif</span>
+    <div class="pt-filter" data-filter-group>
+        <button type="button" class="is-active" data-filter="all">Semua <span>{{ rows|length }}</span></button>
+        <button type="button" data-filter="open">Belum lunas <span>{{ open_rows|length }}</span></button>
+        <button type="button" data-filter="paid">Lunas <span>{{ rows|length - open_rows|length }}</span></button>
+        {% if overdue_rows %}<button type="button" data-filter="overdue">Lewat tempo <span>{{ overdue_rows|length }}</span></button>{% endif %}
     </div>
 
-    <div class="portal-ledger-list portal-finance-ledger-list">
-        {% for invoice in model.invoices %}
-            <article class="portal-ledger-card portal-finance-card {{ 'is-overdue' if invoice.days_overdue > 0 else '' }}">
-                <div class="portal-ledger-card-main">
-                    <span class="portal-record-icon"><i class="bi bi-receipt"></i></span>
-                    <div>
-                        <h3>{{ invoice.invoice_number }}</h3>
-                        <p>
-                            {{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}
-                            | Jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}
-                            | {{ invoice.party.label }}
-                        </p>
-                        <div class="portal-chip-row">
-                            <span>{{ invoice.status_label }}</span>
-                            <span>{{ invoice.bill_to_type or "-" }}</span>
-                            <span>{{ invoice.input_source or "-" }}</span>
-                            {% if invoice.days_overdue > 0 %}<span>Terlambat {{ invoice.days_overdue }} hari</span>{% endif %}
-                            {% if invoice.payment_mismatch %}<span>Selisih pembayaran</span>{% endif %}
-                        </div>
+    <div class="pi-list" data-filter-list>
+        {% for invoice in rows %}
+            {% set total = invoice.total_amount or 0 %}
+            {% set paid = invoice.paid_amount or 0 %}
+            {% set ratio = ((paid / total * 100) if total else 0)|round|int %}
+            {% set is_open = invoice in open_rows %}
+            {% set overdue = invoice.days_overdue > 0 %}
+            <article class="pi-card {{ 'is-overdue' if overdue else '' }}" data-filter-item="{{ 'overdue' if overdue else ('open' if is_open else 'paid') }}">
+                <div class="pi-card-head">
+                    <span class="pi-icon"><i class="bi bi-receipt"></i></span>
+                    <div class="pi-card-title">
+                        <strong>{{ invoice.invoice_number }}</strong>
+                        <span>{{ invoice.party.mandor_name or invoice.party.label }} · terbit {{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}</span>
                     </div>
+                    <span class="ph-pill tone-{{ 'success' if not is_open else ('danger' if overdue else ('info' if paid else 'warning')) }}">{{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}</span>
                 </div>
-                <div class="portal-ledger-amounts">
-                    <div><span>Total</span><strong>{{ invoice.total_amount|rupiah }}</strong></div>
-                    <div><span>Dibayar</span><strong>{{ invoice.paid_amount|rupiah }}</strong></div>
-                    <div><span>Sisa</span><strong>{{ invoice.remaining_amount|rupiah }}</strong></div>
+                <div class="pi-amounts">
+                    <div><span>Total</span><strong>{{ total|rupiah }}</strong></div>
+                    <div><span>Dibayar</span><strong>{{ paid|rupiah }}</strong></div>
+                    <div class="is-due"><span>Sisa</span><strong>{{ (invoice.remaining_amount or 0)|rupiah }}</strong></div>
                 </div>
-                <div class="portal-finance-proof-strip">
-                    <div>
-                        <span>Bukti pembayaran</span>
-                        <strong>{{ invoice.proof_summary.latest_status|status_label }}</strong>
-                        <small>
-                            {{ invoice.proof_summary.count }} file
-                            {% if invoice.proof_summary.latest_uploaded_at %}
-                                | terakhir {{ invoice.proof_summary.latest_uploaded_at|wib('%d-%m-%Y %H:%M') }}
-                            {% endif %}
-                        </small>
-                    </div>
-                    <div>
-                        <span>Pembayaran</span>
-                        <strong>{{ invoice.payment_count }}</strong>
-                        <small>Total pembayaran {{ invoice.payment_total|rupiah }}</small>
-                    </div>
-                </div>
-                <div class="portal-ledger-actions">
+                <div class="ph-inv-bar" role="img" aria-label="Terbayar {{ ratio }} persen"><span style="width: {{ ratio }}%"></span></div>
+                <div class="pi-card-foot">
+                    <span class="pi-meta">
+                        <i class="bi bi-calendar-event"></i> Jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}
+                        · <i class="bi bi-credit-card"></i> {{ invoice.payment_count }} pembayaran
+                        {% if invoice.proof_summary.count %}· <i class="bi bi-paperclip"></i> bukti: {{ invoice.proof_summary.latest_status|status_label }}{% endif %}
+                        {% if invoice.payment_mismatch %}· <span class="text-danger">selisih pembayaran</span>{% endif %}
+                    </span>
                     {% if invoice.payable %}
-                        <a class="portal-action-link" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}">
-                            <i class="bi bi-credit-card"></i>
-                            <span>Bayar / Unggah Bukti</span>
-                        </a>
-                    {% else %}
-                        <span class="portal-action-link secondary"><i class="bi bi-check2-circle"></i><span>Tidak bisa dibayar</span></span>
+                        <a class="btn btn-sm app-btn-primary" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}"><i class="bi bi-credit-card"></i> Bayar / unggah bukti</a>
+                    {% elif not is_open %}
+                        <span class="pi-done"><i class="bi bi-check2-circle"></i> Lunas</span>
                     {% endif %}
                 </div>
             </article>
@@ -106,9 +101,10 @@
             <div class="portal-empty-state">
                 <i class="bi bi-receipt"></i>
                 <strong>Belum ada invoice</strong>
-                <p>Tagihan sesuai akun akan tampil di sini.</p>
+                <p>Tagihan untuk akun ini akan tampil di sini.</p>
             </div>
         {% endfor %}
+        <div class="ph-empty pt-filter-empty" data-filter-empty hidden><i class="bi bi-funnel"></i><span>Tidak ada invoice dengan status ini.</span></div>
     </div>
 </section>
 {% endblock %}

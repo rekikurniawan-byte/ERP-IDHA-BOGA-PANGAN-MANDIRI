@@ -28,7 +28,7 @@ PORTAL_CUSTOMER_FINANCIAL_BLOCKED_REASON = (
     "Financial visibility pelanggan umum menunggu prepayment/payment flow Stage 3."
 )
 INVOICE_STATUS_LABELS = {
-    "DRAFT": "Draft",
+    "DRAFT": "Belum Dibayar",
     "OPEN": "Terbuka",
     "PARTIAL": "Dibayar Sebagian",
     "PARTIAL_PAID": "Dibayar Sebagian",

@@ -176,6 +176,26 @@ def _delivery_fee_label(branch_id, client, location):
     return f"{km_note}ongkir Rp {fee:,.0f}/pengiriman{free_note}".replace(",", ".")
 
 
+def _delivery_fee_facts(branch_id, client, location):
+    """Angka ongkir untuk ringkasan langsung di halaman pesan (JS menghitung total)."""
+    from app.services.geo_service import quote_distance_fee
+    from app.services.pricing_service import FEE_SOURCE_DISTANCE, FEE_SOURCE_INCLUDED, free_delivery_min_portions, quote_trip_fee
+
+    fee, source, error = quote_trip_fee(branch_id, client, location, 1)
+    if error:
+        return {"fee": None, "free_from": 0, "included": False, "km_label": None, "error": True}
+    if source == FEE_SOURCE_INCLUDED or not fee:
+        return {"fee": 0, "free_from": 0, "included": source == FEE_SOURCE_INCLUDED, "km_label": None, "error": False}
+    distance = quote_distance_fee(branch_id, location) if source == FEE_SOURCE_DISTANCE else None
+    return {
+        "fee": float(fee),
+        "free_from": free_delivery_min_portions(branch_id),
+        "included": False,
+        "km_label": distance.km_label if distance else None,
+        "error": False,
+    }
+
+
 def _shown_min_portions(branch_id):
     from app.services.pricing_service import general_min_portions
 
@@ -196,6 +216,8 @@ def _location_option_cards(locations):
                 "price_per_portion": quote.price if quote else None,
                 "price_label": quote.source_label if quote else None,
                 "delivery_fee_label": _delivery_fee_label(mandor.branch_id, client, location) if mandor else None,
+                "fee": _delivery_fee_facts(mandor.branch_id, client, location) if mandor else None,
+                "has_point": location.latitude is not None,
                 # Minimal 1 porsi = tidak ada minimal; jangan tampilkan.
                 "min_portions": _shown_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
                 "id": location.id,

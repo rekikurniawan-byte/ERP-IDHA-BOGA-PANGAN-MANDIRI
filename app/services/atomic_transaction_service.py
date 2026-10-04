@@ -17,6 +17,9 @@ from app.services.audit_log_service import record_critical_audit_log
 
 logger = logging.getLogger(__name__)
 
+# Kedalaman aksi atomik bersarang, disimpan di session.info.
+_DEPTH_KEY = "atomic_business_action_depth"
+
 
 APP_VERSION = "PRODUCTION"
 ATOMIC_GUARD_POLICY_VERSION = "PRODUCTION_ATOMIC_TRANSACTION_GUARD_V2"
@@ -104,6 +107,12 @@ class AtomicBusinessAction(AbstractContextManager):
         # aktif, fallback ke SAVEPOINT juga. Ini menjaga nested transaction tetap aman
         # dan PostgreSQL tanpa error "transaction is already begun".
         self._session = self._current_session()
+        # Aksi atomik bisa bersarang (mis. bayar piutang manual membuat
+        # transaksi lapangan turunan). Hanya yang terluar boleh commit dan
+        # mengaudit dengan commit; yang di dalam cukup SAVEPOINT. Dulu yang
+        # di dalam ikut commit sehingga transaksi luar tertutup dan gagal.
+        depth = int(self._session.info.get(_DEPTH_KEY, 0) or 0)
+        self._outermost = depth == 0
 
         if self._session_in_transaction():
             self._nested = True
@@ -119,6 +128,7 @@ class AtomicBusinessAction(AbstractContextManager):
                 self._transaction = self._session.begin_nested()
 
         self._transaction.__enter__()
+        self._session.info[_DEPTH_KEY] = depth + 1
         return self
 
     def register_rollback_file(self, file_path: Optional[Path | str]) -> None:
@@ -163,7 +173,8 @@ class AtomicBusinessAction(AbstractContextManager):
                 continue
         return cleaned
 
-    def _audit(self, *, status: str, error: Optional[BaseException] = None, cleaned_files: Optional[Iterable[str]] = None) -> None:
+    def _audit(self, *, status: str, error: Optional[BaseException] = None, cleaned_files: Optional[Iterable[str]] = None,
+               commit: bool = True) -> None:
         if status == "PASS" and not self.audit_success:
             return
         if status == "FAIL" and not self.audit_failure:
@@ -198,33 +209,48 @@ class AtomicBusinessAction(AbstractContextManager):
             policy_scope="ATOMIC_TRANSACTION_GUARD",
             user_id=self.user_id,
             branch_id=self.branch_id,
-            commit=True,
+            commit=commit,
         )
 
+    def _leave(self):
+        session = self._session or db.session
+        try:
+            depth = int(session.info.get(_DEPTH_KEY, 1) or 1)
+            session.info[_DEPTH_KEY] = max(depth - 1, 0)
+        except Exception:
+            logger.exception("Suppressed unexpected exception in app/services/atomic_transaction_service.py:_leave")
+
     def __exit__(self, exc_type, exc_value, traceback):
+        outermost = getattr(self, "_outermost", True)
         if exc_type is not None:
             try:
                 if self._transaction is not None:
                     self._transaction.__exit__(exc_type, exc_value, traceback)
             finally:
-                (self._session or db.session).rollback()
+                self._leave()
                 cleaned = self._cleanup_rollback_files()
-                self._audit(status="FAIL", error=exc_value, cleaned_files=cleaned)
+                if outermost:
+                    (self._session or db.session).rollback()
+                    self._audit(status="FAIL", error=exc_value, cleaned_files=cleaned)
             return False
 
         try:
             if self._transaction is not None:
                 self._transaction.__exit__(None, None, None)
             # Jika menggunakan nested transaction karena query sebelumnya sudah
-            # membuka transaction, commit outer session di sini.
-            if self._nested:
+            # membuka transaction, commit outer session di sini -- hanya oleh
+            # aksi atomik terluar.
+            if self._nested and outermost:
                 (self._session or db.session).commit()
-            self._audit(status="PASS")
+            self._leave()
+            self._audit(status="PASS", commit=outermost)
             return False
         except Exception as error:
-            (self._session or db.session).rollback()
-            cleaned = self._cleanup_rollback_files()
-            self._audit(status="FAIL", error=error, cleaned_files=cleaned)
+            self._leave()
+            if outermost:
+                (self._session or db.session).rollback()
+                cleaned = self._cleanup_rollback_files()
+                self._audit(status="FAIL", error=error, cleaned_files=cleaned)
             raise
 
 
