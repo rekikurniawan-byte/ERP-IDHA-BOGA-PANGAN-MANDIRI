@@ -883,6 +883,35 @@ def calendar():
     )
 
 
+@portal_bp.route("/addresses", methods=["GET", "POST"])
+@role_required(ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT)
+def addresses():
+    """Alamat antar + titik GPS (keputusan owner 2026-10-04)."""
+    from app.services.portal_address_service import PortalAddressError, add_address, address_book, update_address
+
+    if request.method == "POST":
+        location_id = request.form.get("location_id", type=int)
+        try:
+            if location_id:
+                location = update_address(current_user, location_id, request.form)
+                flash(f"Alamat {location.location_name} diperbarui.", "success")
+            else:
+                location = add_address(current_user, request.form)
+                flash(f"Alamat {location.location_name} ditambahkan dan bisa dipilih saat memesan.", "success")
+        except PortalAddressError as error:
+            flash(str(error), "danger")
+        return redirect(url_for("portal.addresses"))
+    return render_template(
+        "portal/addresses.html",
+        data={
+            "persona": _current_portal_persona(),
+            "book": address_book(current_user),
+            "page_title": "Alamat Saya",
+            "page_description": "Alamat antar dan titik lokasinya di peta.",
+        },
+    )
+
+
 @portal_bp.route("/profile")
 @role_required(*PORTAL_READONLY_ROLES)
 def profile():

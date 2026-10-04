@@ -300,7 +300,7 @@ def line_effects(section, line):
     from app.services.cash_bank_service import cash_bank_coa_code
 
     if section == "cashbank":
-        return {cash_bank_coa_code(line["account_type"]): _dec(line["amount"])}
+        return {cash_bank_coa_code(line["account_type"], line.get("bank_account_id")): _dec(line["amount"])}
     if section == "receivables":
         return {"1004": _dec(line["amount"])}
     if section == "payables":

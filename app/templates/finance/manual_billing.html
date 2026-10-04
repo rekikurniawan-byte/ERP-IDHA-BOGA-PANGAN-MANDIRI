@@ -97,7 +97,7 @@
                             {% set status_ctx = get_manual_backfill_status_context(batch.status) %}
                             <span class="status-badge status-warning">Input Belakangan</span>
                             <span class="status-badge {{ status_ctx.badge_class }}">{{ status_ctx.label }}</span>
-                            {% if batch.locked_at %}<div class="small text-muted">Dikunci {{ batch.locked_at.strftime('%d-%m-%Y %H:%M') }}</div>{% endif %}
+                            {% if batch.locked_at %}<div class="small text-muted">Dikunci {{ batch.locked_at|wib('%d-%m-%Y %H:%M') }}</div>{% endif %}
                         </td>
                         <td class="text-end">{{ batch.total_amount|rupiah }}</td>
                         <td class="text-end">

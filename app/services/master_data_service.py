@@ -12,6 +12,7 @@ from app.models.master import (
     Supplier,
     UnitConversion,
 )
+from app.services.geo_service import apply_location_point
 
 
 ITEM_PREFINAL = {
@@ -160,7 +161,7 @@ def toggle_mandor_active(mandor):
     return mandor
 
 
-def create_location_record(*, mandor_id, location_name, description, is_active, delivery_zone_id=None):
+def create_location_record(*, mandor_id, location_name, description, is_active, delivery_zone_id=None, point_form=None):
     location = DeliveryLocation(
         mandor_id=mandor_id,
         location_name=location_name,
@@ -168,6 +169,9 @@ def create_location_record(*, mandor_id, location_name, description, is_active, 
         is_active=is_active,
         delivery_zone_id=delivery_zone_id,
     )
+    if point_form is not None:
+        # Titik GPS (peta/GPS HP); GeoError dilempar sebelum apa pun disimpan.
+        apply_location_point(location, point_form)
     db.session.add(location)
     _commit_or_rollback()
     return location
@@ -176,7 +180,10 @@ def create_location_record(*, mandor_id, location_name, description, is_active, 
 _KEEP_ZONE = object()
 
 
-def update_location_record(location, *, mandor_id, location_name, description, is_active, delivery_zone_id=_KEEP_ZONE):
+def update_location_record(location, *, mandor_id, location_name, description, is_active, delivery_zone_id=_KEEP_ZONE,
+                           point_form=None):
+    if point_form is not None:
+        apply_location_point(location, point_form)
     location.mandor_id = mandor_id
     location.location_name = location_name
     location.description = description
@@ -475,20 +482,24 @@ def toggle_supplier_active(supplier):
     return supplier
 
 
-def create_bank_account_record(*, branch_id, account_name, bank_name, account_number, is_active):
+def create_bank_account_record(*, branch_id, account_name, bank_name, account_number, is_active, coa_account_code=None):
     account = BankAccount(
         branch_id=branch_id,
         account_name=account_name,
         bank_name=bank_name,
         account_number=account_number,
         is_active=is_active,
+        coa_account_code=coa_account_code,
     )
     db.session.add(account)
     _commit_or_rollback()
     return account
 
 
-def update_bank_account_record(account, *, account_name, bank_name, account_number, is_active):
+def update_bank_account_record(account, *, account_name, bank_name, account_number, is_active, coa_account_code=_KEEP_ZONE):
+    # coa_account_code divalidasi pemanggil (cash_bank_service.validate_bank_coa_code).
+    if coa_account_code is not _KEEP_ZONE:
+        account.coa_account_code = coa_account_code
     account.account_name = account_name
     account.bank_name = bank_name
     account.account_number = account_number

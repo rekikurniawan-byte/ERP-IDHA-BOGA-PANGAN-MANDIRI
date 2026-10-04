@@ -204,7 +204,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div>{{ notification.created_at.strftime('%d/%m/%Y %H:%M') if notification.created_at else '-' }}</div>
+                                <div>{{ notification.created_at|wib('%d/%m/%Y %H:%M') if notification.created_at else '-' }}</div>
                                 {% if notification.due_date %}
                                     <small class="text-muted">Jatuh tempo: {{ notification.due_date.strftime('%d/%m/%Y') }}</small>
                                 {% endif %}

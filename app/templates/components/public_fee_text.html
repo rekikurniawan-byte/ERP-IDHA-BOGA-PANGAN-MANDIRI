@@ -1,0 +1,12 @@
+{# Kalimat aturan porsi & ongkir pelanggan umum, dari pengaturan Harga & Ongkir. #}
+{% macro fee_sentence(pricing) -%}
+{%- if pricing -%}
+{%- set distance = pricing.distance -%}
+{{ "Tanpa minimal porsi." if (pricing.min_portions or 1) <= 1 else "Minimal " ~ pricing.min_portions ~ " porsi." }}
+{%- if pricing.free_delivery_min %} Gratis ongkir mulai {{ pricing.free_delivery_min }} porsi per kiriman;{% endif %}
+{%- if distance %} {{ "di bawah itu" if pricing.free_delivery_min else "Ongkir" }} dihitung dari jarak, {{ distance.per_km|rupiah }}/km (minimal {{ distance.minimum|rupiah }}), dibayar sekalian saat memesan.
+{%- elif pricing.zones %} {{ "di bawah itu" if pricing.free_delivery_min else "Ongkir" }} mengikuti zona lokasi, dibayar sekalian saat memesan.
+{%- elif pricing.free_delivery_min %} di bawah itu ongkir dibayar sekalian saat memesan.
+{%- endif -%}
+{%- endif -%}
+{%- endmacro %}

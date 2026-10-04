@@ -207,6 +207,7 @@
                     {% if global_portal_enabled|default(false) %}
                         {{ nav_link(url_for('portal.dashboard'), "Akun Portal", "bi-person-badge", endpoint == "portal.dashboard") }}
                     {% endif %}
+                    {{ nav_link(url_for('customer_success.partnerships'), "Pengajuan Kerja Sama", "bi-envelope-paper", endpoint.startswith("customer_success.partnership")) }}
                     {{ nav_link(url_for('customer_success.contracts'), "Kontrak", "bi-file-earmark-text", endpoint.startswith("customer_success.contract")) }}
                     {{ nav_link(url_for('customer_success.complaints'), "Komplain", "bi-chat-square-dots", endpoint.startswith("customer_success.complaint")) }}
                 {% endcall %}

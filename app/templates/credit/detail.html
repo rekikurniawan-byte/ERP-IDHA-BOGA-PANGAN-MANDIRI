@@ -254,7 +254,7 @@
     <div class="card-header-clean"><div><h5>Riwayat Status</h5><p>Tanggal dan angka dibekukan saat status berpindah.</p></div></div>
     {% for event in detail.events %}
         <p class="mb-1 small">
-            <strong>{{ event.changed_at.strftime('%d-%m-%Y %H:%M') }}</strong>
+            <strong>{{ event.changed_at|wib('%d-%m-%Y %H:%M') }}</strong>
             {{ event.from_status or "-" }} → {{ event.to_status|status_label }}
             ({{ "otomatis" if event.trigger == "SWEEP" else event.trigger|lower }})
             — {{ event.reason }}

@@ -15,6 +15,7 @@ from app.extensions import db
 
 logger = logging.getLogger(__name__)
 
+COMPANY_EMAIL = "idhabogapanganmandiri@gmail.com"
 MENU_TYPE_LABELS = {"CATERING": "Katering harian", "BOX": "Nasi kotak", "SNACK": "Snack", "CUSTOM": "Pesanan khusus"}
 
 
@@ -38,8 +39,11 @@ def _common(branch):
     from app.services.company_settings_service import get_company_settings
 
     settings = _safe("pengaturan perusahaan", lambda: get_company_settings(branch.id)) if branch else None
+    email = str((settings or {}).get("company_email") or "").strip()
     return {
         "whatsapp_url": whatsapp_link((settings or {}).get("company_phone")),
+        # Alamat contoh (.local/example) diganti email resmi perusahaan.
+        "email": email if "@" in email and not email.endswith((".local", "example.com")) else COMPANY_EMAIL,
         "portal_enabled": bool(current_app.config.get("PORTAL_ENABLED", False)),
         "year": date.today().year,
     }
@@ -135,11 +139,21 @@ def _pricing(branch_id, today):
         fee = fee_in_effect(branch_id, zone_id=zone.id, on_date=today)
         if fee is not None:
             zones.append({"id": zone.id, "name": zone.name, "fee": float(Decimal(fee.fee))})
+    from app.services.geo_service import distance_fee_settings
+
+    distance = distance_fee_settings(branch_id)
     return {
         "price": float(quote.price) if quote else None,
         "zones": zones,
         "min_portions": general_min_portions(branch_id),
         "free_delivery_min": free_delivery_min_portions(branch_id),
+        # Ongkir per km dari titik dapur (keputusan owner 2026-10-04).
+        "distance": {
+            "per_km": float(distance["per_km"]),
+            "minimum": float(distance["minimum"]),
+            "road_factor": float(distance["road_factor"]),
+            "origin_label": distance["origin"]["label"] if distance["origin"] else None,
+        } if distance["enabled"] else None,
     }
 
 
@@ -188,4 +202,30 @@ def auth_context(today=None):
     branch = _safe("cabang", _main_branch)
     pricing = _safe("harga", lambda: _pricing(branch.id, today)) if branch else None
     arrivals = _safe("jam tiba", lambda: _arrivals(branch.id, today)) if branch else None
-    return {"pricing": pricing, "cutoffs": _safe("batas pesan", _cutoffs) or {}, "arrivals": arrivals or {}, **_common(branch)}
+    return {"pricing": pricing, "cutoffs": _safe("batas pesan", _cutoffs) or {}, "arrivals": arrivals or {},
+            "geo": geo_context(branch), **_common(branch)}
+
+
+def geo_context(branch=None):
+    """Titik dapur + tarif per km untuk pemilih titik lokasi di halaman publik."""
+    from app.services.geo_service import picker_context
+
+    branch = branch or _safe("cabang", _main_branch)
+    return _safe("titik dapur", lambda: picker_context(branch.id)) if branch else None
+
+
+def partnership_context(today=None):
+    """Halaman /kerja-sama: aturan pesan, jam tiba, dan titik dapur untuk peta."""
+    today = today or date.today()
+    branch = _safe("cabang", _main_branch)
+    if not branch:
+        return {"pricing": None, "cutoffs": _safe("batas pesan", _cutoffs) or {}, "arrivals": {}, "geo": None,
+                "performance": None, **_common(None)}
+    return {
+        **_common(branch),
+        "pricing": _safe("harga", lambda: _pricing(branch.id, today)),
+        "cutoffs": _safe("batas pesan", _cutoffs) or {},
+        "arrivals": _safe("jam tiba", lambda: _arrivals(branch.id, today)) or {},
+        "performance": _safe("kinerja", lambda: _performance(branch.id, today)),
+        "geo": geo_context(branch),
+    }

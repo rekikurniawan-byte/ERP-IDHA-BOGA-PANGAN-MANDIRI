@@ -6,6 +6,7 @@ from datetime import date, datetime
 
 from app.routes.settings_routes import *  # noqa: F401,F403
 from app.models.master import Client
+from app.services.geo_service import distance_fee_settings, picker_context
 from app.services.pricing_service import (
     PricingError,
     client_fee_overview,
@@ -59,6 +60,8 @@ def pricing():
         zones=zone_overview(branch_id),
         client_fees=client_fee_overview(branch_id),
         free_delivery_min=free_delivery_min_portions(branch_id),
+        distance=distance_fee_settings(branch_id),
+        geo=picker_context(branch_id),
         today=date.today(),
     )
 
@@ -144,3 +147,34 @@ def pricing_set_free_delivery():
     message = f"Gratis ongkir untuk pengiriman minimal {portions} porsi." if portions else "Gratis ongkir dimatikan."
     flash(message, "success")
     return redirect(url_for("settings.pricing"))
+
+
+@settings_bp.route("/pricing/distance-fee", methods=["POST"])
+@role_required("OWNER")
+def pricing_set_distance_fee():
+    """Titik dapur + tarif ongkir per km pelanggan umum (keputusan owner 2026-10-04)."""
+    from app.extensions import db
+    from app.services.geo_service import GeoError, save_distance_fee_settings
+
+    try:
+        values = save_distance_fee_settings(
+            current_user.branch_id,
+            latitude=request.form.get("latitude"),
+            longitude=request.form.get("longitude"),
+            label=request.form.get("origin_label"),
+            per_km=request.form.get("per_km"),
+            minimum=request.form.get("minimum"),
+            road_factor=request.form.get("road_factor"),
+            updated_by=current_user.id,
+        )
+        db.session.commit()
+    except GeoError as error:
+        db.session.rollback()
+        flash(str(error), "warning")
+        return redirect(url_for("settings.pricing") + "#ongkir-jarak")
+    flash(
+        f"Ongkir jarak tersimpan: Rp {int(float(values['delivery_fee_per_km'])):,}/km, minimal "
+        f"Rp {int(float(values['delivery_fee_minimum'])):,}.".replace(",", "."),
+        "success",
+    )
+    return redirect(url_for("settings.pricing") + "#ongkir-jarak")

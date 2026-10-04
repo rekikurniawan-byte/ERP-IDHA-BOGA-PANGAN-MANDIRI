@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/location_picker.html" import location_picker %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -44,7 +45,11 @@
                         <option value="{{ zone.id }}" {% if location and location.delivery_zone_id == zone.id %}selected{% endif %}>{{ zone.name }}</option>
                     {% endfor %}
                 </select>
-                <div class="form-text">Wajib untuk pelanggan umum; tarifnya diatur OWNER di Harga &amp; Ongkir.</div>
+                <div class="form-text">Cadangan bila lokasi belum punya titik GPS. Lokasi bertitik GPS dihitung per km.</div>
+            </div>
+
+            <div class="col-12">
+                {{ location_picker(lat=location.latitude if location else none, lng=location.longitude if location else none, accuracy=location.gps_accuracy_m if location else none, geo=geo, label="Titik lokasi antar", help="Dipakai pengantar (petunjuk arah) dan untuk ongkir per km pelanggan umum. Ketuk peta, geser penanda, atau pakai GPS saat berada di lokasi.") }}
             </div>
 
             <div class="col-md-12">

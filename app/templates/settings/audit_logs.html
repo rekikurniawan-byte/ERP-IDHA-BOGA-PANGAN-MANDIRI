@@ -158,7 +158,7 @@
             <tbody>
                 {% for log in logs %}
                     <tr>
-                        <td class="text-nowrap">{{ log.created_at.strftime('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
+                        <td class="text-nowrap">{{ log.created_at|wib('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
                         <td>
                             <div class="fw-semibold">{{ log.username_snapshot or '-' }}</div>
                             <div class="text-muted small">{{ log.user_role_snapshot or '-' }}</div>

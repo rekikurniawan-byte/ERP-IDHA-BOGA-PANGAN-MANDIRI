@@ -121,7 +121,7 @@
                         {% if menu.recipe %}
                             {% if menu.recipe.recipe_status == "FINAL" %}
                                 <span class="status-badge success">Final</span>
-                                {% if menu.recipe.finalized_at %}<br><small class="text-muted">{{ menu.recipe.finalized_at.strftime('%d-%m-%Y %H:%M') }}</small>{% endif %}
+                                {% if menu.recipe.finalized_at %}<br><small class="text-muted">{{ menu.recipe.finalized_at|wib('%d-%m-%Y %H:%M') }}</small>{% endif %}
                             {% else %}
                                 <span class="status-badge neutral">Konsep</span>
                                 <br><small class="text-muted">Cek sebelum dipakai operasional</small>

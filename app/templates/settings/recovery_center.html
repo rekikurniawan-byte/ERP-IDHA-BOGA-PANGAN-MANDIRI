@@ -194,7 +194,7 @@
                 <tbody>
                     {% for log in logs %}
                         <tr>
-                            <td>{{ log.created_at.strftime('%d/%m/%Y %H:%M') if log.created_at else '-' }}</td>
+                            <td>{{ log.created_at|wib('%d/%m/%Y %H:%M') if log.created_at else '-' }}</td>
                             <td>{{ log.module }}</td>
                             <td>{{ log.event_type }}</td>
                             <td><span class="status-badge {{ 'danger' if log.audit_severity == 'CRITICAL' else 'warning' if log.audit_severity == 'HIGH' else 'info' }}">{{ log.audit_severity|status_label }}</span></td>

@@ -48,7 +48,7 @@
                                 <span class="status-badge danger">Nonaktif</span>
                             {% endif %}
                         </td>
-                        <td>{{ item.created_at.strftime('%d/%m/%Y') if item.created_at else '-' }}</td>
+                        <td>{{ item.created_at|wib('%d/%m/%Y') if item.created_at else '-' }}</td>
                         <td>
                             <div class="d-flex justify-content-end gap-2 flex-wrap">
                                 <a href="{{ url_for('settings.edit_user_page', user_id=item.id) }}" class="btn btn-sm app-btn-secondary">

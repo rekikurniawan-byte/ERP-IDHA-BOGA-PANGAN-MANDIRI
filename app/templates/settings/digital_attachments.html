@@ -99,7 +99,7 @@
             <tbody>
                 {% for attachment in attachments %}
                     <tr>
-                        <td class="text-nowrap small">{{ attachment.created_at.strftime('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}</td>
+                        <td class="text-nowrap small">{{ attachment.created_at|wib('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}</td>
                         <td class="hr-master-settings-minw-240">
                             <div class="fw-semibold">{{ attachment.original_filename }}</div>
                             <div class="text-muted small">SHA256: {{ attachment.sha256_hash[:12] }}...</div>

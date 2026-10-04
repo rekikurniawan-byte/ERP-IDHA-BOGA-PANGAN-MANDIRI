@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+
+{% block public_page %}
+<div class="pub" data-public-page="partnership-sent">
+    {% include "components/public_header.html" %}
+
+    <main id="mainContent" class="pub-apply">
+        <div class="pub-wrap">
+            <div class="pub-sent">
+                <span class="pub-sent-icon" aria-hidden="true"><i class="bi bi-check2"></i></span>
+                <h1>Pengajuan terkirim</h1>
+                {% if number %}
+                    <p class="pub-sent-number">Nomor pengajuan <strong>{{ number }}</strong></p>
+                {% endif %}
+                <p>Terima kasih. Pengajuan Anda sudah masuk ke owner dan admin kami. Kami akan menghubungi lewat nomor yang Anda isi untuk membahas kebutuhan dan jadwal survei.</p>
+                <p class="pub-fine">Simpan nomor di atas bila ingin menanyakan perkembangannya lewat WhatsApp atau email <a href="mailto:{{ site.email }}">{{ site.email }}</a>.</p>
+                <div class="pub-hero-actions pub-sent-actions">
+                    <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('public.partnership') }}">Baca alur kerja sama</a>
+                    {% if site.whatsapp_url %}
+                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp" aria-hidden="true"></i> Chat WhatsApp</a>
+                    {% endif %}
+                    <a class="pub-btn pub-btn-ghost pub-btn-lg" href="{{ url_for('dashboard.index') }}">Ke beranda</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "components/public_footer.html" %}
+</div>
+{% endblock %}

@@ -56,7 +56,7 @@
                     <dd class="col-sm-8">{{ attachment.uploader.username if attachment.uploader else '-' }}</dd>
 
                     <dt class="col-sm-4">Waktu Unggah</dt>
-                    <dd class="col-sm-8">{{ attachment.created_at.strftime('%d-%m-%Y %H:%M:%S') if attachment.created_at else '-' }}</dd>
+                    <dd class="col-sm-8">{{ attachment.created_at|wib('%d-%m-%Y %H:%M:%S') if attachment.created_at else '-' }}</dd>
 
                     <dt class="col-sm-4">Catatan</dt>
                     <dd class="col-sm-8">{{ attachment.notes or '-' }}</dd>
@@ -106,7 +106,7 @@
                 <div class="card-header bg-white"><strong>Info Hapus</strong></div>
                 <div class="card-body small">
                     <div><strong>Dihapus oleh:</strong> {{ attachment.deleter.username if attachment.deleter else '-' }}</div>
-                    <div><strong>Waktu:</strong> {{ attachment.deleted_at.strftime('%d-%m-%Y %H:%M:%S') if attachment.deleted_at else '-' }}</div>
+                    <div><strong>Waktu:</strong> {{ attachment.deleted_at|wib('%d-%m-%Y %H:%M:%S') if attachment.deleted_at else '-' }}</div>
                     <div><strong>Catatan:</strong> {{ attachment.delete_note or '-' }}</div>
                 </div>
             </div>

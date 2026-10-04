@@ -35,7 +35,9 @@ PRICE_SOURCE_LABELS = {
 }
 
 MIN_PORTIONS_SETTING = "general_min_portions"
-DEFAULT_MIN_PORTIONS = 10
+# Keputusan owner 2026-10-04: pelanggan umum boleh pesan berapa pun; di bawah
+# ambang gratis ongkir, ongkir dibayar di muka bersama pesanan.
+DEFAULT_MIN_PORTIONS = 1
 
 
 class PricingError(ValueError):
@@ -375,6 +377,7 @@ FEE_SOURCE_CONTRACT = "KONTRAK"
 FEE_SOURCE_INCLUDED = "TERMASUK"
 FEE_SOURCE_ZONE = "ZONA"
 FEE_SOURCE_FREE = "GRATIS"
+FEE_SOURCE_DISTANCE = "JARAK"
 FREE_DELIVERY_SETTING = "free_delivery_min_portions"
 ZERO_FEE = Decimal("0.00")
 
@@ -623,16 +626,27 @@ def quote_trip_fee(branch_id, client, location, qty, on_date=None):
     if not is_general_client(client):
         return ZERO_FEE, FEE_SOURCE_INCLUDED, None
 
-    zone_id = getattr(location, "delivery_zone_id", None)
-    if not zone_id:
-        name = getattr(location, "location_name", "ini")
-        return None, None, f"Lokasi {name} belum punya zona ongkir. Admin perlu memilih zonanya di data lokasi."
-    zone_fee = fee_in_effect(branch_id, zone_id=zone_id, on_date=on_date)
-    if not zone_fee:
-        return None, None, "Tarif ongkir zona lokasi ini belum diatur. OWNER perlu mengisinya di Harga & Ongkir."
     threshold = free_delivery_min_portions(branch_id)
     if threshold and int(qty) >= threshold:
         return ZERO_FEE, FEE_SOURCE_FREE, None
+
+    # Lokasi bertitik GPS + titik dapur & tarif per km diatur: ongkir dari jarak.
+    from app.services.geo_service import quote_distance_fee
+
+    distance = quote_distance_fee(branch_id, location)
+    if distance:
+        return distance.fee, FEE_SOURCE_DISTANCE, None
+
+    zone_id = getattr(location, "delivery_zone_id", None)
+    if not zone_id:
+        name = getattr(location, "location_name", "ini")
+        return None, None, (
+            f"Lokasi {name} belum punya zona ongkir maupun titik GPS. "
+            "Pilih titik lokasi di peta (Alamat Saya) atau minta admin memilih zonanya."
+        )
+    zone_fee = fee_in_effect(branch_id, zone_id=zone_id, on_date=on_date)
+    if not zone_fee:
+        return None, None, "Tarif ongkir zona lokasi ini belum diatur. OWNER perlu mengisinya di Harga & Ongkir."
     return Decimal(zone_fee.fee), FEE_SOURCE_ZONE, None
 
 

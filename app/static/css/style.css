@@ -2108,16 +2108,77 @@ select.is-invalid + .ts-wrapper .ts-control,
     color: var(--text-secondary);
 }
 
+/* Tombol filter: satu kelompok di ujung kanan baris, tidak pernah bertumpuk,
+   tingginya sama dengan kotak isian. */
 .app-filter-actions,
 .app-filter > :has(> .btn):not(:has(input:not([type="hidden"]), select)) {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--space-2);
+    grid-column: 1 / -1;
 }
 
-.app-filter-actions .btn {
+.app-filter-actions .btn,
+.app-filter > :has(> .btn) > .btn {
+    min-height: var(--control-height);
     white-space: nowrap;
+}
+
+.app-filter :is(.form-control, .form-select, .ts-wrapper .ts-control) {
+    min-height: var(--control-height);
+}
+
+@media (min-width: 768px) {
+    /* Di layar lebar tombol menempati dua kolom terakhir baris (sejajar isian);
+       bila baris penuh, turun ke baris berikutnya tetap rata kanan. */
+    .app-filter-actions,
+    .app-filter > :has(> .btn):not(:has(input:not([type="hidden"]), select)) {
+        grid-column: -3 / -1;
+    }
+}
+
+/* Chip filter cepat (mis. tahap piutang): tab rata selebar kartu. */
+.receivables-stage-filter-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(150px, 1fr);
+    gap: 4px;
+    margin: 0 0 var(--space-4);
+    padding: 4px;
+    overflow-x: auto;
+    background: var(--gray-100);
+    border-radius: 12px;
+    scrollbar-width: none;
+}
+
+.receivables-stage-filter-bar .btn {
+    justify-content: space-between;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9px;
+    box-shadow: none;
+}
+
+.receivables-stage-filter-bar .btn.app-btn-secondary {
+    --bs-btn-bg: transparent;
+    --bs-btn-hover-bg: var(--surface);
+}
+
+.receivables-stage-filter-bar .btn strong {
+    min-width: 22px;
+    padding: 0 6px;
+    font-size: var(--text-xs);
+    line-height: 20px;
+    text-align: center;
+    border-radius: 999px;
+    background: rgba(28, 25, 23, 0.08);
+}
+
+.receivables-stage-filter-bar .btn.app-btn-primary strong {
+    background: rgba(255, 255, 255, 0.22);
 }
 
 @media (min-width: 768px) {
@@ -3114,6 +3175,139 @@ dl.row dt {
     .portal-web-shell {
         overflow-x: clip;
     }
+}
+
+/* --- Titik lokasi (components/location_picker.html) ------------------------ */
+.geo-picker {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-muted);
+}
+.geo-picker.is-invalid { border-color: var(--danger-border); box-shadow: 0 0 0 3px var(--danger-bg); }
+.geo-picker-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+.geo-picker-head .btn { white-space: nowrap; }
+.geo-map {
+    position: relative;
+    z-index: 0;
+    height: 300px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--gray-100);
+    overflow: hidden;
+}
+.geo-picker[data-readonly] .geo-map { height: 220px; }
+.geo-picker-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+.geo-picker.has-point [data-geo-status] { color: var(--success-text); }
+.geo-picker.is-invalid [data-geo-status] { color: var(--danger-text); }
+.geo-estimate { font-weight: var(--weight-semibold); color: var(--text); }
+.geo-pin { background: none; border: 0; }
+.geo-pin span {
+    position: relative;
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: var(--brand-600);
+    border: 3px solid var(--surface);
+    box-shadow: var(--shadow);
+}
+.geo-pin span::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--surface);
+}
+.geo-pin--origin span { background: var(--ink); }
+.geo-map .leaflet-control-attribution { font-size: 10px; }
+.geo-directions { white-space: nowrap; }
+@media (max-width: 575.98px) {
+    .geo-map { height: 260px; }
+    .geo-picker-head .btn { width: 100%; justify-content: center; }
+}
+
+/* --- Daftar keterangan & riwayat (pengajuan kerja sama, dll.) -------------- */
+.app-dl dt {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+.app-dl dd {
+    margin-bottom: var(--space-3);
+    font-weight: var(--weight-medium);
+    color: var(--text);
+}
+
+.app-dl dd:last-of-type {
+    margin-bottom: 0;
+}
+
+.text-pre-line {
+    white-space: pre-line;
+}
+
+.app-empty-inline {
+    padding: var(--space-4);
+    text-align: center;
+    background: var(--surface-muted);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+}
+
+.app-timeline-list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.app-timeline-list li {
+    position: relative;
+    padding: 0 0 0 var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.app-timeline-list li::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 2px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--brand-600);
+    box-shadow: 0 0 0 3px var(--brand-50);
+}
+
+.app-timeline-list li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 18px;
+    bottom: calc(-1 * var(--space-3));
+    left: 6px;
+    width: 1px;
+    background: var(--border);
 }
 
 /* --- pages.css --- */
@@ -5814,6 +6008,151 @@ a:is(.portal-command-action, .portal-role-focus-card):hover,
     }
 }
 
+/* --- Alamat Saya (portal/addresses.html) ----------------------------------- */
+.portal-address-page {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.portal-address-rule {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-100);
+    border-radius: var(--radius-lg);
+}
+
+.portal-address-rule i {
+    font-size: 1.125rem;
+    color: var(--brand-700);
+}
+
+.portal-address-list {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.portal-address-card.is-inactive {
+    opacity: 0.7;
+}
+
+.portal-address-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+}
+
+.portal-address-head h2 {
+    margin: 0 0 2px;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+}
+
+.portal-address-head p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.portal-address-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.portal-address-meta i {
+    margin-right: 4px;
+    color: var(--brand-700);
+}
+
+.portal-address-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.portal-address-tools:empty {
+    display: none;
+}
+
+.portal-address-edit[open] {
+    flex-basis: 100%;
+    order: -1;
+}
+
+.portal-address-edit > summary {
+    display: inline-flex;
+    list-style: none;
+}
+
+.portal-address-edit > summary::-webkit-details-marker,
+.portal-address-new > summary::-webkit-details-marker {
+    display: none;
+}
+
+.portal-address-edit[open] > summary {
+    margin-bottom: var(--space-3);
+}
+
+.portal-address-form {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.portal-address-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-3);
+}
+
+.portal-address-fields label {
+    display: block;
+    margin: 0;
+}
+
+.portal-address-fields label > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.portal-address-submit {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.portal-address-new > summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--weight-semibold);
+    color: var(--brand-700);
+    cursor: pointer;
+    list-style: none;
+}
+
+@media (max-width: 767.98px) {
+    .portal-address-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .portal-address-submit .btn {
+        width: 100%;
+    }
+}
+
 /* --- public.css --- */
 /* ==========================================================================
    Halaman publik: beranda, masuk, daftar pelanggan.
@@ -6676,39 +7015,39 @@ html:has(.pub) {
 }
 
 /* --- Beranda: kepala & pembuka gelap ------------------------------------------------ */
-[data-public-page="landing"] .pub-header {
+.pub-dark-top .pub-header {
     background: var(--ink);
 }
 
-[data-public-page="landing"] .pub-header.is-scrolled {
+.pub-dark-top .pub-header.is-scrolled {
     border-bottom-color: var(--ink-soft);
     box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.8);
 }
 
-[data-public-page="landing"] .pub-brand,
-[data-public-page="landing"] .pub-brand:hover {
+.pub-dark-top .pub-brand,
+.pub-dark-top .pub-brand:hover {
     color: var(--on-ink);
 }
 
-[data-public-page="landing"] .pub-brand small {
+.pub-dark-top .pub-brand small {
     color: var(--on-ink-muted);
 }
 
-[data-public-page="landing"] .pub .pub-nav a,
-.pub[data-public-page="landing"] .pub-nav a {
+.pub-dark-top .pub .pub-nav a,
+.pub.pub-dark-top .pub-nav a {
     color: var(--on-ink-muted);
 }
 
-.pub[data-public-page="landing"] .pub-nav a:hover {
+.pub.pub-dark-top .pub-nav a:hover {
     color: var(--on-ink);
     background: rgba(245, 240, 232, 0.08);
 }
 
-.pub[data-public-page="landing"] .pub-header .pub-btn-ghost {
+.pub.pub-dark-top .pub-header .pub-btn-ghost {
     color: var(--on-ink);
 }
 
-.pub[data-public-page="landing"] .pub-header .pub-btn-ghost:hover {
+.pub.pub-dark-top .pub-header .pub-btn-ghost:hover {
     color: var(--on-ink);
     background: rgba(245, 240, 232, 0.1);
 }
@@ -7292,6 +7631,705 @@ html:has(.pub) {
 @media (prefers-reduced-motion: reduce) {
     html:has(.pub) {
         scroll-behavior: auto;
+    }
+}
+
+/* ==========================================================================
+   Kerja sama proyek: /kerja-sama, /kerja-sama/ajukan, /kerja-sama/terkirim
+   ========================================================================== */
+.pub .pub-nav a[aria-current="page"] {
+    color: var(--ink);
+    background: var(--paper-strong);
+}
+
+.pub.pub-dark-top .pub-nav a[aria-current="page"] {
+    color: var(--on-ink);
+    background: rgba(245, 240, 232, 0.1);
+}
+
+.pub-track-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.pub-track .pub-track-actions .pub-btn {
+    margin-top: 0;
+}
+
+.pub-track-dark .pub-btn-outline-light {
+    border-color: rgba(245, 240, 232, 0.3);
+}
+
+.pub-qty-unit {
+    position: relative;
+}
+
+.pub-qty-unit .form-control {
+    padding-right: 38px;
+}
+
+.pub-qty-unit span {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+    pointer-events: none;
+}
+
+.pub-fine-spaced {
+    margin-top: 12px;
+}
+
+.pub-estimate > div > .pub-fine {
+    margin-top: 16px;
+    max-width: 46ch;
+}
+
+/* Pembuka ringkas halaman kerja sama. */
+.pub-hero-compact {
+    padding: 56px 0 72px;
+}
+
+.pub-kicker {
+    display: inline-flex;
+    margin: 0 0 16px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.02em;
+    color: var(--brand-200);
+    background: rgba(234, 88, 12, 0.16);
+    border-radius: 999px;
+}
+
+.pub-hero-compact h1 {
+    max-width: 18ch;
+}
+
+.pub-glance {
+    padding: 24px 26px;
+    background: rgba(245, 240, 232, 0.05);
+    border: 1px solid rgba(245, 240, 232, 0.12);
+    border-radius: 20px;
+}
+
+.pub-glance h2 {
+    margin: 0 0 8px;
+    font-size: 0.8125rem;
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--on-ink-muted);
+}
+
+.pub-glance dl {
+    margin: 0;
+}
+
+.pub-glance dl > div {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(245, 240, 232, 0.1);
+}
+
+.pub-glance dl > div:first-child {
+    border-top: 0;
+}
+
+.pub-glance dt {
+    font-size: 0.875rem;
+    font-weight: var(--weight-medium);
+    color: var(--on-ink-muted);
+}
+
+.pub-glance dd {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    color: var(--on-ink);
+}
+
+/* Langkah bernomor. */
+.pub-steps {
+    counter-reset: step;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-steps > li:not(.pub-step-phase) {
+    position: relative;
+    counter-increment: step;
+    padding: 22px 24px 22px 76px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 16px;
+}
+
+.pub-steps > li:not(.pub-step-phase)::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    top: 20px;
+    left: 22px;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--brand-700);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-200);
+    border-radius: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-steps h3 {
+    margin: 0 0 6px;
+    font-size: 1.0625rem;
+    font-weight: 750;
+}
+
+.pub-steps p {
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+.pub-steps small {
+    display: block;
+    margin-top: 10px;
+    padding-top: 10px;
+    font-size: 0.8125rem;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+    border-top: 1px dashed var(--paper-line);
+}
+
+.pub-step-phase {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 16px;
+    font-size: 0.8125rem;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-700);
+}
+
+.pub-step-phase:first-child {
+    margin-top: 0;
+}
+
+.pub-step-phase::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--paper-line);
+}
+
+/* Fitur akun perusahaan. */
+.pub-features {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-features li {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 4px 14px;
+    padding: 22px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 16px;
+}
+
+.pub-features i {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+    color: var(--brand-700);
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+}
+
+.pub-features strong {
+    color: var(--ink);
+}
+
+.pub-features span {
+    font-size: 0.9375rem;
+}
+
+/* Tabel banding kontrak vs pesan sendiri. */
+.pub-compare-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 18px;
+}
+
+.pub-compare {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+}
+
+.pub-compare th,
+.pub-compare td {
+    padding: 16px 20px;
+    text-align: left;
+    vertical-align: top;
+    border-top: 1px solid var(--paper-line);
+}
+
+.pub-compare thead th {
+    border-top: 0;
+    font-size: 0.9375rem;
+    font-weight: 750;
+    color: var(--ink);
+    background: var(--paper);
+}
+
+.pub-compare thead th:nth-child(2) {
+    color: var(--on-ink);
+    background: var(--ink);
+}
+
+.pub-compare tbody th {
+    width: 22%;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--ink-muted);
+}
+
+.pub-compare td {
+    font-size: 0.9375rem;
+    color: var(--ink);
+}
+
+/* Tanya jawab. */
+.pub-faq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.pub-faq {
+    display: grid;
+    gap: 10px;
+}
+
+.pub-faq details {
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+}
+
+.pub-faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+}
+
+.pub-faq summary::-webkit-details-marker {
+    display: none;
+}
+
+.pub-faq summary::after {
+    content: "+";
+    flex: 0 0 auto;
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--brand-700);
+}
+
+.pub-faq details[open] summary::after {
+    content: "\2212";
+}
+
+.pub-faq details p {
+    margin: 0;
+    padding: 0 20px 18px;
+    font-size: 0.9375rem;
+}
+
+/* Ajakan penutup. */
+.pub-cta {
+    padding: 56px 0;
+}
+
+.pub-cta-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 36px 40px;
+    background: var(--brand-50);
+    border: 1px solid var(--brand-200);
+    border-radius: 22px;
+}
+
+.pub-cta h2 {
+    margin: 0 0 6px;
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
+.pub-cta p {
+    margin: 0;
+    max-width: 56ch;
+}
+
+/* Formulir pengajuan. */
+.pub-apply {
+    padding: 40px 0 80px;
+}
+
+.pub-apply-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 40px;
+    align-items: start;
+}
+
+.pub-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+.pub-crumbs i {
+    font-size: 0.75rem;
+}
+
+.pub-apply-main h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.9rem, 1.3rem + 1.6vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.pub-apply-lead {
+    margin: 0 0 24px;
+    max-width: 60ch;
+}
+
+.pub-apply-main .auth-alert-wrapper {
+    width: 100%;
+    margin: 0 0 16px;
+}
+
+.pub-apply-form {
+    display: grid;
+    gap: 16px;
+}
+
+.pub-hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.pub-form-card {
+    padding: 24px 26px 26px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 18px;
+}
+
+.pub-form-card > header {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.pub-form-card > header > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--text-on-brand);
+    background: var(--brand-700);
+    border-radius: 10px;
+}
+
+.pub-form-card h2 {
+    margin: 2px 0;
+    font-size: 1.125rem;
+    font-weight: 750;
+}
+
+.pub-form-card header p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+.pub-form-card label > span,
+.pub-form-card .pub-field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+
+.pub-form-card .form-control,
+.pub-form-card .form-select,
+.pub-form-card .ts-wrapper .ts-control {
+    min-height: 46px;
+    border-radius: 10px;
+}
+
+.pub-form-card textarea.form-control {
+    min-height: 0;
+}
+
+.pub-block-label {
+    display: block;
+    margin: 0;
+}
+
+.pub-apply-submit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 4px 0;
+}
+
+.pub-apply-submit p {
+    margin: 0;
+    max-width: 48ch;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+}
+
+.pub-apply-side {
+    position: sticky;
+    top: 96px;
+    display: grid;
+    gap: 16px;
+}
+
+.pub-apply-box {
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 18px;
+}
+
+.pub-apply-box h2 {
+    margin: 0 0 14px;
+    font-size: 1.0625rem;
+    font-weight: 750;
+}
+
+.pub-apply-box ol {
+    display: grid;
+    gap: 14px;
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+    counter-reset: next;
+}
+
+.pub-apply-box li {
+    position: relative;
+    padding-left: 36px;
+    counter-increment: next;
+}
+
+.pub-apply-box li::before {
+    content: counter(next);
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--brand-700);
+    background: var(--brand-50);
+    border-radius: 8px;
+}
+
+.pub-apply-box li strong {
+    display: block;
+    color: var(--ink);
+}
+
+.pub-apply-box li span {
+    font-size: 0.875rem;
+}
+
+.pub .pub-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: var(--weight-semibold);
+    color: var(--brand-700);
+}
+
+.pub-apply-contact {
+    display: grid;
+    gap: 8px;
+}
+
+.pub-apply-contact .pub-btn {
+    justify-content: flex-start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.pub-apply-contact h2 {
+    margin-bottom: 4px;
+}
+
+/* Halaman terkirim. */
+.pub-sent {
+    max-width: 640px;
+    margin: 32px auto;
+    padding: 44px 40px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: 24px;
+}
+
+.pub-sent-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 18px;
+    font-size: 2rem;
+    color: var(--success-text);
+    background: var(--success-bg);
+    border-radius: 20px;
+}
+
+.pub-sent h1 {
+    margin: 0 0 12px;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.pub-sent-number {
+    display: inline-block;
+    margin: 0 0 16px;
+    padding: 8px 16px;
+    font-size: 0.9375rem;
+    background: var(--paper);
+    border: 1px dashed var(--paper-line);
+    border-radius: 10px;
+}
+
+.pub-sent-number strong {
+    color: var(--ink);
+    font-family: var(--font-mono);
+}
+
+.pub-sent .pub-fine {
+    margin: 12px 0 0;
+}
+
+.pub-sent-actions {
+    justify-content: center;
+    margin-top: 28px;
+}
+
+@media (max-width: 1023.98px) {
+    .pub-apply-grid,
+    .pub-faq-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+    }
+
+    .pub-apply-side {
+        position: static;
+    }
+
+    .pub-features {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pub-steps,
+    .pub-features {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pub-steps > li:not(.pub-step-phase) {
+        padding: 18px 18px 18px 66px;
+    }
+
+    .pub-steps > li:not(.pub-step-phase)::before {
+        top: 18px;
+        left: 16px;
+    }
+
+    .pub-glance dl > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+    }
+
+    .pub-form-card {
+        padding: 20px 18px;
+    }
+
+    .pub-apply-submit .pub-btn,
+    .pub-track-actions .pub-btn {
+        width: 100%;
+    }
+
+    .pub-cta-inner {
+        padding: 28px 22px;
+    }
+
+    .pub-sent {
+        padding: 32px 20px;
     }
 }
 

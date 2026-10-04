@@ -12,6 +12,7 @@ from datetime import date
 from typing import Any
 
 from flask import url_for
+from sqlalchemy import or_
 
 from app.models.accounting import Account, Journal, JournalDetail
 from app.models.finance import OperationalExpense, TransportVehicleExpense
@@ -163,6 +164,7 @@ def _build_posted_expense_components(start_date: date, end_date: date) -> tuple[
         .filter(Journal.journal_date >= start_date)
         .filter(Journal.journal_date <= end_date)
         .filter(Account.account_type.in_(EXPENSE_ACCOUNT_TYPES))
+        .filter(or_(Journal.reference_type.is_(None), Journal.reference_type != "PERIOD_CLOSING"))
         .order_by(Journal.journal_date.desc(), Journal.id.desc(), JournalDetail.id.desc())
         .all()
     )

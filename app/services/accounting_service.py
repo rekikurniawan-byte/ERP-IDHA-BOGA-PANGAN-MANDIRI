@@ -408,15 +408,17 @@ def create_payment_journal_for_payment(payment, created_by, commit=False):
         )
 
     acc_kas = get_active_account_by_code("1001")
-    acc_bank = get_active_account_by_code("1002")
+    # Akun COA milik rekening penerima (Bank 1/Bank 2/...), bukan selalu 1002.
+    bank_code = bank_coa_code(getattr(payment, "bank_account_id", None))
+    acc_bank = get_active_account_by_code(bank_code)
     acc_piutang = get_active_account_by_code("1004")
 
     missing_accounts = []
 
     if not acc_kas:
         missing_accounts.append("1001 Kas")
-    if not acc_bank:
-        missing_accounts.append("1002 Bank 1")
+    if not acc_bank and str(payment.payment_method or "").upper() == "TRANSFER":
+        missing_accounts.append(f"{bank_code} Bank")
     if not acc_piutang:
         missing_accounts.append("1004 Piutang Usaha")
 
@@ -511,15 +513,16 @@ def procurement_credit_account_code(procurement):
     purchase_type = str(getattr(procurement, "purchase_type", "") or "").upper()
     if purchase_type == "CREDIT":
         return "2002"
-    if purchase_type in ("TRANSFER", "BANK"):
-        return "1002"
-    if purchase_type != "CASH":
+    if purchase_type not in ("CASH", "TRANSFER", "BANK"):
         return None
     ledger = CashBankTransaction.query.filter_by(
         reference_type="PROCUREMENT", reference_id=procurement.id
     ).first()
+    bank_account_id = getattr(ledger, "bank_account_id", None)
+    if purchase_type in ("TRANSFER", "BANK"):
+        return bank_coa_code(bank_account_id)
     if ledger is not None and str(ledger.account_type or "").upper() == "BANK":
-        return "1002"
+        return bank_coa_code(bank_account_id)
     return "1001"
 
 
@@ -671,11 +674,17 @@ def create_warung_debt_accrual_journal(worker_debt, created_by, commit=False):
     return True, "Jurnal accrual hutang warung berhasil dibuat.", journal
 
 
-def _warung_cash_bank_account_for_method(payment_method):
+def _warung_cash_bank_account_for_method(payment_method, bank_account_id=None):
     payment_method = str(payment_method or "CASH").upper()
-    # CASH -> Kas, QRIS/TRANSFER -> Bank 1. BankAccount operasional tetap dicatat di ledger,
-    # sedangkan COA memakai akun bank utama yang sudah ada di chart of accounts.
-    return "1001" if payment_method == "CASH" else "1002"
+    # CASH -> Kas; QRIS/TRANSFER -> akun COA rekening yang dipilih (1002 bila belum dipetakan).
+    return "1001" if payment_method == "CASH" else bank_coa_code(bank_account_id)
+
+
+def bank_coa_code(bank_account_id=None):
+    """Akun COA rekening bank: coa_account_code rekening itu, atau 1002 bila belum dipetakan."""
+    from app.services.advance_service import resolve_cash_account_code
+
+    return resolve_cash_account_code("BANK", bank_account_id)
 
 
 def create_warung_debt_payment_journal(debt_payment, created_by, commit=False):
@@ -712,7 +721,7 @@ def create_warung_debt_payment_journal(debt_payment, created_by, commit=False):
         raise Exception("Nominal pembayaran hutang warung tidak valid.")
 
     payment_method = str(getattr(debt_payment, "payment_method", "CASH") or "CASH").upper()
-    debit_code = _warung_cash_bank_account_for_method(payment_method)
+    debit_code = _warung_cash_bank_account_for_method(payment_method, getattr(debt_payment, "cash_bank_account_id", None))
 
     acc_cash_bank = get_active_account_by_code(debit_code)
     acc_piutang_karyawan = get_active_account_by_code("1005")
@@ -990,7 +999,8 @@ def create_supplier_payment_journal_for_payment(supplier_payment, created_by, co
 
     acc_hutang_supplier = get_active_account_by_code("2002")
     acc_kas = get_active_account_by_code("1001")
-    acc_bank = get_active_account_by_code("1002")
+    bank_code = bank_coa_code(getattr(supplier_payment, "bank_account_id", None))
+    acc_bank = get_active_account_by_code(bank_code)
 
     missing_accounts = []
 
@@ -998,8 +1008,8 @@ def create_supplier_payment_journal_for_payment(supplier_payment, created_by, co
         missing_accounts.append("2002 Hutang Supplier")
     if not acc_kas:
         missing_accounts.append("1001 Kas")
-    if not acc_bank:
-        missing_accounts.append("1002 Bank 1")
+    if not acc_bank and str(supplier_payment.payment_method or "").upper() == "TRANSFER":
+        missing_accounts.append(f"{bank_code} Bank")
 
     if missing_accounts:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
@@ -1094,7 +1104,7 @@ def create_warung_direct_sale_journal(sale, created_by, commit=False):
     if amount <= 0:
         raise Exception("Nominal penjualan warung tidak valid.")
 
-    debit_code = _warung_cash_bank_account_for_method(payment_method)
+    debit_code = _warung_cash_bank_account_for_method(payment_method, getattr(sale, "cash_bank_account_id", None))
     acc_cash_bank = get_active_account_by_code(debit_code)
     acc_warung = get_active_account_by_code("4003")
 
@@ -1201,7 +1211,9 @@ def create_warung_external_receivable_payment_journal(external_payment, created_
         raise Exception("Nominal pembayaran piutang warung eksternal tidak valid.")
 
     payment_method = str(getattr(external_payment, "payment_method", "CASH") or "CASH").upper()
-    debit_code = _warung_cash_bank_account_for_method(payment_method)
+    debit_code = _warung_cash_bank_account_for_method(
+        payment_method, getattr(external_payment, "cash_bank_account_id", None)
+    )
     acc_cash_bank = get_active_account_by_code(debit_code)
     acc_receivable = get_active_account_by_code("1004")
 

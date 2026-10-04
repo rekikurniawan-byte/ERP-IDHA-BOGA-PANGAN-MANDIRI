@@ -5,7 +5,7 @@ Keputusan owner 2026-09-27 yang dikunci di sini:
   harga standar cabang;
 - harga bisa diubah kapan saja dengan tanggal berlaku, baris lama tidak diubah;
 - admin tidak menentukan harga; OWNER boleh mengubah harga satu pesanan;
-- pelanggan UMUM minimal 10 porsi per pengiriman (bisa diubah per cabang).
+- pelanggan UMUM tanpa minimal porsi bawaan (bisa diatur per cabang).
 """
 from datetime import date, timedelta
 from decimal import Decimal
@@ -189,11 +189,12 @@ def test_harga_di_form_order_mengikuti_client_tiap_sub_client(ctx):
 
 # --- minimal porsi pelanggan umum -----------------------------------------
 
-def test_pelanggan_umum_minimal_porsi_per_pengiriman(ctx):
-    branch, client, _, _ = _setup(ctx, path=PATH_GENERAL)
+def test_pelanggan_umum_tanpa_minimal_bawaan_tapi_bisa_diatur(ctx):
+    branch, client, _, owner = _setup(ctx, path=PATH_GENERAL)
 
-    assert DEFAULT_MIN_PORTIONS == 10
-    assert min_portion_error(branch.id, client, [("siang", 10), ("malam", 0)]) is None
+    assert DEFAULT_MIN_PORTIONS == 1
+    assert min_portion_error(branch.id, client, [("siang", 1), ("malam", 0)]) is None
+    set_general_min_portions(branch.id, "10", owner.id)
     error = min_portion_error(branch.id, client, [("siang", 12), ("malam", 4)])
     assert "minimal 10 porsi" in error and "malam: 4" in error
 

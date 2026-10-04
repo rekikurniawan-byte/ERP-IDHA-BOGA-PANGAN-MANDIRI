@@ -56,7 +56,7 @@
             <div class="app-stat-card print-box"><span>Grand Total Rekap</span><strong>{{ summary.grand_total|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Sudah Dibayar</span><strong>{{ payment_summary.paid_amount|rupiah }}</strong></div>
             <div class="app-stat-card print-box"><span>Sisa Piutang</span><strong>{{ payment_summary.remaining_amount|rupiah }}</strong></div>
-            <div class="app-stat-card print-box"><span>Rekap Dikunci</span><strong>{{ batch.locked_at.strftime('%d-%m-%Y %H:%M') if batch.locked_at else 'Belum dikunci' }}</strong></div>
+            <div class="app-stat-card print-box"><span>Rekap Dikunci</span><strong>{{ batch.locked_at|wib('%d-%m-%Y %H:%M') if batch.locked_at else 'Belum dikunci' }}</strong></div>
             <div class="app-stat-card print-box"><span>Sumber Input</span><strong>{{ batch.input_source|status_label }}</strong></div>
         </div>
 

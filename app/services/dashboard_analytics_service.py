@@ -18,6 +18,7 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.utils.terms import T
+from app.utils.clock import now_wib, to_wib
 
 logger = logging.getLogger(__name__)
 
@@ -1076,7 +1077,8 @@ def _classify_efficiency_row(row: Dict[str, Any], today_iso: str) -> str:
     delivered_qty = _as_int(row.get("delivered_qty"))
     shortage_qty = _as_int(row.get("shortage_qty"))
     target_arrival = _parse_datetime(row.get("target_arrival_time"))
-    receive_time = _parse_datetime(row.get("receive_time"))
+    # receive_time disimpan UTC; target_arrival jam dinding WIB.
+    receive_time = to_wib(_parse_datetime(row.get("receive_time")))
     tolerance_minutes = _as_int(row.get("late_tolerance_minutes") or 15)
 
     if shortage_qty > 0 or (has_receipt and delivered_qty < planned_qty):
@@ -1093,7 +1095,7 @@ def _classify_efficiency_row(row: Dict[str, Any], today_iso: str) -> str:
 
     if target_arrival:
         late_limit = target_arrival + timedelta(minutes=tolerance_minutes)
-        if datetime.utcnow() > late_limit:
+        if now_wib() > late_limit:
             return "late"
 
     if delivery_date and delivery_date < today_iso and delivery_status not in {"DELIVERED", "CANCELLED", "CANCELED"}:

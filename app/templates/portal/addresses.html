@@ -1,0 +1,109 @@
+{% extends "layouts/portal_mobile.html" %}
+{% from "components/location_picker.html" import location_picker %}
+
+{% macro address_fields(location=none, prefix="new") %}
+    <div class="portal-address-fields">
+        <label>
+            <span>Nama alamat</span>
+            <input class="form-control" type="text" name="location_name" maxlength="120" required value="{{ location.location_name if location else '' }}" placeholder="Rumah, Kantor, Mes Proyek">
+        </label>
+        <label>
+            <span>Alamat lengkap &amp; patokan</span>
+            <textarea class="form-control" name="address" rows="2" maxlength="500" required data-no-textarea-footer placeholder="Jalan, desa, nomor rumah, patokan, nama penerima">{{ location.description if location and location.description else '' }}</textarea>
+        </label>
+    </div>
+    {{ location_picker(lat=location.latitude if location else none, lng=location.longitude if location else none, accuracy=location.gps_accuracy_m if location else none, geo=data.book.geo, label="Titik di peta", required=true, help="Tekan GPS saat Anda di lokasi, atau ketuk peta lalu geser penanda ke pintu/titik serah terima.") }}
+{% endmacro %}
+
+{% block portal_content %}
+{% set book = data.book %}
+<section class="portal-feature-page portal-address-page">
+    <div class="portal-feature-hero">
+        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}" aria-label="Kembali"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <p>{{ data.persona.eyebrow }}</p>
+            <h1>{{ data.page_title }}</h1>
+            <span>{{ data.page_description }}</span>
+        </div>
+        <strong class="portal-hero-status">{{ book.rows|length }} alamat</strong>
+    </div>
+
+    {% if not book.allowed %}
+        <div class="app-card"><div class="card-body text-muted">{{ book.reason }}</div></div>
+    {% else %}
+        {% if book.missing_point %}
+            <div class="alert alert-warning app-alert">
+                <i class="bi bi-geo-alt"></i>
+                {{ book.missing_point }} alamat belum punya titik di peta. Tandai titiknya supaya pengantar tidak tersesat{% if book.geo and book.geo.per_km %} dan ongkir bisa dihitung{% endif %}.
+            </div>
+        {% endif %}
+
+        {% if book.geo and book.geo.per_km and book.free_from %}
+            <div class="portal-address-rule">
+                <i class="bi bi-truck" aria-hidden="true"></i>
+                <span>Gratis ongkir mulai <strong>{{ book.free_from }} porsi</strong> per kiriman. Di bawah itu ongkir dihitung dari jarak titik alamat ke dapur ({{ book.geo.per_km|rupiah }}/km, minimal {{ book.geo.minimum|rupiah }}) dan dibayar bersama pesanan.</span>
+            </div>
+        {% endif %}
+
+        <div class="portal-address-list">
+            {% for row in book.rows %}
+                {% set location = row.location %}
+                <article class="app-card portal-address-card {{ '' if location.is_active else 'is-inactive' }}">
+                    <div class="card-body">
+                        <div class="portal-address-head">
+                            <div>
+                                <h2>{{ location.location_name }}</h2>
+                                <p>{{ location.description or 'Alamat belum diisi.' }}</p>
+                            </div>
+                            {% if row.has_point %}
+                                <span class="status-badge success"><i class="bi bi-geo-alt-fill"></i> Titik tersimpan</span>
+                            {% else %}
+                                <span class="status-badge warning"><i class="bi bi-geo-alt"></i> Belum ada titik</span>
+                            {% endif %}
+                        </div>
+                        <div class="portal-address-meta">
+                            {% if row.quote %}
+                                <span><i class="bi bi-signpost-split"></i> ± {{ row.quote.km_label }} dari dapur</span>
+                                <span><i class="bi bi-truck"></i> Ongkir {{ row.quote.fee|rupiah }}/kiriman{% if book.free_from %} · gratis mulai {{ book.free_from }} porsi{% endif %}</span>
+                            {% endif %}
+                            {% if location.gps_updated_at %}<span><i class="bi bi-clock"></i> Titik diperbarui {{ location.gps_updated_at|wib }}</span>{% endif %}
+                            {% if not location.is_active %}<span class="text-muted">Nonaktif (hubungi admin)</span>{% endif %}
+                        </div>
+                        <div class="portal-address-tools">
+                        {% if row.maps_url %}<a class="btn btn-sm app-btn-secondary" href="{{ row.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-map"></i> Buka di Maps</a>{% endif %}
+                        {% if row.editable %}
+                            <details class="portal-address-edit" {% if not row.has_point %}open{% endif %}>
+                                <summary class="btn btn-sm app-btn-primary"><i class="bi bi-pencil"></i> {{ 'Ubah alamat & titik' if row.has_point else 'Tandai titik sekarang' }}</summary>
+                                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form" data-ui-form="true">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="location_id" value="{{ location.id }}">
+                                    {{ address_fields(location) }}
+                                    <div class="portal-address-submit">
+                                        <button class="btn app-btn-primary" type="submit"><i class="bi bi-check2"></i> Simpan perubahan</button>
+                                    </div>
+                                </form>
+                            </details>
+                        {% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% else %}
+                <div class="app-card"><div class="card-body text-muted">Belum ada alamat antar. Tambahkan di bawah.</div></div>
+            {% endfor %}
+        </div>
+
+        {% if book.can_add %}
+            <details class="app-card portal-address-new" {% if not book.rows %}open{% endif %}>
+                <summary class="card-body"><i class="bi bi-plus-circle"></i> Tambah alamat baru</summary>
+                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form card-body pt-0" data-ui-form="true">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ address_fields() }}
+                    <div class="portal-address-submit">
+                        <button class="btn app-btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Simpan alamat</button>
+                    </div>
+                </form>
+            </details>
+        {% endif %}
+    {% endif %}
+</section>
+{% endblock %}

@@ -135,7 +135,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {{ row.created_at.strftime('%d-%m-%Y %H:%M') if row.created_at else '-' }}
+                                    {{ row.created_at|wib('%d-%m-%Y %H:%M') if row.created_at else '-' }}
                                     <div class="small text-muted">User ID {{ row.uploaded_by or '-' }}</div>
                                 </td>
                                 <td class="finance-proof-action-cell">

@@ -33,6 +33,9 @@ delivery_d5 = importlib.import_module(
 opening_c0 = importlib.import_module(
     "migrations.versions.c0d1e2f3a4b5_opening_balance_single_door"
 )
+gps_d1 = importlib.import_module(
+    "migrations.versions.d1e2f3a4b5c6_gps_locations_partnership_requests"
+)
 
 
 def _migration_columns(module):
@@ -70,6 +73,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(pricing_c4),
         **_migration_columns(delivery_d5),
         **_migration_columns(opening_c0),
+        **_migration_columns(gps_d1),
     }
 
     assert migration_columns

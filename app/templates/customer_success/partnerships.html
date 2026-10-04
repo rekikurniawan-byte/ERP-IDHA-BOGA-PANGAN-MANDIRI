@@ -1,0 +1,122 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+{% set summary = data.summary %}
+<section class="page-section">
+    {{ page_header(
+        title='Pengajuan Kerja Sama',
+        eyebrow='Pelanggan',
+        description='Calon klien proyek yang mengisi formulir di halaman publik. Hubungi, survei, kirim penawaran, lalu jadikan kontrak.',
+        collapse=false,
+        actions=[
+            {'label': 'Lihat halaman publik', 'url': url_for('public.partnership'), 'icon': 'bi-box-arrow-up-right'},
+            {'label': 'Kontrak', 'url': url_for('customer_success.contracts'), 'icon': 'bi-file-earmark-text'}
+        ]
+    ) }}
+
+    <div class="app-stat-grid mb-4">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-inbox"></i></div>
+            <div>
+                <span>Baru masuk</span>
+                <h3>{{ summary.new }}</h3>
+                <p>belum dihubungi</p>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-arrow-repeat"></i></div>
+            <div>
+                <span>Sedang ditindaklanjuti</span>
+                <h3>{{ summary.open }}</h3>
+                <p>{{ "{:,}".format(summary.portions_open)|replace(",", ".") }} porsi/hari potensial</p>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-trophy"></i></div>
+            <div>
+                <span>Jadi kontrak</span>
+                <h3>{{ summary.won }}</h3>
+                <p>dari {{ summary.total }} pengajuan</p>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-primary"><i class="bi bi-calendar-week"></i></div>
+            <div>
+                <span>7 hari terakhir</span>
+                <h3>{{ summary.this_week }}</h3>
+                <p>pengajuan masuk</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card">
+        <div class="card-body">
+            <form method="get" class="app-filter app-form mb-3">
+                <div>
+                    <label class="form-label" for="partnershipStatus">Status</label>
+                    <select class="form-select app-input" id="partnershipStatus" name="status">
+                        <option value="OPEN" {% if data.status_filter == 'OPEN' %}selected{% endif %}>Masih berjalan</option>
+                        <option value="ALL" {% if data.status_filter == 'ALL' %}selected{% endif %}>Semua</option>
+                        {% for key, label in data.status_labels.items() %}
+                            <option value="{{ key }}" {% if data.status_filter == key %}selected{% endif %}>{{ label }} ({{ summary.counts.get(key, 0) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="partnershipSearch">Cari</label>
+                    <input class="form-control app-input" id="partnershipSearch" type="search" name="q" value="{{ data.search }}" placeholder="Perusahaan, proyek, kontak, nomor">
+                </div>
+                <div class="app-filter-actions">
+                    <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                    <a class="btn app-btn-secondary" href="{{ url_for('customer_success.partnerships') }}">Atur Ulang</a>
+                </div>
+            </form>
+
+            <div class="table-responsive app-table-wrapper">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Masuk</th>
+                            <th>Perusahaan &amp; proyek</th>
+                            <th>Kontak</th>
+                            <th class="text-end">Porsi/hari</th>
+                            <th>Mulai</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.requests %}
+                            <tr>
+                                <td class="text-nowrap">
+                                    <div class="fw-semibold">{{ row.request_number }}</div>
+                                    <span class="text-muted small">{{ row.created_at|wib }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">{{ row.company_name }}</div>
+                                    <span class="text-muted small">{{ row.project_name }}</span>
+                                </td>
+                                <td>
+                                    {{ row.contact_name }}{% if row.contact_role %} <span class="text-muted small">· {{ row.contact_role }}</span>{% endif %}
+                                    <div class="text-muted small">{{ row.phone }}</div>
+                                </td>
+                                <td class="text-end">{{ row.portions_per_day or '-' }}<div class="text-muted small">{{ data.meal_labels.get(row.meals, row.meals) }}</div></td>
+                                <td class="text-nowrap">{{ row.start_date|wib if row.start_date else '-' }}</td>
+                                <td><span class="status-badge {{ data.status_tones.get(row.status, 'muted') }}">{{ data.status_labels.get(row.status, row.status) }}</span></td>
+                                <td class="text-end">
+                                    <div class="table-actions justify-content-end">
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('customer_success.partnership_detail', request_id=row.id) }}">Tindak lanjut</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-muted text-center py-4">Belum ada pengajuan {{ 'yang masih berjalan' if data.status_filter == 'OPEN' else 'untuk filter ini' }}. Bagikan tautan <a href="{{ url_for('public.partnership') }}">halaman kerja sama</a> ke calon klien.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

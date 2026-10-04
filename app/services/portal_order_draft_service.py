@@ -156,20 +156,35 @@ def _allowed_location_options(scope, location_ids=None):
 
 def _delivery_fee_label(branch_id, client, location):
     """Ongkir yang akan dikenakan ke lokasi ini, untuk ditampilkan sebelum memesan."""
-    from app.services.pricing_service import FEE_SOURCE_INCLUDED, free_delivery_min_portions, quote_trip_fee
+    from app.services.geo_service import quote_distance_fee
+    from app.services.pricing_service import (
+        FEE_SOURCE_DISTANCE,
+        FEE_SOURCE_INCLUDED,
+        free_delivery_min_portions,
+        quote_trip_fee,
+    )
 
     fee, source, error = quote_trip_fee(branch_id, client, location, 1)
     if error:
-        return "ongkir belum tersedia"
+        return "ongkir belum tersedia: tandai titik lokasi di menu Alamat"
     if source == FEE_SOURCE_INCLUDED or not fee:
         return "ongkir termasuk"
     threshold = free_delivery_min_portions(branch_id)
     free_note = f" (gratis mulai {threshold} porsi)" if threshold else ""
-    return f"ongkir Rp {fee:,.0f}/pengiriman{free_note}".replace(",", ".")
+    distance = quote_distance_fee(branch_id, location) if source == FEE_SOURCE_DISTANCE else None
+    km_note = f"± {distance.km_label} · " if distance else ""
+    return f"{km_note}ongkir Rp {fee:,.0f}/pengiriman{free_note}".replace(",", ".")
+
+
+def _shown_min_portions(branch_id):
+    from app.services.pricing_service import general_min_portions
+
+    value = general_min_portions(branch_id)
+    return value if value and value > 1 else None
 
 
 def _location_option_cards(locations):
-    from app.services.pricing_service import general_min_portions, is_general_client, quote_price
+    from app.services.pricing_service import is_general_client, quote_price
 
     cards = []
     for location in locations:
@@ -181,7 +196,8 @@ def _location_option_cards(locations):
                 "price_per_portion": quote.price if quote else None,
                 "price_label": quote.source_label if quote else None,
                 "delivery_fee_label": _delivery_fee_label(mandor.branch_id, client, location) if mandor else None,
-                "min_portions": general_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
+                # Minimal 1 porsi = tidak ada minimal; jangan tampilkan.
+                "min_portions": _shown_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
                 "id": location.id,
                 "name": location.location_name,
                 "description": location.description,

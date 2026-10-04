@@ -94,7 +94,14 @@ def _build_accounting1b_reports_data(start_date=None, end_date=None):
             "period_credit": 0,
             "trial_debit": 0,
             "trial_credit": 0,
+            "pl_debit": 0,
+            "pl_credit": 0,
         }
+
+    # Jurnal tutup buku memindahkan saldo pendapatan/beban ke laba ditahan.
+    # Buku besar & neraca saldo tetap memuatnya, tetapi laba-rugi periode
+    # dihitung tanpanya; kalau tidak, laba bersih bulan yang ditutup jadi 0.
+    closing_journal_ids = {journal.id for journal in journals if journal.reference_type == "PERIOD_CLOSING"}
 
     for detail in details:
         if detail.account_id not in account_map:
@@ -106,6 +113,9 @@ def _build_accounting1b_reports_data(start_date=None, end_date=None):
         account_map[detail.account_id]["details"].append(detail)
         account_map[detail.account_id]["period_debit"] += debit
         account_map[detail.account_id]["period_credit"] += credit
+        if detail.journal_id not in closing_journal_ids:
+            account_map[detail.account_id]["pl_debit"] += debit
+            account_map[detail.account_id]["pl_credit"] += credit
 
     ledger_rows = []
     trial_rows = []
@@ -146,10 +156,10 @@ def _build_accounting1b_reports_data(start_date=None, end_date=None):
         account_type = str(account.account_type or "").upper()
 
         if account_type == "REVENUE":
-            revenue_total += max(period_credit - period_debit, 0)
+            revenue_total += max(row["pl_credit"] - row["pl_debit"], 0)
 
         if account_type in ["EXPENSE", "COGS", "COST", "HPP"]:
-            expense_total += max(period_debit - period_credit, 0)
+            expense_total += max(row["pl_debit"] - row["pl_credit"], 0)
 
     net_income = revenue_total - expense_total
 

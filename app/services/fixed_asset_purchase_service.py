@@ -174,10 +174,12 @@ def _create_fixed_asset_purchase_journal(purchase: FixedAssetPurchase, created_b
         payment_account = get_active_account_by_code("1001")
         payment_account_label = "1001 Kas"
     else:
-        # Sistem saat ini masih memakai akun bank utama 1002 untuk jurnal pembayaran bank.
-        # Rekening bank detail tetap tercatat di cash_bank_transactions.bank_account_id.
-        payment_account = get_active_account_by_code("1002")
-        payment_account_label = "1002 Bank 1"
+        # Akun COA milik rekening yang dipakai (1002 bila rekening belum dipetakan).
+        from app.services.accounting_service import bank_coa_code
+
+        bank_code = bank_coa_code(getattr(purchase, "bank_account_id", None))
+        payment_account = get_active_account_by_code(bank_code)
+        payment_account_label = f"{bank_code} Bank"
 
     if not payment_account:
         raise Exception(f"Akun pembayaran {payment_account_label} belum tersedia atau tidak aktif.")

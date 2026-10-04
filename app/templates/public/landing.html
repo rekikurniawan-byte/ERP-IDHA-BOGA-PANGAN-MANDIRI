@@ -1,59 +1,34 @@
 {% extends "layouts/base.html" %}
+{% from "components/public_fee_text.html" import fee_sentence %}
 
 {% block public_page %}
 {% set company = global_company_settings %}
 {% set company_name = company.company_name or "PT Idha Boga Pangan Mandiri" %}
 {% set perf = site.performance %}
 {% set pricing = site.pricing %}
+{% set distance = pricing.distance if pricing else none %}
 {% set cutoffs = site.cutoffs %}
-{% set contact_url = site.whatsapp_url or "#kontak" %}
-<div class="pub" data-public-page="landing">
-    <header class="pub-header" data-pub-header>
-        <div class="pub-wrap pub-header-inner">
-            <a class="pub-brand" href="{{ url_for('dashboard.index') }}">
-                {% with class_name="company-logo-mark" %}
-                    {% include "components/company_logo.html" %}
-                {% endwith %}
-                <span>
-                    <strong>{{ company_name }}</strong>
-                    <small>{{ company.company_subtitle or "Katering harian" }}</small>
-                </span>
-            </a>
-            <nav class="pub-nav" aria-label="Bagian halaman">
-                <a href="#layanan">Layanan</a>
-                <a href="#alur">Cara kerja</a>
-                {% if pricing and pricing.price %}<a href="#biaya">Hitung biaya</a>{% endif %}
-                {% if site.menus %}<a href="#menu">Menu</a>{% endif %}
-                <a href="#kontak">Kontak</a>
-            </nav>
-            <div class="pub-header-actions">
-                <a class="pub-btn pub-btn-ghost" href="{{ url_for('auth.login') }}">Masuk</a>
-                {% if site.portal_enabled %}
-                    <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar</a>
-                {% endif %}
-            </div>
-        </div>
-    </header>
-
+<div class="pub pub-dark-top" data-public-page="landing">
+    {% include "components/public_header.html" %}
     {% include "components/public_flashes.html" %}
 
     <main id="mainContent">
         <section class="pub-hero">
             <div class="pub-wrap pub-hero-grid">
                 <div class="pub-hero-copy" data-reveal>
-                    <h1>Makan siang dan sore untuk pekerja proyek, <em>tiba sebelum jam makan.</em></h1>
+                    <h1>Masakan rumahan, diantar <em>sebelum jam makan.</em></h1>
                     <p class="pub-lead">
-                        Kami memasak dan mengantar katering harian ke proyek konstruksi, gudang, dan kantor &mdash;
-                        juga untuk acara keluarga. Pesanan, pengiriman, dan tagihan tercatat di satu sistem
-                        yang bisa Anda pantau sendiri dari portal.
+                        Katering harian untuk pekerja proyek, kantor, acara, dan keluarga. Pesan berapa pun porsinya
+                        dari HP, tandai titik lokasi di peta, lalu pantau sampai makanan diterima.
+                        Perusahaan juga bisa berlangganan dengan kontrak dan tagihan bulanan.
                     </p>
                     <div class="pub-hero-actions">
                         {% if site.portal_enabled %}
                             <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">
-                                Pesan untuk acara <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                Pesan sekarang <i class="bi bi-arrow-right" aria-hidden="true"></i>
                             </a>
                         {% endif %}
-                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>
+                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ url_for('public.partnership') }}">
                             Kerja sama untuk proyek
                         </a>
                     </div>
@@ -93,8 +68,11 @@
                 <ul class="pub-facts" aria-label="Aturan pemesanan">
                     {% if cutoffs.LUNCH %}<li><strong>{{ cutoffs.LUNCH }}</strong>batas pesan makan siang</li>{% endif %}
                     {% if cutoffs.DINNER %}<li><strong>{{ cutoffs.DINNER }}</strong>batas pesan makan sore</li>{% endif %}
-                    {% if pricing and pricing.min_portions %}<li><strong>{{ pricing.min_portions }} porsi</strong>minimal per pesanan</li>{% endif %}
-                    {% if pricing and pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi per kiriman</li>{% endif %}
+                    {% if pricing %}
+                        <li><strong>{{ "Tanpa minimal" if (pricing.min_portions or 1) <= 1 else pricing.min_portions ~ " porsi" }}</strong>{{ "pesan mulai 1 porsi" if (pricing.min_portions or 1) <= 1 else "minimal per pesanan" }}</li>
+                        {% if pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi per kiriman</li>{% endif %}
+                        {% if distance %}<li><strong>{{ distance.per_km|rupiah }}/km</strong>ongkir di bawah itu, minimal {{ distance.minimum|rupiah }}</li>{% endif %}
+                    {% endif %}
                 </ul>
             </div>
         </section>
@@ -102,34 +80,38 @@
         <section class="pub-section pub-section-alt" id="layanan">
             <div class="pub-wrap">
                 <div class="pub-section-head">
-                    <h2>Dua cara bekerja sama</h2>
-                    <p>Proyek dan perusahaan memakai kontrak dengan tagihan berkala. Pelanggan umum memesan sendiri dan membayar di muka.</p>
+                    <h2>Pilih cara pesan yang cocok</h2>
+                    <p>Butuh makan rutin untuk banyak pekerja? Pakai kontrak dengan tagihan berkala. Untuk acara, kantor kecil, atau di rumah, pesan sendiri dan bayar di muka.</p>
                 </div>
                 <div class="pub-tracks">
                     <article class="pub-track pub-track-dark" data-reveal data-index="01">
-                        <div class="pub-track-label">Proyek &amp; perusahaan</div>
-                        <h3>Katering harian dengan kontrak dan tagihan per periode</h3>
+                        <div class="pub-track-label">Proyek, pabrik &amp; perusahaan</div>
+                        <h3>Langganan katering dengan kontrak dan tagihan per periode</h3>
                         <ul>
-                            <li><strong>Harga per porsi sesuai kontrak</strong>, tagihan dikirim per periode dan bisa dicicil sesuai termin.</li>
-                            <li>Pesanan harian lewat admin atau langsung dari portal {{ term('sub_client', lower=True) }} di lapangan.</li>
-                            <li>Pengiriman siang dan sore dengan <strong>jam tiba dan nama penerima</strong> tercatat di lokasi.</li>
-                            <li>Portal {{ term('client') }}: pantau pesanan, tagihan, pembayaran, dan masa kontrak.</li>
+                            <li><strong>Harga per porsi dikunci di kontrak</strong>; tagihan dikirim per periode dan dibayar sesuai termin.</li>
+                            <li>Jumlah porsi harian diisi sendiri oleh mandor atau pengawas lapangan dari HP.</li>
+                            <li>Setiap kiriman dicatat <strong>jam tiba, jumlah diterima, dan nama penerimanya</strong>.</li>
+                            <li>Kantor pusat memantau pesanan, tagihan, pembayaran, dan masa kontrak dari satu akun.</li>
                         </ul>
-                        <a class="pub-btn pub-btn-light" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>Ajukan kerja sama</a>
+                        <div class="pub-track-actions">
+                            <a class="pub-btn pub-btn-light" href="{{ url_for('public.partnership') }}">Lihat alur lengkapnya</a>
+                            <a class="pub-btn pub-btn-outline-light" href="{{ url_for('public.partnership_apply') }}">Ajukan kerja sama</a>
+                        </div>
                     </article>
                     <article class="pub-track" data-reveal data-index="02">
-                        <div class="pub-track-label">Acara, kantor, &amp; rumah</div>
-                        <h3>Pesan sendiri dari portal, bayar di muka</h3>
+                        <div class="pub-track-label">Acara, kantor &amp; rumah</div>
+                        <h3>Pesan sendiri dari HP, bayar di muka</h3>
                         <ul>
-                            <li>Daftar akun, pilih tanggal, waktu makan, dan jumlah porsi.</li>
-                            <li><strong>Bayar di muka</strong> lewat transfer lalu unggah bukti; pesanan diproses setelah pembayaran diperiksa.</li>
-                            {% if pricing %}
-                                <li>Minimal <strong>{{ pricing.min_portions }} porsi</strong>{% if pricing.free_delivery_min %}; gratis ongkir mulai <strong>{{ pricing.free_delivery_min }} porsi</strong> per pengiriman{% endif %}.</li>
-                            {% endif %}
-                            <li>Lacak status pesanan dan ajukan komplain dari portal yang sama.</li>
+                            <li>Daftar sekali, tandai titik lokasi Anda di peta, lalu pesan kapan saja.</li>
+                            {% if pricing %}<li>{{ fee_sentence(pricing) }}</li>{% endif %}
+                            <li><strong>Bayar di muka</strong> lewat transfer lalu unggah bukti; pesanan diproses setelah pembayaran dicek.</li>
+                            <li>Lacak status pesanan dan sampaikan keluhan dari akun yang sama.</li>
                         </ul>
                         {% if site.portal_enabled %}
-                            <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar sebagai pelanggan</a>
+                            <div class="pub-track-actions">
+                                <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar &amp; pesan</a>
+                                {% if pricing and pricing.price %}<a class="pub-btn pub-btn-ghost" href="#biaya">Hitung biayanya</a>{% endif %}
+                            </div>
                         {% endif %}
                     </article>
                 </div>
@@ -139,25 +121,25 @@
         <section class="pub-section" id="alur">
             <div class="pub-wrap">
                 <div class="pub-section-head">
-                    <h2>Dari pesanan sampai tagihan, semuanya tercatat</h2>
-                    <p>Setiap langkah dicatat oleh orang yang mengerjakannya, jadi angka di tagihan sama dengan yang dimasak dan diantar.</p>
+                    <h2>Dari dapur sampai ke tangan Anda</h2>
+                    <p>Setiap langkah dicatat oleh petugas yang mengerjakannya, jadi yang Anda bayar sama dengan yang Anda terima.</p>
                 </div>
                 <ol class="pub-flow" data-reveal>
                     <li>
-                        <h3>Pesanan dikunci</h3>
-                        <p>Pesanan siang ditutup pukul {{ cutoffs.LUNCH or "10.00" }}, sore pukul {{ cutoffs.DINNER or "15.00" }}. Porsi yang dikunci menjadi rencana masak dapur.</p>
+                        <h3>Anda memesan</h3>
+                        <p>Pesanan makan siang ditutup pukul {{ cutoffs.LUNCH or "10.00" }}, makan sore pukul {{ cutoffs.DINNER or "15.00" }}. Jumlah yang masuk langsung jadi rencana masak dapur.</p>
                     </li>
                     <li>
                         <h3>Dapur memasak</h3>
-                        <p>Bahan keluar dari gudang sesuai resep, jumlah masak dicatat per waktu makan.</p>
+                        <p>Dimasak di hari yang sama dari bahan yang dicatat keluar gudang sesuai resep.</p>
                     </li>
                     <li>
-                        <h3>Diantar &amp; diterima</h3>
-                        <p>Pengantar mencatat jam tiba, jumlah yang diterima, dan nama penerima di lokasi.</p>
+                        <h3>Diantar ke titik Anda</h3>
+                        <p>Pengantar memakai titik peta lokasi Anda. Jam tiba, jumlah, dan nama penerima dicatat di tempat.</p>
                     </li>
                     <li>
-                        <h3>Tagihan &amp; pembayaran</h3>
-                        <p>Tagihan dibuat dari porsi yang benar-benar diterima, lalu tampil di portal bersama riwayat pembayarannya.</p>
+                        <h3>Bayar sesuai yang diterima</h3>
+                        <p>Pesanan pribadi dibayar di muka. Pelanggan kontrak ditagih per periode dari porsi yang benar-benar diterima.</p>
                     </li>
                 </ol>
             </div>
@@ -169,29 +151,36 @@
                     <div>
                         <div class="pub-section-head">
                             <h2>Hitung perkiraan biaya</h2>
-                            <p>Untuk pelanggan umum dengan harga standar hari ini. Harga proyek mengikuti kontrak masing-masing.</p>
+                            <p>Untuk pesanan pribadi, acara, dan kantor dengan harga standar hari ini. Harga proyek disepakati di kontrak.</p>
                         </div>
                         <ul class="pub-rules">
-                            <li><span>Harga standar per porsi</span><strong>{{ pricing.price|rupiah }}</strong></li>
-                            {% for zone in pricing.zones %}
-                                <li><span>Ongkir zona {{ zone.name }}</span><strong>{{ zone.fee|rupiah }} / kiriman</strong></li>
-                            {% endfor %}
+                            <li><span>Harga per porsi</span><strong>{{ pricing.price|rupiah }}</strong></li>
                             {% if pricing.free_delivery_min %}
                                 <li><span>Gratis ongkir</span><strong>mulai {{ pricing.free_delivery_min }} porsi / kiriman</strong></li>
                             {% endif %}
+                            {% if distance %}
+                                <li><span>Ongkir di bawah itu</span><strong>{{ distance.per_km|rupiah }}/km, minimal {{ distance.minimum|rupiah }}</strong></li>
+                            {% else %}
+                                {% for zone in pricing.zones %}
+                                    <li><span>Ongkir zona {{ zone.name }}</span><strong>{{ zone.fee|rupiah }} / kiriman</strong></li>
+                                {% endfor %}
+                            {% endif %}
                         </ul>
+                        {% if distance %}
+                            <p class="pub-fine">Jarak dihitung dari titik dapur ke titik lokasi yang Anda tandai di peta saat mendaftar. Ongkir dibayar sekalian dengan pesanan.</p>
+                        {% endif %}
                     </div>
 
                     <div class="pub-estimate-card" data-reveal data-estimate
-                          data-price="{{ pricing.price }}"
-                          data-min="{{ pricing.min_portions }}"
-                          data-free="{{ pricing.free_delivery_min }}"
->
+                         data-price="{{ pricing.price }}"
+                         data-min="{{ pricing.min_portions or 1 }}"
+                         data-free="{{ pricing.free_delivery_min }}"
+                         {% if distance %}data-per-km="{{ distance.per_km }}" data-fee-min="{{ distance.minimum }}"{% endif %}>
                         <div class="pub-field">
                             <label for="estimateQty">Jumlah porsi per waktu makan</label>
                             <div class="pub-qty">
-                                <input type="range" id="estimateRange" min="{{ pricing.min_portions }}" max="300" step="5" value="50" aria-label="Geser jumlah porsi">
-                                <input type="number" id="estimateQty" class="form-control" min="{{ pricing.min_portions }}" max="2000" value="50" inputmode="numeric">
+                                <input type="range" id="estimateRange" min="1" max="200" step="1" value="8" aria-label="Geser jumlah porsi">
+                                <input type="number" id="estimateQty" class="form-control" min="{{ pricing.min_portions or 1 }}" max="2000" value="8" inputmode="numeric">
                             </div>
                         </div>
                         <div class="pub-field">
@@ -202,7 +191,15 @@
                                 <input type="radio" name="estimateMeals" id="mealBoth" value="2"><label for="mealBoth">Siang &amp; sore</label>
                             </div>
                         </div>
-                        {% if pricing.zones %}
+                        {% if distance %}
+                            <div class="pub-field">
+                                <label for="estimateKm">Perkiraan jarak dari dapur</label>
+                                <div class="pub-qty">
+                                    <input type="range" id="estimateKmRange" min="1" max="60" step="1" value="5" aria-label="Geser jarak">
+                                    <div class="pub-qty-unit"><input type="number" id="estimateKm" class="form-control" min="0" max="300" step="0.5" value="5" inputmode="decimal"><span>km</span></div>
+                                </div>
+                            </div>
+                        {% elif pricing.zones %}
                             <div class="pub-field">
                                 <label for="estimateZone">Zona pengiriman</label>
                                 <select id="estimateZone" class="form-select">
@@ -224,7 +221,7 @@
                         {% if site.portal_enabled %}
                             <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">Lanjut ke pemesanan</a>
                         {% endif %}
-                        <p class="pub-fine" style="margin-top: 12px;">Perkiraan, bukan tagihan. Total pasti tampil di portal saat memesan.</p>
+                        <p class="pub-fine pub-fine-spaced">Perkiraan, bukan tagihan. Ongkir pasti dihitung dari titik lokasi Anda saat memesan.</p>
                     </div>
                 </div>
             </section>
@@ -235,7 +232,7 @@
                 <div class="pub-wrap">
                     <div class="pub-section-head">
                         <h2>Menu yang sedang disajikan</h2>
-                        <p>Daftar dari dapur kami saat ini. Menu dirotasi; untuk pesanan khusus silakan hubungi kami.</p>
+                        <p>Menu berganti setiap hari. Untuk nasi kotak, snack rapat, atau pesanan khusus, hubungi kami.</p>
                     </div>
                     <ul class="pub-menu">
                         {% for menu in site.menus %}
@@ -247,33 +244,6 @@
         {% endif %}
     </main>
 
-    <footer class="pub-contact" id="kontak">
-        <div class="pub-wrap">
-            <div class="pub-contact-grid">
-                <div>
-                    <h2>Butuh katering untuk proyek atau acara?</h2>
-                    <p>Ceritakan lokasi, jumlah pekerja, dan jadwal makan. Kami bantu hitung porsi dan jadwal pengirimannya.</p>
-                    <div class="pub-hero-actions">
-                        {% if site.whatsapp_url %}
-                            <a class="pub-btn pub-btn-light pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">
-                                <i class="bi bi-whatsapp" aria-hidden="true"></i> Chat WhatsApp
-                            </a>
-                        {% endif %}
-                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ url_for('auth.login') }}">Masuk ke portal</a>
-                    </div>
-                </div>
-                <dl>
-                    <div><dt>Perusahaan</dt><dd>{{ company_name }}</dd></div>
-                    {% if company.company_address %}<div><dt>Alamat</dt><dd>{{ company.company_address }}</dd></div>{% endif %}
-                    {% if site.whatsapp_url %}<div><dt>Telepon / WhatsApp</dt><dd><a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">{{ company.company_phone }}</a></dd></div>{% endif %}
-                    {% if company.company_email %}<div><dt>Email</dt><dd><a href="mailto:{{ company.company_email }}">{{ company.company_email }}</a></dd></div>{% endif %}
-                </dl>
-            </div>
-            <div class="pub-footer">
-                <span>&copy; {{ site.year }} {{ company_name }}</span>
-                <span><a href="{{ url_for('auth.login') }}">Masuk</a>{% if site.portal_enabled %} &middot; <a href="{{ url_for('portal.register') }}">Daftar pelanggan</a>{% endif %}</span>
-            </div>
-        </div>
-    </footer>
+    {% include "components/public_footer.html" %}
 </div>
 {% endblock %}

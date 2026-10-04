@@ -4,6 +4,7 @@ from typing import Any
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.production import Production
 from app.services.delivery_service import get_delivery_type_from_notes
+from app.utils.clock import now_wib, to_wib
 
 
 DELIVERY_SLA_DEFAULTS = {
@@ -104,14 +105,17 @@ def ensure_delivery_sla_values(delivery: Delivery) -> dict[str, Any]:
         "label": defaults["label"],
         "target_dispatch_time": target_dispatch,
         "target_arrival_time": target_arrival,
-        "actual_departure_time": delivery.actual_departure_time,
+        # Disimpan UTC; target adalah jam dinding WIB.
+        "actual_departure_time": to_wib(delivery.actual_departure_time),
         "late_tolerance_minutes": tolerance,
         "late_limit_time": target_arrival + timedelta(minutes=int(tolerance or 0)) if target_arrival else None,
     }
 
 
 def calculate_delivery_detail_sla(detail: DeliveryDetail, now: datetime | None = None) -> dict[str, Any]:
-    now = now or datetime.utcnow()
+    # now dan jam terima disimpan UTC; target_arrival = tanggal kirim + jam WIB.
+    # Bandingkan dalam WIB (dulu UTC vs WIB: telat 7 jam pun tercatat tepat waktu).
+    now = to_wib(now) if now else now_wib()
     delivery = detail.delivery
     if not delivery:
         return {"status": "NOT_SET", "label": STATUS_LABELS["NOT_SET"], "badge_class": STATUS_BADGE_CLASS["NOT_SET"]}
@@ -120,7 +124,7 @@ def calculate_delivery_detail_sla(detail: DeliveryDetail, now: datetime | None =
     target_arrival = base.get("target_arrival_time")
     late_limit = base.get("late_limit_time")
     receipt = detail.receipt
-    actual_receive = receipt.receive_time if receipt else None
+    actual_receive = to_wib(receipt.receive_time) if receipt else None
     minutes_late = 0
     reason = "Menunggu penerimaan."
     status = "PENDING"
@@ -211,14 +215,14 @@ def calculate_delivery_sla_summary(delivery: Delivery, now: datetime | None = No
 
 
 def calculate_production_sla(production: Production, now: datetime | None = None) -> dict[str, Any]:
-    now = now or datetime.utcnow()
+    now = to_wib(now) if now else now_wib()
     defaults = get_production_sla_defaults(production.production_date, production.production_type)
     target_ready = production.target_ready_time or defaults["target_ready_time"]
     tolerance = production.late_tolerance_minutes
     if tolerance is None:
         tolerance = defaults["late_tolerance_minutes"]
     late_limit = target_ready + timedelta(minutes=int(tolerance or 0)) if target_ready else None
-    actual_completed = production.actual_completed_time
+    actual_completed = to_wib(production.actual_completed_time)
 
     if production.status == "CANCELLED":
         status = "CANCELLED"

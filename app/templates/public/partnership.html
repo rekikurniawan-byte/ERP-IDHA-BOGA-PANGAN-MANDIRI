@@ -1,0 +1,200 @@
+{% extends "layouts/base.html" %}
+{% from "components/public_fee_text.html" import fee_sentence %}
+
+{% block public_page %}
+{% set pricing = site.pricing %}
+{% set cutoffs = site.cutoffs %}
+{% set perf = site.performance %}
+<div class="pub pub-dark-top" data-public-page="partnership">
+    {% include "components/public_header.html" %}
+    {% include "components/public_flashes.html" %}
+
+    <main id="mainContent">
+        <section class="pub-hero pub-hero-compact">
+            <div class="pub-wrap pub-hero-grid">
+                <div class="pub-hero-copy" data-reveal>
+                    <p class="pub-kicker">Kerja sama proyek &amp; perusahaan</p>
+                    <h1>Makan pekerja beres, <em>dari kontrak sampai pembayaran.</em></h1>
+                    <p class="pub-lead">
+                        Untuk kontraktor, pabrik, perkebunan, dan kantor yang butuh makan siang atau sore rutin di lokasi kerja.
+                        Di halaman ini ada alur lengkapnya: bagaimana kontrak dibuat, pesanan harian, pengiriman, tagihan, sampai pembayaran.
+                    </p>
+                    <div class="pub-hero-actions">
+                        <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('public.partnership_apply') }}">
+                            Ajukan kerja sama <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                        {% if site.whatsapp_url %}
+                            <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">
+                                <i class="bi bi-whatsapp" aria-hidden="true"></i> Tanya dulu
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <aside class="pub-glance" data-reveal aria-label="Ringkasan kerja sama">
+                    <h2>Sekilas</h2>
+                    <dl>
+                        <div><dt>Pengajuan</dt><dd>Gratis, tanpa komitmen</dd></div>
+                        <div><dt>Harga</dt><dd>Per porsi, dikunci di kontrak</dd></div>
+                        <div><dt>Tagihan</dt><dd>Bulanan, 2 mingguan, atau mingguan</dd></div>
+                        <div><dt>Pemesan harian</dt><dd>Mandor / pengawas lewat HP</dd></div>
+                        {% if cutoffs.LUNCH %}<div><dt>Batas pesan</dt><dd>Siang {{ cutoffs.LUNCH }}{% if cutoffs.DINNER %} · sore {{ cutoffs.DINNER }}{% endif %} WIB</dd></div>{% endif %}
+                        {% if perf and perf.on_time_rate is not none %}<div><dt>Tiba tepat waktu</dt><dd>{{ perf.on_time_rate|string|replace(".", ",") }}% (30 hari)</dd></div>{% endif %}
+                    </dl>
+                </aside>
+            </div>
+        </section>
+
+        <section class="pub-section" id="alur">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Alur lengkap kerja sama</h2>
+                    <p>Sebelas langkah dari pengajuan sampai perpanjangan. Setiap langkah tercatat di sistem kami dan bisa Anda lihat dari akun perusahaan.</p>
+                </div>
+
+                <ol class="pub-steps" data-reveal>
+                    <li class="pub-step-phase"><span>Sebelum kontrak</span></li>
+                    <li>
+                        <h3>Ajukan kebutuhan</h3>
+                        <p>Isi <a href="{{ url_for('public.partnership_apply') }}">formulir pengajuan</a>: nama perusahaan, lokasi proyek (titik di peta), jumlah pekerja, waktu makan, dan tanggal mulai. Pengajuan langsung masuk ke owner dan admin kami.</p>
+                        <small>Anda mendapat nomor pengajuan.</small>
+                    </li>
+                    <li>
+                        <h3>Kami hubungi &amp; cek lokasi</h3>
+                        <p>Admin menghubungi lewat WhatsApp atau telepon untuk memastikan kebutuhan. Bila perlu, kami survei rute dan titik antar (mes, pos, atau kantor lapangan) termasuk izin masuk area.</p>
+                    </li>
+                    <li>
+                        <h3>Penawaran harga</h3>
+                        <p>Anda menerima penawaran: harga per porsi, menu bergilir, jadwal kirim siang/sore, ongkir (umumnya sudah termasuk di harga kontrak), termin tagihan, dan batas kredit.</p>
+                    </li>
+                    <li>
+                        <h3>Kontrak ditandatangani</h3>
+                        <p>Kontrak memuat masa berlaku, harga per porsi, termin pembayaran, batas kredit, lokasi antar, dan penanggung jawab. Dokumen kontrak disimpan dan bisa diunduh dari akun Anda.</p>
+                        <small>Harga tidak berubah selama masa kontrak.</small>
+                    </li>
+
+                    <li class="pub-step-phase"><span>Setiap hari</span></li>
+                    <li>
+                        <h3>Akun dibuat</h3>
+                        <p>Kami membuat akun perusahaan untuk kantor pusat, dan akun pemesan untuk tiap mandor atau pengawas per lokasi. Titik GPS setiap lokasi antar disimpan agar pengantar tidak tersesat.</p>
+                    </li>
+                    <li>
+                        <h3>Pesan harian dari HP</h3>
+                        <p>Mandor mengisi jumlah porsi sebelum pukul {{ cutoffs.LUNCH or "10.00" }} untuk makan siang dan {{ cutoffs.DINNER or "15.00" }} untuk makan sore. Jumlah boleh berubah setiap hari sesuai pekerja yang masuk.</p>
+                    </li>
+                    <li>
+                        <h3>Masak &amp; antar</h3>
+                        <p>Dapur memasak sesuai total pesanan hari itu. Pengantar berangkat dengan rute ke titik lokasi Anda dan menargetkan tiba sebelum jam istirahat.</p>
+                    </li>
+                    <li>
+                        <h3>Serah terima di lokasi</h3>
+                        <p>Jam tiba, jumlah diterima, dan nama penerima dicatat saat itu juga. Porsi yang kurang atau rusak dicatat dan <strong>tidak ditagih</strong>.</p>
+                    </li>
+
+                    <li class="pub-step-phase"><span>Tagihan &amp; pembayaran</span></li>
+                    <li>
+                        <h3>Tagihan per periode</h3>
+                        <p>Invoice dibuat dari porsi yang benar-benar diterima, sesuai termin di kontrak. Rinciannya per hari dan per lokasi bisa dicek sebelum dibayar.</p>
+                    </li>
+                    <li>
+                        <h3>Pembayaran</h3>
+                        <p>Transfer ke rekening perusahaan kami, lalu unggah bukti dari akun Anda atau kirim ke admin. Pembayaran dicatat dan sisa tagihan langsung terlihat. Tagihan bisa dibayar bertahap sesuai termin.</p>
+                        <small>Bila tagihan lewat jatuh tempo atau melewati batas kredit, pesanan baru ditahan sampai dibayar.</small>
+                    </li>
+                    <li>
+                        <h3>Perpanjangan</h3>
+                        <p>Menjelang kontrak berakhir, sistem kami memberi pengingat dan admin menghubungi Anda. Kontrak bisa diperpanjang (dengan harga baru bila disepakati) atau diakhiri.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="pub-section pub-section-alt" id="portal">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Yang bisa Anda pantau sendiri</h2>
+                    <p>Tidak perlu menunggu laporan dari kami. Semua angka di bawah ini terbaca dari akun perusahaan Anda.</p>
+                </div>
+                <ul class="pub-features">
+                    <li><i class="bi bi-calendar2-week" aria-hidden="true"></i><strong>Pesanan &amp; kiriman</strong><span>Jumlah pesanan tiap lokasi, status kiriman, jam tiba, dan penerimanya.</span></li>
+                    <li><i class="bi bi-receipt" aria-hidden="true"></i><strong>Tagihan &amp; sisa piutang</strong><span>Invoice per periode, jatuh tempo, dan sisa yang belum dibayar.</span></li>
+                    <li><i class="bi bi-cash-coin" aria-hidden="true"></i><strong>Riwayat pembayaran</strong><span>Setiap transfer yang sudah kami terima beserta buktinya.</span></li>
+                    <li><i class="bi bi-file-earmark-text" aria-hidden="true"></i><strong>Kontrak &amp; dokumen</strong><span>Masa berlaku, harga, termin, dan berkas kontrak.</span></li>
+                    <li><i class="bi bi-people" aria-hidden="true"></i><strong>Mandor &amp; lokasi</strong><span>Siapa memesan untuk lokasi mana, dan berapa porsinya.</span></li>
+                    <li><i class="bi bi-chat-square-dots" aria-hidden="true"></i><strong>Keluhan</strong><span>Sampaikan keluhan dan ikuti penyelesaiannya.</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="pub-section" id="banding">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Kontrak atau pesan sendiri?</h2>
+                    <p>Keduanya dilayani dapur dan pengantar yang sama. Bedanya ada di cara bayar dan siapa yang memesan.</p>
+                </div>
+                <div class="pub-compare-wrap">
+                    <table class="pub-compare">
+                        <thead>
+                            <tr><th scope="col"></th><th scope="col">Kontrak proyek</th><th scope="col">Pesan sendiri</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><th scope="row">Cocok untuk</th><td>Proyek, pabrik, perkebunan, kantor dengan makan rutin</td><td>Acara, rapat, kantor kecil, keluarga</td></tr>
+                            <tr><th scope="row">Harga</th><td>Per porsi sesuai kontrak</td><td>Harga standar{% if pricing and pricing.price %} ({{ pricing.price|rupiah }}/porsi){% endif %}</td></tr>
+                            <tr><th scope="row">Pembayaran</th><td>Ditagih per periode, sesuai termin</td><td>Bayar di muka per pesanan</td></tr>
+                            <tr><th scope="row">Ongkir</th><td>Diatur di kontrak (umumnya termasuk harga)</td><td>{{ fee_sentence(pricing) if pricing else "Sesuai jarak lokasi." }}</td></tr>
+                            <tr><th scope="row">Yang memesan</th><td>Mandor / pengawas tiap lokasi</td><td>Anda sendiri</td></tr>
+                            <tr><th scope="row">Cara mulai</th><td><a href="{{ url_for('public.partnership_apply') }}">Ajukan kerja sama</a></td><td>{% if site.portal_enabled %}<a href="{{ url_for('portal.register') }}">Daftar akun</a>{% else %}Hubungi kami{% endif %}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="pub-section pub-section-alt" id="tanya">
+            <div class="pub-wrap pub-faq-grid">
+                <div class="pub-section-head">
+                    <h2>Pertanyaan yang sering muncul</h2>
+                    <p>Belum terjawab? Tulis pertanyaan Anda di kolom keterangan formulir, atau kirim email ke <a href="mailto:{{ site.email }}">{{ site.email }}</a>.</p>
+                </div>
+                <div class="pub-faq">
+                    <details open>
+                        <summary>Berapa minimal porsi untuk kontrak?</summary>
+                        <p>Tidak ada angka baku. Kami menyesuaikan dengan jumlah pekerja, jarak lokasi, dan jadwal makan. Tulis perkiraan porsi per hari di formulir.</p>
+                    </details>
+                    <details>
+                        <summary>Jumlah pekerja kami naik turun. Bagaimana?</summary>
+                        <p>Mandor mengisi jumlah porsi setiap hari sebelum batas pesan, jadi Anda hanya membayar porsi yang dipesan dan diterima.</p>
+                    </details>
+                    <details>
+                        <summary>Bagaimana kalau makanan kurang, rusak, atau terlambat?</summary>
+                        <p>Kekurangan dicatat saat serah terima dan tidak ditagih. Keluhan lain bisa dikirim dari akun Anda dan kami tindak lanjuti sampai selesai.</p>
+                    </details>
+                    <details>
+                        <summary>Lokasi kami di dalam area pabrik atau jauh dari jalan utama.</summary>
+                        <p>Tandai titik lokasinya di peta saat mengajukan. Kami cek rute dan prosedur masuk area saat survei, lalu titik itu dipakai pengantar setiap hari.</p>
+                    </details>
+                    <details>
+                        <summary>Bisa dibayar bertahap?</summary>
+                        <p>Bisa, sesuai termin di kontrak. Selama tagihan belum lewat jatuh tempo dan masih di bawah batas kredit, pesanan berjalan normal.</p>
+                    </details>
+                    <details>
+                        <summary>Apakah mengajukan berarti sudah terikat?</summary>
+                        <p>Tidak. Pengajuan hanya untuk memulai pembicaraan. Kerja sama baru berjalan setelah kontrak disetujui kedua pihak.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section class="pub-section pub-cta">
+            <div class="pub-wrap pub-cta-inner">
+                <div>
+                    <h2>Siap mulai?</h2>
+                    <p>Isi formulirnya sekitar 3 menit. Pengajuan langsung masuk ke owner dan admin kami untuk ditindaklanjuti.</p>
+                </div>
+                <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('public.partnership_apply') }}">Isi formulir pengajuan <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            </div>
+        </section>
+    </main>
+
+    {% include "components/public_footer.html" %}
+</div>
+{% endblock %}

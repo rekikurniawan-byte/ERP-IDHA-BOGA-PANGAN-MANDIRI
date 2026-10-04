@@ -212,8 +212,11 @@ def _create_installment_journal(payment: AssetInstallmentPayment, created_by: in
         credit_account = _require_account("1001", "Kas")
         credit_label = "1001 Kas"
     else:
-        credit_account = _require_account("1002", "Bank")
-        credit_label = "1002 Bank"
+        from app.services.accounting_service import bank_coa_code
+
+        bank_code = bank_coa_code(getattr(payment, "bank_account_id", None))
+        credit_account = _require_account(bank_code, "Bank")
+        credit_label = f"{bank_code} Bank"
 
     amount = round(float(payment.amount or 0), 2)
     if amount <= 0:

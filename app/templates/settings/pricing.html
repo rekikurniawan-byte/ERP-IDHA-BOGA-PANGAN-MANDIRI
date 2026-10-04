@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/location_picker.html" import location_picker %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -130,7 +131,7 @@
     <div class="section-title">
         <div>
             <h3>Minimal Pesan Pelanggan Umum</h3>
-            <p>Berlaku per pengiriman: kiriman siang dan kiriman malam masing-masing harus memenuhi. {{ term('client') }} kontrak tidak dibatasi.</p>
+            <p>Berlaku per pengiriman. Isi 1 kalau tidak ada minimal (keputusan owner: pesanan kecil tetap dilayani, ongkirnya dibayar). {{ term('client') }} kontrak tidak dibatasi.</p>
         </div>
     </div>
     <form method="POST" action="{{ url_for('settings.pricing_set_min_portions') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
@@ -145,11 +146,61 @@
     </form>
 </div>
 
+<div class="app-card mb-4" id="ongkir-jarak">
+    <div class="section-title">
+        <div>
+            <h3>Ongkir Pelanggan Umum per Jarak</h3>
+            <p>Ongkir = jarak dari titik dapur ke titik GPS lokasi × tarif per km, paling sedikit ongkir minimal, dibulatkan ke atas Rp 500. Dikenakan per pengiriman dan dibayar bersama pesanan.</p>
+        </div>
+        {% if distance.enabled %}<span class="status-badge success">Aktif</span>{% else %}<span class="status-badge warning">Belum aktif</span>{% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('settings.pricing_set_distance_fee') }}" class="row g-3 app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Tarif per km</label>
+            <div class="input-group"><span class="input-group-text">Rp</span><input type="number" name="per_km" class="form-control app-input" min="0" step="100" value="{{ distance.per_km|int if distance.per_km else '' }}" placeholder="2000" required></div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Ongkir minimal</label>
+            <div class="input-group"><span class="input-group-text">Rp</span><input type="number" name="minimum" class="form-control app-input" min="0" step="500" value="{{ distance.minimum|int if distance.minimum else '' }}" placeholder="10000" required></div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Faktor jalan</label>
+            <input type="number" name="road_factor" class="form-control app-input" min="1" max="3" step="0.05" value="{{ distance.road_factor }}">
+            <div class="form-text">1,3 = jalan ±30% lebih panjang dari garis lurus.</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Nama titik asal</label>
+            <input type="text" name="origin_label" class="form-control app-input" maxlength="120" value="{{ distance.origin.label if distance.origin else 'Dapur' }}">
+        </div>
+        <div class="col-12">
+            {{ location_picker(lat=distance.origin.lat if distance.origin else none, lng=distance.origin.lng if distance.origin else none, geo=none, label="Titik dapur (asal pengiriman)", required=true, help="Tandai lokasi dapur. Semua jarak ongkir dihitung dari titik ini.") }}
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan ongkir jarak</button>
+        </div>
+    </form>
+
+    <hr>
+
+    <form method="POST" action="{{ url_for('settings.pricing_set_free_delivery') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-4">
+            <label class="form-label">Gratis ongkir kalau satu pengiriman minimal</label>
+            <div class="input-group"><input type="number" name="free_delivery_min_portions" class="form-control app-input" min="0" step="1" value="{{ free_delivery_min }}"><span class="input-group-text">porsi</span></div>
+            <div class="form-text">Isi 0 kalau tidak ada gratis ongkir.</div>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan</button>
+        </div>
+    </form>
+</div>
+
 <div class="app-card mb-4">
     <div class="section-title">
         <div>
-            <h3>Ongkir Pelanggan Umum per Zona</h3>
-            <p>Dikenakan per pengiriman: kiriman siang dan kiriman malam dihitung dua kali jalan. Setiap {{ term('location', lower=True) }} pelanggan umum harus punya zona.</p>
+            <h3>Ongkir per Zona (cadangan)</h3>
+            <p>Dipakai hanya untuk {{ term('location', lower=True) }} yang belum punya titik GPS, atau bila ongkir jarak belum diatur. Per pengiriman: kiriman siang dan sore dihitung dua kali jalan.</p>
         </div>
     </div>
 
@@ -219,19 +270,6 @@
         </div>
     </div>
 
-    <hr>
-
-    <form method="POST" action="{{ url_for('settings.pricing_set_free_delivery') }}" class="row g-2 align-items-end app-form" data-ui-form="true">
-        {% include "components/csrf_token.html" %}
-        <div class="col-md-4">
-            <label class="form-label">Gratis ongkir kalau satu pengiriman minimal</label>
-            <input type="number" name="free_delivery_min_portions" class="form-control app-input" min="0" step="1" value="{{ free_delivery_min }}">
-            <div class="form-text">Isi 0 kalau tidak ada gratis ongkir.</div>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn app-btn-primary"><i class="bi bi-save"></i> Simpan</button>
-        </div>
-    </form>
 </div>
 
 <div class="app-card mb-4">

@@ -29,6 +29,23 @@
                 <input type="text" name="account_name" class="form-control app-input" value="{{ account.account_name if account else '' }}" placeholder="Nama sesuai buku rekening" required>
             </div>
 
+            <div class="col-md-6">
+                <label class="form-label">Akun buku besar (COA)</label>
+                {% set current_coa = account.coa_account_code if account and account.coa_account_code else '' %}
+                <select name="coa_account_code" class="form-select app-input" {% if coa_locked %}disabled{% endif %}>
+                    <option value="" {% if not current_coa %}selected{% endif %}>1002 Bank 1 (bawaan)</option>
+                    {% for coa in coa_choices if coa.account_code != '1002' %}
+                        <option value="{{ coa.account_code }}" {% if current_coa == coa.account_code %}selected{% endif %}>{{ coa.account_code }} {{ coa.account_name }}</option>
+                    {% endfor %}
+                </select>
+                {% if coa_locked %}
+                    <input type="hidden" name="coa_account_code" value="{{ current_coa }}">
+                    <div class="form-text"><i class="bi bi-lock"></i> Terkunci: rekening ini sudah punya transaksi yang terjurnal ke akun ini. Untuk akun lain, buat rekening baru.</div>
+                {% else %}
+                    <div class="form-text">Uang masuk/keluar lewat rekening ini dijurnal ke akun ini. Pilih sebelum rekening dipakai; setelah ada transaksi akun terkunci.</div>
+                {% endif %}
+            </div>
+
             <div class="col-md-12 d-flex align-items-end gap-4">
                 <label class="checkbox-clean">
                     <input type="checkbox" name="is_active" {% if not account or account.is_active %}checked{% endif %}>

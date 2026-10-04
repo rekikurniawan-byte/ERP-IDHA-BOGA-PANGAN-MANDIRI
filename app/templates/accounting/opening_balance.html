@@ -418,7 +418,7 @@
             <tbody>
             {% for row in data.corrections %}
                 <tr>
-                    <td>{{ row.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>{{ row.created_at|wib('%d-%m-%Y %H:%M') }}</td>
                     <td>{{ data.section_labels.get(row.section, row.section) }}</td>
                     <td>{{ {'ADD': 'Tambah', 'UPDATE': 'Ubah', 'REMOVE': 'Hapus'}.get(row.action, row.action) }}</td>
                     <td>{{ row.reason }}</td>

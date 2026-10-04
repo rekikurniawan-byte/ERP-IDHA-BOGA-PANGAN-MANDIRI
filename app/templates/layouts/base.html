@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</title>
+    <title>{% if page_title is defined and page_title %}{{ page_title }} · {% endif %}{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -20,9 +20,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
 </head>
-<body class="{{ 'is-authenticated' if current_user.is_authenticated else 'is-public' }}" data-endpoint="{{ request.endpoint or 'public' }}">
+{% set show_public = (public_view is defined and public_view) or not current_user.is_authenticated %}
+<body class="{{ 'is-public' if show_public else 'is-authenticated' }}" data-endpoint="{{ request.endpoint or 'public' }}">
 
-    {% if current_user.is_authenticated %}
+    {% if not show_public %}
         <a class="skip-link" href="#mainContent">Lewati ke konten utama</a>
         <div class="app-shell" data-layout-shell>
             {% include "layouts/sidebar.html" %}
@@ -71,7 +72,7 @@
     <script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}" data-leaflet-src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" data-leaflet-css="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 
     <script data-csrf-fetch-guard>

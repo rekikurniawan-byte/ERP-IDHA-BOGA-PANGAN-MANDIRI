@@ -279,8 +279,13 @@ ADJUSTMENT_CATEGORIES = {
 SELISIH_OWNER_LIMIT = 100000
 
 
-def cash_bank_coa_code(account_type):
-    return "1001" if str(account_type or "").upper() == "CASH" else "1002"
+def cash_bank_coa_code(account_type, bank_account_id=None):
+    """1001 untuk kas; untuk bank: akun COA milik rekening itu (1002 bila belum dipetakan)."""
+    if str(account_type or "").upper() == "CASH":
+        return "1001"
+    from app.services.advance_service import resolve_cash_account_code
+
+    return resolve_cash_account_code("BANK", bank_account_id)
 
 
 def post_cash_bank_journal(*, journal_date, reference_type, reference_id, description, debit_code, credit_code, amount, created_by):
@@ -472,9 +477,10 @@ def create_cash_bank_transfer(transfer_date, from_account_type, from_bank_accoun
     db.session.add(in_transaction)
     db.session.flush()
 
-    # Kas <-> bank mengubah posisi di buku besar. Bank ke bank tidak: semua
-    # rekening bank memakai akun 1002 yang sama.
-    debit_code, credit_code = cash_bank_coa_code(to_account_type), cash_bank_coa_code(from_account_type)
+    # Kas <-> bank dan bank ke bank beda akun COA mengubah posisi di buku
+    # besar; dua rekening yang dipetakan ke akun yang sama tidak.
+    debit_code = cash_bank_coa_code(to_account_type, to_bank_account_id)
+    credit_code = cash_bank_coa_code(from_account_type, from_bank_account_id)
     if debit_code != credit_code:
         post_cash_bank_journal(
             journal_date=transfer_date,
@@ -606,7 +612,7 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
 
     adjustment.ledger_transaction_id = transaction.id
 
-    cash_code = cash_bank_coa_code(account_type)
+    cash_code = cash_bank_coa_code(account_type, bank_account_id)
     post_cash_bank_journal(
         journal_date=adjustment_date,
         reference_type=CASH_BANK_ADJUSTMENT_REFERENCE_TYPE,
@@ -707,3 +713,51 @@ def unreconcile_cash_bank_transaction_record(transaction):
     transaction = unreconcile_cash_bank_transaction(transaction, commit=False)
     _commit_or_rollback()
     return transaction
+
+
+# --- akun COA per rekening bank ----------------------------------------------
+
+def bank_coa_choices():
+    """Akun buku besar yang boleh dipetakan ke rekening bank: aset aktif bernama Bank."""
+    from app.models.accounting import Account
+
+    return (
+        Account.query.filter(
+            Account.is_active.is_(True),
+            Account.account_type == "ASSET",
+            Account.account_name.ilike("bank%"),
+        )
+        .order_by(Account.account_code.asc())
+        .all()
+    )
+
+
+def bank_account_has_activity(bank_account):
+    """Rekening sudah punya transaksi/saldo awal: akun COA-nya tidak boleh dipindah lagi.
+
+    Jurnal lama sudah memakai akun lama; memindah akun membuat buku besar dan
+    buku kas-bank rekening ini tidak cocok lagi.
+    """
+    from app.models.finance import CashBankOpeningBalance
+
+    if not bank_account or not getattr(bank_account, "id", None):
+        return False
+    if CashBankTransaction.query.filter_by(bank_account_id=bank_account.id).first():
+        return True
+    return CashBankOpeningBalance.query.filter_by(bank_account_id=bank_account.id).first() is not None
+
+
+def validate_bank_coa_code(bank_account, code):
+    """Kode COA yang sah untuk rekening ini, atau Exception dengan pesan jelas."""
+    code = str(code or "").strip() or None
+    current = str(getattr(bank_account, "coa_account_code", "") or "").strip() or None
+    effective_new = code or "1002"
+    effective_old = current or "1002"
+    if bank_account is not None and effective_new != effective_old and bank_account_has_activity(bank_account):
+        raise Exception(
+            f"Akun COA rekening ini terkunci di {effective_old} karena sudah ada transaksi. "
+            "Untuk memakai akun lain, buat rekening baru."
+        )
+    if code and code not in {account.account_code for account in bank_coa_choices()}:
+        raise Exception(f"Akun {code} bukan akun bank aktif di COA.")
+    return code

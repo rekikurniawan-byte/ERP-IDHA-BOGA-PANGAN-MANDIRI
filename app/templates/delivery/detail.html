@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "components/location_picker.html" import directions_link %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="detail">
@@ -189,7 +190,7 @@
                 {% for detail in delivery.details %}
                 <tr>
                     <td><strong>{{ detail.mandor.name if detail.mandor else '-' }}</strong></td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}<div class="mt-1">{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
                     <td>{{ detail.planned_qty }}</td>
                     <td>{{ detail.delivered_qty }}</td>
                     <td>

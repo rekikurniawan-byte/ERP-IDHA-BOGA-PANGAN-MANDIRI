@@ -301,3 +301,43 @@ def test_rute_order_mengunci_ongkir_pelanggan_umum(app, ctx):
 
     detail = DailyOrderDetail.query.filter_by(mandor_id=s.mandor.id).one()
     assert (detail.lunch_delivery_fee, detail.dinner_delivery_fee) == (Decimal("15000.00"), Decimal("15000.00"))
+
+
+# --- ongkir per km dari titik GPS -------------------------------------------
+
+def test_ongkir_jarak_dari_titik_dapur_dengan_minimal(ctx):
+    from app.services.geo_service import save_distance_fee_settings
+    from app.services.pricing_service import FEE_SOURCE_DISTANCE
+
+    s = _setup(ctx)
+    save_distance_fee_settings(
+        s.branch.id, latitude="-2.9850000", longitude="105.7280000", label="Dapur",
+        per_km="2000", minimum="10000", road_factor="1.3", updated_by=s.owner.id,
+    )
+    # Sekitar 1 km garis lurus: kena ongkir minimal.
+    s.location.latitude, s.location.longitude = Decimal("-2.9760000"), Decimal("105.7280000")
+    assert quote_trip_fee(s.branch.id, s.client, s.location, 5)[:2] == (Decimal("10000"), FEE_SOURCE_DISTANCE)
+    # Sekitar 20 km garis lurus x 1,3 = 26 km x Rp 2.000 = Rp 52.000 (dibulatkan ke atas Rp 500).
+    s.location.latitude = Decimal("-2.8051340")
+    fee, source, error = quote_trip_fee(s.branch.id, s.client, s.location, 5)
+    assert error is None and source == FEE_SOURCE_DISTANCE
+    assert Decimal("51000") <= fee <= Decimal("53000") and fee % 500 == 0
+
+
+def test_tanpa_titik_gps_kembali_ke_tarif_zona(ctx):
+    from app.services.geo_service import save_distance_fee_settings
+
+    s = _setup(ctx)
+    save_distance_fee_settings(
+        s.branch.id, latitude="-2.985", longitude="105.728", label="Dapur",
+        per_km="2000", minimum="10000", road_factor="1.3", updated_by=s.owner.id,
+    )
+    assert quote_trip_fee(s.branch.id, s.client, s.location, 5)[:2] == (Decimal("15000.00"), FEE_SOURCE_ZONE)
+
+
+def test_koordinat_di_luar_indonesia_ditolak():
+    from app.services.geo_service import GeoError, parse_coordinates
+
+    with pytest.raises(GeoError):
+        parse_coordinates("48.85", "2.35")
+    assert parse_coordinates("", "") == (None, None)

@@ -328,7 +328,7 @@
                         <td>{{ format_file_size(attachment.file_size) }}</td>
                         <td>{{ attachment.notes or '-' }}</td>
                         <td>
-                            {{ attachment.created_at.strftime('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}
+                            {{ attachment.created_at|wib('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}
                             <div class="text-muted small">{{ attachment.uploader.full_name if attachment.uploader else '-' }}</div>
                         </td>
                         <td>

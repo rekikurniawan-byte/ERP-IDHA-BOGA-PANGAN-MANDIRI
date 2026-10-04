@@ -233,6 +233,32 @@ def test_halaman_pesan_pelanggan_umum_tanpa_label_pt_mandor(app, ctx):
     assert "<dt>Mandor</dt>" not in page and "<dt>Sub Client</dt>" not in page
 
 
+def test_daftar_dengan_titik_gps_tanpa_zona(app, ctx):
+    """Keputusan owner 2026-10-04: titik GPS disimpan sejak mendaftar."""
+    from app.models.master import User
+    from app.models.system import PortalUserMapping
+
+    s = _setup(ctx)
+    base = {
+        "full_name": "Pak GPS", "phone": "081570000998", "branch_id": s.branch.id,
+        "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026",
+        "location_name": "Mes Proyek", "address": "Jl. Lintas Timur Km 3",
+    }
+    tanpa_titik = app.test_client().post("/portal/register", data={**base, "username": f"gps-{uuid4().hex[:8]}"})
+    assert tanpa_titik.status_code == 400
+
+    username = f"gps-{uuid4().hex[:8]}"
+    app.test_client().post("/portal/register", data={
+        **base, "username": username, "latitude": "-2,9612345", "longitude": "105.7512345", "gps_accuracy": "12.4",
+    })
+    user = User.query.filter_by(username=username).one()
+    location = PortalUserMapping.query.filter_by(user_id=user.id).one().delivery_location
+
+    assert str(location.latitude) == "-2.9612345" and str(location.longitude) == "105.7512345"
+    assert location.gps_accuracy_m == 12 and location.gps_updated_at is not None
+    assert location.delivery_zone_id is None
+
+
 # --- warung: cicil hutang pekerja crash (Decimal - float) --------------------
 
 def test_cicil_hutang_warung_pekerja_setelah_dibaca_ulang(ctx):
@@ -324,3 +350,73 @@ def test_buku_pembantu_piutang_menghitung_piutang_warung_eksternal(ctx):
     ctx.session.flush()
 
     assert _receivables() - before == Decimal("15000")
+
+
+# --- tutup buku: laba-rugi bulan yang ditutup tidak boleh jadi nol -----------
+
+def test_ringkasan_laba_rugi_tetap_benar_setelah_tutup_buku(ctx):
+    from app.models.accounting import Account, Journal, JournalDetail
+    from app.routes.accounting.report_routes import _build_accounting1b_reports_data
+    from app.services.accounting_service import generate_journal_number
+    from app.services.period_closing_service import post_period_closing
+
+    s = _setup(ctx)
+    cash = Account.query.filter_by(account_code="1001").first()
+    revenue = Account.query.filter_by(account_type="REVENUE", is_active=True).order_by(Account.account_code).first()
+    retained = Account.query.filter_by(account_code="3002", is_active=True).first()
+    if not (cash and revenue and retained):
+        pytest.skip("COA dasar belum ada di DB tes.")
+    start, end = date(2001, 1, 1), date(2001, 1, 31)
+    journal = Journal(journal_number=generate_journal_number(start), journal_date=start, reference_type="TEST_SALE",
+                      reference_id=900001, description="Penjualan uji", created_by=s.admin.id)
+    ctx.session.add(journal)
+    ctx.session.flush()
+    ctx.session.add_all([
+        JournalDetail(journal_id=journal.id, account_id=cash.id, debit=Decimal("250000"), credit=0),
+        JournalDetail(journal_id=journal.id, account_id=revenue.id, debit=0, credit=Decimal("250000")),
+    ])
+    ctx.session.flush()
+
+    post_period_closing(branch_id=s.branch.id, year=2001, month=1, closing_date=end, notes=None, created_by=s.admin.id)
+    ctx.session.flush()
+    report = _build_accounting1b_reports_data(start, end)
+
+    assert report["revenue_total"] == 250000
+    assert report["net_income"] == 250000
+    assert report["is_period_balanced"]
+
+
+# --- rekening bank: jurnal ke akun COA rekening itu, terkunci setelah dipakai --
+
+def test_rekening_bank_memakai_akun_coa_sendiri_dan_terkunci_setelah_dipakai(ctx):
+    from app.models.accounting import Account
+    from app.models.finance import BankAccount, CashBankTransaction
+    from app.services.accounting_service import bank_coa_code
+    from app.services.cash_bank_service import cash_bank_coa_code, validate_bank_coa_code
+
+    s = _setup(ctx)
+    if not Account.query.filter_by(account_code="1003", is_active=True).first():
+        pytest.skip("Akun 1003 Bank 2 belum ada di DB tes.")
+    bank = BankAccount(branch_id=s.branch.id, account_name="PT Uji", bank_name="BRI",
+                       account_number=f"77{uuid4().int % 10**9}", is_active=True)
+    ctx.session.add(bank)
+    ctx.session.flush()
+    assert bank_coa_code(bank.id) == "1002"
+
+    bank.coa_account_code = validate_bank_coa_code(bank, "1003")
+    ctx.session.flush()
+    assert bank_coa_code(bank.id) == "1003"
+    assert cash_bank_coa_code("BANK", bank.id) == "1003"
+    assert cash_bank_coa_code("CASH", bank.id) == "1001"
+    with pytest.raises(Exception, match="bukan akun bank"):
+        validate_bank_coa_code(bank, "1004")
+
+    ctx.session.add(CashBankTransaction(
+        branch_id=s.branch.id, transaction_date=TODAY, account_type="BANK", bank_account_id=bank.id,
+        transaction_type="IN", amount=1000, description="uji", reference_type="TEST", reference_id=1,
+        created_by=s.admin.id,
+    ))
+    ctx.session.flush()
+    with pytest.raises(Exception, match="terkunci"):
+        validate_bank_coa_code(bank, "1002")
+    assert validate_bank_coa_code(bank, "1003") == "1003"

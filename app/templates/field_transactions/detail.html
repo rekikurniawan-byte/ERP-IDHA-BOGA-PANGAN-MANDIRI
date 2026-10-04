@@ -457,7 +457,7 @@
             <tbody>
                 {% for log in transaction.review_logs|sort(attribute='created_at', reverse=True) %}
                 <tr>
-                    <td>{{ log.created_at.strftime('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
+                    <td>{{ log.created_at|wib('%d-%m-%Y %H:%M') if log.created_at else '-' }}</td>
                     <td>{{ log.action_type|status_label }}</td>
                     <td>{{ log.from_review_status|status_label }}</td>
                     <td>{{ log.to_review_status|status_label }}</td>
@@ -570,7 +570,7 @@
                                             <button type="submit" class="btn app-btn-primary btn-sm">Verifikasi</button>
                                         </form>
                                         {% else %}
-                                        <span class="text-muted small">Diverifikasi {{ item.verified_at.strftime('%d-%m-%Y %H:%M') if item.verified_at else '-' }}</span>
+                                        <span class="text-muted small">Diverifikasi {{ item.verified_at|wib('%d-%m-%Y %H:%M') if item.verified_at else '-' }}</span>
                                         {% endif %}
                                     </td>
                                 </tr>

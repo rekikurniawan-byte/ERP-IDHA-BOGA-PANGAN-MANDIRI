@@ -1,0 +1,44 @@
+{#
+  Pemilih titik lokasi (peta + GPS HP). Menulis ke input tersembunyi
+  {prefix}latitude / {prefix}longitude / {prefix}gps_accuracy.
+
+  {% from "components/location_picker.html" import location_picker %}
+  {{ location_picker(lat=location.latitude, lng=location.longitude, geo=geo) }}
+
+  geo (opsional) = konteks dari geo_service.picker_context(branch_id): titik dapur
+  dan tarif per km, untuk menampilkan perkiraan jarak & ongkir saat titik dipilih.
+#}
+{% macro location_picker(lat=none, lng=none, accuracy=none, prefix="", geo=none, label="Titik lokasi di peta", required=false, help="") %}
+<div class="geo-picker" data-geo-picker
+     {% if geo and geo.origin %}data-origin-lat="{{ geo.origin.lat }}" data-origin-lng="{{ geo.origin.lng }}" data-origin-label="{{ geo.origin.label }}"{% endif %}
+     {% if geo %}data-road-factor="{{ geo.road_factor }}" data-per-km="{{ geo.per_km }}" data-fee-min="{{ geo.minimum }}" data-free-from="{{ geo.free_from or 0 }}"{% endif %}
+     {% if required %}data-required="1"{% endif %}>
+    <div class="geo-picker-head">
+        <div>
+            <span class="form-label mb-0">{{ label }}{% if required %} <span class="text-danger">*</span>{% endif %}</span>
+            <small class="text-muted d-block">{{ help or "Ketuk peta untuk menandai, geser penanda bila kurang pas, atau pakai GPS HP." }}</small>
+        </div>
+        <button type="button" class="btn btn-sm app-btn-secondary" data-geo-locate>
+            <i class="bi bi-crosshair" aria-hidden="true"></i> Pakai lokasi saya (GPS)
+        </button>
+    </div>
+    <div class="geo-map" data-geo-map role="application" aria-label="Peta untuk memilih titik lokasi"></div>
+    <div class="geo-picker-foot">
+        <span data-geo-status>{% if lat is not none and lng is not none %}Titik tersimpan.{% else %}Belum ada titik lokasi.{% endif %}</span>
+        <span class="geo-estimate" data-geo-estimate></span>
+    </div>
+    <input type="hidden" name="{{ prefix }}latitude" value="{{ lat if lat is not none else '' }}" data-geo-lat>
+    <input type="hidden" name="{{ prefix }}longitude" value="{{ lng if lng is not none else '' }}" data-geo-lng>
+    <input type="hidden" name="{{ prefix }}gps_accuracy" value="{{ accuracy if accuracy is not none else '' }}" data-geo-accuracy>
+</div>
+{% endmacro %}
+
+{# Tautan petunjuk arah Google Maps untuk lokasi bertitik GPS. #}
+{% macro directions_link(location, small=true) %}
+{% if location and location.latitude is not none and location.longitude is not none %}
+<a class="btn {{ 'btn-sm' if small else '' }} app-btn-secondary geo-directions" target="_blank" rel="noopener"
+   href="https://www.google.com/maps/dir/?api=1&amp;destination={{ location.latitude }},{{ location.longitude }}">
+    <i class="bi bi-sign-turn-right" aria-hidden="true"></i> Petunjuk arah
+</a>
+{% endif %}
+{% endmacro %}

@@ -118,6 +118,11 @@ class DeliveryLocation(BaseModel):
     # ini ditolak sampai admin memilih zona.
     delivery_zone_id = db.Column(db.Integer, db.ForeignKey("delivery_zones.id"), nullable=True)
     delivery_zone = db.relationship("DeliveryZone", foreign_keys=[delivery_zone_id], lazy="joined")
+    # Titik GPS (WGS84) dari peta/GPS: dasar ongkir per km dan petunjuk arah pengantar.
+    latitude = db.Column(db.Numeric(10, 7), nullable=True)
+    longitude = db.Column(db.Numeric(10, 7), nullable=True)
+    gps_accuracy_m = db.Column(db.Integer, nullable=True)
+    gps_updated_at = db.Column(db.DateTime, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint("mandor_id", "location_name", name="uq_delivery_location_mandor_location"),

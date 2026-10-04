@@ -73,7 +73,7 @@ def record_owner_capital(*, branch_id, kind, transaction_date, account_type, ban
         db.session.flush()
         ledger.reference_id = ledger.id
 
-        cash_code, equity_code = cash_bank_coa_code(account_type), rule["equity_code"]
+        cash_code, equity_code = cash_bank_coa_code(account_type, bank_account_id), rule["equity_code"]
         post_cash_bank_journal(
             journal_date=transaction_date,
             reference_type=OWNER_CAPITAL_REFERENCE,

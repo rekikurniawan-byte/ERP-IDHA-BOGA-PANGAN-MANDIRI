@@ -4,6 +4,8 @@ Route functions moved out of app.routes.master_routes without changing URL rules
 """
 from app.routes.master_routes import *  # noqa: F401,F403
 from app.services.branch_module_service import WORKER_DEBT
+from app.extensions import db
+from app.services.geo_service import GeoError, picker_context
 from app.services.pricing_service import active_zones
 from app.utils.decorators import module_required
 from app.utils.terms import T
@@ -194,7 +196,11 @@ def create_location():
                 description=description,
                 is_active=is_active,
                 delivery_zone_id=_requested_zone_id(),
+                point_form=request.form,
             )
+        except GeoError as error:
+            flash(str(error), "warning")
+            return redirect(url_for("master.create_location"))
         except IntegrityError:
             flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
             return redirect(url_for("master.create_location"))
@@ -209,6 +215,7 @@ def create_location():
         location=None,
         selected_mandor_id=request.args.get("mandor_id", type=int),
         zones=active_zones(current_user.branch_id),
+        geo=picker_context(current_user.branch_id),
     )
 
 
@@ -244,7 +251,12 @@ def edit_location(location_id):
                 description=description,
                 is_active=is_active,
                 delivery_zone_id=_requested_zone_id(),
+                point_form=request.form,
             )
+        except GeoError as error:
+            db.session.rollback()
+            flash(str(error), "warning")
+            return redirect(url_for("master.edit_location", location_id=location.id))
         except IntegrityError:
             flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
             return redirect(url_for("master.edit_location", location_id=location.id))
@@ -253,7 +265,8 @@ def edit_location(location_id):
         return redirect(url_for("master.locations"))
 
     return render_template(
-        "master/location_form.html", mandors=mandors, location=location, zones=active_zones(current_user.branch_id)
+        "master/location_form.html", mandors=mandors, location=location, zones=active_zones(current_user.branch_id),
+        geo=picker_context(current_user.branch_id),
     )
 
 

@@ -156,3 +156,5 @@ from app.models.field_transaction import (
     ManualPayable,
     ManualPayablePayment,
 )
+
+from app.models.partnership import PartnershipRequest

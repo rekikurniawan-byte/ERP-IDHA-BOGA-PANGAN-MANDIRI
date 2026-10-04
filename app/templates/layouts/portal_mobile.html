@@ -50,6 +50,10 @@
                     <i class="bi bi-chat-square-text"></i>
                     <span>Komplain</span>
                 </a>
+                <a href="{{ url_for('portal.addresses') }}" class="{{ 'active' if request.endpoint == 'portal.addresses' else '' }}">
+                    <i class="bi bi-pin-map"></i>
+                    <span>Alamat</span>
+                </a>
             {% elif current_user.role == "PORTAL_SUBCLIENT" %}
                 <a href="{{ url_for('portal.mandor_order') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_order' else '' }}">
                     <i class="bi bi-bag-plus"></i>
@@ -86,6 +90,10 @@
                 <a href="{{ url_for('portal.mandor_payments') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_payments' else '' }}">
                     <i class="bi bi-credit-card"></i>
                     <span>Pembayaran</span>
+                </a>
+                <a href="{{ url_for('portal.addresses') }}" class="{{ 'active' if request.endpoint == 'portal.addresses' else '' }}">
+                    <i class="bi bi-pin-map"></i>
+                    <span>Lokasi</span>
                 </a>
             {% elif current_user.role == "PORTAL_CLIENT" %}
                 <a href="{{ url_for('portal.pt_mandors') }}" class="{{ 'active' if request.endpoint == 'portal.pt_mandors' else '' }}">
@@ -178,7 +186,7 @@
     <script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}" data-leaflet-src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" data-leaflet-css="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 </body>
 </html>

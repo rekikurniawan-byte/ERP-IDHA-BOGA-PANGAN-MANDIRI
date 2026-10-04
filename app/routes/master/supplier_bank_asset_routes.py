@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.services.cash_bank_service import bank_account_has_activity, bank_coa_choices, validate_bank_coa_code
 
 
 @master_bp.route("/suppliers")
@@ -263,12 +264,19 @@ def create_bank_account():
             flash("Nomor rekening sudah digunakan. Data tidak disimpan agar tidak duplikat.", "warning")
             return redirect(url_for("master.create_bank_account"))
 
+        try:
+            coa_code = validate_bank_coa_code(None, request.form.get("coa_account_code"))
+        except Exception as error:
+            flash(str(error), "warning")
+            return redirect(url_for("master.create_bank_account"))
+
         account = create_bank_account_record(
             branch_id=current_user.branch_id,
             account_name=account_name,
             bank_name=bank_name,
             account_number=account_number,
-            is_active=is_active
+            is_active=is_active,
+            coa_account_code=coa_code,
         )
 
         record_audit_log(
@@ -278,13 +286,15 @@ def create_bank_account():
             table_name="bank_accounts",
             record_id=account.id,
             description=f"Rekening bank dibuat: {account.bank_name} - {account.account_name}.",
-            metadata={"bank_name": account.bank_name, "account_name": account.account_name, "is_active": account.is_active},
+            metadata={"bank_name": account.bank_name, "account_name": account.account_name, "is_active": account.is_active,
+                      "coa_account_code": account.coa_account_code or "1002"},
         )
 
         flash("Rekening bank berhasil ditambahkan.", "success")
         return redirect(url_for("master.bank_accounts"))
 
-    return render_template("master/bank_account_form.html", account=None)
+    return render_template("master/bank_account_form.html", account=None, coa_choices=bank_coa_choices(),
+                           coa_locked=False)
 
 
 @master_bp.route("/bank-accounts/<int:account_id>/edit", methods=["GET", "POST"])
@@ -310,11 +320,18 @@ def edit_bank_account(account_id):
             flash("Nomor rekening sudah digunakan oleh rekening lain.", "warning")
             return redirect(url_for("master.edit_bank_account", account_id=account.id))
 
+        try:
+            coa_code = validate_bank_coa_code(account, request.form.get("coa_account_code"))
+        except Exception as error:
+            flash(str(error), "warning")
+            return redirect(url_for("master.edit_bank_account", account_id=account.id))
+
         old_snapshot = {
             "account_name": account.account_name,
             "bank_name": account.bank_name,
             "account_number": account.account_number,
             "is_active": account.is_active,
+            "coa_account_code": account.coa_account_code or "1002",
         }
 
         update_bank_account_record(
@@ -323,6 +340,7 @@ def edit_bank_account(account_id):
             bank_name=bank_name,
             account_number=account_number,
             is_active=is_active,
+            coa_account_code=coa_code,
         )
 
         record_audit_log(
@@ -333,13 +351,15 @@ def edit_bank_account(account_id):
             record_id=account.id,
             description=f"Rekening bank diperbarui: {account.bank_name} - {account.account_name}.",
             old_value=old_snapshot,
-            new_value={"account_name": account.account_name, "bank_name": account.bank_name, "is_active": account.is_active},
+            new_value={"account_name": account.account_name, "bank_name": account.bank_name, "is_active": account.is_active,
+                       "coa_account_code": account.coa_account_code or "1002"},
         )
 
         flash("Rekening bank berhasil diperbarui.", "success")
         return redirect(url_for("master.bank_accounts"))
 
-    return render_template("master/bank_account_form.html", account=account)
+    return render_template("master/bank_account_form.html", account=account, coa_choices=bank_coa_choices(),
+                           coa_locked=bank_account_has_activity(account))
 
 
 @master_bp.route("/bank-accounts/<int:account_id>/toggle", methods=["POST"])

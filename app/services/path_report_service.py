@@ -16,7 +16,7 @@ Keputusan owner 2026-09-27: omzet, kas masuk, dan piutang dipisah per jalur
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.extensions import db
 from app.models.accounting import Account, Journal, JournalDetail
@@ -46,6 +46,8 @@ def _ledger_total(account_code, column, start, end):
         .join(Account, Account.id == JournalDetail.account_id)
         .join(Journal, Journal.id == JournalDetail.journal_id)
         .filter(Account.account_code == account_code, Journal.journal_date >= start, Journal.journal_date <= end)
+        # Jurnal tutup buku memindahkan saldo ke laba ditahan; bukan pendapatan.
+        .filter(or_(Journal.reference_type.is_(None), Journal.reference_type != "PERIOD_CLOSING"))
         .scalar()
     )
     return _money(total)

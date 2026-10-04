@@ -19,7 +19,7 @@
         </header>
 
         <dl class="admin-draft-facts">
-            <div><dt>Dikirim</dt><dd>{{ draft.submitted_at.strftime('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</dd></div>
+            <div><dt>Dikirim</dt><dd>{{ draft.submitted_at|wib('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</dd></div>
             <div><dt>Pemesan</dt><dd>{{ draft.user.full_name if draft.user else "-" }}</dd></div>
             <div><dt>Cabang</dt><dd>{{ draft.branch.name if draft.branch else "-" }}</dd></div>
             <div><dt>Kunci anti ganda</dt><dd>{{ draft.idempotency_key[:12] }}…</dd></div>

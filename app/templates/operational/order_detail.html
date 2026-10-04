@@ -524,7 +524,7 @@
                     {% for revision in detail.revisions %}
                         {% set revision_found.value = true %}
                         <tr>
-                            <td>{{ revision.revision_time.strftime('%d-%m-%Y %H:%M') }}</td>
+                            <td>{{ revision.revision_time|wib('%d-%m-%Y %H:%M') }}</td>
                             <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
                             <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
                             <td>{{ revision.revision_type|status_label }}</td>

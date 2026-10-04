@@ -108,7 +108,7 @@
                     <span class="portal-record-icon"><i class="bi bi-paperclip"></i></span>
                     <div>
                         <h3>{{ proof.filename }}</h3>
-                        <p>{{ proof.uploaded_at.strftime('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} | {{ proof.file_size }} byte</p>
+                        <p>{{ proof.uploaded_at|wib('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} | {{ proof.file_size }} byte</p>
                         <div class="portal-chip-row">
                             <span>{{ proof.attachment_type|status_label }}</span>
                             {% if proof.notes %}<span>{{ proof.notes }}</span>{% endif %}

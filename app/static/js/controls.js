@@ -425,6 +425,168 @@
     document.addEventListener("DOMContentLoaded", loadCharts);
     window.appCharts = { rupiah: rupiah, rupiahShort: rupiahShort, render: loadCharts };
 
+    // --- Titik lokasi (Leaflet + GPS HP) -----------------------------------------
+    // [data-geo-picker] dari components/location_picker.html. Peta dimuat hanya
+    // di halaman yang memakainya. Perkiraan ongkir di sini meniru geo_service:
+    // jarak = garis lurus x faktor jalan (dibulatkan 0,1 km), ongkir =
+    // max(minimal, jarak x tarif/km dibulatkan ke atas Rp 500). Nilai final
+    // tetap dihitung server.
+    const OKI_AREA = [-2.985, 105.728];
+    let leafletLoading = null;
+
+    function loadLeaflet() {
+        if (window.L) return Promise.resolve(window.L);
+        if (leafletLoading) return leafletLoading;
+        const source = document.querySelector("script[data-leaflet-src]");
+        if (!source) return Promise.reject(new Error("leaflet"));
+        leafletLoading = new Promise(function (resolve, reject) {
+            const css = document.createElement("link");
+            css.rel = "stylesheet";
+            css.href = source.dataset.leafletCss;
+            document.head.appendChild(css);
+            const loader = document.createElement("script");
+            loader.src = source.dataset.leafletSrc;
+            loader.onload = function () { resolve(window.L); };
+            loader.onerror = reject;
+            document.head.appendChild(loader);
+        });
+        return leafletLoading;
+    }
+
+    function pinIcon(L, kind) {
+        return L.divIcon({ className: "geo-pin geo-pin--" + kind, html: "<span></span>", iconSize: [30, 38], iconAnchor: [15, 36], tooltipAnchor: [0, -30] });
+    }
+
+    function haversineKm(a, b) {
+        const rad = Math.PI / 180;
+        const dLat = (b[0] - a[0]) * rad;
+        const dLng = (b[1] - a[1]) * rad;
+        const h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.pow(Math.sin(dLng / 2), 2);
+        return 6371.0088 * 2 * Math.asin(Math.sqrt(h));
+    }
+
+    function setupGeoPicker(picker) {
+        if (picker.dataset.geoReady) return;
+        picker.dataset.geoReady = "1";
+        const field = function (name) { return picker.querySelector("[data-geo-" + name + "]"); };
+        const latInput = field("lat");
+        const lngInput = field("lng");
+        const accInput = field("accuracy");
+        const status = field("status");
+        const estimate = field("estimate");
+        const locate = field("locate");
+        const readonly = picker.hasAttribute("data-readonly");
+        const data = picker.dataset;
+        const origin = data.originLat ? [Number(data.originLat), Number(data.originLng)] : null;
+        const perKm = Number(data.perKm) || 0;
+        const feeMin = Number(data.feeMin) || 0;
+        const freeFrom = Number(data.freeFrom) || 0;
+        const roadFactor = Number(data.roadFactor) || 1.3;
+
+        function describe(point) {
+            if (!estimate) return;
+            if (!origin || !point) { estimate.textContent = ""; return; }
+            const km = Math.round(haversineKm(origin, point) * roadFactor * 10) / 10;
+            let text = "± " + DECIMAL.format(km) + " km dari " + (data.originLabel || "dapur");
+            if (perKm > 0 || feeMin > 0) {
+                const fee = Math.max(feeMin, Math.ceil(km * perKm / 500) * 500);
+                text += " · ongkir " + rupiah(fee) + "/kiriman" + (freeFrom ? " (gratis mulai " + freeFrom + " porsi)" : "");
+            }
+            estimate.textContent = text;
+        }
+
+        loadLeaflet().then(function (L) {
+            const saved = latInput.value && lngInput.value ? [Number(latInput.value), Number(lngInput.value)] : null;
+            const map = L.map(field("map"), { scrollWheelZoom: false, tap: true }).setView(saved || origin || OKI_AREA, saved ? 15 : 12);
+            L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>",
+            }).addTo(map);
+            if (origin) {
+                L.marker(origin, { icon: pinIcon(L, "origin"), keyboard: false }).addTo(map)
+                    .bindTooltip(data.originLabel || "Dapur", { direction: "top" });
+            }
+            let marker = null;
+            let ring = null;
+
+            function place(point, accuracy, message) {
+                const lat = Number(point[0]).toFixed(7);
+                const lng = Number(point[1]).toFixed(7);
+                latInput.value = lat;
+                lngInput.value = lng;
+                if (accInput) accInput.value = accuracy ? Math.round(accuracy) : "";
+                if (!marker) {
+                    marker = L.marker(point, { icon: pinIcon(L, "target"), draggable: !readonly }).addTo(map);
+                    marker.on("dragend", function () {
+                        const moved = marker.getLatLng();
+                        if (ring) { map.removeLayer(ring); ring = null; }
+                        place([moved.lat, moved.lng], null, "Titik digeser manual.");
+                    });
+                } else {
+                    marker.setLatLng(point);
+                }
+                if (ring) { map.removeLayer(ring); ring = null; }
+                if (accuracy) ring = L.circle(point, { radius: accuracy, color: token("brand-600"), weight: 1, fillOpacity: 0.08, interactive: false }).addTo(map);
+                status.textContent = (message || "Titik dipilih.") + " " + lat.replace(".", ",") + "; " + lng.replace(".", ",");
+                picker.classList.add("has-point");
+                describe(point);
+                latInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            if (saved) place(saved, Number(accInput && accInput.value) || null, "Titik tersimpan.");
+            if (!readonly) {
+                map.on("click", function (event) { place([event.latlng.lat, event.latlng.lng], null, "Titik dipilih di peta."); });
+            }
+            if (origin && saved) map.fitBounds([origin, saved], { padding: [36, 36], maxZoom: 15 });
+
+            if (locate) {
+                locate.addEventListener("click", function () {
+                    if (!navigator.geolocation) {
+                        status.textContent = "Perangkat ini tidak mendukung GPS. Tandai titik langsung di peta.";
+                        return;
+                    }
+                    if (!window.isSecureContext) {
+                        status.textContent = "GPS hanya jalan di alamat https. Tandai titik langsung di peta.";
+                        return;
+                    }
+                    locate.disabled = true;
+                    status.textContent = "Mencari lokasi Anda…";
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        locate.disabled = false;
+                        const point = [position.coords.latitude, position.coords.longitude];
+                        map.setView(point, 17);
+                        place(point, position.coords.accuracy, "Lokasi GPS (akurasi ± " + Math.round(position.coords.accuracy) + " m).");
+                    }, function (error) {
+                        locate.disabled = false;
+                        status.textContent = error.code === 1
+                            ? "Izin lokasi ditolak. Izinkan lokasi di browser, atau tandai titik di peta."
+                            : "Lokasi belum didapat. Coba lagi di tempat terbuka, atau tandai titik di peta.";
+                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+                });
+            }
+
+            // Peta di dalam tab/collapse yang awalnya tersembunyi perlu dihitung ulang ukurannya.
+            if (window.ResizeObserver) new ResizeObserver(function () { map.invalidateSize(); }).observe(field("map"));
+        }).catch(function () {
+            status.textContent = "Peta gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.";
+        });
+
+        if (picker.dataset.required) {
+            const form = picker.closest("form");
+            if (form) form.addEventListener("submit", function (event) {
+                if (latInput.value && lngInput.value) return;
+                event.preventDefault();
+                picker.classList.add("is-invalid");
+                status.textContent = "Titik lokasi wajib dipilih: ketuk peta atau pakai tombol GPS.";
+                picker.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-geo-picker]").forEach(setupGeoPicker);
+    });
+
     // --- Halaman publik ----------------------------------------------------------
     function setupPublicPage() {
         const header = document.querySelector("[data-pub-header]");
@@ -530,7 +692,20 @@
         const qtyInput = form.querySelector("#estimateQty");
         const range = form.querySelector("#estimateRange");
         const zone = form.querySelector("#estimateZone");
+        // Ongkir jarak (bila diatur): max(minimal, km x tarif/km dibulatkan ke atas Rp 500).
+        const perKm = Number(form.dataset.perKm) || 0;
+        const feeMin = Number(form.dataset.feeMin) || 0;
+        const kmInput = form.querySelector("#estimateKm");
+        const kmRange = form.querySelector("#estimateKmRange");
         const out = function (name) { return form.querySelector("[data-estimate-" + name + "]"); };
+
+        function tripFee() {
+            if (kmInput) {
+                const km = Math.max(Number(String(kmInput.value).replace(",", ".")) || 0, 0);
+                return Math.max(feeMin, Math.ceil(km * perKm / 500) * 500);
+            }
+            return zone ? Number(zone.value) || 0 : 0;
+        }
 
 
         function update(source) {
@@ -543,7 +718,7 @@
             const meals = Number((form.querySelector("input[name=estimateMeals]:checked") || {}).value || 1);
             const trips = meals;
             const free = freeFrom > 0 && qty >= freeFrom;
-            const feePerTrip = zone ? Number(zone.value) || 0 : 0;
+            const feePerTrip = tripFee();
             const food = price * qty * meals;
             const fee = free ? 0 : feePerTrip * trips;
             out("food-label").textContent = NUMBER.format(qty) + " porsi × " + rupiah(price) + (meals > 1 ? " × 2" : "");
@@ -567,6 +742,13 @@
             radio.addEventListener("change", function () { update("qty"); });
         });
         if (zone) zone.addEventListener("change", function () { update("qty"); });
+        if (kmInput) {
+            kmInput.addEventListener("input", function () {
+                if (kmRange) kmRange.value = Math.min(Number(kmRange.max), Math.max(Number(kmRange.min), Number(kmInput.value) || 0));
+                update("qty");
+            });
+            if (kmRange) kmRange.addEventListener("input", function () { kmInput.value = kmRange.value; update("qty"); });
+        }
         update("qty");
     }
 

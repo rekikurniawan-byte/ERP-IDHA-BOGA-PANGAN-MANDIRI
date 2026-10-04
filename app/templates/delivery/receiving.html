@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "components/location_picker.html" import directions_link %}
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
@@ -81,7 +82,7 @@
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
                     <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}<div class="mt-1">{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
                     <td>{{ detail.planned_qty }}</td>
                     <td>{{ detail.delivery.status|status_label }}</td>
                     <td>
@@ -139,7 +140,7 @@
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
                     <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}<div class="mt-1">{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
                     <td>{{ detail.planned_qty }}</td>
                     <td>{{ detail.delivered_qty }}</td>
                     <td>

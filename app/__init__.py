@@ -108,6 +108,7 @@ def create_app():
     from app.routes.prediction_routes import prediction_bp
     from app.routes.customer_success_routes import customer_success_bp
     from app.routes.credit_routes import credit_bp
+    from app.routes.public_routes import public_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -129,6 +130,7 @@ def create_app():
     flask_app.register_blueprint(prediction_bp)
     flask_app.register_blueprint(customer_success_bp)
     flask_app.register_blueprint(credit_bp)
+    flask_app.register_blueprint(public_bp)
 
 
     @flask_app.before_request
@@ -257,7 +259,7 @@ def create_app():
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
         content_security_policy = flask_app.config.get("CONTENT_SECURITY_POLICY")
         if content_security_policy:
             header_name = (
@@ -461,10 +463,12 @@ def create_app():
             return "0"
 
     from app.utils.labels import event_label, role_label, status_label
+    from app.utils.clock import format_wib
 
     flask_app.add_template_filter(status_label, "status_label")
     flask_app.add_template_filter(event_label, "event_label")
     flask_app.add_template_filter(role_label, "role_label")
+    flask_app.add_template_filter(format_wib, "wib")
 
 
     @flask_app.errorhandler(CSRFError)

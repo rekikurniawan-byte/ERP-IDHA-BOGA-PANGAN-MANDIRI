@@ -1,0 +1,117 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+{% set row = data.row %}
+<section class="page-section">
+    {{ page_header(
+        title=row.company_name,
+        eyebrow='Pengajuan Kerja Sama · ' ~ row.request_number,
+        description=row.project_name,
+        collapse=false,
+        actions=[
+            {'label': 'Kembali', 'url': url_for('customer_success.partnerships'), 'icon': 'bi-arrow-left'},
+            {'label': 'Buat kontrak', 'url': url_for('customer_success.contracts'), 'icon': 'bi-file-earmark-plus', 'variant': 'primary'}
+        ]
+    ) }}
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="app-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <h2 class="h5 mb-0">Data pengajuan</h2>
+                        <span class="status-badge {{ data.status_tones.get(row.status, 'muted') }}">{{ data.status_labels.get(row.status, row.status) }}</span>
+                    </div>
+                    <dl class="row mb-0 app-dl">
+                        <dt class="col-sm-4">Masuk</dt><dd class="col-sm-8">{{ row.created_at|wib }} WIB</dd>
+                        <dt class="col-sm-4">Kontak</dt>
+                        <dd class="col-sm-8">
+                            {{ row.contact_name }}{% if row.contact_role %} · {{ row.contact_role }}{% endif %}
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                {% if data.whatsapp_url %}<a class="btn btn-sm app-btn-secondary" href="{{ data.whatsapp_url }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> {{ row.phone }}</a>{% else %}<span>{{ row.phone }}</span>{% endif %}
+                                <a class="btn btn-sm app-btn-secondary" href="tel:{{ row.phone }}"><i class="bi bi-telephone"></i> Telepon</a>
+                                {% if row.email %}<a class="btn btn-sm app-btn-secondary" href="mailto:{{ row.email }}"><i class="bi bi-envelope"></i> {{ row.email }}</a>{% endif %}
+                            </div>
+                        </dd>
+                        <dt class="col-sm-4">Proyek</dt><dd class="col-sm-8">{{ row.project_name }}</dd>
+                        <dt class="col-sm-4">Alamat</dt><dd class="col-sm-8">{{ row.project_address or '-' }}</dd>
+                        <dt class="col-sm-4">Jumlah pekerja</dt><dd class="col-sm-8">{{ row.workers_count or '-' }}</dd>
+                        <dt class="col-sm-4">Porsi per hari</dt><dd class="col-sm-8">{{ row.portions_per_day or '-' }} · {{ data.meal_labels.get(row.meals, row.meals) }}</dd>
+                        <dt class="col-sm-4">Rencana mulai</dt><dd class="col-sm-8">{{ row.start_date|wib if row.start_date else '-' }}{% if row.duration_months %} · {{ row.duration_months }} bulan{% endif %}</dd>
+                        <dt class="col-sm-4">Penagihan</dt><dd class="col-sm-8">{{ data.payment_labels.get(row.payment_preference, row.payment_preference or '-') }}</dd>
+                        <dt class="col-sm-4">Keterangan</dt><dd class="col-sm-8 text-pre-line">{{ row.notes or '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="app-card">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <h2 class="h5 mb-0">Lokasi proyek</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if data.distance_km is not none %}<span class="status-badge info">± {{ data.distance_km|string|replace('.', ',') }} km dari dapur</span>{% endif %}
+                            {% if data.maps_url %}<a class="btn btn-sm app-btn-secondary" href="{{ data.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-sign-turn-right"></i> Petunjuk arah</a>{% endif %}
+                        </div>
+                    </div>
+                    {% if row.latitude is not none %}
+                        <div class="geo-picker" data-geo-picker data-readonly
+                             {% if data.geo and data.geo.origin %}data-origin-lat="{{ data.geo.origin.lat }}" data-origin-lng="{{ data.geo.origin.lng }}" data-origin-label="{{ data.geo.origin.label }}" data-road-factor="{{ data.geo.road_factor }}"{% endif %}>
+                            <div class="geo-map" data-geo-map role="img" aria-label="Peta lokasi proyek"></div>
+                            <div class="geo-picker-foot"><span data-geo-status>Titik dari pengaju.</span><span class="geo-estimate" data-geo-estimate></span></div>
+                            <input type="hidden" value="{{ row.latitude }}" data-geo-lat>
+                            <input type="hidden" value="{{ row.longitude }}" data-geo-lng>
+                        </div>
+                    {% else %}
+                        <div class="app-empty-inline text-muted">Pengaju tidak menandai titik di peta. Minta titik lokasi saat menghubungi.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="app-card mb-3">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Catat tindak lanjut</h2>
+                    <form method="post" action="{{ url_for('customer_success.partnership_follow_up', request_id=row.id) }}" class="app-form d-grid gap-3" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div>
+                            <label class="form-label" for="followStatus">Status</label>
+                            <select class="form-select app-input" id="followStatus" name="status">
+                                {% for key, label in data.status_labels.items() %}
+                                    <option value="{{ key }}" {% if row.status == key %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="followNote">Catatan</label>
+                            <textarea class="form-control app-input" id="followNote" name="note" rows="4" maxlength="2000" placeholder="Contoh: sudah telepon Pak Budi, survei Kamis 10.00, minta penawaran 150 porsi siang."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button class="btn app-btn-primary" type="submit"><i class="bi bi-check2-circle"></i> Simpan tindak lanjut</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="app-card">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Riwayat</h2>
+                    {% if data.entries %}
+                        <ol class="app-timeline-list">
+                            {% for entry in data.entries %}
+                                <li>{{ entry }}</li>
+                            {% endfor %}
+                        </ol>
+                    {% else %}
+                        <p class="text-muted mb-0">Belum ada tindak lanjut. Hubungi pengaju, lalu catat hasilnya di sini.</p>
+                    {% endif %}
+                    {% if row.handler %}
+                        <p class="text-muted small mt-3 mb-0">Terakhir ditangani {{ row.handler.full_name or row.handler.username }} · {{ row.handled_at|wib }} WIB</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

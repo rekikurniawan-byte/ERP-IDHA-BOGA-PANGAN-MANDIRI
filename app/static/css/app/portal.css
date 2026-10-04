@@ -1455,3 +1455,148 @@ a:is(.portal-command-action, .portal-role-focus-card):hover,
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* --- Alamat Saya (portal/addresses.html) ----------------------------------- */
+.portal-address-page {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.portal-address-rule {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    background: var(--brand-50);
+    border: 1px solid var(--brand-100);
+    border-radius: var(--radius-lg);
+}
+
+.portal-address-rule i {
+    font-size: 1.125rem;
+    color: var(--brand-700);
+}
+
+.portal-address-list {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.portal-address-card.is-inactive {
+    opacity: 0.7;
+}
+
+.portal-address-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+}
+
+.portal-address-head h2 {
+    margin: 0 0 2px;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+}
+
+.portal-address-head p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.portal-address-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.portal-address-meta i {
+    margin-right: 4px;
+    color: var(--brand-700);
+}
+
+.portal-address-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.portal-address-tools:empty {
+    display: none;
+}
+
+.portal-address-edit[open] {
+    flex-basis: 100%;
+    order: -1;
+}
+
+.portal-address-edit > summary {
+    display: inline-flex;
+    list-style: none;
+}
+
+.portal-address-edit > summary::-webkit-details-marker,
+.portal-address-new > summary::-webkit-details-marker {
+    display: none;
+}
+
+.portal-address-edit[open] > summary {
+    margin-bottom: var(--space-3);
+}
+
+.portal-address-form {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.portal-address-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-3);
+}
+
+.portal-address-fields label {
+    display: block;
+    margin: 0;
+}
+
+.portal-address-fields label > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.portal-address-submit {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.portal-address-new > summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--weight-semibold);
+    color: var(--brand-700);
+    cursor: pointer;
+    list-style: none;
+}
+
+@media (max-width: 767.98px) {
+    .portal-address-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .portal-address-submit .btn {
+        width: 100%;
+    }
+}

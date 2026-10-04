@@ -57,7 +57,7 @@
                             <span>{{ document.attachment_type|status_label }}</span>
                             <span>{{ document.mime_type or "-" }}</span>
                             <span>{{ document.file_size }} B</span>
-                            <span>{{ document.created_at.strftime('%d-%m-%Y') if document.created_at else "-" }}</span>
+                            <span>{{ document.created_at|wib('%d-%m-%Y') if document.created_at else "-" }}</span>
                         </div>
                         {% if document.notes %}<p>{{ document.notes }}</p>{% endif %}
                         <div class="portal-inline-actions">

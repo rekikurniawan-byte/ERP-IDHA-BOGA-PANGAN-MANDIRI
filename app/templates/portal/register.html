@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "components/location_picker.html" import location_picker %}
 
 {% block public_page %}
 {% set form = data.form %}
@@ -26,9 +27,9 @@
                     <li><strong>Batas pesan</strong><span>Makan siang sampai pukul {{ cutoffs.LUNCH }}{% if cutoffs.DINNER %}, makan sore sampai {{ cutoffs.DINNER }}{% endif %} di hari yang sama.</span></li>
                 {% endif %}
                 {% if pricing %}
-                    <li><strong>Jumlah porsi</strong><span>Minimal {{ pricing.min_portions }} porsi{% if pricing.free_delivery_min %}; gratis ongkir mulai {{ pricing.free_delivery_min }} porsi per kiriman{% endif %}.</span></li>
+                    {% include "components/public_fee_rule.html" %}
                 {% endif %}
-                <li><strong>Untuk proyek</strong><span>Akun {{ term('client') }} dan {{ term('sub_client', lower=True) }} dibuat admin agar tersambung ke kontrak dan tagihan.</span></li>
+                <li><strong>Untuk perusahaan &amp; proyek</strong><span>Butuh kiriman rutin dengan kontrak dan tagihan bulanan? <a href="{{ url_for('public.partnership') }}">Ajukan kerja sama</a>.</span></li>
             </ul>
         </div>
 
@@ -85,11 +86,14 @@
                             <span>Nama lokasi</span>
                             <input class="form-control" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, atau tempat acara">
                         </label>
+                        <div class="is-wide">
+                            {{ location_picker(lat=form.get('latitude') or none, lng=form.get('longitude') or none, accuracy=form.get('gps_accuracy') or none, geo=site.geo if site else none, label="Titik lokasi pengiriman", required=not data.zones, help="Tekan tombol GPS saat Anda di lokasi, atau ketuk peta lalu geser penanda ke titik yang tepat. Titik ini dipakai pengantar dan untuk menghitung ongkir.") }}
+                        </div>
                         {% if data.zones %}
-                            <label>
-                                <span>Zona pengiriman</span>
-                                <select class="form-select" name="delivery_zone_id" required>
-                                    <option value="">Pilih zona</option>
+                            <label class="is-wide">
+                                <span>Peta tidak muncul? Pilih zona pengiriman</span>
+                                <select class="form-select" name="delivery_zone_id">
+                                    <option value="">Tidak perlu bila titik sudah dipilih</option>
                                     {% for branch, zone in data.zones %}
                                         <option value="{{ zone.id }}" {% if form.get('delivery_zone_id')|string == zone.id|string %}selected{% endif %}>{{ zone.name }}{% if data.branches|length > 1 %} ({{ branch.name }}){% endif %}</option>
                                     {% endfor %}

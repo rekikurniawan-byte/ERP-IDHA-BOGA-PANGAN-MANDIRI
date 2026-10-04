@@ -78,7 +78,7 @@
                         <p>{{ complaint.title }} - {{ complaint.category|status_label }}</p>
                         <div class="portal-chip-row">
                             <span>{{ complaint.status|status_label }}</span>
-                            <span>{{ complaint.submitted_at.strftime('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>
+                            <span>{{ complaint.submitted_at|wib('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>
                             {% if complaint.client %}<span>{{ complaint.client.name }}</span>{% endif %}
                             {% if complaint.mandor %}<span>{{ complaint.mandor.name }}</span>{% endif %}
                             <span>{{ model.evidence_counts.get(complaint.id, 0) }} bukti</span>

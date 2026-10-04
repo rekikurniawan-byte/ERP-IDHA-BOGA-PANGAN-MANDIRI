@@ -37,8 +37,10 @@ class PortionPrice(BaseModel):
 
     @property
     def created_at_label(self):
+        from app.utils.clock import to_wib
+
         value = self.created_at or datetime.utcnow()
-        return value.strftime("%d-%m-%Y %H:%M")
+        return to_wib(value).strftime("%d-%m-%Y %H:%M")
 
 
 class DeliveryZone(BaseModel):

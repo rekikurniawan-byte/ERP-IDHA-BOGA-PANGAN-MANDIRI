@@ -335,7 +335,7 @@
                         <div class="portal-chip-row">
                             <span>{{ row.status_label }}</span>
                             {% if draft.price_per_portion %}<span>{{ draft.price_per_portion|rupiah }}/porsi{% if draft.delivery_fee %} + ongkir {{ draft.delivery_fee|rupiah }}{% endif %} · Total {{ (draft.price_per_portion * draft.portion_qty + (draft.delivery_fee or 0))|rupiah }}</span>{% endif %}
-                            <span>{{ draft.submitted_at.strftime('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</span>
+                            <span>{{ draft.submitted_at|wib('%d-%m-%Y %H:%M') if draft.submitted_at else "-" }}</span>
                             {% if draft.converted_daily_order %}<span>{{ draft.converted_daily_order.order_number }}</span>{% endif %}
                         </div>
                         {% if draft.notes %}<p>{{ draft.notes }}</p>{% endif %}

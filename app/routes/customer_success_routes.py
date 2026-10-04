@@ -256,6 +256,78 @@ def upload_complaint_evidence(complaint_id):
     return redirect(url_for("customer_success.complaint_detail", complaint_id=complaint_id))
 
 
+# --- Pengajuan kerja sama dari halaman publik --------------------------------
+
+@customer_success_bp.route("/partnerships")
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def partnerships():
+    from app.services import partnership_service as partnership
+
+    status_filter = (request.args.get("status") or "OPEN").upper()
+    search = (request.args.get("q") or "").strip()
+    data = {
+        "requests": partnership.list_partnership_requests(current_user.branch_id, status_filter, search),
+        "summary": partnership.partnership_summary(current_user.branch_id),
+        "status_filter": status_filter,
+        "search": search,
+        "status_labels": partnership.STATUS_LABELS,
+        "status_tones": partnership.STATUS_TONES,
+        "meal_labels": partnership.MEAL_LABELS,
+    }
+    return render_template("customer_success/partnerships.html", data=data)
+
+
+@customer_success_bp.route("/partnerships/<int:request_id>")
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def partnership_detail(request_id):
+    from app.services import geo_service
+    from app.services import partnership_service as partnership
+
+    row = partnership.get_partnership_request(request_id, current_user.branch_id)
+    if not row:
+        flash("Pengajuan kerja sama tidak ditemukan.", "warning")
+        return redirect(url_for("customer_success.partnerships"))
+    distance_km = geo_service.road_distance_km(current_user.branch_id, row.latitude, row.longitude)
+    data = {
+        "row": row,
+        "status_labels": partnership.STATUS_LABELS,
+        "status_tones": partnership.STATUS_TONES,
+        "meal_labels": partnership.MEAL_LABELS,
+        "payment_labels": partnership.PAYMENT_LABELS,
+        "entries": partnership.follow_up_entries(row),
+        "distance_km": distance_km,
+        "maps_url": geo_service.maps_url(row.latitude, row.longitude),
+        "geo": geo_service.picker_context(current_user.branch_id),
+        "whatsapp_url": _whatsapp(row.phone),
+    }
+    return render_template("customer_success/partnership_detail.html", data=data)
+
+
+@customer_success_bp.route("/partnerships/<int:request_id>/follow-up", methods=["POST"])
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def partnership_follow_up(request_id):
+    from app.services.partnership_service import PartnershipError, update_partnership_request
+
+    try:
+        update_partnership_request(
+            request_id,
+            branch_id=current_user.branch_id,
+            status=request.form.get("status"),
+            note=request.form.get("note"),
+            user_id=current_user.id,
+        )
+        flash("Tindak lanjut tersimpan.", "success")
+    except PartnershipError as error:
+        flash(str(error), "danger")
+    return redirect(url_for("customer_success.partnership_detail", request_id=request_id))
+
+
+def _whatsapp(phone):
+    from app.services.public_site_service import whatsapp_link
+
+    return whatsapp_link(phone)
+
+
 def _active_clients():
     return Client.query.filter_by(is_active=True).order_by(Client.name.asc()).all()
 

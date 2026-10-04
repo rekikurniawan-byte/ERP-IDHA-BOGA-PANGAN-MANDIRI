@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/location_picker.html" import directions_link %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -38,6 +39,7 @@
                     <th>{{ term('sub_client') }}</th>
                     <th>Lokasi</th>
                     <th>Deskripsi</th>
+                    <th>Titik GPS</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -48,6 +50,13 @@
                     <td><strong>{{ location.mandor.name if location.mandor else '-' }}</strong></td>
                     <td>{{ location.location_name }}</td>
                     <td>{{ location.description or '-' }}</td>
+                    <td>
+                        {% if location.latitude is not none %}
+                            {{ directions_link(location) }}
+                        {% else %}
+                            <span class="status-badge warning">Belum ada</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if location.is_active %}
                             <span class="status-badge success">Aktif</span>
@@ -72,7 +81,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <i class="bi bi-geo-alt"></i>
                             <p>Belum ada lokasi {{ term('sub_client', lower=True) }}.</p>

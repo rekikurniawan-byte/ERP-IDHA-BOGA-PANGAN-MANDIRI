@@ -43,6 +43,9 @@ delivery_migration = importlib.import_module(
 opening_balance_migration = importlib.import_module(
     "migrations.versions.c0d1e2f3a4b5_opening_balance_single_door"
 )
+gps_partnership_migration = importlib.import_module(
+    "migrations.versions.d1e2f3a4b5c6_gps_locations_partnership_requests"
+)
 
 
 def _versioned_model_tables():
@@ -76,6 +79,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(pricing_migration.VERSIONED_TABLES)
     migration_tables.update(delivery_migration.VERSIONED_TABLES)
     migration_tables.update(opening_balance_migration.VERSIONED_TABLES)
+    migration_tables.update(gps_partnership_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

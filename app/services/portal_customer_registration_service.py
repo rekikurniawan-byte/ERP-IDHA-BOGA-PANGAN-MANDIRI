@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -6,6 +7,7 @@ from werkzeug.security import generate_password_hash
 from app.extensions import db
 from app.models.master import Branch, Client, DeliveryLocation, Mandor, User
 from app.models.system import PortalUserMapping
+from app.services.geo_service import GeoError, parse_accuracy, parse_coordinates
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, PRINCIPAL_DELEGATE
 from app.services.pricing_service import PATH_GENERAL, active_zones
 from app.services.user_management_service import (
@@ -90,12 +92,19 @@ def validate_customer_registration_form(form):
     if not valid_password:
         raise ValueError(password_error)
 
-    # Zona ongkir dipilih pelanggan sendiri; kalau cabang punya zona, wajib
-    # dipilih supaya pesanan pertamanya langsung bisa dihitung ongkirnya.
+    # Titik GPS lokasi antar (peta/GPS HP) dipakai untuk ongkir per km dan
+    # petunjuk arah pengantar. Zona hanya cadangan bila peta tidak bisa dibuka.
+    try:
+        latitude, longitude = parse_coordinates(form.get("latitude"), form.get("longitude"))
+    except GeoError as exc:
+        raise ValueError(str(exc)) from exc
     zones = {zone.id: zone for zone in active_zones(branch.id)}
     zone_id = _to_int(form.get("delivery_zone_id"))
-    if zones and zone_id not in zones:
-        raise ValueError("Pilih zona pengiriman yang sesuai alamat Anda.")
+    if latitude is None and zone_id not in zones:
+        raise ValueError(
+            "Tandai titik lokasi pengiriman di peta atau tekan tombol GPS"
+            + (", atau pilih zona pengiriman bila peta tidak muncul." if zones else ".")
+        )
 
     return {
         "full_name": full_name,
@@ -107,6 +116,9 @@ def validate_customer_registration_form(form):
         "password": form.get("password") or "",
         "branch": branch,
         "delivery_zone_id": zone_id if zone_id in zones else None,
+        "latitude": latitude,
+        "longitude": longitude,
+        "gps_accuracy_m": parse_accuracy(form.get("gps_accuracy")) if latitude is not None else None,
     }
 
 
@@ -143,6 +155,10 @@ def register_portal_customer(form):
         delivery_zone_id=payload["delivery_zone_id"],
         location_name=payload["location_name"],
         description=payload["address"] if not payload["notes"] else f"{payload['address']} | {payload['notes']}",
+        latitude=payload["latitude"],
+        longitude=payload["longitude"],
+        gps_accuracy_m=payload["gps_accuracy_m"],
+        gps_updated_at=datetime.utcnow() if payload["latitude"] is not None else None,
         is_active=True,
     )
     mapping = PortalUserMapping(
