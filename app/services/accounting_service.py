@@ -863,7 +863,7 @@ def _sdm5d_get_account_balance(account_code):
     return account, balance
 
 
-def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_by, commit=False):
+def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_by, bank_account_id=None, commit=False):
     existing = Journal.query.filter_by(
         reference_type="PAYROLL_PAYMENT",
         reference_id=payroll.id
@@ -881,15 +881,21 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
         return False, "Total payroll tidak valid untuk dibayar.", None
 
     payment_method = (payment_method or "").upper().strip()
-
-    if payment_method == "CASH":
-        payment_account_code = "1001"
-        payment_label = "CASH"
-    elif payment_method == "TRANSFER":
-        payment_account_code = "1002"
-        payment_label = "TRANSFER"
-    else:
+    if payment_method not in ("CASH", "TRANSFER"):
         return False, "Metode pembayaran payroll tidak valid.", None
+
+    # Gaji keluar lewat buku kas/bank seperti pengeluaran lain. Dulu hanya
+    # jurnal yang dibuat (selalu ke 1002), sehingga buku bank lebih besar dari
+    # buku besar sebesar total gaji dan rekening yang dipilih tidak tercatat.
+    from app.models.finance import CashBankTransaction
+    from app.services.operational_expense_service import resolve_cash_account_code, validate_cash_bank
+
+    try:
+        account_type, bank_account_id = validate_cash_bank(payroll.branch_id, payment_method, bank_account_id)
+    except Exception as error:
+        return False, str(error), None
+    payment_account_code = resolve_cash_account_code(account_type, bank_account_id)
+    payment_label = payment_method
 
     payable_account = get_active_account_by_code("2003")
     payment_account, available_balance = _sdm5d_get_account_balance(payment_account_code)
@@ -936,6 +942,19 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
 
     if round(debit_total, 2) != round(credit_total, 2):
         raise Exception("Jurnal pembayaran payroll tidak seimbang.")
+
+    db.session.add(CashBankTransaction(
+        branch_id=payroll.branch_id,
+        transaction_date=journal.journal_date,
+        account_type=account_type,
+        bank_account_id=bank_account_id,
+        transaction_type="OUT",
+        amount=total,
+        description=f"Pembayaran gaji periode {payroll.period_month:02d}-{payroll.period_year} via {payment_label}",
+        reference_type="PAYROLL_PAYMENT",
+        reference_id=payroll.id,
+        created_by=created_by,
+    ))
 
     payroll.status = "PAID"
 

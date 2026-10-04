@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <span class="eyebrow">SDM / Detail Penggajian</span>
-        <h1>Detail Payroll</h1>
+        <h1>Detail Penggajian</h1>
         <p>Periode {{ "%02d"|format(payroll.period_month) }}-{{ payroll.period_year }} · Status <strong>{{ payroll.status|status_label }}</strong></p>
     </div>
     <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
@@ -65,7 +65,7 @@
         <div class="hr-section-title">
             <div>
                 <span>Payroll Lifecycle</span>
-                <h2>DRAFT → FINAL → POSTED → PAID</h2>
+                <h2>Konsep → Final → Dijurnal → Lunas</h2>
             </div>
             <span class="hr-status-badge is-{{ payroll.status|lower }}">{{ payroll.status|status_label }}</span>
         </div>
@@ -108,10 +108,20 @@
                     <div>
                         <label class="form-label">Metode Pembayaran</label>
                         <select name="payment_method" class="form-select" aria-label="Metode pembayaran gaji">
-                            <option value="CASH">CASH</option>
-                            <option value="TRANSFER">TRANSFER</option>
+                            <option value="CASH">Tunai</option>
+                            <option value="TRANSFER">Transfer</option>
                         </select>
-                        <small class="text-muted">CASH memakai akun kas, TRANSFER memakai akun bank.</small>
+                        <small class="text-muted">Tunai keluar dari kas, transfer keluar dari rekening yang dipilih.</small>
+                    </div>
+                    <div>
+                        <label class="form-label">Rekening Bank</label>
+                        <select name="bank_account_id" class="form-select" aria-label="Rekening bank pembayaran gaji">
+                            <option value="">Pilih rekening</option>
+                            {% for bank in bank_accounts %}
+                                <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Wajib untuk transfer.</small>
                     </div>
                     <div class="form-actions">
                         <button class="btn app-btn-primary" type="submit"><i class="bi bi-cash-coin"></i> Bayar Gaji</button>
@@ -120,7 +130,7 @@
             {% else %}
                 <div class="hr-inline-status is-muted">
                     <i class="bi bi-info-circle"></i>
-                    <span>Pembayaran aktif setelah payroll berstatus <strong>POSTED</strong>. Status sekarang: {{ payroll.status|status_label }}.</span>
+                    <span>Pembayaran aktif setelah gaji berstatus <strong>Sudah Dijurnal</strong>. Status sekarang: {{ payroll.status|status_label }}.</span>
                 </div>
             {% endif %}
         </div>
@@ -164,7 +174,7 @@
                                     <td class="text-end fw-semibold">{{ detail.final_salary|rupiah }}</td>
                                     <td class="text-end">
                                         {% if payroll.status == "DRAFT" %}
-                                            <button class="btn btn-sm app-btn-secondary" type="submit">Update</button>
+                                            <button class="btn btn-sm app-btn-secondary" type="submit">Perbarui</button>
                                         {% else %}
                                             <span class="text-muted">Terkunci</span>
                                         {% endif %}

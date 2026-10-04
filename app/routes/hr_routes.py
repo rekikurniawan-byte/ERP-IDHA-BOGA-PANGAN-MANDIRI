@@ -10,6 +10,7 @@ from app.extensions import db, limiter
 from app.models.master import Employee, EmployeeSkill
 from app.models.hr import Payroll, PayrollDetail, EmployeeSalaryHistory
 from app.models.accounting import Journal, Account
+from app.models.finance import BankAccount
 from app.services.hr_service import (
     create_employee_record,
     generate_payroll,
@@ -59,7 +60,7 @@ def _payroll_journal_state(payroll):
 
     if status == "FINAL" and not journal:
         return {
-            "label": "Belum Posting",
+            "label": "Belum Dijurnal",
             "class": "warning",
             "icon": "bi-exclamation-triangle",
             "helper": "Payroll sudah final, perlu dicatat sebagai hutang gaji.",
@@ -68,7 +69,7 @@ def _payroll_journal_state(payroll):
 
     if status in ["POSTED", "PAID"] and journal:
         return {
-            "label": "Sudah Posting",
+            "label": "Sudah Dijurnal",
             "class": "success",
             "icon": "bi-check2-circle",
             "helper": f"Sudah masuk jurnal {journal.journal_number}.",
@@ -77,7 +78,7 @@ def _payroll_journal_state(payroll):
 
     if status in ["FINAL", "POSTED", "PAID"]:
         return {
-            "label": "Belum Posting",
+            "label": "Belum Dijurnal",
             "class": "danger",
             "icon": "bi-x-octagon",
             "helper": "Status payroll sudah lanjut, tetapi jurnal payroll belum ditemukan.",
@@ -473,7 +474,7 @@ def generate_payroll_route():
             return redirect(url_for("hr.payrolls"))
         except Exception as error:
             logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:474")
-            flash(f"Gagal generate payroll secara atomic: {error}", "danger")
+            flash(f"Gagal membuat penggajian: {error}", "danger")
             return redirect(url_for("hr.payrolls"))
 
     today = date.today()
@@ -500,6 +501,7 @@ def payroll_detail(payroll_id):
         lifecycle_steps=_payroll_lifecycle_steps(payroll),
         journal_state=_payroll_journal_state(payroll),
         payment_state=_payroll_payment_state(payroll),
+        bank_accounts=BankAccount.query.filter_by(branch_id=payroll.branch_id, is_active=True).order_by(BankAccount.bank_name.asc()).all(),
     )
 
 
@@ -514,7 +516,7 @@ def update_payroll_detail(payroll_id, detail_id):
         return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
     if payroll.status != "DRAFT":
-        flash("Payroll yang sudah final/posting tidak bisa diubah.", "warning")
+        flash("Penggajian yang sudah final/dijurnal tidak bisa diubah.", "warning")
         return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
     update_payroll_detail_record(
@@ -533,7 +535,7 @@ def finalize_payroll(payroll_id):
     payroll = Payroll.query.get_or_404(payroll_id)
 
     if payroll.status != "DRAFT":
-        flash("Payroll sudah tidak dalam status DRAFT.", "warning")
+        flash("Penggajian sudah bukan konsep.", "warning")
         return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
     if payroll_total(payroll) <= 0:
@@ -553,10 +555,10 @@ def finalize_payroll(payroll_id):
         ):
             payroll.status = "FINAL"
 
-        flash("Payroll berhasil difinalkan secara atomic.", "success")
+        flash("Penggajian berhasil difinalkan.", "success")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:556")
-        flash(f"Gagal finalisasi payroll secara atomic: {error}", "danger")
+        flash(f"Gagal memfinalkan penggajian: {error}", "danger")
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
 
@@ -590,7 +592,7 @@ def post_payroll_journal(payroll_id):
         flash(str(error), "warning")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:589")
-        flash(f"Gagal posting jurnal payroll secara atomic: {error}", "danger")
+        flash(f"Gagal menjurnal penggajian: {error}", "danger")
 
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
@@ -616,6 +618,7 @@ def pay_payroll(payroll_id):
             ok, message, journal = create_payroll_payment_journal_for_payroll(
                 payroll=payroll,
                 payment_method=payment_method,
+                bank_account_id=request.form.get("bank_account_id") or None,
                 created_by=current_user.id,
                 commit=False,
             )
@@ -627,7 +630,7 @@ def pay_payroll(payroll_id):
         flash(str(error), "warning")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:625")
-        flash(f"Gagal bayar payroll secara atomic: {error}", "danger")
+        flash(f"Gagal membayar gaji: {error}", "danger")
 
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 

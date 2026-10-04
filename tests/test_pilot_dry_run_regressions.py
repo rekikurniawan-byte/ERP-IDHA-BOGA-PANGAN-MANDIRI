@@ -231,3 +231,96 @@ def test_halaman_pesan_pelanggan_umum_tanpa_label_pt_mandor(app, ctx):
     assert "Rumah Uji" in page
     assert "<span>Perusahaan</span>" not in page
     assert "<dt>Mandor</dt>" not in page and "<dt>Sub Client</dt>" not in page
+
+
+# --- warung: cicil hutang pekerja crash (Decimal - float) --------------------
+
+def test_cicil_hutang_warung_pekerja_setelah_dibaca_ulang(ctx):
+    from app.models.canteen import CanteenSale, WorkerDebt
+    from app.models.master import Worker
+    from app.services.canteen_service import pay_worker_debt
+
+    s = _setup(ctx)
+    worker = Worker(mandor_id=s.mandor.id, full_name="Pekerja Cicil", status="ACTIVE")
+    sale = CanteenSale(
+        branch_id=s.branch.id, sale_date=TODAY, sale_type="DEBT", total_amount=15000,
+        payment_method="DEBT", buyer_type="REGISTERED_WORKER", created_by=s.admin.id,
+    )
+    ctx.session.add_all([worker, sale])
+    ctx.session.flush()
+    debt = WorkerDebt(branch_id=s.branch.id, worker_id=worker.id, sale_id=sale.id, debt_amount=15000, status="UNPAID")
+    ctx.session.add(debt)
+    ctx.session.flush()
+    ctx.session.expire_all()  # debt_amount terbaca sebagai Decimal
+
+    ok, message = pay_worker_debt(
+        worker_debt=WorkerDebt.query.get(debt.id), payment_date=TODAY, amount="5000",
+        notes=None, created_by=s.admin.id,
+    )
+
+    assert ok, message
+    assert WorkerDebt.query.get(debt.id).status == "PARTIAL"
+
+
+# --- SDM: bayar gaji hanya menjurnal, buku bank tidak tercatat ---------------
+
+def test_bayar_gaji_transfer_tercatat_di_buku_bank_rekening_yang_dipilih(ctx):
+    from app.models.accounting import Account, Journal, JournalDetail
+    from app.models.finance import BankAccount, CashBankTransaction
+    from app.models.hr import Payroll, PayrollDetail
+    from app.models.master import Employee
+    from app.services.accounting_service import create_payroll_payment_journal_for_payroll
+
+    s = _setup(ctx)
+    for code, name, kind in (("1003", "Bank 2", "ASSET"), ("2003", "Hutang Gaji", "LIABILITY")):
+        if not Account.query.filter_by(account_code=code).first():
+            ctx.session.add(Account(account_code=code, account_name=name, account_type=kind, is_active=True))
+    ctx.session.flush()
+    bank = BankAccount(branch_id=s.branch.id, account_name="Rekening Gaji", bank_name="Mandiri",
+                       account_number=f"GJ-{uuid4().hex[:10]}", coa_account_code="1003", is_active=True)
+    funding = Journal(journal_number=f"JU-GJ-{uuid4().hex[:6]}", journal_date=TODAY, reference_type="TEST",
+                      reference_id=0, description="Saldo uji", created_by=s.owner.id)
+    employee = Employee(branch_id=s.branch.id, full_name="Karyawan Uji Gaji", status="ACTIVE")
+    ctx.session.add_all([bank, funding, employee])
+    ctx.session.flush()
+    ctx.session.add(JournalDetail(journal_id=funding.id, account_id=Account.query.filter_by(account_code="1003").one().id,
+                                  debit=Decimal("50000000"), credit=0))
+    payroll = Payroll(branch_id=s.branch.id, period_month=1, period_year=2000 + int(uuid4().hex[:3], 16) % 900,
+                      status="POSTED", created_by=s.owner.id)
+    ctx.session.add(payroll)
+    ctx.session.flush()
+    ctx.session.add(PayrollDetail(payroll_id=payroll.id, employee_id=employee.id, base_salary=3200000, final_salary=3200000))
+    ctx.session.flush()
+
+    ok, message, journal = create_payroll_payment_journal_for_payroll(
+        payroll=payroll, payment_method="TRANSFER", bank_account_id=bank.id, created_by=s.owner.id)
+
+    assert ok, message
+    movement = CashBankTransaction.query.filter_by(reference_type="PAYROLL_PAYMENT", reference_id=payroll.id).one()
+    assert (movement.account_type, movement.bank_account_id, movement.transaction_type) == ("BANK", bank.id, "OUT")
+    assert movement.amount == Decimal("3200000")
+    credited = [d for d in journal.details if d.credit]
+    assert [d.account.account_code for d in credited] == ["1003"]
+
+
+# --- cek buku pembantu: piutang warung eksternal juga ada di 1004 ------------
+
+def test_buku_pembantu_piutang_menghitung_piutang_warung_eksternal(ctx):
+    from app.models.canteen import CanteenExternalReceivable, CanteenSale
+    from app.services.subledger_check_service import _receivables
+
+    s = _setup(ctx)
+    before = _receivables()
+    sale = CanteenSale(
+        branch_id=s.branch.id, sale_date=TODAY, sale_type="DEBT", total_amount=15000,
+        payment_method="DEBT", buyer_type="EXTERNAL_COMPANY_WORKER", created_by=s.admin.id,
+    )
+    ctx.session.add(sale)
+    ctx.session.flush()
+    ctx.session.add(CanteenExternalReceivable(
+        branch_id=s.branch.id, sale_id=sale.id, buyer_name="Pak Rudi", receivable_amount=15000,
+        paid_amount=0, remaining_amount=15000, status="UNPAID", created_by=s.admin.id,
+    ))
+    ctx.session.flush()
+
+    assert _receivables() - before == Decimal("15000")

@@ -69,22 +69,29 @@ def _cash_bank(account_type):
     return _dec(total_in) - _dec(total_out)
 
 
-def _receivables():
-    from app.models.finance import Invoice
-
-    total = db.session.query(func.coalesce(func.sum(Invoice.remaining_amount), 0)).filter(
-        ~func.upper(Invoice.status).in_(CANCELLED)
+def _open_remaining(model):
+    total = db.session.query(func.coalesce(func.sum(model.remaining_amount), 0)).filter(
+        ~func.upper(model.status).in_(CANCELLED)
     ).scalar()
     return _dec(total)
+
+
+def _receivables():
+    """Semua yang dijurnal ke 1004: invoice, piutang warung pembeli eksternal,
+    dan piutang manual dari transaksi lapangan."""
+    from app.models.canteen import CanteenExternalReceivable
+    from app.models.field_transaction import ManualReceivable
+    from app.models.finance import Invoice
+
+    return _open_remaining(Invoice) + _open_remaining(CanteenExternalReceivable) + _open_remaining(ManualReceivable)
 
 
 def _supplier_payables():
+    """Semua yang dijurnal ke 2002: tagihan supplier dan hutang manual vendor nonformal."""
+    from app.models.field_transaction import ManualPayable
     from app.models.finance import SupplierBill
 
-    total = db.session.query(func.coalesce(func.sum(SupplierBill.remaining_amount), 0)).filter(
-        ~func.upper(SupplierBill.status).in_(CANCELLED)
-    ).scalar()
-    return _dec(total)
+    return _open_remaining(SupplierBill) + _open_remaining(ManualPayable)
 
 
 def _inventory():
@@ -122,8 +129,8 @@ def subledger_lines():
     return [
         SubledgerLine("Kas", "1001", gl_balance(("1001",)), _cash_bank("CASH"), "Buku Kas/Bank (Kas)"),
         SubledgerLine("Bank", "1002, 1003", gl_balance(("1002", "1003")), _cash_bank("BANK"), "Buku Kas/Bank (Bank)"),
-        SubledgerLine("Piutang Usaha", "1004", gl_balance(("1004",)), _receivables(), "Sisa tagihan invoice aktif"),
-        SubledgerLine("Hutang Supplier", "2002", gl_balance(("2002",), credit_normal=True), _supplier_payables(), "Sisa hutang supplier"),
+        SubledgerLine("Piutang Usaha", "1004", gl_balance(("1004",)), _receivables(), "Sisa invoice + piutang warung eksternal + piutang manual"),
+        SubledgerLine("Hutang Supplier", "2002", gl_balance(("2002",), credit_normal=True), _supplier_payables(), "Sisa tagihan supplier + hutang manual vendor"),
         SubledgerLine("Persediaan", "1006", gl_balance(("1006",)), _inventory(), "Saldo awal + pembelian - barang keluar"),
         SubledgerLine("Aset Tetap", ", ".join(ASSET_CODES), gl_balance(ASSET_CODES), _fixed_assets("purchase_value"), "Register aset (nilai beli)"),
         SubledgerLine(

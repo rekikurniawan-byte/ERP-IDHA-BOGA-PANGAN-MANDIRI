@@ -417,7 +417,8 @@ def pay_worker_debt(worker_debt, payment_date, amount, notes, created_by, paymen
                 created_by=created_by,
             ))
 
-        new_remaining = remaining - amount
+        # remaining dari kolom Numeric (Decimal), amount float dari form.
+        new_remaining = float(remaining) - amount
 
         if new_remaining <= 0:
             worker_debt.status = "PAID"
