@@ -457,6 +457,68 @@
         }
 
         document.querySelectorAll("[data-estimate]").forEach(setupEstimate);
+        document.querySelectorAll("[data-pub-board]").forEach(setupBoard);
+
+        // Bagian muncul halus saat digulir ke layar.
+        const revealTargets = document.querySelectorAll(".pub [data-reveal]");
+        if (revealTargets.length && !reduced && "IntersectionObserver" in window) {
+            document.querySelector(".pub").classList.add("pub-anim");
+            const revealer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add("is-revealed");
+                    revealer.unobserve(entry.target);
+                });
+            }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+            revealTargets.forEach(function (target) { revealer.observe(target); });
+        }
+    }
+
+    // Papan hari ini: jam WIB berjalan, yang sudah lewat dicentang, yang
+    // berikutnya berdenyut dengan hitung mundur.
+    function setupBoard(board) {
+        const clock = board.querySelector("[data-board-clock]");
+        const dateLabel = board.querySelector("[data-board-date]");
+        const status = board.querySelector("[data-board-status]");
+        const items = Array.prototype.slice.call(board.querySelectorAll("li[data-at]"));
+        const timeFormat = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Jakarta" });
+        const dateFormat = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
+        const minutesOf = function (text) { const parts = String(text).split(":"); return Number(parts[0]) * 60 + Number(parts[1]); };
+        const pad = function (value) { return String(value).padStart(2, "0"); };
+        const duration = function (minutes) {
+            const hours = Math.floor(minutes / 60);
+            const rest = minutes % 60;
+            return (hours ? hours + " jam " : "") + (rest || !hours ? rest + " menit" : "");
+        };
+
+        function tick() {
+            const now = new Date();
+            const parts = timeFormat.formatToParts(now);
+            const hour = Number((parts.find(function (part) { return part.type === "hour"; }) || {}).value || 0) % 24;
+            const minute = Number((parts.find(function (part) { return part.type === "minute"; }) || {}).value || 0);
+            const current = hour * 60 + minute;
+            if (clock) clock.textContent = pad(hour) + "." + pad(minute);
+            if (dateLabel) dateLabel.textContent = dateFormat.format(now) + " · WIB";
+            let next = null;
+            items.forEach(function (item) {
+                const at = minutesOf(item.dataset.at);
+                item.classList.toggle("is-done", at <= current);
+                item.classList.remove("is-next");
+                if (!next && at > current) next = item;
+            });
+            if (!status) return;
+            if (next) {
+                next.classList.add("is-next");
+                const label = next.querySelector("span").textContent;
+                status.innerHTML = "Berikutnya: <strong></strong> dalam " + duration(minutesOf(next.dataset.at) - current) + ".";
+                status.querySelector("strong").textContent = label.charAt(0).toLowerCase() + label.slice(1);
+            } else {
+                status.textContent = "Layanan hari ini sudah selesai. Pesanan untuk hari berikutnya bisa dibuat dari portal.";
+            }
+        }
+
+        tick();
+        setInterval(tick, 20000);
     }
 
     // Perkiraan biaya pelanggan umum: harga standar x porsi x waktu makan +
@@ -489,6 +551,13 @@
             out("fee-label").textContent = "Ongkir " + trips + " kiriman";
             out("fee").textContent = free ? "Gratis" : rupiah(fee);
             out("total").textContent = valid ? rupiah(food + fee) : "Minimal " + minimum + " porsi";
+            const whole = food + fee;
+            const barFood = out("bar-food");
+            const barFee = out("bar-fee");
+            if (barFood && barFee) {
+                barFood.style.width = (whole ? food / whole * 100 : 0) + "%";
+                barFee.style.width = (whole ? fee / whole * 100 : 0) + "%";
+            }
             out("free").classList.toggle("is-visible", free && valid);
         }
 

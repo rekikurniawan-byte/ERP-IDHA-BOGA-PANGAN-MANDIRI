@@ -27,8 +27,8 @@ BILL_TO_TYPE_ALIASES = {
 }
 
 INPUT_SOURCE_LABELS = {
-    "REALTIME": "Realtime",
-    "MANUAL_BACKFILL": "Manual Backfill",
+    "REALTIME": "Langsung",
+    "MANUAL_BACKFILL": "Input Belakangan",
 }
 
 INACTIVE_INVOICE_STATUSES = {"CANCELLED", "CANCELED"}

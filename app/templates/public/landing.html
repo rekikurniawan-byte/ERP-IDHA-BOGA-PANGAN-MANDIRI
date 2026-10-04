@@ -40,7 +40,7 @@
     <main id="mainContent">
         <section class="pub-hero">
             <div class="pub-wrap pub-hero-grid">
-                <div>
+                <div class="pub-hero-copy" data-reveal>
                     <h1>Makan siang dan sore untuk pekerja proyek, <em>tiba sebelum jam makan.</em></h1>
                     <p class="pub-lead">
                         Kami memasak dan mengantar katering harian ke proyek konstruksi, gudang, dan kantor &mdash;
@@ -53,56 +53,49 @@
                                 Pesan untuk acara <i class="bi bi-arrow-right" aria-hidden="true"></i>
                             </a>
                         {% endif %}
-                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>
+                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>
                             Kerja sama untuk proyek
                         </a>
                     </div>
-                    <ul class="pub-facts" aria-label="Aturan pemesanan">
-                        {% if cutoffs.LUNCH %}<li><strong>{{ cutoffs.LUNCH }}</strong>batas pesan makan siang</li>{% endif %}
-                        {% if cutoffs.DINNER %}<li><strong>{{ cutoffs.DINNER }}</strong>batas pesan makan sore</li>{% endif %}
-                        {% if pricing and pricing.min_portions %}<li><strong>{{ pricing.min_portions }} porsi</strong>minimal per pesanan</li>{% endif %}
-                        {% if pricing and pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi</li>{% endif %}
-                    </ul>
                 </div>
 
-                {% if perf %}
-                    {% set spark_spec = {
-                        "kind": "spark", "format": "count", "height": 110, "unit": "porsi",
-                        "categories": perf.series|map(attribute="label")|list,
-                        "series": [{"name": "Porsi terkirim", "color": "brand-600", "data": perf.series|map(attribute="qty")|list}],
-                    } %}
-                    <aside class="pub-stats" aria-labelledby="pubStatsTitle">
-                        <div class="pub-stats-head">
-                            <h2 id="pubStatsTitle">30 hari terakhir</h2>
-                            <span>Langsung dari catatan pengiriman</span>
-                        </div>
-                        <div class="pub-stats-grid">
-                            <div>
-                                <strong data-count="{{ perf.delivered_qty }}">{{ "{:,}".format(perf.delivered_qty)|replace(",", ".") }}</strong>
-                                <span>porsi terkirim</span>
+                <div class="pub-hero-side" data-reveal>
+                    {% include "components/public_board.html" %}
+                    {% if perf %}
+                        {% set spark_spec = {
+                            "kind": "spark", "format": "count", "height": 84, "unit": "porsi",
+                            "categories": perf.series|map(attribute="label")|list,
+                            "series": [{"name": "Porsi terkirim", "color": "brand-500", "data": perf.series|map(attribute="qty")|list}],
+                        } %}
+                        <div class="pub-pulse" aria-labelledby="pubStatsTitle">
+                            <div class="pub-pulse-head">
+                                <h2 id="pubStatsTitle">30 hari terakhir</h2>
+                                <span>dari catatan pengiriman</span>
                             </div>
-                            {% if perf.on_time_rate is not none %}
-                                <div>
-                                    <strong>{{ perf.on_time_rate|string|replace(".", ",") }}%</strong>
-                                    <span>tiba tepat waktu</span>
-                                </div>
-                            {% endif %}
-                            <div>
-                                {% if site.locations %}
-                                    <strong data-count="{{ site.locations }}">{{ site.locations }}</strong>
-                                    <span>lokasi dilayani</span>
-                                {% else %}
-                                    <strong>{{ perf.days_served }}</strong>
-                                    <span>hari beroperasi</span>
+                            <dl class="pub-pulse-grid">
+                                <div><dt>porsi terkirim</dt><dd data-count="{{ perf.delivered_qty }}">{{ "{:,}".format(perf.delivered_qty)|replace(",", ".") }}</dd></div>
+                                {% if perf.on_time_rate is not none %}
+                                    <div><dt>tiba tepat waktu</dt><dd>{{ perf.on_time_rate|string|replace(".", ",") }}%</dd></div>
                                 {% endif %}
+                                {% if site.locations %}
+                                    <div><dt>lokasi dilayani</dt><dd data-count="{{ site.locations }}">{{ site.locations }}</dd></div>
+                                {% endif %}
+                            </dl>
+                            <div class="app-chart pub-spark" data-apex-chart role="img" aria-label="Porsi terkirim per hari selama 30 hari terakhir">
+                                <script type="application/json">{{ spark_spec|tojson }}</script>
                             </div>
                         </div>
-                        <div class="app-chart pub-spark" data-apex-chart role="img" aria-label="Porsi terkirim per hari selama 30 hari terakhir">
-                            <script type="application/json">{{ spark_spec|tojson }}</script>
-                        </div>
-                        <p class="pub-stats-foot">Tepat waktu: tiba sebelum target jam makan dengan jumlah sesuai pesanan.</p>
-                    </aside>
-                {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="pub-wrap">
+                <ul class="pub-facts" aria-label="Aturan pemesanan">
+                    {% if cutoffs.LUNCH %}<li><strong>{{ cutoffs.LUNCH }}</strong>batas pesan makan siang</li>{% endif %}
+                    {% if cutoffs.DINNER %}<li><strong>{{ cutoffs.DINNER }}</strong>batas pesan makan sore</li>{% endif %}
+                    {% if pricing and pricing.min_portions %}<li><strong>{{ pricing.min_portions }} porsi</strong>minimal per pesanan</li>{% endif %}
+                    {% if pricing and pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi per kiriman</li>{% endif %}
+                </ul>
             </div>
         </section>
 
@@ -113,7 +106,7 @@
                     <p>Proyek dan perusahaan memakai kontrak dengan tagihan berkala. Pelanggan umum memesan sendiri dan membayar di muka.</p>
                 </div>
                 <div class="pub-tracks">
-                    <article class="pub-track pub-track-dark">
+                    <article class="pub-track pub-track-dark" data-reveal data-index="01">
                         <div class="pub-track-label">Proyek &amp; perusahaan</div>
                         <h3>Katering harian dengan kontrak dan tagihan per periode</h3>
                         <ul>
@@ -124,7 +117,7 @@
                         </ul>
                         <a class="pub-btn pub-btn-light" href="{{ contact_url }}" {% if site.whatsapp_url %}target="_blank" rel="noopener"{% endif %}>Ajukan kerja sama</a>
                     </article>
-                    <article class="pub-track">
+                    <article class="pub-track" data-reveal data-index="02">
                         <div class="pub-track-label">Acara, kantor, &amp; rumah</div>
                         <h3>Pesan sendiri dari portal, bayar di muka</h3>
                         <ul>
@@ -149,7 +142,7 @@
                     <h2>Dari pesanan sampai tagihan, semuanya tercatat</h2>
                     <p>Setiap langkah dicatat oleh orang yang mengerjakannya, jadi angka di tagihan sama dengan yang dimasak dan diantar.</p>
                 </div>
-                <ol class="pub-flow">
+                <ol class="pub-flow" data-reveal>
                     <li>
                         <h3>Pesanan dikunci</h3>
                         <p>Pesanan siang ditutup pukul {{ cutoffs.LUNCH or "10.00" }}, sore pukul {{ cutoffs.DINNER or "15.00" }}. Porsi yang dikunci menjadi rencana masak dapur.</p>
@@ -189,7 +182,7 @@
                         </ul>
                     </div>
 
-                    <div class="pub-estimate-card" data-estimate
+                    <div class="pub-estimate-card" data-reveal data-estimate
                           data-price="{{ pricing.price }}"
                           data-min="{{ pricing.min_portions }}"
                           data-free="{{ pricing.free_delivery_min }}"
@@ -225,6 +218,7 @@
                                 <dt data-estimate-fee-label>Ongkir</dt><dd data-estimate-fee>-</dd>
                             </dl>
                             <div class="pub-estimate-total"><span>Perkiraan total</span><strong data-estimate-total>-</strong></div>
+                            <div class="pub-estimate-bar" aria-hidden="true"><span data-estimate-bar-food></span><span data-estimate-bar-fee></span></div>
                             <div class="pub-free-note" data-estimate-free>Gratis ongkir untuk jumlah ini.</div>
                         </div>
                         {% if site.portal_enabled %}

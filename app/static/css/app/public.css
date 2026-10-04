@@ -4,13 +4,6 @@
    (app/static/vendor/fonts, lisensi OFL). Isi angka berasal dari ERP
    (app/services/public_site_service.py), bukan teks pemasaran.
    ========================================================================== */
-@font-face {
-    font-family: "Plus Jakarta Sans";
-    font-style: normal;
-    font-weight: 200 800;
-    font-display: swap;
-    src: url("../vendor/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2");
-}
 
 html:has(.pub) {
     scroll-behavior: smooth;
@@ -212,146 +205,6 @@ html:has(.pub) {
     width: min(1180px, 100% - 48px);
     max-width: none;
     margin: 16px auto 0;
-}
-
-/* --- Pembuka --------------------------------------------------------------------- */
-.pub-hero {
-    padding: 56px 0 72px;
-}
-
-.pub-hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
-    gap: 56px;
-    align-items: center;
-}
-
-.pub-hero h1 {
-    max-width: 15ch;
-    margin: 0 0 20px;
-    font-size: clamp(2.25rem, 1.35rem + 2.9vw, 3.6rem);
-    font-weight: 800;
-    line-height: 1.06;
-    letter-spacing: -0.03em;
-}
-
-.pub-hero h1 em {
-    font-style: normal;
-    color: var(--brand-700);
-}
-
-.pub-lead {
-    max-width: 56ch;
-    margin: 0 0 28px;
-    font-size: 1.125rem;
-    color: var(--ink-soft);
-}
-
-.pub-hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.pub-facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0;
-    margin: 40px 0 0;
-    padding: 0;
-    list-style: none;
-    border-top: 1px solid var(--paper-line);
-}
-
-.pub-facts li {
-    padding: 16px 16px 0 0;
-    font-size: 0.875rem;
-    color: var(--ink-muted);
-}
-
-.pub-facts strong {
-    display: block;
-    font-size: 1.25rem;
-    font-weight: 750;
-    color: var(--ink);
-}
-
-/* Kartu kinerja 30 hari. */
-.pub-stats {
-    padding: 24px;
-    background: var(--surface);
-    border: 1px solid var(--paper-line);
-    border-radius: 20px;
-    box-shadow: 0 24px 48px -32px rgba(28, 25, 23, 0.35);
-}
-
-.pub-stats-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 4px 12px;
-    margin-bottom: 18px;
-}
-
-.pub-stats-head h2 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-}
-
-.pub-stats-head span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8125rem;
-    color: var(--ink-muted);
-}
-
-.pub-stats-head span::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--chart-green);
-    box-shadow: 0 0 0 3px rgba(18, 183, 106, 0.18);
-}
-
-.pub-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.pub-stats-grid > div {
-    padding: 14px;
-    background: var(--paper);
-    border-radius: 12px;
-}
-
-.pub-stats-grid strong {
-    display: block;
-    font-size: clamp(1.4rem, 1rem + 1vw, 1.9rem);
-    font-weight: 800;
-    line-height: 1.1;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-}
-
-.pub-stats-grid span {
-    font-size: 0.8125rem;
-    color: var(--ink-muted);
-}
-
-.pub-spark {
-    --chart-height: 110px;
-    margin: 12px -8px 0;
-}
-
-.pub-stats-foot {
-    margin: 4px 0 0;
-    font-size: 0.8125rem;
-    color: var(--ink-muted);
 }
 
 /* --- Bagian umum ------------------------------------------------------------------- */
@@ -1005,9 +858,504 @@ html:has(.pub) {
     border-radius: 12px;
 }
 
+/* --- Beranda: kepala & pembuka gelap ------------------------------------------------ */
+[data-public-page="landing"] .pub-header {
+    background: var(--ink);
+}
+
+[data-public-page="landing"] .pub-header.is-scrolled {
+    border-bottom-color: var(--ink-soft);
+    box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.8);
+}
+
+[data-public-page="landing"] .pub-brand,
+[data-public-page="landing"] .pub-brand:hover {
+    color: var(--on-ink);
+}
+
+[data-public-page="landing"] .pub-brand small {
+    color: var(--on-ink-muted);
+}
+
+[data-public-page="landing"] .pub .pub-nav a,
+.pub[data-public-page="landing"] .pub-nav a {
+    color: var(--on-ink-muted);
+}
+
+.pub[data-public-page="landing"] .pub-nav a:hover {
+    color: var(--on-ink);
+    background: rgba(245, 240, 232, 0.08);
+}
+
+.pub[data-public-page="landing"] .pub-header .pub-btn-ghost {
+    color: var(--on-ink);
+}
+
+.pub[data-public-page="landing"] .pub-header .pub-btn-ghost:hover {
+    color: var(--on-ink);
+    background: rgba(245, 240, 232, 0.1);
+}
+
+.pub-hero {
+    position: relative;
+    padding: 64px 0 0;
+    color: var(--on-ink-muted);
+    background:
+        radial-gradient(1200px 520px at 85% -10%, rgba(234, 88, 12, 0.22), transparent 60%),
+        var(--ink);
+    overflow: hidden;
+}
+
+/* Kisi titik halus: tekstur, bukan gambar dekoratif. */
+.pub-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(245, 240, 232, 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 85%);
+    pointer-events: none;
+}
+
+.pub-hero > .pub-wrap {
+    position: relative;
+}
+
+.pub-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+    gap: 64px;
+    align-items: center;
+}
+
+.pub-hero h1 {
+    max-width: 16ch;
+    margin: 0 0 24px;
+    font-size: clamp(2.4rem, 1.2rem + 3vw, 3.75rem);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    color: var(--on-ink);
+}
+
+.pub-hero h1 em {
+    font-style: normal;
+    color: var(--brand-500);
+}
+
+.pub-hero .pub-lead {
+    max-width: 52ch;
+    margin: 0 0 32px;
+    font-size: 1.125rem;
+    color: var(--on-ink-muted);
+}
+
+.pub-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pub-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-facts li {
+    font-size: 0.875rem;
+}
+
+.pub-facts strong {
+    display: block;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.pub-btn-outline-light {
+    color: var(--on-ink);
+    background: transparent;
+    border-color: rgba(245, 240, 232, 0.35);
+}
+
+.pub-btn-outline-light:hover {
+    color: var(--ink);
+    background: var(--on-ink);
+    border-color: var(--on-ink);
+}
+
+.pub-hero-side {
+    display: grid;
+    gap: 14px;
+}
+
+/* Papan operasional hari ini. */
+.pub-board {
+    padding: 22px 22px 18px;
+    color: var(--on-ink-muted);
+    background: rgba(245, 240, 232, 0.05);
+    border: 1px solid rgba(245, 240, 232, 0.12);
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.pub-board-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.pub-board-head strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--on-ink);
+}
+
+.pub-board-head span {
+    font-size: 0.875rem;
+}
+
+.pub-board-clock {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--on-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-board-timeline {
+    position: relative;
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pub-board-timeline::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 6px;
+    width: 2px;
+    background: rgba(245, 240, 232, 0.12);
+}
+
+.pub-board-timeline li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    gap: 12px;
+    padding: 9px 0 9px 26px;
+    font-size: 0.9375rem;
+    transition: color 0.3s ease;
+}
+
+.pub-board-timeline li::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(245, 240, 232, 0.35);
+    border-radius: 50%;
+    background: var(--ink);
+    transform: translateY(-50%);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pub-board-timeline time {
+    font-weight: 700;
+    color: var(--on-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-board-timeline li.is-done {
+    color: rgba(201, 191, 177, 0.55);
+}
+
+.pub-board-timeline li.is-done time {
+    color: rgba(245, 240, 232, 0.5);
+}
+
+.pub-board-timeline li.is-done::before {
+    border-color: var(--chart-green);
+    background: var(--chart-green);
+}
+
+.pub-board-timeline li.is-next {
+    color: var(--on-ink);
+}
+
+.pub-board-timeline li.is-next::before {
+    border-color: var(--brand-500);
+    background: var(--brand-500);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6);
+    animation: pub-pulse 1.8s ease-out infinite;
+}
+
+@keyframes pub-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55); }
+    100% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+}
+
+.pub-board-status {
+    margin: 14px 0 0;
+    padding-top: 14px;
+    font-size: 0.875rem;
+    border-top: 1px solid rgba(245, 240, 232, 0.1);
+}
+
+.pub-board-status strong {
+    color: var(--brand-200);
+}
+
+/* Kinerja 30 hari. */
+.pub-pulse {
+    padding: 18px 22px 10px;
+    color: var(--on-ink-muted);
+    background: rgba(245, 240, 232, 0.05);
+    border: 1px solid rgba(245, 240, 232, 0.12);
+    border-radius: 20px;
+}
+
+.pub-pulse-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.pub-pulse-head h2 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--on-ink);
+}
+
+.pub-pulse-head span {
+    font-size: 0.8125rem;
+}
+
+.pub-pulse-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.pub-pulse-grid dt {
+    order: 2;
+    font-size: 0.8125rem;
+    font-weight: var(--weight-medium);
+    color: var(--on-ink-muted);
+}
+
+.pub-pulse-grid div {
+    display: flex;
+    flex-direction: column;
+}
+
+.pub-pulse-grid dd {
+    order: 1;
+    margin: 0;
+    font-size: clamp(1.5rem, 1.1rem + 1vw, 2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--on-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pub-hero .pub-spark {
+    --chart-height: 84px;
+    margin: 6px -6px 0;
+}
+
+.pub-hero .app-chart:not(.is-rendered)::before {
+    background: rgba(245, 240, 232, 0.06);
+    animation: none;
+}
+
+.pub-hero .pub-facts {
+    margin: 56px 0 0;
+    border-top: 1px solid rgba(245, 240, 232, 0.12);
+}
+
+.pub-hero .pub-facts li {
+    padding: 22px 16px 28px 0;
+    color: var(--on-ink-muted);
+}
+
+.pub-hero .pub-facts li + li {
+    padding-left: 20px;
+    border-left: 1px solid rgba(245, 240, 232, 0.12);
+}
+
+.pub-hero .pub-facts strong {
+    font-size: 1.5rem;
+    color: var(--on-ink);
+}
+
+/* Papan di panel kiri halaman masuk. */
+.pub-auth-side .pub-board {
+    margin-bottom: 24px;
+}
+
+.pub-auth-roles li {
+    grid-template-columns: 150px 1fr;
+    padding: 12px 0;
+    font-size: 0.9375rem;
+}
+
+/* Nomor besar di dua jalur. */
+.pub-track[data-index] {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pub-track[data-index]::after {
+    content: attr(data-index);
+    position: absolute;
+    top: 14px;
+    right: 22px;
+    font-size: 4.5rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--paper-strong);
+    pointer-events: none;
+}
+
+.pub-track-dark[data-index]::after {
+    color: rgba(245, 240, 232, 0.07);
+}
+
+.pub-track:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 24px 40px -28px rgba(28, 25, 23, 0.45);
+}
+
+.pub-track > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Bar rincian kalkulator. */
+.pub-estimate-bar {
+    display: flex;
+    height: 8px;
+    margin-top: 14px;
+    overflow: hidden;
+    background: var(--paper-line);
+    border-radius: 999px;
+}
+
+.pub-estimate-bar span {
+    height: 100%;
+    transition: width 0.35s ease;
+}
+
+.pub-estimate-bar [data-estimate-bar-food] {
+    background: var(--brand-600);
+}
+
+.pub-estimate-bar [data-estimate-bar-fee] {
+    background: var(--ink-muted);
+}
+
+/* Muncul saat digulir (controls.js menambah .is-revealed). */
+.pub-anim [data-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pub-anim [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+}
+
+.pub-flow li::after {
+    transform-origin: left center;
+}
+
+.pub-anim .pub-flow li:not(:last-child)::after {
+    transform: scaleX(0);
+    transition: transform 0.8s ease 0.3s;
+}
+
+.pub-anim .pub-flow.is-revealed li:not(:last-child)::after {
+    transform: scaleX(1);
+}
+
+@media (max-width: 1023.98px) {
+    .pub-hero {
+        padding-top: 40px;
+    }
+
+    .pub-hero-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 36px;
+    }
+
+    .pub-hero .pub-facts li + li {
+        padding-left: 0;
+        border-left: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pub-hero h1 {
+        font-size: 2.35rem;
+    }
+
+    .pub-board-clock {
+        font-size: 1.6rem;
+    }
+
+    .pub-board-timeline li {
+        grid-template-columns: 70px 1fr;
+        font-size: 0.875rem;
+    }
+
+    .pub-pulse-grid dd {
+        font-size: 1.35rem;
+    }
+
+    .pub-hero .pub-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 36px;
+    }
+
+    .pub-track[data-index]::after {
+        font-size: 3.25rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pub-anim [data-reveal] {
+        opacity: 1;
+        transform: none;
+    }
+
+    .pub-board-timeline li.is-next::before {
+        animation: none;
+    }
+}
+
 /* --- Layar sempit ------------------------------------------------------------------- */
 @media (max-width: 1023.98px) {
-    .pub-hero-grid,
     .pub-estimate,
     .pub-contact-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -1068,29 +1416,16 @@ html:has(.pub) {
         padding: 0 12px;
     }
 
-    .pub-hero {
-        padding: 32px 0 48px;
-    }
-
     .pub-section {
         padding: 56px 0;
     }
 
-    .pub-stats-grid,
     .pub-tracks,
     .pub-menu,
     .pub-form-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .pub-stats-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
-    }
-
-    .pub-stats-grid > div {
-        padding: 10px;
-    }
 
     .pub-track {
         padding: 24px;

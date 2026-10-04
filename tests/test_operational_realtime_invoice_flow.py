@@ -94,6 +94,6 @@ def test_billing_input_source_context_locks_two_input_lanes():
     realtime = build_input_source_context(INPUT_SOURCE_REALTIME)
     backfill = build_input_source_context(INPUT_SOURCE_MANUAL_BACKFILL)
 
-    assert realtime["label"] == "Realtime"
+    assert realtime["label"] == "Langsung"
     assert backfill["label"] == "Input Belakangan"
     assert realtime["value"] != backfill["value"]

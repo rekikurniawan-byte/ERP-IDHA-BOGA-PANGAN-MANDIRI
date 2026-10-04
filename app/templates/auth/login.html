@@ -17,10 +17,11 @@
 
         <div class="pub-auth-side-body">
             <h1>Satu sistem untuk pesanan, dapur, pengiriman, dan tagihan.</h1>
-            <ul class="pub-auth-list">
-                <li><strong>Tim internal</strong><span>Owner, admin, dapur, dan pengantar mencatat pekerjaan masing-masing.</span></li>
-                <li><strong>{{ term('client') }} &amp; {{ term('sub_client', lower=True) }}</strong><span>Pesanan harian, tagihan, pembayaran, dan masa kontrak.</span></li>
-                <li><strong>Pelanggan umum</strong><span>Pesan, bayar di muka, lalu lacak pesanan sampai diterima.</span></li>
+            {% include "components/public_board.html" %}
+            <ul class="pub-auth-list pub-auth-roles">
+                <li><strong>Tim internal</strong><span>Owner, admin, dapur, dan pengantar.</span></li>
+                <li><strong>{{ term('client') }} &amp; {{ term('sub_client', lower=True) }}</strong><span>Pesanan, tagihan, pembayaran, kontrak.</span></li>
+                <li><strong>Pelanggan umum</strong><span>Pesan, bayar di muka, lacak pesanan.</span></li>
             </ul>
         </div>
 

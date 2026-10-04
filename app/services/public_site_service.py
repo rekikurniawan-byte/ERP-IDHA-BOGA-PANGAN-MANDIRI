@@ -83,6 +83,33 @@ def _performance(branch_id, today):
     }
 
 
+def _arrivals(branch_id, today):
+    """Rata-rata jam tiba makan siang & sore 30 hari terakhir, dalam WIB.
+
+    receive_time disimpan UTC (delivery_service memakai datetime.utcnow)."""
+    from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
+
+    start = today - timedelta(days=29)
+    rows = (
+        db.session.query(Delivery.notes, DeliveryReceipt.receive_time)
+        .join(DeliveryDetail, DeliveryDetail.delivery_id == Delivery.id)
+        .join(DeliveryReceipt, DeliveryReceipt.delivery_detail_id == DeliveryDetail.id)
+        .filter(Delivery.branch_id == branch_id, Delivery.delivery_date >= start, Delivery.delivery_date <= today)
+        .all()
+    )
+    minutes = {"LUNCH": [], "DINNER": []}
+    for notes, received in rows:
+        kind = "DINNER" if "DINNER" in str(notes or "").upper() else "LUNCH"
+        local = received + timedelta(hours=7)
+        minutes[kind].append(local.hour * 60 + local.minute)
+    result = {}
+    for kind, values in minutes.items():
+        if values:
+            average = round(sum(values) / len(values))
+            result[kind] = f"{average // 60:02d}.{average % 60:02d}"
+    return result
+
+
 def _locations(branch_id):
     from app.models.master import DeliveryLocation, Mandor
 
@@ -142,11 +169,12 @@ def landing_context(today=None):
     today = today or date.today()
     branch = _safe("cabang", _main_branch)
     if not branch:
-        return {"performance": None, "locations": None, "pricing": None, "menus": [],
+        return {"performance": None, "arrivals": {}, "locations": None, "pricing": None, "menus": [],
                 "cutoffs": _safe("batas pesan", _cutoffs) or {}, **_common(None)}
     return {
         **_common(branch),
         "performance": _safe("kinerja", lambda: _performance(branch.id, today)),
+        "arrivals": _safe("jam tiba", lambda: _arrivals(branch.id, today)) or {},
         "locations": _safe("lokasi", lambda: _locations(branch.id)),
         "pricing": _safe("harga", lambda: _pricing(branch.id, today)),
         "menus": _safe("menu", lambda: _menus(branch.id)) or [],
@@ -159,4 +187,5 @@ def auth_context(today=None):
     today = today or date.today()
     branch = _safe("cabang", _main_branch)
     pricing = _safe("harga", lambda: _pricing(branch.id, today)) if branch else None
-    return {"pricing": pricing, "cutoffs": _safe("batas pesan", _cutoffs) or {}, **_common(branch)}
+    arrivals = _safe("jam tiba", lambda: _arrivals(branch.id, today)) if branch else None
+    return {"pricing": pricing, "cutoffs": _safe("batas pesan", _cutoffs) or {}, "arrivals": arrivals or {}, **_common(branch)}

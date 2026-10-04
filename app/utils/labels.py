@@ -194,7 +194,7 @@ STATUS_LABELS = {
     "WORKER_DEBT": "Hutang Pekerja",
     "DELIVERY_FEE_LUNCH": "Ongkir Siang",
     "DELIVERY_FEE_DINNER": "Ongkir Sore",
-    "REALTIME": "Langsung dari Order",
+    "REALTIME": "Langsung",
     "MANUAL_BACKFILL": "Input Manual",
     "CLIENT": "PT",
     "MANDOR": "Mandor",

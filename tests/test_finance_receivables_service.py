@@ -24,7 +24,7 @@ def test_invoice_party_context_supports_manual_backfill_free_party_snapshot():
     assert party["type"] == "KELOMPOK"
     assert party["type_label"] == "Kelompok"
     assert party["name"] == "Kelompok Pak Yatno"
-    assert party["input_source_label"] == "Manual Backfill"
+    assert party["input_source_label"] == "Input Belakangan"
 
 
 def test_invoice_party_context_keeps_legacy_mandor_invoice_compatible():
@@ -44,7 +44,7 @@ def test_invoice_party_context_keeps_legacy_mandor_invoice_compatible():
     assert party["type_label"] == "Sub Client"
     assert party["name"] == "Pak Tarom"
     assert party["client_name"] == "PT APG"
-    assert party["input_source_label"] == "Realtime"
+    assert party["input_source_label"] == "Langsung"
 
 
 def test_receivable_filters_use_bill_to_status_and_period_overlap():

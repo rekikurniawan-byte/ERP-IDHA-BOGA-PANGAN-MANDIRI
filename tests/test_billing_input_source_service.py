@@ -28,7 +28,7 @@ def test_manual_backfill_input_source_context_is_business_readable():
 
 
 def test_realtime_input_source_helpers():
-    assert input_source_label(INPUT_SOURCE_REALTIME) == "Realtime"
+    assert input_source_label(INPUT_SOURCE_REALTIME) == "Langsung"
     assert is_realtime(INPUT_SOURCE_REALTIME)
     assert not is_manual_backfill(INPUT_SOURCE_REALTIME)
 

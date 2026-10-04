@@ -1237,7 +1237,7 @@ def test_portal_customer_prepayment_guard_blocks_draft_order(app):
     assert status_response.status_code == 404
     assert dashboard_response.status_code == 200
     assert "Pelanggan umum wajib memiliki pembayaran terverifikasi" in get_html
-    assert "Prepayment tetap wajib" in dashboard_html
+    assert "Bayar di muka tetap wajib" in dashboard_html
     assert draft_count == 0
 
 

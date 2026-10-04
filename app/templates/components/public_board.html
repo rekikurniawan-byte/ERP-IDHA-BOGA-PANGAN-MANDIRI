@@ -1,0 +1,28 @@
+{# Papan operasional hari ini: batas pesan (aturan portal) + rata-rata jam tiba 30 hari
+   terakhir (catatan penerimaan). controls.js menandai yang sudah lewat dan berikutnya. #}
+{% set cutoffs = site.cutoffs if site else {} %}
+{% set arrivals = site.arrivals if site and site.arrivals else {} %}
+<div class="pub-board" data-pub-board>
+    <div class="pub-board-head">
+        <div>
+            <strong>Papan hari ini</strong>
+            <span data-board-date>&nbsp;</span>
+        </div>
+        <time class="pub-board-clock" data-board-clock aria-live="off">--.--</time>
+    </div>
+    <ol class="pub-board-timeline">
+        {% if cutoffs.LUNCH %}
+            <li data-at="{{ cutoffs.LUNCH|replace('.', ':') }}"><time>{{ cutoffs.LUNCH }}</time><span>Batas pesan makan siang</span></li>
+        {% endif %}
+        {% if arrivals.LUNCH %}
+            <li data-at="{{ arrivals.LUNCH|replace('.', ':') }}"><time>&plusmn; {{ arrivals.LUNCH }}</time><span>Makan siang tiba di lokasi</span></li>
+        {% endif %}
+        {% if cutoffs.DINNER %}
+            <li data-at="{{ cutoffs.DINNER|replace('.', ':') }}"><time>{{ cutoffs.DINNER }}</time><span>Batas pesan makan sore</span></li>
+        {% endif %}
+        {% if arrivals.DINNER %}
+            <li data-at="{{ arrivals.DINNER|replace('.', ':') }}"><time>&plusmn; {{ arrivals.DINNER }}</time><span>Makan sore tiba di lokasi</span></li>
+        {% endif %}
+    </ol>
+    <p class="pub-board-status" data-board-status>Jadwal layanan harian.</p>
+</div>
