@@ -86,7 +86,7 @@ def build_source(source, today):
     run([pg_tool("createdb"), "-U", "postgres", "-O", "idha_boga_user", source])
     python = sys.executable
     run([python, "-m", "flask", "--app", "run", "db", "upgrade"], env=app_env(source))
-    run([python, "-m", "flask", "--app", "run", "bootstrap", "--branch-code", "CKR", "--branch-name", "Cikarang",
+    run([python, "-m", "flask", "--app", "run", "bootstrap", "--branch-code", "OKI", "--branch-name", "Air Sugihan",
          "--owner-username", "owner", "--owner-name", "Owner Idha Boga"],
         env=app_env(source, BOOTSTRAP_OWNER_PASSWORD=DEMO_OWNER_PASSWORD))
     output = run([python, "-W", "ignore", "tools/seed_demo_data.py", "--db", source, "--confirm", "--today", today.isoformat()],
@@ -118,16 +118,6 @@ def main():
     create_app()
     erp_tables = sorted(db.metadata.tables)
     assert not set(erp_tables) & set(ML_TABLES), "tabel ML terdaftar sebagai tabel ERP"
-    existing = set(psql(args.target, "SELECT tablename FROM pg_tables WHERE schemaname='public'").split())
-    source_tables = set(psql(args.source, "SELECT tablename FROM pg_tables WHERE schemaname='public'").split())
-    missing = [t for t in erp_tables if t not in existing or t not in source_tables]
-    if missing:
-        raise SystemExit(f"Skema berbeda (jalankan flask db upgrade): {missing}")
-    leftovers = sorted(existing - set(erp_tables) - set(ML_TABLES) - {"alembic_version"})
-    leftover_rows = counts(args.target, leftovers)
-    if any(leftover_rows.values()):
-        raise SystemExit(f"Tabel di luar model ERP berisi data, tidak berani dikosongkan: {leftover_rows}")
-    ml_present = [t for t in ML_TABLES if t in existing]
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup = ROOT / "instance" / "backups" / f"{args.target}_sebelum_reset_demo_{stamp}.dump"
@@ -139,11 +129,25 @@ def main():
     entries = len(run([pg_tool("pg_restore"), "-l", backup]).splitlines())
     print(f"    {backup.relative_to(ROOT)} ({backup.stat().st_size:,} byte, {entries} entri)")
 
+    # Skema target disamakan dulu (migrasi hanya menambah kolom/tabel; tabel ML tidak disentuh).
+    print(f"    Migrasi skema {args.target} ...", flush=True)
+    run([sys.executable, "-m", "flask", "--app", "run", "db", "upgrade"], env=app_env(args.target))
+    existing = set(psql(args.target, "SELECT tablename FROM pg_tables WHERE schemaname='public'").split())
+    source_tables = set(psql(args.source, "SELECT tablename FROM pg_tables WHERE schemaname='public'").split())
+    missing = [t for t in erp_tables if t not in existing or t not in source_tables]
+    if missing:
+        raise SystemExit(f"Skema berbeda (jalankan flask db upgrade): {missing}")
+    leftovers = sorted(existing - set(erp_tables) - set(ML_TABLES) - {"alembic_version"})
+    leftover_rows = counts(args.target, leftovers)
+    if any(leftover_rows.values()):
+        raise SystemExit(f"Tabel di luar model ERP berisi data, tidak berani dikosongkan: {leftover_rows}")
+    ml_present = [t for t in ML_TABLES if t in existing]
+
     print("[3] Menyimpan password akun & pengaturan perusahaan ...", flush=True)
     ml_before = counts(args.target, ml_present)
     names = ",".join(f"'{u}'" for u in KEPT_USERS)
     kept = list(csv.reader(io.StringIO(psql(args.target, f"COPY (SELECT username, password_hash FROM users WHERE username IN ({names})) TO STDOUT WITH CSV"))))
-    settings = list(csv.reader(io.StringIO(psql(args.target, "COPY (SELECT setting_key, setting_value FROM branch_settings WHERE branch_id = (SELECT min(id) FROM branches) AND setting_key LIKE 'company%') TO STDOUT WITH CSV"))))
+    settings = list(csv.reader(io.StringIO(psql(args.target, "COPY (SELECT setting_key, setting_value FROM branch_settings WHERE branch_id = (SELECT min(id) FROM branches) AND setting_key LIKE 'company%' AND setting_key <> 'company_email') TO STDOUT WITH CSV"))))
     print(f"    {len(kept)} akun, {len(settings)} pengaturan")
 
     print(f"[4] Mengganti data ERP {args.target} (satu transaksi) ...", flush=True)

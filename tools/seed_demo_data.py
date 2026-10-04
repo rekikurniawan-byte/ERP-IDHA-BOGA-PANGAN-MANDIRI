@@ -15,12 +15,15 @@ kemarin. Hari ini: pesanan sudah dikunci dan bahan sudah keluar, produksi dan
 pengiriman belum (tugas dapur & pengantar terlihat); pesanan hari kerja
 berikutnya + draf portal menunggu.
 
-Isi demo (Cikarang, 1 cabang):
+Isi demo (area OKI Pulp & Paper, Air Sugihan - Ogan Komering Ilir, 1 cabang):
 - 3 PT kontrak (4 mandor/lokasi) + 3 pelanggan umum (bayar di muka).
 - Operasi Senin-Sabtu sekitar 9 minggu sampai kemarin (satu hari libur):
   order, produksi, pengiriman (sesekali kurang kirim/terlambat), pemakaian stok,
   pembelian tunai & hutang, warung, biaya listrik/air/BBM, gaji, penyusutan,
   invoice bulanan, pembayaran (lunas/sebagian/belum), komplain, kontrak.
+- Titik GPS untuk dapur dan semua lokasi antar; ongkir pelanggan umum per km
+  (Rp 2.000/km, minimal Rp 10.000, gratis mulai 10 porsi), tanpa minimal porsi.
+- Pengajuan kerja sama dari halaman publik (baru, sudah dihubungi, jadi kontrak).
 - Akun: 1 per peran internal (Owner, Admin, Dapur, Pengantar) + 1 per portal
   (PT, Mandor, Pelanggan Umum).
 
@@ -94,17 +97,35 @@ STAFF = (
 
 # PT kontrak -> mandor -> lokasi, porsi rata-rata siang/sore.
 CONTRACT_SITES = (
-    ("PT Maju Konstruksi", "MAJU", "Mandor Budi", "Proyek Tol Km 12", 60, 45),
-    ("PT Maju Konstruksi", "MAJU", "Mandor Joko", "Gudang Cikarang", 30, 0),
-    ("PT Sinar Beton Utama", "SINAR", "Mandor Asep", "Batching Plant Cibitung", 35, 25),
-    ("PT Bumi Persada Logistik", "BUMI", "Mandor Hendra", "Depo Jababeka", 26, 20),
+    ("PT Maju Konstruksi", "MAJU", "Mandor Budi", "Proyek Perluasan Mill", 60, 45),
+    ("PT Maju Konstruksi", "MAJU", "Mandor Joko", "Mes Pekerja Sektor 3", 30, 0),
+    ("PT Sinar Beton Utama", "SINAR", "Mandor Asep", "Batching Plant Air Sugihan", 35, 25),
+    ("PT Bumi Persada Logistik", "BUMI", "Mandor Hendra", "Depo Logistik Simpang Tiga", 26, 20),
 )
 # Pelanggan umum: (nama, zona, lokasi, alamat, hari order (0=Senin), porsi siang, akun portal?)
 GENERAL = (
-    ("Ibu Rina", "Dekat (< 5 km)", "Rumah Bu Rina", "Perum Graha Asri Blok C2, Cikarang", (2,), 15, "portal.customer.local"),
-    ("Kantor Notaris Sari", "Dekat (< 5 km)", "Kantor Notaris Sari", "Jl. Kasuari No. 3, Cikarang", (1, 4), 20, None),
-    ("Pak Dedi", "Jauh (5-15 km)", "Kantor Pak Dedi", "Ruko Sentra Niaga No. 5, Cibitung", (5,), 12, None),
+    ("Ibu Rina", "Dekat (< 5 km)", "Rumah Bu Rina", "Perumahan Karyawan Blok C2, Air Sugihan", (2,), 15, "portal.customer.local"),
+    ("Kantor Notaris Sari", "Dekat (< 5 km)", "Kantor Notaris Sari", "Jl. Lintas Timur No. 3, Simpang Tiga", (1, 4), 20, None),
+    # Di bawah 10 porsi: tetap dilayani, ongkir jarak dibayar di muka.
+    ("Pak Dedi", "Jauh (5-15 km)", "Kantor Pak Dedi", "Ruko Pasar Sungai Baung No. 5", (5,), 6, None),
 )
+
+# Titik GPS (lat, lng). Dapur dekat kawasan OKI Pulp & Paper, Air Sugihan.
+KITCHEN_POINT = ("-2.9850000", "105.7280000")
+LOCATION_POINTS = {
+    "Proyek Perluasan Mill": ("-2.9712400", "105.7468100"),
+    "Mes Pekerja Sektor 3": ("-2.9921300", "105.7533800"),
+    "Batching Plant Air Sugihan": ("-3.0144200", "105.7097600"),
+    "Depo Logistik Simpang Tiga": ("-2.9437500", "105.7032900"),
+    "Rumah Bu Rina": ("-2.9796100", "105.7354200"),
+    "Kantor Notaris Sari": ("-2.9558700", "105.7221500"),
+    "Kantor Pak Dedi": ("-3.0302800", "105.7680400"),
+}
+
+
+def point_fields(location):
+    lat, lng = LOCATION_POINTS[location]
+    return {"latitude": lat, "longitude": lng, "gps_accuracy": "12"}
 
 # Bahan per porsi (dipakai dapur) dan harga beli.
 INGREDIENTS = {
@@ -197,8 +218,9 @@ def stage_setup(run):
 
     run.step(own, "Pengaturan perusahaan", "/settings/company", data={
         "company_name": "PT Idha Boga Pangan Mandiri", "company_subtitle": "Catering Proyek & Harian",
-        "company_address": "Jl. Raya Cikarang No. 8, Bekasi", "company_phone": "0812-1111-2222",
-        "company_email": "admin@idhaboga.co.id", "company_npwp": "01.234.567.8-901.000",
+        "company_address": "Jl. Lintas Timur Km 3, Desa Bukit Batu, Kec. Air Sugihan, Kab. Ogan Komering Ilir, Sumatera Selatan",
+        "company_phone": "0812-1111-2222",
+        "company_email": "idhabogapanganmandiri@gmail.com", "company_npwp": "01.234.567.8-901.000",
         "payment_bank_name": "BCA", "payment_account_number": "1234567890", "payment_account_name": "PT Idha Boga Pangan Mandiri",
         "invoice_footer": "Terima kasih atas kepercayaan Anda.", "invoice_terms": "Pembayaran paling lambat sesuai termin kontrak.",
         "invoice_authorized_name": "Idha Rahmawati", "invoice_authorized_position": "Direktur",
@@ -212,14 +234,16 @@ def stage_setup(run):
             "full_name": full_name, "username": username, "role": role, "branch_id": branch_id, "is_active": "on",
             "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, **guard})
 
-    for bank, number in (("BCA", "1234567890"), ("Mandiri", "1400012345678")):
+    # Tiap rekening punya akun buku besar sendiri: BCA -> 1002 Bank 1, Mandiri -> 1003 Bank 2.
+    for bank, number, coa in (("BCA", "1234567890", ""), ("Mandiri", "1400012345678", "1003")):
         run.step(own, f"Rekening {bank}", "/master/bank-accounts/create", data={
-            "bank_name": bank, "account_number": number, "account_name": "PT Idha Boga Pangan Mandiri", "is_active": "on"})
+            "bank_name": bank, "account_number": number, "account_name": "PT Idha Boga Pangan Mandiri",
+            "coa_account_code": coa, "is_active": "on"})
 
     for name, code in {(row[0], row[1]) for row in CONTRACT_SITES}:
         run.step(own, f"PT {name}", "/master/clients/create", data={
-            "client_code": code, "name": name, "phone": "021-8990-1100", "customer_path": "KONTRAK",
-            "address": "Kawasan Industri Cikarang", "is_active": "on"})
+            "client_code": code, "name": name, "phone": "0711-899-110", "customer_path": "KONTRAK",
+            "address": "Kawasan OKI Pulp & Paper, Air Sugihan", "is_active": "on"})
     clients = run.q(lambda: {c.name: c.id for c in Client.query.all()})
     for name, pic in (("PT Maju Konstruksi", "Wati Susanti"), ("PT Sinar Beton Utama", "Hendra Gunawan"), ("PT Bumi Persada Logistik", "Lina Marlina")):
         run.step(own, f"PIC {pic}", f"/master/clients/{clients[name]}/pics/create", data={
@@ -229,13 +253,17 @@ def stage_setup(run):
     run.step(own, "Harga standar 18.000", "/settings/pricing/price", data={"price_per_portion": "18000", "effective_from": price_from, "notes": "Harga umum 2026"})
     run.step(own, "Harga kontrak PT Maju 16.000", "/settings/pricing/price", data={"client_id": clients["PT Maju Konstruksi"], "price_per_portion": "16000", "effective_from": price_from, "notes": "Kontrak 2026"})
     run.step(own, "Harga kontrak PT Sinar 17.000", "/settings/pricing/price", data={"client_id": clients["PT Sinar Beton Utama"], "price_per_portion": "17000", "effective_from": price_from, "notes": "Kontrak 2026"})
-    run.step(own, "Minimal porsi pelanggan umum", "/settings/pricing/min-portions", data={"min_portions": "10"})
+    # Keputusan owner 2026-10-04: tanpa minimal porsi; di bawah 10 porsi bayar ongkir jarak.
+    run.step(own, "Tanpa minimal porsi", "/settings/pricing/min-portions", data={"min_portions": "1"})
+    run.step(own, "Ongkir jarak dari dapur", "/settings/pricing/distance-fee", data={
+        "latitude": KITCHEN_POINT[0], "longitude": KITCHEN_POINT[1], "origin_label": "Dapur Idha Boga",
+        "per_km": "2000", "minimum": "10000", "road_factor": "1.3"})
     for zone in ("Dekat (< 5 km)", "Jauh (5-15 km)"):
         run.step(own, f"Zona {zone}", "/settings/pricing/zones", data={"name": zone})
     zones = run.q(lambda: {z.name: z.id for z in DeliveryZone.query.filter_by(branch_id=branch_id).all()})
     run.step(own, "Ongkir dekat", "/settings/pricing/delivery-fee", data={"zone_id": zones["Dekat (< 5 km)"], "fee": "10000", "effective_from": price_from})
     run.step(own, "Ongkir jauh", "/settings/pricing/delivery-fee", data={"zone_id": zones["Jauh (5-15 km)"], "fee": "25000", "effective_from": price_from})
-    run.step(own, "Gratis ongkir 100 porsi", "/settings/pricing/free-delivery", data={"free_delivery_min_portions": "100"})
+    run.step(own, "Gratis ongkir 10 porsi", "/settings/pricing/free-delivery", data={"free_delivery_min_portions": "10"})
 
     adm = run.client("admin")
     for client_name, _code, mandor, location, _l, _d in CONTRACT_SITES:
@@ -243,8 +271,9 @@ def stage_setup(run):
             "client_id": clients[client_name], "name": mandor, "phone": "0813-5500-1200", "is_active": "on"})
         mandor_id = run.q(lambda: Mandor.query.filter_by(name=mandor).one().id)
         run.step(adm, f"Lokasi {location}", "/master/locations/create", data={
-            "mandor_id": mandor_id, "location_name": location, "description": "Gerbang utama, lapor ke pos satpam", "is_active": "on"})
-    for driver, plate in (("Pak Ujang", "B 9123 KCA"), ("Pak Karim", "B 9471 KCB")):
+            "mandor_id": mandor_id, "location_name": location, "description": "Gerbang utama, lapor ke pos satpam", "is_active": "on",
+            **point_fields(location)})
+    for driver, plate in (("Pak Ujang", "BG 8123 OK"), ("Pak Karim", "BG 8471 OK")):
         run.step(adm, f"Pengantar {driver}", "/master/drivers/create", data={"name": driver, "phone": "0814-7700-2100", "license_number": plate, "is_active": "on"})
 
     # Akun portal: satu PT, satu mandor, satu pelanggan umum (daftar sendiri).
@@ -262,7 +291,8 @@ def stage_setup(run):
             run.step(anon, f"Pelanggan umum daftar: {name}", "/portal/register", data={
                 "full_name": name, "phone": f"0815-7000-{index}{index}{index}{index}", "username": username, "branch_id": branch_id,
                 "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, "location_name": location,
-                "delivery_zone_id": zones[zone], "address": address, "notes": "Pagar hitam, sebelah musala"})
+                "delivery_zone_id": zones[zone], "address": address, "notes": "Pagar hitam, sebelah musala",
+                **point_fields(location)})
             continue
         run.step(own, f"Pelanggan umum {name}", "/master/clients/create", data={
             "name": name, "phone": f"0815-7000-{index}{index}{index}{index}", "customer_path": "UMUM", "address": address, "is_active": "on"})
@@ -270,7 +300,8 @@ def stage_setup(run):
         run.step(adm, f"Kontak {name}", "/master/mandors/create", data={"client_id": client_id, "name": name, "phone": "0815-7000-1111", "is_active": "on"})
         mandor_id = run.q(lambda: Mandor.query.filter_by(name=name, client_id=client_id).one().id)
         run.step(adm, f"Lokasi {location}", "/master/locations/create", data={
-            "mandor_id": mandor_id, "location_name": location, "description": address, "delivery_zone_id": zones[zone], "is_active": "on"})
+            "mandor_id": mandor_id, "location_name": location, "description": address, "delivery_zone_id": zones[zone], "is_active": "on",
+            **point_fields(location)})
 
     for name, (unit, _per, _price) in INGREDIENTS.items():
         category = "PACKAGING" if name == "Box Nasi" else ("GAS" if name.startswith("Gas") else "RAW_MATERIAL")
@@ -284,7 +315,7 @@ def stage_setup(run):
     for supplier, kind, terms in (("Toko Sumber Rejeki", "RAW_MATERIAL", "14"), ("Agen Gas Makmur", "GAS", "7"), ("CV Kemasan Jaya", "PACKAGING", "30")):
         run.step(own, f"Supplier {supplier}", "/master/suppliers/create", data={
             "supplier_name": supplier, "supplier_type": kind, "default_payment_terms_days": terms, "contact_person": "Bagian Penjualan",
-            "phone": "021-8833-4400", "address": "Cikarang", "is_active": "on"})
+            "phone": "0711-883-440", "address": "Pasar Simpang Tiga, OKI", "is_active": "on"})
 
     for mandor, workers in (("Mandor Budi", ("Slamet", "Wawan", "Rudi")), ("Mandor Asep", ("Dadang", "Ujang Sopandi"))):
         mandor_id = run.q(lambda: Mandor.query.filter_by(name=mandor).one().id)
@@ -379,7 +410,7 @@ def stage_opening(run, ref):
         "name": "Kompor, wajan & peralatan dapur", "category": "KITCHEN_EQUIPMENT", "purchase_date": "2024-03-01",
         "purchase_value": "48000000", "accumulated": "11200000", "useful_life_years": "5"})
     run.step(own, "Aset mobil pengantar", f"{base}/assets/add", data={
-        "name": "Mobil boks pengantar B 9123 KCA", "category": "VEHICLE", "purchase_date": "2023-06-01",
+        "name": "Mobil boks pengantar BG 8123 OK", "category": "VEHICLE", "purchase_date": "2023-06-01",
         "purchase_value": "165000000", "accumulated": "44000000", "useful_life_years": "8"})
     run.step(own, "Kunci saldo awal", f"{base}/lock", data={
         "sensitive_reason": f"Saldo awal sesuai hitung fisik dan rekening koran {tanggal(OPEN_DATE - timedelta(days=1))}", "confirm_password": OWNER_PASSWORD})
@@ -394,10 +425,10 @@ def stage_contracts(run, ref):
     own = run.client("owner")
     pics = run.q(lambda: {p.client_id: p.id for p in ClientPic.query.filter_by(is_active=True).all()})
     for client, title, start, end, terms, limit in (
-        ("PT Maju Konstruksi", "Katering Proyek Tol Km 12 & Gudang", d(2026, 1, 1), d(2026, 12, 31), "net 14", "150000000"),
+        ("PT Maju Konstruksi", "Katering Proyek Perluasan Mill & Mes", d(2026, 1, 1), d(2026, 12, 31), "net 14", "150000000"),
         # Habis 12 hari setelah "hari ini": pengingat H-30 dan H-7 terlihat.
-        ("PT Sinar Beton Utama", "Katering Batching Plant Cibitung", d(2025, 10, 16), d(2026, 10, 15), "net 30", "90000000"),
-        ("PT Bumi Persada Logistik", "Katering Depo Jababeka", BUMI_START, d(2027, 8, 31), "net 30", "60000000"),
+        ("PT Sinar Beton Utama", "Katering Batching Plant Air Sugihan", d(2025, 10, 16), d(2026, 10, 15), "net 30", "90000000"),
+        ("PT Bumi Persada Logistik", "Katering Depo Logistik Simpang Tiga", BUMI_START, d(2027, 8, 31), "net 30", "60000000"),
     ):
         client_id = ref["clients"][client]
         run.step(own, f"Kontrak {client}", "/customer-success/contracts", data={
@@ -461,7 +492,8 @@ def place_general_orders(run, plan, ref, day, adm):
     for name, _zone, location, _address, weekdays, base, username in GENERAL:
         if day.weekday() not in weekdays:
             continue
-        qty = max(10, base + plan.rng.randint(-3, 5))
+        # Tanpa minimal porsi: pesanan kecil (Pak Dedi) membayar ongkir jarak.
+        qty = max(1, base + plan.rng.randint(-3, 5))
         loc = run.q(lambda: (lambda row: {"id": row.id, "mandor_id": row.mandor_id})(DeliveryLocation.query.filter_by(location_name=location).one()))
         amount = general_total(run, ref, loc["mandor_id"], loc["id"], qty, day)
         if username:
@@ -633,7 +665,7 @@ def purchase_day(run, plan, ref, day, upcoming_portions):
                          "supplier_bill_due_date": (day + timedelta(days=terms)).isoformat(), "purchase_place": supplier})
         else:
             data.update({"purchase_type": "CASH", "payment_account_type": "BANK", "bank_account_id": str(ref["bca"]),
-                         "purchase_place": "Pasar Induk Cikarang"})
+                         "purchase_place": "Pasar Simpang Tiga"})
         run.step(adm, f"Belanja {supplier or 'pasar'} {day}", "/logistics/purchases/create", data=data)
 
     if day.weekday() == 0:  # stok warung seminggu sekali, tunai
@@ -819,7 +851,7 @@ def special_events(run, ref, day, plan):
         run.step(own, "Kontrak cicilan mobil", "/finance/fixed-asset-installments/create", data={
             "contract_date": day.isoformat(), "asset_mode": "NEW", "asset_name": "Mobil pickup Grand Max", "asset_category": "VEHICLE",
             "asset_account_code": "1102", "liability_account_code": "2001", "interest_expense_account_code": "5008",
-            "admin_expense_account_code": "5008", "financing_provider": "BCA Finance", "vendor_name": "Dealer Daihatsu Cikarang",
+            "admin_expense_account_code": "5008", "financing_provider": "BCA Finance", "vendor_name": "Dealer Daihatsu Kayuagung",
             "principal_amount": "96000000", "total_interest_amount": "7680000", "total_admin_amount": "1500000",
             "installment_count": "24", "first_due_date": d(2026, 10, 1).isoformat(), "notes": "DP dibayar dealer terpisah"})
 
@@ -855,7 +887,7 @@ def field_expense(run, day, event_type, amount, party, notes, post):
     run.step(adm, f"Transaksi lapangan {notes}", "/field-transactions/create", data={
         "business_event_type": event_type, "transaction_direction": "OUT", "transaction_date": day.isoformat(),
         "entry_date": day.isoformat(), "amount": amount, "payment_method": "CASH", "field_channel": "MANUAL",
-        "site_location": "Dapur Cikarang", "party_snapshot_name": party, "notes": notes})
+        "site_location": "Dapur Air Sugihan", "party_snapshot_name": party, "notes": notes})
     if not post:
         return
     transaction_id = run.q(lambda: FieldTransaction.query.order_by(FieldTransaction.id.desc()).first().id)
@@ -892,7 +924,7 @@ def stage_operations(run, ref):
             run.travel(at(day, 17, 0))
             run.step(adm, "BBM mingguan", "/finance/transport-expenses/create", data={
                 "expense_date": day.isoformat(), "expense_type": "VEHICLE_FUEL", "amount": str(plan.rng.choice((350000, 400000, 425000))),
-                "payment_method": "CASH", "vehicle_label": "B 9123 KCA", "vendor_name": "SPBU Cikarang Baru", "notes": "BBM pengiriman"})
+                "payment_method": "CASH", "vehicle_label": "BG 8123 OK", "vendor_name": "SPBU Simpang Tiga", "notes": "BBM pengiriman"})
 
         # Bulan berjalan (hari terakhir data) belum ditutup: gaji, penyusutan,
         # listrik/air baru dicatat setelah bulannya berakhir.
@@ -966,7 +998,7 @@ def stage_today(run, ref, plan):
             "order_date": monday.isoformat(), "mandor_id": ref["mandors"][mandor], "delivery_location_id": loc,
             "lunch_qty": lunch, "dinner_qty": dinner, "notes": ""})
     budi = run.client("portal.mandor.local")
-    tol = run.q(lambda: DeliveryLocation.query.filter_by(location_name="Proyek Tol Km 12").one().id)
+    tol = run.q(lambda: DeliveryLocation.query.filter_by(location_name="Proyek Perluasan Mill").one().id)
     for meal, qty in (("LUNCH", 62), ("DINNER", 44)):
         page = budi.get("/portal/orders/draft").get_data(as_text=True)
         key = re.search(r'name="idempotency_key" value="([^"]+)"', page)
@@ -987,7 +1019,48 @@ def stage_today(run, ref, plan):
     if NOW_DAY.weekday() != 6:
         request_items(run, ref, NOW_DAY, plan, (("Minyak Goreng", "2"),), fulfill=False)
     field_expense(run, NOW_DAY, "SITE_OPERATION_EXPENSE", "75000", "Warung Bu Darmi", "Air galon untuk pekerja proyek", post=False)
+    stage_partnerships(run)
     run.stop_clock()
+
+
+# Pengajuan kerja sama dari halaman publik /kerja-sama/ajukan, lalu ditindaklanjuti owner.
+PARTNERSHIPS = (
+    (9, "PT Karya Rawa Mandiri", "Bapak Sugeng", "Site manager", "0812-7300-4410", "sugeng@karyarawa.co.id",
+     "Perbaikan Tanggul Kanal Sektor 5", ("-2.9611200", "105.7884300"), 85, 90, "BOTH", 6, "MONTHLY",
+     "Shift pagi & sore, jam istirahat 11.30. Sebagian pekerja tidak makan pedas.",
+     (("CONTACTED", "Sudah telepon Pak Sugeng, minta survei lokasi Kamis."),
+      ("SURVEY", "Survei selesai: akses lewat pos 2, perlu izin masuk area."),
+      ("OFFERED", "Penawaran Rp 16.500/porsi siang & sore, termin bulanan."),
+      ("WON", "Disetujui. Kontrak dibuat mulai bulan depan."))),
+    (3, "CV Sumber Hijau Agro", "Ibu Ratna", "HRD", "0813-6611-2290", "",
+     "Kebun Bibit Akasia Blok B", ("-3.0420500", "105.6915200"), 40, 40, "LUNCH", 3, "UNDECIDED",
+     "Ingin coba 1 minggu dulu sebelum kontrak.",
+     (("CONTACTED", "Ibu Ratna minta contoh menu seminggu, sudah dikirim lewat WhatsApp."),)),
+    (0, "PT Lintas Timur Ekspedisi", "Pak Anton", "Kepala pool", "0811-7788-1200", "anton@lintastimur.id",
+     "Pool Truk Simpang Tiga", ("-2.9399100", "105.7008700"), 25, 30, "DINNER", None, "WEEKLY",
+     "Sopir datang bergantian, butuh makan sore jam 17.00.", ()),
+)
+
+
+def stage_partnerships(run):
+    from app.models.partnership import PartnershipRequest
+
+    run.stage = "Pengajuan kerja sama"
+    for days_ago, company, contact, role, phone, email, project, point, workers, portions, meals, months, pay, notes, follow in PARTNERSHIPS:
+        day = NOW_DAY - timedelta(days=days_ago)
+        run.travel(at(day, 7 if not days_ago else 14, 10))
+        visitor = run.client()
+        run.step(visitor, f"Pengajuan {company}", "/kerja-sama/ajukan", data={
+            "company_name": company, "contact_name": contact, "contact_role": role, "phone": phone, "email": email,
+            "project_name": project, "project_address": f"{project}, Kec. Air Sugihan, OKI",
+            "latitude": point[0], "longitude": point[1], "workers_count": workers, "portions_per_day": portions,
+            "meals": meals, "start_date": (day + timedelta(days=21)).isoformat() if months else "",
+            "duration_months": months or "", "payment_preference": pay, "notes": notes})
+        request_id = run.q(lambda: PartnershipRequest.query.filter_by(company_name=company).one().id)
+        for index, (status, note) in enumerate(follow):
+            run.travel(at(min(day + timedelta(days=index + 1), NOW_DAY), 10 + index, 0))
+            run.step(run.client("owner"), f"Tindak lanjut {company}: {status}",
+                     f"/customer-success/partnerships/{request_id}/follow-up", data={"status": status, "note": note})
 
 
 def main():
