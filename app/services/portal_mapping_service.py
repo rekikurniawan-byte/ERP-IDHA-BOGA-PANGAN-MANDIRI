@@ -120,6 +120,20 @@ def _apply_mapping(scope, mapping):
 
 
 def build_portal_external_scope(user):
+    """Akses portal akun ini. Disimpan sekali per request: satu halaman portal
+    memanggilnya puluhan kali (dulu 23x query mapping per halaman)."""
+    from flask import g, has_request_context
+
+    if not has_request_context():
+        return _build_portal_external_scope(user)
+    key = (getattr(user, "id", None), getattr(user, "role", None))
+    memo = g.setdefault("_portal_scope_memo", {})
+    if key not in memo:
+        memo[key] = _build_portal_external_scope(user)
+    return memo[key]
+
+
+def _build_portal_external_scope(user):
     role = getattr(user, "role", None)
     branch_id = getattr(user, "branch_id", None)
     user_id = getattr(user, "id", None)

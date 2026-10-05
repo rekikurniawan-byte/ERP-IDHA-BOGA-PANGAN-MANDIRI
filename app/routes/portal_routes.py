@@ -205,24 +205,70 @@ def my_dashboard():
 
 
 def _role_dashboard_data(persona, *, include_center=False):
-    data = {
+    if include_center:
+        # Beranda (portal/_dashboard_*.html) hanya membaca data.center dan
+        # data.scope; command center sudah membangun pesanan, tagihan,
+        # pembayaran, dan hutang sendiri -- jangan dibangun dua kali.
+        return {
+            "persona": persona,
+            "active_role": current_user.role,
+            "branch_id": current_user.branch_id,
+            "scope": build_portal_access_scope(current_user),
+            "center": build_portal_command_center(current_user),
+        }
+    user = current_user._get_current_object()
+    year, month = request.args.get("year"), request.args.get("month")
+    # Dihitung hanya bila template halaman benar-benar membacanya (halaman
+    # Pesan misalnya tidak memakai tagihan/hutang/closing sama sekali).
+    return {
         "persona": persona,
         "active_role": current_user.role,
         "branch_id": current_user.branch_id,
         "scope": build_portal_access_scope(current_user),
-        "orders": build_portal_order_status_context(current_user),
-        "invoices": build_portal_invoice_read_model(current_user, limit=5),
-        "payments": build_portal_payment_history_read_model(current_user, limit=5),
-        "debts": build_portal_worker_debt_read_model(current_user, limit=5),
-        "closing": build_portal_closing_visibility(
-            current_user,
-            year=request.args.get("year"),
-            month=request.args.get("month"),
-        ),
+        "orders": _LazyModel(lambda: build_portal_order_status_context(user)),
+        "invoices": _LazyModel(lambda: build_portal_invoice_read_model(user, limit=5)),
+        "payments": _LazyModel(lambda: build_portal_payment_history_read_model(user, limit=5)),
+        "debts": _LazyModel(lambda: build_portal_worker_debt_read_model(user, limit=5)),
+        "closing": _LazyModel(lambda: build_portal_closing_visibility(user, year=year, month=month)),
     }
-    if include_center:
-        data["center"] = build_portal_command_center(current_user)
-    return data
+
+
+class _LazyModel:
+    """Model baca portal yang baru dibangun saat pertama dipakai (template/route)."""
+
+    __slots__ = ("_factory", "_value", "_ready")
+
+    def __init__(self, factory):
+        self._factory = factory
+        self._value = None
+        self._ready = False
+
+    def _resolve(self):
+        if not self._ready:
+            self._value = self._factory()
+            self._ready = True
+        return self._value
+
+    def __getattr__(self, name):
+        return getattr(self._resolve(), name)
+
+    def __getitem__(self, key):
+        return self._resolve()[key]
+
+    def __contains__(self, key):
+        return key in self._resolve()
+
+    def __iter__(self):
+        return iter(self._resolve())
+
+    def __len__(self):
+        return len(self._resolve())
+
+    def __bool__(self):
+        return bool(self._resolve())
+
+    def get(self, key, default=None):
+        return self._resolve().get(key, default)
 
 
 def _customer_persona():

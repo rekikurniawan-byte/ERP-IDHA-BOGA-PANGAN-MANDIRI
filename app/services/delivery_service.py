@@ -71,7 +71,39 @@ def unreplaced_shortage_qty(order_detail_id, delivery_type):
     return max(shortage - replaced, 0)
 
 
-def get_remaining_delivery_rows(daily_order, delivery_type):
+def planned_delivery_qty_lookup(order_detail_ids):
+    """{(order_detail_id, delivery_type): porsi terencana} dalam SATU query.
+
+    Sama aturannya dengan get_planned_delivery_qty_for_order_detail (delivery
+    aktif, bukan pengganti kekurangan), dipakai panel dashboard yang memeriksa
+    banyak order sekaligus supaya tidak satu query per baris order.
+    """
+    from sqlalchemy import func
+
+    ids = sorted({int(i) for i in order_detail_ids if i})
+    lookup = {}
+    if not ids:
+        return lookup
+    rows = (
+        db.session.query(DeliveryDetail.daily_order_detail_id, Delivery.notes, func.coalesce(func.sum(DeliveryDetail.planned_qty), 0))
+        .join(Delivery, Delivery.id == DeliveryDetail.delivery_id)
+        .filter(
+            DeliveryDetail.daily_order_detail_id.in_(ids),
+            Delivery.status != "CANCELLED",
+            ~Delivery.notes.like("%batch=SHORTAGE_REPLACEMENT%"),
+        )
+        .group_by(DeliveryDetail.daily_order_detail_id, Delivery.notes)
+        .all()
+    )
+    for detail_id, notes, planned in rows:
+        for delivery_type in ("LUNCH", "DINNER"):
+            if f"delivery_type={delivery_type}" in (notes or ""):
+                key = (detail_id, delivery_type)
+                lookup[key] = lookup.get(key, 0) + int(planned or 0)
+    return lookup
+
+
+def get_remaining_delivery_rows(daily_order, delivery_type, planned_lookup=None):
     rows = []
     total_order_qty = 0
     total_planned_delivery_qty = 0
@@ -82,10 +114,13 @@ def get_remaining_delivery_rows(daily_order, delivery_type):
         if order_qty <= 0:
             continue
 
-        planned_delivery_qty = get_planned_delivery_qty_for_order_detail(
-            order_detail_id=order_detail.id,
-            delivery_type=delivery_type
-        )
+        if planned_lookup is not None:
+            planned_delivery_qty = planned_lookup.get((order_detail.id, delivery_type), 0)
+        else:
+            planned_delivery_qty = get_planned_delivery_qty_for_order_detail(
+                order_detail_id=order_detail.id,
+                delivery_type=delivery_type
+            )
 
         remaining_qty = order_qty - planned_delivery_qty
 
@@ -106,16 +141,23 @@ def get_remaining_delivery_rows(daily_order, delivery_type):
     return rows, total_order_qty, total_planned_delivery_qty, remaining_total
 
 
-def get_delivery_summary_for_order(daily_order, delivery_type):
-    deliveries = find_existing_deliveries(
-        branch_id=daily_order.branch_id,
-        delivery_date=daily_order.order_date,
-        delivery_type=delivery_type
-    )
+def get_delivery_summary_for_order(daily_order, delivery_type, planned_lookup=None, cache=None):
+    cache_key = ("deliveries", daily_order.branch_id, daily_order.order_date, delivery_type)
+    if cache is not None and cache_key in cache:
+        deliveries = cache[cache_key]
+    else:
+        deliveries = find_existing_deliveries(
+            branch_id=daily_order.branch_id,
+            delivery_date=daily_order.order_date,
+            delivery_type=delivery_type
+        )
+        if cache is not None:
+            cache[cache_key] = deliveries
 
     rows, total_order_qty, total_planned_delivery_qty, remaining_total = get_remaining_delivery_rows(
         daily_order=daily_order,
-        delivery_type=delivery_type
+        delivery_type=delivery_type,
+        planned_lookup=planned_lookup,
     )
 
     return {
@@ -140,7 +182,15 @@ def get_delivery_type_label(delivery_type):
     return DELIVERY_TYPE_LABELS.get(delivery_type, delivery_type or "-")
 
 
-def build_delivery_next_action_for_order(daily_order, delivery_type):
+def _cached(cache, key, loader):
+    if cache is None:
+        return loader()
+    if key not in cache:
+        cache[key] = loader()
+    return cache[key]
+
+
+def build_delivery_next_action_for_order(daily_order, delivery_type, planned_lookup=None, cache=None):
     """
     PRODUCTION read-only guard builder.
 
@@ -148,13 +198,14 @@ def build_delivery_next_action_for_order(daily_order, delivery_type):
     sadar ketika produksi sudah COMPLETED tetapi delivery belum dibuat.
     Fungsi ini tidak membuat delivery, tidak mengubah order, dan tidak mengubah DB.
     """
-    summary = get_delivery_summary_for_order(daily_order, delivery_type)
-    production = get_completed_production(
-        branch_id=daily_order.branch_id,
-        production_date=daily_order.order_date,
-        delivery_type=delivery_type,
-    )
-    driver = get_default_driver(daily_order.branch_id)
+    summary = get_delivery_summary_for_order(daily_order, delivery_type, planned_lookup=planned_lookup, cache=cache)
+    production = _cached(cache, ("production", daily_order.branch_id, daily_order.order_date, delivery_type),
+                         lambda: get_completed_production(
+                             branch_id=daily_order.branch_id,
+                             production_date=daily_order.order_date,
+                             delivery_type=delivery_type,
+                         ))
+    driver = _cached(cache, ("driver", daily_order.branch_id), lambda: get_default_driver(daily_order.branch_id))
 
     label = get_delivery_type_label(delivery_type)
     total_order_qty = int(summary.get("total_order_qty") or 0)
@@ -240,18 +291,55 @@ def build_delivery_next_action_for_order(daily_order, delivery_type):
     }
 
 
-def get_delivery_next_actions_for_order(daily_order):
+def get_delivery_next_actions_for_order(daily_order, planned_lookup=None, cache=None):
     return [
-        build_delivery_next_action_for_order(daily_order, "LUNCH"),
-        build_delivery_next_action_for_order(daily_order, "DINNER"),
+        build_delivery_next_action_for_order(daily_order, "LUNCH", planned_lookup=planned_lookup, cache=cache),
+        build_delivery_next_action_for_order(daily_order, "DINNER", planned_lookup=planned_lookup, cache=cache),
     ]
 
 
-def get_ready_delivery_next_actions_for_order(daily_order):
+def get_ready_delivery_next_actions_for_order(daily_order, planned_lookup=None, cache=None):
     return [
-        action for action in get_delivery_next_actions_for_order(daily_order)
+        action for action in get_delivery_next_actions_for_order(daily_order, planned_lookup=planned_lookup, cache=cache)
         if action.get("needs_attention")
     ]
+
+
+def _prefetch_delivery_context(branch_id, dates):
+    """Isi cache build_delivery_next_action_for_order untuk banyak tanggal
+    sekaligus: delivery aktif & produksi COMPLETED per (tanggal, tipe)."""
+    cache = {}
+    dates = sorted(d for d in dates if d)
+    if not dates:
+        return cache
+    for day in dates:
+        for delivery_type in ("LUNCH", "DINNER"):
+            cache[("deliveries", branch_id, day, delivery_type)] = []
+            cache[("production", branch_id, day, delivery_type)] = None
+    deliveries = (
+        Delivery.query.filter(
+            Delivery.branch_id == branch_id,
+            Delivery.delivery_date.in_(dates),
+            Delivery.status != "CANCELLED",
+            ~Delivery.notes.like("%batch=SHORTAGE_REPLACEMENT%"),
+        )
+        .order_by(Delivery.id.desc())
+        .all()
+    )
+    for delivery in deliveries:
+        for delivery_type in ("LUNCH", "DINNER"):
+            if f"delivery_type={delivery_type}" in (delivery.notes or ""):
+                cache[("deliveries", branch_id, delivery.delivery_date, delivery_type)].append(delivery)
+    productions = Production.query.filter(
+        Production.branch_id == branch_id,
+        Production.production_date.in_(dates),
+        Production.status == "COMPLETED",
+    ).order_by(Production.id.asc()).all()
+    for production in productions:
+        key = ("production", branch_id, production.production_date, production.production_type)
+        if key in cache and cache[key] is None:
+            cache[key] = production
+    return cache
 
 
 def get_pending_delivery_next_actions(branch_id, target_date=None, limit=10):
@@ -260,9 +348,11 @@ def get_pending_delivery_next_actions(branch_id, target_date=None, limit=10):
     Mengambil order locked yang produksinya completed tetapi delivery normal belum dibuat
     atau masih ada sisa porsi delivery tambahan.
     """
+    from sqlalchemy.orm import selectinload
+
     from app.models.operational import DailyOrder
 
-    query = DailyOrder.query.filter_by(branch_id=branch_id, is_locked=True)
+    query = DailyOrder.query.options(selectinload(DailyOrder.details)).filter_by(branch_id=branch_id, is_locked=True)
 
     if target_date is not None:
         query = query.filter(DailyOrder.order_date == target_date)
@@ -273,9 +363,15 @@ def get_pending_delivery_next_actions(branch_id, target_date=None, limit=10):
     ).limit(max(limit * 5, 20)).all()
 
     actions = []
+    # Satu query untuk porsi terencana semua order + cache produksi/driver/
+    # delivery per tanggal: dulu ~5 query per baris order (dashboard 2+ detik).
+    planned_lookup = planned_delivery_qty_lookup(
+        detail.id for daily_order in orders for detail in daily_order.details
+    )
+    cache = _prefetch_delivery_context(branch_id, {daily_order.order_date for daily_order in orders})
 
     for daily_order in orders:
-        for action in get_ready_delivery_next_actions_for_order(daily_order):
+        for action in get_ready_delivery_next_actions_for_order(daily_order, planned_lookup=planned_lookup, cache=cache):
             actions.append(action)
             if len(actions) >= limit:
                 return actions

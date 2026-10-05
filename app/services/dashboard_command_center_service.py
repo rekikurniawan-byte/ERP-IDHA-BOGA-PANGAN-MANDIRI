@@ -87,8 +87,11 @@ def _backup_signal() -> Dict[str, Any]:
     """
     try:
         from app.services.backup_service import get_backup_status
+        from app.services.ttl_cache_service import get_cached_value
 
-        status = get_backup_status()
+        # Status backup menghitung sha256 semua file backup; cukup diperbarui
+        # tiap 5 menit untuk kartu dashboard (halaman Backup tetap segar).
+        status = get_cached_value(("dashboard_backup_status",), get_backup_status, ttl_seconds=300)
         full_backups = list(status.get("full_backups") or [])
         verified = [item for item in full_backups if item.get("is_verified_backup")]
         latest_verified = verified[0] if verified else None
