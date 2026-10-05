@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/location_picker.html" import directions_link %}
+{% from "components/location_photos.html" import photo_gallery %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="receive">
@@ -13,6 +14,11 @@
         </p>
         {% if delivery_detail.delivery_location and delivery_detail.delivery_location.description %}<p class="text-muted small mb-2">{{ delivery_detail.delivery_location.description }}</p>{% endif %}
         {{ directions_link(delivery_detail.delivery_location, small=false) }}
+        {% if delivery_detail.delivery_location %}
+            <div class="mt-3">
+                {{ photo_gallery(delivery_detail.delivery_location, location_photos_for(delivery_detail.delivery_location.id), can_manage=can_manage_location_photos(current_user, delivery_detail.delivery_location), next_url=request.path) }}
+            </div>
+        {% endif %}
     </div>
 
     <div class="page-actions">

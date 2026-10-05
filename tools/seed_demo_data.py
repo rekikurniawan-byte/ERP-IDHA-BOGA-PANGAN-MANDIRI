@@ -125,7 +125,24 @@ LOCATION_POINTS = {
 
 def point_fields(location):
     lat, lng = LOCATION_POINTS[location]
-    return {"latitude": lat, "longitude": lng, "gps_accuracy": "12"}
+    return {"latitude": lat, "longitude": lng, "gps_accuracy": "12", "location_photos": location_photo(location)}
+
+
+def location_photo(label):
+    """Foto contoh titik serah terima (wajib sejak 2026-10-05): gambar JPEG berlabel."""
+    from PIL import Image, ImageDraw
+
+    seed = sum(ord(ch) for ch in label)
+    image = Image.new("RGB", (960, 640), (60 + seed % 50, 90 + seed % 40, 70 + seed % 30))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 470, 960, 640), fill=(28, 25, 23))
+    draw.rectangle((380, 180, 580, 470), fill=(194, 65, 12))  # pintu/pos serah terima
+    draw.text((40, 500), f"Titik serah terima: {label}", fill=(245, 240, 232))
+    draw.text((40, 540), "Foto contoh data demo", fill=(200, 190, 180))
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=80)
+    buffer.seek(0)
+    return (buffer, re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-") + ".jpg")
 
 # Bahan per porsi (dipakai dapur) dan harga beli.
 INGREDIENTS = {

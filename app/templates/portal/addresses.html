@@ -1,5 +1,6 @@
 {% extends "layouts/portal_mobile.html" %}
 {% from "components/location_picker.html" import location_picker %}
+{% from "components/location_photos.html" import photo_input, photo_gallery %}
 
 {% macro address_fields(location=none, prefix="new") %}
     <div class="portal-address-fields">
@@ -69,6 +70,9 @@
                             {% if location.gps_updated_at %}<span><i class="bi bi-clock"></i> Titik diperbarui {{ location.gps_updated_at|wib }}</span>{% endif %}
                             {% if not location.is_active %}<span class="text-muted">Nonaktif (hubungi admin)</span>{% endif %}
                         </div>
+                        <div class="portal-address-photos">
+                            {{ photo_gallery(location, row.photos, can_manage=row.editable, next_url=url_for('portal.addresses')) }}
+                        </div>
                         <div class="portal-address-tools">
                         {% if row.maps_url %}<a class="btn btn-sm app-btn-secondary" href="{{ row.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-map"></i> Buka di Maps</a>{% endif %}
                         {% if row.editable %}
@@ -95,9 +99,10 @@
         {% if book.can_add %}
             <details class="app-card portal-address-new" {% if not book.rows %}open{% endif %}>
                 <summary class="card-body"><i class="bi bi-plus-circle"></i> Tambah alamat baru</summary>
-                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form card-body pt-0" data-ui-form="true">
+                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form card-body pt-0" data-ui-form="true" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {{ address_fields() }}
+                    {{ photo_input(required=true) }}
                     <div class="portal-address-submit">
                         <button class="btn app-btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Simpan alamat</button>
                     </div>

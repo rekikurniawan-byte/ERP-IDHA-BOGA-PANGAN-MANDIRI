@@ -204,8 +204,10 @@ def _shown_min_portions(branch_id):
 
 
 def _location_option_cards(locations):
+    from app.services.location_photo_service import first_photo_ids
     from app.services.pricing_service import is_general_client, quote_price
 
+    photo_ids = first_photo_ids([location.id for location in locations])
     cards = []
     for location in locations:
         mandor = location.mandor
@@ -218,6 +220,7 @@ def _location_option_cards(locations):
                 "delivery_fee_label": _delivery_fee_label(mandor.branch_id, client, location) if mandor else None,
                 "fee": _delivery_fee_facts(mandor.branch_id, client, location) if mandor else None,
                 "has_point": location.latitude is not None,
+                "photo_id": photo_ids.get(location.id),
                 # Minimal 1 porsi = tidak ada minimal; jangan tampilkan.
                 "min_portions": _shown_min_portions(mandor.branch_id) if mandor and is_general_client(client) else None,
                 "id": location.id,

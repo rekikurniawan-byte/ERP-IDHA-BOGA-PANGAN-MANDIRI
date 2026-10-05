@@ -154,6 +154,7 @@
                                        data-included="{{ 1 if fee.included else 0 }}"
                                        data-name="{{ location.name }}">
                                 <span class="po-loc-body">
+                                    {% if location.photo_id %}<img class="po-loc-photo" src="{{ url_for('location_photos.view', attachment_id=location.photo_id) }}" alt="Foto {{ location.name }}" loading="lazy">{% endif %}
                                     <span class="po-loc-top">
                                         <strong>{{ location.name }}</strong>
                                         {% if location.has_point %}<i class="bi bi-geo-alt-fill po-gps" title="Titik GPS tersimpan"></i>{% endif %}
@@ -162,6 +163,7 @@
                                     {% if not is_customer %}<span class="po-loc-desc">{{ location.mandor_name }} · {{ location.client_name }}</span>{% endif %}
                                     <span class="po-loc-meta">
                                         {% if location.price_per_portion %}<span>{{ location.price_per_portion|rupiah }}/porsi</span>{% endif %}
+                                        {% if not location.photo_id %}<span class="is-warn"><i class="bi bi-camera"></i> Belum ada foto</span>{% endif %}
                                         {% if fee.error %}<span class="is-warn">Ongkir belum tersedia</span>
                                         {% elif fee.included %}<span>Ongkir termasuk</span>
                                         {% elif fee.fee %}<span>{% if fee.km_label %}± {{ fee.km_label }} · {% endif %}ongkir {{ fee.fee|rupiah }}</span>

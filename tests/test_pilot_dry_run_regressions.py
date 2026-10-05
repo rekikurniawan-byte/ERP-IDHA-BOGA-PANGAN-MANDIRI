@@ -3,6 +3,8 @@
 Gladi menjalankan runbook deployment/PILOT_SATU_CABANG.md dari database kosong
 lewat halaman-halaman aslinya. Setiap tes di bawah gagal sebelum perbaikannya.
 """
+import base64
+import io
 import json
 from datetime import date, timedelta
 from decimal import Decimal
@@ -14,6 +16,15 @@ from app.services.pricing_service import PricingError, set_delivery_fee, set_por
 from tests.test_prepaid_orders import _draft, _pay, _payment_gate, _setup, ctx  # noqa: F401 - fixture
 
 TODAY = date.today()
+
+# PNG 1x1 untuk foto lokasi (wajib sejak keputusan owner 2026-10-05).
+TINY_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+def _photo(name="foto.png"):
+    return (io.BytesIO(TINY_PNG), name)
 
 
 def _login(app, user):
@@ -222,8 +233,8 @@ def test_halaman_pesan_pelanggan_umum_tanpa_label_pt_mandor(app, ctx):
     app.test_client().post("/portal/register", data={
         "full_name": "Ibu Uji", "phone": "081570000999", "username": username, "branch_id": s.branch.id,
         "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026", "location_name": "Rumah Uji",
-        "delivery_zone_id": s.zone.id, "address": "Jl. Uji No. 1",
-    })
+        "delivery_zone_id": s.zone.id, "address": "Jl. Uji No. 1", "location_photos": _photo(),
+    }, content_type="multipart/form-data")
     customer = User.query.filter_by(username=username).one()
 
     page = _login(app, customer).get("/portal/orders/draft").get_data(as_text=True)
@@ -250,7 +261,8 @@ def test_daftar_dengan_titik_gps_tanpa_zona(app, ctx):
     username = f"gps-{uuid4().hex[:8]}"
     app.test_client().post("/portal/register", data={
         **base, "username": username, "latitude": "-2,9612345", "longitude": "105.7512345", "gps_accuracy": "12.4",
-    })
+        "location_photos": _photo(),
+    }, content_type="multipart/form-data")
     user = User.query.filter_by(username=username).one()
     location = PortalUserMapping.query.filter_by(user_id=user.id).one().delivery_location
 
@@ -435,3 +447,47 @@ def test_aksi_atomik_bersarang_tidak_menutup_transaksi_luar(ctx):
         with atomic_business_action(module="TEST", action="INNER", description="dalam", audit_success=False):
             ctx.session.execute(text("SELECT 1"))
         assert ctx.session.execute(text("SELECT 1")).scalar() == 1
+
+
+# --- foto lokasi antar: wajib saat daftar, minimal 1, maksimal 3 -------------
+
+def test_foto_lokasi_wajib_saat_daftar_dan_dibatasi(app, ctx):
+    from app.models.master import User
+    from app.models.system import PortalUserMapping
+    from app.services.location_photo_service import (
+        LocationPhotoError,
+        add_photos,
+        location_photos,
+        remove_photo,
+    )
+
+    s = _setup(ctx)
+    base = {
+        "full_name": "Bu Foto", "phone": "081570000997", "branch_id": s.branch.id,
+        "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026", "location_name": "Rumah Foto",
+        "address": "Jl. Foto 1", "latitude": "-2.97", "longitude": "105.74",
+    }
+    tanpa_foto = app.test_client().post("/portal/register", data={**base, "username": f"foto-{uuid4().hex[:8]}"})
+    assert tanpa_foto.status_code == 400
+
+    username = f"foto-{uuid4().hex[:8]}"
+    app.test_client().post("/portal/register", data={**base, "username": username, "location_photos": _photo()},
+                           content_type="multipart/form-data")
+    user = User.query.filter_by(username=username).one()
+    location = PortalUserMapping.query.filter_by(user_id=user.id).one().delivery_location
+    photos = location_photos(location.id)
+    assert len(photos) == 1
+
+    # Foto terakhir tidak boleh dihapus.
+    with pytest.raises(LocationPhotoError, match="minimal 1"):
+        remove_photo(user, location, photos[0].id)
+
+    from werkzeug.datastructures import FileStorage
+
+    def storage():
+        return FileStorage(stream=io.BytesIO(TINY_PNG), filename="tambah.png", content_type="image/png")
+
+    add_photos(user, location, [storage(), storage()])
+    assert len(location_photos(location.id)) == 3
+    with pytest.raises(LocationPhotoError, match="Maksimal 3"):
+        add_photos(user, location, [storage()])

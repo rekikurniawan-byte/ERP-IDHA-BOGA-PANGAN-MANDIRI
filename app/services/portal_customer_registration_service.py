@@ -122,8 +122,13 @@ def validate_customer_registration_form(form):
     }
 
 
-def register_portal_customer(form):
+def register_portal_customer(form, files=None):
+    from app.services.location_photo_service import LocationPhotoError, discard_files, stage_location_photos
+
     payload = validate_customer_registration_form(form)
+    photo_files = [f for f in (files or []) if f is not None and getattr(f, "filename", "")]
+    if not photo_files:
+        raise ValueError("Foto lokasi antar wajib diunggah (minimal 1 foto titik serah terima).")
     branch = payload["branch"]
 
     user = User(
@@ -171,14 +176,22 @@ def register_portal_customer(form):
         is_active=True,
     )
 
+    staged = []
     try:
         db.session.add_all([user, client, mandor, location, mapping])
+        db.session.flush()
+        staged = stage_location_photos(location, photo_files, uploaded_by=user.id, branch_id=branch.id, required=True)
         db.session.commit()
+    except LocationPhotoError as exc:
+        db.session.rollback()
+        raise ValueError(str(exc)) from exc
     except IntegrityError as exc:
         db.session.rollback()
+        discard_files(staged)
         raise ValueError("Data registrasi bentrok dengan data yang sudah ada. Gunakan username atau lokasi lain.") from exc
     except Exception:
         db.session.rollback()
+        discard_files(staged)
         raise
 
     return user

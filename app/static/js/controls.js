@@ -687,7 +687,36 @@
         });
     }
 
+    // Foto lokasi: pratinjau sebelum unggah (maks 3) dan unggah langsung di galeri.
+    function setupPhotoInput(input) {
+        const holder = input.closest("[data-photo-input]");
+        const preview = holder ? holder.querySelector("[data-photo-preview]") : null;
+        input.addEventListener("change", function () {
+            if (input.files.length > 3) {
+                window.alert("Maksimal 3 foto per lokasi.");
+                input.value = "";
+            }
+            if (!preview) return;
+            preview.replaceChildren();
+            Array.prototype.slice.call(input.files, 0, 3).forEach(function (file) {
+                const img = document.createElement("img");
+                img.alt = file.name;
+                img.src = URL.createObjectURL(file);
+                img.onload = function () { URL.revokeObjectURL(img.src); };
+                preview.appendChild(img);
+            });
+        });
+    }
+
+    document.addEventListener("change", function (event) {
+        const input = event.target;
+        if (input && input.matches && input.matches("[data-photo-autosubmit]") && input.files.length) {
+            input.form.submit();
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-photo-files]").forEach(setupPhotoInput);
         document.querySelectorAll("[data-order-builder]").forEach(setupOrderBuilder);
         document.querySelectorAll("[data-tabs]").forEach(setupTabs);
         document.querySelectorAll("[data-filter-group]").forEach(setupFilterGroup);

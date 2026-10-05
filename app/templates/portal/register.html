@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/location_picker.html" import location_picker %}
+{% from "components/location_photos.html" import photo_input %}
 
 {% block public_page %}
 {% set form = data.form %}
@@ -42,7 +43,7 @@
             <h2>Daftar pelanggan</h2>
             <p>Buat akun untuk memesan katering dan mengirim bukti pembayaran.</p>
 
-            <form method="post" action="{{ url_for('portal.register') }}" class="app-form" data-ui-form="true">
+            <form method="post" action="{{ url_for('portal.register') }}" class="app-form" data-ui-form="true" enctype="multipart/form-data">
                 {% include "components/csrf_token.html" %}
 
                 <section class="pub-form-section">
@@ -88,6 +89,9 @@
                         </label>
                         <div class="is-wide">
                             {{ location_picker(lat=form.get('latitude') or none, lng=form.get('longitude') or none, accuracy=form.get('gps_accuracy') or none, geo=site.geo if site else none, label="Titik lokasi pengiriman", required=not data.zones, help="Tekan tombol GPS saat Anda di lokasi, atau ketuk peta lalu geser penanda ke titik yang tepat. Titik ini dipakai pengantar dan untuk menghitung ongkir.") }}
+                        </div>
+                        <div class="is-wide">
+                            {{ photo_input(required=true, label="Foto lokasi antar", help="Foto titik serah terima: pagar, pintu, atau pos. Wajib 1, boleh sampai 3 foto.") }}
                         </div>
                         {% if data.zones %}
                             <label class="is-wide">

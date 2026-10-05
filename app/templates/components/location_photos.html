@@ -1,0 +1,55 @@
+{#
+  Foto lokasi antar.
+  photo_input(required)        : input unggah di dalam form (nama field: location_photos).
+  photo_gallery(location, photos, can_manage, next_url)
+                               : galeri + tambah/hapus. Letakkan DI LUAR form lain
+                                 (berisi form sendiri).
+#}
+{% macro photo_input(required=false, label="Foto lokasi antar", help="") %}
+<div class="lp-input" data-photo-input>
+    <span class="lp-label">{{ label }}{% if required %} <span class="text-danger">*</span>{% endif %}</span>
+    <label class="lp-drop">
+        <input type="file" name="location_photos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple {% if required %}required{% endif %} data-photo-files>
+        <i class="bi bi-camera" aria-hidden="true"></i>
+        <strong>Ambil atau pilih foto</strong>
+        <small>{{ help or "Foto titik serah terima (pagar, pintu, pos). Maksimal 3 foto, JPG/PNG/WEBP." }}</small>
+    </label>
+    <div class="lp-preview" data-photo-preview></div>
+</div>
+{% endmacro %}
+
+{% macro photo_gallery(location, photos, can_manage=false, next_url="", max_photos=3) %}
+<div class="lp-gallery">
+    {% if photos %}
+        <div class="lp-thumbs">
+            {% for photo in photos %}
+                <figure class="lp-thumb">
+                    <a href="{{ url_for('location_photos.view', attachment_id=photo.id) }}" target="_blank" rel="noopener" aria-label="Buka foto {{ loop.index }}">
+                        <img src="{{ url_for('location_photos.view', attachment_id=photo.id) }}" alt="Foto lokasi {{ location.location_name }} {{ loop.index }}" loading="lazy">
+                    </a>
+                    {% if can_manage and photos|length > 1 %}
+                        <form method="post" action="{{ url_for('location_photos.delete', attachment_id=photo.id) }}" data-app-confirm="Hapus foto ini?">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="next" value="{{ next_url }}">
+                            <button type="submit" class="lp-remove" aria-label="Hapus foto"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                    {% endif %}
+                </figure>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="lp-missing"><i class="bi bi-camera"></i><span>Belum ada foto lokasi. Tambahkan foto titik serah terima supaya pengantar tidak salah tempat.</span></div>
+    {% endif %}
+    {% if can_manage and photos|length < max_photos %}
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('location_photos.add', location_id=location.id) }}" class="lp-add">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <label class="btn btn-sm app-btn-secondary lp-add-btn">
+                <i class="bi bi-camera"></i> {{ "Tambah foto" if photos else "Unggah foto" }}
+                <input type="file" name="location_photos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple required data-photo-autosubmit hidden>
+            </label>
+            <small>{{ photos|length }}/{{ max_photos }} foto</small>
+        </form>
+    {% endif %}
+</div>
+{% endmacro %}

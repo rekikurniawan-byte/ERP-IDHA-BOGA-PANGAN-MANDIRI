@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.extensions import db
 from app.models.master import DeliveryLocation, Mandor
 from app.services import geo_service
+from app.services.location_photo_service import LocationPhotoError, discard_files, location_photos, stage_location_photos
 from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.portal_order_draft_service import orderable_location_ids
 from app.services.user_management_service import ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT
@@ -52,6 +53,7 @@ def address_book(user):
             quote = geo_service.quote_distance_fee(branch_id, location) if branch_id and general else None
             rows.append({
                 "location": location,
+                "photos": location_photos(location.id),
                 "editable": location.id in editable,
                 "has_point": geo_service.has_point(location),
                 "quote": quote,
@@ -115,17 +117,28 @@ def _commit():
         raise PortalAddressError("Nama alamat itu sudah dipakai. Pakai nama lain, misalnya Rumah 2.") from exc
 
 
-def add_address(user, form):
+def add_address(user, form, files=None):
     scope = build_portal_external_scope(user)
     mandor = _owner_mandor(user, scope)
     if not mandor:
         raise PortalAddressError("Akun ini tidak bisa menambah alamat sendiri. Hubungi admin.")
+    if not [f for f in (files or []) if f is not None and getattr(f, "filename", "")]:
+        raise PortalAddressError("Foto lokasi antar wajib diunggah (minimal 1 foto titik serah terima).")
     location = DeliveryLocation(mandor_id=mandor.id, is_active=True)
     _apply_form(location, form)
     db.session.add(location)
     db.session.flush()
+    try:
+        staged = stage_location_photos(location, files, uploaded_by=user.id, branch_id=mandor.branch_id, required=True)
+    except LocationPhotoError as exc:
+        db.session.rollback()
+        raise PortalAddressError(str(exc)) from exc
     _audit(user, location, "CREATE")
-    _commit()
+    try:
+        _commit()
+    except PortalAddressError:
+        discard_files(staged)
+        raise
     return location
 
 

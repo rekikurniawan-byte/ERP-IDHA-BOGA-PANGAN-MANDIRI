@@ -40,6 +40,7 @@
                     <th>Lokasi</th>
                     <th>Deskripsi</th>
                     <th>Titik GPS</th>
+                    <th>Foto</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -56,6 +57,11 @@
                         {% else %}
                             <span class="status-badge warning">Belum ada</span>
                         {% endif %}
+                    </td>
+                    <td>
+                        {% set n_photos = photo_counts.get(location.id, 0) %}
+                        {% if n_photos %}<span class="status-badge success"><i class="bi bi-camera"></i> {{ n_photos }} foto</span>
+                        {% else %}<a class="status-badge warning" href="{{ url_for('master.edit_location', location_id=location.id) }}"><i class="bi bi-camera"></i> Belum ada</a>{% endif %}
                     </td>
                     <td>
                         {% if location.is_active %}
@@ -81,7 +87,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state">
                             <i class="bi bi-geo-alt"></i>
                             <p>Belum ada lokasi {{ term('sub_client', lower=True) }}.</p>

@@ -140,6 +140,11 @@ def _png():
             + chunk(b"IDAT", zlib.compress(b"\x00\xff\x00\x00")) + chunk(b"IEND", b""))
 
 
+def _photo():
+    """Foto lokasi antar (wajib sejak 2026-10-05)."""
+    return (io.BytesIO(_png()), "lokasi.png")
+
+
 # --- tahap A: sebelum hari pertama --------------------------------------------
 
 def stage_setup(run):
@@ -200,7 +205,8 @@ def stage_setup(run):
         run.step(adm, f"Mandor {name}", "/master/mandors/create", data={"client_id": client_id, "name": name, "phone": "0813000000", "is_active": "on"})
     for mandor, location in (("Mandor Budi", "Proyek Tol Km 12"), ("Mandor Joko", "Gudang Cikarang"), ("Mandor Asep", "Batching Plant Cibitung")):
         mandor_id = run.q(lambda: Mandor.query.filter_by(name=mandor).one().id)
-        run.step(adm, f"Lokasi {location}", "/master/locations/create", data={"mandor_id": mandor_id, "location_name": location, "is_active": "on"})
+        run.step(adm, f"Lokasi {location}", "/master/locations/create", data={"mandor_id": mandor_id, "location_name": location, "is_active": "on",
+                                                                             "location_photos": _photo()})
     for driver in ("Pak Ujang", "Pak Karim"):
         run.step(adm, f"Pengantar {driver}", "/master/drivers/create", data={"name": driver, "phone": "0814000000", "license_number": "SIM-A", "is_active": "on"})
 
@@ -222,7 +228,7 @@ def stage_setup(run):
         run.step(anon, f"Pelanggan umum daftar sendiri: {full_name}", "/portal/register", data={
             "full_name": full_name, "phone": f"08157000{index}{index}{index}", "username": username, "branch_id": branch_id,
             "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, "location_name": location,
-            "delivery_zone_id": zones[zone], "address": address, "notes": "gerbang biru"})
+            "delivery_zone_id": zones[zone], "address": address, "notes": "gerbang biru", "location_photos": _photo()})
 
     for name, unit in (("Beras", "kg"), ("Minyak Goreng", "liter")):
         run.step(adm, f"Barang {name}", "/master/items/create", data={

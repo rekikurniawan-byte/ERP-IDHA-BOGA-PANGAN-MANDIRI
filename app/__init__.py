@@ -109,6 +109,7 @@ def create_app():
     from app.routes.customer_success_routes import customer_success_bp
     from app.routes.credit_routes import credit_bp
     from app.routes.public_routes import public_bp
+    from app.routes.location_photo_routes import location_photo_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -131,6 +132,7 @@ def create_app():
     flask_app.register_blueprint(customer_success_bp)
     flask_app.register_blueprint(credit_bp)
     flask_app.register_blueprint(public_bp)
+    flask_app.register_blueprint(location_photo_bp)
 
 
     @flask_app.before_request
@@ -470,6 +472,9 @@ def create_app():
     flask_app.add_template_filter(role_label, "role_label")
     flask_app.add_template_filter(format_wib, "wib")
     flask_app.jinja_env.globals["today_wib"] = today_wib
+    from app.services.location_photo_service import can_manage as can_manage_location_photos, location_photos
+    flask_app.jinja_env.globals["location_photos_for"] = location_photos
+    flask_app.jinja_env.globals["can_manage_location_photos"] = can_manage_location_photos
 
 
     @flask_app.errorhandler(CSRFError)

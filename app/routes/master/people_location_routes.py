@@ -6,6 +6,8 @@ from app.routes.master_routes import *  # noqa: F401,F403
 from app.services.branch_module_service import WORKER_DEBT
 from app.extensions import db
 from app.services.geo_service import GeoError, picker_context
+from app.services.location_photo_service import LocationPhotoError, location_photos, photo_counts
+from app.services.location_photo_service import add_photos as add_location_photos
 from app.services.pricing_service import active_zones
 from app.utils.decorators import module_required
 from app.utils.terms import T
@@ -160,6 +162,7 @@ def locations():
     return render_template(
         "master/locations.html",
         locations=locations,
+        photo_counts=photo_counts([location.id for location in locations]),
         q=q,
         status=status
     )
@@ -189,8 +192,13 @@ def create_location():
             flash(f"{T.sub_client} dan nama lokasi wajib diisi.", "warning")
             return redirect(url_for("master.create_location"))
 
+        photo_files = [f for f in request.files.getlist("location_photos") if f and f.filename]
+        if not photo_files:
+            flash("Foto lokasi antar wajib diunggah (minimal 1 foto titik serah terima).", "warning")
+            return redirect(url_for("master.create_location"))
+
         try:
-            create_location_record(
+            location = create_location_record(
                 mandor_id=mandor_id,
                 location_name=location_name,
                 description=description,
@@ -204,6 +212,12 @@ def create_location():
         except IntegrityError:
             flash(f"Lokasi ini sudah ada untuk {T.sub_client_lower} tersebut.", "warning")
             return redirect(url_for("master.create_location"))
+
+        try:
+            add_location_photos(current_user, location, photo_files)
+        except LocationPhotoError as error:
+            flash(f"Lokasi tersimpan, tetapi fotonya belum: {error} Unggah ulang di halaman ubah lokasi.", "warning")
+            return redirect(url_for("master.edit_location", location_id=location.id))
 
         flash(f"Lokasi {T.sub_client_lower} berhasil ditambahkan.", "success")
         return redirect(url_for("master.locations"))
@@ -266,7 +280,7 @@ def edit_location(location_id):
 
     return render_template(
         "master/location_form.html", mandors=mandors, location=location, zones=active_zones(current_user.branch_id),
-        geo=picker_context(current_user.branch_id),
+        geo=picker_context(current_user.branch_id), photos=location_photos(location.id),
     )
 
 

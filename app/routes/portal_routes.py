@@ -110,7 +110,7 @@ def login_entry():
 def register():
     if request.method == "POST":
         try:
-            user = register_portal_customer(request.form)
+            user = register_portal_customer(request.form, files=request.files.getlist("location_photos"))
         except ValueError as exc:
             flash(str(exc), "danger")
             data = _customer_register_page_data()
@@ -896,7 +896,7 @@ def addresses():
                 location = update_address(current_user, location_id, request.form)
                 flash(f"Alamat {location.location_name} diperbarui.", "success")
             else:
-                location = add_address(current_user, request.form)
+                location = add_address(current_user, request.form, files=request.files.getlist("location_photos"))
                 flash(f"Alamat {location.location_name} ditambahkan dan bisa dipilih saat memesan.", "success")
         except PortalAddressError as error:
             flash(str(error), "danger")

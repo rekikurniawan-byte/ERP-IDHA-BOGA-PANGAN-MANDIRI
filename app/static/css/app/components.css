@@ -2308,3 +2308,158 @@ dl.row dt {
     width: 1px;
     background: var(--border);
 }
+
+/* --- Foto lokasi antar (components/location_photos.html) ------------------ */
+.lp-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.lp-drop {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: var(--space-4);
+    text-align: center;
+    background: var(--surface-muted);
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.lp-drop:hover {
+    border-color: var(--brand-600);
+    background: var(--brand-50);
+}
+
+.lp-drop input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.lp-drop i {
+    font-size: 1.5rem;
+    color: var(--brand-700);
+}
+
+.lp-drop strong {
+    color: var(--text);
+}
+
+.lp-drop small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.lp-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.lp-preview:empty {
+    display: none;
+}
+
+.lp-preview img,
+.lp-thumb img {
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.lp-gallery {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.lp-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.lp-thumb {
+    position: relative;
+    margin: 0;
+}
+
+.lp-thumb img {
+    width: 120px;
+    height: 90px;
+    transition: transform 0.15s ease;
+}
+
+.lp-thumb a:hover img {
+    transform: scale(1.03);
+}
+
+.lp-thumb form {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    margin: 0;
+}
+
+.lp-remove {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 0.7rem;
+    color: var(--surface);
+    background: rgba(28, 25, 23, 0.7);
+    border: 0;
+    border-radius: 50%;
+}
+
+.lp-remove:hover {
+    background: var(--danger-solid);
+}
+
+.lp-missing {
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--warning-text);
+    background: var(--warning-bg);
+    border-radius: var(--radius);
+}
+
+.lp-add {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.lp-add small {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.lp-add-btn {
+    cursor: pointer;
+}
+
+.lp-mini {
+    width: 44px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}

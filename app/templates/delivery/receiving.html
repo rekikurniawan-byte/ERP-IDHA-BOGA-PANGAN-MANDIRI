@@ -82,7 +82,7 @@
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
                     <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}<div class="mt-1">{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
                     <td>{{ detail.planned_qty }}</td>
                     <td>{{ detail.delivery.status|status_label }}</td>
                     <td>
@@ -140,7 +140,7 @@
                     </td>
                     <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
                     <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}<div class="mt-1">{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
+                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
                     <td>{{ detail.planned_qty }}</td>
                     <td>{{ detail.delivered_qty }}</td>
                     <td>
