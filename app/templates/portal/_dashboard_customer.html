@@ -1,4 +1,4 @@
-{% from "portal/_home_kit.html" import ph_kpi, ph_track %}
+{% from "portal/_home_kit.html" import ph_kpi, ph_track, ph_alerts %}
 {% set center = data.center %}
 {% set models = center.models %}
 {% set orders = models.orders %}
@@ -31,6 +31,8 @@
             </div>
         </div>
     </header>
+
+    {{ ph_alerts(center.alerts) }}
 
     <div class="ph-kpis">
         {{ ph_kpi("bi-bag-check", "brand", "Pesanan saya", orders.total, orders.pending ~ " menunggu admin", url_for('portal.customer_order_history')) }}

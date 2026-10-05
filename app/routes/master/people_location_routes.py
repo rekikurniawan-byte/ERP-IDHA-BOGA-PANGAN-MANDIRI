@@ -4,7 +4,6 @@ Route functions moved out of app.routes.master_routes without changing URL rules
 """
 from app.routes.master_routes import *  # noqa: F401,F403
 from app.services.branch_module_service import WORKER_DEBT
-from app.extensions import db
 from app.services.geo_service import GeoError, picker_context
 from app.services.location_photo_service import LocationPhotoError, location_photos, photo_counts
 from app.services.location_photo_service import add_photos as add_location_photos
@@ -268,7 +267,7 @@ def edit_location(location_id):
                 point_form=request.form,
             )
         except GeoError as error:
-            db.session.rollback()
+            # apply_location_point menolak sebelum ada perubahan apa pun.
             flash(str(error), "warning")
             return redirect(url_for("master.edit_location", location_id=location.id))
         except IntegrityError:

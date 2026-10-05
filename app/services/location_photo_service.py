@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 
 from app.extensions import db
 from app.models.system import DigitalAttachment
@@ -18,9 +19,10 @@ from app.services.digital_attachment_service import (
     AttachmentValidationError,
     get_attachment_file_path,
     list_reference_attachments,
-    soft_delete_attachment,
     stage_digital_attachment,
 )
+
+logger = logging.getLogger(__name__)
 
 MODULE = "LOCATION"
 REFERENCE_TYPE = "DELIVERY_LOCATION"
@@ -150,8 +152,10 @@ def discard_files(staged):
     for attachment in staged:
         try:
             get_attachment_file_path(attachment).unlink(missing_ok=True)
-        except Exception:  # noqa: BLE001 - file mungkin belum/tidak ada
-            pass
+        except FileNotFoundError:
+            continue
+        except OSError:
+            logger.exception("File foto lokasi gagal dihapus setelah transaksi batal: %s", attachment.stored_filename)
 
 
 def can_manage(user, location):
@@ -218,7 +222,26 @@ def remove_photo(user, location, attachment_id):
         raise LocationPhotoError("Foto tidak ditemukan.")
     if len(photos) <= 1:
         raise LocationPhotoError("Foto terakhir tidak bisa dihapus: lokasi wajib punya minimal 1 foto. Unggah foto pengganti dulu.")
-    soft_delete_attachment(target, deleted_by=user.id, note="Foto lokasi dihapus pemilik/admin")
+    from datetime import datetime
+
+    from app.services.audit_log_service import record_audit_log
+
+    target.is_deleted = True
+    target.deleted_by = user.id
+    target.deleted_at = datetime.utcnow()
+    target.delete_note = "Foto lokasi dihapus pemilik/admin/pengantar"
+    record_audit_log(
+        module="LOCATION",
+        event_type="LOCATION_PHOTO_REMOVED",
+        action="DELETE",
+        table_name="digital_attachments",
+        record_id=target.id,
+        description=f"Foto lokasi {location.location_name} dihapus (file disimpan, ditandai terhapus).",
+        user_id=user.id,
+        branch_id=location.mandor.branch_id,
+        commit=False,
+    )
+    _commit([])
     return target
 
 

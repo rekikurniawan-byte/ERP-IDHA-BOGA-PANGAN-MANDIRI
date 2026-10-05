@@ -49,6 +49,9 @@ def _migration_columns(module):
     for table_name, column_names in module.RATIO_COLUMNS.items():
         for column_name in column_names:
             columns[(table_name, column_name)] = (8, 4)
+    for table_name, column_names in getattr(module, "COORDINATE_COLUMNS", {}).items():
+        for column_name in column_names:
+            columns[(table_name, column_name)] = (10, 7)
     return columns
 
 

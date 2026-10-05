@@ -1,4 +1,4 @@
-{% from "portal/_home_kit.html" import ph_kpi, ph_invoice %}
+{% from "portal/_home_kit.html" import ph_kpi, ph_invoice, ph_alerts %}
 {% set center = data.center %}
 {% set models = center.models %}
 {% set invoices = models.invoices.totals %}
@@ -36,6 +36,8 @@
             </div>
         </div>
     </header>
+
+    {{ ph_alerts(center.alerts) }}
 
     <div class="ph-kpis">
         {{ ph_kpi("bi-receipt", "brand", "Total ditagihkan", invoices.total_amount|rupiah, invoices.invoice_count ~ " invoice", url_for('portal.pt_invoices')) }}

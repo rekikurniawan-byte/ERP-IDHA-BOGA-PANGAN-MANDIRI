@@ -42,3 +42,18 @@
     </div>
 </article>
 {%- endmacro %}
+
+
+{# Peringatan akun dari command center (mis. akun belum terhubung, tagihan lewat tempo). #}
+{% macro ph_alerts(alerts) -%}
+{% if alerts %}
+<div class="ph-alerts" role="status">
+    {% for alert in alerts[:3] %}
+        <div class="ph-alert level-{{ alert.level }}">
+            <i class="bi {{ alert.icon or 'bi-info-circle' }}" aria-hidden="true"></i>
+            <div><strong>{{ alert.title }}</strong><span>{{ alert.message }}</span></div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}

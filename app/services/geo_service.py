@@ -151,8 +151,10 @@ def quote_distance_fee(branch_id, location):
     return DistanceQuote(km=km, fee=fee, per_km=settings["per_km"], minimum=settings["minimum"])
 
 
-def save_distance_fee_settings(branch_id, *, latitude, longitude, label, per_km, minimum, road_factor, updated_by):
-    """Simpan titik dapur dan tarif per km (OWNER). Tidak commit."""
+def save_distance_fee_settings(branch_id, *, latitude, longitude, label, per_km, minimum, road_factor, updated_by, commit=False):
+    """Simpan titik dapur dan tarif per km (OWNER). Commit hanya bila commit=True.
+
+    Semua validasi terjadi sebelum ada perubahan, jadi GeoError tidak perlu rollback."""
     from app.services.audit_log_service import record_audit_log
 
     lat, lng = parse_coordinates(latitude, longitude, required=True)
@@ -196,6 +198,12 @@ def save_distance_fee_settings(branch_id, *, latitude, longitude, label, per_km,
         branch_id=branch_id,
         commit=False,
     )
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
     return values
 
 

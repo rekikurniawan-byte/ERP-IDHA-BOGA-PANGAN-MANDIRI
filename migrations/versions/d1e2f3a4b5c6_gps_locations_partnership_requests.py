@@ -19,10 +19,11 @@ down_revision = "c0d1e2f3a4b5"
 branch_labels = None
 depends_on = None
 
-# Dibaca tes cakupan Numeric dan optimistic locking. Koordinat dicatat sebagai
-# kuantitas (bukan uang).
+# Dibaca tes cakupan Numeric dan optimistic locking. Koordinat GPS punya
+# kategori sendiri: Numeric(10, 7) = derajat dengan presisi ~1 cm.
 MONEY_COLUMNS = {}
-QUANTITY_COLUMNS = {
+QUANTITY_COLUMNS = {}
+COORDINATE_COLUMNS = {
     "delivery_locations": ["latitude", "longitude"],
     "partnership_requests": ["latitude", "longitude"],
 }

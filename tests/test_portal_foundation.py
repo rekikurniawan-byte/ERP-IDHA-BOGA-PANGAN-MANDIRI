@@ -633,7 +633,7 @@ def test_portal_draft_order_requires_draft_order_mapping(app):
             )
 
         assert get_response.status_code == 200
-        assert "Belum Bisa Membuat Draft" in get_response.get_data(as_text=True)
+        assert "Belum bisa memesan" in get_response.get_data(as_text=True)
         assert post_response.status_code == 400
         assert (
             PortalOrderDraft.query.filter(PortalOrderDraft.user_id == user.id).count()
@@ -1865,7 +1865,7 @@ def test_portal_customer_general_pages_render_with_financial_guards(app):
         ],
         "/portal/debts": [
             'data-endpoint="portal.customer_dashboard"',
-            "Pesan catering, bayar, lalu kami proses.",
+            "Bayar di muka tetap wajib",
         ],
     }
 

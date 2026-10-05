@@ -153,7 +153,6 @@ def pricing_set_free_delivery():
 @role_required("OWNER")
 def pricing_set_distance_fee():
     """Titik dapur + tarif ongkir per km pelanggan umum (keputusan owner 2026-10-04)."""
-    from app.extensions import db
     from app.services.geo_service import GeoError, save_distance_fee_settings
 
     try:
@@ -166,10 +165,9 @@ def pricing_set_distance_fee():
             minimum=request.form.get("minimum"),
             road_factor=request.form.get("road_factor"),
             updated_by=current_user.id,
+            commit=True,
         )
-        db.session.commit()
     except GeoError as error:
-        db.session.rollback()
         flash(str(error), "warning")
         return redirect(url_for("settings.pricing") + "#ongkir-jarak")
     flash(
