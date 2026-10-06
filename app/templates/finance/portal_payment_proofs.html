@@ -1,4 +1,4 @@
-﻿{% extends "layouts/base.html" %}
+{% extends "layouts/base.html" %}
 
 {% block content %}
 <section class="page-section">
@@ -12,6 +12,14 @@
             <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.index') }}">Pusat Finance</a>
             <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.payment_history') }}">Riwayat Pembayaran</a>
         </div>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-center justify-content-between mb-3" role="alert">
+        <div>
+            <i class="bi bi-lightning-charge-fill me-2"></i>
+            <strong>Halaman baru yang lebih cepat:</strong> Verifikasi bukti, catat uang muka, dan konfirmasi pesanan dalam satu klik.
+        </div>
+        <a href="{{ url_for('finance.payment_inbox') }}" class="btn btn-sm app-btn-primary text-nowrap">Pembayaran Masuk &rarr;</a>
     </div>
 
     <div class="finance-portal-proof-overview">

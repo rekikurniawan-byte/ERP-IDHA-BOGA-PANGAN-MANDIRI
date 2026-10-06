@@ -887,5 +887,98 @@
         update("qty");
     }
 
+    // --- Payment Inbox (Antrean Pembayaran Masuk) -----------------------------
+    function setupPaymentInbox() {
+        const root = document.querySelector("[data-payment-inbox]");
+        if (!root) return;
+
+        // 1. Filter Chips
+        const chips = root.querySelectorAll(".pin-chip");
+        const cards = root.querySelectorAll(".pin-card");
+
+        chips.forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                chips.forEach(function (c) { c.classList.remove("is-active"); });
+                chip.classList.add("is-active");
+                const filter = chip.getAttribute("data-filter");
+
+                cards.forEach(function (card) {
+                    let show = true;
+                    if (filter === "today") {
+                        show = card.getAttribute("data-is-today") === "1";
+                    } else if (filter === "exact") {
+                        show = card.getAttribute("data-match") === "EXACT";
+                    } else if (filter === "check") {
+                        show = card.getAttribute("data-has-warning") === "1";
+                    }
+                    card.style.display = show ? "" : "none";
+                });
+            });
+        });
+
+        // 2. Form Interactions (dynamic button label, note requirement, prevent double submit)
+        cards.forEach(function (card) {
+            const form = card.querySelector(".pin-approve-form");
+            if (!form) return;
+
+            const amountInput = form.querySelector(".pin-input-amount");
+            const noteInput = form.querySelector(".pin-input-note");
+            const noteLabel = form.querySelector(".pin-note-label");
+            const submitBtn = form.querySelector(".pin-btn-approve");
+            const btnText = form.querySelector(".pin-btn-text");
+
+            const outstanding = Number(amountInput.getAttribute("data-outstanding")) || 0;
+            const expected = Number(amountInput.getAttribute("data-expected")) || 0;
+
+            function updateAmount() {
+                const val = Number(amountInput.value) || 0;
+                const diff = outstanding - val;
+
+                if (diff > 0) {
+                    const formatted = new Intl.NumberFormat("id-ID").format(Math.round(diff));
+                    if (btnText) btnText.textContent = "Catat & Tahan (kurang Rp " + formatted + ")";
+                } else {
+                    if (btnText) btnText.textContent = "Terima & Konfirmasi";
+                }
+
+                const mismatch = Math.abs(val - expected) > 0.009 && Math.abs(val - outstanding) > 0.009;
+                if (noteInput) {
+                    noteInput.required = mismatch;
+                    if (noteLabel) {
+                        noteLabel.innerHTML = mismatch
+                            ? 'Catat Alasan <span class="text-danger">*</span>'
+                            : 'Catatan Tambahan';
+                    }
+                }
+            }
+
+            if (amountInput) {
+                amountInput.addEventListener("input", updateAmount);
+                updateAmount();
+            }
+
+            form.addEventListener("submit", function () {
+                if (submitBtn) {
+                    setTimeout(function () {
+                        submitBtn.disabled = true;
+                    }, 50);
+                }
+            });
+        });
+
+        // Double submit protection on reject forms
+        root.querySelectorAll(".pin-reject-form").forEach(function (rejForm) {
+            rejForm.addEventListener("submit", function () {
+                const btn = rejForm.querySelector("button[type=submit]");
+                if (btn) {
+                    setTimeout(function () {
+                        btn.disabled = true;
+                    }, 50);
+                }
+            });
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", setupPublicPage);
+    document.addEventListener("DOMContentLoaded", setupPaymentInbox);
 })();

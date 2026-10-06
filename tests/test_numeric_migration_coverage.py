@@ -36,6 +36,9 @@ opening_c0 = importlib.import_module(
 gps_d1 = importlib.import_module(
     "migrations.versions.d1e2f3a4b5c6_gps_locations_partnership_requests"
 )
+claims_a7 = importlib.import_module(
+    "migrations.versions.a7b8c9d0e1f2_payment_proof_claims_unique_code"
+)
 
 
 def _migration_columns(module):
@@ -77,6 +80,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(delivery_d5),
         **_migration_columns(opening_c0),
         **_migration_columns(gps_d1),
+        **_migration_columns(claims_a7),
     }
 
     assert migration_columns

@@ -1027,6 +1027,8 @@ def upload_draft_payment_proof(draft_id):
         # Nominal dari pelanggan hanya keterangan untuk Finance; yang dijurnal
         # adalah nominal yang Finance catat saat memverifikasi.
         paid_amount = (request.form.get("paid_amount") or "").strip()
+        sender_name = (request.form.get("sender_name") or "").strip()
+        transfer_reference = (request.form.get("transfer_reference") or "").strip()
         notes = (request.form.get("notes") or "").strip()
         if paid_amount:
             notes = f"Nominal dibayar pelanggan: Rp {paid_amount}. {notes}".strip()
@@ -1035,6 +1037,9 @@ def upload_draft_payment_proof(draft_id):
             draft_id=draft_id,
             file_storage=request.files.get("proof_file"),
             notes=notes or None,
+            claimed_amount=paid_amount or None,
+            sender_name=sender_name or None,
+            transfer_reference=transfer_reference or None,
         )
     except (PortalPaymentProofError, AttachmentValidationError) as exc:
         flash(str(exc), "danger")

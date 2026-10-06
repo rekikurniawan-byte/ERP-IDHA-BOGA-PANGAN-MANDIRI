@@ -133,7 +133,7 @@
 
     {% set queue = global_work_queue|default({}) %}
     {% set is_queue_orders = endpoint == "portal.admin_order_drafts" %}
-    {% set is_queue_proofs = endpoint == "finance.portal_payment_proofs" %}
+    {% set is_queue_proofs = endpoint in ["finance.portal_payment_proofs", "finance.payment_inbox"] %}
     {% set is_queue_advances = endpoint in ["finance.advances", "finance.advance_detail", "finance.advance_create"] %}
     {% set is_queue_approvals = endpoint.startswith("settings.") and "approval" in endpoint %}
     {% set is_work_queue = is_queue_orders or is_queue_proofs or is_queue_advances or is_queue_approvals %}
@@ -174,7 +174,7 @@
                     {% if global_portal_enabled|default(false) %}
                         {{ nav_link(url_for('portal.admin_order_drafts'), "Pesanan Portal", "bi-bag-check", is_queue_orders, queue.portal_orders) }}
                     {% endif %}
-                    {{ nav_link(url_for('finance.portal_payment_proofs'), "Bukti Bayar Masuk", "bi-receipt-cutoff", is_queue_proofs, queue.payment_proofs) }}
+                    {{ nav_link(url_for('finance.payment_inbox'), "Pembayaran Masuk", "bi-receipt-cutoff", is_queue_proofs, queue.payment_proofs) }}
                     {{ nav_link(url_for('finance.advances'), "Uang Muka & Refund", "bi-arrow-left-right", is_queue_advances, queue.refunds) }}
                     {{ nav_link(url_for('settings.approvals'), "Persetujuan", "bi-shield-check", is_queue_approvals, queue.approvals) }}
                 {% endcall %}

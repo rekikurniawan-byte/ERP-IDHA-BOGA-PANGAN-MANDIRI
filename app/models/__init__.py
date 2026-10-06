@@ -142,6 +142,7 @@ from app.models.system import (
     ApprovalRequest,
     PortalUserMapping,
     PortalOrderDraft,
+    PortalPaymentProofClaim,
 )
 
 from app.models.field_transaction import (

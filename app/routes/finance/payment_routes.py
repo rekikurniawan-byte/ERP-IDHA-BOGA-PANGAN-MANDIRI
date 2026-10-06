@@ -554,3 +554,313 @@ def create_payment_from_portal_proof(attachment_id):
         "success",
     )
     return redirect(url_for("finance.invoice_detail", invoice_id=result["invoice_id"]))
+
+
+@finance_bp.route("/payment-inbox")
+@role_required("OWNER", "ADMIN", "FINANCE")
+def payment_inbox():
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+    from uuid import uuid4
+    from sqlalchemy.orm import joinedload
+    from app.models.finance import BankAccount
+    from app.models.system import DigitalAttachment, PortalOrderDraft, PortalPaymentProofClaim
+    from app.services.portal_payment_approval_service import (
+        batch_build_draft_blockers,
+        batch_build_draft_prepaids,
+        build_draft_payment_review,
+    )
+    from app.services.portal_payment_verification_queue_service import (
+        list_payment_proof_verification_queue,
+    )
+    from app.utils.clock import today_wib
+
+    tab = (request.args.get("tab") or "waiting").strip().lower()
+    if tab not in {"waiting", "invoice", "history"}:
+        tab = "waiting"
+
+    today = today_wib()
+    branch_id = current_user.branch_id
+
+    bank_accounts = (
+        BankAccount.query.filter_by(branch_id=branch_id, is_active=True)
+        .order_by(BankAccount.bank_name.asc(), BankAccount.account_name.asc())
+        .all()
+    )
+
+    waiting_rows = []
+    waiting_attachments = (
+        DigitalAttachment.query.join(
+            PortalOrderDraft, DigitalAttachment.reference_id == PortalOrderDraft.id
+        )
+        .options(joinedload(DigitalAttachment.uploader))
+        .filter(
+            DigitalAttachment.module == "PORTAL_PAYMENT",
+            DigitalAttachment.reference_type == "PORTAL_ORDER_DRAFT",
+            DigitalAttachment.branch_id == branch_id,
+            DigitalAttachment.is_deleted.is_(False),
+            DigitalAttachment.attachment_type.in_(["PAYMENT_PROOF_PENDING", "PAYMENT_PROOF_VERIFIED"]),
+        )
+        .order_by(PortalOrderDraft.order_date.asc(), DigitalAttachment.created_at.asc())
+        .limit(100)
+        .all()
+    )
+
+    draft_ids = [att.reference_id for att in waiting_attachments]
+    drafts = []
+    if draft_ids:
+        drafts = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.id.in_(draft_ids))
+            .options(
+                joinedload(PortalOrderDraft.client),
+                joinedload(PortalOrderDraft.mandor),
+                joinedload(PortalOrderDraft.delivery_location),
+                joinedload(PortalOrderDraft.user),
+            )
+            .all()
+        )
+    drafts_by_id = {d.id: d for d in drafts}
+
+    att_ids = [att.id for att in waiting_attachments]
+    claims = []
+    if att_ids:
+        claims = PortalPaymentProofClaim.query.filter(PortalPaymentProofClaim.attachment_id.in_(att_ids)).all()
+    claims_by_att_id = {c.attachment_id: c for c in claims}
+
+    hashes = [att.sha256_hash for att in waiting_attachments if att.sha256_hash]
+    dup_file_map = {}
+    if hashes:
+        candidates = (
+            DigitalAttachment.query.filter(
+                DigitalAttachment.module == "PORTAL_PAYMENT",
+                DigitalAttachment.branch_id == branch_id,
+                DigitalAttachment.is_deleted.is_(False),
+                DigitalAttachment.attachment_type != "PAYMENT_PROOF_REJECTED",
+                DigitalAttachment.sha256_hash.in_(hashes),
+            ).all()
+        )
+        for c in candidates:
+            dup_file_map.setdefault(c.sha256_hash, []).append(c)
+
+    refs = [c.transfer_reference.strip().upper() for c in claims if c.transfer_reference]
+    dup_ref_map = {}
+    if refs:
+        ref_candidates = (
+            PortalPaymentProofClaim.query.join(
+                DigitalAttachment, PortalPaymentProofClaim.attachment_id == DigitalAttachment.id
+            )
+            .options(joinedload(PortalPaymentProofClaim.attachment))
+            .filter(
+                PortalPaymentProofClaim.branch_id == branch_id,
+                DigitalAttachment.is_deleted.is_(False),
+                DigitalAttachment.attachment_type != "PAYMENT_PROOF_REJECTED",
+                PortalPaymentProofClaim.transfer_reference.in_(refs),
+            )
+            .all()
+        )
+        for rc in ref_candidates:
+            dup_ref_map.setdefault(rc.transfer_reference, []).append(rc)
+
+    prepaids_by_draft_id = batch_build_draft_prepaids(draft_ids)
+    blockers_by_draft_id = batch_build_draft_blockers(drafts, branch_id, today=today)
+
+    for att in waiting_attachments:
+        row = build_draft_payment_review(
+            att,
+            draft=drafts_by_id.get(att.reference_id),
+            claim=claims_by_att_id.get(att.id),
+            dup_file_map=dup_file_map,
+            dup_ref_map=dup_ref_map,
+            prepaid=prepaids_by_draft_id.get(att.reference_id, Decimal("0.00")),
+            blockers=blockers_by_draft_id.get(att.reference_id, []),
+        )
+        row["idempotency_key"] = uuid4().hex
+        waiting_rows.append(row)
+
+    waiting_count = len(waiting_rows)
+    waiting_amount = sum(
+        Decimal(str(r["expected_transfer"] or r["claimed_amount"] or 0)) for r in waiting_rows
+    )
+
+    today_start = datetime.combine(today, datetime.min.time())
+    from app.models.system import AuditLog
+    processed_today_count = AuditLog.query.filter(
+        AuditLog.branch_id == branch_id,
+        AuditLog.event_type == "PORTAL_DRAFT_PAYMENT_APPROVED",
+        AuditLog.created_at >= today_start,
+    ).count()
+
+    invoice_rows = []
+    if tab == "invoice":
+        invoice_rows = list_payment_proof_verification_queue(current_user, status="PENDING", limit=100)
+        for r in invoice_rows:
+            r["idempotency_key"] = uuid4().hex
+
+    history_rows = []
+    if tab == "history":
+        since = datetime.utcnow() - timedelta(days=30)
+        hist_attachments = (
+            DigitalAttachment.query.filter(
+                DigitalAttachment.module == "PORTAL_PAYMENT",
+                DigitalAttachment.reference_type == "PORTAL_ORDER_DRAFT",
+                DigitalAttachment.branch_id == branch_id,
+                DigitalAttachment.is_deleted.is_(False),
+                DigitalAttachment.attachment_type.in_(["PAYMENT_PROOF_PAYMENT_CREATED", "PAYMENT_PROOF_REJECTED"]),
+                DigitalAttachment.created_at >= since,
+            )
+            .order_by(DigitalAttachment.created_at.desc())
+            .limit(100)
+            .all()
+        )
+        h_draft_ids = [att.reference_id for att in hist_attachments]
+        h_drafts = (
+            PortalOrderDraft.query.filter(PortalOrderDraft.id.in_(h_draft_ids))
+            .options(
+                joinedload(PortalOrderDraft.client),
+                joinedload(PortalOrderDraft.mandor),
+                joinedload(PortalOrderDraft.delivery_location),
+            )
+            .all()
+            if h_draft_ids
+            else []
+        )
+        h_drafts_by_id = {d.id: d for d in h_drafts}
+        h_claims = (
+            PortalPaymentProofClaim.query.filter(
+                PortalPaymentProofClaim.attachment_id.in_([att.id for att in hist_attachments])
+            ).all()
+            if hist_attachments
+            else []
+        )
+        h_claims_by_id = {c.attachment_id: c for c in h_claims}
+        h_prepaids_by_draft_id = batch_build_draft_prepaids(h_draft_ids)
+        h_blockers_by_draft_id = batch_build_draft_blockers(h_drafts, branch_id, today=today)
+
+        for att in hist_attachments:
+            history_rows.append(
+                build_draft_payment_review(
+                    att,
+                    draft=h_drafts_by_id.get(att.reference_id),
+                    claim=h_claims_by_id.get(att.id),
+                    prepaid=h_prepaids_by_draft_id.get(att.reference_id, Decimal("0.00")),
+                    blockers=h_blockers_by_draft_id.get(att.reference_id, []),
+                )
+            )
+
+    return render_template(
+        "finance/payment_inbox.html",
+        tab=tab,
+        today=today,
+        waiting_rows=waiting_rows,
+        waiting_count=waiting_count,
+        waiting_amount=waiting_amount,
+        processed_today_count=processed_today_count,
+        invoice_rows=invoice_rows,
+        history_rows=history_rows,
+        bank_accounts=bank_accounts,
+        payment_methods=CUSTOMER_PAYMENT_METHODS,
+    )
+
+
+@finance_bp.route("/payment-inbox/<int:attachment_id>/approve", methods=["POST"])
+@role_required("OWNER", "ADMIN", "FINANCE")
+def approve_payment_inbox(attachment_id):
+    from datetime import datetime
+    from app.models.system import DigitalAttachment, PortalOrderDraft
+    from app.services.portal_payment_approval_service import (
+        PaymentApprovalError,
+        approve_draft_payment,
+    )
+    from app.utils.clock import today_wib
+
+    draft_id = request.form.get("draft_id", type=int)
+    received_amount = request.form.get("received_amount")
+    payment_method = request.form.get("payment_method")
+    bank_account_id = request.form.get("bank_account_id", type=int) or None
+    payment_date_raw = (request.form.get("payment_date") or "").strip()
+    reference_number = request.form.get("reference_number")
+    checked_mutation = request.form.get("checked_mutation") == "1"
+    note = request.form.get("note")
+    idempotency_key = request.form.get("idempotency_key")
+
+    try:
+        payment_date = datetime.strptime(payment_date_raw, "%Y-%m-%d").date() if payment_date_raw else today_wib()
+    except ValueError:
+        flash("Format tanggal pembayaran tidak valid (YYYY-MM-DD).", "danger")
+        return redirect(url_for("finance.payment_inbox", tab="waiting"))
+
+    try:
+        result = approve_draft_payment(
+            current_user,
+            attachment_id=attachment_id,
+            draft_id=draft_id,
+            received_amount=received_amount,
+            payment_method=payment_method,
+            bank_account_id=bank_account_id,
+            payment_date=payment_date,
+            reference_number=reference_number,
+            checked_mutation=checked_mutation,
+            note=note,
+            idempotency_key=idempotency_key,
+        )
+        outcome = result.get("outcome")
+        if outcome == "CONFIRMED":
+            draft = PortalOrderDraft.query.get(draft_id)
+            nama = draft.client.name if draft and draft.client else "Pelanggan"
+            tgl = draft.order_date.strftime("%d-%m-%Y") if draft and draft.order_date else "-"
+            sesi = "Makan Siang" if draft and draft.meal_type == "LUNCH" else ("Makan Malam" if draft and draft.meal_type == "DINNER" else (draft.meal_type if draft else ""))
+            porsi = draft.portion_qty if draft else 0
+            flash(f"Pembayaran {nama} diterima. Pesanan {tgl} {sesi} {porsi} porsi masuk ke Operasional.", "success")
+        elif outcome == "HELD_SHORT":
+            remaining_formatted = f"{result['remaining']:,.0f}".replace(",", ".")
+            flash(f"Pembayaran dicatat, tapi masih kurang Rp {remaining_formatted}. Pesanan ditahan sampai lunas.", "warning")
+    except PaymentApprovalError as exc:
+        flash(str(exc), "danger")
+    except Exception as exc:
+        logger.exception("Persetujuan pembayaran draft portal gagal.")
+        flash(f"Terjadi kesalahan saat memproses pembayaran: {exc}", "danger")
+
+    next_proof = (
+        DigitalAttachment.query.filter(
+            DigitalAttachment.module == "PORTAL_PAYMENT",
+            DigitalAttachment.reference_type == "PORTAL_ORDER_DRAFT",
+            DigitalAttachment.branch_id == current_user.branch_id,
+            DigitalAttachment.is_deleted.is_(False),
+            DigitalAttachment.attachment_type.in_(["PAYMENT_PROOF_PENDING", "PAYMENT_PROOF_VERIFIED"]),
+            DigitalAttachment.id != attachment_id,
+        )
+        .order_by(DigitalAttachment.created_at.asc())
+        .first()
+    )
+    anchor = f"#proof-{next_proof.id}" if next_proof else ""
+    return redirect(url_for("finance.payment_inbox", tab="waiting") + anchor)
+
+
+@finance_bp.route("/payment-inbox/<int:attachment_id>/reject", methods=["POST"])
+@role_required("OWNER", "ADMIN", "FINANCE")
+def reject_payment_inbox(attachment_id):
+    from app.services.portal_payment_approval_service import (
+        PaymentApprovalError,
+        reject_draft_payment,
+    )
+
+    draft_id = request.form.get("draft_id", type=int)
+    reason_code = (request.form.get("reason_code") or "").strip()
+    note = request.form.get("note")
+
+    try:
+        reject_draft_payment(
+            current_user,
+            attachment_id=attachment_id,
+            draft_id=draft_id,
+            reason_code=reason_code,
+            note=note,
+        )
+        flash("Bukti pembayaran berhasil ditolak.", "success")
+    except PaymentApprovalError as exc:
+        flash(str(exc), "danger")
+    except Exception as exc:
+        logger.exception("Penolakan bukti draft portal gagal.")
+        flash(f"Terjadi kesalahan saat menolak bukti: {exc}", "danger")
+
+    return redirect(url_for("finance.payment_inbox", tab="waiting"))

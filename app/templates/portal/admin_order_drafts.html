@@ -8,6 +8,10 @@
         <header class="admin-draft-head">
             <div class="admin-draft-title">
                 <span class="status-badge {{ 'danger' if not row.can_confirm else 'success' }}">{{ row.review_status_label }}</span>
+                {% if row.active_proof_id %}
+                    <span class="status-badge warning"><i class="bi bi-receipt"></i> Ada bukti bayar</span>
+                    <a class="small text-decoration-none fw-bold text-primary ms-1" href="{{ url_for('finance.payment_inbox') }}#proof-{{ row.active_proof_id }}">Proses di Pembayaran Masuk &rarr;</a>
+                {% endif %}
                 <h3>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} · {{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</h3>
                 <p>{{ row.client_name }} · {{ row.mandor_name }} · {{ row.location_name }}</p>
             </div>

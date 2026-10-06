@@ -7,7 +7,7 @@ Laporan ini read-only. Checksum digunakan untuk membuktikan file migration lama 
 | Metrik | Nilai |
 | --- | --- |
 | Status | PASS |
-| Total migration file | 45 |
+| Total migration file | 69 |
 | Root revision | 1 |
 | Head revision | 1 |
 | Branch point | 0 |
@@ -19,7 +19,7 @@ Laporan ini read-only. Checksum digunakan untuk membuktikan file migration lama 
 
 | Revision |
 | --- |
-| 88a0a1b2c3d4 |
+| a7b8c9d0e1f2 |
 
 ## Roots
 
@@ -100,4 +100,28 @@ Laporan ini read-only. Checksum digunakan untuk membuktikan file migration lama 
 | migrations/versions/86a0a1b2c3d4_stock_opening_balance.py | 86a0a1b2c3d4 | 85a0a1b2c3d4 | d1fde4e98cb233d484517ac0ef8d53475214331bd251c38672cc34eb8f1ad8d5 |
 | migrations/versions/87a0a1b2c3d4_idempotency_keys.py | 87a0a1b2c3d4 | 86a0a1b2c3d4 | c5dc92aeb1ab876f455cd0e085a85a337c274242bee1a096d23684289d7f3798 |
 | migrations/versions/88a0a1b2c3d4_approval_requests.py | 88a0a1b2c3d4 | 87a0a1b2c3d4 | e8af87ce80b3690e77517d05e687563f75ddf46caf2d57f20c08bc344e00bfa9 |
+| migrations/versions/89a0a1b2c3d4_item_selling_price_schema_alignment.py | 89a0a1b2c3d4 | 88a0a1b2c3d4 | 37f3aec65adba11e0b793c427dcfbdeb63b206eceb5ee48d09f38528c0b9583b |
+| migrations/versions/90a0a1b2c3d4_clean_install_schema_alignment.py | 90a0a1b2c3d4 | 89a0a1b2c3d4 | b4fc26be6e301d6f6bdd39847f9736c0efba4462dc99a100d4d2ff76e4cf25c6 |
+| migrations/versions/91a0a1b2c3d4_portal_user_mappings.py | 91a0a1b2c3d4 | 90a0a1b2c3d4 | d294a193f65d48fbe61149611b91adc282a5f6b933542442dd77ead80bf158e8 |
+| migrations/versions/92a0a1b2c3d4_portal_order_drafts.py | 92a0a1b2c3d4 | 91a0a1b2c3d4 | e7437e2f6918dead3f334a9f86a58496809abf3a91ee3d9c9ae7e60d3152b0fa |
+| migrations/versions/93a0a1b2c3d4_customer_contracts.py | 93a0a1b2c3d4 | 92a0a1b2c3d4 | b39977ff109b05f162a43f51938f7de7a02e51abd335d6c49e656c5b64195362 |
+| migrations/versions/94a0a1b2c3d4_customer_complaints.py | 94a0a1b2c3d4 | 93a0a1b2c3d4 | 864e41fbe0da470dfa79eb455e575189572e59542ed926671864c04ad267c08d |
+| migrations/versions/95a0a1b2c3d4_customer_corrections.py | 95a0a1b2c3d4 | 94a0a1b2c3d4 | 5ff7bb566387fa843b8808878c712e0ac7d0ad7666eb4b36faae3c9de795fd4d |
+| migrations/versions/96a0a1b2c3d4_consolidate_internal_roles.py | 96a0a1b2c3d4 | 95a0a1b2c3d4 | d8b28cfdeb798d2964be7dce3517c9987379045658d2eb1f24e000b5f0bfe4b0 |
+| migrations/versions/97a0a1b2c3d4_rename_portal_mandor_to_subclient.py | 97a0a1b2c3d4 | 96a0a1b2c3d4 | 5694823c685d1a95bf29fbe6aa99af5c8b2748fea916c05176459e3ca3c4d99a |
+| migrations/versions/98a0a1b2c3d4_merge_portal_pt_into_client.py | 98a0a1b2c3d4 | 97a0a1b2c3d4 | 232cf4ac1b214367dd8a467f717e0f63fac8be0e7257cc36da7ac45cb8894087 |
+| migrations/versions/99a0a1b2c3d4_retire_portal_delegate.py | 99a0a1b2c3d4 | 98a0a1b2c3d4 | d2f3ec115d2fc152a559c4c7a5e62333ba3e37d2430072db0d53917cefb49311 |
+| migrations/versions/a0b1c2d3e4f5_add_credit_control.py | a0b1c2d3e4f5 | 99a0a1b2c3d4 | eb53f8004ced364a974c3bb227e98d83c9ba76d41d7a88aac9cb8eac43daea9d |
+| migrations/versions/a1b2c3d4e5f6_mandor_direct_unit.py | a1b2c3d4e5f6 | a0b1c2d3e4f5 | 7ea600cbd43a44689d9a16d21eec1392e579c2ad3e7e5df2453f0e0a019e9421 |
+| migrations/versions/a2b3c4d5e6f7_generic_deposit_account_name.py | a2b3c4d5e6f7 | a1b2c3d4e5f6 | 7821975b86ac338189590b53f39aa077ca39672d271d1c6f7c5df4cc245bb23a |
+| migrations/versions/a7b8c9d0e1f2_payment_proof_claims_unique_code.py | a7b8c9d0e1f2 | d1e2f3a4b5c6 | f6ca110989612351b6d951eaecc90f15a367e425f18c7e4d4f3ac539ef16334f |
+| migrations/versions/a8b9c0d1e2f3_invoice_item_order_detail_source.py | a8b9c0d1e2f3 | f7a8b9c0d1e2 | acc72b4ecf782a03fc11cdd54eef88a5dbc65ec58126223025eaa63f055e8fa3 |
+| migrations/versions/b3c4d5e6f7a8_branch_modules_on_for_existing.py | b3c4d5e6f7a8 | a2b3c4d5e6f7 | c4cbf819509daa75eec312ace28461d4fd88861578337cdf5383cc28c53c7928 |
+| migrations/versions/b9c0d1e2f3a4_cash_adjustment_category.py | b9c0d1e2f3a4 | a8b9c0d1e2f3 | 41e28b4b8055dd0a7d0cc66fc0ffd11e6c12732bc8986aa56b49bdee855f4334 |
+| migrations/versions/c0d1e2f3a4b5_opening_balance_single_door.py | c0d1e2f3a4b5 | b9c0d1e2f3a4 | 8e6c53fdf1c0f2a127fdfbbbaef1b11af8c30245d32a02fc940459f07865ea08 |
+| migrations/versions/c4d5e6f7a8b9_customer_path_and_portion_prices.py | c4d5e6f7a8b9 | b3c4d5e6f7a8 | 329bb7d13fc109e3ed20545473641b7ea16e57b621a3b4b871b5a10fa10195d5 |
+| migrations/versions/d1e2f3a4b5c6_gps_locations_partnership_requests.py | d1e2f3a4b5c6 | c0d1e2f3a4b5 | c9e9bbfefd031e51bc7b9a91b88e0a0ad88f8e2e535bed74be215f41058df391 |
+| migrations/versions/d5e6f7a8b9c0_delivery_zones_and_fees.py | d5e6f7a8b9c0 | c4d5e6f7a8b9 | 3d61a4efd90f48ecd276e2f8c60322975408daee60b40685181acbae020ff2bb |
+| migrations/versions/e6f7a8b9c0d1_prepaid_order_links.py | e6f7a8b9c0d1 | d5e6f7a8b9c0 | c63b8085feae8339f49dc7166c4d1939902168b9f2f09e90eeb8d736d90b3a9c |
+| migrations/versions/f7a8b9c0d1e2_invoice_customer_path.py | f7a8b9c0d1e2 | e6f7a8b9c0d1 | 6770fc3651ce1dc3356ffa1cc845d0215a4de26723590cee7ea08da0211b7905 |
 

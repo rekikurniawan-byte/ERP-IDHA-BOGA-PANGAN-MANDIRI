@@ -585,7 +585,7 @@ def cash_bank_adjustments():
         "finance/cash_bank_adjustments.html",
         adjustments=adjustments,
         active_bank_accounts=active_bank_accounts,
-        adjustment_categories=ADJUSTMENT_CATEGORIES,
+        adjustment_categories={k: v for k, v in ADJUSTMENT_CATEGORIES.items() if not v.get("system_only")},
         selisih_owner_limit=SELISIH_OWNER_LIMIT,
     )
 

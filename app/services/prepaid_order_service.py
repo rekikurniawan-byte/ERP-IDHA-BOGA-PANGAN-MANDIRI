@@ -87,6 +87,27 @@ def draft_prepaid_amount(draft):
     return available_amount(draft_prepayments(draft))
 
 
+def draft_unique_code_amount(draft) -> Decimal:
+    """Kode unik hanya berlaku untuk transfer PERTAMA (belum ada uang muka)."""
+    code = int(getattr(draft, "payment_unique_code", None) or 0)
+    if code <= 0 or draft_prepaid_amount(draft) > ZERO:
+        return ZERO
+    return Decimal(code).quantize(Decimal("0.01"))
+
+
+def draft_transfer_amount(draft) -> Decimal | None:
+    """Nominal yang harus ditransfer pelanggan = sisa + kode unik."""
+    from app.services.portal_order_draft_service import draft_total_amount
+
+    total = draft_total_amount(draft)  # import di dalam fungsi
+    if total is None:
+        return None
+    outstanding = max(total - draft_prepaid_amount(draft), ZERO)
+    if outstanding <= ZERO:
+        return ZERO
+    return outstanding + draft_unique_code_amount(draft)
+
+
 def draft_requires_prepayment(draft):
     """Jalur UMUM, atau akun pelanggan umum (tidak pernah melonggarkan aturan lama)."""
     from app.services.pricing_service import is_general_client

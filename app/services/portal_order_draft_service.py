@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 from decimal import Decimal
+import secrets
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import lazyload
@@ -872,18 +873,26 @@ def _latest_scope_drafts(user, scope, limit=10):
 
 
 def _draft_history_rows(drafts):
-    from app.services.prepaid_order_service import draft_prepaid_amount, draft_requires_prepayment
+    from app.services.prepaid_order_service import (
+        draft_prepaid_amount,
+        draft_requires_prepayment,
+        draft_transfer_amount,
+    )
 
     rows = []
     for draft in drafts:
         gate = evaluate_portal_order_draft_gate(draft) if draft.status == DRAFT_STATUS_PENDING else None
         total = draft_total_amount(draft) if draft_requires_prepayment(draft) else None
         paid = draft_prepaid_amount(draft) if total is not None else None
+        transfer_amount = draft_transfer_amount(draft) if total is not None else None
+        unique_code = int(getattr(draft, "payment_unique_code", None) or 0) or None
         rows.append(
             {
                 "total_amount": total,
                 "paid_amount": paid,
                 "amount_due": max(total - paid, 0) if total is not None else None,
+                "transfer_amount": transfer_amount,
+                "unique_code": unique_code,
                 "draft": draft,
                 "status_label": _label_status(draft.status),
                 "meal_type_label": _meal_label(draft.meal_type),
@@ -1130,6 +1139,29 @@ def _validate_draft_payload(user, form):
     }, None
 
 
+def _pick_unique_code(branch_id):
+    if not branch_id:
+        return None
+    used_codes = {
+        row[0]
+        for row in db.session.query(PortalOrderDraft.payment_unique_code)
+        .filter(
+            PortalOrderDraft.branch_id == branch_id,
+            PortalOrderDraft.status == DRAFT_STATUS_PENDING,
+            PortalOrderDraft.payment_unique_code.isnot(None),
+        )
+        .all()
+    }
+    for _ in range(50):
+        code = secrets.randbelow(999) + 1
+        if code not in used_codes:
+            return code
+    for code in range(1, 1000):
+        if code not in used_codes:
+            return code
+    return None
+
+
 def create_portal_order_draft(user, form):
     payload, error = _validate_draft_payload(user, form)
     if error:
@@ -1151,6 +1183,11 @@ def create_portal_order_draft(user, form):
 
     try:
         db.session.flush()
+        from app.services.prepaid_order_service import draft_requires_prepayment
+
+        if draft_requires_prepayment(draft):
+            draft.payment_unique_code = _pick_unique_code(draft.branch_id)
+            db.session.flush()
         _notify_portal_order_draft_created(draft)
         _commit_or_rollback()
     except IntegrityError:
@@ -1241,6 +1278,21 @@ def list_pending_portal_order_drafts(admin_user, limit=100):
 
 def build_portal_order_draft_review_queue(admin_user, limit=100):
     drafts = list_pending_portal_order_drafts(admin_user, limit=limit)
+    draft_ids = [d.id for d in drafts]
+    proof_map = {}
+    if draft_ids:
+        from app.models.system import DigitalAttachment
+        active_proofs = DigitalAttachment.query.filter(
+            DigitalAttachment.module == "PORTAL_PAYMENT",
+            DigitalAttachment.reference_type == "PORTAL_ORDER_DRAFT",
+            DigitalAttachment.reference_id.in_(draft_ids),
+            DigitalAttachment.is_deleted.is_(False),
+            DigitalAttachment.attachment_type.in_(["PAYMENT_PROOF_PENDING", "PAYMENT_PROOF_VERIFIED"]),
+        ).order_by(DigitalAttachment.id.desc()).all()
+        for p in active_proofs:
+            if p.reference_id not in proof_map:
+                proof_map[p.reference_id] = p.id
+
     rows = []
     for draft in drafts:
         daily_order = DailyOrder.query.filter_by(
@@ -1278,6 +1330,7 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
                 "daily_order_status": daily_order.status if daily_order else "NEW_DRAFT",
                 "daily_order_status_label": _label_status(daily_order.status if daily_order else "NEW_DRAFT"),
                 "meal_type_label": _meal_label(draft.meal_type),
+                "active_proof_id": proof_map.get(draft.id),
             }
         )
     ready_rows = [row for row in rows if row["can_confirm"]]
@@ -1318,7 +1371,7 @@ def build_portal_order_draft_review_queue(admin_user, limit=100):
     }
 
 
-def confirm_portal_order_draft(draft_id, admin_user, review_note=None, owner_override=False):
+def confirm_portal_order_draft(draft_id, admin_user, review_note=None, owner_override=False, commit=True):
     draft = (
         PortalOrderDraft.query.filter(PortalOrderDraft.id == draft_id)
         .options(lazyload("*"))
@@ -1358,7 +1411,10 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, owner_ove
         if gate["needs_approval"]:
             # Permintaan approval yang baru dibuat harus tersimpan walau draft
             # belum bisa dikonfirmasi.
-            _commit_or_rollback()
+            if commit:
+                _commit_or_rollback()
+            else:
+                db.session.flush()
         return draft, False, " ".join(gate["blockers"] or gate["warnings"]) or "Draft order perlu review manual."
 
     if not daily_order:
@@ -1495,7 +1551,10 @@ def confirm_portal_order_draft(draft_id, admin_user, review_note=None, owner_ove
         ),
     )
 
-    _commit_or_rollback()
+    if commit:
+        _commit_or_rollback()
+    else:
+        db.session.flush()
     return draft, True, None
 
 

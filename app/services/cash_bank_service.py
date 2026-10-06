@@ -274,6 +274,7 @@ ADJUSTMENT_CATEGORIES = {
     "SELISIH": {"label": "Selisih hitung kas/bank", "INCREASE": "4004", "DECREASE": "5009", "bank_only": False},
     "BIAYA_BANK": {"label": "Biaya administrasi bank", "DECREASE": "5008", "bank_only": True},
     "BUNGA_BANK": {"label": "Bunga / jasa giro bank", "INCREASE": "4004", "bank_only": True},
+    "KODE_UNIK": {"label": "Kode unik transfer pelanggan", "INCREASE": "4004", "bank_only": False, "system_only": True},
 }
 # Selisih di atas batas ini hanya boleh dicatat OWNER.
 SELISIH_OWNER_LIMIT = 100000
@@ -533,7 +534,7 @@ def create_cash_bank_transfer_record(
     return transfer, out_transaction, in_transaction
 
 
-def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, adjustment_type, amount, reason, created_by, branch_id, notes=None, commit=False, category=None, actor_role=None):
+def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, adjustment_type, amount, reason, created_by, branch_id, notes=None, commit=False, category=None, actor_role=None, allow_system_category=False):
     from app.models.finance import CashBankAdjustment
     from app.utils.roles import effective_role
 
@@ -551,6 +552,8 @@ def create_cash_bank_adjustment(adjustment_date, account_type, bank_account_id, 
     rule = ADJUSTMENT_CATEGORIES.get(category)
     if rule is None:
         raise Exception("Pilih jenis penyesuaian: selisih hitung, biaya administrasi bank, atau bunga bank.")
+    if rule.get("system_only") and not allow_system_category:
+        raise Exception("Jenis penyesuaian ini hanya dibuat otomatis oleh sistem.")
     if rule["bank_only"] and account_type != "BANK":
         raise Exception(f"{rule['label']} hanya untuk rekening bank.")
     counter_code = rule.get(adjustment_type)
@@ -643,6 +646,7 @@ def create_cash_bank_adjustment_record(
     notes=None,
     category=None,
     actor_role=None,
+    allow_system_category=False,
 ):
     try:
         adjustment, transaction = create_cash_bank_adjustment(
@@ -658,6 +662,7 @@ def create_cash_bank_adjustment_record(
             commit=False,
             category=category,
             actor_role=actor_role,
+            allow_system_category=allow_system_category,
         )
     except Exception:
         db.session.rollback()

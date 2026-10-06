@@ -189,6 +189,7 @@ class PortalOrderDraft(BaseModel):
     price_per_portion = db.Column(db.Numeric(18, 2), nullable=True)
     price_source = db.Column(db.String(20), nullable=True)
     delivery_fee = db.Column(db.Numeric(18, 2), nullable=True)
+    payment_unique_code = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(40), nullable=False, default="PENDING_ADMIN_CONFIRMATION", index=True)
     idempotency_key = db.Column(db.String(120), nullable=False, index=True)
@@ -205,3 +206,27 @@ class PortalOrderDraft(BaseModel):
     delivery_location = db.relationship("DeliveryLocation", foreign_keys=[delivery_location_id], lazy="joined")
     reviewer = db.relationship("User", foreign_keys=[reviewed_by], lazy="joined")
     converted_daily_order = db.relationship("DailyOrder", foreign_keys=[converted_daily_order_id], lazy="joined")
+
+
+class PortalPaymentProofClaim(BaseModel):
+    __tablename__ = "portal_payment_proof_claims"
+
+    attachment_id = db.Column(
+        db.Integer,
+        db.ForeignKey("digital_attachments.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    branch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("branches.id"),
+        nullable=False,
+        index=True,
+    )
+    claimed_amount = db.Column(db.Numeric(18, 2), nullable=False)
+    sender_name = db.Column(db.String(120), nullable=False)
+    transfer_reference = db.Column(db.String(80), nullable=True, index=True)
+
+    attachment = db.relationship("DigitalAttachment", foreign_keys=[attachment_id], lazy="joined")
+

@@ -89,11 +89,21 @@
                         <span>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} · {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</span>
                     </div>
                     <div class="po-pay-amount">
-                        <span>Sisa bayar</span>
-                        <strong>{{ (row.amount_due or 0)|rupiah }}</strong>
-                        {% if row.paid_amount %}<small>tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</small>{% endif %}
+                        {% if row.unique_code and row.transfer_amount %}
+                            <span>Transfer TEPAT</span>
+                            {% set tr_str = (row.transfer_amount|rupiah) %}
+                            <strong class="po-transfer-amount">{{ tr_str[:-3] }}<span class="po-unique-code" style="color: #0d6efd; font-weight: 800;">{{ tr_str[-3:] }}</span></strong>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem; line-height: 1.2;">3 angka terakhir adalah kode unik pesanan Anda agar pembayaran cepat dicocokkan. Mohon jangan dibulatkan.</small>
+                            {% if row.paid_amount %}<small class="d-block text-muted">tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</small>{% endif %}
+                        {% else %}
+                            <span>Sisa bayar</span>
+                            <strong>{{ (row.amount_due or 0)|rupiah }}</strong>
+                            {% if row.paid_amount %}<small>tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</small>{% endif %}
+                        {% endif %}
                     </div>
-                    <label class="po-pay-field"><span>Nominal</span><input class="form-control" type="number" name="paid_amount" min="1" step="1" value="{{ row.amount_due|int if row.amount_due else '' }}" required></label>
+                    <label class="po-pay-field"><span>Nominal</span><input class="form-control" type="number" name="paid_amount" min="1" step="1" value="{{ (row.transfer_amount if row.unique_code and row.transfer_amount is not none else row.amount_due)|int if (row.transfer_amount or row.amount_due) else '' }}" required></label>
+                    <label class="po-pay-field"><span>Nama pemilik rekening pengirim</span><input class="form-control" type="text" name="sender_name" maxlength="120" required placeholder="Nama pengirim"></label>
+                    <label class="po-pay-field"><span>No. referensi transfer (opsional)</span><input class="form-control" type="text" name="transfer_reference" maxlength="80" placeholder="No. referensi bank"></label>
                     <label class="po-pay-file"><span>Bukti transfer</span><input class="form-control" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></label>
                     <input type="hidden" name="notes" value="">
                     <button class="btn app-btn-primary" type="submit"><i class="bi bi-upload"></i> Unggah</button>

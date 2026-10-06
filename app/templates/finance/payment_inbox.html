@@ -1,0 +1,454 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section" data-payment-inbox>
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Keuangan &middot; Antrean Kerja</p>
+            <h1>Pembayaran Masuk</h1>
+            <p class="page-description">Cocokkan bukti dengan mutasi rekening, lalu terima atau tolak.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.index') }}">Pusat Keuangan</a>
+            <a class="btn app-btn-secondary btn-sm" href="{{ url_for('finance.portal_payment_proofs') }}">Bukti Lama</a>
+        </div>
+    </div>
+
+    <!-- Ringkasan Statistik -->
+    <div class="pin-stat-grid mb-4">
+        <div class="pin-stat-card">
+            <span class="pin-stat-label">Menunggu Diproses</span>
+            <strong class="pin-stat-value text-warning">{{ waiting_count }}</strong>
+            <small class="text-muted">bukti transfer pesanan</small>
+        </div>
+        <div class="pin-stat-card">
+            <span class="pin-stat-label">Total Menunggu</span>
+            <strong class="pin-stat-value">{{ waiting_amount|rupiah }}</strong>
+            <small class="text-muted">akumulasi nominal antrean</small>
+        </div>
+        <div class="pin-stat-card">
+            <span class="pin-stat-label">Sudah Diproses Hari Ini</span>
+            <strong class="pin-stat-value text-success">{{ processed_today_count }}</strong>
+            <small class="text-muted">selesai diverifikasi / ditolak</small>
+        </div>
+    </div>
+
+    <!-- Tab Navigasi -->
+    <div class="pin-nav-tabs mb-3">
+        <a class="pin-tab-btn {{ 'is-active' if tab == 'waiting' else '' }}" href="{{ url_for('finance.payment_inbox', tab='waiting') }}">
+            <span>Pesanan Portal (Menunggu)</span>
+            <span class="badge {{ 'bg-warning text-dark' if waiting_count > 0 else 'bg-secondary' }} ms-1">{{ waiting_count }}</span>
+        </a>
+        <a class="pin-tab-btn {{ 'is-active' if tab == 'invoice' else '' }}" href="{{ url_for('finance.payment_inbox', tab='invoice') }}">
+            <span>Tagihan Invoice</span>
+            <span class="badge bg-secondary ms-1">{{ invoice_rows|length }}</span>
+        </a>
+        <a class="pin-tab-btn {{ 'is-active' if tab == 'history' else '' }}" href="{{ url_for('finance.payment_inbox', tab='history') }}">
+            <span>Riwayat (30 Hari)</span>
+            <span class="badge bg-secondary ms-1">{{ history_rows|length }}</span>
+        </a>
+    </div>
+
+    {% if tab == 'waiting' %}
+        <!-- Filter Cepat (Chips) -->
+        <div class="pin-filter-bar mb-3">
+            <span class="pin-filter-label text-muted small me-2"><i class="bi bi-funnel"></i> Filter:</span>
+            <div class="pin-chips d-flex gap-2 flex-wrap">
+                <button type="button" class="pin-chip is-active" data-filter="all">Semua ({{ waiting_count }})</button>
+                <button type="button" class="pin-chip" data-filter="today">Hari Ini</button>
+                <button type="button" class="pin-chip" data-filter="exact">Cocok</button>
+                <button type="button" class="pin-chip" data-filter="check">Perlu Dicek</button>
+            </div>
+        </div>
+
+        {% if not waiting_rows %}
+            <div class="app-card text-center p-5 pin-empty-card">
+                <i class="bi bi-check-circle-fill text-success fs-1 mb-2"></i>
+                <h4 class="mt-2">Tidak ada pembayaran yang menunggu</h4>
+                <p class="text-muted mb-0">Semua bukti pembayaran pesanan draft portal sudah selesai diproses.</p>
+            </div>
+        {% else %}
+            <div class="pin-card-list">
+                {% for row in waiting_rows %}
+                    <article class="app-card pin-card mb-4" id="proof-{{ row.attachment_id }}"
+                             data-is-today="{{ '1' if row.is_today else '0' }}"
+                             data-match="{{ row.match }}"
+                             data-has-warning="{{ '1' if (row.warnings or row.blockers or row.match != 'EXACT') else '0' }}">
+                        <div class="pin-card-inner">
+                            <!-- Kolom Kiri: Pratinjau Bukti -->
+                            <div class="pin-col-preview">
+                                {% if row.is_image %}
+                                    <div class="pin-img-wrapper">
+                                        <a href="{{ row.view_url }}" target="_blank" title="Klik untuk memperbesar">
+                                            <img src="{{ row.view_url }}" loading="lazy" class="pin-img-preview" alt="Bukti Transfer #{{ row.attachment_id }}">
+                                        </a>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <a href="{{ row.view_url }}" target="_blank" class="btn btn-xs app-btn-secondary">
+                                            <i class="bi bi-arrows-fullscreen"></i> Buka Ukuran Penuh
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <div class="pin-pdf-box">
+                                        <i class="bi bi-file-earmark-pdf fs-1 text-danger"></i>
+                                        <p class="mt-2 mb-2 font-weight-bold">Dokumen PDF</p>
+                                        <a href="{{ row.view_url }}" target="_blank" class="btn btn-sm app-btn-secondary">
+                                            <i class="bi bi-box-arrow-up-right"></i> Buka PDF
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                <div class="pin-meta-small text-muted text-center mt-2 small">
+                                    <span>Bukti #{{ row.attachment_id }}</span> &middot;
+                                    <span>{{ row.uploaded_at|wib('%d-%m-%Y %H:%M') if row.uploaded_at else '-' }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Kolom Kanan: Detail & Form -->
+                            <div class="pin-col-details">
+                                <div class="pin-customer-header d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <h3 class="pin-customer-name mb-1">{{ row.customer_name }}</h3>
+                                        <div class="pin-customer-sub text-muted small">
+                                            {% if row.phone and row.phone != '-' %}
+                                                <a href="tel:{{ row.phone }}" class="text-decoration-none me-2"><i class="bi bi-telephone"></i> {{ row.phone }}</a>
+                                            {% endif %}
+                                            <span class="me-2"><i class="bi bi-geo-alt"></i> {{ row.location_name }}</span>
+                                            <span><i class="bi bi-building"></i> {{ row.client_name }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        {% if row.match == 'EXACT' %}
+                                            <span class="status-badge success"><i class="bi bi-check-circle"></i> Cocok</span>
+                                        {% elif row.match == 'SHORT' %}
+                                            <span class="status-badge warning"><i class="bi bi-exclamation-triangle"></i> {{ row.match_label }}</span>
+                                        {% elif row.match == 'OVER' %}
+                                            <span class="status-badge danger"><i class="bi bi-x-circle"></i> {{ row.match_label }}</span>
+                                        {% else %}
+                                            <span class="status-badge neutral">{{ row.match_label }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Info Pesanan -->
+                                <div class="pin-order-strip p-2 rounded mb-3 bg-light d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <span class="fw-bold">Pesanan Draft #{{ row.draft_id }}:</span>
+                                        <span>{{ row.order_date.strftime('%d-%m-%Y') if row.order_date else '-' }}</span>
+                                        {% if row.is_today %}
+                                            <span class="badge bg-danger ms-1">HARI INI</span>
+                                        {% endif %}
+                                        <span class="text-muted">&middot; {{ row.meal_label }} &middot;</span>
+                                        <strong>{{ row.portion_qty }} porsi</strong>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-secondary">{{ row.draft_status }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tabel Pembanding Uang -->
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm app-table align-middle mb-0 pin-money-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Total Pesanan</th>
+                                                <th>Sudah Bayar</th>
+                                                <th>Sisa Tagihan</th>
+                                                <th>Kode Unik</th>
+                                                <th class="table-primary fw-bold">Harus Ditransfer</th>
+                                                <th class="table-success fw-bold">Diklaim Pelanggan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{{ row.total|rupiah if row.total is not none else '-' }}</td>
+                                                <td>{{ row.prepaid|rupiah }}</td>
+                                                <td>{{ row.outstanding|rupiah if row.outstanding is not none else '-' }}</td>
+                                                <td><span class="badge bg-light text-dark border">+{{ row.unique_code|rupiah }}</span></td>
+                                                <td class="table-primary fw-bold text-primary">{{ row.expected_transfer|rupiah if row.expected_transfer is not none else '-' }}</td>
+                                                <td class="table-success fw-bold text-success">
+                                                    {{ row.claimed_amount|rupiah if row.claimed_amount is not none else 'Belum diisi' }}
+                                                    {% if row.sender_name %}
+                                                        <div class="small text-muted fw-normal">a.n. {{ row.sender_name }}</div>
+                                                    {% endif %}
+                                                    {% if row.transfer_reference %}
+                                                        <div class="small text-muted fw-normal">Ref: {{ row.transfer_reference }}</div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Warning & Blocker Alerts -->
+                                {% if row.warnings %}
+                                    <div class="pin-warnings mb-3">
+                                        {% for warn in row.warnings %}
+                                            <div class="alert alert-danger py-1 px-2 mb-1 small d-flex align-items-center">
+                                                <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ warn }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if row.blockers %}
+                                    <div class="pin-blockers mb-3">
+                                        {% for block in row.blockers %}
+                                            <div class="alert alert-warning py-1 px-2 mb-1 small d-flex align-items-center">
+                                                <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ block }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Form Terima & Konfirmasi -->
+                                <div class="pin-action-panel p-3 border rounded bg-white mt-3">
+                                    <form method="post" action="{{ url_for('finance.approve_payment_inbox', attachment_id=row.attachment_id) }}"
+                                          class="pin-approve-form"
+                                          data-app-confirm="Terima pembayaran dari {{ row.customer_name }} untuk pesanan {{ row.order_date.strftime('%d-%m-%Y') if row.order_date else '' }} {{ row.meal_label }} {{ row.portion_qty }} porsi?">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="draft_id" value="{{ row.draft_id }}">
+                                        <input type="hidden" name="idempotency_key" value="{{ row.idempotency_key }}">
+
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1">Nominal Masuk di Rekening <span class="text-danger">*</span></label>
+                                                {% set def_val = row.claimed_amount if row.claimed_amount is not none else (row.expected_transfer if row.expected_transfer is not none else row.outstanding) %}
+                                                <input type="number" step="any" min="1" name="received_amount"
+                                                       class="form-control form-control-sm pin-input-amount"
+                                                       value="{{ ('%f'|format(def_val)).rstrip('0').rstrip('.') if def_val is not none else '' }}"
+                                                       data-outstanding="{{ row.outstanding or 0 }}"
+                                                       data-expected="{{ row.expected_transfer or row.outstanding or 0 }}"
+                                                       required>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1">Rekening Bank Penerima <span class="text-danger">*</span></label>
+                                                <select name="bank_account_id" class="form-select form-select-sm" required>
+                                                    {% for bank in bank_accounts %}
+                                                        <option value="{{ bank.id }}" {{ 'selected' if bank_accounts|length == 1 else '' }}>
+                                                            {{ bank.bank_name }} - {{ bank.account_number }} ({{ bank.account_name }})
+                                                        </option>
+                                                    {% else %}
+                                                        <option value="" disabled selected>Belum ada rekening bank aktif</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1">Metode Bayar <span class="text-danger">*</span></label>
+                                                <select name="payment_method" class="form-select form-select-sm" required>
+                                                    <option value="TRANSFER" selected>TRANSFER</option>
+                                                    <option value="QRIS">QRIS</option>
+                                                    <option value="CASH">CASH (Tunai)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1">Tanggal Terima</label>
+                                                <input type="date" name="payment_date" class="form-control form-control-sm"
+                                                       value="{{ today.strftime('%Y-%m-%d') }}" max="{{ today.strftime('%Y-%m-%d') }}" required>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1">No. Referensi Bank</label>
+                                                <input type="text" name="reference_number" class="form-control form-control-sm"
+                                                       placeholder="Contoh: REF123456" value="{{ row.transfer_reference or '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold mb-1 pin-note-label">Catatan Tambahan</label>
+                                                <input type="text" name="note" class="form-control form-control-sm pin-input-note"
+                                                       placeholder="Wajib bila nominal tidak sesuai">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-check my-2">
+                                            <input class="form-check-input pin-check-mutation" type="checkbox" name="checked_mutation" value="1" id="check-mut-{{ row.attachment_id }}" required>
+                                            <label class="form-check-label small fw-bold text-dark" for="check-mut-{{ row.attachment_id }}">
+                                                Saya sudah cek mutasi rekening dan dana ini benar-benar masuk.
+                                            </label>
+                                        </div>
+
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top">
+                                            <div>
+                                                <button type="submit" class="btn app-btn-primary btn-sm pin-btn-approve"
+                                                        {% if not row.can_approve %}disabled{% endif %}>
+                                                    <i class="bi bi-check2-circle"></i> <span class="pin-btn-text">Terima &amp; Konfirmasi</span>
+                                                </button>
+                                                <button type="button" class="btn app-btn-danger btn-sm ms-2 pin-btn-toggle-reject"
+                                                        data-bs-toggle="collapse" data-bs-target="#reject-box-{{ row.attachment_id }}" aria-expanded="false">
+                                                    <i class="bi bi-x-circle"></i> Tolak...
+                                                </button>
+                                            </div>
+                                            {% if not row.can_approve %}
+                                                <small class="text-danger">
+                                                    <i class="bi bi-slash-circle"></i> Tidak dapat diterima langsung (periksa peringatan data).
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </form>
+
+                                    <!-- Form Tolak Terlipat -->
+                                    <div class="collapse mt-3 pt-3 border-top" id="reject-box-{{ row.attachment_id }}">
+                                        <form method="post" action="{{ url_for('finance.reject_payment_inbox', attachment_id=row.attachment_id) }}"
+                                              class="pin-reject-form"
+                                              data-app-confirm="Yakin ingin menolak bukti pembayaran ini?">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="draft_id" value="{{ row.draft_id }}">
+
+                                            <div class="row g-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold mb-1">Alasan Penolakan <span class="text-danger">*</span></label>
+                                                    <select name="reason_code" class="form-select form-select-sm pin-select-reason" required>
+                                                        <option value="NOT_RECEIVED">Dana tidak masuk ke rekening</option>
+                                                        <option value="UNREADABLE">Bukti tidak jelas / terbaca</option>
+                                                        <option value="WRONG_ORDER">Bukti untuk pesanan lain</option>
+                                                        <option value="WRONG_AMOUNT">Nominal tidak sesuai</option>
+                                                        <option value="OTHER">Lainnya</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold mb-1">Keterangan untuk Pelanggan</label>
+                                                    <input type="text" name="note" class="form-control form-control-sm pin-reject-note"
+                                                           placeholder="Tulis alasan jelas agar pelanggan memahami">
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                    <button type="submit" class="btn app-btn-danger btn-sm w-100">
+                                                        Konfirmasi Tolak
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% elif tab == 'invoice' %}
+        <!-- Tab Tagihan Invoice -->
+        <div class="app-card">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Bukti Pembayaran Tagihan Invoice</h5>
+                    <p class="text-muted small mb-0">Verifikasi bukti invoice pelanggan kredit / tempo.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if not invoice_rows %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-2"></i>
+                        <p class="mt-2 mb-0">Tidak ada bukti pembayaran tagihan invoice yang menunggu.</p>
+                    </div>
+                {% else %}
+                    <div class="table-responsive app-table-wrapper">
+                        <table class="table app-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Bukti</th>
+                                    <th>Invoice</th>
+                                    <th>Status Invoice</th>
+                                    <th>Unggah</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in invoice_rows %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ inv.original_filename }}</strong>
+                                            <div class="small text-muted">Lampiran #{{ inv.attachment_id }}</div>
+                                        </td>
+                                        <td>
+                                            <strong>{{ inv.invoice_number }}</strong>
+                                            <div class="small text-muted">{{ inv.client_name }}</div>
+                                        </td>
+                                        <td><span class="status-badge neutral">{{ inv.source_status }}</span></td>
+                                        <td>{{ inv.created_at|wib('%d-%m-%Y %H:%M') if inv.created_at else '-' }}</td>
+                                        <td>
+                                            <a class="btn btn-sm app-btn-secondary" target="_blank"
+                                               href="{{ url_for('finance.view_portal_payment_proof_attachment', attachment_id=inv.attachment_id) }}">
+                                                Lihat Bukti
+                                            </a>
+                                            <a class="btn btn-sm app-btn-primary ms-1"
+                                               href="{{ url_for('finance.portal_payment_proofs', status='PENDING') }}">
+                                                Proses di Halaman Bukti
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% elif tab == 'history' %}
+        <!-- Tab Riwayat -->
+        <div class="app-card">
+            <div class="card-header-clean">
+                <div>
+                    <h5>Riwayat Pembayaran Masuk (30 Hari Terakhir)</h5>
+                    <p class="text-muted small mb-0">Daftar bukti pembayaran yang telah disetujui atau ditolak.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if not history_rows %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-clock-history fs-2"></i>
+                        <p class="mt-2 mb-0">Belum ada riwayat pembayaran yang diproses dalam 30 hari terakhir.</p>
+                    </div>
+                {% else %}
+                    <div class="table-responsive app-table-wrapper">
+                        <table class="table app-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Pelanggan</th>
+                                    <th>Pesanan</th>
+                                    <th>Total &amp; Transfer</th>
+                                    <th>Status Bukti</th>
+                                    <th>Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in history_rows %}
+                                    <tr>
+                                        <td>{{ h.uploaded_at|wib('%d-%m-%Y %H:%M') if h.uploaded_at else '-' }}</td>
+                                        <td>
+                                            <strong>{{ h.customer_name }}</strong>
+                                            <div class="small text-muted">{{ h.client_name }} &middot; {{ h.location_name }}</div>
+                                        </td>
+                                        <td>
+                                            Draft #{{ h.draft_id }} &middot; {{ h.order_date.strftime('%d-%m-%Y') if h.order_date else '-' }}
+                                            <div class="small text-muted">{{ h.meal_label }} &middot; {{ h.portion_qty }} porsi</div>
+                                        </td>
+                                        <td>
+                                            <div>Total: {{ h.total|rupiah if h.total is not none else '-' }}</div>
+                                            <div class="small text-muted">Harus: {{ h.expected_transfer|rupiah if h.expected_transfer is not none else '-' }}</div>
+                                        </td>
+                                        <td>
+                                            {% if h.status_key == 'PAYMENT_PROOF_PAYMENT_CREATED' %}
+                                                <span class="status-badge success"><i class="bi bi-check-circle"></i> Selesai (Diterima)</span>
+                                            {% elif h.status_key == 'PAYMENT_PROOF_REJECTED' %}
+                                                <span class="status-badge danger"><i class="bi bi-x-circle"></i> Ditolak</span>
+                                            {% else %}
+                                                <span class="status-badge neutral">{{ h.status_key }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-sm app-btn-secondary" target="_blank" href="{{ h.view_url }}">
+                                                Lihat
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
