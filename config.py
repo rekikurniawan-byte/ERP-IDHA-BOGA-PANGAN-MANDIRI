@@ -162,6 +162,16 @@ class Config:
     TRUSTED_HOSTS = _csv_env("TRUSTED_HOSTS", os.getenv("APP_TRUSTED_HOSTS", "")) or None
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
     LOGIN_RATE_LIMIT = os.getenv("LOGIN_RATE_LIMIT", "5 per minute")
+    PASSWORD_RESET_RATE_LIMIT = os.getenv("PASSWORD_RESET_RATE_LIMIT", "5 per minute")
+
+    # Konfigurasi email (SMTP standard library) untuk reset password
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_USE_TLS = _env_bool("MAIL_USE_TLS", True)
+    MAIL_FROM = os.getenv("MAIL_FROM", "")
+
     CONTENT_SECURITY_POLICY = os.getenv("CONTENT_SECURITY_POLICY", DEFAULT_CONTENT_SECURITY_POLICY)
     CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", False)
     PORTAL_ENABLED = _env_bool("PORTAL_ENABLED", False)

@@ -627,7 +627,7 @@ def add_increase_after_lock_route(order_id):
     )
 
 @operational_bp.route("/orders/<int:order_id>")
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR", "PENGANTAR")
 def order_detail(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -660,6 +660,10 @@ def order_detail(order_id):
     delivery_next_actions = get_delivery_next_actions_for_order(daily_order)
     delivery_ready_actions = get_ready_delivery_next_actions_for_order(daily_order)
 
+    from app.services.kitchen_recap_service import get_session_print_history
+    lunch_print_status = get_session_print_history(daily_order, "LUNCH")
+    dinner_print_status = get_session_print_history(daily_order, "DINNER")
+
     return render_template(
         "operational/order_detail.html",
         daily_order=daily_order,
@@ -673,6 +677,8 @@ def order_detail(order_id):
         delivery_ready_actions=delivery_ready_actions,
         hpp_snapshots=hpp_snapshots,
         latest_hpp_snapshot=latest_hpp_snapshot,
+        lunch_print_status=lunch_print_status,
+        dinner_print_status=dinner_print_status,
     )
 
 
@@ -985,3 +991,70 @@ def order_hpp_stock_consumption_detail(order_id, snapshot_id, consumption_id):
         consumption=consumption,
     )
 
+
+
+@operational_bp.route("/orders/<int:order_id>/kitchen-recap/<string:sesi>")
+@role_required("ADMIN", "DAPUR")
+def kitchen_recap(order_id, sesi):
+    from app.services.company_settings_service import get_company_settings
+    from app.services.kitchen_recap_service import build_kitchen_recap_data, record_print_event
+
+    daily_order = DailyOrder.query.get_or_404(order_id)
+    if daily_order.branch_id != current_user.branch_id:
+        flash("Data order tidak sesuai cabang user.", "danger")
+        return redirect(url_for("operational.orders"))
+
+    if not daily_order.is_locked:
+        flash("Rekap Dapur hanya dapat dicetak setelah pesanan dikunci (locked).", "warning")
+        return redirect(url_for("operational.order_detail", order_id=daily_order.id))
+
+    try:
+        recap_data = build_kitchen_recap_data(daily_order, sesi)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("operational.order_detail", order_id=daily_order.id))
+
+    record_print_event(current_user, daily_order, sesi, "RECAP", "A4")
+    company = get_company_settings(daily_order.branch_id)
+
+    return render_template(
+        "operational/kitchen_recap.html",
+        recap=recap_data,
+        company=company,
+    )
+
+
+@operational_bp.route("/orders/<int:order_id>/container-labels/<string:sesi>")
+@role_required("ADMIN", "DAPUR", "PENGANTAR")
+def container_labels(order_id, sesi):
+    from app.services.company_settings_service import get_company_settings
+    from app.services.kitchen_recap_service import build_container_labels_data, record_print_event
+
+    daily_order = DailyOrder.query.get_or_404(order_id)
+    if daily_order.branch_id != current_user.branch_id:
+        flash("Data order tidak sesuai cabang user.", "danger")
+        return redirect(url_for("operational.orders"))
+
+    if not daily_order.is_locked:
+        flash("Label wadah hanya dapat dicetak setelah pesanan dikunci (locked).", "warning")
+        return redirect(url_for("operational.order_detail", order_id=daily_order.id))
+
+    paper_size = request.args.get("size", "58mm").lower().strip()
+    if paper_size not in ("58mm", "80mm", "a4"):
+        paper_size = "58mm"
+
+    try:
+        labels_data = build_container_labels_data(daily_order, sesi, paper_size)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("operational.order_detail", order_id=daily_order.id))
+
+    record_print_event(current_user, daily_order, sesi, "LABEL", paper_size)
+    company = get_company_settings(daily_order.branch_id)
+
+    return render_template(
+        "operational/container_labels.html",
+        labels_data=labels_data,
+        paper_size=paper_size,
+        company=company,
+    )

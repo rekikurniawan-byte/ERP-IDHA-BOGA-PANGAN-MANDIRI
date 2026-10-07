@@ -16,17 +16,17 @@
         </a>
 
         <div class="pub-auth-side-body">
-            <h1>Satu sistem untuk pesanan, dapur, pengiriman, dan tagihan.</h1>
+            <h1>Pesan catering harian, lacak pengiriman, dan bayar tagihan — semua dalam satu tempat.</h1>
             {% include "components/public_board.html" %}
             <ul class="pub-auth-list pub-auth-roles">
-                <li><strong>Tim internal</strong><span>Owner, admin, dapur, dan pengantar.</span></li>
+                <li><strong>Tim katering</strong><span>Staf operasional, pengantar, dan administrasi.</span></li>
                 <li><strong>{{ term('client') }} &amp; {{ term('sub_client', lower=True) }}</strong><span>Pesanan, tagihan, pembayaran, kontrak.</span></li>
                 <li><strong>Pelanggan umum</strong><span>Pesan, bayar di muka, lacak pesanan.</span></li>
             </ul>
         </div>
 
         <p class="pub-auth-help">
-            Lupa kata sandi? Kata sandi diatur ulang oleh admin{% if site and site.whatsapp_url %} &mdash;
+            Lupa kata sandi? <a href="{{ url_for('auth.forgot_password') }}">Reset kata sandi di sini</a>{% if site and site.whatsapp_url %} atau
             <a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">hubungi lewat WhatsApp</a>{% endif %}.
         </p>
     </aside>
@@ -45,7 +45,10 @@
                            autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label" for="loginPassword">Kata sandi</label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0" for="loginPassword">Kata sandi</label>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="small text-decoration-none">Lupa password?</a>
+                    </div>
                     <input type="password" id="loginPassword" name="password" class="form-control"
                            autocomplete="current-password" required>
                 </div>

@@ -80,6 +80,9 @@
 
                     {% if field.type == 'textarea' %}
                         <textarea name="{{ field.key }}" class="form-control app-input" rows="3" {% if field.required %}required{% endif %}>{{ settings[field.key] }}</textarea>
+                    {% elif field.type == 'number' %}
+                        <input type="number" name="{{ field.key }}" class="form-control app-input" value="{{ settings[field.key] }}" min="{{ field.min or 0 }}" max="{{ field.max or '' }}" {% if field.required %}required{% endif %}>
+                        {% if field.help %}<div class="small text-muted mt-1">{{ field.help }}</div>{% endif %}
                     {% else %}
                         <input type="text" name="{{ field.key }}" class="form-control app-input" value="{{ settings[field.key] }}" {% if field.required %}required{% endif %}>
                     {% endif %}

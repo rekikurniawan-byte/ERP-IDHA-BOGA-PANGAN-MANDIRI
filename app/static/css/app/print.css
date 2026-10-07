@@ -138,3 +138,294 @@
         text-decoration: none;
     }
 }
+
+/* ==========================================================================
+   Rekap Dapur & Label Wadah
+   ========================================================================== */
+
+/* Rekap Dapur */
+.kitchen-recap-shell .print-doc-card {
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: var(--space-6);
+}
+
+.kitchen-recap-shell .print-summary-hero {
+    border-radius: var(--radius-lg);
+}
+
+.kitchen-recap-shell .print-signatures-wrap {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* Label Wadah - Layout */
+.container-labels-shell {
+    margin-bottom: var(--space-8);
+}
+
+.labels-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: center;
+}
+
+.labels-layout-a4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-4);
+    width: 100%;
+}
+
+.container-label-item {
+    position: relative;
+    background: var(--surface);
+    border: 2px solid var(--text);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    color: var(--text);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.label-paper-58mm .container-label-item {
+    width: 320px;
+    max-width: 100%;
+}
+
+.label-paper-80mm .container-label-item {
+    width: 440px;
+    max-width: 100%;
+}
+
+.label-paper-a4 .container-label-item {
+    width: 100%;
+    border: 1.5px dashed var(--text-secondary);
+}
+
+.label-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.label-client-name {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.label-portion-badge {
+    font-size: var(--text-md);
+    font-weight: var(--weight-bold);
+    background: var(--text);
+    color: var(--surface);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.label-meta-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.label-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.label-info-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.label-row {
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    margin-bottom: 3px;
+    color: var(--text);
+}
+
+.label-key {
+    font-weight: var(--weight-semibold);
+    margin-right: 4px;
+}
+
+.label-val {
+    word-break: break-word;
+}
+
+.label-qr-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    min-width: 80px;
+}
+
+.label-qr-code svg {
+    width: 72px;
+    height: 72px;
+    display: block;
+}
+
+.label-qr-hint {
+    font-size: 0.6rem;
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 2px;
+}
+
+.stale-label-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    color: var(--danger);
+    opacity: 0.3;
+    border: 3px dashed var(--danger);
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    z-index: 5;
+    white-space: nowrap;
+}
+
+/* Aturan Khusus Cetak Thermal & A4 di dalam media print */
+@media print {
+    .kitchen-recap-shell .print-doc-card {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .label-paper-58mm {
+        margin: 0;
+        padding: 0;
+    }
+    .label-paper-58mm .labels-grid {
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+    .label-paper-58mm .container-label-item {
+        width: 48mm;
+        max-width: 48mm;
+        margin: 0 auto 3mm auto;
+        padding: 2mm;
+        border: 1px solid var(--text);
+        page-break-after: always;
+        break-after: page;
+    }
+    .label-paper-58mm .label-client-name {
+        font-size: 9pt;
+    }
+    .label-paper-58mm .label-portion-badge {
+        font-size: 9pt;
+        padding: 1px 4px;
+    }
+    .label-paper-58mm .label-meta-bar,
+    .label-paper-58mm .label-row {
+        font-size: 7pt;
+    }
+    .label-paper-58mm .label-qr-col {
+        width: 24mm;
+        min-width: 24mm;
+    }
+    .label-paper-58mm .label-qr-code svg {
+        width: 22mm;
+        height: 22mm;
+    }
+    .label-paper-58mm .label-qr-hint {
+        font-size: 5pt;
+    }
+
+    .label-paper-80mm {
+        margin: 0;
+        padding: 0;
+    }
+    .label-paper-80mm .labels-grid {
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+    .label-paper-80mm .container-label-item {
+        width: 72mm;
+        max-width: 72mm;
+        margin: 0 auto 4mm auto;
+        padding: 3mm;
+        border: 1.5px solid var(--text);
+        page-break-after: always;
+        break-after: page;
+    }
+    .label-paper-80mm .label-client-name {
+        font-size: 11pt;
+    }
+    .label-paper-80mm .label-portion-badge {
+        font-size: 11pt;
+        padding: 2px 6px;
+    }
+    .label-paper-80mm .label-meta-bar,
+    .label-paper-80mm .label-row {
+        font-size: 8pt;
+    }
+    .label-paper-80mm .label-qr-col {
+        width: 28mm;
+        min-width: 28mm;
+    }
+    .label-paper-80mm .label-qr-code svg {
+        width: 26mm;
+        height: 26mm;
+    }
+    .label-paper-80mm .label-qr-hint {
+        font-size: 6pt;
+    }
+
+    .label-paper-a4 .labels-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4mm;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .label-paper-a4 .container-label-item {
+        width: 100%;
+        padding: 4mm;
+        border: 1px dashed var(--text-secondary);
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    .label-paper-a4 .label-client-name {
+        font-size: 11pt;
+    }
+    .label-paper-a4 .label-portion-badge {
+        font-size: 11pt;
+    }
+    .label-paper-a4 .label-meta-bar,
+    .label-paper-a4 .label-row {
+        font-size: 8.5pt;
+    }
+}

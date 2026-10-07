@@ -74,9 +74,12 @@ def company_settings():
 
         try:
             save_company_settings(current_user.branch_id, form_payload)
-        except ModuleChangeError as error:
-            for message in error.errors:
-                flash(message, "danger")
+        except (ModuleChangeError, ValueError) as error:
+            if isinstance(error, ModuleChangeError):
+                for message in error.errors:
+                    flash(message, "danger")
+            else:
+                flash(str(error), "danger")
             return redirect(url_for("settings.company_settings"))
         module_note = "".join(f" Modul {key}: {old} → {new}." for key, (old, new) in changed_modules.items())
         record_critical_audit_log(
@@ -106,7 +109,7 @@ def company_settings():
     )
 
 @settings_bp.route("/users")
-@role_required("OWNER")
+@role_required("OWNER", "ADMIN")
 def users():
     users = list_users()
     return render_template(
@@ -251,9 +254,12 @@ def toggle_user_page(user_id):
 
 
 @settings_bp.route("/users/<int:user_id>/reset-password", methods=["GET", "POST"])
-@role_required("OWNER")
+@role_required("OWNER", "ADMIN")
 def reset_user_password_page(user_id):
     target_user = get_user_or_404(user_id)
+    if target_user.role == "OWNER" and current_user.role != "OWNER":
+        flash("Reset password OWNER hanya boleh dilakukan oleh OWNER.", "danger")
+        return redirect(url_for("settings.users"))
 
     if request.method == "POST":
         guard_ok, guard_message, guard_meta = validate_sensitive_action_guard(

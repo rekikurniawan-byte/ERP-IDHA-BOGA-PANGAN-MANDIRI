@@ -176,6 +176,12 @@ def upload_portal_order_draft_payment_proof(
     if draft.status != "PENDING_ADMIN_CONFIRMATION":
         raise PortalPaymentProofError("Bukti pembayaran awal hanya dapat diunggah untuk draft yang masih menunggu admin.")
 
+    from app.services.portal_order_draft_service import session_closed_reason
+
+    closed_reason = session_closed_reason(draft.branch_id, draft.order_date, draft.meal_type)
+    if closed_reason:
+        raise PortalPaymentProofError("Pesanan ini sudah lewat batas waktu dan tidak bisa diproses. Hubungi admin.")
+
     claim = None
     if commit:
         with atomic_business_action(

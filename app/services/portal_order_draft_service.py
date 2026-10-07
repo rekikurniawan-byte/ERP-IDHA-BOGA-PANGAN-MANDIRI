@@ -20,11 +20,12 @@ from app.services.credit_control_service import (
     estimate_order_amount,
     evaluate_credit,
 )
+from app.services.operational_service import generate_order_number
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_financial_visibility_service import build_portal_invoice_read_model
 from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, build_portal_external_scope
 from app.services.user_management_service import ROLE_ADMIN, ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT
-from app.services.operational_service import generate_order_number
+from app.utils.clock import now_wib, today_wib
 from app.utils.labels import status_label as shared_status_label
 from app.utils.terms import T
 
@@ -509,7 +510,7 @@ def _credit_gate_for_draft(draft):
 
 def _cutoff_gate_for_draft(draft):
     cutoff_at = PORTAL_CUTOFF_TIMES.get(str(draft.meal_type or "").upper())
-    now = datetime.now()
+    now = now_wib()
     today = now.date()
     if draft.order_date < today:
         return {
@@ -872,6 +873,37 @@ def _latest_scope_drafts(user, scope, limit=10):
     )
 
 
+def session_closed_reason(branch_id: int | None, order_date: date, meal_type: str) -> str | None:
+    """Helper untuk memeriksa apakah suatu sesi makan pada tanggal order sudah tutup.
+
+    Tutup bila:
+    1. Tanggal lampau (sebelum hari ini WIB).
+    2. Tanggal = hari ini dan jam WIB > cutoff sesi (LUNCH: 10:00, DINNER: 15:00).
+    3. DailyOrder cabang + tanggal tersebut berstatus is_locked.
+    """
+    if not order_date:
+        return "Tanggal order wajib valid."
+
+    today = today_wib()
+    if order_date < today:
+        return "Tanggal order portal tidak boleh sebelum hari ini."
+
+    if order_date == today:
+        now = now_wib()
+        meal_key = str(meal_type or "").upper()
+        cutoff_at = PORTAL_CUTOFF_TIMES.get(meal_key)
+        if cutoff_at and now.time() > cutoff_at:
+            meal_label = MEAL_TYPE_LABELS.get(meal_key, meal_key)
+            return f"Batas waktu pemesanan untuk {meal_label} hari ini sudah lewat ({cutoff_at.strftime('%H:%M')} WIB)."
+
+    if branch_id:
+        daily_order = DailyOrder.query.filter_by(branch_id=branch_id, order_date=order_date).first()
+        if daily_order and daily_order.is_locked:
+            return f"Order harian tanggal {order_date.strftime('%d-%m-%Y')} sudah dikunci oleh dapur."
+
+    return None
+
+
 def _draft_history_rows(drafts):
     from app.services.prepaid_order_service import (
         draft_prepaid_amount,
@@ -886,6 +918,8 @@ def _draft_history_rows(drafts):
         paid = draft_prepaid_amount(draft) if total is not None else None
         transfer_amount = draft_transfer_amount(draft) if total is not None else None
         unique_code = int(getattr(draft, "payment_unique_code", None) or 0) or None
+        closed_reason = session_closed_reason(draft.branch_id, draft.order_date, draft.meal_type)
+        is_closed = bool(closed_reason)
         rows.append(
             {
                 "total_amount": total,
@@ -900,6 +934,8 @@ def _draft_history_rows(drafts):
                 "needs_payment": bool(gate and gate["needs_payment"]),
                 "needs_approval": bool(gate and gate["needs_approval"]),
                 "can_confirm": bool(gate and gate["can_confirm"]),
+                "is_closed": is_closed,
+                "closed_reason": closed_reason,
             }
         )
     return rows
@@ -912,6 +948,25 @@ def build_portal_draft_order_context(user):
     location_ids = orderable_location_ids(user, scope)
     locations = _allowed_location_options(scope, location_ids)
     is_customer = getattr(user, "role", None) == ROLE_PORTAL_CUSTOMER
+
+    today = today_wib()
+    branch_id = getattr(user, "branch_id", None)
+    today_sessions = {}
+    for m in ("LUNCH", "DINNER"):
+        r = session_closed_reason(branch_id, today, m)
+        today_sessions[m] = {
+            "closed": bool(r),
+            "reason": r or "",
+        }
+    locked_dates = []
+    if branch_id:
+        locked_dates = [
+            row[0].strftime("%Y-%m-%d")
+            for row in db.session.query(DailyOrder.order_date)
+            .filter(DailyOrder.branch_id == branch_id, DailyOrder.is_locked.is_(True))
+            .all()
+        ]
+
     return {
         "allowed": scope.allowed and ACCESS_DRAFT_ORDER in scope.access_levels,
         # Untuk PT: True kalau client-nya punya unit order langsung yang
@@ -930,6 +985,9 @@ def build_portal_draft_order_context(user):
         "prepayment_required": is_customer,
         "payment_precheck": precheck,
         "cutoff_times": {key: value.strftime("%H:%M") for key, value in PORTAL_CUTOFF_TIMES.items()},
+        "today": today.strftime("%Y-%m-%d"),
+        "today_sessions": today_sessions,
+        "locked_dates": locked_dates,
     }
 
 
@@ -1064,7 +1122,7 @@ def _validate_draft_payload(user, form):
     order_date = _parse_date(form.get("order_date"))
     if not order_date:
         return None, "Tanggal order wajib valid."
-    if order_date < date.today():
+    if order_date < today_wib():
         return None, "Tanggal order portal tidak boleh sebelum hari ini."
 
     meal_type = _clean_text(form.get("meal_type")).upper()
@@ -1090,9 +1148,13 @@ def _validate_draft_payload(user, form):
     if location.mandor_id not in scope.mandor_ids:
         return None, f"{T.sub_client} lokasi tidak termasuk akses portal user."
 
+    branch_id = location.mandor.branch_id
+    closed_reason = session_closed_reason(branch_id, order_date, meal_type)
+    if closed_reason:
+        return None, closed_reason
+
     from app.services.pricing_service import min_portion_error, quote_price, quote_trip_fee
 
-    branch_id = location.mandor.branch_id
     client = location.mandor.client
     minimum_error = min_portion_error(branch_id, client, [(MEAL_TYPE_LABELS.get(meal_type, meal_type), portion_qty)])
     if minimum_error:

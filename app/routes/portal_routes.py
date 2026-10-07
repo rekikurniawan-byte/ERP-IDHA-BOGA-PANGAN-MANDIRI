@@ -69,6 +69,7 @@ from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
     ROLE_PORTAL_SUBCLIENT,
     list_active_branches,
+    update_portal_user_email,
 )
 from app.utils.decorators import module_required, role_required
 from app.services.branch_module_service import WORKER_DEBT
@@ -939,7 +940,7 @@ def addresses():
         location_id = request.form.get("location_id", type=int)
         try:
             if location_id:
-                location = update_address(current_user, location_id, request.form)
+                location = update_address(current_user, location_id, request.form, files=request.files.getlist("location_photos"))
                 flash(f"Alamat {location.location_name} diperbarui.", "success")
             else:
                 location = add_address(current_user, request.form, files=request.files.getlist("location_photos"))
@@ -958,9 +959,19 @@ def addresses():
     )
 
 
-@portal_bp.route("/profile")
+@portal_bp.route("/profile", methods=["GET", "POST"])
 @role_required(*PORTAL_READONLY_ROLES)
 def profile():
+    if request.method == "POST":
+        new_email = request.form.get("email")
+        current_password = request.form.get("current_password")
+        success, error = update_portal_user_email(current_user, new_email, current_password)
+        if error:
+            flash(error, "danger")
+        else:
+            flash("Email akun portal berhasil diperbarui.", "success")
+        return redirect(url_for("portal.profile"))
+
     return render_template(
         "portal/profile.html",
         data={
@@ -970,6 +981,19 @@ def profile():
             "page_description": "Akses akun portal terhadap data master.",
         },
     )
+
+
+@portal_bp.route("/profile/email", methods=["POST"])
+@role_required(*PORTAL_READONLY_ROLES)
+def update_profile_email():
+    new_email = request.form.get("email")
+    current_password = request.form.get("current_password")
+    success, error = update_portal_user_email(current_user, new_email, current_password)
+    if error:
+        flash(error, "danger")
+    else:
+        flash("Email akun portal berhasil diperbarui.", "success")
+    return redirect(url_for("portal.profile"))
 
 
 @portal_bp.route("/orders/draft", methods=["GET", "POST"])

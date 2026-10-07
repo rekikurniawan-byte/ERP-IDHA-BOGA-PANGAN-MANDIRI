@@ -34,7 +34,7 @@
                     <tr>
                         <td>
                             <div class="fw-semibold">{{ item.full_name }}</div>
-                            <div class="text-muted small">@{{ item.username }}</div>
+                            <div class="text-muted small">@{{ item.username }}{% if item.email %} &bull; {{ item.email }}{% endif %}</div>
                         </td>
                         <td>
                             <span class="status-badge neutral">{{ role_labels.get(item.role, item.role) }}</span>
@@ -55,7 +55,7 @@
                                     Ubah
                                 </a>
 
-                                {% if item.id != current_user.id %}
+                                {% if item.id != current_user.id and (current_user.role == 'OWNER' or item.role != 'OWNER') %}
                                     <a href="{{ url_for('settings.reset_user_password_page', user_id=item.id) }}" class="btn btn-sm app-btn-secondary">
                                         Reset Password
                                     </a>

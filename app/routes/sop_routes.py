@@ -1,13 +1,14 @@
 from copy import deepcopy
 
 from flask import Blueprint, abort, render_template, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 from werkzeug.routing import BuildError
 
 from app.services.disaster_recovery_sop_service import (
     get_backup_restore_sop,
     get_disaster_recovery_sop,
 )
+from app.utils.roles import effective_role
 from app.utils.terms import L
 
 
@@ -599,18 +600,35 @@ def _safe_url(endpoint):
         return "#"
 
 
-def _role_nav(active_slug=None):
+ROLE_SOP_MAP = {
+    "OWNER": ["owner"],
+    "ADMIN": ["admin", "finance", "accounting", "canteen", "logistics", "hr", "master", "settings", "ui"],
+    "DAPUR": ["dapur"],
+    "PENGANTAR": ["delivery"],
+}
+
+
+def _allowed_sop_slugs(user):
+    if not user or not getattr(user, "is_authenticated", False):
+        return []
+    role = effective_role(getattr(user, "role", ""))
+    return ROLE_SOP_MAP.get(role, [])
+
+
+def _role_nav(allowed_slugs=None, active_slug=None):
+    slugs = allowed_slugs if allowed_slugs is not None else ROLE_ORDER
     nav = []
-    for slug in ROLE_ORDER:
-        item = SOP_LIBRARY[slug]
-        nav.append({
-            "slug": slug,
-            "title": item["title"],
-            "summary": item["summary"],
-            "icon": item["icon"],
-            "is_active": slug == active_slug,
-            "url": url_for("sop.role_sop", slug=slug),
-        })
+    for slug in slugs:
+        if slug in SOP_LIBRARY:
+            item = SOP_LIBRARY[slug]
+            nav.append({
+                "slug": slug,
+                "title": item["title"],
+                "summary": item["summary"],
+                "icon": item["icon"],
+                "is_active": slug == active_slug,
+                "url": url_for("sop.role_sop", slug=slug),
+            })
     return nav
 
 
@@ -636,11 +654,14 @@ def _hydrate_sop(slug):
 @sop_bp.route("/")
 @login_required
 def index():
-    sop_items = [_hydrate_sop(slug) for slug in ROLE_ORDER]
+    allowed_slugs = _allowed_sop_slugs(current_user)
+    if not allowed_slugs:
+        abort(403)
+    sop_items = [_hydrate_sop(slug) for slug in allowed_slugs if slug in SOP_LIBRARY]
     return render_template(
         "sop/index.html",
         sop_items=sop_items,
-        role_nav=_role_nav(),
+        role_nav=_role_nav(allowed_slugs),
         total_roles=len(sop_items),
     )
 
@@ -648,24 +669,32 @@ def index():
 @sop_bp.route("/disaster-recovery")
 @login_required
 def disaster_recovery():
+    role = effective_role(getattr(current_user, "role", ""))
+    if role not in {"OWNER", "ADMIN"}:
+        abort(403)
+    allowed_slugs = _allowed_sop_slugs(current_user)
     sop = get_disaster_recovery_sop()
     sop["safety_pages"] = _hydrate_safety_pages(sop.get("safety_pages"))
     return render_template(
         "sop/disaster_recovery.html",
         sop=sop,
-        role_nav=_role_nav(),
+        role_nav=_role_nav(allowed_slugs),
     )
 
 
 @sop_bp.route("/backup-restore")
 @login_required
 def backup_restore():
+    role = effective_role(getattr(current_user, "role", ""))
+    if role not in {"OWNER", "ADMIN"}:
+        abort(403)
+    allowed_slugs = _allowed_sop_slugs(current_user)
     sop = get_backup_restore_sop()
     sop["safety_pages"] = _hydrate_safety_pages(sop.get("safety_pages"))
     return render_template(
         "sop/backup_restore.html",
         sop=sop,
-        role_nav=_role_nav(),
+        role_nav=_role_nav(allowed_slugs),
     )
 
 
@@ -674,9 +703,12 @@ def backup_restore():
 def role_sop(slug):
     if slug not in SOP_LIBRARY:
         abort(404)
+    allowed_slugs = _allowed_sop_slugs(current_user)
+    if slug not in allowed_slugs:
+        abort(403)
 
     return render_template(
         "sop/role_sop.html",
         sop=_hydrate_sop(slug),
-        role_nav=_role_nav(active_slug=slug),
+        role_nav=_role_nav(allowed_slugs, active_slug=slug),
     )

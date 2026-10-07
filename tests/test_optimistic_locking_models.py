@@ -49,6 +49,9 @@ gps_partnership_migration = importlib.import_module(
 claims_migration = importlib.import_module(
     "migrations.versions.a7b8c9d0e1f2_payment_proof_claims_unique_code"
 )
+reset_tokens_migration = importlib.import_module(
+    "migrations.versions.b1c2d3e4f5a6_add_password_reset_tokens"
+)
 
 
 def _versioned_model_tables():
@@ -84,6 +87,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(opening_balance_migration.VERSIONED_TABLES)
     migration_tables.update(gps_partnership_migration.VERSIONED_TABLES)
     migration_tables.update(claims_migration.VERSIONED_TABLES)
+    migration_tables.update(reset_tokens_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

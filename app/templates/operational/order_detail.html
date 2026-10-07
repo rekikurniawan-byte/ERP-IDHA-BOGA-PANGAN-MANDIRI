@@ -87,6 +87,97 @@
         Dapur harus menyelesaikan tambahan produksi dulu sebelum pengiriman tambahan bisa dibuat.
     </p>
 </div>
+
+<div class="app-card mt-4" data-kitchen-print-panel="true">
+    <div class="card-header-clean">
+        <div>
+            <h5><i class="bi bi-printer me-2 text-primary"></i>Cetak Rekap Dapur & Label Wadah</h5>
+            <p>Rekap pesanan dapur dan label wadah per sesi untuk pesanan yang telah dikunci.</p>
+        </div>
+    </div>
+    
+    <div class="row g-3">
+        <!-- Sesi Siang -->
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light-subtle h-100 d-flex flex-column justify-content-between" style="border-radius: var(--radius-lg) !important;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0 font-weight-bold"><i class="bi bi-sun text-warning me-1"></i> Sesi Siang ({{ total_lunch }} Porsi)</h6>
+                        {% if lunch_print_status.any_stale %}
+                            <span class="status-badge status-danger">Cetak ulang — data berubah sejak dicetak</span>
+                        {% elif lunch_print_status.is_recap_printed or lunch_print_status.is_label_printed %}
+                            <span class="status-badge status-success">Sudah dicetak</span>
+                        {% else %}
+                            <span class="status-badge status-secondary">Belum dicetak</span>
+                        {% endif %}
+                    </div>
+                    {% if lunch_print_status.recap_history %}
+                        <div class="muted-small mb-1">
+                            Rekap: {{ lunch_print_status.recap_history.printed_at }} oleh {{ lunch_print_status.recap_history.printed_by_name }}
+                        </div>
+                    {% endif %}
+                    {% if lunch_print_status.label_history %}
+                        <div class="muted-small mb-2">
+                            Label ({{ lunch_print_status.label_history.paper_size }}): {{ lunch_print_status.label_history.printed_at }} oleh {{ lunch_print_status.label_history.printed_by_name }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 mt-3 flex-wrap">
+                    {% if current_user.role in ['OWNER', 'ADMIN', 'DAPUR'] %}
+                        <a href="{{ url_for('operational.kitchen_recap', order_id=daily_order.id, sesi='LUNCH') }}" target="_blank" class="btn btn-sm app-btn-primary">
+                            <i class="bi bi-printer"></i> Cetak Rekap Dapur
+                        </a>
+                    {% endif %}
+                    {% if current_user.role in ['OWNER', 'ADMIN', 'DAPUR', 'PENGANTAR'] %}
+                        <a href="{{ url_for('operational.container_labels', order_id=daily_order.id, sesi='LUNCH') }}" target="_blank" class="btn btn-sm app-btn-secondary">
+                            <i class="bi bi-tags"></i> Cetak Label Wadah
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sesi Malam -->
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light-subtle h-100 d-flex flex-column justify-content-between" style="border-radius: var(--radius-lg) !important;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0 font-weight-bold"><i class="bi bi-moon text-primary me-1"></i> Sesi Malam / Sore ({{ total_dinner }} Porsi)</h6>
+                        {% if dinner_print_status.any_stale %}
+                            <span class="status-badge status-danger">Cetak ulang — data berubah sejak dicetak</span>
+                        {% elif dinner_print_status.is_recap_printed or dinner_print_status.is_label_printed %}
+                            <span class="status-badge status-success">Sudah dicetak</span>
+                        {% else %}
+                            <span class="status-badge status-secondary">Belum dicetak</span>
+                        {% endif %}
+                    </div>
+                    {% if dinner_print_status.recap_history %}
+                        <div class="muted-small mb-1">
+                            Rekap: {{ dinner_print_status.recap_history.printed_at }} oleh {{ dinner_print_status.recap_history.printed_by_name }}
+                        </div>
+                    {% endif %}
+                    {% if dinner_print_status.label_history %}
+                        <div class="muted-small mb-2">
+                            Label ({{ dinner_print_status.label_history.paper_size }}): {{ dinner_print_status.label_history.printed_at }} oleh {{ dinner_print_status.label_history.printed_by_name }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 mt-3 flex-wrap">
+                    {% if current_user.role in ['OWNER', 'ADMIN', 'DAPUR'] %}
+                        <a href="{{ url_for('operational.kitchen_recap', order_id=daily_order.id, sesi='DINNER') }}" target="_blank" class="btn btn-sm app-btn-primary">
+                            <i class="bi bi-printer"></i> Cetak Rekap Dapur
+                        </a>
+                    {% endif %}
+                    {% if current_user.role in ['OWNER', 'ADMIN', 'DAPUR', 'PENGANTAR'] %}
+                        <a href="{{ url_for('operational.container_labels', order_id=daily_order.id, sesi='DINNER') }}" target="_blank" class="btn btn-sm app-btn-secondary">
+                            <i class="bi bi-tags"></i> Cetak Label Wadah
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 
 {% if delivery_ready_actions %}

@@ -231,7 +231,8 @@ def test_halaman_pesan_pelanggan_umum_tanpa_label_pt_mandor(app, ctx):
     s = _setup(ctx)
     username = f"cust-{uuid4().hex[:8]}"
     app.test_client().post("/portal/register", data={
-        "full_name": "Ibu Uji", "phone": "081570000999", "username": username, "branch_id": s.branch.id,
+        "full_name": "Ibu Uji", "phone": "081570000999", "email": f"{username}@idhaboga.local",
+        "username": username, "branch_id": s.branch.id,
         "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026", "location_name": "Rumah Uji",
         "delivery_zone_id": s.zone.id, "address": "Jl. Uji No. 1", "location_photos": _photo(),
     }, content_type="multipart/form-data")
@@ -251,7 +252,7 @@ def test_daftar_dengan_titik_gps_tanpa_zona(app, ctx):
 
     s = _setup(ctx)
     base = {
-        "full_name": "Pak GPS", "phone": "081570000998", "branch_id": s.branch.id,
+        "full_name": "Pak GPS", "phone": "081570000998", "email": "pak.gps@idhaboga.local", "branch_id": s.branch.id,
         "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026",
         "location_name": "Mes Proyek", "address": "Jl. Lintas Timur Km 3",
     }
@@ -260,7 +261,7 @@ def test_daftar_dengan_titik_gps_tanpa_zona(app, ctx):
 
     username = f"gps-{uuid4().hex[:8]}"
     app.test_client().post("/portal/register", data={
-        **base, "username": username, "latitude": "-2,9612345", "longitude": "105.7512345", "gps_accuracy": "12.4",
+        **base, "username": username, "email": f"{username}@idhaboga.local", "latitude": "-2,9612345", "longitude": "105.7512345", "gps_accuracy": "12.4",
         "location_photos": _photo(),
     }, content_type="multipart/form-data")
     user = User.query.filter_by(username=username).one()
@@ -463,7 +464,7 @@ def test_foto_lokasi_wajib_saat_daftar_dan_dibatasi(app, ctx):
 
     s = _setup(ctx)
     base = {
-        "full_name": "Bu Foto", "phone": "081570000997", "branch_id": s.branch.id,
+        "full_name": "Bu Foto", "phone": "081570000997", "email": "bu.foto@idhaboga.local", "branch_id": s.branch.id,
         "password": "PilotUser#2026", "password_confirmation": "PilotUser#2026", "location_name": "Rumah Foto",
         "address": "Jl. Foto 1", "latitude": "-2.97", "longitude": "105.74",
     }

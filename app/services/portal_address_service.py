@@ -14,9 +14,9 @@ from app.services import geo_service
 from app.services.location_photo_service import LocationPhotoError, discard_files, location_photos, stage_location_photos
 from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.portal_order_draft_service import orderable_location_ids
-from app.services.user_management_service import ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT
+from app.services.user_management_service import ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT
 
-ADDRESS_ROLES = (ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT)
+ADDRESS_ROLES = (ROLE_PORTAL_CUSTOMER, ROLE_PORTAL_SUBCLIENT, ROLE_PORTAL_CLIENT)
 
 
 class PortalAddressError(ValueError):
@@ -142,14 +142,41 @@ def add_address(user, form, files=None):
     return location
 
 
-def update_address(user, location_id, form):
+def update_address(user, location_id, form, files=None):
     scope = build_portal_external_scope(user)
     if getattr(user, "role", None) not in ADDRESS_ROLES or location_id not in orderable_location_ids(user, scope):
         raise PortalAddressError("Alamat ini tidak bisa diubah dari akun Anda.")
     location = db.session.get(DeliveryLocation, location_id)
-    before = {"location_name": location.location_name, "latitude": str(location.latitude),
-              "longitude": str(location.longitude)}
+    if not location:
+        raise PortalAddressError("Alamat tidak ditemukan.")
+    before = {
+        "location_name": location.location_name,
+        "latitude": str(location.latitude) if location.latitude is not None else None,
+        "longitude": str(location.longitude) if location.longitude is not None else None,
+        "description": location.description,
+    }
     _apply_form(location, form)
     _audit(user, location, "UPDATE", before)
-    _commit()
+
+    staged = []
+    incoming_files = [f for f in (files or []) if f is not None and getattr(f, "filename", "")]
+    if incoming_files:
+        try:
+            branch_id = location.mandor.branch_id if location.mandor else getattr(user, "branch_id", None)
+            staged = stage_location_photos(
+                location,
+                incoming_files,
+                uploaded_by=user.id,
+                branch_id=branch_id,
+                required=False,
+            )
+        except LocationPhotoError as exc:
+            db.session.rollback()
+            raise PortalAddressError(str(exc)) from exc
+
+    try:
+        _commit()
+    except PortalAddressError:
+        discard_files(staged)
+        raise
     return location

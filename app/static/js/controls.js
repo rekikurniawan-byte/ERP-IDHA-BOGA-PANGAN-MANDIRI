@@ -596,6 +596,62 @@
         const dateInput = form.querySelector("[name=order_date]");
         const quick = form.querySelectorAll("[data-qty-set]");
 
+        const step1 = form.querySelector(".po-step[data-today]");
+        const todayStr = step1 ? (step1.dataset.today || "") : "";
+        let todaySessions = {};
+        let lockedDates = [];
+        try {
+            if (step1 && step1.dataset.todaySessions) todaySessions = JSON.parse(step1.dataset.todaySessions);
+            if (step1 && step1.dataset.lockedDates) lockedDates = JSON.parse(step1.dataset.lockedDates);
+        } catch (e) {}
+
+        function updateSessions() {
+            if (!dateInput) return;
+            const chosenDate = dateInput.value;
+            const isToday = chosenDate === todayStr;
+            const isLocked = lockedDates.indexOf(chosenDate) !== -1;
+            const isPast = Boolean(chosenDate && todayStr && chosenDate < todayStr);
+
+            const mealLabels = form.querySelectorAll(".po-seg[data-meal-type]");
+            let hasChecked = false;
+            mealLabels.forEach(function (label) {
+                const mealType = label.dataset.mealType;
+                const radio = label.querySelector("input[name=meal_type]");
+                const badge = label.querySelector(".po-seg-badge");
+                let closed = false;
+                let badgeText = "Sudah tutup";
+
+                if (isPast) {
+                    closed = true;
+                } else if (isLocked) {
+                    closed = true;
+                    badgeText = "Sudah tutup";
+                } else if (isToday && todaySessions[mealType] && todaySessions[mealType].closed) {
+                    closed = true;
+                }
+
+                if (radio) {
+                    radio.disabled = closed;
+                    if (closed && radio.checked) {
+                        radio.checked = false;
+                    }
+                    if (!closed && radio.checked) {
+                        hasChecked = true;
+                    }
+                }
+                label.classList.toggle("is-disabled", closed);
+                if (badge) {
+                    badge.textContent = badgeText;
+                    badge.classList.toggle("d-none", !closed);
+                }
+            });
+
+            if (!hasChecked) {
+                const firstOpen = form.querySelector(".po-seg[data-meal-type] input[name=meal_type]:not(:disabled)");
+                if (firstOpen) firstOpen.checked = true;
+            }
+        }
+
         function selectedLocation() { return form.querySelector("[name=delivery_location_id]:checked"); }
         function selectedMeal() { return form.querySelector("[name=meal_type]:checked"); }
 
@@ -642,8 +698,12 @@
         quick.forEach(function (button) {
             button.addEventListener("click", function () { qty.value = button.dataset.qtySet; update(); });
         });
+        if (dateInput) {
+            dateInput.addEventListener("change", updateSessions);
+        }
         form.addEventListener("input", update);
         form.addEventListener("change", update);
+        updateSessions();
         update();
     }
 

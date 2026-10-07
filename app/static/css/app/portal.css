@@ -1868,6 +1868,23 @@ a:is(.portal-command-action, .portal-role-focus-card):hover,
     box-shadow: var(--focus-ring);
 }
 
+.po-seg input:disabled + span,
+.po-seg.is-disabled span {
+    opacity: 0.55;
+    background: var(--gray-200);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.po-seg-badge {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    color: var(--danger-text);
+    margin-left: 4px;
+}
+
 .po-locations {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -3604,3 +3621,23 @@ a.ph-kpi:hover {
 .ph-alert.level-danger,
 .ph-alert.level-critical { color: var(--danger-text); background: var(--danger-bg); border-color: var(--danger-border); }
 .ph-alert.level-success { color: var(--success-text); background: var(--success-bg); border-color: var(--success-border); }
+
+.portal-email-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-lg);
+    background-color: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+}
+
+.portal-email-banner-content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 500;
+}

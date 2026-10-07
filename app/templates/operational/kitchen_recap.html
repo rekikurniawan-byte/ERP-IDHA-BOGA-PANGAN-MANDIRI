@@ -1,0 +1,144 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="kitchen-recap-shell" data-ui-kitchen-recap="UI" data-ui-print-export="UI">
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Operasional Dapur | Siap Cetak</span>
+            <h1>Rekap Dapur — Sesi {{ recap.meal_label }}</h1>
+            <p>Tanggal order: {{ recap.daily_order.order_date.strftime('%d-%m-%Y') }} | Order: {{ recap.daily_order.order_number }}</p>
+        </div>
+        <div class="page-actions">
+            <button type="button" class="btn app-btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Cetak Dokumen
+            </button>
+            <a href="{{ url_for('operational.order_detail', order_id=recap.daily_order.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali ke Order
+            </a>
+        </div>
+    </div>
+
+    {% if recap.print_status.any_stale or recap.print_status.recap_stale %}
+    <div class="app-card border-warning bg-warning-subtle text-warning-emphasis mb-3" data-stale-warning="true">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <strong>Cetak ulang — data berubah sejak dicetak!</strong>
+                <p class="mb-0 small">Jumlah porsi atau rincian pesanan telah dimodifikasi setelah cetakan terakhir. Rekap ini menampilkan data terkini.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="app-card print-doc-card">
+        <!-- KOP PERUSAHAAN -->
+        <div class="print-doc-header">
+            <div>
+                <h2>{{ company.company_name if company else 'PT IDHA BOGA PANGAN MANDIRI' }}</h2>
+                <p>{{ company.company_address if company and company.company_address else 'Katering Harian & Pelayanan Boga Industri' }}</p>
+                {% if company and company.company_phone %}<p>Telp: {{ company.company_phone }}</p>{% endif %}
+                {% if company and company.company_email %}<p>Email: {{ company.company_email }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <h3 class="mb-1">REKAP OPERASIONAL DAPUR</h3>
+                <div class="badge bg-dark text-white px-2 py-1 mb-2 fs-6">SESI {{ recap.meal_label|upper }}</div>
+                <p class="mb-0"><strong>Tanggal:</strong> {{ recap.daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+                <p class="mb-0"><strong>No Order:</strong> {{ recap.daily_order.order_number }}</p>
+                <p class="mb-0"><strong>Waktu Kunci:</strong> {{ recap.daily_order.locked_at.strftime('%d-%m-%Y %H:%M') if recap.daily_order.locked_at else '-' }} WIB</p>
+            </div>
+        </div>
+
+        <!-- TOTAL PORSI BESAR & WADAH -->
+        <div class="print-summary-hero mb-4 p-3 bg-light rounded-3 border">
+            <div class="row text-center">
+                <div class="col-6 border-end">
+                    <span class="text-muted d-block small text-uppercase">TOTAL PORSI KESELURUHAN</span>
+                    <strong class="display-6 text-primary">{{ recap.total_portions }}</strong>
+                    <span class="text-muted d-block small">Porsi {{ recap.meal_label }}</span>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small text-uppercase">TOTAL WADAH DIPERLUKAN</span>
+                    <strong class="display-6 text-success">{{ recap.total_containers }}</strong>
+                    <span class="text-muted d-block small">Maks {{ recap.max_per_container }} porsi / wadah</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABEL PER PEMESAN -->
+        <div class="table-responsive mb-4">
+            <table class="table print-table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;" class="text-center">No</th>
+                        <th>Pemesan</th>
+                        <th>Lokasi & Alamat</th>
+                        <th class="text-center" style="width: 80px;">Porsi</th>
+                        <th class="text-center" style="width: 80px;">Wadah</th>
+                        <th>Rincian Isi</th>
+                        <th>Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in recap.rows %}
+                    <tr>
+                        <td class="text-center">{{ row.no }}</td>
+                        <td>
+                            <strong>{{ row.client_name }}</strong>
+                            {% if row.sub_client_name and row.sub_client_name != row.client_name %}
+                                <div class="text-muted small">({{ row.sub_client_name }})</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ row.location_name }}</div>
+                            {% if row.location_description and row.location_description != row.location_name %}
+                                <div class="text-muted small">{{ row.location_description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <strong class="fs-6">{{ row.portion }}</strong>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border px-2 py-1">{{ row.container_count }}</span>
+                        </td>
+                        <td>
+                            <code class="text-dark bg-light px-2 py-1 rounded">{{ row.containers_breakdown }}</code>
+                        </td>
+                        <td class="small">{{ row.notes or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            Tidak ada pesanan untuk sesi {{ recap.meal_label }}.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold bg-light">
+                        <td colspan="3" class="text-end">Total:</td>
+                        <td class="text-center fs-6">{{ recap.total_portions }}</td>
+                        <td class="text-center fs-6">{{ recap.total_containers }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- KOLOM PARAF -->
+        <div class="print-signatures-wrap mt-5 pt-3">
+            <div class="row text-center">
+                <div class="col-6">
+                    <p class="mb-5"><strong>Kepala Dapur</strong></p>
+                    <div class="signature-line mx-auto" style="width: 200px; border-bottom: 1px solid #000; height: 50px;"></div>
+                    <p class="mt-1 small text-muted">( Nama & Paraf )</p>
+                </div>
+                <div class="col-6">
+                    <p class="mb-5"><strong>Pengecek / Checker</strong></p>
+                    <div class="signature-line mx-auto" style="width: 200px; border-bottom: 1px solid #000; height: 50px;"></div>
+                    <p class="mt-1 small text-muted">( Nama & Paraf )</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

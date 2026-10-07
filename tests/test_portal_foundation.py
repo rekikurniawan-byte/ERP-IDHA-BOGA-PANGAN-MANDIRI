@@ -467,7 +467,10 @@ def test_user_management_accepts_portal_roles_on_existing_auth(app):
             mandor = Mandor(branch_id=owner.branch_id, client_id=client.id, name=f"Mandor Portal {uuid4().hex[:6]}", is_active=True)
             db.session.add(mandor)
             db.session.flush()
-            base = {"full_name": "Portal User", "branch_id": str(owner.branch_id), "is_active": "on"}
+            base = {
+                "full_name": "Portal User", "branch_id": str(owner.branch_id), "is_active": "on",
+                "email": f"portal-{uuid4().hex[:8]}@uji.local",
+            }
 
             _payload, error = validate_user_payload({**base, "username": f"portal-mandor-{uuid4().hex[:8]}", "role": ROLE_PORTAL_SUBCLIENT})
             assert error and "Portal" in error

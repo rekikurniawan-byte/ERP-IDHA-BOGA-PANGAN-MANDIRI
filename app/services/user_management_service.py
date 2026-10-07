@@ -1,3 +1,5 @@
+import re
+from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
@@ -100,12 +102,41 @@ def get_portal_role_landing_endpoint(role):
     return PORTAL_ROLE_LANDING_ENDPOINTS.get(role)
 
 
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
 def normalize_username(username):
-    return (username or "").strip().lower()
+    if username is None:
+        return ""
+    return str(username).strip().lower()
+
+
+def normalize_email(email):
+    if email is None:
+        return ""
+    return str(email).strip().lower()
+
+
+def is_valid_email_format(email):
+    if not email or len(email) > 150:
+        return False
+    return bool(EMAIL_REGEX.match(email))
+
+
+def email_is_used(email, exclude_id=None):
+    normalized = normalize_email(email)
+    if not normalized:
+        return False
+    query = User.query.filter(func.lower(User.email) == normalized)
+    if exclude_id is not None:
+        query = query.filter(User.id != exclude_id)
+    return query.first() is not None
 
 
 def clean_text(value):
-    return (value or "").strip()
+    if value is None:
+        return ""
+    return str(value).strip()
 
 
 def list_users(branch_id=None):
@@ -163,6 +194,8 @@ def validate_user_payload(form, existing_user=None, current_user=None):
     role = clean_text(form.get("role"))
     branch_id_raw = clean_text(form.get("branch_id"))
     is_active = form.get("is_active") == "on"
+    email_raw = clean_text(form.get("email"))
+    email = normalize_email(email_raw)
 
     if not full_name:
         return None, "Nama lengkap wajib diisi."
@@ -192,6 +225,15 @@ def validate_user_payload(form, existing_user=None, current_user=None):
         branch_id = existing_user.branch_id
         is_active = existing_user.is_active
 
+    if role in PORTAL_EXTERNAL_ROLES and not email:
+        return None, "Email wajib diisi untuk akun portal."
+
+    if email:
+        if not is_valid_email_format(email):
+            return None, "Format email tidak valid."
+        if email_is_used(email, exclude_id=exclude_id):
+            return None, "Email ini sudah dipakai akun lain."
+
     if role == ROLE_PORTAL_CUSTOMER and not (existing_user and existing_user.role == ROLE_PORTAL_CUSTOMER):
         return None, (
             "Pelanggan umum mendaftar sendiri lewat halaman Daftar di portal, "
@@ -213,6 +255,7 @@ def validate_user_payload(form, existing_user=None, current_user=None):
     return {
         "full_name": full_name,
         "username": username,
+        "email": email or None,
         "role": role,
         "branch_id": branch_id,
         "is_active": is_active,
@@ -234,6 +277,7 @@ def create_user(form, acted_by=None):
     user = User(
         full_name=payload["full_name"],
         username=payload["username"],
+        email=payload.get("email"),
         role=payload["role"],
         branch_id=payload["branch_id"],
         is_active=payload["is_active"],
@@ -254,6 +298,7 @@ def update_user(user, form, current_user):
 
     user.full_name = payload["full_name"]
     user.username = payload["username"]
+    user.email = payload.get("email")
     user.role = payload["role"]
     user.branch_id = payload["branch_id"]
     user.is_active = payload["is_active"]
@@ -310,6 +355,45 @@ def change_own_password(user, current_password, new_password, confirmation):
 
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
+    return True, None
+
+
+def update_portal_user_email(user, new_email, current_password):
+    if not user.password_hash or not check_password_hash(user.password_hash, current_password or ""):
+        return False, "Password saat ini tidak sesuai."
+
+    cleaned_email = normalize_email(new_email)
+    if not cleaned_email:
+        return False, "Email wajib diisi."
+
+    if not is_valid_email_format(cleaned_email):
+        return False, "Format email tidak valid."
+
+    if email_is_used(cleaned_email, exclude_id=user.id):
+        return False, "Email ini sudah dipakai akun lain."
+
+    old_email = user.email
+    user.email = cleaned_email
+    db.session.commit()
+
+    from app.services.audit_log_service import record_critical_audit_log
+
+    record_critical_audit_log(
+        module="PORTAL",
+        event_type="PORTAL_EMAIL_UPDATED",
+        action="UPDATE",
+        table_name="users",
+        record_id=user.id,
+        description=f"Email akun portal {user.username} diperbarui.",
+        old_value=old_email,
+        new_value=cleaned_email,
+        metadata={
+            "user_id": user.id,
+            "username": user.username,
+            "old_email": old_email,
+            "new_email": cleaned_email,
+        },
+    )
     return True, None
 
 

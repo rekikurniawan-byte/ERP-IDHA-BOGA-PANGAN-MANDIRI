@@ -12,6 +12,9 @@ from app.services.portal_mapping_service import ACCESS_DRAFT_ORDER, PRINCIPAL_DE
 from app.services.pricing_service import PATH_GENERAL, active_zones
 from app.services.user_management_service import (
     ROLE_PORTAL_CUSTOMER,
+    email_is_used,
+    is_valid_email_format,
+    normalize_email,
     normalize_username,
     username_is_used,
     validate_password_pair,
@@ -75,6 +78,7 @@ def _build_location_name(form):
 def validate_customer_registration_form(form):
     full_name = _require(form.get("full_name"), "Nama lengkap wajib diisi.")
     username = normalize_username(form.get("username"))
+    email = normalize_email(form.get("email"))
     phone = _require(form.get("phone"), "Nomor HP wajib diisi.")
     address = _require(form.get("address"), "Alamat pengiriman wajib diisi.")
     location_name = _build_location_name(form)
@@ -84,6 +88,13 @@ def validate_customer_registration_form(form):
         raise ValueError("Username wajib diisi.")
     if username_is_used(username):
         raise ValueError("Username sudah digunakan.")
+
+    if not email:
+        raise ValueError("Email wajib diisi.")
+    if not is_valid_email_format(email):
+        raise ValueError("Format email tidak valid.")
+    if email_is_used(email):
+        raise ValueError("Email ini sudah dipakai akun lain.")
 
     valid_password, password_error = validate_password_pair(
         form.get("password") or "",
@@ -109,6 +120,7 @@ def validate_customer_registration_form(form):
     return {
         "full_name": full_name,
         "username": username,
+        "email": email,
         "phone": phone,
         "address": address,
         "location_name": location_name,
@@ -135,6 +147,7 @@ def register_portal_customer(form, files=None):
         branch_id=branch.id,
         full_name=payload["full_name"],
         username=payload["username"],
+        email=payload["email"],
         password_hash=generate_password_hash(payload["password"]),
         role=ROLE_PORTAL_CUSTOMER,
         is_active=True,

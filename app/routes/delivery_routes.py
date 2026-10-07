@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file
 from flask_login import current_user
+from app.extensions import db
 from datetime import datetime
 
 from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
@@ -625,3 +626,49 @@ def cancel(delivery_id):
     flash(message, "success" if success else "warning")
     return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
+
+
+@delivery_bp.route("/scan/<int:daily_order_detail_id>/<string:sesi>")
+@role_required("OWNER", "ADMIN", "PENGANTAR")
+def scan_qr(daily_order_detail_id, sesi):
+
+    from app.models.operational import DailyOrderDetail
+    detail = db.session.get(DailyOrderDetail, daily_order_detail_id)
+    if not detail or not detail.daily_order:
+        flash("Data pesanan tidak ditemukan.", "danger")
+        return redirect(url_for("delivery.index"))
+
+    if detail.daily_order.branch_id != current_user.branch_id:
+        flash("Data pesanan tidak sesuai cabang pengguna.", "danger")
+        return redirect(url_for("delivery.index"))
+
+    norm_sesi = "LUNCH" if (sesi or "").strip().upper() in ("LUNCH", "SIANG") else "DINNER"
+
+    delivery_detail = (
+        DeliveryDetail.query.join(Delivery)
+        .filter(
+            DeliveryDetail.daily_order_detail_id == daily_order_detail_id,
+            Delivery.status != "CANCELLED",
+            db.or_(
+                Delivery.notes.like(f"%delivery_type={norm_sesi}%"),
+                Delivery.delivery_number.like(f"%{norm_sesi}%"),
+            ),
+        )
+        .first()
+    )
+
+    if not delivery_detail:
+        delivery_detail = (
+            DeliveryDetail.query.join(Delivery)
+            .filter(
+                DeliveryDetail.daily_order_detail_id == daily_order_detail_id,
+                Delivery.status != "CANCELLED",
+            )
+            .first()
+        )
+
+    if not delivery_detail:
+        flash("Pengiriman untuk pesanan ini belum dibuat oleh admin. Hubungi admin atau koordinator pengiriman.", "warning")
+        return redirect(url_for("delivery.index"))
+
+    return redirect(url_for("delivery.receive", detail_id=delivery_detail.id))

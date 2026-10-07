@@ -16,13 +16,28 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models.system import Notification
 from app.services.live_reminder_service import build_live_reminder_center
-from app.utils.roles import effective_role
+from app.utils.roles import RETIRED_ROLE_SUCCESSOR, effective_role
 
 logger = logging.getLogger(__name__)
 
 NOTIFICATION_STATUSES = {"UNREAD", "READ", "DISMISSED", "RESOLVED"}
 NOTIFICATION_PRIORITIES = {"CRITICAL", "WARNING", "INFO"}
-ROLE_TARGETS = {"OWNER", "ADMIN", "DAPUR", "PENGANTAR"}
+INTERNAL_ROLES = {"OWNER", "ADMIN", "DAPUR", "PENGANTAR"}
+PORTAL_ROLES = {"PORTAL_CLIENT", "PORTAL_SUBCLIENT", "PORTAL_CUSTOMER"}
+ROLE_TARGETS = INTERNAL_ROLES | PORTAL_ROLES
+
+
+def equivalent_target_roles(role: Optional[str]) -> set[str]:
+    if not role:
+        return set()
+    eff = effective_role(role)
+    if not eff:
+        return set()
+    roles = {eff}
+    for old_role, new_role in RETIRED_ROLE_SUCCESSOR.items():
+        if new_role == eff:
+            roles.add(old_role)
+    return roles
 
 # Finance and stock reminders used to target FINANCE and LOGISTICS. Those
 # roles are retired and ADMIN does the work (app/utils/roles.py), so a
@@ -121,22 +136,30 @@ def get_notification_or_none(notification_id: int, *, branch_id: Optional[int] =
 
 
 def can_user_access_notification(notification: Notification, user: Any) -> bool:
-    """OWNER can see all branch notifications; target user/role can see their own."""
+    """User can only see notifications addressed to them, their role, or general branch."""
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if notification.branch_id != getattr(user, "branch_id", None):
         return False
-    role = effective_role(getattr(user, "role", ""))
-    if role == "OWNER":
-        return True
-    if notification.target_user_id and notification.target_user_id == getattr(user, "id", None):
-        return True
-    if notification.target_role and notification.target_role == role:
-        return True
-    # Branch-wide system notifications can be seen by OWNER/ADMIN only.
-    if not notification.target_user_id and not notification.target_role and role == "ADMIN":
-        return True
-    return False
+    user_role = getattr(user, "role", "")
+    eff_role = effective_role(user_role)
+    user_id = getattr(user, "id", None)
+    is_portal = eff_role in PORTAL_ROLES
+
+    # 1. Targeted specifically to a user
+    if notification.target_user_id is not None:
+        return notification.target_user_id == user_id
+
+    # 2. Targeted to a role
+    if notification.target_role:
+        allowed = equivalent_target_roles(eff_role)
+        return notification.target_role in allowed
+
+    # 3. General branch notification (target_user_id is None and target_role is None)
+    # Portal users cannot see internal branch notifications
+    if is_portal:
+        return False
+    return True
 
 
 def list_notifications(
@@ -150,19 +173,37 @@ def list_notifications(
     include_resolved: bool = False,
     limit: int = 200,
 ) -> List[Notification]:
-    """List persistent notifications with safe role filtering."""
+    """List persistent notifications with safe role and user filtering."""
     query = Notification.query.filter(Notification.branch_id == branch_id)
 
     if user is not None:
-        role = effective_role(getattr(user, "role", ""))
+        user_role = getattr(user, "role", "")
+        eff_role = effective_role(user_role)
         user_id = getattr(user, "id", None)
-        if role != "OWNER":
-            visibility = [Notification.target_role == role]
-            if user_id:
-                visibility.append(Notification.target_user_id == user_id)
-            if role == "ADMIN":
-                visibility.append(Notification.target_role.is_(None))
-            query = query.filter(or_(*visibility))
+        is_portal = eff_role in PORTAL_ROLES
+        allowed_roles = equivalent_target_roles(eff_role)
+
+        conditions = []
+        # 1. Target spesifik user ID ini
+        if user_id:
+            conditions.append(Notification.target_user_id == user_id)
+
+        # 2. Target role user (hanya notifikasi yang tidak ditujukan ke spesifik user lain)
+        if allowed_roles:
+            conditions.append(
+                Notification.target_user_id.is_(None) & Notification.target_role.in_(allowed_roles)
+            )
+
+        # 3. Notifikasi umum cabang internal (hanya untuk staf internal)
+        if not is_portal:
+            conditions.append(
+                Notification.target_user_id.is_(None) & Notification.target_role.is_(None)
+            )
+
+        if conditions:
+            query = query.filter(or_(*conditions))
+        else:
+            query = query.filter(db.false())
 
     if status:
         query = query.filter(Notification.status == _normalize_status(status))
@@ -174,7 +215,9 @@ def list_notifications(
     if notification_type:
         query = query.filter(Notification.notification_type == notification_type)
     if target_role:
-        query = query.filter(Notification.target_role == _normalize_role(target_role))
+        eq_roles = equivalent_target_roles(target_role)
+        if eq_roles:
+            query = query.filter(Notification.target_role.in_(eq_roles))
 
     try:
         limit = max(1, min(int(limit), 500))

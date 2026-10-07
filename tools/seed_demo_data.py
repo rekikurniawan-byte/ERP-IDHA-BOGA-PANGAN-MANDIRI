@@ -297,16 +297,16 @@ def stage_setup(run):
     budi = run.q(lambda: Mandor.query.filter_by(name="Mandor Budi").one().id)
     portal = {"branch_id": branch_id, "is_active": "on", "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, **guard}
     run.step(own, "Portal PT", "/settings/users/create", data={
-        "full_name": "Wati Susanti (PT Maju)", "username": "portal.pt.local", "role": "PORTAL_CLIENT",
+        "full_name": "Wati Susanti (PT Maju)", "username": "portal.pt.local", "email": "portal.pt.demo@idhaboga.local", "role": "PORTAL_CLIENT",
         "portal_client_id": clients["PT Maju Konstruksi"], **portal})
     run.step(own, "Portal Mandor", "/settings/users/create", data={
-        "full_name": "Mandor Budi", "username": "portal.mandor.local", "role": "PORTAL_SUBCLIENT", "portal_mandor_id": budi, **portal})
+        "full_name": "Mandor Budi", "username": "portal.mandor.local", "email": "portal.mandor.demo@idhaboga.local", "role": "PORTAL_SUBCLIENT", "portal_mandor_id": budi, **portal})
 
     anon = run.client()
     for index, (name, zone, location, address, _days, _qty, username) in enumerate(GENERAL):
         if username:
             run.step(anon, f"Pelanggan umum daftar: {name}", "/portal/register", data={
-                "full_name": name, "phone": f"0815-7000-{index}{index}{index}{index}", "username": username, "branch_id": branch_id,
+                "full_name": name, "phone": f"0815-7000-{index}{index}{index}{index}", "email": "customer.demo@idhaboga.local", "username": username, "branch_id": branch_id,
                 "password": USER_PASSWORD, "password_confirmation": USER_PASSWORD, "location_name": location,
                 "delivery_zone_id": zones[zone], "address": address, "notes": "Pagar hitam, sebelah musala",
                 **point_fields(location)})

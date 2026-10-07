@@ -83,6 +83,21 @@ COMPANY_SETTINGS_SECTIONS = [
         ],
     },
     {
+        "title": "Kapasitas Wadah Katering",
+        "description": "Pengaturan porsi per wadah untuk rekap dapur dan label wadah.",
+        "fields": [
+            {
+                "key": "kitchen.max_portions_per_container",
+                "label": "Maksimal Porsi per Wadah",
+                "help": "Kapasitas maksimal porsi per wadah (bawaan 20 porsi, rentang 15–20).",
+                "type": "number",
+                "min": 15,
+                "max": 20,
+                "required": False,
+            },
+        ],
+    },
+    {
         "title": "Prefix Nomor Dokumen",
         "description": "Catatan prefix untuk standar penomoran dokumen. Belum mengubah logic generate nomor transaksi.",
         "fields": [
@@ -136,6 +151,7 @@ DEFAULT_SETTINGS = {
     # Cabang yang sudah ada dinyalakan migrasi b3c4d5e6f7a8.
     "module_warung": "",
     "module_worker_debt": "",
+    "kitchen.max_portions_per_container": "20",
 }
 
 
@@ -186,6 +202,15 @@ def save_company_settings(branch_id, form_data):
     module_errors = module_change_errors(branch_id, form_data)
     if module_errors:
         raise ModuleChangeError(module_errors)
+
+    raw_kitchen_max = form_data.get("kitchen.max_portions_per_container")
+    if raw_kitchen_max is not None and str(raw_kitchen_max).strip() != "":
+        try:
+            val = int(str(raw_kitchen_max).strip())
+            if not (15 <= val <= 20):
+                raise ValueError("Maksimal porsi per wadah harus di antara 15 sampai 20.")
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Maksimal porsi per wadah harus berupa angka antara 15 sampai 20.") from exc
 
     saved_keys = []
 

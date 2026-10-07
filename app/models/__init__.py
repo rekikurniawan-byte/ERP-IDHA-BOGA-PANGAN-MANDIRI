@@ -143,6 +143,7 @@ from app.models.system import (
     PortalUserMapping,
     PortalOrderDraft,
     PortalPaymentProofClaim,
+    PasswordResetToken,
 )
 
 from app.models.field_transaction import (

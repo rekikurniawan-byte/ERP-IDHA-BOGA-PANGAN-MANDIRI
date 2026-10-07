@@ -78,10 +78,11 @@
                         {% if row.editable %}
                             <details class="portal-address-edit" {% if not row.has_point %}open{% endif %}>
                                 <summary class="btn btn-sm app-btn-primary"><i class="bi bi-pencil"></i> {{ 'Ubah alamat & titik' if row.has_point else 'Tandai titik sekarang' }}</summary>
-                                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form" data-ui-form="true">
+                                <form method="post" action="{{ url_for('portal.addresses') }}" class="app-form portal-address-form" data-ui-form="true" enctype="multipart/form-data">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="location_id" value="{{ location.id }}">
                                     {{ address_fields(location) }}
+                                    {{ photo_input(required=false, label="Tambah foto lokasi (opsional)") }}
                                     <div class="portal-address-submit">
                                         <button class="btn app-btn-primary" type="submit"><i class="bi bi-check2"></i> Simpan perubahan</button>
                                     </div>

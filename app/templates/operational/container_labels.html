@@ -1,0 +1,106 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="container-labels-shell label-paper-{{ paper_size }}" data-ui-container-labels="UI" data-paper-size="{{ paper_size }}">
+    <!-- TOOLBAR (NO-PRINT) -->
+    <div class="page-header no-print">
+        <div>
+            <span class="eyebrow">Operasional Dapur | Label Wadah</span>
+            <h1>Cetak Label Wadah — Sesi {{ labels_data.meal_label }}</h1>
+            <p>Order: {{ labels_data.daily_order.order_number }} | {{ labels_data.daily_order.order_date.strftime('%d-%m-%Y') }} | Total: {{ labels_data.total_containers }} wadah ({{ labels_data.total_portions }} porsi)</p>
+        </div>
+        <div class="page-actions d-flex align-items-center gap-2 flex-wrap">
+            <div class="btn-group" role="group" aria-label="Pilihan Kertas">
+                <a href="{{ url_for('operational.container_labels', order_id=labels_data.daily_order.id, sesi=labels_data.meal_type, size='58mm') }}" 
+                   class="btn btn-sm {% if paper_size == '58mm' %}btn-dark active{% else %}btn-outline-secondary{% endif %}">
+                    Thermal 58mm
+                </a>
+                <a href="{{ url_for('operational.container_labels', order_id=labels_data.daily_order.id, sesi=labels_data.meal_type, size='80mm') }}" 
+                   class="btn btn-sm {% if paper_size == '80mm' %}btn-dark active{% else %}btn-outline-secondary{% endif %}">
+                    Thermal 80mm
+                </a>
+                <a href="{{ url_for('operational.container_labels', order_id=labels_data.daily_order.id, sesi=labels_data.meal_type, size='a4') }}" 
+                   class="btn btn-sm {% if paper_size == 'a4' %}btn-dark active{% else %}btn-outline-secondary{% endif %}">
+                    Stiker A4
+                </a>
+            </div>
+            <button type="button" class="btn app-btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Cetak Label
+            </button>
+            <a href="{{ url_for('operational.order_detail', order_id=labels_data.daily_order.id) }}" class="btn app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali ke Order
+            </a>
+        </div>
+    </div>
+
+    {% if labels_data.print_status.any_stale or labels_data.print_status.label_stale %}
+    <div class="app-card border-warning bg-warning-subtle text-warning-emphasis mb-3 no-print" data-stale-warning="true">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <strong>Cetak ulang — data berubah sejak dicetak!</strong>
+                <p class="mb-0 small">Jumlah porsi pesanan telah diubah setelah pencetakan label sebelumnya. Label lama dianggap tidak berlaku.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- LABELS CONTAINER -->
+    <div class="labels-grid labels-layout-{{ paper_size }}">
+        {% for label in labels_data.labels %}
+        <div class="container-label-item">
+            {% if labels_data.print_status.any_stale or labels_data.print_status.label_stale %}
+            <div class="stale-label-watermark">CETAK ULANG</div>
+            {% endif %}
+
+            <div class="label-header">
+                <div class="label-client-name">{{ label.customer_name }}</div>
+                <div class="label-portion-badge">{{ label.portion }} PORSI</div>
+            </div>
+
+            <div class="label-meta-bar">
+                <span class="label-container-number">{{ label.container_label }}</span>
+                <span class="label-session-date">{{ label.date_str }} &bull; {{ label.session_label }}</span>
+            </div>
+
+            <div class="label-body">
+                <div class="label-info-col">
+                    <div class="label-row">
+                        <span class="label-key">Lokasi:</span>
+                        <span class="label-val fw-bold">{{ label.location_name }}</span>
+                    </div>
+                    {% if label.location_benchmark and label.location_benchmark != '-' %}
+                    <div class="label-row">
+                        <span class="label-key">Patokan:</span>
+                        <span class="label-val">{{ label.location_benchmark }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="label-row">
+                        <span class="label-key">Penerima:</span>
+                        <span class="label-val">{{ label.receiver_name or '-' }} ({{ label.receiver_phone or '-' }})</span>
+                    </div>
+                    {% if label.seq_number %}
+                    <div class="label-row">
+                        <span class="label-key">Rute Antar:</span>
+                        <span class="label-val fw-bold">Urutan #{{ label.seq_number }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="label-qr-col">
+                    <div class="label-qr-code">
+                        {{ label.qr_svg|safe }}
+                    </div>
+                    <span class="label-qr-hint">Scan Serah Terima</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state no-print py-5 text-center">
+            <i class="bi bi-tags fs-1 text-muted"></i>
+            <p class="mt-2 text-muted">Tidak ada label untuk dicetak pada sesi {{ labels_data.meal_label }}.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

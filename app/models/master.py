@@ -33,6 +33,7 @@ class User(BaseModel):
     branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False)
     full_name = db.Column(db.String(150), nullable=False)
     username = db.Column(db.String(80), nullable=False, unique=True)
+    email = db.Column(db.String(150), nullable=True, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(30), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)

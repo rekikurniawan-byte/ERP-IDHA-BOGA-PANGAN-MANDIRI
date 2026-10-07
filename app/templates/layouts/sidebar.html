@@ -329,6 +329,8 @@
                 {% if role == "OWNER" %}
                     {{ nav_link(url_for('settings.company_settings'), "Profil Perusahaan", "bi-building-gear", is_company_settings) }}
                     {{ nav_link(url_for('settings.pricing'), "Harga & Ongkir", "bi-tags", endpoint.startswith("settings.pricing")) }}
+                {% endif %}
+                {% if has_role(["OWNER", "ADMIN"]) %}
                     {{ nav_link(url_for('settings.users'), "Pengguna", "bi-person-gear", is_user_management) }}
                 {% endif %}
                 {% if can_view_notifications %}

@@ -100,3 +100,49 @@ def logout():
     logout_user()
     flash("Logout berhasil. Silakan login kembali jika ingin masuk ke dashboard.", "success")
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit(os.getenv("PASSWORD_RESET_RATE_LIMIT", "5 per minute"), methods=["POST"])
+def forgot_password():
+    if current_user.is_authenticated:
+        return _post_login_redirect_for(current_user)
+
+    if request.method == "POST":
+        identifier = request.form.get("email_or_username") or request.form.get("email")
+
+        def reset_url_builder(raw_token):
+            return url_for("auth.reset_password", token=raw_token, _external=True)
+
+        from app.services.password_reset_service import request_password_reset
+        _, message = request_password_reset(identifier, reset_url_builder)
+        flash(message, "info")
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/forgot_password.html", site=auth_context())
+
+
+@auth_bp.route("/reset-password/<string:token>", methods=["GET", "POST"])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return _post_login_redirect_for(current_user)
+
+    from app.services.password_reset_service import verify_reset_token, execute_password_reset
+
+    token_record, error = verify_reset_token(token)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password")
+        confirmation = request.form.get("password_confirmation")
+
+        success, msg = execute_password_reset(token, password, confirmation)
+        if success:
+            flash(msg, "success")
+            return redirect(url_for("auth.login"))
+
+        flash(msg, "danger")
+
+    return render_template("auth/reset_password.html", token=token, site=auth_context())

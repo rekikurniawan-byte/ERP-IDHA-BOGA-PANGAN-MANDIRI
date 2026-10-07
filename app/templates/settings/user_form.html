@@ -45,6 +45,12 @@
             </div>
 
             <div class="col-md-6">
+                <label class="form-label">Email <span class="text-danger" id="email-required-indicator" {% if selected_role not in ['PORTAL_CLIENT', 'PORTAL_SUBCLIENT', 'PORTAL_CUSTOMER'] %}style="display:none;"{% endif %}>*</span></label>
+                <input type="email" name="email" id="user-email-input" class="form-control app-input" value="{{ form_data.get('email') if form_data else (target_user.email if target_user else '') }}" placeholder="nama@perusahaan.com">
+                <div class="form-text" id="email-help-text">{% if selected_role in ['PORTAL_CLIENT', 'PORTAL_SUBCLIENT', 'PORTAL_CUSTOMER'] %}Wajib untuk akun portal (reset password dan tagihan).{% else %}Opsional untuk staf internal.{% endif %}</div>
+            </div>
+
+            <div class="col-md-6">
                 <label class="form-label">Peran <span class="text-danger">*</span></label>
                 <select name="role" class="form-select app-input" {% if is_edit and target_user.id == current_user.id %}disabled{% endif %}>
                     {% for role in roles %}
@@ -182,17 +188,37 @@
 (function () {
     var role = document.querySelector('select[name="role"]');
     var card = document.querySelector('[data-portal-link]');
-    if (!role || !card) { return; }
+    var emailMark = document.getElementById('email-required-indicator');
+    var emailHelp = document.getElementById('email-help-text');
+    var emailInput = document.getElementById('user-email-input');
+    var portalRoles = ['PORTAL_CLIENT', 'PORTAL_SUBCLIENT', 'PORTAL_CUSTOMER'];
+
+    if (!role) { return; }
     function sync() {
-        var shown = false;
-        card.querySelectorAll('[data-portal-link-for]').forEach(function (block) {
-            var match = block.getAttribute('data-portal-link-for') === role.value;
-            block.hidden = !match;
-            shown = shown || match;
-        });
-        card.hidden = !shown;
+        var isPortal = portalRoles.indexOf(role.value) !== -1;
+        if (card) {
+            var shown = false;
+            card.querySelectorAll('[data-portal-link-for]').forEach(function (block) {
+                var match = block.getAttribute('data-portal-link-for') === role.value;
+                block.hidden = !match;
+                shown = shown || match;
+            });
+            card.hidden = !shown;
+        }
+        if (emailMark && emailHelp) {
+            emailMark.style.display = isPortal ? 'inline' : 'none';
+            emailHelp.textContent = isPortal ? 'Wajib untuk akun portal (reset password dan tagihan).' : 'Opsional untuk staf internal.';
+        }
+        if (emailInput) {
+            if (isPortal) {
+                emailInput.setAttribute('required', 'required');
+            } else {
+                emailInput.removeAttribute('required');
+            }
+        }
     }
     role.addEventListener('change', sync);
+    sync();
 })();
 </script>
 {% endblock %}

@@ -50,7 +50,9 @@ def _form(branch, **extra):
     return {
         "full_name": "Akun Portal Uji", "branch_id": branch.id, "is_active": "on",
         "sensitive_action_confirmed": "1", "sensitive_reason": "Uji hubungkan akun portal",
-        "confirm_password": GUARD_PASSWORD, **extra,
+        "confirm_password": GUARD_PASSWORD,
+        # Akun portal wajib punya email (untuk lupa password); satu email per username.
+        "email": f"{extra.get('username', 'akun')}@uji.local", **extra,
     }
 
 
