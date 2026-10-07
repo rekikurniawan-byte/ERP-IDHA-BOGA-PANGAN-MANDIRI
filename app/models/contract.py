@@ -1,5 +1,28 @@
+from datetime import time
+
 from app.extensions import db
 from app.models.base import BaseModel
+
+
+COURT_PANGKALAN_BALAI = "PN_PANGKALAN_BALAI"
+COURT_KAYUAGUNG = "PN_KAYUAGUNG"
+DISPUTE_COURTS = (COURT_PANGKALAN_BALAI, COURT_KAYUAGUNG)
+
+DISPUTE_COURT_LABELS = {
+    COURT_PANGKALAN_BALAI: "PN Pangkalan Balai (alamat PT, Kab. Banyuasin)",
+    COURT_KAYUAGUNG: "PN Kayuagung (lokasi OKI)",
+}
+
+BILLING_CYCLE_WEEKLY = "WEEKLY"
+BILLING_CYCLE_BIWEEKLY = "BIWEEKLY"
+BILLING_CYCLE_MONTHLY = "MONTHLY"
+BILLING_CYCLES = (BILLING_CYCLE_WEEKLY, BILLING_CYCLE_BIWEEKLY, BILLING_CYCLE_MONTHLY)
+
+BILLING_CYCLE_LABELS = {
+    BILLING_CYCLE_WEEKLY: "Mingguan",
+    BILLING_CYCLE_BIWEEKLY: "14 Hari (Dua Mingguan)",
+    BILLING_CYCLE_MONTHLY: "Bulanan",
+}
 
 
 class CustomerContract(BaseModel):
@@ -11,6 +34,20 @@ class CustomerContract(BaseModel):
         ),
         db.CheckConstraint("version_no > 0", name="ck_customer_contracts_version_positive"),
         db.CheckConstraint("end_date >= start_date", name="ck_customer_contracts_date_range"),
+        db.CheckConstraint("due_days >= 1", name="ck_customer_contracts_due_days_positive"),
+        db.CheckConstraint("tazir_amount >= 0", name="ck_customer_contracts_tazir_nonnegative"),
+        db.CheckConstraint(
+            "default_billing_mode IN ('VIA_CLIENT', 'DIRECT', 'CASH')",
+            name="ck_customer_contracts_billing_mode",
+        ),
+        db.CheckConstraint(
+            "billing_cycle IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY')",
+            name="ck_customer_contracts_billing_cycle",
+        ),
+        db.CheckConstraint(
+            "dispute_court IN ('PN_PANGKALAN_BALAI', 'PN_KAYUAGUNG')",
+            name="ck_customer_contracts_dispute_court",
+        ),
         db.Index("ix_customer_contracts_client_status", "client_id", "status"),
         db.Index("ix_customer_contracts_branch_end_date", "branch_id", "end_date"),
     )
@@ -31,9 +68,43 @@ class CustomerContract(BaseModel):
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     updated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
 
+    # Fase 3 — Pengaturan kontrak (fondasi)
+    lunch_lock_time = db.Column(db.Time, nullable=False, default=time(10, 0))
+    dinner_lock_time = db.Column(db.Time, nullable=False, default=time(15, 0))
+    weekly_holidays = db.Column(db.String(20), nullable=True, default="")
+    default_billing_mode = db.Column(db.String(20), nullable=False, default="VIA_CLIENT")
+    billing_cycle = db.Column(db.String(20), nullable=False, default="BIWEEKLY")
+    billing_anchor_date = db.Column(db.Date, nullable=True)
+    due_days = db.Column(db.Integer, nullable=False, default=7)
+    dispute_court = db.Column(db.String(40), nullable=False, default=COURT_PANGKALAN_BALAI)
+    tazir_amount = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+
     branch = db.relationship("Branch", foreign_keys=[branch_id], lazy="joined")
     client = db.relationship("Client", foreign_keys=[client_id], lazy="joined")
     client_pic = db.relationship("ClientPic", foreign_keys=[client_pic_id], lazy="joined")
     parent_contract = db.relationship("CustomerContract", remote_side="CustomerContract.id", lazy="joined")
     creator = db.relationship("User", foreign_keys=[created_by], lazy="joined")
     updater = db.relationship("User", foreign_keys=[updated_by], lazy="joined")
+
+    holidays = db.relationship(
+        "ContractHoliday",
+        backref="contract",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="ContractHoliday.holiday_date",
+    )
+
+
+class ContractHoliday(BaseModel):
+    """Hari libur khusus per kontrak (mis. libur bersama, tanggal tertentu)."""
+
+    __tablename__ = "contract_holidays"
+    __table_args__ = (
+        db.UniqueConstraint("contract_id", "holiday_date", name="uq_contract_holidays_contract_date"),
+        db.Index("ix_contract_holidays_contract_id", "contract_id"),
+        db.Index("ix_contract_holidays_holiday_date", "holiday_date"),
+    )
+
+    contract_id = db.Column(db.Integer, db.ForeignKey("customer_contracts.id", ondelete="CASCADE"), nullable=False)
+    holiday_date = db.Column(db.Date, nullable=False)
+    note = db.Column(db.String(200), nullable=True)

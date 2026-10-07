@@ -1,4 +1,4 @@
-﻿{% extends "layouts/base.html" %}
+{% extends "layouts/base.html" %}
 
 {% block content %}
 {% set contract = data.contract %}
@@ -97,6 +97,237 @@
                     </form>
                 </div>
             </div>
+    </div>
+
+    <!-- Aturan Pesanan & Tagihan -->
+    <div class="app-card mt-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h2 class="h5 mb-1"><i class="bi bi-sliders"></i> Aturan Pesanan &amp; Tagihan</h2>
+                    <p class="text-muted small mb-0">Jam lock pesanan, hari libur, siklus penagihan, jatuh tempo, pengadilan sengketa, ta'zir, dan mode tagih sub client.</p>
+                </div>
+                {% if current_user.role in ['OWNER', 'ADMIN'] %}
+                    <span class="badge bg-light text-dark border">OWNER &amp; ADMIN dapat mengubah</span>
+                {% endif %}
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Jam Lock Siang</div>
+                    <div class="fw-semibold">{{ contract.lunch_lock_time.strftime('%H:%M') if contract.lunch_lock_time else '10:00' }} WIB</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Jam Lock Malam</div>
+                    <div class="fw-semibold">{{ contract.dinner_lock_time.strftime('%H:%M') if contract.dinner_lock_time else '15:00' }} WIB</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Siklus Tagihan</div>
+                    <div class="fw-semibold">{{ contract.billing_cycle }} (Awal: {{ contract.billing_anchor_date.strftime('%d-%m-%Y') if contract.billing_anchor_date else contract.start_date.strftime('%d-%m-%Y') }})</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Jatuh Tempo</div>
+                    <div class="fw-semibold">{{ contract.due_days }} hari</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Bawaan Pihak Ditagih</div>
+                    <div class="fw-semibold">{{ contract.default_billing_mode }}</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="text-muted small text-uppercase fw-bold">Pengadilan Sengketa</div>
+                    <div class="fw-semibold">
+                        {% if contract.dispute_court == 'PN_KAYUAGUNG' %}
+                            PN Kayuagung (lokasi OKI)
+                        {% else %}
+                            PN Pangkalan Balai (alamat PT, Kab. Banyuasin)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold">Nominal Ta'zir</div>
+                    <div class="fw-semibold">{{ contract.tazir_amount|rupiah }}</div>
+                    <div class="small text-muted">Nominal tetap per kejadian. Diusulkan sistem, diputuskan Owner, masuk Dana Sosial — bukan pendapatan.</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small text-uppercase fw-bold">Hari Libur Rutin Mingguan</div>
+                    <div class="fw-semibold">
+                        {% if contract.weekly_holidays %}
+                            {% set d_names = [] %}
+                            {% for num, name in [('1','Senin'),('2','Selasa'),('3','Rabu'),('4','Kamis'),('5','Jumat'),('6','Sabtu'),('7','Minggu')] %}
+                                {% if num in data.weekly_holidays_set %}
+                                    {% set _ = d_names.append(name) %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ d_names|join(', ') }}
+                        {% else %}
+                            Kirim setiap hari (tanpa libur rutin mingguan)
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.role in ['OWNER', 'ADMIN'] %}
+                <hr class="my-4">
+                <h3 class="h6 fw-bold mb-3"><i class="bi bi-pencil-square"></i> Ubah Pengaturan Aturan &amp; Mode Tagih</h3>
+                <form method="post" action="{{ url_for('customer_success.update_contract_rules', contract_id=contract.id) }}" class="app-form row g-3">
+                    {% include "components/csrf_token.html" %}
+                    <div class="col-md-3">
+                        <label class="form-label">Jam Lock Siang</label>
+                        <input class="form-control app-input" type="time" name="lunch_lock_time" value="{{ contract.lunch_lock_time.strftime('%H:%M') if contract.lunch_lock_time else '10:00' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Jam Lock Malam</label>
+                        <input class="form-control app-input" type="time" name="dinner_lock_time" value="{{ contract.dinner_lock_time.strftime('%H:%M') if contract.dinner_lock_time else '15:00' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Siklus Tagihan</label>
+                        <select class="form-select app-input" name="billing_cycle">
+                            {% for code, label in data.billing_cycles %}
+                                <option value="{{ code }}" {% if code == contract.billing_cycle %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Awal Siklus Tagihan</label>
+                        <input class="form-control app-input" type="date" name="billing_anchor_date" value="{{ contract.billing_anchor_date.isoformat() if contract.billing_anchor_date else contract.start_date.isoformat() }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Jatuh Tempo (Hari)</label>
+                        <input class="form-control app-input" type="number" name="due_days" min="1" max="60" value="{{ contract.due_days }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Bawaan Pihak Ditagih</label>
+                        <select class="form-select app-input" name="default_billing_mode">
+                            {% for code, label in data.billing_modes %}
+                                <option value="{{ code }}" {% if code == contract.default_billing_mode %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Pengadilan Sengketa</label>
+                        <select class="form-select app-input" name="dispute_court">
+                            {% for code, label in data.dispute_courts %}
+                                <option value="{{ code }}" {% if code == contract.dispute_court %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Nominal Ta'zir (Rp)</label>
+                        <input class="form-control app-input" type="number" name="tazir_amount" min="0" step="0.01" value="{{ contract.tazir_amount }}">
+                        <div class="form-text small">Masuk Dana Sosial — bukan pendapatan.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Hari Libur Rutin Mingguan</label>
+                        <div class="d-flex flex-wrap gap-3 pt-1">
+                            {% set days = [('1', 'Senin'), ('2', 'Selasa'), ('3', 'Rabu'), ('4', 'Kamis'), ('5', 'Jumat'), ('6', 'Sabtu'), ('7', 'Minggu')] %}
+                            {% for d_val, d_name in days %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="weekly_holidays" value="{{ d_val }}" id="wh_edit_{{ d_val }}" {% if d_val in data.weekly_holidays_set %}checked{% endif %}>
+                                    <label class="form-check-label small" for="wh_edit_{{ d_val }}">{{ d_name }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Libur Khusus -->
+                    <div class="col-12 mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0">Daftar Tanggal Libur Khusus</label>
+                            <button type="button" class="btn btn-sm app-btn-secondary" onclick="addHolidayRow()"><i class="bi bi-plus-circle"></i> Tambah Tanggal Libur</button>
+                        </div>
+                        <div class="table-responsive app-table-wrapper">
+                            <table class="table app-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 200px;">Tanggal Libur</th>
+                                        <th>Keterangan</th>
+                                        <th style="width: 60px;" class="text-end">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="holiday-table-body">
+                                    {% for h in contract.holidays %}
+                                        <tr>
+                                            <td><input type="date" name="holiday_dates" value="{{ h.holiday_date.isoformat() }}" class="form-control app-input form-control-sm" required min="{{ contract.start_date.isoformat() }}" max="{{ contract.end_date.isoformat() }}"></td>
+                                            <td><input type="text" name="holiday_notes" value="{{ h.note or '' }}" class="form-control app-input form-control-sm" placeholder="Keterangan libur"></td>
+                                            <td class="text-end"><button type="button" class="btn btn-sm app-btn-secondary text-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Mode Tagih per Sub Client -->
+                    <div class="col-12 mt-4">
+                        <label class="form-label fw-bold mb-1">Mode Penagihan per {{ term('sub_client') }}</label>
+                        <p class="text-muted small mb-2">Sumber data tersimpan di akun kredit {{ term('sub_client') }}. Jika memilih "Bawaan Kontrak", sistem menggunakan bawaan kontrak aktif.</p>
+                        <div class="table-responsive app-table-wrapper">
+                            <table class="table app-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Nama {{ term('sub_client') }}</th>
+                                        <th>Kode / Telepon</th>
+                                        <th>Mode Tagih Saat Ini</th>
+                                        <th style="width: 280px;">Atur Mode Tagih</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in data.subclients %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ item.mandor.name }}</td>
+                                            <td>{{ item.mandor.code or '-' }} / {{ item.mandor.phone or '-' }}</td>
+                                            <td>
+                                                <span class="status-badge neutral">
+                                                    {% if item.billing_mode == 'VIA_CLIENT' %}
+                                                        Lewat client
+                                                    {% elif item.billing_mode == 'DIRECT' %}
+                                                        Langsung ke sub client
+                                                    {% elif item.billing_mode == 'CASH' %}
+                                                        Bayar di muka
+                                                    {% else %}
+                                                        Bawaan Kontrak ({{ contract.default_billing_mode }})
+                                                    {% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <select class="form-select app-input form-select-sm" name="subclient_billing_{{ item.mandor.id }}">
+                                                    <option value="" {% if not item.billing_mode %}selected{% endif %}>Bawaan Kontrak ({{ contract.default_billing_mode }})</option>
+                                                    <option value="VIA_CLIENT" {% if item.billing_mode == 'VIA_CLIENT' %}selected{% endif %}>Lewat client</option>
+                                                    <option value="DIRECT" {% if item.billing_mode == 'DIRECT' %}selected{% endif %}>Langsung ke sub client</option>
+                                                    <option value="CASH" {% if item.billing_mode == 'CASH' %}selected{% endif %}>Bayar di muka</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-muted text-center">Belum ada {{ term('sub_client') }} terdaftar di bawah pelanggan ini.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end mt-3">
+                        <button class="btn app-btn-primary" type="submit">
+                            <i class="bi bi-check-circle"></i> Simpan Aturan Pesanan &amp; Tagihan
+                        </button>
+                    </div>
+                </form>
+
+                <script>
+                function addHolidayRow() {
+                    const tbody = document.getElementById('holiday-table-body');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><input type="date" name="holiday_dates" class="form-control app-input form-control-sm" required min="{{ contract.start_date.isoformat() }}" max="{{ contract.end_date.isoformat() }}"></td>
+                        <td><input type="text" name="holiday_notes" class="form-control app-input form-control-sm" placeholder="Keterangan libur"></td>
+                        <td class="text-end"><button type="button" class="btn btn-sm app-btn-secondary text-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+                </script>
+            {% endif %}
         </div>
     </div>
 

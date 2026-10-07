@@ -55,6 +55,9 @@ reset_tokens_migration = importlib.import_module(
 user_menu_migration = importlib.import_module(
     "migrations.versions.c1d2e3f4a5b6_user_profile_and_menu_schedule"
 )
+contract_settings_migration = importlib.import_module(
+    "migrations.versions.d2e3f4a5b6c7_contract_settings_and_driver_user"
+)
 
 
 def _versioned_model_tables():
@@ -92,6 +95,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(claims_migration.VERSIONED_TABLES)
     migration_tables.update(reset_tokens_migration.VERSIONED_TABLES)
     migration_tables.update(user_menu_migration.VERSIONED_TABLES)
+    migration_tables.update(contract_settings_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

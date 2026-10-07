@@ -30,6 +30,14 @@ from app.services.customer_contract_document_service import (
     list_customer_contract_documents,
 )
 from app.services.contract_lifecycle_service import run_contract_sweep_now
+from app.models.contract import (
+    BILLING_CYCLES,
+    BILLING_CYCLE_LABELS,
+    COURT_PANGKALAN_BALAI,
+    DISPUTE_COURTS,
+    DISPUTE_COURT_LABELS,
+)
+from app.services.credit_account_service import BILLING_MODES, BILLING_MODE_LABELS
 from app.services.customer_contract_service import (
     CONTRACT_STATUS_ACTIVE,
     CONTRACT_STATUS_DRAFT,
@@ -39,6 +47,7 @@ from app.services.customer_contract_service import (
     get_customer_contract,
     list_customer_contracts,
     renew_customer_contract,
+    update_customer_contract_rules,
 )
 from app.services.digital_attachment_service import AttachmentValidationError
 from app.services.user_management_service import ROLE_CUSTOMER_SUCCESS
@@ -72,6 +81,15 @@ def contracts():
                 notes=request.form.get("notes"),
                 created_by=current_user.id,
                 status=request.form.get("status") or CONTRACT_STATUS_DRAFT,
+                lunch_lock_time=request.form.get("lunch_lock_time") or "10:00",
+                dinner_lock_time=request.form.get("dinner_lock_time") or "15:00",
+                weekly_holidays=request.form.getlist("weekly_holidays"),
+                default_billing_mode=request.form.get("default_billing_mode") or "VIA_CLIENT",
+                billing_cycle=request.form.get("billing_cycle") or "BIWEEKLY",
+                billing_anchor_date=_date_or_none(request.form.get("billing_anchor_date")),
+                due_days=_int_or_none(request.form.get("due_days")) or 7,
+                dispute_court=request.form.get("dispute_court") or COURT_PANGKALAN_BALAI,
+                tazir_amount=request.form.get("tazir_amount") or 0,
             )
             flash("Kontrak customer berhasil dibuat.", "success")
             return redirect(url_for("customer_success.contracts"))
@@ -85,6 +103,9 @@ def contracts():
         "clients": _active_clients(),
         "client_pics": _active_client_pics(),
         "status_options": ["ALL", CONTRACT_STATUS_DRAFT, CONTRACT_STATUS_ACTIVE, "EXPIRED", "TERMINATED", "SUPERSEDED"],
+        "dispute_courts": [(k, DISPUTE_COURT_LABELS[k]) for k in DISPUTE_COURTS],
+        "billing_cycles": [(k, BILLING_CYCLE_LABELS[k]) for k in BILLING_CYCLES],
+        "billing_modes": [(k, BILLING_MODE_LABELS[k]) for k in BILLING_MODES],
     }
     return render_template("customer_success/contracts.html", data=data)
 
@@ -97,14 +118,75 @@ def contract_detail(contract_id):
         flash("Kontrak customer tidak ditemukan.", "warning")
         return redirect(url_for("customer_success.contracts"))
     from app.services.pricing_service import quote_price
+    from app.services.credit_control_service import get_credit_account
+    from app.models.credit import PARTY_MANDOR
+
+    subclients = Mandor.query.filter_by(branch_id=current_user.branch_id, client_id=contract.client_id).order_by(Mandor.name.asc()).all()
+    subclient_data = []
+    for m in subclients:
+        acc = get_credit_account(current_user.branch_id, PARTY_MANDOR, m.id)
+        mode = acc.billing_mode if acc and acc.billing_mode else None
+        subclient_data.append({
+            "mandor": m,
+            "billing_mode": mode,
+            "resolved_mode": mode or contract.default_billing_mode,
+        })
+
+    weekly_holidays_set = set(contract.weekly_holidays.split(",")) if contract.weekly_holidays else set()
 
     data = {
         "contract": contract,
         "documents": list_customer_contract_documents(contract_id=contract.id, branch_id=current_user.branch_id),
         "attachment_types": sorted(ALLOWED_CONTRACT_ATTACHMENT_TYPES),
         "price_quote": quote_price(current_user.branch_id, contract.client_id),
+        "subclients": subclient_data,
+        "dispute_courts": [(k, DISPUTE_COURT_LABELS[k]) for k in DISPUTE_COURTS],
+        "billing_cycles": [(k, BILLING_CYCLE_LABELS[k]) for k in BILLING_CYCLES],
+        "billing_modes": [(k, BILLING_MODE_LABELS[k]) for k in BILLING_MODES],
+        "weekly_holidays_set": weekly_holidays_set,
     }
     return render_template("customer_success/contract_detail.html", data=data)
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/rules", methods=["POST"])
+@role_required("ADMIN")
+def update_contract_rules(contract_id):
+    try:
+        holiday_dates = request.form.getlist("holiday_dates")
+        holiday_notes = request.form.getlist("holiday_notes")
+        holidays = []
+        for h_date, h_note in zip(holiday_dates, holiday_notes):
+            if h_date.strip():
+                holidays.append({"holiday_date": h_date.strip(), "note": h_note.strip() if h_note else None})
+
+        subclient_billing_modes = {}
+        for key, value in request.form.items():
+            if key.startswith("subclient_billing_") and value:
+                m_id = _int_or_none(key.replace("subclient_billing_", ""))
+                if m_id:
+                    subclient_billing_modes[m_id] = value.strip().upper()
+
+        update_customer_contract_rules(
+            contract_id,
+            branch_id=current_user.branch_id,
+            actor=current_user,
+            lunch_lock_time=request.form.get("lunch_lock_time") or "10:00",
+            dinner_lock_time=request.form.get("dinner_lock_time") or "15:00",
+            weekly_holidays=request.form.getlist("weekly_holidays"),
+            default_billing_mode=request.form.get("default_billing_mode") or "VIA_CLIENT",
+            billing_cycle=request.form.get("billing_cycle") or "BIWEEKLY",
+            billing_anchor_date=_date_or_none(request.form.get("billing_anchor_date")),
+            due_days=_int_or_none(request.form.get("due_days")) or 7,
+            dispute_court=request.form.get("dispute_court") or COURT_PANGKALAN_BALAI,
+            tazir_amount=request.form.get("tazir_amount") or 0,
+            holidays=holidays,
+            subclient_billing_modes=subclient_billing_modes,
+            commit=True,
+        )
+        flash("Pengaturan aturan pesanan & tagihan berhasil diperbarui.", "success")
+    except CustomerContractError as error:
+        flash(str(error), "danger")
+    return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
 
 
 @customer_success_bp.route("/contracts/<int:contract_id>/activate", methods=["POST"])

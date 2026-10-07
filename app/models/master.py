@@ -162,6 +162,10 @@ class Driver(BaseModel):
     phone = db.Column(db.String(30), nullable=True)
     license_number = db.Column(db.String(100), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, unique=True, index=True)
+
+    user = db.relationship("User", foreign_keys=[user_id], lazy="joined")
+
 
 
 class Supplier(BaseModel):

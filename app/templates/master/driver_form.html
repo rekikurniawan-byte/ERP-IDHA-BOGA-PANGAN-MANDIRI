@@ -14,19 +14,31 @@
     <form method="POST" action="{% if driver %}{{ url_for('master.edit_driver', driver_id=driver.id) }}{% else %}{{ url_for('master.create_driver') }}{% endif %}" data-ui-form="true" class="app-form">
         {% include "components/csrf_token.html" %}
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Nama Driver</label>
                 <input type="text" name="name" class="form-control app-input" value="{{ driver.name if driver else '' }}" required>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Telepon</label>
                 <input type="text" name="phone" class="form-control app-input" value="{{ driver.phone if driver else '' }}">
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">No Lisensi</label>
                 <input type="text" name="license_number" class="form-control app-input" value="{{ driver.license_number if driver else '' }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Akun login pengantar</label>
+                <select name="user_id" class="form-select app-input">
+                    <option value="">-- Belum terhubung --</option>
+                    {% for u in eligible_users %}
+                        <option value="{{ u.id }}" {% if driver and driver.user_id == u.id %}selected{% endif %}>
+                            {{ u.full_name or u.username }} ({{ u.username }})
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="col-md-12">

@@ -100,6 +100,7 @@ from app.models.finance import (
 
 from app.models.contract import (
     CustomerContract,
+    ContractHoliday,
 )
 
 from app.models.credit import (

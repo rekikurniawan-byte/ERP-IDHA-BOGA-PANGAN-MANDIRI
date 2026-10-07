@@ -51,7 +51,8 @@ CANCELLED_ORDER_STATUS = "CANCELLED"
 # Satu-satunya tempat nilai bawaan. Baris branch_settings dengan key yang sama
 # hanya menimpa nilai ini untuk satu cabang; cabang tanpa baris memakai ini.
 DEFAULT_THRESHOLDS = {
-    "credit.terms_days_direct": 14,
+    # Keputusan owner 2026-10-06 (Fase 3): tempo bawaan kredit langsung 7 hari, menggantikan 14 hari lama.
+    "credit.terms_days_direct": 7,
     # Keputusan owner 2026-09-25: limit dari kebutuhan order (termin + 7 hari
     # cadangan), deposit 20% dari limit.
     "credit.limit_buffer_days": 7,
@@ -887,10 +888,16 @@ def resolve_due_date(invoice_date, branch_id=None, client_id=None, mandor_id=Non
 
     days = int(getattr(account, "payment_terms_days", 0) or 0)
     if days <= 0:
-        if contract_payment_terms is None:
-            contract_payment_terms = active_contract_terms(branch_id, client_id)
-        parsed = parse_terms_days(contract_payment_terms)
-        days = parsed if parsed else LEGACY_FALLBACK_TERMS_DAYS
+        from app.services.contract_rules_service import active_contract_for
+
+        act_contract = active_contract_for(client_id, on_date=invoice_date, branch_id=branch_id)
+        if act_contract and act_contract.due_days and act_contract.due_days >= 1:
+            days = int(act_contract.due_days)
+        else:
+            if contract_payment_terms is None:
+                contract_payment_terms = active_contract_terms(branch_id, client_id)
+            parsed = parse_terms_days(contract_payment_terms)
+            days = parsed if parsed else LEGACY_FALLBACK_TERMS_DAYS
 
     return invoice_date + timedelta(days=days)
 

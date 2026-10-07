@@ -237,24 +237,26 @@ def delete_worker_record(worker):
     _commit_or_rollback()
 
 
-def create_driver_record(*, branch_id, name, phone, license_number, is_active):
+def create_driver_record(*, branch_id, name, phone, license_number, is_active, user_id=None):
     driver = Driver(
         branch_id=branch_id,
         name=name,
         phone=phone,
         license_number=license_number,
         is_active=is_active,
+        user_id=user_id,
     )
     db.session.add(driver)
     _commit_or_rollback()
     return driver
 
 
-def update_driver_record(driver, *, name, phone, license_number, is_active):
+def update_driver_record(driver, *, name, phone, license_number, is_active, user_id=None):
     driver.name = name
     driver.phone = phone
     driver.license_number = license_number
     driver.is_active = is_active
+    driver.user_id = user_id
     _commit_or_rollback()
     return driver
 

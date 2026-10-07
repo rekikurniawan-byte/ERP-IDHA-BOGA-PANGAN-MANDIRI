@@ -178,7 +178,13 @@ def upload_portal_order_draft_payment_proof(
 
     from app.services.portal_order_draft_service import session_closed_reason
 
-    closed_reason = session_closed_reason(draft.branch_id, draft.order_date, draft.meal_type)
+    closed_reason = session_closed_reason(
+        draft.branch_id,
+        draft.order_date,
+        draft.meal_type,
+        client_id=draft.client_id,
+        location_id=draft.delivery_location_id,
+    )
     if closed_reason:
         raise PortalPaymentProofError("Pesanan ini sudah lewat batas waktu dan tidak bisa diproses. Hubungi admin.")
 

@@ -56,7 +56,7 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 | 2+ | Tombol Scan Label untuk pengantar | Gemini + perbaikan Claude (izin kamera) | ✅ `c61ee41` |
 | T1 | "Akun Saya" semua role + menu harian dengan foto | Gemini | ⏳ `PROMPT_GEMINI_AKUN_MENU.md` |
 | T2 | Reminder sesuai role | Gemini | ⏳ `PROMPT_GEMINI_REMINDER_ROLE.md` |
-| 3 | Pengaturan kontrak | Gemini + cek Claude | 🔜 |
+| 3 | Pengaturan kontrak | Gemini + cek Claude | ✅ (belum commit) |
 | 4 | Penjadwal otomatis | Gemini + cek Claude | 🔜 |
 | 5 | Pesanan otomatis | Gemini + cek Claude | 🔜 |
 | 6 | Invoice otomatis | **Claude** | 🔜 |
@@ -288,6 +288,8 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 ---
 
 ## 12. Daftar tunggu lain (belum dijadwalkan)
+- **(Fase 6, Claude) Pilihan "Bawaan kontrak" untuk pihak ditagih per sub client belum berfungsi**: `CreditAccount.billing_mode` wajib terisi (bawaan `VIA_CLIENT`), jadi sub client yang sudah punya akun kredit tidak pernah mengikuti `default_billing_mode` kontrak, dan pilihan "Bawaan kontrak" di halaman kontrak diabaikan. Selesaikan saat Fase 6 (invoice otomatis memakai `billing_mode_for`), sekalian penagihan nyata membaca aturan yang sama.
+- **Dua tempat tempo di kontrak**: teks lama `payment_terms` ("net 30") dan angka baru `due_days`. Sistem kini memakai `due_days` (kontrak lama sudah diisi dari teksnya saat migrasi). Saat Fase 9 (surat kontrak), teks tempo dibuat otomatis dari `due_days` supaya tidak bisa berbeda.
 - **Hubungkan akun pengantar ke data Driver secara pasti** (kolom `drivers.user_id` atau pilihan "Akun login" di master Driver). Sekarang reminder pengantar mencocokkan lewat nama/no. HP — rapuh kalau nama berbeda. Kerjakan bersama Fase 3.
 - Lupa password lewat **WhatsApp OTP** (butuh layanan WA berbayar) — nanti.
 - **Pembersihan CSS** yang tidak terpakai setelah fitur besar selesai.
@@ -304,3 +306,4 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - 2026-10-05: verifikasi pembayaran 1 klik disetujui (semua usulan).
 - 2026-10-06: seluruh keputusan paket kontrak, pesanan otomatis, invoice otomatis, kredit syariah, surat kontrak, rekap dapur & label; tempo 7 hari; pengadilan Pangkalan Balai/Kayuagung; ta'zir Dana Sosial disetujui.
 - 2026-10-07: email wajib akun portal; tombol scan pengantar; menu = pelanggan melihat saja; Akun Saya semua role; reminder per role.
+- 2026-10-07: Fase 3 — Fondasi pengaturan kontrak (jam lock, libur rutin & khusus, siklus & anchor tagihan, tempo 7 hari, pengadilan sengketa, nominal ta'zir, mode tagih sub client, Driver.user_id link).

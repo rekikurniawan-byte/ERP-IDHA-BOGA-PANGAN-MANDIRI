@@ -105,6 +105,15 @@ def _get_driver_ids_for_user(branch_id: int, user: Any) -> Optional[List[int]]:
     if effective_role(role_raw) != "PENGANTAR":
         return None
 
+    user_id = getattr(user, "id", None) if not isinstance(user, dict) else user.get("id")
+    if user_id:
+        driver_by_user = Driver.query.filter(
+            Driver.branch_id == branch_id,
+            Driver.user_id == user_id,
+        ).all()
+        if driver_by_user:
+            return [d.id for d in driver_by_user]
+
     direct_driver_id = getattr(user, "driver_id", None) if not isinstance(user, dict) else user.get("driver_id")
     if direct_driver_id is not None:
         try:

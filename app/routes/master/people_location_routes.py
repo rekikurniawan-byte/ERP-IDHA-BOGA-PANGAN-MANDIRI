@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.master_routes without changing URL rules or endpoint names.
 """
 from app.routes.master_routes import *  # noqa: F401,F403
+from app.models.master import User
 from app.services.branch_module_service import WORKER_DEBT
 from app.services.geo_service import GeoError, picker_context
 from app.services.location_photo_service import LocationPhotoError, location_photos, photo_counts
@@ -494,6 +495,25 @@ def drivers():
     )
 
 
+def _eligible_pengantar_users(branch_id: int, current_driver_id: int | None = None):
+    query = Driver.query.filter(
+        Driver.branch_id == branch_id,
+        Driver.user_id.isnot(None),
+    )
+    if current_driver_id:
+        query = query.filter(Driver.id != current_driver_id)
+    assigned_user_ids = [d.user_id for d in query.all()]
+
+    user_query = User.query.filter(
+        User.branch_id == branch_id,
+        User.role == "PENGANTAR",
+        User.is_active.is_(True),
+    )
+    if assigned_user_ids:
+        user_query = user_query.filter(~User.id.in_(assigned_user_ids))
+    return user_query.order_by(User.full_name.asc(), User.username.asc()).all()
+
+
 @master_bp.route("/drivers/create", methods=["GET", "POST"])
 @role_required("ADMIN")
 def create_driver():
@@ -502,6 +522,8 @@ def create_driver():
         phone = (request.form.get("phone") or "").strip()
         license_number = (request.form.get("license_number") or "").strip()
         is_active = True if request.form.get("is_active") == "on" else False
+        user_id_raw = (request.form.get("user_id") or "").strip()
+        user_id = int(user_id_raw) if user_id_raw.isdigit() else None
 
         if not name:
             flash("Nama driver wajib diisi.", "warning")
@@ -513,12 +535,14 @@ def create_driver():
             phone=phone,
             license_number=license_number,
             is_active=is_active,
+            user_id=user_id,
         )
 
         flash("Driver berhasil ditambahkan.", "success")
         return redirect(url_for("master.drivers"))
 
-    return render_template("master/driver_form.html", driver=None)
+    eligible_users = _eligible_pengantar_users(current_user.branch_id)
+    return render_template("master/driver_form.html", driver=None, eligible_users=eligible_users)
 
 
 @master_bp.route("/drivers/<int:driver_id>/edit", methods=["GET", "POST"])
@@ -535,6 +559,8 @@ def edit_driver(driver_id):
         phone = (request.form.get("phone") or "").strip()
         license_number = (request.form.get("license_number") or "").strip()
         is_active = True if request.form.get("is_active") == "on" else False
+        user_id_raw = (request.form.get("user_id") or "").strip()
+        user_id = int(user_id_raw) if user_id_raw.isdigit() else None
 
         if not name:
             flash("Nama driver wajib diisi.", "warning")
@@ -546,12 +572,14 @@ def edit_driver(driver_id):
             phone=phone,
             license_number=license_number,
             is_active=is_active,
+            user_id=user_id,
         )
 
         flash("Driver berhasil diperbarui.", "success")
         return redirect(url_for("master.drivers"))
 
-    return render_template("master/driver_form.html", driver=driver)
+    eligible_users = _eligible_pengantar_users(current_user.branch_id, current_driver_id=driver.id)
+    return render_template("master/driver_form.html", driver=driver, eligible_users=eligible_users)
 
 
 @master_bp.route("/drivers/<int:driver_id>/toggle", methods=["POST"])

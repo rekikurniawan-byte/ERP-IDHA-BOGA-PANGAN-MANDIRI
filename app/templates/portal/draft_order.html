@@ -157,12 +157,17 @@
                             <span>Waktu makan</span>
                             <div class="po-segment" role="radiogroup" aria-label="Waktu makan">
                                 {% for value, label in context.meal_types.items() %}
-                                    {% set is_today_closed = context.today_sessions[value].closed if context.today_sessions and value in context.today_sessions else false %}
+                                    {% set session_info = context.today_sessions[value] if context.today_sessions and value in context.today_sessions else {} %}
+                                    {% set is_today_closed = session_info.closed if session_info is mapping and 'closed' in session_info else false %}
+                                    {% set lock_str = session_info.lock_time_str if session_info is mapping and 'lock_time_str' in session_info else '' %}
                                     <label class="po-seg{% if is_today_closed %} is-disabled{% endif %}" data-meal-type="{{ value }}">
                                         <input type="radio" name="meal_type" value="{{ value }}" {% if is_today_closed %}disabled{% elif loop.first %}checked{% endif %} data-meal-label="{{ label }}">
                                         <span>
                                              <i class="bi bi-{{ 'sun' if value == 'LUNCH' else ('moon-stars' if value == 'DINNER' else 'cup-hot') }}"></i>
                                              {{ label }}
+                                             {% if lock_str and not is_today_closed %}
+                                                 <small class="po-seg-hint text-muted" style="display: block; font-size: 0.72rem;">Pesan sebelum {{ lock_str }} WIB</small>
+                                             {% endif %}
                                              <small class="po-seg-badge{% if not is_today_closed %} d-none{% endif %}">Sudah tutup</small>
                                         </span>
                                     </label>

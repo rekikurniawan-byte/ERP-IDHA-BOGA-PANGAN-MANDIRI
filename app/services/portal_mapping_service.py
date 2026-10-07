@@ -36,6 +36,10 @@ class PortalResolvedScope:
     client_pic_ids: set[int] = field(default_factory=set)
     delivery_location_ids: set[int] = field(default_factory=set)
 
+    @property
+    def client_id(self) -> int | None:
+        return next(iter(self.client_ids)) if self.client_ids else None
+
 
 def is_portal_external_role(role):
     return role in PORTAL_EXTERNAL_ROLES

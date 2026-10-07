@@ -873,12 +873,19 @@ def _latest_scope_drafts(user, scope, limit=10):
     )
 
 
-def session_closed_reason(branch_id: int | None, order_date: date, meal_type: str) -> str | None:
+def session_closed_reason(
+    branch_id: int | None,
+    order_date: date,
+    meal_type: str,
+    *,
+    client_id: int | None = None,
+    location_id: int | None = None,
+) -> str | None:
     """Helper untuk memeriksa apakah suatu sesi makan pada tanggal order sudah tutup.
 
     Tutup bila:
     1. Tanggal lampau (sebelum hari ini WIB).
-    2. Tanggal = hari ini dan jam WIB > cutoff sesi (LUNCH: 10:00, DINNER: 15:00).
+    2. Tanggal = hari ini dan jam WIB > lock time sesi dari kontrak aktif (atau batas bawaan).
     3. DailyOrder cabang + tanggal tersebut berstatus is_locked.
     """
     if not order_date:
@@ -888,10 +895,17 @@ def session_closed_reason(branch_id: int | None, order_date: date, meal_type: st
     if order_date < today:
         return "Tanggal order portal tidak boleh sebelum hari ini."
 
+    if client_id is None and location_id:
+        loc = DeliveryLocation.query.get(location_id) if hasattr(DeliveryLocation.query, "get") else db.session.get(DeliveryLocation, location_id)
+        if loc and loc.mandor:
+            client_id = loc.mandor.client_id
+
     if order_date == today:
         now = now_wib()
         meal_key = str(meal_type or "").upper()
-        cutoff_at = PORTAL_CUTOFF_TIMES.get(meal_key)
+        from app.services.contract_rules_service import lock_time_for
+
+        cutoff_at = lock_time_for(client_id, meal_key, on_date=order_date, branch_id=branch_id)
         if cutoff_at and now.time() > cutoff_at:
             meal_label = MEAL_TYPE_LABELS.get(meal_key, meal_key)
             return f"Batas waktu pemesanan untuk {meal_label} hari ini sudah lewat ({cutoff_at.strftime('%H:%M')} WIB)."
@@ -918,7 +932,13 @@ def _draft_history_rows(drafts):
         paid = draft_prepaid_amount(draft) if total is not None else None
         transfer_amount = draft_transfer_amount(draft) if total is not None else None
         unique_code = int(getattr(draft, "payment_unique_code", None) or 0) or None
-        closed_reason = session_closed_reason(draft.branch_id, draft.order_date, draft.meal_type)
+        closed_reason = session_closed_reason(
+            draft.branch_id,
+            draft.order_date,
+            draft.meal_type,
+            client_id=draft.client_id,
+            location_id=draft.delivery_location_id,
+        )
         is_closed = bool(closed_reason)
         rows.append(
             {
@@ -942,6 +962,8 @@ def _draft_history_rows(drafts):
 
 
 def build_portal_draft_order_context(user):
+    from app.services.contract_rules_service import lock_time_for
+
     scope = build_portal_external_scope(user)
     drafts = list_portal_order_drafts(user)
     precheck = _portal_payment_precheck(user, scope)
@@ -951,12 +973,15 @@ def build_portal_draft_order_context(user):
 
     today = today_wib()
     branch_id = getattr(user, "branch_id", None)
+    active_client_id = getattr(scope, "client_id", None) or (next(iter(scope.client_ids)) if (scope and getattr(scope, "client_ids", None)) else None)
     today_sessions = {}
     for m in ("LUNCH", "DINNER"):
-        r = session_closed_reason(branch_id, today, m)
+        r = session_closed_reason(branch_id, today, m, client_id=active_client_id)
+        lock_t = lock_time_for(active_client_id, m, on_date=today, branch_id=branch_id)
         today_sessions[m] = {
             "closed": bool(r),
             "reason": r or "",
+            "lock_time_str": lock_t.strftime("%H.%M") if lock_t else "",
         }
     locked_dates = []
     if branch_id:
@@ -1155,13 +1180,18 @@ def _validate_draft_payload(user, form):
         return None, f"{T.sub_client} lokasi tidak termasuk akses portal user."
 
     branch_id = location.mandor.branch_id
-    closed_reason = session_closed_reason(branch_id, order_date, meal_type)
+    client = location.mandor.client
+    closed_reason = session_closed_reason(
+        branch_id,
+        order_date,
+        meal_type,
+        client_id=getattr(client, "id", None),
+        location_id=location.id,
+    )
     if closed_reason:
         return None, closed_reason
 
     from app.services.pricing_service import min_portion_error, quote_price, quote_trip_fee
-
-    client = location.mandor.client
     minimum_error = min_portion_error(branch_id, client, [(MEAL_TYPE_LABELS.get(meal_type, meal_type), portion_qty)])
     if minimum_error:
         return None, minimum_error

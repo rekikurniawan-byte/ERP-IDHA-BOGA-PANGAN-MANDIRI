@@ -1,4 +1,4 @@
-﻿{% extends "layouts/base.html" %}
+{% extends "layouts/base.html" %}
 
 {% block content %}
 <section class="page-section">
@@ -67,13 +67,81 @@
                         <option value="ACTIVE">Aktif</option>
                     </select>
                 </div>
-                <div class="col-md-7">
+                <div class="col-md-9">
                     <label class="form-label">Catatan</label>
                     <input class="form-control app-input" name="notes" placeholder="Opsional">
                 </div>
-                <div class="col-md-2 d-grid align-items-end">
+
+                <div class="col-12 mt-3 pt-3 border-top">
+                    <h3 class="h6 fw-bold mb-2"><i class="bi bi-sliders"></i> Aturan Pesanan &amp; Tagihan</h3>
+                    <p class="text-muted small mb-2">Pengaturan jam batas pesan, hari libur rutin, siklus penagihan, tempo, serta klausul kontrak.</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Jam Lock Siang</label>
+                    <input class="form-control app-input" type="time" name="lunch_lock_time" value="10:00" required>
+                    <div class="form-text small">Batas order makan siang</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Jam Lock Malam</label>
+                    <input class="form-control app-input" type="time" name="dinner_lock_time" value="15:00" required>
+                    <div class="form-text small">Batas order makan malam</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Siklus Tagihan</label>
+                    <select class="form-select app-input" name="billing_cycle">
+                        {% for code, label in data.billing_cycles %}
+                            <option value="{{ code }}" {% if code == 'BIWEEKLY' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Awal Siklus Tagihan</label>
+                    <input class="form-control app-input" type="date" name="billing_anchor_date">
+                    <div class="form-text small">Kosong = sama dengan Mulai</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Jatuh Tempo (Hari)</label>
+                    <input class="form-control app-input" type="number" name="due_days" min="1" max="60" value="7" required>
+                    <div class="form-text small">Bawaan kontrak (1–60 hari)</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Bawaan Pihak Ditagih</label>
+                    <select class="form-select app-input" name="default_billing_mode">
+                        {% for code, label in data.billing_modes %}
+                            <option value="{{ code }}" {% if code == 'VIA_CLIENT' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Pengadilan Sengketa</label>
+                    <select class="form-select app-input" name="dispute_court">
+                        {% for code, label in data.dispute_courts %}
+                            <option value="{{ code }}" {% if code == 'PN_PANGKALAN_BALAI' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nominal Ta'zir (Rp)</label>
+                    <input class="form-control app-input" type="number" name="tazir_amount" min="0" step="0.01" value="0">
+                    <div class="form-text small">Nominal tetap per kejadian. Diusulkan sistem, diputuskan Owner, masuk Dana Sosial — bukan pendapatan.</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Hari Libur Rutin Mingguan</label>
+                    <div class="d-flex flex-wrap gap-3 pt-1">
+                        {% set days = [('1', 'Senin'), ('2', 'Selasa'), ('3', 'Rabu'), ('4', 'Kamis'), ('5', 'Jumat'), ('6', 'Sabtu'), ('7', 'Minggu')] %}
+                        {% for d_val, d_name in days %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="weekly_holidays" value="{{ d_val }}" id="wh_new_{{ d_val }}">
+                                <label class="form-check-label small" for="wh_new_{{ d_val }}">{{ d_name }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-text small">Centang hari rutin tanpa pengiriman. Kosong = kirim setiap hari.</div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end mt-3">
                     <button class="btn app-btn-primary" type="submit">
-                        <i class="bi bi-plus-circle"></i> Buat
+                        <i class="bi bi-plus-circle"></i> Buat Kontrak
                     </button>
                 </div>
             </form>
