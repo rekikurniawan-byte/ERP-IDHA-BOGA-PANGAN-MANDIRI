@@ -319,13 +319,20 @@ def build_container_labels_data(daily_order: DailyOrder, meal_type: str, paper_s
             receiver_phone = detail.mandor.client.phone
             receiver_name = detail.mandor.client.name
 
-        scan_url = url_for("delivery.scan_qr", daily_order_detail_id=detail.id, sesi=norm_meal, _external=True)
-        qr_obj = segno.make(scan_url, error="m")
-        qr_svg = qr_obj.svg_inline(scale=2, border=1)
-
         seq_num = delivery_detail_seq_map.get(detail.id) if has_delivery_sequence else None
 
         for idx, portion in enumerate(containers, start=1):
+            container_scan_url = url_for(
+                "delivery.scan_qr",
+                daily_order_detail_id=detail.id,
+                sesi=norm_meal,
+                w=idx,
+                n=n_wadah,
+                _external=True,
+            )
+            container_qr_obj = segno.make(container_scan_url, error="m")
+            container_qr_svg = container_qr_obj.svg_inline(scale=2, border=1)
+
             labels.append({
                 "detail_id": detail.id,
                 "customer_name": client_name,
@@ -342,7 +349,8 @@ def build_container_labels_data(daily_order: DailyOrder, meal_type: str, paper_s
                 "date_str": daily_order.order_date.strftime("%d/%m/%Y"),
                 "session_label": "Siang" if norm_meal == "LUNCH" else "Malam",
                 "seq_number": seq_num,
-                "qr_svg": qr_svg,
+                "scan_url": container_scan_url,
+                "qr_svg": container_qr_svg,
             })
 
     print_status = get_session_print_history(daily_order, norm_meal)

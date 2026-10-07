@@ -1,0 +1,90 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="delivery-scan-shell" data-ui-page="delivery-scan">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">Pengantar | Serah Terima</span>
+            <h1>Scan Label Wadah</h1>
+            <p>Arahkan kamera ke QR code label wadah makanan untuk langsung membuka form serah terima.</p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
+                <i class="bi bi-list-check"></i>
+                Pilih dari Daftar
+            </a>
+            <a href="{{ url_for('dashboard.pengantar') }}" class="btn app-btn-secondary">
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert jika bukan Secure Context (kamera browser butuh HTTPS/localhost) -->
+    <div id="scan-secure-warning" class="app-card border-warning bg-warning-subtle text-warning-emphasis mb-3" style="display: none;">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+            <div>
+                <strong>Kamera browser hanya berjalan di HTTPS atau localhost</strong>
+                <p class="mb-1 small">
+                    Koneksi saat ini bukan HTTPS. Anda tetap dapat menggunakan <strong>kamera bawaan HP</strong> untuk memindai QR code label wadah, atau gunakan <strong>input manual</strong> di bawah ini.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kamera Scanner Viewport -->
+    <div class="app-card scanner-main-card mb-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Kamera Pemindai QR</h5>
+                <p class="mb-0">Pastikan QR code label berada di dalam area kotak fokus.</p>
+            </div>
+        </div>
+
+        <div class="scanner-viewport-wrapper">
+            <div id="qr-reader" class="scanner-viewport-box">
+                <div class="scanner-placeholder text-center text-muted p-4">
+                    <i class="bi bi-camera fs-1 d-block mb-2 text-secondary"></i>
+                    <span>Memuat akses kamera belakang...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="scan-status-message" class="alert alert-info mt-3 mb-0 text-center">
+            <i class="bi bi-camera me-1"></i> Menyiapkan kamera pemindai...
+        </div>
+        <div id="scan-error-alert" class="alert alert-danger mt-2 mb-0" style="display: none;"></div>
+    </div>
+
+    <!-- Cadangan Tanpa Kamera / Input Manual -->
+    <div class="app-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Cadangan Tanpa Kamera / Input Manual</h5>
+                <p class="mb-0">Jika kamera tidak tersedia atau label buram, masukkan kode label atau pilih dari daftar.</p>
+            </div>
+        </div>
+
+        <div class="row g-2 align-items-center mb-3">
+            <div class="col-sm-8 col-md-9">
+                <input type="text" id="manual-scan-input" class="form-control app-input form-control-lg" placeholder="Contoh: 123/LUNCH atau /delivery/scan/123/LUNCH" autocomplete="off">
+            </div>
+            <div class="col-sm-4 col-md-3">
+                <button type="button" id="manual-scan-btn" class="btn btn-lg app-btn-primary w-100">
+                    <i class="bi bi-arrow-right-circle"></i> Buka
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+            <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
+                <i class="bi bi-list-task me-1"></i> Pilih dari Daftar Penerimaan Hari Ini
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Library html5-qrcode dari CDN dengan versi dikunci sebagai fallback -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}

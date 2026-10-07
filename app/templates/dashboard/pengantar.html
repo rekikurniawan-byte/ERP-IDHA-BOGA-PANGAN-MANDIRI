@@ -1,6 +1,13 @@
 {% extends "layouts/base.html" %}
 
 {% block content %}
+<div class="delivery-scan-banner mb-3" data-ui-delivery-scan-banner>
+    <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary delivery-scan-btn-hero w-100 py-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-qr-code-scan fs-3"></i>
+        <span class="fs-5 fw-bold">Scan Label Wadah</span>
+    </a>
+</div>
+
 <div class="page-header dashboard-role-header" data-ui-dashboard="pengantar">
     <div class="dashboard-command-title-block">
         <span class="eyebrow">Dashboard Pengantar</span>
@@ -9,7 +16,11 @@
     </div>
 
     <div class="page-actions dashboard-page-actions">
-        <a href="{{ url_for('delivery.index') }}" class="btn app-btn-primary">
+        <a href="{{ url_for('delivery.scan') }}" class="btn app-btn-primary">
+            <i class="bi bi-qr-code-scan"></i>
+            Scan Label Wadah
+        </a>
+        <a href="{{ url_for('delivery.index') }}" class="btn app-btn-secondary">
             <i class="bi bi-truck"></i>
             Buka Pengiriman
         </a>
@@ -135,4 +146,11 @@
         </div>
     </div>
 </section>
+
+<div class="delivery-scan-sticky-mobile d-md-none">
+    <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary w-100 py-3 shadow-lg d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-qr-code-scan fs-4"></i>
+        <span class="fw-bold">Scan Label Wadah</span>
+    </a>
+</div>
 {% endblock %}

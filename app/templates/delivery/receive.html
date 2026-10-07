@@ -6,35 +6,52 @@
 <div class="op-prod-delivery-page-shell" data-ui-page="receive">
 <div class="page-header">
     <div>
-        <span class="eyebrow">Penerimaan Pengiriman</span>
-        <h1>{{ delivery_detail.delivery.delivery_number }}</h1>
-        <p>
-            {{ term('sub_client') }}: <strong>{{ delivery_detail.mandor.name }}</strong> |
-            Lokasi: <strong>{{ delivery_detail.delivery_location.location_name }}</strong>
+        <span class="eyebrow">Serah Terima Pengiriman</span>
+        <h1>{{ customer_name or (delivery_detail.mandor.name if delivery_detail.mandor else '-') }}</h1>
+        <p class="fs-5 text-secondary mb-1">
+            <strong>{{ delivery_detail.delivery_location.location_name if delivery_detail.delivery_location else '-' }}</strong>
+            &bull; Sesi <strong>{{ session_label }}</strong>
+            &bull; <strong>{{ delivery_detail.planned_qty }} porsi dipesan</strong>
         </p>
-        {% if delivery_detail.delivery_location and delivery_detail.delivery_location.description %}<p class="text-muted small mb-2">{{ delivery_detail.delivery_location.description }}</p>{% endif %}
-        {{ directions_link(delivery_detail.delivery_location, small=false) }}
+        {% if container_info_text %}
+            <div class="mt-2">
+                <span class="badge bg-primary-subtle text-primary border px-3 py-2 fs-6">
+                    <i class="bi bi-box-seam me-1"></i> {{ container_info_text }}
+                </span>
+            </div>
+        {% endif %}
+        {% if delivery_detail.delivery_location and delivery_detail.delivery_location.description %}
+            <p class="text-muted small mt-2 mb-1">Patokan: {{ delivery_detail.delivery_location.description }}</p>
+        {% endif %}
+        {{ directions_link(delivery_detail.delivery_location, small=true) }}
         {% if delivery_detail.delivery_location %}
-            <div class="mt-3">
+            <div class="mt-2">
                 {{ photo_gallery(delivery_detail.delivery_location, location_photos_for(delivery_detail.delivery_location.id), can_manage=can_manage_location_photos(current_user, delivery_detail.delivery_location), next_url=request.path) }}
             </div>
         {% endif %}
     </div>
 
     <div class="page-actions">
-        <a href="{{ url_for('delivery.detail', delivery_id=delivery_detail.delivery.id) }}" class="btn app-btn-secondary">
+        <a href="{{ url_for('delivery.scan') }}" class="btn app-btn-secondary">
+            <i class="bi bi-qr-code-scan"></i>
+            Scan Label
+        </a>
+        <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
             <i class="bi bi-arrow-left"></i>
-            Kembali
+            Daftar Penerimaan
+        </a>
+        <a href="{{ url_for('delivery.detail', delivery_id=delivery_detail.delivery.id) }}" class="btn app-btn-secondary">
+            <i class="bi bi-truck"></i>
+            Detail Delivery
         </a>
     </div>
 </div>
 
-
-<div class="app-stat-grid">
+<div class="app-stat-grid mb-3">
     <div class="app-stat-card">
         <div class="app-stat-icon stat-info"><i class="bi bi-box"></i></div>
         <div>
-            <p>Qty Rencana</p>
+            <p>Qty Dipesan</p>
             <h3>{{ delivery_detail.planned_qty }}</h3>
             <span class="app-stat-helper">Porsi rencana</span>
         </div>
@@ -45,12 +62,12 @@
         <div>
             <p>Qty Terkirim</p>
             <h3>{{ delivery_detail.delivered_qty }}</h3>
-            <span class="app-stat-helper">Porsi terkirim</span>
+            <span class="app-stat-helper">Realisasi porsi</span>
         </div>
     </div>
 
     <div class="app-stat-card">
-        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="app-stat-icon {% if delivery_detail.shortage_qty > 0 %}stat-danger{% else %}stat-success{% endif %}"><i class="bi bi-exclamation-triangle"></i></div>
         <div>
             <p>Qty Kurang</p>
             <h3>{{ delivery_detail.shortage_qty }}</h3>
@@ -72,168 +89,104 @@
         <div>
             <p>SLA</p>
             <h3>{{ delivery_detail_sla.label }}</h3>
-            <span class="app-stat-helper">Target {{ delivery_detail_sla.target_arrival_label }} · batas {{ delivery_detail_sla.late_limit_label }}</span>
+            <span class="app-stat-helper">Target {{ delivery_detail_sla.target_arrival_label }}</span>
         </div>
     </div>
 </div>
-
-<div class="app-card soft-info-card mt-3">
-    <strong>Status SLA Penerimaan</strong>
-    <p>{{ delivery_detail_sla.reason }}</p>
-    <span class="status-badge {{ delivery_detail_sla.badge_class }}">{{ delivery_detail_sla.label }}</span>
-</div>
-
-<div class="app-card">
-    <div class="card-header-clean">
-        <div>
-            <h5>Form Penerimaan</h5>
-            <p>Jam terima otomatis dicatat saat form disimpan dan dipakai untuk hitung tepat waktu/terlambat/kurang kirim.</p>
-        </div>
-    </div>
-
-    <form method="POST" action="{{ url_for('delivery.receive', detail_id=delivery_detail.id) }}" enctype="multipart/form-data" data-ui-form="true" class="app-form">
-        {% include "components/csrf_token.html" %}
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Jumlah Rencana</label>
-                <input type="text" class="form-control app-input" value="{{ delivery_detail.planned_qty }} Porsi" readonly>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Jumlah Terkirim</label>
-                <input type="number" name="delivered_qty" class="form-control app-input" value="{{ delivery_detail.delivered_qty }}" min="0" max="{{ delivery_detail.planned_qty }}" required>
-                <small class="text-muted">Tidak boleh melebihi planned qty.</small>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Nama Penerima</label>
-                <input type="text" name="receiver_name" class="form-control app-input" value="{{ delivery_detail.receipt.receiver_name if delivery_detail.receipt else '' }}" required>
-            </div>
-
-            <div class="col-md-12">
-                <label class="form-label">Catatan</label>
-                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Contoh: diterima lengkap / kurang 2 porsi">{{ delivery_detail.receipt.notes if delivery_detail.receipt else '' }}</textarea>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Bukti Digital Terima</label>
-                <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf">
-                <small class="text-muted">Opsional. Format: {{ allowed_extensions|join(', ') }}. Maks {{ max_upload_mb }} MB.</small>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Jenis Bukti</label>
-                <select name="proof_type" class="form-select app-input">
-                    <option value="FOTO_TERIMA">Foto Bukti Terima</option>
-                    <option value="TANDA_TANGAN">Tanda Tangan</option>
-                    <option value="SURAT_JALAN">Surat Jalan</option>
-                    <option value="LAINNYA">Lainnya</option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Catatan Bukti</label>
-                <input type="text" name="proof_notes" class="form-control app-input" placeholder="Contoh: foto serah terima lengkap">
-            </div>
-        </div>
-
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">
-                <i class="bi bi-save"></i>
-                Simpan Penerimaan
-            </button>
-        </div>
-    </form>
-</div>
-
 
 {% if delivery_detail.receipt %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
-        <div>
-            <h5>Bukti Digital Penerimaan</h5>
-            <p>Lampiran bukti terima untuk {{ term('sub_client', lower=True) }}/lokasi ini. File disimpan sebagai lampiran digital dan tercatat di audit log.</p>
+    <!-- KONDISI ORDER SUDAH DITERIMA: TAMPILKAN STATUS DAN FOTO, JANGAN TAMPILKAN FORM -->
+    <div class="app-card border-success bg-success-subtle mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-check-circle-fill text-success fs-1"></i>
+            <div>
+                <h4 class="mb-1 text-success-emphasis">Pesanan Ini Sudah Diterima</h4>
+                <p class="mb-0 text-success-emphasis fs-5">
+                    Sudah diantar jam <strong>{{ delivery_detail.receipt.receive_time|wib('%H:%M') }}</strong> oleh <strong>{{ delivery_detail.delivery.driver.name if (delivery_detail.delivery and delivery_detail.delivery.driver) else 'Pengantar' }}</strong>.
+                </p>
+                <div class="mt-1 text-secondary">
+                    <span>Penerima: <strong>{{ delivery_detail.receipt.receiver_name }}</strong></span> &bull;
+                    <span>Porsi Diterima: <strong>{{ delivery_detail.delivered_qty }} Porsi</strong></span>
+                    {% if delivery_detail.shortage_qty > 0 %}
+                        &bull; <span class="text-danger fw-bold">Kurang: {{ delivery_detail.shortage_qty }} Porsi</span>
+                    {% endif %}
+                </div>
+                {% if delivery_detail.receipt.notes %}
+                    <p class="mb-0 text-muted small mt-2">Catatan: {{ delivery_detail.receipt.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if receipt_attachments %}
+            <div class="mt-3 pt-3 border-top border-success-subtle">
+                <span class="fw-semibold d-block mb-2 text-success-emphasis">Foto Bukti Penerimaan:</span>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for att in receipt_attachments %}
+                        <a href="{{ url_for('delivery.view_attachment', attachment_id=att.id) }}" target="_blank" rel="noopener">
+                            <img src="{{ url_for('delivery.view_attachment', attachment_id=att.id) }}" alt="Bukti Penerimaan" class="rounded border" style="max-height: 180px; max-width: 240px; object-fit: cover;">
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="mt-4 pt-3 border-top border-success-subtle d-flex flex-wrap gap-2">
+            <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary">
+                <i class="bi bi-qr-code-scan"></i> Scan Berikutnya
+            </a>
+            <a href="{{ url_for('delivery.receiving') }}" class="btn btn-lg app-btn-secondary">
+                <i class="bi bi-list-check"></i> Daftar Penerimaan
+            </a>
         </div>
     </div>
+{% else %}
+    <!-- KONDISI ORDER BELUM DITERIMA: TAMPILKAN FORM SERAH TERIMA CEPAT -->
+    <div class="app-card mb-4">
+        <div class="card-header-clean">
+            <div>
+                <h5>Form Serah Terima</h5>
+                <p>Jam terima otomatis dicatat saat form disimpan.</p>
+            </div>
+        </div>
 
-    <form method="POST" action="{{ url_for('delivery.upload_receipt_attachment', receipt_id=delivery_detail.receipt.id) }}" enctype="multipart/form-data" class="mb-4 app-form" data-ui-form="true">
-        {% include "components/csrf_token.html" %}
-        <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label">Tambah Bukti</label>
-                <input type="file" name="proof_file" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
-                <small class="text-muted">Format: {{ allowed_extensions|join(', ') }}. Maks {{ max_upload_mb }} MB.</small>
+        <form method="POST" action="{{ url_for('delivery.receive', detail_id=delivery_detail.id) }}" enctype="multipart/form-data" data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="from_scan" value="{{ 1 if from_scan else 0 }}">
+            <input type="hidden" name="w" value="{{ w or '' }}">
+            <input type="hidden" name="n" value="{{ n or '' }}">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Realisasi Porsi <span class="text-danger">*</span></label>
+                    <input type="number" name="delivered_qty" class="form-control app-input form-control-lg fw-bold" value="{{ delivery_detail.planned_qty }}" min="0" max="{{ delivery_detail.planned_qty }}" required>
+                    <small class="text-muted">Sudah terisi porsi dipesan ({{ delivery_detail.planned_qty }} porsi). Ubah bila ada kekurangan.</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Nama Penerima <span class="text-danger">*</span></label>
+                    <input type="text" name="receiver_name" class="form-control app-input form-control-lg" value="{{ default_receiver_name or '' }}" placeholder="Nama penerima di lokasi" required>
+                    <small class="text-muted">Nama mandor / staf yang menerima makanan di lokasi.</small>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Catatan Serah Terima (Opsional)</label>
+                    <textarea name="notes" class="form-control app-input" rows="2" placeholder="Contoh: diterima lengkap di pos satpam / ada kurang porsi"></textarea>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Foto Bukti Penerimaan (Langsung Kamera HP)</label>
+                    <input type="file" name="proof_file" class="form-control app-input" accept="image/*" capture="environment">
+                    <small class="text-muted">Klik untuk langsung membuka kamera HP dan mengambil foto serah terima di lokasi.</small>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Jenis Bukti</label>
-                <select name="proof_type" class="form-select app-input">
-                    <option value="FOTO_TERIMA">Foto Bukti Terima</option>
-                    <option value="TANDA_TANGAN">Tanda Tangan</option>
-                    <option value="SURAT_JALAN">Surat Jalan</option>
-                    <option value="LAINNYA">Lainnya</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Catatan</label>
-                <input type="text" name="proof_notes" class="form-control app-input" placeholder="Catatan bukti">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn app-btn-primary w-100">
-                    <i class="bi bi-upload"></i>
-                    Unggah
+
+            <div class="form-actions mt-4">
+                <button type="submit" class="btn btn-lg app-btn-primary w-100 py-3 fs-5">
+                    <i class="bi bi-check2-circle"></i> Selesai Diantar
                 </button>
             </div>
-        </div>
-    </form>
-
-    <div class="table-responsive">
-        <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>Jenis</th>
-                    <th>File</th>
-                    <th>Ukuran</th>
-                    <th>Catatan</th>
-                    <th>Unggah</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for attachment in receipt_attachments %}
-                <tr>
-                    <td><span class="status-badge status-info">{{ attachment.attachment_type|status_label }}</span></td>
-                    <td><strong>{{ attachment.original_filename }}</strong></td>
-                    <td>{{ format_file_size(attachment.file_size) }}</td>
-                    <td>{{ attachment.notes or '-' }}</td>
-                    <td>{{ attachment.created_at|wib('%d-%m-%Y %H:%M') if attachment.created_at else '-' }}</td>
-                    <td>
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ url_for('delivery.view_attachment', attachment_id=attachment.id) }}" target="_blank" class="btn btn-sm app-btn-secondary">Lihat</a>
-                            <a href="{{ url_for('delivery.download_attachment', attachment_id=attachment.id) }}" class="btn btn-sm app-btn-secondary">Unduh</a>
-                            {% if current_user.role in ['OWNER', 'ADMIN'] %}
-                            <form method="POST" action="{{ url_for('delivery.delete_attachment', attachment_id=attachment.id) }}" data-app-confirm="Hapus lunak bukti digital ini? File fisik tetap tersimpan untuk audit." data-ui-form="true" class="app-form">
-                                {% include "components/csrf_token.html" %}
-                                <input type="hidden" name="delete_note" value="Dihapus dari halaman penerimaan delivery.">
-                                <button type="submit" class="btn btn-sm app-btn-danger">Hapus</button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6">
-                        <div class="empty-state">
-                            <i class="bi bi-image"></i>
-                            <p>Belum ada bukti digital untuk penerimaan ini.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        </form>
     </div>
-</div>
 {% endif %}
 
 </div>

@@ -1039,6 +1039,239 @@
         });
     }
 
+    // --- Delivery QR Scanner ---------------------------------------------------
+    function setupDeliveryScanner() {
+        const scannerShell = document.querySelector('[data-ui-page="delivery-scan"]');
+        if (!scannerShell) return;
+
+        const previewContainer = document.getElementById("qr-reader");
+        const statusMsg = document.getElementById("scan-status-message");
+        const errorAlert = document.getElementById("scan-error-alert");
+        const secureWarning = document.getElementById("scan-secure-warning");
+        const manualInput = document.getElementById("manual-scan-input");
+        const manualBtn = document.getElementById("manual-scan-btn");
+
+        function showError(msg) {
+            if (errorAlert) {
+                errorAlert.textContent = msg;
+                errorAlert.style.display = "block";
+            }
+            if (statusMsg) {
+                statusMsg.textContent = msg;
+                statusMsg.className = "alert alert-warning mt-3 mb-0 text-center";
+            }
+        }
+
+        function setStatus(msg, isSuccess) {
+            if (errorAlert) errorAlert.style.display = "none";
+            if (statusMsg) {
+                statusMsg.textContent = msg;
+                statusMsg.className = isSuccess
+                    ? "alert alert-success mt-3 mb-0 text-center"
+                    : "alert alert-info mt-3 mb-0 text-center";
+            }
+        }
+
+        function notifyFeedback() {
+            if (navigator.vibrate) {
+                try { navigator.vibrate([100, 50, 100]); } catch (e) {}
+            }
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    const ctx = new AudioCtx();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                }
+            } catch (e) {}
+        }
+
+        let isNavigating = false;
+        function handleScannedResult(rawText) {
+            if (isNavigating) return;
+            if (!rawText || typeof rawText !== "string") {
+                showError("Ini bukan label Idha Boga.");
+                return;
+            }
+
+            const trimmed = rawText.trim();
+            let targetUrl;
+            try {
+                if (trimmed.startsWith("/")) {
+                    targetUrl = new URL(trimmed, window.location.origin);
+                } else {
+                    targetUrl = new URL(trimmed);
+                }
+            } catch (e) {
+                showError("Ini bukan label Idha Boga.");
+                return;
+            }
+
+            // Validasi: origin sama dan path diawali /delivery/scan/
+            if (targetUrl.origin !== window.location.origin || !targetUrl.pathname.startsWith("/delivery/scan/")) {
+                showError("Ini bukan label Idha Boga.");
+                return;
+            }
+
+            isNavigating = true;
+            notifyFeedback();
+            setStatus("Label terbaca! Mengalihkan ke serah terima...", true);
+            window.location.href = targetUrl.toString();
+        }
+
+        // Cadangan input manual
+        if (manualBtn && manualInput) {
+            function submitManual() {
+                const val = (manualInput.value || "").trim();
+                if (!val) {
+                    showError("Masukkan kode label atau URL scan.");
+                    return;
+                }
+                if (val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/")) {
+                    handleScannedResult(val);
+                } else if (/^\d+(\/[A-Za-z]+)?/.test(val)) {
+                    const sesi = val.includes("/") ? "" : "/LUNCH";
+                    handleScannedResult("/delivery/scan/" + val + sesi);
+                } else {
+                    showError("Ini bukan label Idha Boga.");
+                }
+            }
+
+            manualBtn.addEventListener("click", submitManual);
+            manualInput.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitManual();
+                }
+            });
+        }
+
+        // Cek Secure Context (kamera browser wajib HTTPS atau localhost)
+        if (window.isSecureContext === false) {
+            if (secureWarning) secureWarning.style.display = "block";
+            setStatus("Kamera browser dinonaktifkan oleh browser karena bukan HTTPS/localhost. Gunakan kamera bawaan HP untuk scan QR atau masukkan kode manual.", false);
+            return;
+        }
+
+        // Cek mediaDevices
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError("Kamera browser tidak didukung pada perangkat ini. Silakan gunakan kamera bawaan HP atau input manual.");
+            return;
+        }
+
+        // Pilihan pemindai: BarcodeDetector bawaan vs Html5Qrcode
+        if ("BarcodeDetector" in window) {
+            BarcodeDetector.getSupportedFormats().then(function (formats) {
+                if (formats && formats.indexOf("qr_code") !== -1) {
+                    startNativeBarcodeDetector();
+                } else {
+                    startHtml5Qrcode();
+                }
+            }).catch(function () {
+                startHtml5Qrcode();
+            });
+        } else {
+            startHtml5Qrcode();
+        }
+
+        function startNativeBarcodeDetector() {
+            const video = document.createElement("video");
+            video.setAttribute("autoplay", "true");
+            video.setAttribute("playsinline", "true");
+            video.setAttribute("muted", "true");
+            if (previewContainer) {
+                previewContainer.innerHTML = "";
+                previewContainer.appendChild(video);
+            }
+
+            let detector;
+            try {
+                detector = new BarcodeDetector({ formats: ["qr_code"] });
+            } catch (e) {
+                startHtml5Qrcode();
+                return;
+            }
+
+            let activeStream = null;
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: "environment" } }
+            }).then(function (stream) {
+                activeStream = stream;
+                video.srcObject = stream;
+                video.play().catch(function () {});
+                setStatus("Arahkan kamera ke QR code label wadah...", false);
+
+                const scanTimer = setInterval(function () {
+                    if (isNavigating) {
+                        clearInterval(scanTimer);
+                        if (activeStream) activeStream.getTracks().forEach(function (t) { t.stop(); });
+                        return;
+                    }
+                    if (video.readyState >= 2) {
+                        detector.detect(video).then(function (codes) {
+                            if (codes && codes.length > 0) {
+                                clearInterval(scanTimer);
+                                if (activeStream) activeStream.getTracks().forEach(function (t) { t.stop(); });
+                                handleScannedResult(codes[0].rawValue);
+                            }
+                        }).catch(function () {});
+                    }
+                }, 300);
+            }).catch(function (err) {
+                if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                    showError("Izin kamera ditolak. Silakan izinkan akses kamera, gunakan kamera bawaan HP, atau masukkan kode manual.");
+                } else {
+                    startHtml5Qrcode();
+                }
+            });
+        }
+
+        function startHtml5Qrcode() {
+            let attempts = 0;
+            const checkTimer = setInterval(function () {
+                attempts++;
+                if (window.Html5Qrcode) {
+                    clearInterval(checkTimer);
+                    runHtml5Qrcode();
+                } else if (attempts > 30) {
+                    clearInterval(checkTimer);
+                    showError("Pemindai QR tidak dapat dimuat. Silakan gunakan kamera bawaan HP atau input manual.");
+                }
+            }, 100);
+        }
+
+        function runHtml5Qrcode() {
+            try {
+                const html5QrCode = new window.Html5Qrcode("qr-reader");
+                const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    function (decodedText) {
+                        html5QrCode.stop().catch(function () {});
+                        handleScannedResult(decodedText);
+                    },
+                    function () {}
+                ).then(function () {
+                    setStatus("Arahkan kamera ke QR code label wadah...", false);
+                }).catch(function (err) {
+                    showError("Kamera tidak dapat diakses atau izin ditolak. Silakan gunakan kamera bawaan HP atau input manual.");
+                });
+            } catch (e) {
+                showError("Gagal membuka kamera. Silakan gunakan input manual.");
+            }
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", setupPublicPage);
     document.addEventListener("DOMContentLoaded", setupPaymentInbox);
+    document.addEventListener("DOMContentLoaded", setupDeliveryScanner);
 })();

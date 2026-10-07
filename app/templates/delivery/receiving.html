@@ -10,10 +10,18 @@
     description=('Daftar ' ~ term('sub_client', lower=True) ~ '/lokasi yang belum dan sudah dicatat penerimaannya.'),
     collapse=false,
     actions=[
+        {'label': 'Scan Label Wadah', 'url': url_for('delivery.scan'), 'icon': 'bi-qr-code-scan', 'variant': 'primary'},
         {'label': 'Pengiriman', 'url': url_for('delivery.today', date=selected_date_text), 'icon': 'bi-truck'},
         {'label': 'Riwayat', 'url': url_for('delivery.history'), 'icon': 'bi-clock-history'}
     ]
 ) }}
+
+<div class="delivery-scan-banner mb-3" data-ui-delivery-scan-banner>
+    <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary delivery-scan-btn-hero w-100 py-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-qr-code-scan fs-3"></i>
+        <span class="fs-5 fw-bold">Scan Label Wadah</span>
+    </a>
+</div>
 
 
 <div class="app-card">
@@ -171,5 +179,12 @@
         </table>
     </div>
 </div>
+</div>
+
+<div class="delivery-scan-sticky-mobile d-md-none">
+    <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary w-100 py-3 shadow-lg d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-qr-code-scan fs-4"></i>
+        <span class="fw-bold">Scan Label Wadah</span>
+    </a>
 </div>
 {% endblock %}

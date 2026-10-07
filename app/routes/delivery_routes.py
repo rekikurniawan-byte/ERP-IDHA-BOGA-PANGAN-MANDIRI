@@ -270,14 +270,27 @@ def receive(detail_id):
         flash("Pengiriman sudah dibatalkan. Penerimaan tidak bisa dicatat.", "warning")
         return redirect(url_for("delivery.detail", delivery_id=delivery.id))
 
+    w = request.args.get("w", type=int)
+    n = request.args.get("n", type=int)
+    from_scan = request.args.get("from_scan") == "1" or request.form.get("from_scan") == "1"
+
     if request.method == "POST":
         delivered_qty = request.form.get("delivered_qty")
         receiver_name = request.form.get("receiver_name")
         notes = request.form.get("notes")
+        form_w = request.form.get("w")
+        form_n = request.form.get("n")
 
         if not receiver_name:
             flash("Nama penerima wajib diisi.", "warning")
-            return redirect(url_for("delivery.receive", detail_id=delivery_detail.id))
+            redirect_args = {"detail_id": delivery_detail.id}
+            if from_scan:
+                redirect_args["from_scan"] = 1
+            if form_w:
+                redirect_args["w"] = form_w
+            if form_n:
+                redirect_args["n"] = form_n
+            return redirect(url_for("delivery.receive", **redirect_args))
 
         success, message = update_delivery_receipt(
             delivery_detail=delivery_detail,
@@ -307,9 +320,6 @@ def receive(detail_id):
                     logger.exception("Suppressed unexpected exception in app/routes/delivery_routes.py:301")
                     flash(f"Penerimaan tersimpan, tapi bukti digital gagal diunggah: {exc}", "danger")
 
-        flash(message, "success" if success else "warning")
-
-        if success:
             # Jalur UMUM: begitu semua pengiriman pesanan diterima, invoice dibuat
             # otomatis dan langsung dipotong uang mukanya. Tanda terima tetap
             # tersimpan walau langkah ini gagal.
@@ -330,14 +340,61 @@ def receive(detail_id):
                         "OWNER perlu mengembalikannya di Finance > Uang Muka.",
                         "warning",
                     )
-        return redirect(url_for("delivery.detail", delivery_id=delivery.id))
+
+            if from_scan:
+                flash("Tersimpan. Scan label berikutnya.", "success")
+                return redirect(url_for("delivery.scan"))
+
+            flash(message, "success")
+            return redirect(url_for("delivery.detail", delivery_id=delivery.id))
+
+        flash(message, "warning")
+        redirect_args = {"detail_id": delivery_detail.id}
+        if from_scan:
+            redirect_args["from_scan"] = 1
+        if form_w:
+            redirect_args["w"] = form_w
+        if form_n:
+            redirect_args["n"] = form_n
+        return redirect(url_for("delivery.receive", **redirect_args))
 
     delivery_detail_sla = calculate_delivery_detail_sla(delivery_detail)
+
+    from app.services.kitchen_recap_service import split_containers
+    container_info_text = None
+    if w and n:
+        container_info_text = f"Wadah {w}/{n} — pesanan ini punya {n} wadah"
+    elif delivery_detail.planned_qty:
+        c_list = split_containers(delivery_detail.planned_qty)
+        if len(c_list) > 1:
+            container_info_text = f"Pesanan ini terdiri dari {len(c_list)} wadah"
+
+    customer_name = "-"
+    if delivery_detail.mandor:
+        if delivery_detail.mandor.client:
+            customer_name = delivery_detail.mandor.client.name
+            if not getattr(delivery_detail.mandor, "is_direct_unit", False):
+                customer_name += f" ({delivery_detail.mandor.name})"
+        else:
+            customer_name = delivery_detail.mandor.name
+
+    default_receiver_name = delivery_detail.mandor.name if (delivery_detail.mandor and delivery_detail.mandor.name) else ""
+
+    notes_type = get_delivery_type_from_notes(delivery_detail.delivery.notes)
+    session_label = "Siang" if any(k in notes_type.upper() for k in ("LUNCH", "SIANG")) else ("Malam" if any(k in notes_type.upper() for k in ("DINNER", "MALAM")) else notes_type)
 
     return render_template(
         "delivery/receive.html",
         delivery_detail=delivery_detail,
         delivery_detail_sla=delivery_detail_sla,
+        customer_name=customer_name,
+        default_receiver_name=default_receiver_name,
+        session_label=session_label,
+        container_info_text=container_info_text,
+        w=w,
+        n=n,
+        from_scan=from_scan,
+        get_delivery_type_from_notes=get_delivery_type_from_notes,
         receipt_attachments=list_reference_attachments(
             module="DELIVERY",
             reference_type="DELIVERY_RECEIPT",
@@ -628,6 +685,12 @@ def cancel(delivery_id):
 
 
 
+@delivery_bp.route("/scan", methods=["GET"])
+@role_required("OWNER", "ADMIN", "PENGANTAR")
+def scan():
+    return render_template("delivery/scan.html")
+
+
 @delivery_bp.route("/scan/<int:daily_order_detail_id>/<string:sesi>")
 @role_required("OWNER", "ADMIN", "PENGANTAR")
 def scan_qr(daily_order_detail_id, sesi):
@@ -636,11 +699,11 @@ def scan_qr(daily_order_detail_id, sesi):
     detail = db.session.get(DailyOrderDetail, daily_order_detail_id)
     if not detail or not detail.daily_order:
         flash("Data pesanan tidak ditemukan.", "danger")
-        return redirect(url_for("delivery.index"))
+        return redirect(url_for("delivery.scan"))
 
     if detail.daily_order.branch_id != current_user.branch_id:
         flash("Data pesanan tidak sesuai cabang pengguna.", "danger")
-        return redirect(url_for("delivery.index"))
+        return redirect(url_for("delivery.scan"))
 
     norm_sesi = "LUNCH" if (sesi or "").strip().upper() in ("LUNCH", "SIANG") else "DINNER"
 
@@ -669,6 +732,14 @@ def scan_qr(daily_order_detail_id, sesi):
 
     if not delivery_detail:
         flash("Pengiriman untuk pesanan ini belum dibuat oleh admin. Hubungi admin atau koordinator pengiriman.", "warning")
-        return redirect(url_for("delivery.index"))
+        return redirect(url_for("delivery.scan"))
 
-    return redirect(url_for("delivery.receive", detail_id=delivery_detail.id))
+    w = request.args.get("w")
+    n = request.args.get("n")
+    kwargs = {"detail_id": delivery_detail.id, "from_scan": 1}
+    if w:
+        kwargs["w"] = w
+    if n:
+        kwargs["n"] = n
+
+    return redirect(url_for("delivery.receive", **kwargs))

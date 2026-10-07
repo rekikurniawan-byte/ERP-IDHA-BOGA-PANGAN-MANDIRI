@@ -261,7 +261,7 @@ def create_app():
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
+        response.headers.setdefault("Permissions-Policy", "camera=(self), microphone=(), geolocation=(self)")
         content_security_policy = flask_app.config.get("CONTENT_SECURITY_POLICY")
         if content_security_policy:
             header_name = (
