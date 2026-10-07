@@ -288,6 +288,7 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 ---
 
 ## 12. Daftar tunggu lain (belum dijadwalkan)
+- **Hubungkan akun pengantar ke data Driver secara pasti** (kolom `drivers.user_id` atau pilihan "Akun login" di master Driver). Sekarang reminder pengantar mencocokkan lewat nama/no. HP — rapuh kalau nama berbeda. Kerjakan bersama Fase 3.
 - Lupa password lewat **WhatsApp OTP** (butuh layanan WA berbayar) — nanti.
 - **Pembersihan CSS** yang tidak terpakai setelah fitur besar selesai.
 - Mengganti `Query.get()` lama (peringatan SQLAlchemy) — tidak mendesak.

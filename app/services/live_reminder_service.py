@@ -6,13 +6,16 @@ from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
 from flask import url_for
+from sqlalchemy import func, or_
 
 from app.models.delivery import Delivery
 from app.models.finance import CashBankTransaction, Invoice, Payment, SupplierBill, SupplierPayment
 from app.models.logistics import Procurement
+from app.models.master import Driver
 from app.models.operational import DailyOrder
 from app.services.digital_attachment_service import count_reference_attachments
 from app.services.stock_service import get_stock_summary
+from app.utils.roles import effective_role
 from app.utils.terms import L
 
 logger = logging.getLogger(__name__)
@@ -49,6 +52,93 @@ SECTION_LABELS = OrderedDict([
     ("digital_proof", {"title": "Bukti Digital", "icon": "bi-paperclip", "description": "Reminder nota, bukti transfer, dan bukti serah terima yang belum dilampirkan."}),
     ("cash_bank", {"title": "Kas/Bank", "icon": "bi-bank", "description": "Reminder transaksi kas/bank yang belum direkonsiliasi."}),
 ])
+
+
+def allowed_reminder_sections(user: Any) -> set[str]:
+    """Single source of truth for role-based reminder section visibility.
+
+    Returns a set of section keys from SECTION_LABELS allowed for the given user:
+    - OWNER, ADMIN (and legacy roles mapped to ADMIN): all sections
+    - DAPUR: {'stock', 'hpp_order'}
+    - PENGANTAR: {'delivery', 'digital_proof'}
+    - Portal accounts (PORTAL_CUSTOMER, PORTAL_CLIENT, PORTAL_SUBCLIENT): empty set
+    """
+    if user is None:
+        return set(SECTION_LABELS.keys())
+
+    if isinstance(user, str):
+        role_raw = user
+    elif isinstance(user, dict):
+        role_raw = user.get("role")
+    else:
+        role_raw = getattr(user, "role", None)
+
+    role = effective_role(role_raw)
+    if role in ("OWNER", "ADMIN"):
+        return set(SECTION_LABELS.keys())
+    if role == "DAPUR":
+        return {"stock", "hpp_order"}
+    if role == "PENGANTAR":
+        return {"delivery", "digital_proof"}
+    return set()
+
+
+def _get_driver_ids_for_user(branch_id: int, user: Any) -> Optional[List[int]]:
+    """Resolve driver IDs for a user with role PENGANTAR.
+
+    Returns:
+    - None if user is not PENGANTAR or user is None (no driver scoping applied)
+    - List of int driver IDs if user is PENGANTAR and matching driver(s) found
+    - Empty list [] if user is PENGANTAR and drivers exist in branch but none matched
+    - None if user is PENGANTAR but no driver records exist in branch at all
+    """
+    if user is None:
+        return None
+
+    if isinstance(user, str):
+        role_raw = user
+    elif isinstance(user, dict):
+        role_raw = user.get("role")
+    else:
+        role_raw = getattr(user, "role", None)
+
+    if effective_role(role_raw) != "PENGANTAR":
+        return None
+
+    direct_driver_id = getattr(user, "driver_id", None) if not isinstance(user, dict) else user.get("driver_id")
+    if direct_driver_id is not None:
+        try:
+            return [int(direct_driver_id)]
+        except (TypeError, ValueError):
+            pass
+
+    full_name = getattr(user, "full_name", None) if not isinstance(user, dict) else user.get("full_name")
+    username = getattr(user, "username", None) if not isinstance(user, dict) else user.get("username")
+    phone = getattr(user, "phone", None) if not isinstance(user, dict) else user.get("phone")
+
+    conditions = []
+    if full_name:
+        conditions.append(func.lower(Driver.name) == full_name.strip().lower())
+    if username:
+        conditions.append(func.lower(Driver.name) == username.strip().lower())
+    if phone:
+        conditions.append(Driver.phone == phone.strip())
+
+    if conditions:
+        matched = Driver.query.filter(
+            Driver.branch_id == branch_id,
+            or_(*conditions),
+        ).all()
+        if matched:
+            return [d.id for d in matched]
+
+    # Sengaja tidak mencocokkan Driver.id dengan User.id: keduanya tabel berbeda,
+    # angka yang kebetulan sama akan menampilkan pengiriman pengantar lain.
+    total_drivers = Driver.query.filter_by(branch_id=branch_id).count()
+    if total_drivers > 0:
+        return []
+
+    return None
 
 
 def _to_float(value: Any) -> float:
@@ -274,11 +364,25 @@ def _build_hpp_order_reminders(branch_id: int, today: date, reminders: Dict[str,
                 break
 
 
-def _build_delivery_reminders(branch_id: int, today: date, reminders: Dict[str, List[Dict[str, Any]]], limit: int) -> None:
-    deliveries = Delivery.query.filter(
+def _build_delivery_reminders(
+    branch_id: int,
+    today: date,
+    reminders: Dict[str, List[Dict[str, Any]]],
+    limit: int,
+    user: Any = None,
+) -> None:
+    driver_ids = _get_driver_ids_for_user(branch_id, user)
+
+    query = Delivery.query.filter(
         Delivery.branch_id == branch_id,
         Delivery.delivery_date <= today,
-    ).order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(80).all()
+    )
+    if driver_ids is not None:
+        if not driver_ids:
+            return
+        query = query.filter(Delivery.driver_id.in_(driver_ids))
+
+    deliveries = query.order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(80).all()
 
     count = 0
     for delivery in deliveries:
@@ -297,110 +401,138 @@ def _build_delivery_reminders(branch_id: int, today: date, reminders: Dict[str, 
                     metadata={"planned_qty": detail.planned_qty, "delivered_qty": detail.delivered_qty},
                 ))
                 count += 1
-            else:
-                proof_count = count_reference_attachments(
-                    module="DELIVERY",
-                    reference_type="DELIVERY_RECEIPT",
-                    reference_id=receipt.id,
-                    branch_id=branch_id,
-                )
-                if proof_count <= 0:
-                    _append(reminders, _reminder(
-                        section="delivery",
-                        severity="INFO",
-                        title=f"Receipt delivery {delivery.delivery_number} belum punya bukti digital",
-                        message="Penerimaan sudah dicatat, tapi foto/surat jalan/bukti terima belum dilampirkan.",
-                        reference_label=delivery.delivery_number,
-                        due_date=delivery.delivery_date,
-                        action_url=_safe_url("delivery.detail", delivery_id=delivery.id),
-                        action_label="Buka Delivery",
-                        metadata={"receipt_id": receipt.id},
-                    ))
-                    count += 1
             if count >= limit:
                 return
 
 
-def _build_digital_proof_reminders(branch_id: int, reminders: Dict[str, List[Dict[str, Any]]], limit: int) -> None:
+def _build_digital_proof_reminders(
+    branch_id: int,
+    reminders: Dict[str, List[Dict[str, Any]]],
+    limit: int,
+    user: Any = None,
+) -> None:
     count = 0
+    role_raw = getattr(user, "role", None) if not isinstance(user, str) else user
+    if isinstance(user, dict):
+        role_raw = user.get("role")
+    role = effective_role(role_raw) if role_raw else None
 
-    procurements = Procurement.query.filter_by(branch_id=branch_id).order_by(Procurement.procurement_date.desc(), Procurement.id.desc()).limit(80).all()
-    for procurement in procurements:
-        proof_count = count_reference_attachments(
-            module="PROCUREMENT",
-            reference_type="PROCUREMENT",
-            reference_id=procurement.id,
-            branch_id=branch_id,
-        )
-        if proof_count <= 0:
-            _append(reminders, _reminder(
-                section="digital_proof",
-                severity="INFO",
-                title=f"Pembelian {procurement.procurement_number} belum punya nota digital",
-                message=f"Tempat belanja: {procurement.purchase_place or procurement.supplier_name or '-'}.",
-                reference_label=procurement.procurement_number,
-                due_date=procurement.procurement_date,
-                amount=procurement.total_amount,
-                action_url=_safe_url("logistics.purchase_detail", procurement_id=procurement.id),
-                action_label="Buka Pembelian",
-            ))
-            count += 1
-        if count >= limit:
-            return
+    # Pengantar ONLY sees digital proofs for their deliveries (bukti serah terima).
+    # Owner, Admin, and system sync also see Procurement and Payments.
+    if role != "PENGANTAR":
+        procurements = Procurement.query.filter_by(branch_id=branch_id).order_by(Procurement.procurement_date.desc(), Procurement.id.desc()).limit(80).all()
+        for procurement in procurements:
+            proof_count = count_reference_attachments(
+                module="PROCUREMENT",
+                reference_type="PROCUREMENT",
+                reference_id=procurement.id,
+                branch_id=branch_id,
+            )
+            if proof_count <= 0:
+                _append(reminders, _reminder(
+                    section="digital_proof",
+                    severity="INFO",
+                    title=f"Pembelian {procurement.procurement_number} belum punya nota digital",
+                    message=f"Tempat belanja: {procurement.purchase_place or procurement.supplier_name or '-'}.",
+                    reference_label=procurement.procurement_number,
+                    due_date=procurement.procurement_date,
+                    amount=procurement.total_amount,
+                    action_url=_safe_url("logistics.purchase_detail", procurement_id=procurement.id),
+                    action_label="Buka Pembelian",
+                ))
+                count += 1
+            if count >= limit:
+                return
 
-    payments = Payment.query.filter_by(branch_id=branch_id).order_by(Payment.payment_date.desc(), Payment.id.desc()).limit(80).all()
-    for payment in payments:
-        method = str(payment.payment_method or "").upper()
-        if method not in ["TRANSFER", "BANK", "QRIS"]:
-            continue
-        proof_count = count_reference_attachments(
-            module="CUSTOMER_PAYMENT",
-            reference_type="PAYMENT",
-            reference_id=payment.id,
-            branch_id=branch_id,
-        )
-        if proof_count <= 0:
-            _append(reminders, _reminder(
-                section="digital_proof",
-                severity="WARNING",
-                title=f"Payment customer {payment.payment_number} belum punya bukti transfer",
-                message="Pembayaran transfer sebaiknya punya screenshot/bukti transfer untuk audit.",
-                reference_label=payment.payment_number,
-                due_date=payment.payment_date,
-                amount=payment.amount,
-                action_url=_safe_url("finance.invoice_detail", invoice_id=payment.invoice_id),
-                action_label="Buka Invoice",
-            ))
-            count += 1
-        if count >= limit:
-            return
+        payments = Payment.query.filter_by(branch_id=branch_id).order_by(Payment.payment_date.desc(), Payment.id.desc()).limit(80).all()
+        for payment in payments:
+            method = str(payment.payment_method or "").upper()
+            if method not in ["TRANSFER", "BANK", "QRIS"]:
+                continue
+            proof_count = count_reference_attachments(
+                module="CUSTOMER_PAYMENT",
+                reference_type="PAYMENT",
+                reference_id=payment.id,
+                branch_id=branch_id,
+            )
+            if proof_count <= 0:
+                _append(reminders, _reminder(
+                    section="digital_proof",
+                    severity="WARNING",
+                    title=f"Payment customer {payment.payment_number} belum punya bukti transfer",
+                    message="Pembayaran transfer sebaiknya punya screenshot/bukti transfer untuk audit.",
+                    reference_label=payment.payment_number,
+                    due_date=payment.payment_date,
+                    amount=payment.amount,
+                    action_url=_safe_url("finance.invoice_detail", invoice_id=payment.invoice_id),
+                    action_label="Buka Invoice",
+                ))
+                count += 1
+            if count >= limit:
+                return
 
-    supplier_payments = SupplierPayment.query.filter_by(branch_id=branch_id).order_by(SupplierPayment.payment_date.desc(), SupplierPayment.id.desc()).limit(80).all()
-    for payment in supplier_payments:
-        method = str(payment.payment_method or "").upper()
-        if method not in ["TRANSFER", "BANK", "QRIS"]:
-            continue
-        proof_count = count_reference_attachments(
-            module="SUPPLIER_PAYMENT",
-            reference_type="SUPPLIER_PAYMENT",
-            reference_id=payment.id,
-            branch_id=branch_id,
-        )
-        if proof_count <= 0:
-            _append(reminders, _reminder(
-                section="digital_proof",
-                severity="WARNING",
-                title=f"Payment supplier {payment.payment_number} belum punya bukti transfer",
-                message="Pembayaran supplier via transfer sebaiknya punya bukti digital.",
-                reference_label=payment.payment_number,
-                due_date=payment.payment_date,
-                amount=payment.amount,
-                action_url=_safe_url("finance.supplier_bill_detail", bill_id=payment.supplier_bill_id),
-                action_label="Buka Hutang Supplier",
-            ))
-            count += 1
-        if count >= limit:
+        supplier_payments = SupplierPayment.query.filter_by(branch_id=branch_id).order_by(SupplierPayment.payment_date.desc(), SupplierPayment.id.desc()).limit(80).all()
+        for payment in supplier_payments:
+            method = str(payment.payment_method or "").upper()
+            if method not in ["TRANSFER", "BANK", "QRIS"]:
+                continue
+            proof_count = count_reference_attachments(
+                module="SUPPLIER_PAYMENT",
+                reference_type="SUPPLIER_PAYMENT",
+                reference_id=payment.id,
+                branch_id=branch_id,
+            )
+            if proof_count <= 0:
+                _append(reminders, _reminder(
+                    section="digital_proof",
+                    severity="WARNING",
+                    title=f"Payment supplier {payment.payment_number} belum punya bukti transfer",
+                    message="Pembayaran supplier via transfer sebaiknya punya bukti digital.",
+                    reference_label=payment.payment_number,
+                    due_date=payment.payment_date,
+                    amount=payment.amount,
+                    action_url=_safe_url("finance.supplier_bill_detail", bill_id=payment.supplier_bill_id),
+                    action_label="Buka Hutang Supplier",
+                ))
+                count += 1
+            if count >= limit:
+                return
+
+    # Bukti serah terima (DELIVERY_RECEIPT)
+    driver_ids = _get_driver_ids_for_user(branch_id, user)
+    delivery_query = Delivery.query.filter(Delivery.branch_id == branch_id)
+    if driver_ids is not None:
+        if not driver_ids:
             return
+        delivery_query = delivery_query.filter(Delivery.driver_id.in_(driver_ids))
+
+    deliveries = delivery_query.order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(80).all()
+    for delivery in deliveries:
+        for detail in delivery.details:
+            receipt = detail.receipt
+            if not receipt:
+                continue
+            proof_count = count_reference_attachments(
+                module="DELIVERY",
+                reference_type="DELIVERY_RECEIPT",
+                reference_id=receipt.id,
+                branch_id=branch_id,
+            )
+            if proof_count <= 0:
+                _append(reminders, _reminder(
+                    section="digital_proof",
+                    severity="INFO",
+                    title=f"Receipt delivery {delivery.delivery_number} belum punya bukti digital",
+                    message="Penerimaan sudah dicatat, tapi foto/surat jalan/bukti terima belum dilampirkan.",
+                    reference_label=delivery.delivery_number,
+                    due_date=delivery.delivery_date,
+                    action_url=_safe_url("delivery.detail", delivery_id=delivery.id),
+                    action_label="Buka Delivery",
+                    metadata={"receipt_id": receipt.id},
+                ))
+                count += 1
+            if count >= limit:
+                return
 
 
 def _build_cash_bank_reminders(branch_id: int, reminders: Dict[str, List[Dict[str, Any]]], limit: int) -> None:
@@ -424,39 +556,61 @@ def _build_cash_bank_reminders(branch_id: int, reminders: Dict[str, List[Dict[st
         ))
 
 
-def build_live_reminder_center(branch_id: int, *, due_days: int = 7, limit_per_section: int = 15) -> Dict[str, Any]:
+def build_live_reminder_center(
+    branch_id: int,
+    user: Any = None,
+    *,
+    due_days: int = 7,
+    limit_per_section: int = 15,
+) -> Dict[str, Any]:
     """Build live reminders from active transactional data.
 
-    Read-only. Fungsi ini tidak membuat row notifications, tidak commit database,
-    dan tidak mengubah transaksi apa pun.
+    Read-only. Filtered by role and user scope according to allowed_reminder_sections.
+    Sections not allowed for user are NOT queried at all.
     """
     today = date.today()
     try:
         due_days = max(0, min(int(due_days), 60))
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:431")
+    except (TypeError, ValueError):
         due_days = 7
+    except Exception:
+        logger.exception("Suppressed unexpected exception in live reminder due_days calculation")
+        due_days = 7
+
     try:
         limit_per_section = max(5, min(int(limit_per_section), 50))
+    except (TypeError, ValueError):
+        limit_per_section = 15
     except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:435")
+        logger.exception("Suppressed unexpected exception in live reminder limit_per_section calculation")
         limit_per_section = 15
 
-    reminders: Dict[str, List[Dict[str, Any]]] = {key: [] for key in SECTION_LABELS.keys()}
+    allowed = allowed_reminder_sections(user)
 
-    _build_receivable_reminders(branch_id, today, due_days, reminders, limit_per_section)
-    _build_payable_reminders(branch_id, today, due_days, reminders, limit_per_section)
-    _build_stock_reminders(branch_id, reminders, limit_per_section)
-    _build_hpp_order_reminders(branch_id, today, reminders, limit_per_section)
-    _build_delivery_reminders(branch_id, today, reminders, limit_per_section)
-    _build_digital_proof_reminders(branch_id, reminders, limit_per_section)
-    _build_cash_bank_reminders(branch_id, reminders, limit_per_section)
+    reminders: Dict[str, List[Dict[str, Any]]] = {key: [] for key in allowed}
+
+    if "receivable" in allowed:
+        _build_receivable_reminders(branch_id, today, due_days, reminders, limit_per_section)
+    if "payable" in allowed:
+        _build_payable_reminders(branch_id, today, due_days, reminders, limit_per_section)
+    if "stock" in allowed:
+        _build_stock_reminders(branch_id, reminders, limit_per_section)
+    if "hpp_order" in allowed:
+        _build_hpp_order_reminders(branch_id, today, reminders, limit_per_section)
+    if "delivery" in allowed:
+        _build_delivery_reminders(branch_id, today, reminders, limit_per_section, user=user)
+    if "digital_proof" in allowed:
+        _build_digital_proof_reminders(branch_id, reminders, limit_per_section, user=user)
+    if "cash_bank" in allowed:
+        _build_cash_bank_reminders(branch_id, reminders, limit_per_section)
 
     section_rows = []
     total = 0
     severity_counts = {"CRITICAL": 0, "WARNING": 0, "INFO": 0}
 
     for key, meta in SECTION_LABELS.items():
+        if key not in allowed:
+            continue
         items = reminders.get(key, [])
         for item in items:
             severity_counts[item["severity"]] += 1
@@ -503,7 +657,12 @@ def build_live_reminder_center(branch_id: int, *, due_days: int = 7, limit_per_s
     }
 
 
-def build_empty_live_reminder_center(*, due_days: int = 7, runtime_warning: Optional[str] = None) -> Dict[str, Any]:
+def build_empty_live_reminder_center(
+    user: Any = None,
+    *,
+    due_days: int = 7,
+    runtime_warning: Optional[str] = None,
+) -> Dict[str, Any]:
     """Return a safe empty reminder center when live reminder calculation fails.
 
     Read-only fallback. Dipakai supaya halaman Reminder Live tidak menjadi 500
@@ -512,12 +671,18 @@ def build_empty_live_reminder_center(*, due_days: int = 7, runtime_warning: Opti
     today = date.today()
     try:
         due_days = max(0, min(int(due_days), 60))
-    except Exception:
-        logger.exception("Suppressed unexpected exception in app/services/live_reminder_service.py:508")
+    except (TypeError, ValueError):
         due_days = 7
+    except Exception:
+        logger.exception("Suppressed unexpected exception in empty live reminder due_days calculation")
+        due_days = 7
+
+    allowed = allowed_reminder_sections(user)
 
     section_rows = []
     for key, meta in SECTION_LABELS.items():
+        if key not in allowed:
+            continue
         section_rows.append({
             "key": key,
             "title": meta["title"],
@@ -547,14 +712,20 @@ def build_empty_live_reminder_center(*, due_days: int = 7, runtime_warning: Opti
         "sections": section_rows,
     }
 
-def build_live_reminder_badge_summary(branch_id: int, *, due_days: int = 7) -> Dict[str, Any]:
+
+def build_live_reminder_badge_summary(
+    branch_id: int,
+    user: Any = None,
+    *,
+    due_days: int = 7,
+) -> Dict[str, Any]:
     """Build a compact reminder badge summary for dashboard/sidebar.
 
-    Read-only. Fungsi ini hanya membaca data aktif dan tidak menyimpan row
-    notifications agar database utama tetap clean.
+    Read-only. Filtered by role and user scope according to allowed_reminder_sections.
     """
     center = build_live_reminder_center(
         branch_id,
+        user=user,
         due_days=due_days,
         limit_per_section=15,
     )

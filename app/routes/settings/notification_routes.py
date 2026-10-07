@@ -3,11 +3,17 @@
 Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.settings_routes import *  # noqa: F401,F403
+from app.services.live_reminder_service import allowed_reminder_sections
 
 
 @settings_bp.route("/reminders")
 @role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def live_reminders():
+    allowed = allowed_reminder_sections(current_user)
+    if not allowed:
+        flash("Akses ditolak. Role kamu tidak memiliki reminder internal.", "danger")
+        return redirect(url_for("dashboard.index"))
+
     due_days_raw = (request.args.get("due_days") or "7").strip()
     try:
         due_days = max(0, min(int(due_days_raw), 60))
@@ -19,12 +25,14 @@ def live_reminders():
     try:
         reminder_center = build_live_reminder_center(
             current_user.branch_id,
+            user=current_user,
             due_days=due_days,
             limit_per_section=15,
         )
     except Exception as exc:
         current_app.logger.exception("Live reminder center failed")
         reminder_center = build_empty_live_reminder_center(
+            user=current_user,
             due_days=due_days,
             runtime_warning=f"Ada bagian reminder yang belum bisa dihitung: {exc}",
         )

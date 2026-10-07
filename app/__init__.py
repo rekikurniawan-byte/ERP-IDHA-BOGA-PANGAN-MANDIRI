@@ -314,14 +314,39 @@ def create_app():
     def inject_live_reminder_badge():
         try:
             from flask_login import current_user
-            from app.services.live_reminder_service import build_live_reminder_badge_summary
+            from app.services.live_reminder_service import allowed_reminder_sections, build_live_reminder_badge_summary
+            from app.utils.roles import effective_role
 
             if current_user.is_authenticated and role_in(current_user.role, INTERNAL_ROLES):
+                allowed = allowed_reminder_sections(current_user)
+                if not allowed:
+                    return {
+                        "global_live_reminder_badge": {
+                            "total": 0,
+                            "critical": 0,
+                            "warning": 0,
+                            "info": 0,
+                            "badge_class": "bg-success-subtle text-success border",
+                            "icon": "bi-check2-circle",
+                            "label": "Aman",
+                            "top_sections": [],
+                            "action_url": "#",
+                            "read_only": True,
+                        }
+                    }
+
+                eff_role = effective_role(current_user.role)
+                if eff_role == "PENGANTAR":
+                    cache_key = ("live_reminder_badge", current_user.branch_id, eff_role, current_user.id)
+                else:
+                    cache_key = ("live_reminder_badge", current_user.branch_id, eff_role)
+
                 return {
                     "global_live_reminder_badge": get_cached_value(
-                        ("live_reminder_badge", current_user.branch_id, current_user.role),
+                        cache_key,
                         lambda: build_live_reminder_badge_summary(
                             current_user.branch_id,
+                            user=current_user,
                             due_days=7,
                         ),
                         ttl_seconds=30,
