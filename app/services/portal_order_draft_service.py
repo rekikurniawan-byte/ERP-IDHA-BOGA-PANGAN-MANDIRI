@@ -988,6 +988,12 @@ def build_portal_draft_order_context(user):
         "today": today.strftime("%Y-%m-%d"),
         "today_sessions": today_sessions,
         "locked_dates": locked_dates,
+        "menu_schedules": (
+            __import__("app.services.menu_schedule_service", fromlist=["build_menu_schedule_json_for_order"])
+            .build_menu_schedule_json_for_order(branch_id)
+            if branch_id
+            else {}
+        ),
     }
 
 

@@ -183,7 +183,7 @@ def landing_context(today=None):
     today = today or date.today()
     branch = _safe("cabang", _main_branch)
     if not branch:
-        return {"performance": None, "arrivals": {}, "locations": None, "pricing": None, "menus": [],
+        return {"performance": None, "arrivals": {}, "locations": None, "pricing": None, "menus": [], "weekly_menus": [],
                 "cutoffs": _safe("batas pesan", _cutoffs) or {}, **_common(None)}
     return {
         **_common(branch),
@@ -192,6 +192,10 @@ def landing_context(today=None):
         "locations": _safe("lokasi", lambda: _locations(branch.id)),
         "pricing": _safe("harga", lambda: _pricing(branch.id, today)),
         "menus": _safe("menu", lambda: _menus(branch.id)) or [],
+        "weekly_menus": _safe(
+            "menu mingguan",
+            lambda: __import__("app.services.menu_schedule_service", fromlist=["get_public_weekly_menu"]).get_public_weekly_menu(branch.id, today),
+        ) or [],
         "cutoffs": _safe("batas pesan", _cutoffs) or {},
     }
 

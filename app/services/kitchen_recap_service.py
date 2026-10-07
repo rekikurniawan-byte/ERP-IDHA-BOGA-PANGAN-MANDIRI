@@ -234,10 +234,22 @@ def build_kitchen_recap_data(daily_order: DailyOrder, meal_type: str) -> dict[st
 
     print_status = get_session_print_history(daily_order, norm_meal)
 
+    from app.models.master import MenuSchedule
+
+    schedule = (
+        MenuSchedule.query.filter_by(
+            branch_id=daily_order.branch_id,
+            menu_date=daily_order.order_date,
+            meal_type=norm_meal,
+        ).first()
+    )
+    scheduled_menu_name = schedule.menu.menu_name if (schedule and schedule.menu) else None
+
     return {
         "daily_order": daily_order,
         "meal_type": norm_meal,
         "meal_label": MEAL_LABEL_MAP[norm_meal],
+        "scheduled_menu_name": scheduled_menu_name,
         "max_per_container": max_per,
         "rows": rows,
         "total_portions": total_portions,

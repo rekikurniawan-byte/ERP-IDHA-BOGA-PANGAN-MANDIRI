@@ -14,6 +14,7 @@ from app.models.master import (
     UnitConversion,
     ItemCostProfile,
     Menu,
+    MenuSchedule,
     RecipeHeader,
     RecipeItem,
     RecipeVersion,

@@ -144,6 +144,24 @@ def location_photo(label):
     buffer.seek(0)
     return (buffer, re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-") + ".jpg")
 
+
+def menu_photo(label):
+    """Foto contoh menu catering: gambar JPEG berlabel piring & hidangan dibuat Pillow."""
+    from PIL import Image, ImageDraw
+
+    seed = sum(ord(ch) for ch in label)
+    image = Image.new("RGB", (960, 640), (140 + seed % 60, 110 + seed % 40, 70 + seed % 30))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 480, 960, 640), fill=(44, 38, 34))
+    draw.ellipse((280, 140, 680, 480), fill=(245, 245, 240), outline=(210, 205, 195), width=8)
+    draw.ellipse((340, 200, 620, 430), fill=(200 + seed % 30, 80 + seed % 40, 30))
+    draw.text((40, 510), f"Menu: {label}", fill=(245, 240, 232))
+    draw.text((40, 550), "Foto contoh data demo katering", fill=(200, 190, 180))
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=80)
+    buffer.seek(0)
+    return (buffer, re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-") + ".jpg")
+
 # Bahan per porsi (dipakai dapur) dan harga beli.
 INGREDIENTS = {
     "Beras": ("kg", Decimal("0.12"), 14500),
@@ -380,8 +398,19 @@ def stage_hr_and_costing(run, ref):
         run.step(own, f"Karyawan {name}", "/hr/employees/create", data={
             "full_name": name, "join_date": joined, "phone": "0818-6600-1200", "salary_amount": str(salary), "skills": skills})
 
-    for menu, kind, price in (("Nasi Ayam Bumbu Kuning", "LUNCH", "18000"), ("Nasi Telur Balado", "DINNER", "18000")):
-        run.step(own, f"Menu {menu}", "/costing/menus/create", data={"menu_name": menu, "menu_type": kind, "default_selling_price": price, "is_active": "on"})
+    DEMO_MENUS = (
+        ("Nasi Ayam Bumbu Kuning", "LUNCH", "18000", "Ayam goreng bumbu kuning empuk dengan tahu, tempe, lalap segar, dan sambal terasi."),
+        ("Nasi Telur Balado", "DINNER", "18000", "Telur balado bumbu cabai segar pedas manis dengan tumis buncis tempe dan kerupuk."),
+        ("Nasi Rendang Sapi", "LUNCH", "24000", "Rendang daging sapi empuk kaya rempah khas Minang dengan daun singkong rebus."),
+        ("Nasi Ikan Bakar Sambal Kecap", "DINNER", "20000", "Ikan nila bakar bumbu rempah harum disajikan dengan sambal kecap pedas segar."),
+        ("Nasi Ayam Bakar Madu", "LUNCH", "19000", "Ayam bakar oles madu gurih legit dengan sambal bajak dan tempe bacem."),
+    )
+    for menu, kind, price, desc in DEMO_MENUS:
+        buf, filename = menu_photo(menu)
+        run.step(own, f"Menu {menu}", "/costing/menus/create", data={
+            "menu_name": menu, "menu_type": kind, "default_selling_price": price, "description": desc, "is_active": "on",
+            "menu_photos": (buf, filename),
+        })
     run.step(own, "Profil kemasan box", "/costing/packaging-profiles/create", data={"profile_name": "Box nasi + sendok", "cost_per_portion": "900", "is_active": "on"})
     run.step(own, "Profil overhead dapur", "/costing/overhead-profiles/create", data={
         "profile_name": "Overhead dapur standar", "gas_cost_per_portion": "1450", "electricity_cost_per_portion": "350",
@@ -394,6 +423,7 @@ def stage_hr_and_costing(run, ref):
             "cost_source": "STANDARD", "notes": f"Harga pasar {MONTHS_ID[(OPEN_DATE - timedelta(days=1)).month - 1]} {OPEN_DATE.year}"})
 
     from app.models.master import Menu
+    from app.services.menu_schedule_service import get_monday_of_week, save_menu_schedule
 
     menus = run.q(lambda: {m.menu_name: m.id for m in Menu.query.all()})
     for menu, items in (("Nasi Ayam Bumbu Kuning", (("Beras", "0.12"), ("Ayam Potong", "0.09"), ("Minyak Goreng", "0.015"))),
@@ -407,6 +437,28 @@ def stage_hr_and_costing(run, ref):
             run.step(own, f"Resep {menu}: {item}", url, data={
                 "action": "add_item", "item_id": ref["items"][item], "qty_per_portion": qty, "unit": unit, "item_notes": ""})
         run.step(own, f"Resep {menu} final", url, data={**header, "recipe_status": "FINAL"})
+
+    # Jadwal menu 2 minggu untuk cabang demo
+    monday = get_monday_of_week(NOW_DAY)
+    lunch_cycle = [menus.get("Nasi Ayam Bumbu Kuning"), menus.get("Nasi Rendang Sapi"), menus.get("Nasi Ayam Bakar Madu")]
+    lunch_cycle = [m for m in lunch_cycle if m]
+    dinner_cycle = [menus.get("Nasi Telur Balado"), menus.get("Nasi Ikan Bakar Sambal Kecap")]
+    dinner_cycle = [m for m in dinner_cycle if m]
+
+    for day_offset in range(14):
+        target_date = monday + timedelta(days=day_offset)
+        if lunch_cycle:
+            m_id = lunch_cycle[day_offset % len(lunch_cycle)]
+            run.q(lambda d=target_date, mid=m_id: save_menu_schedule(
+                branch_id=ref["branch_id"], menu_date=d, meal_type="LUNCH", menu_id=mid,
+                notes=f"Menu siang {d.strftime('%d-%m-%Y')}", commit=True
+            ))
+        if dinner_cycle:
+            m_id = dinner_cycle[day_offset % len(dinner_cycle)]
+            run.q(lambda d=target_date, mid=m_id: save_menu_schedule(
+                branch_id=ref["branch_id"], menu_date=d, meal_type="DINNER", menu_id=mid,
+                notes=f"Menu malam {d.strftime('%d-%m-%Y')}", commit=True
+            ))
     run.stop_clock()
 
 

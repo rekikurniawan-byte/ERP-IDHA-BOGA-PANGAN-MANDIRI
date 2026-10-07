@@ -1,59 +1,120 @@
-﻿{% extends "layouts/base.html" %}
+{% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="menu_form">
 {{ page_header(
     "Ubah Menu" if menu else "Tambah Menu",
-    "Menu ini dipakai sebagai dasar resep/BOM dan kalkulator HPP Mode pantau.",
+    "Menu ini dipakai sebagai dasar resep/BOM, jadwal harian pelanggan, dan kalkulator HPP.",
     eyebrow="HPP",
     actions=[{"label": "Kembali", "url": url_for('costing.menus')}]
 ) }}
 
+<div class="app-card mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Informasi Dasar Menu</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{% if menu %}{{ url_for('costing.edit_menu', menu_id=menu.id) }}{% else %}{{ url_for('costing.create_menu') }}{% endif %}" enctype="multipart/form-data" data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Nama Menu <span class="text-danger">*</span></label>
+                    <input type="text" name="menu_name" class="form-control app-input" value="{{ menu.menu_name if menu else '' }}" placeholder="Contoh: Nasi Ayam Bakar Madu" required>
+                </div>
 
+                <div class="col-md-3">
+                    <label class="form-label">Jenis Menu</label>
+                    <select name="menu_type" class="form-select app-input">
+                        {% for type in menu_types %}
+                        <option value="{{ type }}" {% if menu and menu.menu_type == type %}selected{% endif %}>{{ type|status_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-<div class="app-card">
-    <form method="POST" action="{% if menu %}{{ url_for('costing.edit_menu', menu_id=menu.id) }}{% else %}{{ url_for('costing.create_menu') }}{% endif %}" data-ui-form="true" class="app-form">
-        {% include "components/csrf_token.html" %}
-        <div class="row g-3">
-            <div class="col-md-5">
-                <label class="form-label">Nama Menu</label>
-                <input type="text" name="menu_name" class="form-control app-input" value="{{ menu.menu_name if menu else '' }}" placeholder="Contoh: Nasi Ayam Box" required>
-            </div>
+                <div class="col-md-4">
+                    <label class="form-label">Harga Jual Default / Porsi</label>
+                    <input type="number" name="default_selling_price" class="form-control app-input" value="{{ menu.default_selling_price if menu else 0 }}" min="0" step="0.01">
+                    <small class="text-muted">Dipakai sebagai default di kalkulator HPP.</small>
+                </div>
 
-            <div class="col-md-3">
-                <label class="form-label">Jenis Menu</label>
-                <select name="menu_type" class="form-select app-input">
-                    {% for type in menu_types %}
-                    <option value="{{ type }}" {% if menu and menu.menu_type == type %}selected{% endif %}>{{ type|status_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                <div class="col-md-12">
+                    <label class="form-label">Deskripsi Singkat (Tampil ke Pelanggan)</label>
+                    <textarea name="description" class="form-control app-input" rows="2" placeholder="Jelaskan menu secara menarik untuk pelanggan (lauk, sayur, sambal, pelengkap).">{{ menu.description if menu and menu.description else '' }}</textarea>
+                    <small class="text-muted">Deskripsi ini akan muncul di halaman pesan pelanggan dan landing page saat menu dijadwalkan.</small>
+                </div>
 
-            <div class="col-md-4">
-                <label class="form-label">Harga Jual Default / Porsi</label>
-                <input type="number" name="default_selling_price" class="form-control app-input" value="{{ menu.default_selling_price if menu else 0 }}" min="0" step="0.01">
-                <small class="text-muted">Dipakai sebagai default di kalkulator HPP, masih bisa dioverride.</small>
-            </div>
+                <div class="col-md-12">
+                    <label class="form-label">Catatan Internal</label>
+                    <textarea name="notes" class="form-control app-input" rows="2" placeholder="Catatan internal dapur / produksi.">{{ menu.notes if menu else '' }}</textarea>
+                </div>
 
-            <div class="col-md-12">
-                <label class="form-label">Catatan</label>
-                <textarea name="notes" class="form-control app-input" rows="3" placeholder="Catatan internal menu.">{{ menu.notes if menu else '' }}</textarea>
-            </div>
+                {# UPLOAD FOTO #}
+                <div class="col-md-12">
+                    <label class="form-label">Unggah Foto Menu (1–3 Foto)</label>
+                    {% set cur_count = menu_photos|length if menu_photos else 0 %}
+                    <p class="text-muted small mb-2">
+                        Format JPG, JPEG, PNG, atau WEBP. Foto pertama menjadi <strong>Foto Utama</strong> di halaman pemesanan dan landing page publik.
+                        Saat ini tersimpan {{ cur_count }}/3 foto.
+                    </p>
+                    {% if cur_count < 3 %}
+                        <input type="file" name="menu_photos" class="form-control app-input" accept=".jpg,.jpeg,.png,.webp" multiple>
+                    {% else %}
+                        <div class="alert alert-info py-2 small mb-0">Batas maksimal 3 foto telah tercapai. Hapus salah satu foto di bawah jika ingin mengganti.</div>
+                    {% endif %}
+                </div>
 
-            <div class="col-md-12">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if not menu or menu.is_active %}checked{% endif %}>
-                    <label class="form-check-label" for="isActive">Aktif</label>
+                <div class="col-md-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if not menu or menu.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="isActive">Menu Aktif (dapat dijadwalkan & tampil ke pelanggan)</label>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">Simpan Menu</button>
-        </div>
-    </form>
+            <div class="form-actions mt-4">
+                <button type="submit" class="btn app-btn-primary">
+                    <i class="bi bi-check2-circle me-1"></i> Simpan Menu
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+{% if menu and menu_photos %}
+<div class="app-card mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Galeri Foto Menu ({{ menu_photos|length }}/3)</h2>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            {% for photo in menu_photos %}
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="card h-100 border">
+                    <div class="position-relative" style="height: 180px; overflow: hidden; background: var(--surface-muted); border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                        <img src="{{ url_for('menu_photos.view', attachment_id=photo.id) }}" alt="Foto {{ menu.menu_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% if loop.first %}
+                            <span class="badge bg-primary position-absolute top-0 start-0 m-2">
+                                <i class="bi bi-star-fill me-1"></i> Foto Utama
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Foto #{{ loop.index }}</small>
+                        <form method="POST" action="{{ url_for('costing.delete_menu_photo_route', menu_id=menu.id, attachment_id=photo.id) }}" class="m-0" onsubmit="return confirm('Hapus foto ini?');">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Hapus foto">
+                                <i class="bi bi-trash"></i> Hapus
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 </div>
 {% endblock %}
-

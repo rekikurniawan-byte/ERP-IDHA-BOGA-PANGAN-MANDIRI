@@ -1058,3 +1058,113 @@ def container_labels(order_id, sesi):
         paper_size=paper_size,
         company=company,
     )
+
+
+@operational_bp.route("/menu-schedule", methods=["GET"])
+@role_required("ADMIN", "DAPUR")
+def menu_schedule():
+    """Halaman Jadwal Menu mingguan (grid 7 hari x Siang/Malam)."""
+    from datetime import datetime
+    from app.models.master import Menu
+    from app.services.menu_schedule_service import (
+        get_monday_of_week,
+        get_weekly_schedule_matrix,
+    )
+
+    week_str = request.args.get("week")
+    start_monday = None
+    if week_str:
+        try:
+            start_monday = datetime.strptime(week_str.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            start_monday = None
+
+    monday = get_monday_of_week(start_monday)
+    matrix = get_weekly_schedule_matrix(current_user.branch_id, monday)
+
+    active_menus = (
+        Menu.query.filter_by(branch_id=current_user.branch_id, is_active=True)
+        .order_by(Menu.menu_name.asc())
+        .all()
+    )
+
+    return render_template(
+        "operational/menu_schedule.html",
+        matrix=matrix,
+        active_menus=active_menus,
+        current_monday=monday,
+    )
+
+
+@operational_bp.route("/menu-schedule/save", methods=["POST"])
+@role_required("ADMIN", "DAPUR")
+def save_menu_schedule_slot():
+    """Simpan menu dan catatan untuk slot tanggal & sesi tertentu."""
+    from datetime import datetime
+    from app.services.menu_schedule_service import MenuScheduleError, save_menu_schedule
+
+    date_str = request.form.get("menu_date")
+    meal_type = request.form.get("meal_type")
+    menu_id_raw = request.form.get("menu_id")
+    notes = request.form.get("notes")
+    week_ref = request.form.get("week_ref")
+
+    if not date_str or not meal_type:
+        flash("Tanggal dan sesi makan wajib ditentukan.", "danger")
+        return redirect(url_for("operational.menu_schedule", week=week_ref))
+
+    try:
+        menu_date = datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
+    except ValueError:
+        flash("Format tanggal tidak valid.", "danger")
+        return redirect(url_for("operational.menu_schedule", week=week_ref))
+
+    menu_id = int(menu_id_raw) if menu_id_raw and menu_id_raw.isdigit() else None
+
+    try:
+        save_menu_schedule(
+            branch_id=current_user.branch_id,
+            menu_date=menu_date,
+            meal_type=meal_type,
+            menu_id=menu_id,
+            notes=notes,
+            acted_by=current_user.id,
+        )
+        flash("Jadwal menu berhasil disimpan.", "success")
+    except MenuScheduleError as err:
+        flash(str(err), "warning")
+
+    return redirect(url_for("operational.menu_schedule", week=week_ref or date_str))
+
+
+@operational_bp.route("/menu-schedule/copy-last-week", methods=["POST"])
+@role_required("ADMIN", "DAPUR")
+def copy_last_week_menu_schedule():
+    """Salin seluruh jadwal menu dari minggu sebelumnya ke minggu ini."""
+    from datetime import datetime
+    from app.services.menu_schedule_service import (
+        copy_previous_week_schedule,
+        get_monday_of_week,
+    )
+
+    target_week_str = request.form.get("target_week")
+    start_monday = None
+    if target_week_str:
+        try:
+            start_monday = datetime.strptime(target_week_str.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            start_monday = None
+
+    monday = get_monday_of_week(start_monday)
+    count = copy_previous_week_schedule(
+        branch_id=current_user.branch_id,
+        target_monday=monday,
+        acted_by=current_user.id,
+    )
+
+    if count > 0:
+        flash(f"Berhasil menyalin {count} jadwal menu dari minggu sebelumnya.", "success")
+    else:
+        flash("Tidak ada jadwal di minggu sebelumnya untuk disalin.", "info")
+
+    return redirect(url_for("operational.menu_schedule", week=monday.strftime("%Y-%m-%d")))

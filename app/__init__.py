@@ -110,6 +110,8 @@ def create_app():
     from app.routes.credit_routes import credit_bp
     from app.routes.public_routes import public_bp
     from app.routes.location_photo_routes import location_photo_bp
+    from app.routes.account_routes import account_bp
+    from app.routes.menu_photo_routes import menu_photo_bp
 
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(dashboard_bp)
@@ -133,6 +135,8 @@ def create_app():
     flask_app.register_blueprint(credit_bp)
     flask_app.register_blueprint(public_bp)
     flask_app.register_blueprint(location_photo_bp)
+    flask_app.register_blueprint(account_bp)
+    flask_app.register_blueprint(menu_photo_bp)
 
 
     @flask_app.before_request

@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from flask import current_app
+from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 from app.routes.settings_routes import *  # noqa: F401,F403
@@ -297,30 +298,90 @@ def reset_user_password_page(user_id):
     return render_template("settings/reset_password.html", target_user=target_user)
 
 
+@settings_bp.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    from app.services.user_profile_service import (
+        UserProfileError,
+        change_user_password as profile_change_password,
+        delete_user_avatar,
+        update_user_profile,
+        upload_user_avatar,
+    )
+
+    if getattr(current_user, "role", "").startswith("PORTAL_"):
+        return redirect(url_for("portal.profile"))
+
+    if request.method == "POST":
+        action = request.form.get("action", "update_profile")
+        if action == "upload_avatar":
+            try:
+                upload_user_avatar(current_user, request.files.get("avatar_file"))
+                flash("Foto profil berhasil diperbarui.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("settings.account"))
+
+        elif action == "delete_avatar":
+            try:
+                delete_user_avatar(current_user)
+                flash("Foto profil berhasil dihapus.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("settings.account"))
+
+        elif action == "update_profile":
+            try:
+                update_user_profile(current_user, request.form, is_portal=False)
+                flash("Data diri berhasil diperbarui.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("settings.account"))
+
+        elif action == "change_password":
+            try:
+                profile_change_password(current_user, request.form)
+                flash("Password berhasil diganti. Silakan gunakan password baru saat login berikutnya.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("settings.account", _anchor="ganti-password"))
+
+    from app.models.system import AuditLog
+
+    last_login = (
+        AuditLog.query.filter(
+            AuditLog.user_id == current_user.id,
+            AuditLog.event_type == "LOGIN_SUCCESS",
+        )
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+    last_login_at = last_login.created_at if last_login else None
+
+    return render_template(
+        "settings/account.html",
+        user=current_user,
+        last_login_at=last_login_at,
+        page_title="Akun Saya",
+    )
+
+
 @settings_bp.route("/change-password", methods=["GET", "POST"])
 @role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def change_password():
-    if request.method == "POST":
-        success, error = change_own_password(
-            current_user,
-            request.form.get("current_password"),
-            request.form.get("password"),
-            request.form.get("password_confirmation"),
-        )
+    from app.services.user_profile_service import (
+        UserProfileError,
+        change_user_password as profile_change_password,
+    )
 
-        if error:
-            flash(error, "warning")
+    if request.method == "POST":
+        try:
+            profile_change_password(current_user, request.form)
+            flash("Password berhasil diganti. Silakan gunakan password baru saat login berikutnya.", "success")
+            return redirect(url_for("dashboard.index"))
+        except (UserProfileError, ValueError) as error:
+            flash(str(error), "warning")
             return render_template("settings/change_password.html")
 
-        record_critical_audit_log(
-            module="AUTH",
-            event_type="PASSWORD_CHANGED",
-            action="UPDATE",
-            table_name="users",
-            record_id=current_user.id,
-            description="User mengganti password sendiri.",
-        )
-        flash("Password berhasil diganti. Silakan gunakan password baru saat login berikutnya.", "success")
-        return redirect(url_for("dashboard.index"))
-
     return render_template("settings/change_password.html")
+

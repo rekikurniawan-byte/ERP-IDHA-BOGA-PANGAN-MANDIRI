@@ -20,8 +20,9 @@ def create_menu_record(
     menu_name,
     menu_type,
     default_selling_price,
-    notes,
-    is_active,
+    description=None,
+    notes=None,
+    is_active=True,
     updated_by,
 ):
     menu = Menu(
@@ -30,6 +31,7 @@ def create_menu_record(
         menu_name=menu_name,
         menu_type=menu_type,
         default_selling_price=default_selling_price,
+        description=description,
         notes=notes,
         is_active=is_active,
     )
@@ -170,10 +172,11 @@ def add_recipe_item_record(recipe, *, menu, item, qty_per_portion, unit, notes, 
     return recipe, recipe_item
 
 
-def update_menu_record(menu, *, menu_name, menu_type, default_selling_price, notes, is_active):
+def update_menu_record(menu, *, menu_name, menu_type, default_selling_price, description=None, notes=None, is_active=True):
     menu.menu_name = menu_name
     menu.menu_type = menu_type
     menu.default_selling_price = default_selling_price
+    menu.description = description
     menu.notes = notes
     menu.is_active = is_active
     _commit_or_rollback()

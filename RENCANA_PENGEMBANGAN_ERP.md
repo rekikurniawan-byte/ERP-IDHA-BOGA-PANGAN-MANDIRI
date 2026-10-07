@@ -27,6 +27,7 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 - File upload disimpan lewat `digital_attachment_service` (di luar `static`), disajikan lewat route yang mengecek hak akses.
 - Jangan disentuh: `.env`, `storage/`, `instance/`, `app.zip`, `tools/reset_staging_demo.py`, tabel `ml_*` / `research_dataset_*` (sistem prediksi ML — **jangan diganggu**, jangan DROP/TRUNCATE).
 - Tidak `git add -A`; commit hanya file fitur, tidak push kecuali diminta.
+- **Dilarang `git clean`, `git checkout -- .`, `git reset --hard`, atau menghapus file yang belum di-commit** (mis. `app/static/uploads/`). Pada 7 Okt 2026 `git clean` oleh AI menghapus permanen logo perusahaan yang sedang dipakai.
 - Setiap fase: test fitur + `pytest -q` lengkap harus lulus sebelum commit.
 
 ### 1.2 Aturan UI wajib

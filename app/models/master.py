@@ -34,9 +34,14 @@ class User(BaseModel):
     full_name = db.Column(db.String(150), nullable=False)
     username = db.Column(db.String(80), nullable=False, unique=True)
     email = db.Column(db.String(150), nullable=True, unique=True, index=True)
+    phone = db.Column(db.String(30), nullable=True)
+    address = db.Column(db.Text, nullable=True)
+    avatar_attachment_id = db.Column(db.Integer, db.ForeignKey("digital_attachments.id"), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(30), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    avatar = db.relationship("DigitalAttachment", foreign_keys=[avatar_attachment_id], lazy="joined")
 
     def get_id(self):
         return str(self.id)
@@ -240,6 +245,7 @@ class Menu(BaseModel):
     menu_name = db.Column(db.String(150), nullable=False)
     menu_type = db.Column(db.String(50), nullable=False, default="CATERING")
     default_selling_price = db.Column(db.Numeric(18, 2), nullable=False, default=0)
+    description = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -248,6 +254,24 @@ class Menu(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("branch_id", "menu_name", name="uq_menus_branch_name"),
     )
+
+
+class MenuSchedule(BaseModel):
+    __tablename__ = "menu_schedules"
+
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False, index=True)
+    menu_date = db.Column(db.Date, nullable=False, index=True)
+    meal_type = db.Column(db.String(20), nullable=False, index=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey("menus.id"), nullable=False, index=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    branch = db.relationship("Branch", foreign_keys=[branch_id], lazy="joined")
+    menu = db.relationship("Menu", foreign_keys=[menu_id], lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint("branch_id", "menu_date", "meal_type", name="uq_menu_schedule_branch_date_meal"),
+    )
+
 
 
 class RecipeHeader(BaseModel):

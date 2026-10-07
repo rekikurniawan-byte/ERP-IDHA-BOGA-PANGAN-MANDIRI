@@ -145,7 +145,8 @@
                 <section class="po-step"
                          data-today="{{ context.today }}"
                          data-today-sessions='{{ context.today_sessions|tojson }}'
-                         data-locked-dates='{{ context.locked_dates|tojson }}'>
+                         data-locked-dates='{{ context.locked_dates|tojson }}'
+                         data-menu-schedules='{{ (context.menu_schedules or {})|tojson }}'>
                     <header><span class="po-num">1</span><h2>Kapan diantar?</h2></header>
                     <div class="po-when">
                         <label class="po-field">
@@ -160,12 +161,27 @@
                                     <label class="po-seg{% if is_today_closed %} is-disabled{% endif %}" data-meal-type="{{ value }}">
                                         <input type="radio" name="meal_type" value="{{ value }}" {% if is_today_closed %}disabled{% elif loop.first %}checked{% endif %} data-meal-label="{{ label }}">
                                         <span>
-                                            <i class="bi bi-{{ 'sun' if value == 'LUNCH' else ('moon-stars' if value == 'DINNER' else 'cup-hot') }}"></i>
-                                            {{ label }}
-                                            <small class="po-seg-badge{% if not is_today_closed %} d-none{% endif %}">Sudah tutup</small>
+                                             <i class="bi bi-{{ 'sun' if value == 'LUNCH' else ('moon-stars' if value == 'DINNER' else 'cup-hot') }}"></i>
+                                             {{ label }}
+                                             <small class="po-seg-badge{% if not is_today_closed %} d-none{% endif %}">Sudah tutup</small>
                                         </span>
                                     </label>
                                 {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="po-scheduled-menu-wrap" data-menu-card-wrap style="margin-top: var(--space-3);">
+                        <div class="po-scheduled-menu-card" data-menu-card style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3); display: flex; gap: var(--space-3); align-items: flex-start;">
+                            <div data-menu-photo-container style="width: 72px; height: 72px; min-width: 72px; border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-egg-fried" style="font-size: 1.75rem; color: var(--text-muted);" data-menu-photo-placeholder></i>
+                                <img src="" alt="Foto Menu" data-menu-photo style="width: 100%; height: 100%; object-fit: cover; display: none;" loading="lazy">
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+                                    <span style="font-size: var(--text-xs); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-solid);" data-menu-badge>Menu Sesi Ini</span>
+                                </div>
+                                <strong style="display: block; font-size: var(--text-base); color: var(--text); margin-bottom: 4px;" data-menu-title>Menu akan diinformasikan</strong>
+                                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.4;" data-menu-desc>Pilih tanggal dan sesi makan untuk melihat menu pilihan dapur.</p>
                             </div>
                         </div>
                     </div>

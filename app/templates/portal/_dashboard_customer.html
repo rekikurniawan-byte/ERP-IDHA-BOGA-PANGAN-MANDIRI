@@ -38,8 +38,43 @@
         {{ ph_kpi("bi-bag-check", "brand", "Pesanan saya", orders.total, orders.pending ~ " menunggu admin", url_for('portal.customer_order_history')) }}
         {{ ph_kpi("bi-hourglass-split", "warning", "Menunggu admin", orders.pending, "dicek setelah bayar", url_for('portal.customer_order')) }}
         {{ ph_kpi("bi-truck", "success", "Sudah diterima", received, (on_the_way ~ " sedang diantar"), url_for('portal.customer_tracking')) }}
-        {{ ph_kpi("bi-chat-square-text", "info", "Komplain aktif", complaints.open_count or 0, (notifications.unread or 0) ~ " notifikasi baru", url_for('portal.customer_complaints')) }}
     </div>
+
+    {% if data.today_tomorrow_menus %}
+    <section class="ph-panel" style="margin-bottom: var(--space-4);">
+        <header class="ph-panel-head">
+            <div>
+                <h2><i class="bi bi-calendar-check me-2" style="color: var(--brand-solid);"></i>Menu Hari Ini &amp; Besok</h2>
+                <p>Jadwal menu hidangan yang disiapkan dapur untuk Anda.</p>
+            </div>
+            <a href="{{ url_for('portal.customer_order') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bag-plus"></i> Pesan Sekarang</a>
+        </header>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-4);">
+            {% for item in data.today_tomorrow_menus %}
+            <article style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3); display: flex; gap: var(--space-3); align-items: center;">
+                <div style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); display: flex; align-items: center; justify-content: center;">
+                    {% if item.photo_id %}
+                        <img src="{{ url_for('menu_photos.view_photo', attachment_id=item.photo_id) }}" alt="{{ item.menu_name }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                    {% else %}
+                        <i class="bi bi-egg-fried" style="font-size: 1.5rem; color: var(--text-muted);"></i>
+                    {% endif %}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: var(--space-1); margin-bottom: 2px;">
+                        <span class="badge" style="background: var(--brand-subtle); color: var(--brand-solid); font-size: var(--text-xs); border-radius: var(--radius); padding: 2px 6px;">{{ item.date_label }} · {{ item.meal_label }}</span>
+                    </div>
+                    <strong style="display: block; font-size: var(--text-sm); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.menu_name or "Akan diinformasikan" }}</strong>
+                    {% if item.description %}
+                        <small style="display: block; color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.description }}</small>
+                    {% else %}
+                        <small style="display: block; color: var(--text-muted); font-size: var(--text-xs);">{{ "Menu dapur" if item.scheduled else "Belum dijadwalkan" }}</small>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
     <div class="ph-grid">
         <section class="ph-panel">

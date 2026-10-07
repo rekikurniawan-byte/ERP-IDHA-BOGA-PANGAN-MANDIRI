@@ -210,12 +210,15 @@ def _role_dashboard_data(persona, *, include_center=False):
         # Beranda (portal/_dashboard_*.html) hanya membaca data.center dan
         # data.scope; command center sudah membangun pesanan, tagihan,
         # pembayaran, dan hutang sendiri -- jangan dibangun dua kali.
+        from app.services.menu_schedule_service import get_customer_today_tomorrow_menu
+
         return {
             "persona": persona,
             "active_role": current_user.role,
             "branch_id": current_user.branch_id,
             "scope": build_portal_access_scope(current_user),
             "center": build_portal_command_center(current_user),
+            "today_tomorrow_menus": get_customer_today_tomorrow_menu(current_user.branch_id),
         }
     user = current_user._get_current_object()
     year, month = request.args.get("year"), request.args.get("month")
@@ -962,23 +965,79 @@ def addresses():
 @portal_bp.route("/profile", methods=["GET", "POST"])
 @role_required(*PORTAL_READONLY_ROLES)
 def profile():
+    from app.services.user_profile_service import (
+        UserProfileError,
+        change_user_password as profile_change_password,
+        delete_user_avatar,
+        update_user_profile,
+        upload_user_avatar,
+    )
+
     if request.method == "POST":
-        new_email = request.form.get("email")
-        current_password = request.form.get("current_password")
-        success, error = update_portal_user_email(current_user, new_email, current_password)
-        if error:
-            flash(error, "danger")
+        action = request.form.get("action")
+        if action == "upload_avatar":
+            try:
+                upload_user_avatar(current_user, request.files.get("avatar_file"))
+                flash("Foto profil berhasil diperbarui.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("portal.profile"))
+
+        elif action == "delete_avatar":
+            try:
+                delete_user_avatar(current_user)
+                flash("Foto profil berhasil dihapus.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("portal.profile"))
+
+        elif action == "change_password":
+            try:
+                profile_change_password(current_user, request.form)
+                flash("Password berhasil diganti.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "warning")
+            return redirect(url_for("portal.profile", _anchor="ganti-password"))
+
+        elif action == "update_profile" or request.form.get("full_name"):
+            try:
+                update_user_profile(current_user, request.form, is_portal=True)
+                flash("Data diri berhasil diperbarui.", "success")
+            except (UserProfileError, ValueError) as error:
+                flash(str(error), "danger")
+            return redirect(url_for("portal.profile"))
+
         else:
-            flash("Email akun portal berhasil diperbarui.", "success")
-        return redirect(url_for("portal.profile"))
+            # Backward compatibility for direct email submit
+            new_email = request.form.get("email")
+            current_password = request.form.get("current_password")
+            success, error = update_portal_user_email(current_user, new_email, current_password)
+            if error:
+                flash(error, "danger")
+            else:
+                flash("Email akun portal berhasil diperbarui.", "success")
+            return redirect(url_for("portal.profile"))
+
+    from app.models.system import AuditLog
+
+    last_login = (
+        AuditLog.query.filter(
+            AuditLog.user_id == current_user.id,
+            AuditLog.event_type == "LOGIN_SUCCESS",
+        )
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+    last_login_at = last_login.created_at if last_login else None
 
     return render_template(
         "portal/profile.html",
         data={
             **_role_dashboard_data(_current_portal_persona()),
             "profile": build_portal_profile(current_user),
-            "page_title": "Profil Portal",
-            "page_description": "Akses akun portal terhadap data master.",
+            "last_login_at": last_login_at,
+            "page_title": "Akun Saya",
+            "page_description": "Kelola data diri, foto profil, dan keamanan akun portal Anda.",
         },
     )
 

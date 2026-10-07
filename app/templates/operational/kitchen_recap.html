@@ -5,7 +5,7 @@
     <div class="page-header no-print">
         <div>
             <span class="eyebrow">Operasional Dapur | Siap Cetak</span>
-            <h1>Rekap Dapur — Sesi {{ recap.meal_label }}</h1>
+            <h1>Rekap Dapur — Sesi {{ recap.meal_label }}{% if recap.scheduled_menu_name %}: {{ recap.scheduled_menu_name }}{% endif %}</h1>
             <p>Tanggal order: {{ recap.daily_order.order_date.strftime('%d-%m-%Y') }} | Order: {{ recap.daily_order.order_number }}</p>
         </div>
         <div class="page-actions">
@@ -42,6 +42,9 @@
             <div class="text-end">
                 <h3 class="mb-1">REKAP OPERASIONAL DAPUR</h3>
                 <div class="badge bg-dark text-white px-2 py-1 mb-2 fs-6">SESI {{ recap.meal_label|upper }}</div>
+                {% if recap.scheduled_menu_name %}
+                    <div class="fw-bold fs-6 text-primary mb-1">Menu: {{ recap.scheduled_menu_name }}</div>
+                {% endif %}
                 <p class="mb-0"><strong>Tanggal:</strong> {{ recap.daily_order.order_date.strftime('%d-%m-%Y') }}</p>
                 <p class="mb-0"><strong>No Order:</strong> {{ recap.daily_order.order_number }}</p>
                 <p class="mb-0"><strong>Waktu Kunci:</strong> {{ recap.daily_order.locked_at.strftime('%d-%m-%Y %H:%M') if recap.daily_order.locked_at else '-' }} WIB</p>

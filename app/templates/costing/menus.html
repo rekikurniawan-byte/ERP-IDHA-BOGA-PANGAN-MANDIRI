@@ -102,9 +102,21 @@
                 {% for menu in menus %}
                 <tr>
                     <td>
-                        <strong>{{ menu.menu_code }}</strong><br>
-                        <span>{{ menu.menu_name }}</span>
-                        {% if menu.notes %}<br><small class="text-muted">{{ menu.notes }}</small>{% endif %}
+                        <div class="d-flex align-items-center gap-2">
+                            {% set photo = primary_photos.get(menu.id) if primary_photos else None %}
+                            {% if photo %}
+                                <img src="{{ url_for('menu_photos.view', attachment_id=photo.id) }}" alt="{{ menu.menu_name }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius); flex-shrink: 0;">
+                            {% else %}
+                                <div style="width: 44px; height: 44px; border-radius: var(--radius); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted);">
+                                    <i class="bi bi-card-image"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <strong>{{ menu.menu_code }}</strong><br>
+                                <span>{{ menu.menu_name }}</span>
+                                {% if menu.description %}<br><small class="text-muted d-inline-block text-truncate" style="max-width: 200px;">{{ menu.description }}</small>{% endif %}
+                            </div>
+                        </div>
                     </td>
                     <td>{{ menu.menu_type|status_label }}</td>
                     <td>{{ menu.default_selling_price|rupiah }} / porsi</td>

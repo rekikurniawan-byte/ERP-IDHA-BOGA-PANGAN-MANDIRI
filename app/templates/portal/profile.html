@@ -2,36 +2,165 @@
 {% from "components/page_header.html" import portal_page_header %}
 
 {% block content %}
-<!-- {{ data.profile.scope_mode }} -->
 <section class="page-section">
     {{ portal_page_header(
-        "Profil Portal",
-        "Akses akun portal terhadap data master .",
+        "Akun Saya",
+        "Kelola data diri, foto profil, dan keamanan akun portal Anda.",
         status_label=data.status_label,
         link_label="Dashboard Saya",
         link_url=url_for('portal.my_dashboard')
     ) }}
 
-    <div class="app-card">
+    {# 1. FOTO PROFIL #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Foto Profil</h2>
+        </div>
+        <div class="card-body">
+            <div class="account-avatar-card">
+                <div class="account-avatar-large">
+                    {% if current_user.avatar_attachment_id %}
+                        <img src="{{ url_for('account.avatar', user_id=current_user.id) }}" alt="Foto profil {{ current_user.full_name or current_user.username }}">
+                    {% else %}
+                        {{ (current_user.full_name or current_user.username or "U")[0] }}
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <p class="text-muted small mb-3">
+                        Gunakan foto format JPG, PNG, atau WEBP (maks. 5MB). Foto akan dipotong melingkar secara proporsional dan ditampilkan pada navigasi.
+                    </p>
+                    <div class="account-btn-group">
+                        <form method="POST" action="{{ url_for('portal.profile') }}" enctype="multipart/form-data" class="d-inline-block m-0">
+                            {% include "components/csrf_token.html" %}
+                            <input type="hidden" name="action" value="upload_avatar">
+                            <label class="btn app-btn-secondary btn-sm mb-0">
+                                <i class="bi bi-upload me-1"></i> Unggah Foto
+                                <input type="file" name="avatar_file" accept=".jpg,.jpeg,.png,.webp" class="d-none" onchange="this.form.submit()">
+                            </label>
+                        </form>
+                        {% if current_user.avatar_attachment_id %}
+                            <form method="POST" action="{{ url_for('portal.profile') }}" class="d-inline-block m-0">
+                                {% include "components/csrf_token.html" %}
+                                <input type="hidden" name="action" value="delete_avatar">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Hapus foto profil dan gunakan inisial nama?')">
+                                    <i class="bi bi-trash me-1"></i> Hapus Foto
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 2. DATA DIRI #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Data Diri</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('portal.profile') }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="action" value="update_profile">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="full_name">Nama Lengkap <span class="text-danger">*</span></label>
+                        <input type="text" id="full_name" name="full_name" class="form-control app-input" value="{{ current_user.full_name }}" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="phone">No. Handphone / WhatsApp</label>
+                        <input type="tel" id="phone" name="phone" class="form-control app-input" value="{{ current_user.phone or '' }}" placeholder="Contoh: 08123456789">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="address">Alamat (Opsional)</label>
+                        <textarea id="address" name="address" class="form-control app-input" rows="2" placeholder="Alamat domisili atau operasional">{{ current_user.address or '' }}</textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                        <input type="email" id="email" name="email" class="form-control app-input" required value="{{ current_user.email or '' }}" placeholder="nama@email.com">
+                        <div class="form-text small text-muted">Email wajib untuk akun portal. Mengubah email memerlukan konfirmasi password saat ini.</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="current_password_email">Password Saat Ini</label>
+                        <input type="password" id="current_password_email" name="current_password" class="form-control app-input" placeholder="Wajib diisi jika mengubah email" autocomplete="current-password">
+                    </div>
+                    <div class="col-12">
+                        <div class="account-btn-group">
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-check2-circle me-1"></i> Simpan Data Diri
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# 3. GANTI PASSWORD #}
+    <div class="app-card mb-4" id="ganti-password">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Ganti Password</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Password baru minimal 8 karakter. Pastikan password kuat dan berbeda dari password lama Anda.
+            </p>
+            <form method="POST" action="{{ url_for('portal.profile') }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="action" value="change_password">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_current">Password Saat Ini <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_current" name="current_password" class="form-control app-input" required autocomplete="current-password" placeholder="Password lama">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_new">Password Baru <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_new" name="password" class="form-control app-input" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_confirm">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_confirm" name="password_confirmation" class="form-control app-input" required minlength="8" autocomplete="new-password" placeholder="Ulangi password baru">
+                    </div>
+                    <div class="col-12">
+                        <div class="account-btn-group">
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-shield-lock me-1"></i> Ganti Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# 4. INFORMASI AKUN (BACA SAJA) #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Informasi Akun Portal</h2>
+        </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Username</div>
+                    <div class="fw-semibold">{{ current_user.username }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Peran</div>
                     <div class="fw-semibold">{{ data.profile.role|role_label }}</div>
                 </div>
-                <div class="col-12 col-md-3">
-                    <div class="text-muted small text-uppercase fw-bold">Email</div>
-                    <div class="fw-semibold">{{ current_user.email or 'Belum diisi' }}</div>
-                </div>
-                <div class="col-12 col-md-2">
+                <div class="col-12 col-sm-6 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Cabang</div>
-                    <div class="fw-semibold">{{ data.profile.branch_id or '-' }}</div>
+                    <div class="fw-semibold">{{ current_user.branch.name if current_user.branch else data.profile.branch_id or '-' }}</div>
                 </div>
-                <div class="col-12 col-md-2">
-                    <div class="text-muted small text-uppercase fw-bold">Akses akun</div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Terakhir Login</div>
+                    <div class="fw-semibold">{{ data.last_login_at.strftime('%d %b %Y %H:%M WIB') if data.last_login_at else '-' }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Akses Akun</div>
                     <div class="fw-semibold">{{ "Aktif" if data.profile.allowed else "Belum aktif" }}</div>
                 </div>
-                <div class="col-12 col-md-2">
+                <div class="col-12 col-sm-6 col-md-3">
                     <div class="text-muted small text-uppercase fw-bold">Jenis Akses</div>
                     <div class="fw-semibold">{{ data.profile.access_levels|join(', ') if data.profile.access_levels else '-' }}</div>
                 </div>
@@ -39,35 +168,17 @@
             {% if data.profile.reason %}
                 <p class="text-muted mb-0 mt-3">{{ data.profile.reason }}</p>
             {% endif %}
+            <p class="text-muted small mb-0 mt-3">
+                <i class="bi bi-info-circle me-1"></i> Username, peran, dan cabang ditetapkan oleh Administrator dan tidak dapat diubah sendiri.
+            </p>
         </div>
     </div>
 
-    <div class="app-card mt-3">
-        <div class="card-body">
-            <h2 class="h5 mb-2">Email Akun</h2>
-            <p class="text-muted small mb-3">Lengkapi atau perbarui email Anda agar dapat mereset password jika lupa dan menerima informasi tagihan.</p>
-            <form method="POST" action="{{ url_for('portal.update_profile_email') }}" class="app-form" data-ui-form="true">
-                {% include "components/csrf_token.html" %}
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label class="form-label">Email <span class="text-danger">*</span></label>
-                        <input type="email" name="email" class="form-control app-input" required value="{{ current_user.email or '' }}" placeholder="nama@email.com">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label">Password Saat Ini <span class="text-danger">*</span></label>
-                        <input type="password" name="current_password" class="form-control app-input" required autocomplete="current-password" placeholder="Konfirmasi password saat ini">
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn app-btn-primary">
-                            <i class="bi bi-check2-circle me-1"></i> Simpan Email
-                        </button>
-                    </div>
-                </div>
-            </form>
+    {# 5. RINGKASAN & TABEL AKSES TERHUBUNG #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Area Terhubung</h2>
         </div>
-    </div>
-
-    <div class="app-card mt-3">
         <div class="card-body">
             <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
@@ -100,9 +211,11 @@
         </div>
     </div>
 
-    <div class="app-card mt-3">
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Daftar Akses Terhubung</h2>
+        </div>
         <div class="card-body">
-            <h2 class="h5 mb-3">Akses Aktif</h2>
             <div class="table-responsive app-table-wrapper">
                 <table class="table app-table align-middle mb-0">
                     <thead>
@@ -139,4 +252,3 @@
     </div>
 </section>
 {% endblock %}
-

@@ -15,6 +15,12 @@
                 <i class="bi bi-person-workspace"></i>
                 <span>Dashboard Saya</span>
             </a>
+            <a href="{{ url_for('portal.profile') }}"
+               class="sidebar-link sidebar-sublink {{ 'active' if endpoint == 'portal.profile' else '' }}"
+               aria-current="{{ 'page' if endpoint == 'portal.profile' else 'false' }}">
+                <i class="bi bi-person-circle"></i>
+                <span>Akun Saya</span>
+            </a>
 
             {% if role == "PORTAL_CUSTOMER" %}
                 <a href="{{ url_for('portal.customer_order') }}"

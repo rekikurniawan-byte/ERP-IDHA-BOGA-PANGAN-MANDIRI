@@ -1,0 +1,165 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header-main">
+            <span class="page-eyebrow">Pengaturan Akun</span>
+            <h1 class="page-title">Akun Saya</h1>
+            <p class="page-description">Kelola foto profil, data diri, dan keamanan akun Anda.</p>
+        </div>
+    </div>
+
+    {# 1. FOTO PROFIL #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Foto Profil</h2>
+        </div>
+        <div class="card-body">
+            <div class="account-avatar-card">
+                <div class="account-avatar-large">
+                    {% if current_user.avatar_attachment_id %}
+                        <img src="{{ url_for('account.avatar', user_id=current_user.id) }}" alt="Foto profil {{ current_user.full_name or current_user.username }}">
+                    {% else %}
+                        {{ (current_user.full_name or current_user.username or "U")[0] }}
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <p class="text-muted small mb-3">
+                        Gunakan foto format JPG, PNG, atau WEBP (maks. 5MB). Foto akan dipotong melingkar secara proporsional dan ditampilkan pada navigasi.
+                    </p>
+                    <div class="account-btn-group">
+                        <form method="POST" action="{{ url_for('settings.account') }}" enctype="multipart/form-data" class="d-inline-block m-0">
+                            {% include "components/csrf_token.html" %}
+                            <input type="hidden" name="action" value="upload_avatar">
+                            <label class="btn app-btn-secondary btn-sm mb-0">
+                                <i class="bi bi-upload me-1"></i> Unggah Foto
+                                <input type="file" name="avatar_file" accept=".jpg,.jpeg,.png,.webp" class="d-none" onchange="this.form.submit()">
+                            </label>
+                        </form>
+                        {% if current_user.avatar_attachment_id %}
+                            <form method="POST" action="{{ url_for('settings.account') }}" class="d-inline-block m-0">
+                                {% include "components/csrf_token.html" %}
+                                <input type="hidden" name="action" value="delete_avatar">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Hapus foto profil dan gunakan inisial nama?')">
+                                    <i class="bi bi-trash me-1"></i> Hapus Foto
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 2. DATA DIRI #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Data Diri</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings.account') }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="action" value="update_profile">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="full_name">Nama Lengkap <span class="text-danger">*</span></label>
+                        <input type="text" id="full_name" name="full_name" class="form-control app-input" value="{{ current_user.full_name }}" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="phone">No. Handphone / WhatsApp</label>
+                        <input type="tel" id="phone" name="phone" class="form-control app-input" value="{{ current_user.phone or '' }}" placeholder="Contoh: 08123456789">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="address">Alamat (Opsional)</label>
+                        <textarea id="address" name="address" class="form-control app-input" rows="2" placeholder="Alamat domisili atau operasional">{{ current_user.address or '' }}</textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" name="email" class="form-control app-input" value="{{ current_user.email or '' }}" placeholder="nama@perusahaan.com">
+                        <div class="form-text small text-muted">Mengubah alamat email memerlukan konfirmasi password saat ini.</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="current_password_email">Password Saat Ini</label>
+                        <input type="password" id="current_password_email" name="current_password" class="form-control app-input" placeholder="Wajib diisi jika mengubah email" autocomplete="current-password">
+                    </div>
+                    <div class="col-12">
+                        <div class="account-btn-group">
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-check2-circle me-1"></i> Simpan Data Diri
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# 3. GANTI PASSWORD #}
+    <div class="app-card mb-4" id="ganti-password">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Ganti Password</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Password baru minimal 8 karakter. Pastikan password kuat dan berbeda dari password lama Anda.
+            </p>
+            <form method="POST" action="{{ url_for('settings.account') }}" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="action" value="change_password">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_current">Password Saat Ini <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_current" name="current_password" class="form-control app-input" required autocomplete="current-password" placeholder="Password lama">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_new">Password Baru <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_new" name="password" class="form-control app-input" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="pwd_confirm">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                        <input type="password" id="pwd_confirm" name="password_confirmation" class="form-control app-input" required minlength="8" autocomplete="new-password" placeholder="Ulangi password baru">
+                    </div>
+                    <div class="col-12">
+                        <div class="account-btn-group">
+                            <button type="submit" class="btn app-btn-primary">
+                                <i class="bi bi-shield-lock me-1"></i> Ganti Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# 4. INFORMASI AKUN (BACA SAJA) #}
+    <div class="app-card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Informasi Akun</h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Username</div>
+                    <div class="fw-semibold">{{ current_user.username }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Peran (Role)</div>
+                    <div class="fw-semibold">{{ current_user.role|role_label }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Cabang</div>
+                    <div class="fw-semibold">{{ current_user.branch.name if current_user.branch else '-' }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold">Terakhir Login</div>
+                    <div class="fw-semibold">{{ last_login_at.strftime('%d %b %Y %H:%M WIB') if last_login_at else '-' }}</div>
+                </div>
+            </div>
+            <p class="text-muted small mb-0 mt-3">
+                <i class="bi bi-info-circle me-1"></i> Username, peran, dan cabang ditetapkan oleh Administrator dan tidak dapat diubah sendiri.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

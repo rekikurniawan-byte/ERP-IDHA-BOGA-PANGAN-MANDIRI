@@ -252,10 +252,15 @@ def validate_user_payload(form, existing_user=None, current_user=None):
         if active_owner_count(exclude_user_id=existing_user.id) <= 0:
             return None, "Tidak boleh menonaktifkan OWNER terakhir."
 
+    phone = clean_text(form.get("phone")) or None
+    address = clean_text(form.get("address")) or None
+
     return {
         "full_name": full_name,
         "username": username,
         "email": email or None,
+        "phone": phone,
+        "address": address,
         "role": role,
         "branch_id": branch_id,
         "is_active": is_active,
@@ -278,6 +283,8 @@ def create_user(form, acted_by=None):
         full_name=payload["full_name"],
         username=payload["username"],
         email=payload.get("email"),
+        phone=payload.get("phone"),
+        address=payload.get("address"),
         role=payload["role"],
         branch_id=payload["branch_id"],
         is_active=payload["is_active"],
@@ -299,6 +306,10 @@ def update_user(user, form, current_user):
     user.full_name = payload["full_name"]
     user.username = payload["username"]
     user.email = payload.get("email")
+    if "phone" in form:
+        user.phone = payload.get("phone")
+    if "address" in form:
+        user.address = payload.get("address")
     user.role = payload["role"]
     user.branch_id = payload["branch_id"]
     user.is_active = payload["is_active"]
@@ -342,7 +353,7 @@ def reset_user_password(user, new_password, confirmation, current_user):
     return True, None
 
 
-def change_own_password(user, current_password, new_password, confirmation):
+def change_own_password(user, current_password, new_password, confirmation, *, commit=True):
     if not check_password_hash(user.password_hash, current_password or ""):
         return False, "Password lama tidak sesuai."
 
@@ -354,7 +365,8 @@ def change_own_password(user, current_password, new_password, confirmation):
         return False, "Password baru tidak boleh sama dengan password lama."
 
     user.password_hash = generate_password_hash(new_password)
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return True, None
 
 

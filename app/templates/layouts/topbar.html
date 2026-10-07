@@ -25,7 +25,13 @@
 
         <div class="dropdown user-menu-dropdown">
             <button class="user-chip user-chip-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu user">
-                <span class="user-avatar">{{ (current_user.full_name or current_user.username or "U")[0] }}</span>
+                <span class="user-avatar">
+                    {% if current_user.avatar_attachment_id %}
+                        <img src="{{ url_for('account.avatar', user_id=current_user.id) }}" alt="Avatar" class="user-avatar-img">
+                    {% else %}
+                        {{ (current_user.full_name or current_user.username or "U")[0] }}
+                    {% endif %}
+                </span>
                 <span class="user-info d-none d-md-block">
                     <span class="user-name">{{ current_user.full_name or current_user.username }}</span>
                     <span class="user-role">{{ current_user.role|role_label }}</span>
@@ -38,7 +44,11 @@
                     <span>{{ current_user.role|role_label }}</span>
                 </div>
                 <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{{ url_for('settings.change_password') }}">
+                <a class="dropdown-item" href="{{ url_for('portal.profile') if current_user.role.startswith('PORTAL_') else url_for('settings.account') }}">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <span>Akun Saya</span>
+                </a>
+                <a class="dropdown-item" href="{{ url_for('portal.profile') ~ '#ganti-password' if current_user.role.startswith('PORTAL_') else url_for('settings.account') ~ '#ganti-password' }}">
                     <i class="bi bi-shield-lock" aria-hidden="true"></i>
                     <span>Ganti Password</span>
                 </a>

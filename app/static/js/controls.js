@@ -600,10 +600,58 @@
         const todayStr = step1 ? (step1.dataset.today || "") : "";
         let todaySessions = {};
         let lockedDates = [];
+        let menuSchedules = {};
         try {
             if (step1 && step1.dataset.todaySessions) todaySessions = JSON.parse(step1.dataset.todaySessions);
             if (step1 && step1.dataset.lockedDates) lockedDates = JSON.parse(step1.dataset.lockedDates);
+            if (step1 && step1.dataset.menuSchedules) menuSchedules = JSON.parse(step1.dataset.menuSchedules);
         } catch (e) {}
+
+        const menuWrap = form.querySelector("[data-menu-card-wrap]");
+        const menuTitle = form.querySelector("[data-menu-title]");
+        const menuDesc = form.querySelector("[data-menu-desc]");
+        const menuPhoto = form.querySelector("[data-menu-photo]");
+        const menuPlaceholder = form.querySelector("[data-menu-photo-placeholder]");
+        const menuBadge = form.querySelector("[data-menu-badge]");
+
+        function updateMenuDisplay() {
+            if (!menuWrap || !dateInput) return;
+            const chosenDate = dateInput.value;
+            const mealRadio = form.querySelector("input[name=meal_type]:checked");
+            const chosenMeal = mealRadio ? mealRadio.value : "";
+            if (!chosenDate || !chosenMeal) {
+                if (menuTitle) menuTitle.textContent = "Menu akan diinformasikan";
+                if (menuDesc) menuDesc.textContent = "Pilih tanggal dan sesi makan untuk melihat menu.";
+                if (menuBadge) menuBadge.textContent = "Informasi Menu";
+                if (menuPhoto) menuPhoto.style.display = "none";
+                if (menuPlaceholder) menuPlaceholder.style.display = "block";
+                return;
+            }
+            const key = chosenDate + "_" + chosenMeal;
+            const item = menuSchedules[key];
+            if (item && item.menu_name) {
+                if (menuTitle) menuTitle.textContent = "Menu: " + item.menu_name;
+                if (menuDesc) menuDesc.textContent = item.description || "Menu lezat pilihan dapur untuk Anda.";
+                if (menuBadge) menuBadge.textContent = "Menu Terjadwal";
+                if (item.photo_id) {
+                    if (menuPhoto) {
+                        menuPhoto.src = "/menu-photos/" + item.photo_id;
+                        menuPhoto.alt = item.menu_name;
+                        menuPhoto.style.display = "block";
+                    }
+                    if (menuPlaceholder) menuPlaceholder.style.display = "none";
+                } else {
+                    if (menuPhoto) menuPhoto.style.display = "none";
+                    if (menuPlaceholder) menuPlaceholder.style.display = "block";
+                }
+            } else {
+                if (menuTitle) menuTitle.textContent = "Menu akan diinformasikan";
+                if (menuDesc) menuDesc.textContent = "Menu untuk tanggal dan sesi ini belum dijadwalkan oleh dapur.";
+                if (menuBadge) menuBadge.textContent = "Informasi Menu";
+                if (menuPhoto) menuPhoto.style.display = "none";
+                if (menuPlaceholder) menuPlaceholder.style.display = "block";
+            }
+        }
 
         function updateSessions() {
             if (!dateInput) return;
@@ -650,12 +698,14 @@
                 const firstOpen = form.querySelector(".po-seg[data-meal-type] input[name=meal_type]:not(:disabled)");
                 if (firstOpen) firstOpen.checked = true;
             }
+            updateMenuDisplay();
         }
 
         function selectedLocation() { return form.querySelector("[name=delivery_location_id]:checked"); }
         function selectedMeal() { return form.querySelector("[name=meal_type]:checked"); }
 
         function update() {
+            updateMenuDisplay();
             const loc = selectedLocation();
             const meal = selectedMeal();
             const portions = Math.max(Math.round(Number(qty.value) || 0), 0);
@@ -699,12 +749,16 @@
             button.addEventListener("click", function () { qty.value = button.dataset.qtySet; update(); });
         });
         if (dateInput) {
-            dateInput.addEventListener("change", updateSessions);
+            dateInput.addEventListener("change", function () {
+                updateSessions();
+                update();
+            });
         }
         form.addEventListener("input", update);
         form.addEventListener("change", update);
         updateSessions();
         update();
+        updateMenuDisplay();
     }
 
     // Tab sederhana: [data-tabs] > button[data-tab] + [data-tab-panel].

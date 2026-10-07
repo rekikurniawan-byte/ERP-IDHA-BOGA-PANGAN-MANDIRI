@@ -6,7 +6,7 @@ from app.routes.costing_routes import *  # noqa: F401,F403
 
 
 @costing_bp.route("/menus")
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def menus():
     q = (request.args.get("q") or "").strip()
     status = request.args.get("status") or "ACTIVE"
@@ -20,6 +20,7 @@ def menus():
             or_(
                 Menu.menu_code.ilike(f"%{q}%"),
                 Menu.menu_name.ilike(f"%{q}%"),
+                Menu.description.ilike(f"%{q}%"),
                 Menu.notes.ilike(f"%{q}%"),
             )
         )
@@ -45,9 +46,14 @@ def menus():
     recipe_draft_count = RecipeHeader.query.filter_by(branch_id=current_user.branch_id, recipe_status="DRAFT").count()
     recipe_final_count = RecipeHeader.query.filter_by(branch_id=current_user.branch_id, recipe_status="FINAL").count()
 
+    from app.services.menu_schedule_service import get_primary_menu_photo
+
+    primary_photos = {m.id: get_primary_menu_photo(m.id) for m in menus}
+
     return render_template(
         "costing/menus.html",
         menus=menus,
+        primary_photos=primary_photos,
         q=q,
         status=status,
         menu_type=menu_type,
@@ -62,12 +68,15 @@ def menus():
 
 
 @costing_bp.route("/menus/create", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def create_menu():
+    from app.services.menu_schedule_service import MenuScheduleError, add_menu_photos
+
     if request.method == "POST":
         menu_name = (request.form.get("menu_name") or "").strip()
         menu_type = (request.form.get("menu_type") or "CATERING").strip().upper()
         default_selling_price = to_float(request.form.get("default_selling_price"))
+        description = (request.form.get("description") or "").strip() or None
         notes = (request.form.get("notes") or "").strip() or None
         is_active = True if request.form.get("is_active") == "on" else False
 
@@ -92,21 +101,31 @@ def create_menu():
             menu_name=menu_name,
             menu_type=menu_type,
             default_selling_price=default_selling_price,
+            description=description,
             notes=notes,
             is_active=is_active,
             updated_by=current_user.id,
         )
 
+        photos_uploaded = request.files.getlist("menu_photos")
+        if photos_uploaded and any(p.filename for p in photos_uploaded):
+            try:
+                add_menu_photos(menu, photos_uploaded, acted_by=current_user.id)
+            except MenuScheduleError as photo_err:
+                flash(f"Menu dibuat, namun foto gagal disimpan: {photo_err}", "warning")
+
         record_audit_log(module="HPP", event_type="MENU_CREATED", action="CREATE", table_name="menus", record_id=menu.id, description=f"Menu dibuat: {menu.menu_name}.")
         flash("Menu berhasil dibuat. Lanjut lengkapi resep/BOM per porsi.", "success")
         return redirect(url_for("costing.menu_recipe", menu_id=menu.id))
 
-    return render_template("costing/menu_form.html", menu=None, menu_types=MENU_TYPES)
+    return render_template("costing/menu_form.html", menu=None, menu_types=MENU_TYPES, menu_photos=[])
 
 
 @costing_bp.route("/menus/<int:menu_id>/edit", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def edit_menu(menu_id):
+    from app.services.menu_schedule_service import MenuScheduleError, add_menu_photos, get_menu_photos
+
     menu = Menu.query.get_or_404(menu_id)
     if menu.branch_id != current_user.branch_id:
         flash("Menu tidak sesuai cabang user.", "danger")
@@ -116,6 +135,7 @@ def edit_menu(menu_id):
         menu_name = (request.form.get("menu_name") or "").strip()
         menu_type = (request.form.get("menu_type") or "CATERING").strip().upper()
         default_selling_price = to_float(request.form.get("default_selling_price"))
+        description = (request.form.get("description") or "").strip() or None
         notes = (request.form.get("notes") or "").strip() or None
         is_active = True if request.form.get("is_active") == "on" else False
 
@@ -139,18 +159,47 @@ def edit_menu(menu_id):
             menu_name=menu_name,
             menu_type=menu_type,
             default_selling_price=default_selling_price,
+            description=description,
             notes=notes,
             is_active=is_active,
         )
+
+        photos_uploaded = request.files.getlist("menu_photos")
+        if photos_uploaded and any(p.filename for p in photos_uploaded):
+            try:
+                add_menu_photos(menu, photos_uploaded, acted_by=current_user.id)
+            except MenuScheduleError as photo_err:
+                flash(f"Data menu disimpan, namun foto gagal diunggah: {photo_err}", "warning")
+
         record_audit_log(module="HPP", event_type="MENU_UPDATED", action="UPDATE", table_name="menus", record_id=menu.id, description=f"Menu diperbarui: {menu.menu_name}.")
         flash("Menu berhasil diperbarui.", "success")
         return redirect(url_for("costing.menus"))
 
-    return render_template("costing/menu_form.html", menu=menu, menu_types=MENU_TYPES)
+    menu_photos = get_menu_photos(menu.id)
+    return render_template("costing/menu_form.html", menu=menu, menu_types=MENU_TYPES, menu_photos=menu_photos)
+
+
+@costing_bp.route("/menus/<int:menu_id>/photos/<int:attachment_id>/delete", methods=["POST"])
+@role_required("ADMIN", "DAPUR")
+def delete_menu_photo_route(menu_id, attachment_id):
+    from app.services.menu_schedule_service import MenuScheduleError, delete_menu_photo
+
+    menu = Menu.query.get_or_404(menu_id)
+    if menu.branch_id != current_user.branch_id:
+        flash("Menu tidak sesuai cabang user.", "danger")
+        return redirect(url_for("costing.menus"))
+
+    try:
+        delete_menu_photo(menu, attachment_id, acted_by=current_user.id)
+        flash("Foto menu berhasil dihapus.", "success")
+    except MenuScheduleError as err:
+        flash(str(err), "warning")
+
+    return redirect(url_for("costing.edit_menu", menu_id=menu.id))
 
 
 @costing_bp.route("/menus/<int:menu_id>/toggle", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def toggle_menu(menu_id):
     menu = Menu.query.get_or_404(menu_id)
     if menu.branch_id != current_user.branch_id:
@@ -164,7 +213,7 @@ def toggle_menu(menu_id):
 
 
 @costing_bp.route("/menus/<int:menu_id>/recipe", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def menu_recipe(menu_id):
     menu = Menu.query.get_or_404(menu_id)
     if menu.branch_id != current_user.branch_id:
@@ -322,7 +371,7 @@ def menu_recipe(menu_id):
 
 
 @costing_bp.route("/recipe-items/<int:recipe_item_id>/delete", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "DAPUR")
 def delete_recipe_item(recipe_item_id):
     recipe_item = RecipeItem.query.get_or_404(recipe_item_id)
     menu = recipe_item.recipe.menu

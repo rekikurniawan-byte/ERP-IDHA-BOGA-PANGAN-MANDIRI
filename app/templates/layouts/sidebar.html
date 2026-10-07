@@ -72,7 +72,7 @@
 {% set can_view_logistics = has_role(["OWNER", "LOGISTICS", "DAPUR"]) %}
 {% set can_view_hr = has_role(["OWNER", "ADMIN", "HR"]) %}
 {% set can_view_master = has_role(["OWNER", "ADMIN", "FINANCE", "LOGISTICS"]) %}
-{% set can_view_costing = has_role(["OWNER", "ADMIN"]) %}
+{% set can_view_costing = has_role(["OWNER", "ADMIN", "DAPUR"]) %}
 {% set can_view_portal = (global_portal_enabled|default(false)) and has_role(["OWNER", "ADMIN", "PORTAL_CLIENT", "PORTAL_SUBCLIENT", "PORTAL_CUSTOMER"]) %}
 {% set can_admin_portal = has_role(["OWNER", "ADMIN"]) %}
 {% set can_view_customer_success = has_role(["OWNER", "ADMIN", "CUSTOMER_SUCCESS"]) %}
@@ -184,6 +184,9 @@
                 {% call nav_group("Operasional", "bi-truck", is_operational_group) %}
                     {% if has_role(["OWNER", "ADMIN"]) %}
                         {{ nav_link(url_for('operational.orders'), "Order Harian", "bi-journal-plus", is_operational_order) }}
+                    {% endif %}
+                    {% if has_role(["OWNER", "ADMIN", "DAPUR"]) %}
+                        {{ nav_link(url_for('operational.menu_schedule'), "Jadwal Menu", "bi-calendar-week", endpoint == "operational.menu_schedule") }}
                     {% endif %}
                     {% if has_role(["OWNER", "DAPUR"]) %}
                         {{ nav_link(url_for('production.index'), "Produksi Dapur", "bi-fire", endpoint.startswith("production.")) }}
@@ -347,7 +350,8 @@
                 {% if has_role(["OWNER", "ADMIN"]) %}
                     {{ nav_link(url_for('settings.system_health'), "Kesehatan Sistem", "bi-heart-pulse", is_system_tools) }}
                 {% endif %}
-                {{ nav_link(url_for('settings.change_password'), "Ganti Password", "bi-shield-lock", is_change_password) }}
+                {{ nav_link(url_for('settings.account'), "Akun Saya", "bi-person-circle", endpoint == 'settings.account') }}
+                {{ nav_link(url_for('settings.account') ~ '#ganti-password', "Ganti Password", "bi-shield-lock", is_change_password) }}
             {% endcall %}
 
             {% if has_role(all_roles) %}
