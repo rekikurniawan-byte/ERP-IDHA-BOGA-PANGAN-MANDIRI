@@ -4,6 +4,10 @@
 {% macro draft_card(row) %}
     {% set draft = row.draft %}
     {% set owner_can_override = row.owner_override_reasons and current_user.role == 'OWNER' %}
+    {# Hanya butuh persetujuan (mis. lewat limit kredit), tanpa penghalang lain:
+       tombol tetap bisa ditekan supaya permintaan persetujuan OWNER terbentuk. #}
+    {% set hard_blocked = row.gates|selectattr('status', 'equalto', 'BLOCKED')|list %}
+    {% set ask_approval = row.needs_approval and not row.can_confirm and not hard_blocked %}
     <article class="app-card admin-draft-card {{ 'is-blocked' if not row.can_confirm else 'is-ready' }}">
         <header class="admin-draft-head">
             <div class="admin-draft-title">
@@ -54,12 +58,21 @@
         {% endif %}
 
         <footer class="admin-draft-actions">
-            <form method="post" action="{{ url_for('portal.confirm_order_draft', draft_id=draft.id) }}" class="admin-draft-action" data-app-confirm="Konfirmasi draft ini ke Order Harian?">
+            <form method="post" action="{{ url_for('portal.confirm_order_draft', draft_id=draft.id) }}" class="admin-draft-action" data-app-confirm="{{ 'Kirim permintaan persetujuan ke OWNER?' if ask_approval else 'Konfirmasi draft ini ke Order Harian?' }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="text" name="review_note" class="form-control" aria-label="Catatan konfirmasi" placeholder="{{ 'Alasan meloloskan (wajib)' if owner_can_override else 'Catatan konfirmasi' }}" value="{{ '' if owner_can_override else 'Dikonfirmasi ke order harian.' }}">
-                <button class="btn app-btn-primary" type="submit" {% if not row.can_confirm and not owner_can_override %}disabled{% endif %}>
-                    <i class="bi bi-check2-circle"></i> Konfirmasi
-                </button>
+                {% if ask_approval %}
+                    <button class="btn app-btn-primary" type="submit">
+                        <i class="bi bi-send-check"></i> Minta Persetujuan OWNER
+                    </button>
+                    <a class="btn app-btn-secondary" href="{{ url_for('settings.approvals', status='PENDING') }}">
+                        <i class="bi bi-shield-check"></i> Buka Persetujuan
+                    </a>
+                {% else %}
+                    <button class="btn app-btn-primary" type="submit" {% if not row.can_confirm and not owner_can_override %}disabled{% endif %}>
+                        <i class="bi bi-check2-circle"></i> Konfirmasi
+                    </button>
+                {% endif %}
                 {% if owner_can_override %}
                     <label class="checkbox-clean admin-draft-override">
                         <input type="checkbox" name="owner_override" value="1" required>
