@@ -1,10 +1,12 @@
 """Satu sumber riwayat pelunasan invoice.
 
-Invoice bisa berkurang sisanya lewat dua jalan:
+Invoice bisa berkurang sisanya lewat tiga pintu:
 - pembayaran kas/bank (tabel payments: bayar manual, bukti transfer portal);
 - potongan uang muka/DP client atau deposit jaminan sub client
   (advance_settlements ber-referensi INVOICE). Uangnya sudah masuk saat
-  DP/deposit diterima, jadi potongan ini tidak membuat baris kas/bank baru.
+  DP/deposit diterima, jadi potongan ini tidak membuat baris kas/bank baru;
+- potongan PPh oleh pelanggan (tax_withholdings, Fase 8): pelanggan membayar
+  bersih dan menyerahkan bukti potong; nilainya pajak, bukan uang masuk.
 
 Semua yang perlu tahu "kapan dan berapa invoice ini dibayar" -- janji bayar
 ditepati atau tidak, riwayat di detail kredit, detail invoice, portal --
@@ -50,11 +52,22 @@ def payment_dates_by_invoice(invoice_ids):
         dates.setdefault(invoice_id, []).append(paid_on)
     for settlement in invoice_settlements(ids):
         dates.setdefault(settlement.reference_id, []).append(settlement.settlement_date)
+    for withholding in _withholdings(ids):
+        dates.setdefault(withholding.invoice_id, []).append(withholding.withheld_on)
     return dates
 
 
+def _withholdings(invoice_ids):
+    from app.services.tax_service import withholdings_for_invoices
+
+    return withholdings_for_invoices(invoice_ids)
+
+
 def settlement_total(invoice_id) -> Decimal:
-    return sum((Decimal(str(row.amount or 0)) for row in invoice_settlements([invoice_id])), Decimal("0"))
+    """Pelunasan bukan kas/bank: potongan DP/deposit + potongan pajak pelanggan."""
+    settled = sum((Decimal(str(row.amount or 0)) for row in invoice_settlements([invoice_id])), Decimal("0"))
+    withheld = sum((Decimal(str(row.amount or 0)) for row in _withholdings([invoice_id])), Decimal("0"))
+    return settled + withheld
 
 
 def payment_events(invoice_ids, limit=None):
@@ -87,6 +100,19 @@ def payment_events(invoice_ids, limit=None):
             "payment_id": None,
         }
         for settlement in invoice_settlements(ids)
+    )
+    events.extend(
+        {
+            "kind": "WITHHOLDING",
+            "invoice_id": row.invoice_id,
+            "payment_date": row.withheld_on,
+            "payment_number": row.certificate_number,
+            "payment_method": f"POTONG_{row.withholding_type}",
+            "amount": Decimal(str(row.amount or 0)),
+            "reference_number": row.certificate_number,
+            "payment_id": None,
+        }
+        for row in _withholdings(ids)
     )
     events.sort(key=lambda row: (row["payment_date"], row["payment_number"] or ""), reverse=True)
     return events[:limit] if limit else events

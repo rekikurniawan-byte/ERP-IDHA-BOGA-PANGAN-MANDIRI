@@ -1,0 +1,12 @@
+{# Cap tanda tangan di luar snapshot: isi surat yang ditandatangani tetap persis seperti saat dibuat. #}
+<div style="max-width: 210mm; margin: 12px auto; padding: 12px 16px; border: 2px solid #1f7a4d; border-radius: 10px; font-family: Arial, sans-serif; font-size: 12px; color: #1f2933; page-break-inside: avoid;">
+    <strong style="color: #1f7a4d;">DOKUMEN INI TELAH DITANDATANGANI</strong><br>
+    Nomor dokumen: {{ doc.document_number }}<br>
+    {% if doc.signing_method == 'PORTAL_EMAIL_OTP' %}
+        Metode: persetujuan portal &amp; verifikasi OTP email<br>
+        Oleh: {{ doc.signed_by_name or '-' }} · Waktu: {{ doc.portal_signed_at.strftime('%d-%m-%Y %H:%M WIB') if doc.portal_signed_at else '-' }}
+    {% else %}
+        Metode: tanda tangan basah di atas meterai Rp10.000 (scan terarsip di sistem)<br>
+        Diverifikasi oleh: {{ doc.signed_by_name or '-' }} · Tanggal: {{ doc.signed_at.strftime('%d-%m-%Y %H:%M WIB') if doc.signed_at else '-' }}
+    {% endif %}
+</div>

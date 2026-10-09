@@ -704,7 +704,7 @@
                     </td>
                 </tr>
                 {% else %}
-                {% if not invoice_settlements %}
+                {% if not invoice_settlements and not tax_withholdings %}
                 <tr>
                     <td colspan="7">
                         <div class="empty-state">
@@ -731,6 +731,71 @@
     </div>
 </div>
 
+
+{% if tax_suggestion is not none %}
+<div class="app-card mt-4" data-ui-section="tax-withholding">
+    <div class="card-header-clean">
+        <div>
+            <h5>Potongan Pajak oleh Pelanggan</h5>
+            <p>Kalau pelanggan membayar setelah memotong PPh, catat bukti potongnya di sini: sisa invoice berkurang, jurnal pajak dibuat, dan janji bayar dianggap ditepati.</p>
+        </div>
+    </div>
+    {% if tax_withholdings %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Tanggal</th><th>Jenis</th><th>No. bukti potong</th><th class="text-end">Dasar</th><th class="text-end">Potongan</th><th>File</th></tr></thead>
+            <tbody>
+                {% for row in tax_withholdings %}
+                <tr>
+                    <td>{{ row.withheld_on.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ tax_withholding_labels.get(row.withholding_type, row.withholding_type) }}</td>
+                    <td>{{ row.certificate_number }}</td>
+                    <td class="text-end">{{ row.base_amount|rupiah }}</td>
+                    <td class="text-end">{{ row.amount|rupiah }}</td>
+                    <td>{% if row.attachment_id %}<a href="{{ url_for('finance.tax_attachment_view', attachment_id=row.attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Lihat</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {% if invoice.status not in ['PAID', 'CLOSED', 'CANCELLED'] and invoice.remaining_amount > 0 %}
+    <form method="POST" action="{{ url_for('finance.invoice_tax_withholding', invoice_id=invoice.id) }}" enctype="multipart/form-data" class="row g-3 app-form mt-1">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Jenis potongan</label>
+            <select name="withholding_type" class="form-select" required>
+                {% for code, label in tax_withholding_labels.items() %}<option value="{{ code }}" {% if code == tax_suggestion.type %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Dasar (tanpa PBJT)</label>
+            <input type="text" name="base_amount" class="form-control" inputmode="numeric" value="{{ '%.0f'|format(tax_suggestion.base) }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Nominal dipotong</label>
+            <input type="text" name="amount" class="form-control" inputmode="numeric" value="{{ '%.0f'|format(tax_suggestion.amount) }}" required>
+            <div class="form-text">Saran sistem; ikuti angka di bukti potong.</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Tanggal bukti potong</label>
+            <input type="date" name="withheld_on" class="form-control" value="{{ today_date }}" max="{{ today_date }}" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Nomor bukti potong</label>
+            <input type="text" name="certificate_number" class="form-control" required>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">File bukti potong (PDF/foto)</label>
+            <input type="file" name="evidence" class="form-control" accept="image/*,application/pdf">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn app-btn-secondary w-100"><i class="bi bi-receipt-cutoff"></i> Catat Potongan</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

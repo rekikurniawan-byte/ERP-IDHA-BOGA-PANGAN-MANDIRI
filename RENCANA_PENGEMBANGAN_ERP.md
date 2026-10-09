@@ -29,6 +29,7 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 - Tidak `git add -A`; commit hanya file fitur, tidak push kecuali diminta.
 - **Dilarang `git clean`, `git checkout -- .`, `git reset --hard`, atau menghapus file yang belum di-commit** (mis. `app/static/uploads/`). Pada 7 Okt 2026 `git clean` oleh AI menghapus permanen logo perusahaan yang sedang dipakai.
 - Setiap fase: test fitur + `pytest -q` lengkap harus lulus sebelum commit.
+- **Skrip debug/uji coba wajib memakai `test_db`, tidak boleh menulis ke database dev** (`idha_boga_staging`). Pada 7 Okt 2026 skrip debug fitur reminder membuat 10 cabang "Branch Reminder …" + 18 user uji di database dev; dinonaktifkan 9 Okt 2026.
 
 ### 1.2 Aturan UI wajib
 - **Ikuti UI yang sudah ada**; tiru struktur & kelas halaman sejenis sebelum membuat yang baru.
@@ -61,8 +62,10 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 | 5 | Pesanan otomatis | Gemini + perbaikan Claude | ✅ (799 test lulus) |
 | 6 | Invoice otomatis | **Claude** | ✅ (belum commit) |
 | 7 | Kontrol kredit syariah + ta'zir | **Claude** | ✅ (belum commit; migrasi `g5b6c7d8e9f0`) |
-| 8 | Pajak | **Claude** | 🔜 (tunggu konsultan pajak) |
-| 9 | Surat kontrak otomatis | Gemini + cek Claude | 🔜 (paling akhir) |
+| 8 | Pajak | **Claude** | ✅ (belum commit; migrasi `h6c7d8e9f0a1`; semua pajak mati sampai diisi di Pengaturan Pajak) |
+| WIB | Semua tanggal bisnis pakai WIB | Gemini + cek Claude | ⏳ `PROMPT_GEMINI_JAM_WIB.md` |
+| Gladi | Gladi pilot ulang Fase 3–7 | Gemini | ⏳ `PROMPT_GEMINI_GLADI_PILOT.md` (setelah WIB) |
+| 9 | Surat kontrak otomatis | Gemini + perbaikan Claude | ✅ (belum commit; migrasi `i7d8e9f0a1b2`) |
 
 **Alasan urutan:** kontrak (3) adalah fondasi aturan; penjadwal (4) dibutuhkan pesanan jam 18.00 dan invoice jam 06.00; invoice (6) harus ada sebelum kontrol kredit (7) bisa menghitung tunggakan; pajak (8) mengubah isi invoice; surat kontrak (9) terakhir karena menjelaskan **semua** aturan fase 3–8 — kalau dibuat lebih awal isinya bisa tidak cocok dengan sistem.
 
@@ -242,13 +245,31 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 
 ---
 
-## 10. Fase 8 — Pajak (Claude, setelah konsultan pajak)
+## 10. Fase 8 — Pajak (Claude)
 
-- **PBJT** (pajak daerah makan/minum, dulu PB1): persentase bisa diatur, opsional muncul di invoice.
-- **PPh 23 (2%)** yang dipotong pelanggan PT: admin mencatat bukti potong, sisa piutang berkurang, jurnal otomatis.
-- Laporan pajak bulanan.
-- PPN/e-Faktur **tidak** dibuat kecuali PT sudah PKP.
-- **Syarat mulai**: tarif dan kewajiban dikonfirmasi konsultan pajak.
+### 10.1 Fakta (Surat Keterangan Terdaftar S-25175/SKT-WP-CT/KPP.0312/2026)
+- NPWP **1000000010006690**, WP Badan, terdaftar **19 Juni 2026**, **KPP Pratama Sekayu**; alamat terdaftar Jakabaring Selatan, Rambutan, **Kab. Banyuasin**. **Belum PKP** (katering = objek PBJT, bukan PPN; PKP baru wajib bila omzet setahun > Rp4,8 M).
+- Password akun Coretax **tidak boleh** disimpan di ERP; owner diminta menggantinya (sempat terkirim di chat 2026-10-09).
+
+### 10.2 Keputusan owner (2026-10-09)
+- **PPh: sistem mendukung DUA rezim, dipilih owner di Pengaturan Pajak setelah konsultan memastikan** (bawaan: belum dipilih → fitur PPh mati). (a) **PP 55 final 0,5%** — boleh untuk tahun pajak 2026–2028 (PT maks. 3 tahun pajak sejak terdaftar), dasar = peredaran bruto usaha per bulan, pelanggan memotong 0,5% final bila PT punya **Surat Keterangan PP 55** (nomor dicetak di invoice); sistem otomatis menolak PP 55 setelah 2028. (b) **Tarif normal** — 22% dari laba (Pasal 31E → efektif 11% bila omzet ≤ Rp4,8 M), pelanggan memotong **PPh 23 2%** yang menjadi kredit pajak. Rezim bisa berbeda per tahun pajak.
+- **PBJT ditambahkan di atas harga** (harga per porsi tetap, PBJT baris terpisah), terdaftar di **Kab. OKI** (lokasi dapur, Air Sugihan). Tarif & NPWPD dari Bapenda OKI.
+- **Dibangun sekarang, semua pajak MATI bawaan**; aktif setelah owner mengisi pengaturan (Surat Keterangan PP 55, NPWPD, tarif PBJT).
+
+### 10.3 Rancangan
+1. Pengaturan pajak perusahaan (NPWP, KPP, tanggal terdaftar, rezim + tahun berlaku PP 55, nomor & masa berlaku Surat Keterangan PP 55, PBJT aktif/tarif/kabupaten/NPWPD, mulai berlaku), pengurus & pemegang saham, dokumen pajak (lampiran + tanggal berlaku).
+2. PBJT di semua jalur invoice: baris terpisah, Dr 1004 / Cr **Hutang PBJT** (bukan pendapatan); tidak masuk omzet PPh.
+3. Potongan pajak oleh pelanggan saat bayar = **pintu pelunasan ketiga** (selain kas/bank dan potong DP/deposit): jenis (PPh final 0,5% / PPh 23 2%), nomor & file bukti potong; jurnal: final → Cr 1004 / Dr PPh final dibayar; PPh 23 → Dr kredit pajak (aset). Ikut riwayat pelunasan (janji bayar, portal).
+4. Laporan pajak bulanan: peredaran bruto (tanpa PBJT & ta'zir), PPh final 0,5% terutang − sudah dipotong pelanggan = wajib setor (tgl 15); PBJT dipungut vs disetor; catat setoran (kas keluar + jurnal + NTPN + bukti); rekonsiliasi invoice–potongan–bank; rekap tahunan untuk SPT (batas 30 April).
+5. Pengingat: setor PPh final tgl 15, PBJT sesuai Perda OKI, SPT Tahunan; peringatan omzet mendekati Rp4,8 M dan PP 55 akan habis (akhir 2028).
+- PPN/e-Faktur **tidak** dibuat kecuali PT sudah PKP. PPh 21 karyawan & PPh 23 pemasok menyusul.
+
+### 10.4 Yang dibangun (2026-10-09)
+- Menu **Keuangan → Pajak** (`/finance/tax`) dan **Pengaturan Pajak** (Owner). Akun baru: **1009** Pajak Dibayar di Muka, **2010** Hutang PBJT, **5014** Beban PPh Final.
+- PBJT dipasang di semua jalur invoice penjualan (`tax_service.apply_pbjt_to_invoice`): invoice otomatis + pratinjau, invoice periode manual, invoice per pesanan, input susulan. Ta'zir/ta'widh/saldo awal tidak kena PBJT. Laporan omzet per jalur & laba per invoice mengecualikan PBJT.
+- Potongan PPh pelanggan = **pintu pelunasan ketiga** di `invoice_payment_history_service` (janji bayar, portal, cetak invoice, jejak tagihan).
+- Peredaran bruto dihitung dari buku besar 4001–4005 (tanpa PBJT & ta'zir). Catatan: jurnal belum per cabang, jadi laporan pajak = seluruh PT (sesuai: NPWP satu untuk PT).
+- Pengingat `tax_reminders` 08.30. Pasal pajak surat kontrak (Fase 9) diisi Claude setelah Gemini selesai.
 
 ---
 
@@ -322,5 +343,7 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - 2026-10-09: Fase 6 — keputusan owner: invoice otomatis **satu per sub client** (atas nama pihak yang ditagih; PT melihat semua + rekap), **hutang warung pekerja ikut ditagih** (bila modul aktif), **pratinjau H-1 jam 07.00**, terbit 06.00 hari potong.
 - 2026-10-09: Review Claude Fase 1–5 & perbaikan: kredit TAHAN/BLOKIR benar-benar menahan pesanan otomatis; portal hanya bisa ubah porsi lokasinya sendiri; pesanan manual besok tidak disentuh; tidak ada pesanan Rp0; tugas baru tidak mundur 7 hari; tugas terputus diulang; syarat anti-kabur di halaman kontrak; scan label sesuai sesi; angka terima tidak bisa diubah pengantar; notifikasi admin tampil untuk owner. test_db dibersihkan (test lengkap ±12 menit).
 - 2026-10-09: Pihak yang ditagih **satu sumber**: pengaturan kredit per sub client (dibaca pesanan otomatis *dan* invoice; dulu bisa berbeda). Pilihan "Bawaan Kontrak" per sub client dihapus. Bawaan Pihak Ditagih kontrak hanya Owner yang boleh mengubah; saat diubah ke "Bayar di muka" langsung diterapkan ke sub client yang belum punya pengaturan. "Ditagih langsung" tidak bisa dipukul rata — disetel per sub client setelah syarat anti-kabur lengkap.
+- 2026-10-09: Fase 9 (Gemini) direview & diperbaiki Claude: ambang kredit tidak terbaca (surat & adendum error, ubah aturan kontrak aktif ikut error); **isi surat di-render ulang saat TTD** → kini snapshot terkunci, cap TTD ditambahkan saat cetak; ongkir "gratis" ditulis mati → dari tarif kontrak; angka eskalasi kredit ditulis mati → dari ambang sistem; libur rutin tampil angka → nama hari; **OTP ditulis ke log bila SMTP kosong** → ditolak tanpa log; OTP tanpa batas percobaan → dibatasi (3 minta/5 coba per 15 menit); adendum dibuat tiap simpan → hanya bila aturan berubah, catatan berisi apa yang berubah; data karangan (email info@idhaboga.co.id, NPWP/alamat cadangan) dihapus → wajib dari Profil Perusahaan; pasal pajak diisi dari Pengaturan Pajak. Kontrak baru aktif hanya setelah surat ditandatangani (basah+scan atau OTP email portal client).
+- 2026-10-09: Fase 8 Pajak — keputusan owner: rezim PPh **disiapkan dua-duanya** (PP 55 0,5% atau normal; dipilih di pengaturan setelah konsultan, semula PP 55 lalu diubah owner), PBJT ditambahkan di atas harga, PBJT ke Kab. OKI, dibangun sekarang dengan semua pajak mati bawaan. Urutan kerja: prompt Gemini (jam WIB → gladi pilot → surat kontrak) lalu Claude membangun Fase 8.
 - 2026-10-09: **Audit integrasi keuangan end-to-end** (atas permintaan owner, sebelum fitur berikutnya). Cocok: buku besar = buku pembantu (kas, bank, piutang, hutang supplier, persediaan, aset), semua pembayaran berjurnal & tercatat di buku kas, tidak ada jurnal tidak seimbang / tagihan dobel. Diperbaiki: (1) **potong DP/deposit ke invoice dihitung sebagai pelunasan** di satu sumber riwayat (`invoice_payment_history_service`) — janji bayar ditepati, riwayat di detail kredit/detail & cetak invoice/portal, log penagihan otomatis; (2) invoice periode manual, Tagihan Manual, dan input susulan **batal total bila jurnal gagal**; (3) invoice per pesanan **menolak pesanan yang sudah ditagih** di invoice lain; (4) **semua client kontrak** masuk Kontrol Kredit sejak awal; (5) bayar manual & bayar dari bukti portal **satu fungsi** (`customer_payment_service.apply_customer_payment`), validasi tanggal bayar pakai WIB. **Aturan ke depan:** setiap jalur baru yang mengubah sisa invoice wajib lewat salah satu dari dua pintu itu (pembayaran kas/bank atau potongan DP/deposit), dan setiap invoice baru wajib `post_invoice_journal_or_raise`.
 - 2026-10-09: Fase 7 — keputusan owner: ta'zir ditagih sebagai **tagihan terpisah** (bukan baris di invoice makanan); selama **kelonggaran** (tidak mampu) utang lama ditangguhkan tanpa ta'zir tetapi **pesanan baru wajib bayar di muka**; **penyaluran Dana Sosial hanya dicatat Owner** (dengan bukti); **ta'widh dibuat sekarang** (biaya penagihan riil + bukti, diputuskan Owner, tagihan terpisah). Tambahan: pemeriksaan kredit masuk penjadwal harian, client kontrak ikut diperiksa, peringatan status sampai ke portal pihak yang ditagih.

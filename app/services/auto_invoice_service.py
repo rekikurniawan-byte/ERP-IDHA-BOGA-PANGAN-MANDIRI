@@ -291,6 +291,7 @@ def plan_invoices(branch_id: int, cutoff_date: date) -> list[dict[str, Any]]:
     """Rencana invoice untuk hari potong ini (tanpa menulis apa pun) -- dipakai pratinjau & penerbitan."""
     from app.services.credit_control_service import invoice_billing_terms
     from app.services.invoice_identity_service import invoice_contact_snapshot
+    from app.services.tax_service import pbjt_for_lines
 
     plans = []
     for contract in _contracts_with_cutoff(branch_id, cutoff_date):
@@ -307,6 +308,7 @@ def plan_invoices(branch_id: int, cutoff_date: date) -> list[dict[str, Any]]:
                 mandor.id, contract.start_date, period_end, branch_id, require_receipt=True
             )
             total = sum((money(line["subtotal"] or 0) for line in lines), Decimal("0"))
+            pbjt = pbjt_for_lines(lines, branch_id, cutoff_date) if total > 0 else Decimal("0")
             billing = invoice_billing_terms(cutoff_date, branch_id, client, mandor)
             _, contact_error = invoice_contact_snapshot(
                 client, mandor, getattr(contract, "client_pic_id", None), billing["bill_to_type"]
@@ -319,6 +321,8 @@ def plan_invoices(branch_id: int, cutoff_date: date) -> list[dict[str, Any]]:
                 "period_end": period_end,
                 "lines": lines,
                 "total": total,
+                "pbjt": pbjt,
+                "grand_total": total + pbjt,
                 "bill_to_type": billing["bill_to_type"],
                 "bill_to_name": billing["bill_to_name"],
                 "due_date": billing["due_date"],
@@ -465,6 +469,10 @@ def issue_planned_invoice(plan: dict[str, Any], *, invoice_date: date) -> Invoic
             input_source=INPUT_SOURCE_REALTIME,
         ))
     db.session.flush()
+    # PBJT ditambahkan di atas harga bila sudah aktif (Fase 8); bagian dari jurnal yang sama.
+    from app.services.tax_service import apply_pbjt_to_invoice
+
+    apply_pbjt_to_invoice(invoice)
 
     try:
         ok, message, _journal = create_invoice_journal_for_invoice(
@@ -587,7 +595,7 @@ def run_auto_invoice_preview(branch_id=None, period_key=None, now=None, *, commi
     billable = [plan for plan in plans if plan["lines"] and plan["total"] > 0]
     ready = [plan for plan in billable if not plan["error"]]
     problems = [plan for plan in billable if plan["error"]]
-    total = sum((plan["total"] for plan in ready), Decimal("0"))
+    total = sum((plan["grand_total"] for plan in ready), Decimal("0"))
 
     def work():
         if not plans:

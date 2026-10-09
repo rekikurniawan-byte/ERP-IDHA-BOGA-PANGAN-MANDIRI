@@ -48,6 +48,20 @@ def test_create_and_activate_customer_contract(app):
             assert contract.version_no == 1
             assert contract.credit_limit == Decimal("2500000.00")
 
+            # Fase 9: kontrak baru aktif setelah surat kontraknya ditandatangani.
+            import pytest
+
+            from app.models.contract import DOC_STATUS_SIGNED
+            from app.services.customer_contract_document_service import generate_contract_document
+            from app.services.customer_contract_service import CustomerContractError
+
+            with pytest.raises(CustomerContractError, match="ditandatangani"):
+                activate_customer_contract(contract.id, branch_id=user.branch_id, updated_by=user.id, commit=False)
+            document = generate_contract_document(
+                contract_id=contract.id, branch_id=user.branch_id, created_by=user.id, commit=False
+            )
+            document.status = DOC_STATUS_SIGNED
+
             activate_customer_contract(contract.id, branch_id=user.branch_id, updated_by=user.id, commit=False)
 
             assert contract.status == CONTRACT_STATUS_ACTIVE

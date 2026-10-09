@@ -1,0 +1,240 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% set r = report %}
+{% set s = r.settings %}
+{% set month_names = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"] %}
+
+{% block content %}
+<section class="page-section" data-ui-page="tax-report">
+    {% set header_actions = [] %}
+    {% if is_owner %}{% do header_actions.append({"label": "Pengaturan Pajak", "url": url_for('finance.tax_settings'), "icon": "bi-sliders", "variant": "secondary"}) %}{% endif %}
+    {{ page_header(
+        "Pajak",
+        "Laporan masa pajak: peredaran bruto, PPh final, PBJT, potongan pajak pelanggan, dan setoran. Semua angka dari buku besar dan invoice yang sama.",
+        eyebrow="Keuangan",
+        actions=header_actions
+    ) }}
+
+    <div class="app-card mb-4">
+        <form method="GET" action="{{ url_for('finance.tax_report') }}">
+            <div class="app-filter">
+                <div class="form-group">
+                    <label for="taxMonth">Masa pajak</label>
+                    <select id="taxMonth" name="month" class="form-select">
+                        {% for m in range(1, 13) %}<option value="{{ m }}" {% if m == r.month %}selected{% endif %}>{{ month_names[m] }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="taxYear">Tahun</label>
+                    <input type="number" id="taxYear" name="year" class="form-control" value="{{ r.year }}" min="2026" max="2100">
+                </div>
+                <div class="form-group d-flex align-items-end gap-2">
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-funnel"></i> Tampilkan</button>
+                    <a href="{{ url_for('finance.tax_report') }}" class="btn app-btn-ghost">Bulan ini</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% for warning in r.warnings %}
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3"><i class="bi bi-exclamation-triangle"></i><span>{{ warning }}</span></div>
+    {% endfor %}
+
+    <div class="app-stat-grid mb-4">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-graph-up"></i></div>
+            <div><p>Peredaran bruto</p><h3>{{ r.gross|rupiah }}</h3><small>tanpa PBJT &amp; ta'zir · {{ r.regime_label }}</small></div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon {{ 'stat-danger' if r.pph_final_to_pay > 0 else 'stat-success' }}"><i class="bi bi-bank"></i></div>
+            <div>
+                <p>PPh final kurang setor</p><h3>{{ r.pph_final_to_pay|rupiah }}</h3>
+                <small>{% if r.regime == 'PP55' %}terutang {{ r.pph_final_due|rupiah }}, batas {{ r.pph_final_due_date.strftime('%d-%m-%Y') }}{% else %}tidak berlaku untuk rezim ini{% endif %}</small>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon {{ 'stat-warning' if r.pbjt_to_pay > 0 else 'stat-success' }}"><i class="bi bi-shop"></i></div>
+            <div>
+                <p>PBJT belum disetor</p><h3>{{ r.pbjt_to_pay|rupiah }}</h3>
+                <small>{% if s.pbjt_enabled %}dipungut {{ r.pbjt_collected|rupiah }}, batas {{ r.pbjt_due_date.strftime('%d-%m-%Y') }}{% else %}PBJT belum diaktifkan{% endif %}</small>
+            </div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-speedometer"></i></div>
+            <div><p>Omzet tahun {{ r.year }}</p><h3>{{ r.ytd_gross|rupiah }}</h3><small>{{ '%.1f'|format(r.ytd_limit_pct) }}% dari batas Rp4,8 M</small></div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="app-card h-100">
+                <div class="card-header-clean"><div><h5>PPh {{ month_names[r.month] }} {{ r.year }}</h5><p>{{ r.regime_label }}</p></div></div>
+                <div class="table-responsive" data-mobile-table="scroll">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr><td>Peredaran bruto usaha</td><td class="text-end">{{ r.gross|rupiah }}</td></tr>
+                            {% if r.regime == 'PP55' %}
+                            <tr><td>PPh final 0,5% terutang</td><td class="text-end">{{ r.pph_final_due|rupiah }}</td></tr>
+                            <tr><td>Sudah dipotong pelanggan</td><td class="text-end">− {{ r.withheld_final|rupiah }}</td></tr>
+                            <tr><td>Sudah disetor sendiri</td><td class="text-end">− {{ r.pph_final_paid|rupiah }}</td></tr>
+                            <tr><td><strong>Kurang setor</strong></td><td class="text-end"><strong>{{ r.pph_final_to_pay|rupiah }}</strong></td></tr>
+                            {% endif %}
+                            <tr><td>PPh 23 dipotong pelanggan (kredit pajak)</td><td class="text-end">{{ r.withheld_pph23|rupiah }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="app-card h-100">
+                <div class="card-header-clean"><div><h5>PBJT {{ month_names[r.month] }} {{ r.year }}</h5><p>{{ s.pbjt_region }}{% if s.npwpd %} · NPWPD {{ s.npwpd }}{% endif %}</p></div></div>
+                <div class="table-responsive" data-mobile-table="scroll">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr><td>Dipungut di invoice</td><td class="text-end">{{ r.pbjt_collected|rupiah }}</td></tr>
+                            <tr><td>Sudah disetor</td><td class="text-end">− {{ r.pbjt_paid|rupiah }}</td></tr>
+                            <tr><td><strong>Belum disetor</strong></td><td class="text-end"><strong>{{ r.pbjt_to_pay|rupiah }}</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean"><div><h5>Catat Setoran Pajak</h5><p>Kas/bank keluar dan jurnal tercatat otomatis. Simpan NTPN / nomor bukti setor dan unggah buktinya.</p></div></div>
+        <form method="POST" action="{{ url_for('finance.tax_payment_create') }}" enctype="multipart/form-data" class="row g-3 app-form">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="period_year" value="{{ r.year }}">
+            <input type="hidden" name="period_month" value="{{ r.month }}">
+            <div class="col-md-3">
+                <label class="form-label">Jenis pajak</label>
+                <select name="tax_type" class="form-select" required>
+                    {% for code, label in payment_labels.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tanggal setor</label>
+                <input type="date" name="paid_on" class="form-control" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Nominal (Rp)</label>
+                <input type="text" name="amount" class="form-control" inputmode="numeric" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">NTPN / nomor bukti setor</label>
+                <input type="text" name="reference_number" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Dari</label>
+                <select name="account_type" class="form-select" required><option value="BANK">Bank</option><option value="CASH">Kas</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Rekening (kalau bank)</label>
+                <select name="bank_account_id" class="form-select">
+                    <option value="">-</option>
+                    {% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Bukti setor (foto/PDF)</label>
+                <input type="file" name="evidence" class="form-control" accept="image/*,application/pdf">
+            </div>
+            <div class="col-12"><button type="submit" class="btn app-btn-primary btn-sm">Catat Setoran {{ month_names[r.month] }} {{ r.year }}</button></div>
+        </form>
+
+        {% if r.payments %}
+        <div class="table-responsive mt-3" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Tanggal</th><th>Jenis</th><th>NTPN</th><th class="text-end">Nominal</th><th>Bukti</th></tr></thead>
+                <tbody>
+                    {% for row in r.payments %}
+                    <tr>
+                        <td>{{ row.paid_on.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ payment_labels.get(row.tax_type, row.tax_type) }}</td>
+                        <td>{{ row.reference_number }}</td>
+                        <td class="text-end">{{ row.amount|rupiah }}</td>
+                        <td>{% if row.attachment_id %}<a href="{{ url_for('finance.tax_attachment_view', attachment_id=row.attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Lihat</a>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean"><div><h5>Bukti Potong dari Pelanggan</h5><p>Dicatat dari halaman detail invoice saat pelanggan membayar setelah memotong pajak.</p></div></div>
+        {% if r.withholdings %}
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Tanggal</th><th>Invoice</th><th>Jenis</th><th>No. bukti potong</th><th class="text-end">Dasar</th><th class="text-end">Potongan</th><th>File</th></tr></thead>
+                <tbody>
+                    {% for row in r.withholdings %}
+                    <tr>
+                        <td>{{ row.withheld_on.strftime('%d-%m-%Y') }}</td>
+                        <td><a href="{{ url_for('finance.invoice_detail', invoice_id=row.invoice_id) }}">{{ row.invoice.invoice_number }}</a></td>
+                        <td>{{ withholding_labels.get(row.withholding_type, row.withholding_type) }}</td>
+                        <td>{{ row.certificate_number }}</td>
+                        <td class="text-end">{{ row.base_amount|rupiah }}</td>
+                        <td class="text-end">{{ row.amount|rupiah }}</td>
+                        <td>{% if row.attachment_id %}<a href="{{ url_for('finance.tax_attachment_view', attachment_id=row.attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Lihat</a>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="small mb-0">Belum ada bukti potong di masa ini.</p>
+        {% endif %}
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean"><div><h5>Rekonsiliasi Invoice {{ month_names[r.month] }} {{ r.year }}</h5><p>Total invoice = harga + PBJT. Potongan pajak + pembayaran + potong DP harus menutup total.</p></div></div>
+        {% if r.reconciliation %}
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Invoice</th><th>Tanggal</th><th>Pihak</th><th class="text-end">Total</th><th class="text-end">PBJT</th><th class="text-end">Dipotong pajak</th><th class="text-end">Sudah lunas</th><th class="text-end">Sisa</th></tr></thead>
+                <tbody>
+                    {% for row in r.reconciliation %}
+                    {% set inv = row.invoice %}
+                    <tr>
+                        <td><a href="{{ url_for('finance.invoice_detail', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+                        <td>{{ inv.invoice_date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ inv.client_name_snapshot or '-' }}</td>
+                        <td class="text-end">{{ inv.total_amount|rupiah }}</td>
+                        <td class="text-end">{{ row.pbjt|rupiah }}</td>
+                        <td class="text-end">{{ row.withheld|rupiah }}</td>
+                        <td class="text-end">{{ inv.paid_amount|rupiah }}</td>
+                        <td class="text-end">{{ inv.remaining_amount|rupiah }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="small mb-0">Belum ada invoice penjualan di masa ini.</p>
+        {% endif %}
+    </div>
+
+    <div class="app-card mt-4">
+        <div class="card-header-clean"><div><h5>Peredaran Bruto per Bulan {{ r.year }}</h5><p>Bahan SPT Tahunan (batas 30 April {{ r.year + 1 }}).</p></div></div>
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Bulan</th><th class="text-end">Peredaran bruto</th><th class="text-end">PPh final 0,5%</th></tr></thead>
+                <tbody>
+                    {% for row in r.monthly %}
+                    <tr>
+                        <td>{{ month_names[row.month] }}</td>
+                        <td class="text-end">{{ row.gross|rupiah if row.gross is not none else '-' }}</td>
+                        <td class="text-end">{{ row.pph_final|rupiah if row.pph_final is not none else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr><td><strong>Total</strong></td><td class="text-end"><strong>{{ r.ytd_gross|rupiah }}</strong></td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

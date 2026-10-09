@@ -74,6 +74,9 @@ CREDIT_CHARGE_INVOICE_SOURCES = ("TAZIR", "TAWIDH")
 # Ta'zir masuk Dana Sosial (kewajiban), tidak pernah ke akun pendapatan.
 SOCIAL_FUND_ITEM_TYPES = {"TAZIR"}
 SOCIAL_FUND_ACCOUNT_CODE = "2009"
+# PBJT (Fase 8): pajak daerah titipan konsumen, ditambahkan di atas harga; bukan pendapatan.
+PBJT_ITEM_TYPES = {"PBJT"}
+PBJT_PAYABLE_ACCOUNT_CODE = "2010"
 CATERING_ITEM_TYPES = {"CATERING", "REVISION_INCREASE"}
 WARUNG_ITEM_TYPES = {"WARUNG_DEBT", "WARUNG"}
 # Ongkir punya akun sendiri supaya bisa dibandingkan dengan 5003 Beban Transport / BBM.
@@ -171,6 +174,7 @@ def build_invoice_journal_amounts(invoice):
     warung_transfer_total = 0
     delivery_fee_total = 0
     social_fund_total = 0
+    pbjt_total = 0
     other_total = 0
 
     items = InvoiceItem.query.filter_by(
@@ -205,6 +209,8 @@ def build_invoice_journal_amounts(invoice):
             delivery_fee_total += subtotal
         elif item_type in SOCIAL_FUND_ITEM_TYPES:
             social_fund_total += subtotal
+        elif item_type in PBJT_ITEM_TYPES:
+            pbjt_total += subtotal
         else:
             other_total += subtotal
 
@@ -219,10 +225,11 @@ def build_invoice_journal_amounts(invoice):
         "warung_transfer_total": warung_transfer_total,
         "delivery_fee_total": delivery_fee_total,
         "social_fund_total": social_fund_total,
+        "pbjt_total": pbjt_total,
         "other_total": other_total,
         "total_credit": (
             catering_total + unresolved_catering_total + warung_total + warung_transfer_total
-            + delivery_fee_total + social_fund_total + other_total
+            + delivery_fee_total + social_fund_total + pbjt_total + other_total
         ),
         "total_debit": money(invoice.total_amount or 0),
         "revenue_rule": revenue_rule,
@@ -275,6 +282,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
     acc_lain = get_active_account_by_code("4004")
     acc_delivery = get_active_account_by_code(DELIVERY_FEE_REVENUE_CODE)
     acc_social_fund = get_active_account_by_code(SOCIAL_FUND_ACCOUNT_CODE)
+    acc_pbjt = get_active_account_by_code(PBJT_PAYABLE_ACCOUNT_CODE)
 
     missing_accounts = []
 
@@ -294,6 +302,8 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
         missing_accounts.append("4005 Pendapatan Ongkos Kirim")
     if not acc_social_fund and amounts.get("social_fund_total", 0) > 0:
         missing_accounts.append("2009 Dana Sosial (Ta'zir)")
+    if not acc_pbjt and amounts.get("pbjt_total", 0) > 0:
+        missing_accounts.append("2010 Hutang PBJT")
 
     if missing_accounts:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
@@ -366,6 +376,14 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
             account_id=acc_social_fund.id,
             debit=0,
             credit=amounts["social_fund_total"]
+        ))
+
+    if amounts.get("pbjt_total", 0) > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_pbjt.id,
+            debit=0,
+            credit=amounts["pbjt_total"]
         ))
 
     if amounts["other_total"] > 0:

@@ -1,0 +1,162 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% set raw = form if form else settings.raw %}
+
+{% block content %}
+<section class="page-section" data-ui-page="tax-settings">
+    {{ page_header(
+        "Pengaturan Pajak",
+        "Semua pajak MATI sampai diisi di sini. Isi setelah angka dan dokumennya dipastikan konsultan pajak / Bapenda.",
+        eyebrow="Keuangan • Pajak",
+        actions=[{"label": "Laporan Pajak", "url": url_for('finance.tax_report'), "icon": "bi-arrow-left", "variant": "secondary"}]
+    ) }}
+
+    <form method="POST" action="{{ url_for('finance.tax_settings') }}" class="app-form">
+        {% include "components/csrf_token.html" %}
+
+        <div class="app-card mb-4">
+            <div class="card-header-clean"><div><h5>Identitas Pajak</h5><p>NPWP dicetak dari Profil Perusahaan. Password akun Coretax jangan pernah disimpan di sistem.</p></div></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">KPP terdaftar</label>
+                    <input type="text" name="tax.kpp" class="form-control" value="{{ raw.get('tax.kpp', '') }}" placeholder="KPP Pratama Sekayu">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal terdaftar (SKT)</label>
+                    <input type="date" name="tax.registered_on" class="form-control" value="{{ raw.get('tax.registered_on', '') }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Susunan pengurus</label>
+                    <textarea name="company.directors" class="form-control" rows="2" placeholder="Ida Royani — Direktur&#10;Reki Kurniawan — Komisaris">{{ raw.get('company.directors', '') }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Pemegang saham</label>
+                    <textarea name="company.shareholders" class="form-control" rows="2" placeholder="Nama — jumlah/persen saham">{{ raw.get('company.shareholders', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mb-4">
+            <div class="card-header-clean"><div><h5>Pajak Penghasilan (PPh)</h5><p>Pilih setelah konsultan memastikan. Belum dipilih = potongan &amp; PPh final tidak dihitung.</p></div></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Rezim PPh</label>
+                    <select name="tax.regime" class="form-select">
+                        <option value="">— Belum dipilih —</option>
+                        {% for code, label in regime_labels.items() %}<option value="{{ code }}" {% if raw.get('tax.regime') == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <div class="form-text">PP 55: 0,5% dari omzet, PT maksimal 3 tahun pajak, omzet ≤ Rp4,8 M/tahun. Normal: 22% dari laba (efektif 11% dengan Pasal 31E).</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tahun pertama memakai PP 55</label>
+                    <input type="number" name="tax.pp55_first_year" class="form-control" value="{{ raw.get('tax.pp55_first_year', '') }}" placeholder="2026" min="2000" max="2100">
+                    <div class="form-text">{% if settings.pp55_last_year %}Berlaku sampai akhir {{ settings.pp55_last_year }}; sesudahnya otomatis tarif normal.{% else %}Biasanya tahun PT terdaftar.{% endif %}</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Nomor Surat Keterangan PP 55</label>
+                    <input type="text" name="tax.pp55_certificate_number" class="form-control" value="{{ raw.get('tax.pp55_certificate_number', '') }}">
+                    <div class="form-text">Dicetak di invoice supaya pelanggan memotong 0,5% final, bukan PPh 23 2%.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Surat Keterangan berlaku sampai</label>
+                    <input type="date" name="tax.pp55_certificate_valid_until" class="form-control" value="{{ raw.get('tax.pp55_certificate_valid_until', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mb-4">
+            <div class="card-header-clean"><div><h5>PBJT (Pajak Barang &amp; Jasa Tertentu — makanan &amp; minuman)</h5><p>Ditambahkan di atas harga sebagai baris terpisah di invoice, dicatat sebagai hutang PBJT (bukan pendapatan).</p></div></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="tax.pbjt_enabled" id="pbjtEnabled" value="1" {% if raw.get('tax.pbjt_enabled') == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="pbjtEnabled">Pungut PBJT di invoice</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tarif (%)</label>
+                    <input type="number" name="tax.pbjt_rate" class="form-control" value="{{ raw.get('tax.pbjt_rate', '10') }}" min="0" max="10" step="0.01">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Mulai berlaku (tanggal invoice)</label>
+                    <input type="date" name="tax.pbjt_effective_from" class="form-control" value="{{ raw.get('tax.pbjt_effective_from', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Daerah</label>
+                    <input type="text" name="tax.pbjt_region" class="form-control" value="{{ raw.get('tax.pbjt_region', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">NPWPD</label>
+                    <input type="text" name="tax.npwpd" class="form-control" value="{{ raw.get('tax.npwpd', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal batas setor tiap bulan</label>
+                    <input type="number" name="tax.pbjt_due_day" class="form-control" value="{{ raw.get('tax.pbjt_due_day', '15') }}" min="1" max="28">
+                    <div class="form-text">Sesuaikan dengan Perda Kab. OKI.</div>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="tax.pbjt_include_delivery" id="pbjtDelivery" value="1" {% if raw.get('tax.pbjt_include_delivery') == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="pbjtDelivery">Ongkir ikut dasar PBJT (tanyakan ke Bapenda)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="btn app-btn-primary"><i class="bi bi-check2"></i> Simpan Pengaturan Pajak</button>
+        </div>
+    </form>
+
+    <div class="app-card">
+        <div class="card-header-clean"><div><h5>Dokumen Pajak &amp; Legal</h5><p>SKT, Surat Keterangan PP 55, NPWPD, akta, NIB. Sistem mengingatkan 30 hari sebelum masa berlaku habis.</p></div></div>
+        {% if documents %}
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table app-table align-middle">
+                <thead><tr><th>Jenis</th><th>Nomor</th><th>Terbit</th><th>Berlaku sampai</th><th>File</th></tr></thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>{{ document_types.get(doc.doc_type, doc.doc_type) }}</td>
+                        <td>{{ doc.doc_number or '-' }}</td>
+                        <td>{{ doc.issued_on.strftime('%d-%m-%Y') if doc.issued_on else '-' }}</td>
+                        <td>{{ doc.valid_until.strftime('%d-%m-%Y') if doc.valid_until else 'Tanpa batas' }}</td>
+                        <td>{% if doc.attachment_id %}<a href="{{ url_for('finance.tax_attachment_view', attachment_id=doc.attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Lihat</a>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        <form method="POST" action="{{ url_for('finance.tax_document_upload') }}" enctype="multipart/form-data" class="row g-3 app-form mt-1">
+            {% include "components/csrf_token.html" %}
+            <div class="col-md-4">
+                <label class="form-label">Jenis dokumen</label>
+                <select name="doc_type" class="form-select" required>
+                    {% for code, label in document_types.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nomor dokumen</label>
+                <input type="text" name="doc_number" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Terbit</label>
+                <input type="date" name="issued_on" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Berlaku sampai</label>
+                <input type="date" name="valid_until" class="form-control">
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">File (PDF/foto)</label>
+                <input type="file" name="evidence" class="form-control" accept="image/*,application/pdf" required>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn app-btn-secondary w-100"><i class="bi bi-upload"></i> Simpan Dokumen</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

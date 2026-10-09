@@ -710,6 +710,8 @@ def test_create_invoice_from_manual_backfill_batch_promotes_locked_batch_to_invo
         "app.services.manual_backfill_billing_service.create_invoice_journal_for_invoice",
         lambda invoice, created_by, commit=False: (True, "ok", SimpleNamespace(id=333)),
     )
+    # PBJT (Fase 8) mati di unit test ini; perilakunya diuji di tests/test_tax.py.
+    monkeypatch.setattr("app.services.manual_backfill_billing_service.apply_pbjt_to_invoice", lambda invoice: 0)
     monkeypatch.setattr(
         "app.services.manual_backfill_billing_service.record_audit_log",
         lambda **kwargs: None,
@@ -1246,6 +1248,8 @@ def test_create_invoice_from_free_perorangan_backfill_uses_snapshot_without_mast
         "app.services.manual_backfill_billing_service.create_invoice_journal_for_invoice",
         lambda invoice, created_by, commit=False: (True, "ok", SimpleNamespace(id=333)),
     )
+    # PBJT (Fase 8) mati di unit test ini; perilakunya diuji di tests/test_tax.py.
+    monkeypatch.setattr("app.services.manual_backfill_billing_service.apply_pbjt_to_invoice", lambda invoice: 0)
     monkeypatch.setattr("app.services.manual_backfill_billing_service.record_audit_log", lambda **kwargs: None)
     monkeypatch.setattr("app.services.manual_backfill_billing_service.date", date)
 

@@ -52,9 +52,20 @@ from app.services.customer_complaint_attachment_service import (
     attach_customer_complaint_evidence,
 )
 from app.services.customer_complaint_service import get_customer_complaint
+from app.extensions import limiter
+from app.models.contract import CustomerContract
+from app.services.customer_contract_document_service import (
+    CustomerContractDocumentError,
+    get_contract_document,
+    list_contract_documents_for_contract,
+    send_contract_signing_otp,
+    verify_and_sign_contract_document_otp,
+)
+from app.services.portal_mapping_service import build_portal_external_scope
 from app.services.digital_attachment_service import (
     AttachmentValidationError,
     get_attachment_file_path,
+    get_attachment_or_none,
     is_inline_view_safe,
 )
 from app.services.portal_customer_registration_service import register_portal_customer
@@ -671,6 +682,123 @@ def pt_contracts():
             "page_description": f"Kontrak {T.client_lower} Anda dan masa berlakunya.",
             "contracts": build_portal_contract_model(current_user),
         },
+    )
+
+
+def _can_portal_user_access_contract(user, contract) -> bool:
+    if not contract or contract.branch_id != getattr(user, "branch_id", None):
+        return False
+    scope = build_portal_external_scope(user)
+    return contract.client_id in scope.client_ids
+
+
+@portal_bp.route("/contracts")
+@role_required(ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT)
+def portal_contracts():
+    persona = _pt_persona() if current_user.role == ROLE_PORTAL_CLIENT else _mandor_persona()
+    return render_template(
+        "portal/contracts.html",
+        data={
+            **_role_dashboard_data(persona),
+            "page_title": "Seluruh Kontrak",
+            "page_description": f"Kontrak {T.client_lower} Anda dan dokumen resminya.",
+            "contracts": build_portal_contract_model(current_user),
+        },
+    )
+
+
+@portal_bp.route("/contracts/<int:contract_id>/documents")
+@role_required(ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT)
+def portal_contract_documents(contract_id):
+    contract = CustomerContract.query.filter_by(id=contract_id, branch_id=current_user.branch_id).first()
+    if not contract or not _can_portal_user_access_contract(current_user, contract):
+        abort(404)
+    persona = _pt_persona() if current_user.role == ROLE_PORTAL_CLIENT else _mandor_persona()
+    documents = list_contract_documents_for_contract(contract.id, branch_id=current_user.branch_id)
+    return render_template(
+        "portal/contract_documents.html",
+        data=_role_dashboard_data(persona),
+        contract=contract,
+        documents=documents,
+    )
+
+
+@portal_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/print")
+@role_required(ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT)
+def portal_contract_document_print(contract_id, document_id):
+    contract = CustomerContract.query.filter_by(id=contract_id, branch_id=current_user.branch_id).first()
+    if not contract or not _can_portal_user_access_contract(current_user, contract):
+        abort(404)
+    doc = get_contract_document(document_id, branch_id=current_user.branch_id)
+    if not doc or doc.contract_id != contract_id:
+        abort(404)
+    from app.services.customer_contract_document_service import contract_document_print_html
+
+    return contract_document_print_html(doc)
+
+
+@portal_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/request-otp", methods=["POST"])
+@limiter.limit("3 per 15 minutes", methods=["POST"])
+@role_required(ROLE_PORTAL_CLIENT)
+def portal_contract_document_request_otp(contract_id, document_id):
+    contract = CustomerContract.query.filter_by(id=contract_id, branch_id=current_user.branch_id).first()
+    if not contract or not _can_portal_user_access_contract(current_user, contract):
+        abort(404)
+    try:
+        ok, msg = send_contract_signing_otp(
+            document_id=document_id,
+            user_id=current_user.id,
+            branch_id=current_user.branch_id,
+        )
+        flash(msg, "success")
+    except CustomerContractDocumentError as err:
+        flash(str(err), "danger")
+    return redirect(url_for("portal.portal_contract_documents", contract_id=contract_id))
+
+
+@portal_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/verify-otp", methods=["POST"])
+@limiter.limit("5 per 15 minutes", methods=["POST"])
+@role_required(ROLE_PORTAL_CLIENT)
+def portal_contract_document_verify_otp(contract_id, document_id):
+    contract = CustomerContract.query.filter_by(id=contract_id, branch_id=current_user.branch_id).first()
+    if not contract or not _can_portal_user_access_contract(current_user, contract):
+        abort(404)
+    otp_code = request.form.get("otp_code")
+    try:
+        doc = verify_and_sign_contract_document_otp(
+            document_id=document_id,
+            user_id=current_user.id,
+            otp_code=otp_code,
+            branch_id=current_user.branch_id,
+        )
+        flash(f"Dokumen {doc.document_number} berhasil disetujui dan ditandatangani secara digital.", "success")
+    except CustomerContractDocumentError as err:
+        flash(str(err), "danger")
+    return redirect(url_for("portal.portal_contract_documents", contract_id=contract_id))
+
+
+@portal_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/scan")
+@role_required(ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT)
+def portal_contract_document_scan(contract_id, document_id):
+    contract = CustomerContract.query.filter_by(id=contract_id, branch_id=current_user.branch_id).first()
+    if not contract or not _can_portal_user_access_contract(current_user, contract):
+        abort(404)
+    doc = get_contract_document(document_id, branch_id=current_user.branch_id)
+    if not doc or doc.contract_id != contract_id or not doc.scan_attachment_id:
+        abort(404)
+    attachment = get_attachment_or_none(doc.scan_attachment_id, branch_id=current_user.branch_id)
+    if not attachment:
+        abort(404)
+    try:
+        file_path = get_attachment_file_path(attachment)
+    except Exception as exc:
+        flash(f"File lampiran tidak ditemukan: {exc}", "danger")
+        return redirect(url_for("portal.portal_contract_documents", contract_id=contract_id))
+    return send_file(
+        str(file_path),
+        as_attachment=True,
+        download_name=attachment.original_filename,
+        mimetype=attachment.mime_type or "application/octet-stream",
     )
 
 

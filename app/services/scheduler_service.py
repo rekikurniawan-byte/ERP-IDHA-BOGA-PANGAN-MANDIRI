@@ -132,6 +132,18 @@ def register_default_jobs() -> None:
             enabled=True,
             description="Mengingatkan pihak yang ditagih pada H-3, H, dan H+7 jatuh tempo.",
         )
+    if "tax_reminders" not in _JOB_REGISTRY:
+        from app.services.tax_service import run_tax_reminders
+
+        register_job(
+            key="tax_reminders",
+            label="Pengingat Pajak",
+            schedule=daily_at("08:30"),
+            handler=run_tax_reminders,
+            per_branch=True,
+            enabled=True,
+            description="Mengingatkan setor PPh final (tgl 15), setor PBJT, SPT Tahunan (30 April), dan peringatan pajak (omzet Rp4,8 M, PP 55 berakhir, dokumen kedaluwarsa).",
+        )
     if "credit_daily_sweep" not in _JOB_REGISTRY:
         from app.services.credit_account_service import run_credit_sweep_job
 

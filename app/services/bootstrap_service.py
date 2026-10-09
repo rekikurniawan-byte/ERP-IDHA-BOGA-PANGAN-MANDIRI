@@ -20,6 +20,7 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("1005", "Piutang Karyawan / Warung", "ASSET"),
     ("1006", "Persediaan Bahan Baku", "ASSET"),
     ("1008", "Uang Muka / DP", "ASSET"),
+    ("1009", "Pajak Dibayar di Muka (PPh 23/25)", "ASSET"),
     ("1101", "Peralatan Dapur", "ASSET"),
     ("1102", "Kendaraan Operasional", "ASSET"),
     ("1103", "Bangunan / Dapur", "ASSET"),
@@ -33,6 +34,8 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("2008", "Uang Muka Pelanggan", "LIABILITY"),
     # Ta'zir (Fase 7): dana titipan untuk disalurkan, bukan pendapatan.
     ("2009", "Dana Sosial (Ta'zir)", "LIABILITY"),
+    # Pajak (Fase 8): PBJT titipan konsumen, bukan pendapatan.
+    ("2010", "Hutang PBJT", "LIABILITY"),
     ("2101", "Akumulasi Penyusutan Peralatan", "CONTRA_ASSET"),
     ("2102", "Akumulasi Penyusutan Kendaraan", "CONTRA_ASSET"),
     ("2103", "Akumulasi Penyusutan Bangunan", "CONTRA_ASSET"),
@@ -57,6 +60,7 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("5011", "Beban Perawatan Kendaraan", "EXPENSE"),
     ("5012", "Beban Penyusutan", "EXPENSE"),
     ("5013", "Beban Piutang Tak Tertagih", "EXPENSE"),
+    ("5014", "Beban PPh Final", "EXPENSE"),
 )
 
 

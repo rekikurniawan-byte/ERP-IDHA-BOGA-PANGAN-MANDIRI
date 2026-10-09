@@ -103,6 +103,14 @@ from app.models.finance import (
 from app.models.contract import (
     CustomerContract,
     ContractHoliday,
+    ContractDocument,
+    DOC_TYPE_CONTRACT,
+    DOC_TYPE_ADDENDUM,
+    DOC_STATUS_DRAFT,
+    DOC_STATUS_PENDING,
+    DOC_STATUS_SIGNED,
+    SIGNING_METHOD_WET,
+    SIGNING_METHOD_OTP,
 )
 
 from app.models.credit import (
@@ -110,6 +118,12 @@ from app.models.credit import (
     CreditCharge,
     CreditStatusEvent,
     SocialFundDisbursement,
+)
+
+from app.models.tax import (
+    TaxDocument,
+    TaxPayment,
+    TaxWithholding,
 )
 
 from app.models.pricing import (

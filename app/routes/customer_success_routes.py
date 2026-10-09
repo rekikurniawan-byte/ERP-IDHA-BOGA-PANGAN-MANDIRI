@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
 
 from app.models.master import Client, ClientPic, Mandor, User
@@ -27,7 +27,18 @@ from app.services.customer_contract_document_service import (
     CONTRACT_DOCUMENT_TYPE,
     CustomerContractDocumentError,
     attach_customer_contract_document,
+    generate_addendum_document,
+    generate_contract_document,
+    get_contract_document,
+    is_contract_signed,
+    list_contract_documents_for_contract,
     list_customer_contract_documents,
+    sign_contract_document_wet,
+)
+from app.services.digital_attachment_service import (
+    AttachmentValidationError,
+    get_attachment_file_path,
+    get_attachment_or_none,
 )
 from app.services.contract_lifecycle_service import run_contract_sweep_now
 from app.models.contract import (
@@ -128,9 +139,14 @@ def contract_detail(contract_id):
 
     weekly_holidays_set = set(contract.weekly_holidays.split(",")) if contract.weekly_holidays else set()
 
+    contract_docs = list_contract_documents_for_contract(contract.id, branch_id=current_user.branch_id)
+    signed_status = is_contract_signed(contract.id, branch_id=current_user.branch_id)
+
     data = {
         "contract": contract,
         "documents": list_customer_contract_documents(contract_id=contract.id, branch_id=current_user.branch_id),
+        "contract_documents": contract_docs,
+        "is_contract_signed": signed_status,
         "attachment_types": sorted(ALLOWED_CONTRACT_ATTACHMENT_TYPES),
         "price_quote": quote_price(current_user.branch_id, contract.client_id),
         "subclients": subclient_data,
@@ -232,6 +248,89 @@ def upload_contract_document(contract_id):
     except (CustomerContractDocumentError, AttachmentValidationError) as error:
         flash(str(error), "danger")
     return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/generate-document", methods=["POST"])
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def generate_contract_document_route(contract_id):
+    try:
+        doc = generate_contract_document(
+            contract_id=contract_id,
+            branch_id=current_user.branch_id,
+            created_by=current_user.id,
+            notes=request.form.get("notes"),
+        )
+        flash(f"Surat kontrak resmi {doc.document_number} berhasil dibuat.", "success")
+    except CustomerContractDocumentError as err:
+        flash(str(err), "danger")
+    return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/generate-addendum", methods=["POST"])
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def generate_addendum_route(contract_id):
+    try:
+        doc = generate_addendum_document(
+            contract_id=contract_id,
+            branch_id=current_user.branch_id,
+            created_by=current_user.id,
+            notes=request.form.get("notes"),
+        )
+        flash(f"Dokumen adendum {doc.document_number} berhasil dibuat.", "success")
+    except CustomerContractDocumentError as err:
+        flash(str(err), "danger")
+    return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/print")
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def print_contract_document_route(contract_id, document_id):
+    doc = get_contract_document(document_id, branch_id=current_user.branch_id)
+    if not doc or doc.contract_id != contract_id:
+        abort(404)
+    from app.services.customer_contract_document_service import contract_document_print_html
+
+    return contract_document_print_html(doc)
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/sign-wet", methods=["POST"])
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def sign_contract_document_wet_route(contract_id, document_id):
+    file_storage = request.files.get("scan_file")
+    try:
+        doc = sign_contract_document_wet(
+            document_id=document_id,
+            branch_id=current_user.branch_id,
+            file_storage=file_storage,
+            actor_id=current_user.id,
+            notes=request.form.get("notes"),
+        )
+        flash(f"Dokumen {doc.document_number} berhasil ditandatangani basah dengan bukti scan.", "success")
+    except (CustomerContractDocumentError, AttachmentValidationError) as err:
+        flash(str(err), "danger")
+    return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
+
+
+@customer_success_bp.route("/contracts/<int:contract_id>/documents/<int:document_id>/scan-attachment")
+@role_required(*CUSTOMER_SUCCESS_ROLES)
+def view_contract_document_scan(contract_id, document_id):
+    doc = get_contract_document(document_id, branch_id=current_user.branch_id)
+    if not doc or doc.contract_id != contract_id or not doc.scan_attachment_id:
+        abort(404)
+    attachment = get_attachment_or_none(doc.scan_attachment_id, branch_id=current_user.branch_id)
+    if not attachment:
+        abort(404)
+    try:
+        file_path = get_attachment_file_path(attachment)
+    except Exception as exc:
+        flash(f"File lampiran tidak ditemukan: {exc}", "danger")
+        return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
+    return send_file(
+        str(file_path),
+        as_attachment=False,
+        download_name=attachment.original_filename,
+        mimetype=attachment.mime_type or "application/octet-stream",
+    )
 
 
 @customer_success_bp.route("/contracts/check", methods=["POST"])

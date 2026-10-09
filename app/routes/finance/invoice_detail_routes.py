@@ -91,16 +91,24 @@ def invoice_detail(invoice_id):
     from app.services.billing_trace_service import build_invoice_billing_trace_context
     billing_trace = build_invoice_billing_trace_context(invoice)
     from app.services.invoice_payment_history_service import invoice_settlements
+    from app.utils.clock import today_wib
+    from app.services.tax_service import NON_SALES_SOURCES, WITHHOLDING_LABELS, suggest_withholding, withholdings_for_invoices
 
     return render_template(
         "finance/invoice_detail.html",
         invoice=invoice,
         payments=payments,
         invoice_settlements=invoice_settlements([invoice.id]),
+        tax_withholdings=withholdings_for_invoices([invoice.id]),
+        tax_withholding_labels=WITHHOLDING_LABELS,
+        tax_suggestion=(
+            suggest_withholding(invoice)
+            if str(invoice.source_type or "").upper() not in NON_SALES_SOURCES else None
+        ),
         collection_logs=collection_logs,
         client_pics=client_pics,
         active_bank_accounts=active_bank_accounts,
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         bill_to=get_invoice_bill_to(invoice),
         official_identity=official_identity,
         client_name=client_name,

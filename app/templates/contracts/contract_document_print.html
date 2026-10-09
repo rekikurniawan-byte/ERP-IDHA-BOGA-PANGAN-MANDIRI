@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doc_title or "Surat Perjanjian Kontrak" }} - {{ contract.contract_number }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 20mm 15mm 22mm 15mm;
+            @bottom-right {
+                content: "Halaman " counter(page);
+                font-size: 9pt;
+                color: #555;
+            }
+        }
+
+        body {
+            background-color: #f4f6f8;
+            color: #1a1a1a;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .no-print-bar {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .document-wrapper {
+            max-width: 820px;
+            margin: 24px auto 48px auto;
+            background: #ffffff;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            padding: 40px 48px;
+            box-sizing: border-box;
+        }
+
+        /* Kop Surat PT */
+        .kop-surat {
+            border-bottom: 3px double #1a202c;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .kop-surat h1 {
+            font-size: 15pt;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin: 0 0 4px 0;
+            color: #0f172a;
+        }
+
+        .kop-surat .kop-subtitle {
+            font-size: 9.5pt;
+            font-weight: 600;
+            color: #475569;
+            margin: 0 0 4px 0;
+        }
+
+        .kop-surat .kop-meta {
+            font-size: 8.5pt;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .doc-header-box {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .doc-header-box h2 {
+            font-size: 13pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: underline;
+            margin: 0 0 4px 0;
+            color: #0f172a;
+        }
+
+        .doc-header-box .doc-number {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #334155;
+            margin: 0;
+        }
+
+        .opening-text {
+            text-align: justify;
+            margin-bottom: 16px;
+        }
+
+        .pihak-box {
+            margin-bottom: 18px;
+            padding-left: 12px;
+        }
+
+        .pihak-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .pihak-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+            margin-bottom: 8px;
+        }
+
+        .pihak-table td {
+            padding: 2px 4px;
+            vertical-align: top;
+        }
+
+        .pihak-table td.label-col {
+            width: 170px;
+            color: #334155;
+        }
+
+        .pihak-table td.colon-col {
+            width: 15px;
+            text-align: center;
+        }
+
+        .pasal-block {
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+
+        .pasal-heading {
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .pasal-title {
+            font-size: 11pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            color: #0f172a;
+        }
+
+        .pasal-subtitle {
+            font-size: 10pt;
+            font-weight: 700;
+            margin: 2px 0 6px 0;
+            color: #1e293b;
+        }
+
+        .pasal-content {
+            text-align: justify;
+            margin: 0;
+        }
+
+        .pasal-content ol, .pasal-content ul {
+            margin: 4px 0 8px 0;
+            padding-left: 24px;
+        }
+
+        .pasal-content li {
+            margin-bottom: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 12px 0;
+            font-size: 9.5pt;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 8px;
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .signatures-section {
+            margin-top: 32px;
+            page-break-inside: avoid;
+        }
+
+        .signatures-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+
+        .signature-column {
+            width: 48%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 190px;
+            box-sizing: border-box;
+            border: 1px dashed #cbd5e1;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .signature-header {
+            font-weight: 700;
+            font-size: 10pt;
+            margin-bottom: 6px;
+        }
+
+        .meterai-box {
+            border: 1px dashed #94a3b8;
+            padding: 10px 14px;
+            font-size: 8pt;
+            color: #64748b;
+            display: inline-block;
+            margin: 12px auto;
+            border-radius: 4px;
+            background: #f8fafc;
+        }
+
+        .digital-signed-badge {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 8px 12px;
+            font-size: 8.5pt;
+            border-radius: 6px;
+            margin: 8px auto;
+            display: inline-block;
+            text-align: left;
+        }
+
+        .signature-footer {
+            margin-top: auto;
+        }
+
+        .signer-name {
+            font-weight: 700;
+            text-decoration: underline;
+            margin: 0;
+            font-size: 10.5pt;
+        }
+
+        .signer-title {
+            font-size: 9pt;
+            color: #475569;
+            margin: 2px 0 0 0;
+        }
+
+        .paraf-row-screen {
+            border-top: 1px solid #e2e8f0;
+            margin-top: 36px;
+            padding-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8.5pt;
+            color: #64748b;
+        }
+
+        .print-paraf-box {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                font-size: 9.5pt;
+            }
+
+            .no-print-bar {
+                display: none !important;
+            }
+
+            .document-wrapper {
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .signature-column {
+                border: 1px solid #94a3b8;
+            }
+
+            .print-paraf-box {
+                display: block;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                font-size: 8pt;
+                color: #64748b;
+                border-top: 1px solid #cbd5e1;
+                padding-top: 4px;
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print-bar">
+        <div>
+            <strong>{{ doc.title if doc else "Surat Perjanjian Kontrak" }}</strong>
+
+            <span class="badge bg-light text-dark ms-1">Versi {{ doc.version_no if doc else contract.version_no }}</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm" onclick="window.print()">
+                <i class="bi bi-printer"></i> Cetak / Simpan PDF
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="window.close()">
+                <i class="bi bi-x"></i> Tutup
+            </button>
+        </div>
+    </div>
+
+    <div class="document-wrapper">
+        <!-- Kop Surat -->
+        <header class="kop-surat">
+            <h1>{{ company.company_name or "PT IDHA BOGA PANGAN MANDIRI" }}</h1>
+            <p class="kop-subtitle">JASA BOGA &amp; KATERING MAKANAN KARYAWAN / PROYEK</p>
+            <p class="kop-meta">
+                NPWP: {{ company.company_npwp or "-" }}<br>
+                Alamat: {{ company.company_address or "-" }}<br>
+                Telepon: {{ company.company_phone or "-" }} | Email: {{ company.company_email or "-" }}
+            </p>
+        </header>
+
+        <!-- Judul Surat -->
+        <div class="doc-header-box">
+            <h2>{{ "SURAT ADENDUM PERJANJIAN" if (doc and doc.document_type == 'ADENDUM') else "SURAT PERJANJIAN KERJASAMA KATERING" }}</h2>
+            <p class="doc-number">Nomor: {{ doc.document_number if doc else ("KTR/" ~ contract.contract_number) }}</p>
+        </div>
+
+        <p class="opening-text">
+            Pada hari ini, <strong>{{ signed_day_name }}</strong> tanggal <strong>{{ signed_date_text }}</strong> ({{ signed_date_formatted }}), bertempat di Banyuasin, telah dibuat dan ditandatangani perjanjian kerjasama penyediaan jasa makanan katering (selanjutnya disebut "<strong>Perjanjian</strong>") oleh dan antara para pihak di bawah ini:
+        </p>
+
+        <!-- Identitas Para Pihak -->
+        <div class="pihak-box">
+            <div class="pihak-title">I. PIHAK PERTAMA (Penyedia Jasa):</div>
+            <table class="pihak-table">
+                <tr>
+                    <td class="label-col">Nama Perusahaan</td>
+                    <td class="colon-col">:</td>
+                    <td><strong>{{ company.company_name or "PT IDHA BOGA PANGAN MANDIRI" }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">NPWP</td>
+                    <td class="colon-col">:</td>
+                    <td>{{ company.company_npwp or "-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Alamat Terdaftar</td>
+                    <td class="colon-col">:</td>
+                    <td>{{ company.company_address or "-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Diwakili Oleh</td>
+                    <td class="colon-col">:</td>
+                    <td>
+                        <strong>Ida Royani</strong> (Direktur) dan <strong>Reki Kurniawan</strong> (Komisaris), bertindak sah mewakili PT Idha Boga Pangan Mandiri.
+                    </td>
+                </tr>
+            </table>
+            <p class="mb-2">Selanjutnya disebut sebagai <strong>"PIHAK PERTAMA"</strong>.</p>
+        </div>
+
+        <div class="pihak-box">
+            <div class="pihak-title">II. PIHAK KEDUA (Pelanggan / Pengguna Jasa):</div>
+            <table class="pihak-table">
+                <tr>
+                    <td class="label-col">Nama Perusahaan / Client</td>
+                    <td class="colon-col">:</td>
+                    <td><strong>{{ contract.client.name }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Telepon / Kontak</td>
+                    <td class="colon-col">:</td>
+                    <td>{{ contract.client.phone or "-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Alamat Pelanggan</td>
+                    <td class="colon-col">:</td>
+                    <td>{{ contract.client.address or "-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Penanggung Jawab (PIC)</td>
+                    <td class="colon-col">:</td>
+                    <td>
+                        {% if contract.client_pic %}
+                            <strong>{{ contract.client_pic.name }}</strong>{% if contract.client_pic.position %} ({{ contract.client_pic.position }}){% endif %}
+                            {% if contract.client_pic.phone %} - Telp/WA: {{ contract.client_pic.phone }}{% endif %}
+                        {% else %}
+                            {{ contract.client.name }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            <p class="mb-3">Selanjutnya disebut sebagai <strong>"PIHAK KEDUA"</strong>.</p>
+        </div>
+
+        <p class="opening-text">
+            PIHAK PERTAMA dan PIHAK KEDUA secara bersama-sama disebut sebagai <strong>"PARA PIHAK"</strong>, dan masing-masing disebut sebagai <strong>"PIHAK"</strong>.
+            PARA PIHAK sepakat untuk mengikatkan diri dalam Perjanjian ini dengan syarat-syarat dan ketentuan-ketentuan yang diatur dalam pasal-pasal berikut:
+        </p>
+
+        <!-- 17 PASAL -->
+
+        <!-- PASAL 1 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 1</h3>
+                <div class="pasal-subtitle">IDENTITAS DAN KEDUDUKAN PARA PIHAK</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>PIHAK PERTAMA adalah perseroan terbatas penyedia jasa boga katering makanan yang berkedudukan hukum di Kabupaten Banyuasin, Sumatera Selatan, yang diwakili secara sah oleh <strong>Ida Royani</strong> selaku Direktur dan <strong>Reki Kurniawan</strong> selaku Komisaris.</li>
+                    <li>PIHAK KEDUA adalah entitas pengguna jasa yang memesan layanan penyediaan makanan harian karyawan/pekerja dengan identitas dan kontak perwakilan (PIC) sebagaimana tercatat dalam sistem ERP PIHAK PERTAMA.</li>
+                    <li>Seluruh unit kerja lapangan, mandor, perwakilan sub client, dan titik antar yang ditunjuk oleh PIHAK KEDUA merupakan satu kesatuan yang tunduk pada ketentuan Perjanjian ini.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 2 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 2</h3>
+                <div class="pasal-subtitle">RUANG LINGKUP PEKERJAAN</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>PIHAK PERTAMA berkewajiban menyediakan dan mengantarkan makanan matang siap konsumsi untuk sesi <strong>Makan Siang</strong> dan/atau <strong>Makan Malam</strong> sesuai dengan pesanan aktif PIHAK KEDUA.</li>
+                    <li>Pengantaran dilakukan ke titik-titik lokasi antar yang telah didaftarkan dan diverifikasi di sistem, mencakup sub client / mandor sebagaimana terlampir dalam Lampiran Perjanjian ini.</li>
+                    <li>Masa berlaku Perjanjian ini dimulai sejak tanggal <strong>{{ contract.start_date.strftime('%d-%m-%Y') }}</strong> sampai dengan tanggal <strong>{{ contract.end_date.strftime('%d-%m-%Y') }}</strong>.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 3 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 3</h3>
+                <div class="pasal-subtitle">HARGA PER PORSI, ONGKOS KIRIM &amp; PENYESUAIAN HARGA</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Harga disepakati adalah sebesar <strong>{{ price_per_portion|rupiah }}</strong> per porsi (berlaku sama untuk sesi makan siang maupun makan malam).</li>
+                    <li>Ongkos kirim disepakati: <strong>{{ delivery_fee_text }}</strong>.</li>
+                    <li>Harga per porsi dan ongkos kirim tersebut dapat disesuaikan di kemudian hari apabila terjadi fluktuasi signifikan pada harga bahan pokok atau bahan bakar minyak (BBM). Penyesuaian harga wajib dituangkan dalam dokumen <strong>Adendum Perjanjian</strong> yang disetujui PARA PIHAK melalui sistem.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 4 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 4</h3>
+                <div class="pasal-subtitle">MEKANISME PEMESANAN OTOMATIS</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Untuk kelancaran operasional dapur dan logistik, sistem ERP PIHAK PERTAMA akan menyusun pesanan pengiriman hari kerja berikutnya secara <strong>otomatis setiap hari pada pukul 18.00 WIB</strong>.</li>
+                    <li>Jumlah porsi pesanan harian otomatis mengikuti jumlah porsi pada hari kerja terakhir yang bukan nol, per sub client dan per sesi makan.</li>
+                    <li>Pesanan otomatis hanya dijalankan untuk kontrak yang berstatus aktif dan telah ditandatangani.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 5 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 5</h3>
+                <div class="pasal-subtitle">BATAS WAKTU KUNCI (LOCK TIME)</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Batas akhir pengubahan porsi makan siang adalah pukul <strong>{{ lunch_lock_time }} WIB</strong> pada hari pengiriman.</li>
+                    <li>Batas akhir pengubahan porsi makan malam adalah pukul <strong>{{ dinner_lock_time }} WIB</strong> pada hari pengiriman.</li>
+                    <li>Setelah batas waktu kunci (lock time) tercapai, pesanan otomatis dikunci oleh sistem. Pihak pemesan tidak dapat lagi menambah, mengurangi, atau membatalkan pesanan melalui portal.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 6 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 6</h3>
+                <div class="pasal-subtitle">PERUBAHAN PORSI &amp; PORSI NOL (0)</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>PIHAK KEDUA atau perwakilan sub client dapat mengubah jumlah porsi sebelum batas waktu kunci melalui portal pelanggan.</li>
+                    <li>Pengurangan porsi hingga 0 (nol) porsi wajib memilih 1 (satu) dari 6 (enam) alasan resmi sistem:
+                        <ul>
+                            <li><strong>Libur hari ini saja:</strong> pesanan besok kembali otomatis ke porsi terakhir yang bukan nol;</li>
+                            <li><strong>Libur sampai tanggal tertentu:</strong> pesanan kosong hingga tanggal ditentukan, lalu otomatis aktif kembali;</li>
+                            <li><strong>Berhenti sementara, saya pesan lagi nanti:</strong> pesanan otomatis dimatikan sampai PIHAK KEDUA mengaktifkannya kembali;</li>
+                            <li><strong>Proyek / pekerjaan selesai:</strong> pesanan otomatis dimatikan dan admin menerima pemberitahuan untuk penutupan kontrak;</li>
+                            <li><strong>Pekerja sedang tidak di lokasi:</strong> tercatat khusus dalam laporan operasional lapangan;</li>
+                            <li><strong>Lainnya:</strong> dengan catatan wajib yang jelas.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 7 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 7</h3>
+                <div class="pasal-subtitle">HARI LIBUR RUTIN DAN KHUSUS</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Hari libur rutin yang disepakati: <strong>{{ weekly_holidays_label }}</strong>.</li>
+                    <li>Daftar hari libur khusus yang disepakati: <strong>{{ special_holidays_label }}</strong>.</li>
+                    <li>Pada hari libur rutin maupun khusus yang tercatat dalam sistem, PIHAK PERTAMA tidak menerbitkan pesanan harian dan tidak melakukan pengiriman makanan, kecuali ada permintaan tertulis terpisah sebelum batas waktu kunci.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 8 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 8</h3>
+                <div class="pasal-subtitle">MAKANAN DALAM PERJALANAN (IN TRANSIT)</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Makanan yang telah selesai diproduksi oleh dapur dan berada dalam status perjalanan pengiriman (In Transit) <strong>terkunci total secara permanen</strong> di dalam sistem.</li>
+                    <li>Seluruh pihak, termasuk Manajemen PIHAK PERTAMA, Administrator, maupun PIHAK KEDUA, tidak diperbolehkan dan tidak memiliki akses sistem untuk membatalkan, mengurangi, atau menghapus pesanan yang sedang dalam perjalanan. Porsi tersebut wajib diterima dan ditagihkan penuh.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 9 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 9</h3>
+                <div class="pasal-subtitle">PENERIMAAN BARANG &amp; BUKTI SERAH TERIMA</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Petugas logistik / pengantar PIHAK PERTAMA wajib mendokumentasikan serah terima makanan dengan mengambil foto titik antar dan melakukan konfirmasi penerimaan (tanda terima digital / QR label wadah).</li>
+                    <li>Komplain mengenai jumlah porsi atau ketidaksesuaian fisik wajib disampaikan pada hari pengantaran yang bersangkutan sebelum sesi makan berakhir.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 10 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 10</h3>
+                <div class="pasal-subtitle">PENAGIHAN &amp; PEMBAYARAN</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Siklus penerbitan invoice adalah <strong>{{ billing_cycle_label }}</strong>, dengan tanggal potong (anchor) tanggal {{ billing_anchor_text }}.</li>
+                    <li>Invoice diterbitkan secara otomatis oleh sistem pada <strong>pukul 06.00 WIB</strong> pada tanggal siklus tagihan, dan hanya menagihkan porsi makanan yang telah terkonfirmasi diterima.</li>
+                    <li>Jatuh tempo pembayaran tagihan adalah <strong>{{ due_days_text }}</strong>.</li>
+                    <li>Ketentuan pihak yang berutang dan ditagih untuk masing-masing unit kerja/sub client adalah sebagai berikut:
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sub Client / Mandor</th>
+                                    <th>Mode Penagihan</th>
+                                    <th>Keterangan Tanggung Jawab</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sc in subclient_rows %}
+                                    <tr>
+                                        <td><strong>{{ sc.name }}</strong></td>
+                                        <td>{{ sc.billing_mode_label }}</td>
+                                        <td>{{ sc.billing_mode_desc }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-muted text-center">Seluruh penagihan ditujukan ke Kantor Pusat PIHAK KEDUA.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </li>
+                    <li>Kedua belah pihak dapat melihat seluruh invoice, rincian per sub client, dan status pembayaran secara transparan melalui portal masing-masing.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 11 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 11</h3>
+                <div class="pasal-subtitle">KONTROL KREDIT, LIMIT &amp; ESKALASI STATUS</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Limit kredit total untuk Perjanjian ini ditetapkan sebesar <strong>{{ contract.credit_limit|rupiah }}</strong>.</li>
+                    <li>Apabila terjadi keterlambatan pembayaran melampaui tanggal jatuh tempo, sistem menerapkan tangga eskalasi kredit syariah secara otomatis:
+                        <ul>
+                            <li><strong>Keterlambatan {{ thresholds['credit.watch_days_overdue'] }} Hari (Status PANTAU):</strong> Peringatan dini disampaikan ke portal dan penanggung jawab tagihan;</li>
+                            <li><strong>Keterlambatan {{ thresholds['credit.hold_days_overdue'] }} Hari (Status TAHAN):</strong> Fasilitas kredit ditangguhkan. Pesanan baru wajib dibayar di muka (tunai/transfer);</li>
+                            <li><strong>Keterlambatan {{ thresholds['credit.blocked_days_overdue'] }} Hari (Status BLOKIR):</strong> Seluruh pesanan otomatis maupun manual ditolak dan dihentikan sementara hingga tunggakan diselesaikan;</li>
+                            <li><strong>Keterlambatan {{ thresholds['credit.write_off_days_overdue'] }} Hari:</strong> Tagihan dievaluasi oleh Manajemen PIHAK PERTAMA untuk tindakan hukum dan hapus buku.</li>
+                        </ul>
+                    </li>
+                    <li>Pelanggaran janji bayar (ingkar janji) {{ thresholds['credit.broken_promise_hold'] }} kali menaikkan status akun ke <strong>TAHAN</strong>, dan {{ thresholds['credit.broken_promise_blocked'] }} kali langsung menaikkan ke status <strong>BLOKIR</strong>.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 12 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 12</h3>
+                <div class="pasal-subtitle">SANKSI KETERLAMBATAN SYARIAH (TA'ZIR &amp; TA'WIDH) &amp; KELONGGARAN</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Sesuai prinsip syariat Islam (Fatwa DSN-MUI No. 17/DSN-MUI/IX/2000 dan No. 43/DSN-MUI/VIII/2004), PIHAK PERTAMA <strong>tidak mengenakan bunga atau denda persentase harian</strong> yang menguntungkan PIHAK PERTAMA (bebas riba).</li>
+                    <li><strong>Kelonggaran Waktu (QS. Al-Baqarah: 280):</strong> Pihak yang terbukti mengalami kesulitan keuangan nyata dapat mengajukan permohonan kelonggaran waktu tanpa dikenakan sanksi denda, dengan ketentuan pesanan berikutnya beralih ke skema bayar di muka.</li>
+                    <li><strong>Ta'zir:</strong> Bagi pihak yang berkemampuan namun sengaja menunda pembayaran atau ingkar janji bayar, PIHAK PERTAMA berhak mengenakan sanksi Ta'zir nominal tetap sebesar <strong>{{ contract.tazir_amount|rupiah }}</strong> per kejadian (janji bayar meleset atau status BLOKIR), atas keputusan Direksi PIHAK PERTAMA dan ditagihkan terpisah dari invoice makanan. Seluruh dana Ta'zir dibukukan terpisah ke akun <strong>Dana Sosial</strong> untuk kemaslahatan umat dan bukan merupakan pendapatan operasional PIHAK PERTAMA.</li>
+                    <li><strong>Ta'widh:</strong> PIHAK PERTAMA berhak menuntut ganti rugi nyata (Ta'widh) sebatas biaya riil penagihan yang dikeluarkan secara sah dan memiliki bukti otentik.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 13 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 13</h3>
+                <div class="pasal-subtitle">KETENTUAN PERPAJAKAN</div>
+            </div>
+            <div class="pasal-content">
+                {% include "contracts/_pasal_pajak.html" %}
+            </div>
+        </section>
+
+        <!-- PASAL 14 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 14</h3>
+                <div class="pasal-subtitle">AKUN PORTAL DAN KEAMANAN AKSES</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>PIHAK KEDUA dan perwakilan sub client diberikan akses ke aplikasi portal pelanggan untuk memonitor pesanan, menu harian, rekap pengiriman, dan tagihan invoice.</li>
+                    <li>Kerahasiaan akun, username, password, dan kode OTP sepenuhnya menjadi tanggung jawab PIHAK KEDUA. Seluruh transaksi dan persetujuan yang dilakukan melalui akun yang sah diakui mengikat secara hukum.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 15 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 15</h3>
+                <div class="pasal-subtitle">KEADAAN KAHAR (FORCE MAJEURE)</div>
+            </div>
+            <div class="pasal-content">
+                <p>
+                    Tidak ada pihak yang dianggap lalai atas keterlambatan atau kegagalan memenuhi kewajiban akibat peristiwa di luar kendali yang wajar (keadaan kahar), termasuk namun tidak terbatas pada bencana alam besar, banjir bandang, kebakaran, blokade akses jalan, huru-hara massal, atau kebijakan darurat pemerintah. Pihak yang terdampak wajib memberitahukan pihak lainnya dalam waktu 1x24 jam.
+                </p>
+            </div>
+        </section>
+
+        <!-- PASAL 16 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 16</h3>
+                <div class="pasal-subtitle">PENYELESAIAN SENGKETA &amp; DOMISILI HUKUM</div>
+            </div>
+            <div class="pasal-content">
+                <ol>
+                    <li>Segala perselisihan yang timbul dari pelaksanaan Perjanjian ini diselesaikan terlebih dahulu melalui musyawarah untuk mencapai mufakat secara kekeluargaan.</li>
+                    <li>Apabila musyawarah tidak mencapai mufakat dalam waktu 30 (tiga puluh) hari kalender, PARA PIHAK sepakat memilih domisili hukum yang tetap dan tidak berubah di <strong>{{ dispute_court_label }}</strong>.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- PASAL 17 -->
+        <section class="pasal-block">
+            <div class="pasal-heading">
+                <h3 class="pasal-title">PASAL 17</h3>
+                <div class="pasal-subtitle">PENUTUP &amp; TANDA TANGAN</div>
+            </div>
+            <div class="pasal-content">
+                <p>
+                    Demikian Perjanjian ini dibuat dalam bentuk dokumen elektronik terverifikasi dan/atau dokumen fisik bermeterai cukup, serta memiliki kekuatan hukum yang sah dan mengikat PARA PIHAK sejak ditandatangani.
+                </p>
+            </div>
+        </section>
+
+        <!-- BLOK TANDA TANGAN -->
+        <div class="signatures-section">
+            <div class="signatures-row">
+                <!-- PIHAK PERTAMA -->
+                <div class="signature-column">
+                    <div>
+                        <div class="signature-header">PIHAK PERTAMA</div>
+                        <div class="fw-bold">{{ company.company_name or "PT IDHA BOGA PANGAN MANDIRI" }}</div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <span class="text-muted small">[Tanda Tangan &amp; Cap Perusahaan]</span>
+                    </div>
+
+                    <div class="signature-footer">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="signer-name">IDA ROYANI</p>
+                                <p class="signer-title">Direktur</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="signer-name">REKI KURNIAWAN</p>
+                                <p class="signer-title">Komisaris</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PIHAK KEDUA -->
+                <div class="signature-column">
+                    <div>
+                        <div class="signature-header">PIHAK KEDUA</div>
+                        <div class="fw-bold">{{ contract.client.name }}</div>
+                    </div>
+
+                    <div>
+                        {% if doc and doc.status == 'DITANDATANGANI' and doc.signing_method == 'PORTAL_EMAIL_OTP' %}
+                            <div class="digital-signed-badge">
+                                <i class="bi bi-patch-check-fill text-success"></i> <strong>DITANDATANGANI SECARA DIGITAL</strong><br>
+                                <small>Persetujuan Portal &amp; Verifikasi OTP Email</small><br>
+                                <small>Oleh: <strong>{{ doc.signed_by_name or contract.client.name }}</strong></small><br>
+                                <small>Waktu: {{ doc.portal_signed_at.strftime('%d-%m-%Y %H:%M:%S WIB') if doc.portal_signed_at else '-' }}</small>
+                            </div>
+                        {% elif doc and doc.status == 'DITANDATANGANI' and doc.signing_method == 'WET_STAMP' %}
+                            <div class="digital-signed-badge">
+                                <i class="bi bi-file-earmark-check text-success"></i> <strong>TANDA TANGAN BASAH TERVERIFIKASI</strong><br>
+                                <small>Meterai Rp10.000 &amp; Scan Terarsip</small><br>
+                                <small>Diverifikasi: {{ doc.signed_at.strftime('%d-%m-%Y') if doc.signed_at else '-' }}</small>
+                            </div>
+                        {% else %}
+                            <div class="meterai-box">
+                                Meterai Rp 10.000<br>
+                                (Atau Persetujuan OTP Portal)
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="signature-footer">
+                        <p class="signer-name">
+                            {% if contract.client_pic %}{{ contract.client_pic.name }}{% else %}{{ contract.client.name }}{% endif %}
+                        </p>
+                        <p class="signer-title">
+                            {% if contract.client_pic and contract.client_pic.position %}{{ contract.client_pic.position }}{% else %}Perwakilan Resmi Pelanggan{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="paraf-row-screen">
+            <span>Paraf Pihak I: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</span>
+            <span>Dokumen Resmi ERP PT Idha Boga Pangan Mandiri</span>
+            <span>Paraf Pihak II: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</span>
+        </div>
+
+        <div class="print-paraf-box">
+            <span>Paraf Pihak I: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</span>
+            <span>{{ contract.contract_number }} - Halaman &bull;</span>
+            <span>Paraf Pihak II: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</span>
+        </div>
+    </div>
+
+</body>
+</html>

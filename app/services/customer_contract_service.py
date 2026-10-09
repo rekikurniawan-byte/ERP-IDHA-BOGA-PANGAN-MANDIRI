@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from app.extensions import db
@@ -362,6 +362,9 @@ def activate_customer_contract(contract_id: int, *, branch_id: int, updated_by: 
     contract = _get_contract_or_raise(contract_id, branch_id)
     if contract.status != CONTRACT_STATUS_DRAFT:
         raise CustomerContractError("Hanya kontrak DRAFT yang bisa diaktifkan.")
+    from app.services.customer_contract_document_service import is_contract_signed
+    if not is_contract_signed(contract.id, branch_id=branch_id):
+        raise CustomerContractError("Kontrak hanya dapat diaktifkan setelah dokumen kontrak ditandatangani.")
     return _set_contract_status(contract, CONTRACT_STATUS_ACTIVE, updated_by=updated_by, commit=commit)
 
 
@@ -442,6 +445,36 @@ def renew_customer_contract(
         )
 
     return new_contract
+
+
+_RULE_LABELS = {
+    "lunch_lock_time": "Jam lock siang",
+    "dinner_lock_time": "Jam lock malam",
+    "weekly_holidays": "Libur rutin",
+    "default_billing_mode": "Bawaan pihak ditagih",
+    "billing_cycle": "Siklus tagihan",
+    "billing_anchor_date": "Tanggal acuan tagihan",
+    "due_days": "Tempo (hari)",
+    "dispute_court": "Pengadilan sengketa",
+    "tazir_amount": "Ta'zir",
+}
+
+
+def _same_rule_value(before, after):
+    """Nilai aturan sama? Angka dibandingkan sebagai angka ("100000.00" == "100000")."""
+    try:
+        return Decimal(str(before)) == Decimal(str(after))
+    except (InvalidOperation, ValueError):
+        return str(before or "") == str(after or "")
+
+
+def _subclient_mode_snapshot(branch_id, client_id):
+    from app.services.contract_rules_service import billing_mode_for
+
+    return {
+        mandor.id: billing_mode_for(mandor.id, branch_id=branch_id)
+        for mandor in Mandor.query.filter_by(branch_id=branch_id, client_id=client_id).all()
+    }
 
 
 def update_customer_contract_rules(
@@ -551,10 +584,34 @@ def update_customer_contract_rules(
         contract.tazir_amount = tazir_dec
         contract.updated_by = actor_id
 
+        holidays_before = sorted((h.holiday_date.isoformat(), h.note or "") for h in contract.holidays)
+        modes_before = _subclient_mode_snapshot(branch_id, contract.client_id)
         _save_contract_holidays(contract, holidays, contract.start_date, contract.end_date)
         _save_subclient_billing_modes(branch_id, modes, client_id=contract.client_id, actor_role=actor_role)
 
         db.session.flush()
+
+        # Kontrak aktif yang aturannya BENAR-BENAR berubah wajib punya adendum (Fase 9);
+        # menyimpan tanpa perubahan tidak membuat adendum.
+        changes = [
+            f"{_RULE_LABELS.get(key, key)}: {old_values[key]} → {new_values[key]}"
+            for key in new_values
+            if not _same_rule_value(old_values.get(key), new_values[key])
+        ]
+        holidays_after = sorted((h.holiday_date.isoformat(), h.note or "") for h in contract.holidays)
+        if holidays_after != holidays_before:
+            changes.append("Hari libur khusus diubah")
+        if _subclient_mode_snapshot(branch_id, contract.client_id) != modes_before:
+            changes.append("Pihak yang ditagih per sub client diubah")
+        if contract.status == CONTRACT_STATUS_ACTIVE and changes:
+            from app.services.customer_contract_document_service import generate_addendum_document
+            generate_addendum_document(
+                contract_id=contract.id,
+                branch_id=branch_id,
+                created_by=actor_id or contract.created_by,
+                notes="Adendum: " + "; ".join(changes) + ".",
+                commit=False,
+            )
 
         record_audit_log(
             module="CONTRACT",

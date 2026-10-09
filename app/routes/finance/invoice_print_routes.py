@@ -263,6 +263,8 @@ def invoice_print(invoice_id):
         flash("Data invoice tidak sesuai cabang user.", "danger")
         return redirect(url_for("finance.invoices"))
 
+    from app.services.tax_service import tax_print_note
+
     # Termasuk pelunasan lewat potong DP/deposit, supaya cetakan sama dengan sisa tagihannya.
     from app.services.invoice_payment_history_service import payment_events
 
@@ -294,7 +296,8 @@ def invoice_print(invoice_id):
         mandor_name=mandor_name,
         whatsapp=whatsapp,
         print_data=print_data,
-        company_settings=company_settings
+        company_settings=company_settings,
+        tax_print_note=tax_print_note(invoice)
     )
 
 

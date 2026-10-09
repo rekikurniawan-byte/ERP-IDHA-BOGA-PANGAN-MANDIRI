@@ -70,7 +70,10 @@ def build_path_summary(branch_id, today=None):
         if invoice.source_type == "TAZIR":
             continue
         if start <= invoice.invoice_date <= end:
-            row["revenue"] += _money(invoice.total_amount)
+            # PBJT titipan konsumen, bukan omzet (Fase 8).
+            from app.services.tax_service import invoice_pbjt_amount
+
+            row["revenue"] += _money(invoice.total_amount) - invoice_pbjt_amount(invoice.id)
             row["invoice_count"] += 1
 
     payments = (

@@ -566,6 +566,8 @@ def generate_period_invoice_save():
 
             # Jurnal gagal -> seluruh invoice batal (atomic), bukan invoice tanpa jurnal.
             from app.services.accounting_service import post_invoice_journal_or_raise
+            from app.services.tax_service import apply_pbjt_to_invoice
+            apply_pbjt_to_invoice(invoice)
             post_invoice_journal_or_raise(invoice, current_user.id)
 
         record_audit_log(

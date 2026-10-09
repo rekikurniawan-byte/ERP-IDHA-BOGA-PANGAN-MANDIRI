@@ -15,6 +15,7 @@ from app.models.master import Client, Mandor
 from app.services.audit_log_service import record_audit_log
 from app.services.billing_input_source_service import INPUT_SOURCE_MANUAL_BACKFILL, INPUT_SOURCE_REALTIME
 from app.services.invoice_identity_service import build_company_bank_snapshot
+from app.services.tax_service import apply_pbjt_to_invoice
 from app.services.manual_billing_service import (
     MANUAL_BILLING_INVOICE_SOURCE,
     create_invoice_journal_for_invoice,
@@ -931,6 +932,8 @@ def create_invoice_from_manual_backfill_batch(*, batch_id, branch_id, created_by
     batch.status = MANUAL_BACKFILL_STATUS_INVOICED
 
     # Invoice tanpa jurnal = piutang tidak cocok dengan buku besar: batalkan semuanya.
+    # PBJT hanya bila tanggal invoice sudah masuk masa pungut PBJT (Fase 8).
+    apply_pbjt_to_invoice(invoice)
     journal_ok, journal_message, _ = create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
     if not journal_ok:
         raise ManualBackfillBillingError(f"Jurnal piutang gagal dibuat: {journal_message}")

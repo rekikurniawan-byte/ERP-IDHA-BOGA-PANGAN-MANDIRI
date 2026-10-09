@@ -140,6 +140,20 @@ def test_customer_success_contract_lifecycle_and_document_upload(app, tmp_path):
 
     list_response = client.get("/customer-success/contracts")
     detail_response = client.get(f"/customer-success/contracts/{contract_id}")
+    # Fase 9: buat surat kontrak, tanda tangan basah (unggah scan), baru aktifkan.
+    blocked_response = client.post(f"/customer-success/contracts/{contract_id}/activate", follow_redirects=False)
+    client.post(f"/customer-success/contracts/{contract_id}/generate-document", follow_redirects=False)
+    with app.app_context():
+        from app.models.contract import ContractDocument
+
+        assert db.session.get(CustomerContract, contract_id).status == "DRAFT"
+        document_id = ContractDocument.query.filter_by(contract_id=contract_id).one().id
+    client.post(
+        f"/customer-success/contracts/{contract_id}/documents/{document_id}/sign-wet",
+        data={"scan_file": (BytesIO(b"%PDF-1.4\nsigned contract\n%%EOF"), "kontrak-ttd.pdf")},
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
     activate_response = client.post(f"/customer-success/contracts/{contract_id}/activate", follow_redirects=False)
     upload_response = client.post(
         f"/customer-success/contracts/{contract_id}/documents",
@@ -164,6 +178,7 @@ def test_customer_success_contract_lifecycle_and_document_upload(app, tmp_path):
         assert create_response.status_code == 302
         assert list_response.status_code == 200
         assert detail_response.status_code == 200
+        assert blocked_response.status_code == 302
         assert activate_response.status_code == 302
         assert upload_response.status_code == 302
         assert contract.status == "ACTIVE"

@@ -48,6 +48,12 @@ auto_order_f4 = importlib.import_module(
 sharia_credit_g5 = importlib.import_module(
     "migrations.versions.g5b6c7d8e9f0_sharia_credit_tazir"
 )
+tax_h6 = importlib.import_module(
+    "migrations.versions.h6c7d8e9f0a1_tax_phase8"
+)
+contract_documents_i7 = importlib.import_module(
+    "migrations.versions.i7d8e9f0a1b2_contract_documents_phase9"
+)
 
 
 def _migration_columns(module):
@@ -93,6 +99,8 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(contract_settings_d2),
         **_migration_columns(auto_order_f4),
         **_migration_columns(sharia_credit_g5),
+        **_migration_columns(tax_h6),
+        **_migration_columns(contract_documents_i7),
     }
 
     assert migration_columns

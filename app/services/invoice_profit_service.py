@@ -199,6 +199,17 @@ def build_invoice_profit_report(invoice):
         ):
             allocations, snapshot, warning = _allocations_for_daily_order_invoice(invoice)
             daily_order_invoice_consumed = True
+        elif item_type == "PBJT":
+            row.update({
+                "status": "EXCLUDED",
+                "status_label": "Pajak daerah (titipan)",
+                "status_class": "status-draft",
+                "note": "PBJT dipungut untuk pemerintah daerah; bukan pendapatan dan tidak punya HPP.",
+                "gross_profit": 0.0,
+            })
+            excluded_revenue_total += item_subtotal
+            item_rows.append(row)
+            continue
         elif source_type == "WORKER_DEBT" or item_type == "WARUNG_DEBT":
             row.update({
                 "status": "EXCLUDED",

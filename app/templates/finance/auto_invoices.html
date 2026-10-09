@@ -14,7 +14,7 @@
             </td>
             <td>{{ p.period_start.strftime('%d-%m-%Y') }} s/d {{ p.period_end.strftime('%d-%m-%Y') }}</td>
             <td class="text-end">{{ p.lines|length }}</td>
-            <td class="text-end"><strong>{{ p.total|rupiah }}</strong></td>
+            <td class="text-end"><strong>{{ p.grand_total|rupiah }}</strong>{% if p.pbjt %}<small class="text-muted d-block">termasuk PBJT {{ p.pbjt|rupiah }}</small>{% endif %}</td>
             <td>{{ p.due_date.strftime('%d-%m-%Y') if p.due_date else "-" }}</td>
             {% if show_reason %}<td class="text-danger">{{ p.error }}</td>{% endif %}
         </tr>

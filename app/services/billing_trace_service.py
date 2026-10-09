@@ -307,9 +307,23 @@ def build_invoice_billing_trace_context(invoice):
         ref_number=getattr(invoice_journal.get("journal"), "journal_number", None),
     ))
 
+    # Pelunasan bukan kas/bank (potong DP/deposit, potongan pajak pelanggan) punya
+    # jurnalnya sendiri dan memang tidak membuat kas masuk baru.
+    non_cash = 0
+    if not payments and paid_amount > 0 and getattr(invoice, "id", None):
+        from app.services.invoice_payment_history_service import settlement_total
+
+        non_cash = _money_value(settlement_total(invoice.id))
+    journal_note = "Setiap pembayaran harus punya jurnal Dr Kas/Bank / Cr Piutang."
+    ledger_note = "Setiap pembayaran harus punya jejak masuk di buku kas/bank."
     if payments:
         journal_status = "Lengkap" if all_payment_journals_exist else "Belum lengkap"
         ledger_status = "Lengkap" if all_ledgers_exist else "Belum lengkap"
+    elif non_cash > 0:
+        journal_status = "Lengkap"
+        ledger_status = "Lengkap"
+        journal_note = f"Pelunasan {non_cash:,.0f} lewat potong DP/deposit atau potongan pajak; dijurnal tersendiri."
+        ledger_note = "Tidak ada kas masuk baru untuk pelunasan non-kas (uangnya sudah diterima/ditahan sebagai pajak)."
     else:
         journal_status = "Belum ada"
         ledger_status = "Belum ada"
@@ -317,13 +331,13 @@ def build_invoice_billing_trace_context(invoice):
         "PAYMENT_JOURNAL",
         "Jurnal Pembayaran",
         journal_status,
-        "Setiap pembayaran harus punya jurnal Dr Kas/Bank / Cr Piutang.",
+        journal_note,
     ))
     steps.append(_step(
         "CASH_BANK_LEDGER",
         "Buku Kas/Bank",
         ledger_status,
-        "Setiap pembayaran harus punya jejak masuk di buku kas/bank.",
+        ledger_note,
     ))
 
     blocking_steps = [step for step in steps if step["status_class"] == "status-danger"]

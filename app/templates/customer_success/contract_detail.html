@@ -12,9 +12,24 @@
         <div class="page-actions" data-page-actions>
             <a class="btn app-btn-secondary" href="{{ url_for('customer_success.contracts') }}">Kembali</a>
             {% if contract.status == 'DRAFT' %}
-                <form method="post" action="{{ url_for('customer_success.activate_contract', contract_id=contract.id) }}" class="app-form">
+                <form method="post" action="{{ url_for('customer_success.generate_contract_document_route', contract_id=contract.id) }}" class="app-form d-inline">
                     {% include "components/csrf_token.html" %}
-                    <button class="btn app-btn-primary" type="submit">Aktifkan</button>
+                    <button class="btn app-btn-secondary" type="submit">
+                        <i class="bi bi-file-earmark-plus"></i> {% if data.contract_documents %}Perbarui Surat{% else %}Buat Surat Kontrak{% endif %}
+                    </button>
+                </form>
+                <form method="post" action="{{ url_for('customer_success.activate_contract', contract_id=contract.id) }}" class="app-form d-inline">
+                    {% include "components/csrf_token.html" %}
+                    <button class="btn app-btn-primary" type="submit" {% if not data.is_contract_signed %}title="Kontrak hanya dapat diaktifkan setelah dokumen kontrak ditandatangani"{% endif %}>
+                        <i class="bi bi-check-circle"></i> Aktifkan Kontrak
+                    </button>
+                </form>
+            {% elif contract.status == 'ACTIVE' %}
+                <form method="post" action="{{ url_for('customer_success.generate_addendum_route', contract_id=contract.id) }}" class="app-form d-inline">
+                    {% include "components/csrf_token.html" %}
+                    <button class="btn app-btn-secondary" type="submit">
+                        <i class="bi bi-file-earmark-diff"></i> Buat Adendum
+                    </button>
                 </form>
             {% endif %}
         </div>
@@ -328,9 +343,161 @@
         </div>
     </div>
 
+    <!-- Surat Kontrak & Adendum Resmi (Fase 9) -->
     <div class="app-card mt-4">
         <div class="card-body">
-            <h2 class="h5 mb-3">Dokumen Kontrak</h2>
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h2 class="h5 mb-1">Surat Kontrak &amp; Adendum Resmi</h2>
+                    <p class="text-muted small mb-0">Dokumen snapshot berkekuatan hukum, dicetak A4 dengan kop PT dan kolom paraf tiap halaman.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if data.is_contract_signed %}
+                        <span class="status-badge green"><i class="bi bi-patch-check-fill me-1"></i> Ditandatangani</span>
+                    {% else %}
+                        <span class="status-badge orange"><i class="bi bi-hourglass-split me-1"></i> Menunggu TTD</span>
+                    {% endif %}
+                    {% if contract.status == 'DRAFT' %}
+                        <form method="post" action="{{ url_for('customer_success.generate_contract_document_route', contract_id=contract.id) }}" class="app-form">
+                            {% include "components/csrf_token.html" %}
+                            <button class="btn btn-sm app-btn-primary" type="submit">
+                                <i class="bi bi-file-earmark-text"></i> {% if data.contract_documents %}Perbarui Surat{% else %}Buat Surat Kontrak{% endif %}
+                            </button>
+                        </form>
+                    {% elif contract.status == 'ACTIVE' %}
+                        <form method="post" action="{{ url_for('customer_success.generate_addendum_route', contract_id=contract.id) }}" class="app-form">
+                            {% include "components/csrf_token.html" %}
+                            <button class="btn btn-sm app-btn-primary" type="submit">
+                                <i class="bi bi-file-earmark-diff"></i> Buat Adendum
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="table-responsive app-table-wrapper">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nomor Dokumen</th>
+                            <th>Jenis</th>
+                            <th>Versi</th>
+                            <th>Status</th>
+                            <th>Metode TTD</th>
+                            <th>Tanggal</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in data.contract_documents %}
+                            <tr>
+                                <td>
+                                    <strong>{{ doc.document_number }}</strong>
+                                    <div class="small text-muted">{{ doc.title }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge {{ 'bg-primary' if doc.document_type == 'KONTRAK' else 'bg-info text-dark' }}">
+                                        {{ doc.document_type }}
+                                    </span>
+                                </td>
+                                <td>v{{ doc.version_no }}</td>
+                                <td>
+                                    {% if doc.status == 'DITANDATANGANI' %}
+                                        <span class="status-badge green">Ditandatangani</span>
+                                    {% elif doc.status == 'MENUNGGU_TTD' %}
+                                        <span class="status-badge orange">Menunggu TTD</span>
+                                    {% else %}
+                                        <span class="status-badge neutral">{{ doc.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc.signing_method == 'PORTAL_EMAIL_OTP' %}
+                                        <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i> OTP Portal</span>
+                                        <div class="small text-muted">{{ doc.signed_by_name }}</div>
+                                    {% elif doc.signing_method == 'WET_STAMP' %}
+                                        <span class="badge bg-secondary"><i class="bi bi-file-earmark-check me-1"></i> Basah / Meterai</span>
+                                        <div class="small text-muted">{{ doc.signed_by_name }}</div>
+                                    {% else %}
+                                        <span class="text-muted small">Belum TTD</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="small">{{ doc.created_at.strftime('%d-%m-%Y %H:%M') if doc.created_at else '-' }}</div>
+                                    {% if doc.signed_at or doc.portal_signed_at %}
+                                        <div class="small text-success">
+                                            TTD: {{ (doc.signed_at or doc.portal_signed_at).strftime('%d-%m-%Y') }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1 align-items-center">
+                                        <a href="{{ url_for('customer_success.print_contract_document_route', contract_id=contract.id, document_id=doc.id) }}" target="_blank" class="btn btn-sm app-btn-secondary" title="Lihat &amp; Cetak Surat">
+                                            <i class="bi bi-printer"></i> Cetak A4
+                                        </a>
+
+                                        {% if doc.status != 'DITANDATANGANI' %}
+                                            <button type="button" class="btn btn-sm app-btn-primary" data-bs-toggle="modal" data-bs-target="#uploadScanModal-{{ doc.id }}" title="Unggah Scan TTD Basah">
+                                                <i class="bi bi-upload"></i> Unggah Scan
+                                            </button>
+
+                                            <!-- Modal Unggah Scan Basah -->
+                                            <div class="modal fade" id="uploadScanModal-{{ doc.id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form method="post" action="{{ url_for('customer_success.sign_contract_document_wet_route', contract_id=contract.id, document_id=doc.id) }}" enctype="multipart/form-data">
+                                                            {% include "components/csrf_token.html" %}
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Unggah Scan Tanda Tangan Basah</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body text-start">
+                                                                <p class="small text-muted">
+                                                                    Unggah berkas hasil scan surat kontrak yang telah ditandatangani basah di atas meterai Rp 10.000 oleh para pihak.
+                                                                </p>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Berkas Scan (PDF / JPG / PNG / WEBP)</label>
+                                                                    <input type="file" name="scan_file" class="form-control app-input" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Catatan (Opsional)</label>
+                                                                    <input type="text" name="notes" class="form-control app-input" placeholder="Misal: Scan bermeterai cabang">
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                                <button type="submit" class="btn app-btn-primary">Simpan &amp; Verifikasi TTD</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% elif doc.scan_attachment_id %}
+                                            <a href="{{ url_for('customer_success.view_contract_document_scan', contract_id=contract.id, document_id=doc.id) }}" target="_blank" class="btn btn-sm app-btn-secondary" title="Lihat Berkas Scan TTD">
+                                                <i class="bi bi-file-earmark-check"></i> Scan TTD
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-file-earmark-text display-6 d-block mb-2 text-secondary"></i>
+                                    Surat kontrak resmi belum dibuat.<br>
+                                    <small class="text-muted">Klik tombol <strong>"Buat Surat Kontrak"</strong> untuk menyusun surat lengkap dari data sistem.</small>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dokumen Lampiran Tambahan -->
+    <div class="app-card mt-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Dokumen Lampiran Tambahan</h2>
             <form method="post" action="{{ url_for('customer_success.upload_contract_document', contract_id=contract.id) }}" enctype="multipart/form-data" class="row g-3 app-form mb-3">
                 {% include "components/csrf_token.html" %}
                 <div class="col-md-3">

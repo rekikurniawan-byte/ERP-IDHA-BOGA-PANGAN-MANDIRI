@@ -378,6 +378,27 @@ def _settlement_rows(ownership_filter, limit: int) -> list[dict]:
             "invoice_active_receivable": _is_active_receivable(invoice) if invoice else False,
             "invoice_remaining_amount": _money(invoice.remaining_amount) if invoice else Decimal("0"),
         })
+    # Potongan PPh oleh pelanggan sendiri (bukti potong) juga pelunasan.
+    from app.services.tax_service import withholdings_for_invoices
+
+    for withholding in withholdings_for_invoices(list(invoices))[:limit]:
+        invoice = invoices.get(withholding.invoice_id)
+        rows.append({
+            "payment_id": None,
+            "payment_number": withholding.certificate_number,
+            "payment_date": withholding.withheld_on,
+            "payment_method": f"POTONG_{withholding.withholding_type}",
+            "amount": _money(withholding.amount),
+            "reference_number": withholding.certificate_number,
+            "notes": withholding.notes,
+            "bank_account": {"bank_name": None, "account_name": None, "account_number": None},
+            "invoice_id": withholding.invoice_id,
+            "invoice_number": invoice.invoice_number if invoice else None,
+            "invoice_status": _normalized_status(invoice.status) if invoice else None,
+            "invoice_status_label": _status_label(invoice.status) if invoice else "-",
+            "invoice_active_receivable": _is_active_receivable(invoice) if invoice else False,
+            "invoice_remaining_amount": _money(invoice.remaining_amount) if invoice else Decimal("0"),
+        })
     return rows
 
 

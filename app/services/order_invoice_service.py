@@ -237,6 +237,10 @@ def create_order_invoice(order, mandor, *, created_by, client_pic_id=None, prepa
     db.session.flush()
     # Invoice tanpa jurnal membuat piutang 1004 tidak cocok dengan buku besar;
     # lebih baik seluruh invoice dibatalkan.
+    # PBJT ditambahkan di atas harga bila sudah aktif (Fase 8), sebelum jurnal.
+    from app.services.tax_service import apply_pbjt_to_invoice
+
+    apply_pbjt_to_invoice(invoice)
     journal_ok, journal_message, _ = create_invoice_journal_for_invoice(
         invoice=invoice, created_by=created_by, commit=False
     )

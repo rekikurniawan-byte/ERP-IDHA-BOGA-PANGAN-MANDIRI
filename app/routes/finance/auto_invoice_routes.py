@@ -51,7 +51,7 @@ def auto_invoices():
         problems=problems,
         empty=empty,
         issued=issued,
-        ready_total=sum(p["total"] for p in ready),
+        ready_total=sum(p["grand_total"] for p in ready),
         recent=recent,
         can_issue_now=cutoff_date <= today,
     )
