@@ -130,6 +130,12 @@
                     <span>Profil</span>
                 </a>
             {% endif %}
+            {% if current_user.role in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT", "PORTAL_CLIENT"] %}
+                <a href="{{ url_for('portal.profile') }}" class="{{ 'active' if request.endpoint == 'portal.profile' else '' }}">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Akun Saya</span>
+                </a>
+            {% endif %}
             {% if current_user.role not in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT", "PORTAL_CLIENT"] %}
                 <a href="{{ url_for('portal.notifications') }}" class="{{ 'active' if request.endpoint == 'portal.notifications' else '' }}">
                     <i class="bi bi-bell"></i>
@@ -151,9 +157,15 @@
             </nav>
 
             <div class="portal-web-user">
-                <span class="portal-web-user-name">{{ current_user.full_name or current_user.username }}</span>
-                <span class="portal-web-role-chip">{{ portal_role_label }}</span>
-                <div class="portal-mobile-avatar">{{ (current_user.full_name or current_user.username or "P")[:1] }}</div>
+                <a href="{{ url_for('portal.profile') }}" class="portal-web-user-link" title="Akun Saya">
+                    <span class="portal-web-user-name">{{ current_user.full_name or current_user.username }}</span>
+                    <span class="portal-web-role-chip">{{ portal_role_label }}</span>
+                    {% if current_user.avatar_attachment_id %}
+                        <img class="portal-mobile-avatar portal-web-avatar-photo" src="{{ url_for('account.avatar', user_id=current_user.id) }}" alt="Foto profil">
+                    {% else %}
+                        <div class="portal-mobile-avatar">{{ (current_user.full_name or current_user.username or "P")[:1] }}</div>
+                    {% endif %}
+                </a>
                 <form method="POST" action="{{ url_for('auth.logout') }}" class="portal-web-logout-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="portal-web-logout-button" title="Keluar">
