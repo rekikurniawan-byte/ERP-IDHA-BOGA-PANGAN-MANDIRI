@@ -211,6 +211,7 @@ def _role_dashboard_data(persona, *, include_center=False):
         # data.scope; command center sudah membangun pesanan, tagihan,
         # pembayaran, dan hutang sendiri -- jangan dibangun dua kali.
         from app.services.menu_schedule_service import get_customer_today_tomorrow_menu
+        from app.services.auto_order_service import build_portal_today_tomorrow_orders_context
 
         return {
             "persona": persona,
@@ -219,6 +220,7 @@ def _role_dashboard_data(persona, *, include_center=False):
             "scope": build_portal_access_scope(current_user),
             "center": build_portal_command_center(current_user),
             "today_tomorrow_menus": get_customer_today_tomorrow_menu(current_user.branch_id),
+            "standing_orders": build_portal_today_tomorrow_orders_context(current_user),
         }
     user = current_user._get_current_object()
     year, month = request.args.get("year"), request.args.get("month")
@@ -1220,5 +1222,58 @@ def reject_order_draft(draft_id):
                 "warning",
             )
     return redirect(url_for("portal.admin_order_drafts"))
+
+
+@portal_bp.route("/orders/update-qty", methods=["POST"])
+@role_required(ROLE_PORTAL_CLIENT, ROLE_PORTAL_SUBCLIENT)
+def update_order_qty():
+    """Ubah porsi dari portal untuk client/sub client kontrak."""
+    from datetime import date
+    from app.services.auto_order_service import update_order_qty_from_portal
+
+    mandor_id = request.form.get("mandor_id", type=int)
+    delivery_location_id = request.form.get("delivery_location_id", type=int)
+    meal_type = (request.form.get("meal_type") or "").strip().upper()
+    order_date_str = (request.form.get("order_date") or "").strip()
+    new_qty = request.form.get("new_qty", type=int)
+    reason_code = (request.form.get("reason_code") or "").strip() or None
+    note = (request.form.get("note") or "").strip() or None
+    resume_date_str = (request.form.get("resume_date") or "").strip() or None
+
+    resume_date = None
+    if resume_date_str:
+        try:
+            resume_date = date.fromisoformat(resume_date_str)
+        except ValueError:
+            flash("Format tanggal kembali pesan tidak valid.", "danger")
+            return redirect(request.referrer or url_for("portal.my_dashboard"))
+
+    try:
+        order_date = date.fromisoformat(order_date_str)
+    except (ValueError, TypeError):
+        flash("Tanggal order tidak valid.", "danger")
+        return redirect(request.referrer or url_for("portal.my_dashboard"))
+
+    if new_qty is None:
+        flash("Jumlah porsi wajib diisi.", "danger")
+        return redirect(request.referrer or url_for("portal.my_dashboard"))
+
+    success, message, _detail = update_order_qty_from_portal(
+        user=current_user,
+        mandor_id=mandor_id,
+        delivery_location_id=delivery_location_id,
+        meal_type=meal_type,
+        order_date=order_date,
+        new_qty=new_qty,
+        reason_code=reason_code,
+        note=note,
+        resume_date=resume_date,
+    )
+
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return {"success": success, "message": message}, (200 if success else 400)
+
+    flash(message, "success" if success else "danger")
+    return redirect(request.referrer or url_for("portal.my_dashboard"))
 
 

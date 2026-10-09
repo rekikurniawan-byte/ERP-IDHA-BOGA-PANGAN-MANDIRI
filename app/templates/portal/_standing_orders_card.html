@@ -1,0 +1,196 @@
+{% if data.standing_orders and data.standing_orders.has_contract %}
+<div class="standing-orders-container mb-4" data-standing-orders="true">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h2 class="h5 mb-1 text-dark fw-bold">
+                <i class="bi bi-calendar2-week text-primary me-2"></i>Pesanan Hari Ini & Besok
+            </h2>
+            <p class="text-muted small mb-0">Ubah porsi harian langsung sebelum jam lock. Perubahan porsi 0 wajib memilih alasan.</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for day in data.standing_orders.days %}
+        <div class="col-12 col-lg-6">
+            <div class="app-card border shadow-sm h-100" style="border-radius: var(--radius-lg); background: var(--surface);">
+                <div class="card-header bg-light border-bottom py-3 px-3 d-flex justify-content-between align-items-center" style="border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+                    <div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">{{ day.date_label }}</span>
+                        <strong class="text-dark">{{ day.formatted_date }}</strong>
+                    </div>
+                </div>
+
+                <div class="card-body p-3">
+                    {% for loc in day.locations %}
+                    <div class="location-standing-block mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <strong class="text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ loc.location_name }}</strong>
+                                {% if current_user.role == "PORTAL_CLIENT" %}
+                                    <small class="text-muted d-block ms-3">{{ term('sub_client') }}: {{ loc.mandor_name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            {% for session in loc.sessions %}
+                            <div class="col-12 col-md-6">
+                                <div class="session-box p-3 border rounded bg-light-subtle h-100 d-flex flex-column justify-content-between" style="border-radius: var(--radius);">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="fw-bold text-dark">
+                                                {% if session.meal_type == 'LUNCH' %}
+                                                    <i class="bi bi-sun-fill text-warning me-1"></i>
+                                                {% else %}
+                                                    <i class="bi bi-moon-stars-fill text-indigo me-1"></i>
+                                                {% endif %}
+                                                {{ session.meal_label }}
+                                            </span>
+                                            <small class="text-muted d-block mt-0" style="font-size: 0.75rem;">Lock: {{ session.lock_time_str }} WIB</small>
+                                        </div>
+                                        <div>
+                                            {% if session.badge_class == 'success' %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
+                                            {% elif session.badge_class == 'danger' %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
+                                            {% elif session.badge_class == 'warning' %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if session.can_resume and session.qty == 0 %}
+                                    <div class="resume-alert mb-2 p-2 border border-warning-subtle bg-warning-subtle rounded small text-dark" style="border-radius: var(--radius-sm);">
+                                        <i class="bi bi-pause-circle me-1"></i>
+                                        {% if session.state_status == 'PAUSED_UNTIL' %}
+                                            Libur sampai {{ session.resume_date.strftime('%d-%m-%Y') if session.resume_date else '-' }}
+                                        {% else %}
+                                            Pesanan dihentikan sementara
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if session.can_edit %}
+                                    <form method="POST" action="{{ url_for('portal.update_order_qty') }}" class="standing-order-form mt-2" data-session-form="{{ loc.location_id }}-{{ session.meal_type }}-{{ day.date_iso }}">
+                                        {% include "components/csrf_token.html" %}
+                                        <input type="hidden" name="mandor_id" value="{{ loc.mandor_id }}">
+                                        <input type="hidden" name="delivery_location_id" value="{{ loc.location_id }}">
+                                        <input type="hidden" name="meal_type" value="{{ session.meal_type }}">
+                                        <input type="hidden" name="order_date" value="{{ day.date_iso }}">
+
+                                        {% if session.can_resume and session.qty == 0 %}
+                                        <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2 py-2 fw-semibold btn-resume-order" style="border-radius: var(--radius);" onclick="enableResumeOrder(this, {{ session.last_nonzero_qty or 10 }})">
+                                            <i class="bi bi-play-circle-fill me-1"></i>Mulai pesan lagi
+                                        </button>
+                                        {% endif %}
+
+                                        <div class="stepper-controls {% if session.can_resume and session.qty == 0 %}d-none{% endif %}">
+                                            <div class="d-flex align-items-stretch gap-1 mb-2">
+                                                <button type="button" class="btn btn-outline-secondary px-3 py-2 fs-5 fw-bold btn-stepper-minus" style="min-width: 44px; min-height: 44px; border-radius: var(--radius);" onclick="adjustStepper(this, -1)">−</button>
+                                                <input type="number" name="new_qty" class="form-control text-center fw-bold fs-5 qty-input" value="{{ session.qty }}" min="0" max="5000" style="height: 44px; border-radius: var(--radius);" onchange="handleQtyChange(this)" oninput="handleQtyChange(this)">
+                                                <button type="button" class="btn btn-outline-secondary px-3 py-2 fs-5 fw-bold btn-stepper-plus" style="min-width: 44px; min-height: 44px; border-radius: var(--radius);" onclick="adjustStepper(this, 1)">+</button>
+                                                <button type="submit" class="btn app-btn-primary px-3 fw-bold btn-save-qty" style="height: 44px; border-radius: var(--radius);">Simpan</button>
+                                            </div>
+
+                                            <div class="reason-zero-container {% if session.qty != 0 %}d-none{% endif %} mt-2 p-2 border rounded bg-white" style="border-radius: var(--radius-sm);">
+                                                <label class="form-label small text-danger fw-semibold mb-1">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>Porsi 0: Pilih Alasan Wajib
+                                                </label>
+                                                <select name="reason_code" class="form-select form-select-sm mb-2" onchange="handleReasonSelect(this)">
+                                                    <option value="">-- Pilih Alasan --</option>
+                                                    <option value="OFF_TODAY" {% if session.qty == 0 %}selected{% endif %}>Libur hari ini saja (Besok aktif lagi)</option>
+                                                    <option value="OFF_UNTIL">Libur sampai tanggal tertentu...</option>
+                                                    <option value="PAUSE">Berhenti sementara, saya pesan lagi nanti</option>
+                                                    <option value="PROJECT_DONE">Proyek / pekerjaan selesai</option>
+                                                    <option value="NO_WORKERS">Pekerja sedang tidak di lokasi</option>
+                                                    <option value="OTHER">Lainnya (wajib catatan)</option>
+                                                </select>
+
+                                                <div class="resume-date-group d-none mb-2">
+                                                    <label class="form-label small text-muted mb-0">Mulai pesan lagi tanggal:</label>
+                                                    <input type="date" name="resume_date" class="form-control form-control-sm" min="{{ day.date_iso }}">
+                                                </div>
+
+                                                <div class="note-group mb-1">
+                                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="Catatan tambahan (wajib untuk 'Lainnya')...">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    {% else %}
+                                    <div class="mt-2 text-center p-2 rounded bg-light border text-muted small" style="border-radius: var(--radius-sm);">
+                                        <div class="fw-bold fs-5 text-dark mb-1">{{ session.qty }} porsi</div>
+                                        <span>{{ session.block_msg }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function adjustStepper(btn, delta) {
+    const wrapper = btn.closest('.stepper-controls');
+    const input = wrapper.querySelector('.qty-input');
+    let val = parseInt(input.value || '0', 10);
+    val = isNaN(val) ? 0 : val;
+    val = Math.max(0, val + delta);
+    input.value = val;
+    handleQtyChange(input);
+}
+
+function handleQtyChange(input) {
+    const wrapper = input.closest('.stepper-controls');
+    const reasonContainer = wrapper.querySelector('.reason-zero-container');
+    const val = parseInt(input.value || '0', 10);
+    if (val === 0) {
+        reasonContainer.classList.remove('d-none');
+        const reasonSelect = reasonContainer.querySelector('select[name="reason_code"]');
+        if (!reasonSelect.value) {
+            reasonSelect.value = 'OFF_TODAY';
+        }
+        handleReasonSelect(reasonSelect);
+    } else {
+        reasonContainer.classList.add('d-none');
+    }
+}
+
+function handleReasonSelect(select) {
+    const container = select.closest('.reason-zero-container');
+    const dateGroup = container.querySelector('.resume-date-group');
+    const noteGroup = container.querySelector('.note-group input');
+    if (select.value === 'OFF_UNTIL') {
+        dateGroup.classList.remove('d-none');
+    } else {
+        dateGroup.classList.add('d-none');
+    }
+    if (select.value === 'OTHER') {
+        noteGroup.setAttribute('required', 'required');
+        noteGroup.setAttribute('placeholder', 'Wajib isi alasan lainnya...');
+    } else {
+        noteGroup.removeAttribute('required');
+        noteGroup.setAttribute('placeholder', 'Catatan tambahan...');
+    }
+}
+
+function enableResumeOrder(btn, defaultQty) {
+    btn.classList.add('d-none');
+    const form = btn.closest('form');
+    const controls = form.querySelector('.stepper-controls');
+    controls.classList.remove('d-none');
+    const input = controls.querySelector('.qty-input');
+    input.value = defaultQty > 0 ? defaultQty : 10;
+    handleQtyChange(input);
+}
+</script>
+{% endif %}

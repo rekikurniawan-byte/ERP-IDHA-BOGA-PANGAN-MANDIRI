@@ -1,0 +1,177 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="op-prod-delivery-page-shell" data-ui-page="order-qty-changes">
+    {{ page_header(
+        "Riwayat Perubahan Porsi",
+        "Jejak audit perubahan porsi order harian dari Penjadwal (AUTO), Portal Client/Sub Client (PORTAL), dan Admin (ADMIN).",
+        eyebrow="Modul Operasional",
+        actions=[{"label": "Order Harian", "url": url_for('operational.orders'), "icon": "bi-journal-text", "variant": "secondary"}]
+    ) }}
+
+    <div class="app-card mb-4" style="border-radius: var(--radius-lg);">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('operational.order_qty_changes') }}">
+                <div class="app-filter">
+                    <div class="form-group">
+                        <label for="qtyStartDate">Dari Tanggal Order</label>
+                        <input type="date" id="qtyStartDate" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="qtyEndDate">Sampai Tanggal</label>
+                        <input type="date" id="qtyEndDate" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="qtyMandor">{{ term('sub_client') }}</label>
+                        <select id="qtyMandor" name="mandor_id" class="form-select">
+                            <option value="">Semua {{ term('sub_client', lower=True) }}</option>
+                            {% for m in mandors %}
+                                <option value="{{ m.id }}" {% if selected_mandor_id == m.id %}selected{% endif %}>{{ m.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="qtySource">Sumber Perubahan</label>
+                        <select id="qtySource" name="source" class="form-select">
+                            <option value="">Semua Sumber</option>
+                            <option value="AUTO" {% if selected_source == 'AUTO' %}selected{% endif %}>Otomatis jam 18.00</option>
+                            <option value="PORTAL" {% if selected_source == 'PORTAL' %}selected{% endif %}>Dari portal pelanggan</option>
+                            <option value="ADMIN" {% if selected_source == 'ADMIN' %}selected{% endif %}>Admin / dapur</option>
+                        </select>
+                    </div>
+                    <div class="form-group d-flex align-items-end gap-2">
+                        <button type="submit" class="btn app-btn-primary">
+                            <i class="bi bi-funnel"></i>
+                            Terapkan Filter
+                        </button>
+                        <a href="{{ url_for('operational.order_qty_changes') }}" class="btn app-btn-ghost">Atur Ulang</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-card" style="border-radius: var(--radius-lg);">
+        <div class="card-header-clean d-flex justify-content-between align-items-center">
+            <div>
+                <h5>Log Perubahan Porsi</h5>
+                <p>Mencatat setiap kali porsi dibuat atau diubah beserta alasan penjelas dan waktu WIB.</p>
+            </div>
+            <span class="badge bg-secondary-subtle text-secondary border">{{ changes|length }} data ditemukan</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table app-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="min-width: 140px;">Waktu (WIB)</th>
+                        <th>Sumber & Pengubah</th>
+                        <th>Order & Lokasi</th>
+                        <th>Sesi</th>
+                        <th class="text-center" style="min-width: 120px;">Perubahan Porsi</th>
+                        <th>Alasan & Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in changes %}
+                    {% set detail = c.daily_order_detail %}
+                    {% set order = detail.daily_order if detail else None %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ c.changed_at.strftime('%d/%m/%Y %H.%M') }}</div>
+                        </td>
+                        <td>
+                            <div>
+                                {% if c.source == 'AUTO' %}
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
+                                        <i class="bi bi-robot me-1"></i>AUTO (18:00)
+                                    </span>
+                                {% elif c.source == 'PORTAL' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        <i class="bi bi-phone me-1"></i>PORTAL
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                        <i class="bi bi-person-badge me-1"></i>ADMIN
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                {% if c.user %}
+                                    {{ c.user.full_name or c.user.username }}
+                                {% else %}
+                                    Sistem Penjadwal
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if order %}
+                                <strong>{{ order.order_date.strftime('%d-%m-%Y') }}</strong>
+                                <small class="text-muted d-block">No: {{ order.order_number }}</small>
+                            {% else %}
+                                -
+                            {% endif %}
+                            {% if detail %}
+                                <div class="text-dark small mt-1">
+                                    <i class="bi bi-geo-alt text-danger me-1"></i>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}
+                                    <span class="text-muted">({{ detail.mandor.name if detail.mandor else '-' }})</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.meal_type == 'LUNCH' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border">Siang</span>
+                            {% else %}
+                                <span class="badge bg-indigo-subtle text-indigo border" style="background: var(--brand-100); color: var(--brand-800);">Malam</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-inline-flex align-items-center gap-1">
+                                <span class="text-muted fs-6">{{ c.old_qty }}</span>
+                                <i class="bi bi-arrow-right text-secondary small"></i>
+                                <span class="fw-bold fs-6 {% if c.new_qty == 0 %}text-danger{% elif c.new_qty > c.old_qty %}text-success{% else %}text-warning-emphasis{% endif %}">
+                                    {{ c.new_qty }}
+                                </span>
+                            </div>
+                            {% set diff = c.new_qty - c.old_qty %}
+                            <div class="small">
+                                {% if diff > 0 %}
+                                    <span class="text-success fw-semibold">(+{{ diff }})</span>
+                                {% elif diff < 0 %}
+                                    <span class="text-danger fw-semibold">({{ diff }})</span>
+                                {% else %}
+                                    <span class="text-muted">(sama)</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if c.reason_code %}
+                                <span class="badge bg-light text-dark border me-1">
+                                    {{ reason_labels.get(c.reason_code, c.reason_code) }}
+                                </span>
+                            {% endif %}
+                            {% if c.note %}
+                                <span class="text-dark small d-block mt-1">{{ c.note }}</span>
+                            {% elif not c.reason_code %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-clock-history fs-1 text-muted d-block mb-2"></i>
+                                <p class="text-dark fw-semibold mb-1">Belum ada riwayat perubahan porsi.</p>
+                                <span class="text-muted small">Perubahan porsi dari tugas otomatis, portal pelanggan, atau admin akan tercatat di sini.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1168,3 +1168,80 @@ def copy_last_week_menu_schedule():
         flash("Tidak ada jadwal di minggu sebelumnya untuk disalin.", "info")
 
     return redirect(url_for("operational.menu_schedule", week=monday.strftime("%Y-%m-%d")))
+
+
+@operational_bp.route("/order-details/<int:detail_id>/change-qty", methods=["POST"])
+@role_required("ADMIN", "OWNER")
+def change_order_detail_qty(detail_id):
+    """Ubah porsi oleh admin/owner (setelah lock wajib menyertakan alasan)."""
+    from app.services.auto_order_service import update_order_qty_from_admin
+
+    detail = DailyOrderDetail.query.get_or_404(detail_id)
+    if detail.daily_order.branch_id != current_user.branch_id and current_user.role != "OWNER":
+        flash("Data order tidak sesuai cabang pengguna.", "danger")
+        return redirect(url_for("operational.orders"))
+
+    meal_type = (request.form.get("meal_type") or "").strip().upper()
+    new_qty_str = request.form.get("new_qty")
+    reason = (request.form.get("reason") or "").strip()
+    reason_code = (request.form.get("reason_code") or "").strip() or None
+
+    try:
+        new_qty = int(new_qty_str)
+    except (ValueError, TypeError):
+        flash("Jumlah porsi harus berupa angka bulat.", "danger")
+        return redirect(url_for("operational.order_detail", order_id=detail.daily_order_id))
+
+    success, message, _ = update_order_qty_from_admin(
+        user=current_user,
+        detail_id=detail.id,
+        meal_type=meal_type,
+        new_qty=new_qty,
+        reason=reason,
+        reason_code=reason_code,
+    )
+
+    flash(message, "success" if success else "danger")
+    return redirect(url_for("operational.order_detail", order_id=detail.daily_order_id))
+
+
+@operational_bp.route("/order-qty-changes", methods=["GET"])
+@role_required("OWNER", "ADMIN", "DAPUR")
+def order_qty_changes():
+    """Halaman riwayat perubahan porsi (Fase 5) dengan filter."""
+    from app.services.auto_order_service import list_order_qty_changes, PORTION_ZERO_REASONS
+    from app.services.catering_report_service import get_active_mandors, parse_date
+
+    today = date.today()
+    start_date_val = request.args.get("start_date", "").strip()
+    end_date_val = request.args.get("end_date", "").strip()
+    mandor_id_val = request.args.get("mandor_id", "").strip()
+    source_val = request.args.get("source", "").strip()
+
+    start_date = parse_date(start_date_val, None) if start_date_val else None
+    end_date = parse_date(end_date_val, None) if end_date_val else None
+    mandor_id = int(mandor_id_val) if mandor_id_val.isdigit() else None
+    source = source_val.upper() if source_val in ("AUTO", "PORTAL", "ADMIN") else None
+
+    branch_id = current_user.branch_id if current_user.role != "OWNER" else (request.args.get("branch_id", type=int) or current_user.branch_id)
+
+    changes = list_order_qty_changes(
+        branch_id=branch_id,
+        start_date=start_date,
+        end_date=end_date,
+        mandor_id=mandor_id,
+        source=source,
+        limit=200,
+    )
+    mandors = get_active_mandors(branch_id)
+
+    return render_template(
+        "operational/order_qty_changes.html",
+        changes=changes,
+        mandors=mandors,
+        selected_mandor_id=mandor_id,
+        selected_source=source,
+        start_date=start_date_val,
+        end_date=end_date_val,
+        reason_labels=PORTION_ZERO_REASONS,
+    )

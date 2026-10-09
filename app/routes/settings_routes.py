@@ -90,3 +90,4 @@ from app.routes.settings import audit_attachment_routes as _settings_audit_attac
 from app.routes.settings import notification_routes as _settings_notification_routes  # noqa: F401,E402
 from app.routes.settings import approval_routes as _settings_approval_routes  # noqa: F401,E402
 from app.routes.settings import pricing_routes as _settings_pricing_routes  # noqa: F401,E402
+from app.routes.settings import scheduled_job_routes as _settings_scheduled_job_routes  # noqa: F401,E402

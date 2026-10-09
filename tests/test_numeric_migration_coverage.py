@@ -42,6 +42,9 @@ claims_a7 = importlib.import_module(
 contract_settings_d2 = importlib.import_module(
     "migrations.versions.d2e3f4a5b6c7_contract_settings_and_driver_user"
 )
+auto_order_f4 = importlib.import_module(
+    "migrations.versions.f4a5b6c7d8e9_standing_orders_and_qty_changes"
+)
 
 
 def _migration_columns(module):
@@ -85,6 +88,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(gps_d1),
         **_migration_columns(claims_a7),
         **_migration_columns(contract_settings_d2),
+        **_migration_columns(auto_order_f4),
     }
 
     assert migration_columns

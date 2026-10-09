@@ -35,6 +35,8 @@ from app.models.operational import (
     OrderHppSnapshotAllocation,
     OrderHppStockConsumption,
     OrderHppStockConsumptionLine,
+    StandingOrderState,
+    OrderQtyChange,
 )
 
 from app.models.production import (
@@ -146,6 +148,7 @@ from app.models.system import (
     PortalOrderDraft,
     PortalPaymentProofClaim,
     PasswordResetToken,
+    ScheduledJobRun,
 )
 
 from app.models.field_transaction import (

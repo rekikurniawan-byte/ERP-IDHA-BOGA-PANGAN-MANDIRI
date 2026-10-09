@@ -1,5 +1,6 @@
 from app.extensions import db
 from app.models.base import BaseModel
+from app.utils.clock import now_wib
 
 
 class DailyOrder(BaseModel):
@@ -265,3 +266,51 @@ class OrderHppStockConsumptionLine(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("consumption_id", "item_id", name="uq_hpp_stock_consumption_line_item"),
     )
+
+
+class StandingOrderState(BaseModel):
+    __tablename__ = "standing_order_states"
+
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=False, index=True)
+    mandor_id = db.Column(db.Integer, db.ForeignKey("mandors.id"), nullable=False, index=True)
+    delivery_location_id = db.Column(db.Integer, db.ForeignKey("delivery_locations.id"), nullable=False, index=True)
+    meal_type = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(30), nullable=False, default="ACTIVE", server_default="ACTIVE")
+    resume_date = db.Column(db.Date, nullable=True)
+    last_nonzero_qty = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    updated_at = db.Column(db.DateTime, nullable=False, default=now_wib)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    branch = db.relationship("Branch", lazy=True)
+    mandor = db.relationship("Mandor", lazy=True)
+    delivery_location = db.relationship("DeliveryLocation", lazy=True)
+    updater = db.relationship("User", foreign_keys=[updated_by], lazy=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "branch_id",
+            "mandor_id",
+            "delivery_location_id",
+            "meal_type",
+            name="uq_standing_order_states_scope",
+        ),
+    )
+
+
+class OrderQtyChange(BaseModel):
+    __tablename__ = "order_qty_changes"
+
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=True, index=True)
+    daily_order_detail_id = db.Column(db.Integer, db.ForeignKey("daily_order_details.id"), nullable=False, index=True)
+    meal_type = db.Column(db.String(20), nullable=False)
+    old_qty = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    new_qty = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    reason_code = db.Column(db.String(50), nullable=True)
+    note = db.Column(db.Text, nullable=True)
+    source = db.Column(db.String(20), nullable=False, default="AUTO", server_default="AUTO")
+    changed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    changed_at = db.Column(db.DateTime, nullable=False, default=now_wib)
+
+    branch = db.relationship("Branch", lazy=True)
+    daily_order_detail = db.relationship("DailyOrderDetail", backref=db.backref("qty_changes", lazy=True), lazy=True)
+    user = db.relationship("User", foreign_keys=[changed_by], lazy=True)

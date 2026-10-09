@@ -497,9 +497,79 @@
                     <td><strong>{{ detail.total_qty }}</strong></td>
                     <td>{{ detail.notes or '-' }}</td>
                     <td>
-                        <a href="{{ url_for('operational.create_revision', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
-                            Revisi
-                        </a>
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% if current_user.role in ['ADMIN', 'OWNER'] %}
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalChangeQty-{{ detail.id }}">
+                                <i class="bi bi-pencil-square"></i> Ubah Porsi
+                            </button>
+                            {% endif %}
+                            <a href="{{ url_for('operational.create_revision', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
+                                Revisi
+                            </a>
+                        </div>
+
+                        {% if current_user.role in ['ADMIN', 'OWNER'] %}
+                        {# Modal Ubah Porsi Admin #}
+                        <div class="modal fade text-start" id="modalChangeQty-{{ detail.id }}" tabindex="-1" aria-labelledby="modalLabelChangeQty-{{ detail.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('operational.change_order_detail_qty', detail_id=detail.id) }}" class="app-form">
+                                        {% include "components/csrf_token.html" %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modalLabelChangeQty-{{ detail.id }}">
+                                                <i class="bi bi-pencil-square me-1"></i> Ubah Porsi: {{ detail.mandor.name if detail.mandor else 'Sub Client' }}
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Lokasi Antar</label>
+                                                <input type="text" class="form-control" value="{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}" readonly disabled>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Pilih Sesi</label>
+                                                <select name="meal_type" class="form-select" required>
+                                                    <option value="LUNCH">Siang (Porsi saat ini: {{ detail.lunch_qty }})</option>
+                                                    <option value="DINNER">Malam / Sore (Porsi saat ini: {{ detail.dinner_qty }})</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Jumlah Porsi Baru</label>
+                                                <input type="number" name="new_qty" class="form-control" min="0" placeholder="Contoh: 35" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Alasan Perubahan</label>
+                                                <textarea name="reason" class="form-control" rows="2" placeholder="Wajib diisi jika order sudah dikunci atau porsi diubah menjadi 0"></textarea>
+                                                <small class="text-muted">Setelah jam lock atau jika order terkunci, alasan wajib dicantumkan.</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Kategori Alasan (Wajib jika porsi 0)</label>
+                                                <select name="reason_code" class="form-select">
+                                                    <option value="">-- Pilih jika porsi diubah ke 0 --</option>
+                                                    <option value="OFF_TODAY">Libur hari ini saja (aktif kembali besok)</option>
+                                                    <option value="OFF_UNTIL">Libur sementara sampai tanggal tertentu</option>
+                                                    <option value="PAUSE">Berhenti sementara (STOPPED)</option>
+                                                    <option value="PROJECT_DONE">Proyek selesai (STOPPED + tinjau kontrak)</option>
+                                                    <option value="NO_WORKERS">Pekerja tidak di lokasi</option>
+                                                    <option value="OTHER">Lainnya</option>
+                                                </select>
+                                            </div>
+                                            <div class="alert alert-warning py-2 mb-0 small">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Jika pengiriman sesi ini sudah berjalan (on the way) atau diterima di lokasi, perubahan akan otomatis ditolak oleh sistem untuk semua pengguna termasuk Admin.
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn app-btn-primary">
+                                                <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}

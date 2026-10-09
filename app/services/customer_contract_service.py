@@ -10,7 +10,7 @@ from app.models.contract import (
     ContractHoliday,
     CustomerContract,
 )
-from app.models.master import Client, ClientPic
+from app.models.master import Client, ClientPic, Mandor, User
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.business_logic_guard_service import decimal_money
@@ -27,6 +27,11 @@ CONTRACT_STATUS_SUPERSEDED = "SUPERSEDED"
 
 class CustomerContractError(ValueError):
     pass
+
+
+def _actor_role_for(user_id: int | None) -> str | None:
+    user = db.session.get(User, user_id) if user_id else None
+    return effective_role(user.role) if user else None
 
 
 def _parse_and_validate_time(value: Any, default_value: time, label: str) -> time:
@@ -129,17 +134,62 @@ def _save_contract_holidays(
         contract.holidays.append(ContractHoliday(holiday_date=h_date, note=note))
 
 
-def _save_subclient_billing_modes(branch_id: int, modes: dict[int, str] | None) -> None:
+def _save_subclient_billing_modes(
+    branch_id: int,
+    modes: dict[int, str] | None,
+    *,
+    client_id: int,
+    actor_role: str | None,
+) -> None:
+    """Ubah pihak tagih per sub client dari halaman kontrak.
+
+    Aturannya sama dengan halaman Kredit (save_credit_settings): mengubah mode
+    tagih hanya OWNER, unit order langsung selalu lewat client, dan "ditagih
+    langsung" (kredit) hanya untuk sub client yang syarat anti-kaburnya sudah
+    lengkap dan NIK-nya tidak masuk daftar blokir. Sub client client lain
+    (ID dari form yang diakali) ditolak.
+    """
     if not modes:
         return
     from app.models.credit import BILLING_CASH, BILLING_DIRECT, BILLING_VIA_CLIENT, PARTY_MANDOR
-    from app.services.credit_control_service import get_or_create_credit_account
+    from app.services.credit_account_service import find_blacklisted_identity
+    from app.services.credit_control_service import get_credit_account, get_or_create_credit_account
 
     for mandor_id, mode_val in modes.items():
         mode_clean = str(mode_val or "").strip().upper()
-        if mode_clean in (BILLING_VIA_CLIENT, BILLING_DIRECT, BILLING_CASH):
-            acc = get_or_create_credit_account(branch_id, PARTY_MANDOR, int(mandor_id))
-            acc.billing_mode = mode_clean
+        if mode_clean not in (BILLING_VIA_CLIENT, BILLING_DIRECT, BILLING_CASH):
+            continue
+        mandor = Mandor.query.filter_by(id=int(mandor_id), branch_id=branch_id, client_id=client_id).first()
+        if mandor is None:
+            raise CustomerContractError("Sub client tidak termasuk client kontrak ini.")
+
+        account = get_credit_account(branch_id, PARTY_MANDOR, mandor.id)
+        current_mode = getattr(account, "billing_mode", None) or BILLING_VIA_CLIENT
+        if mode_clean == current_mode:
+            continue
+        if actor_role != "OWNER":
+            raise CustomerContractError("Mengubah pihak yang ditagih hanya boleh dilakukan OWNER.")
+        if getattr(mandor, "is_direct_unit", False) and mode_clean != BILLING_VIA_CLIENT:
+            raise CustomerContractError(f"{mandor.name}: unit order langsung selalu ditagih ke client-nya sendiri.")
+        if mode_clean == BILLING_DIRECT:
+            missing = []
+            if account is None or Decimal(str(account.credit_limit or 0)) <= 0:
+                missing.append("limit kredit")
+            if account is None or int(account.payment_terms_days or 0) <= 0:
+                missing.append("termin (hari)")
+            if not (getattr(mandor, "id_number", None) or "").strip():
+                missing.append("NIK")
+            if not (getattr(mandor, "address", None) or "").strip():
+                missing.append("alamat")
+            if missing:
+                raise CustomerContractError(
+                    f"{mandor.name} belum bisa ditagih langsung: lengkapi {', '.join(missing)} di halaman Kredit sub client dulu."
+                )
+            if find_blacklisted_identity(mandor.id_number, exclude_mandor_id=mandor.id):
+                raise CustomerContractError(
+                    f"NIK {mandor.name} milik sub client yang sudah diblokir/dihapus buku. Kredit langsung tidak bisa diberikan."
+                )
+        get_or_create_credit_account(branch_id, PARTY_MANDOR, mandor.id).billing_mode = mode_clean
 
 
 def generate_customer_contract_number(contract_date: date) -> str:
@@ -248,7 +298,9 @@ def create_customer_contract(
         db.session.flush()
 
         _save_contract_holidays(contract, holidays, start_date, end_date)
-        _save_subclient_billing_modes(branch_id, subclient_billing_modes)
+        _save_subclient_billing_modes(
+            branch_id, subclient_billing_modes, client_id=client_id, actor_role=_actor_role_for(created_by)
+        )
 
         record_audit_log(
             module="CONTRACT",
@@ -451,7 +503,9 @@ def update_customer_contract_rules(
         contract.updated_by = actor_id
 
         _save_contract_holidays(contract, holidays, contract.start_date, contract.end_date)
-        _save_subclient_billing_modes(branch_id, subclient_billing_modes)
+        _save_subclient_billing_modes(
+            branch_id, subclient_billing_modes, client_id=contract.client_id, actor_role=actor_role
+        )
 
         db.session.flush()
 

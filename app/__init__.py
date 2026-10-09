@@ -256,6 +256,67 @@ def create_app():
         if failed:
             sys.exit(1)
 
+    @flask_app.cli.group("jobs")
+    def jobs_group():
+        """Perintah penjadwal tugas otomatis PT Idha Boga."""
+        pass
+
+    @jobs_group.command("tick")
+    def jobs_tick_command():
+        """Jalankan semua tugas otomatis yang jatuh tempo (dipanggil tiap 5 menit oleh OS)."""
+        import sys
+        from app.services.scheduler_service import run_due_jobs
+
+        runs = run_due_jobs()
+        failed = [r for r in runs if r.status == "FAILED"]
+        print(f"Tick selesai: {len(runs)} dieksekusi, {len(failed)} gagal.")
+        for r in runs:
+            branch_info = f"cabang {r.branch_id}" if r.branch_id else "global"
+            print(f"- [{r.status}] {r.job_key} ({branch_info}, periode {r.period_key}): {r.message or 'OK'}")
+        if failed:
+            sys.exit(1)
+
+    @jobs_group.command("list")
+    def jobs_list_command():
+        """Tampilkan daftar tugas otomatis yang terdaftar."""
+        from app.services.scheduler_service import list_jobs
+
+        jobs = list_jobs()
+        print(f"Daftar tugas otomatis ({len(jobs)} terdaftar):")
+        for j in jobs:
+            sched = j["schedule"]
+            sched_str = f"Harian {sched.get('time')} WIB" if sched.get("type") == "daily" else f"Tiap {sched.get('minutes')} menit"
+            branch_str = "per-cabang" if j.get("per_branch") else "global"
+            status_str = "aktif" if j.get("enabled") else "nonaktif"
+            print(f"- {j['key']} | {j['label']} | {sched_str} | {branch_str} | {status_str}")
+
+    @jobs_group.command("run")
+    @click.argument("key")
+    @click.option("--branch", "branch_id", type=int, default=None, help="ID cabang (opsional).")
+    @click.option("--period", "period_key", default=None, help="Kunci periode, mis. '2026-10-08' (opsional).")
+    @click.option("--force", is_flag=True, default=False, help="Paksa jalan ulang periode SUCCESS (khusus OWNER).")
+    @click.option("--reason", "force_reason", default=None, help="Alasan bila memakai --force.")
+    def jobs_run_command(key, branch_id, period_key, force, force_reason):
+        """Jalankan satu tugas otomatis secara manual."""
+        import sys
+        from app.services.scheduler_service import run_job_now
+
+        try:
+            run = run_job_now(
+                key=key,
+                branch_id=branch_id,
+                period_key=period_key,
+                force=force,
+                force_reason=force_reason,
+            )
+            branch_info = f"cabang {run.branch_id}" if run.branch_id else "global"
+            print(f"[{run.status}] {run.job_key} ({branch_info}, periode {run.period_key}): {run.message or 'OK'}")
+            if run.status == "FAILED":
+                sys.exit(1)
+        except Exception as error:
+            print(f"GAGAL: {error}")
+            sys.exit(1)
+
 
     @flask_app.after_request
     def add_security_headers(response):
@@ -441,6 +502,23 @@ def create_app():
         except Exception:
             flask_app.logger.exception("Gagal memuat antrean kerja.")
         return {"global_work_queue": empty}
+
+    @flask_app.context_processor
+    def inject_scheduler_warning():
+        try:
+            from flask_login import current_user
+            from app.services.scheduler_service import get_scheduler_warning
+
+            if current_user.is_authenticated and role_in(current_user.role, ("OWNER", "ADMIN")):
+                warning = get_cached_value(
+                    ("scheduler_warning",),
+                    get_scheduler_warning,
+                    ttl_seconds=30,
+                )
+                return {"scheduler_warning": warning}
+        except Exception:
+            flask_app.logger.exception("Gagal memuat status peringatan penjadwal.")
+        return {"scheduler_warning": None}
 
     @flask_app.context_processor
     def inject_portal_feature_flags():

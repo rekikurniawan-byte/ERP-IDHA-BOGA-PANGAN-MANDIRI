@@ -1,0 +1,298 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="hr-master-settings-page-shell" data-ui-section="true" data-fix73b-outlier-page="scheduled-jobs">
+
+{{ page_header(
+    "Tugas Otomatis",
+    "Fondasi mesin penjadwal tugas otomatis (CLI tick) untuk eksekusi operasional dan penagihan berkala.",
+    eyebrow="Pengaturan Sistem",
+    actions=[
+        {"label": "Kesehatan Sistem", "url": url_for('settings.system_health')},
+        {"label": "Kembali ke Dashboard", "url": url_for('dashboard.index')},
+    ]
+) }}
+
+{# Peringatan status detak penjadwal (Heartbeat) #}
+{% if heartbeat.warning %}
+<div class="alert alert-danger d-flex align-items-center gap-3 mb-4" role="alert" data-scheduler-alert="warning">
+    <i class="bi bi-exclamation-triangle-fill fs-2 text-danger"></i>
+    <div class="flex-grow-1">
+        <h5 class="alert-heading mb-1 fw-bold">Peringatan: Penjadwal Tidak Berjalan</h5>
+        <p class="mb-0">{{ heartbeat.warning }}</p>
+        <small class="text-muted d-block mt-1">
+            Detak terakhir: {{ heartbeat.last_run.started_at.strftime('%d/%m/%Y %H.%M') if heartbeat.last_run else 'Belum pernah berjalan' }}
+            {% if heartbeat.diff_minutes is not none %} ({{ heartbeat.diff_minutes }} menit yang lalu){% endif %}.
+            Pastikan Windows Task Scheduler atau cron sistem operasi aktif memanggil <code>flask jobs tick</code>.
+        </small>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success d-flex align-items-center gap-3 mb-4" role="alert" data-scheduler-alert="healthy">
+    <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+    <div class="flex-grow-1">
+        <div class="fw-bold">Penjadwal Otomatis Berjalan Normal</div>
+        <small class="text-muted">
+            Detak terakhir: {{ heartbeat.last_run.started_at.strftime('%d/%m/%Y %H.%M') if heartbeat.last_run else '-' }}
+            {% if heartbeat.diff_minutes is not none %} ({{ heartbeat.diff_minutes }} menit yang lalu){% endif %}.
+            Sistem siap mengeksekusi tugas otomatis berikutnya.
+        </small>
+    </div>
+</div>
+{% endif %}
+
+{# Seksi 1: Daftar Tugas Otomatis #}
+<div class="app-card mb-4" data-section="scheduled-jobs-list">
+    <div class="section-title mb-3">
+        <div>
+            <h3>Daftar Tugas Terdaftar</h3>
+            <p>Tugas-tugas otomatis yang terdaftar di mesin penjadwal dan dieksekusi saat jatuh tempo.</p>
+        </div>
+        <span class="badge bg-primary-subtle text-primary border">{{ jobs|length }} Tugas Aktif</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nama & Kunci Tugas</th>
+                    <th>Jadwal</th>
+                    <th>Cakupan</th>
+                    <th>Terakhir Sukses</th>
+                    <th>Status Terakhir</th>
+                    <th>Jadwal Berikutnya</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ job.label }}</div>
+                        <code class="small text-muted">{{ job.key }}</code>
+                        {% if job.description %}
+                        <div class="small text-muted mt-1">{{ job.description }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ job.schedule_label }}</span>
+                    </td>
+                    <td>
+                        {% if job.per_branch %}
+                        <span class="badge bg-info-subtle text-info border">Per Cabang</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border">Global</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.last_success %}
+                        <div>{{ job.last_success.started_at.strftime('%d/%m/%Y %H.%M') }}</div>
+                        <small class="text-muted">Periode: {{ job.last_success.period_key }}</small>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.last_run %}
+                            {% if job.last_run.status == 'SUCCESS' %}
+                            <span class="status-badge success">SUKSES</span>
+                            {% elif job.last_run.status == 'FAILED' %}
+                            <span class="status-badge danger">GAGAL</span>
+                            {% elif job.last_run.status == 'RUNNING' %}
+                            <span class="status-badge warning">BERJALAN</span>
+                            {% else %}
+                            <span class="status-badge secondary">{{ job.last_run.status }}</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">Belum ada</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="text-nowrap">{{ job.next_run_str }}</span>
+                    </td>
+                    <td class="text-end">
+                        <button type="button"
+                                class="btn btn-sm app-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#runModal-{{ job.key }}">
+                            <i class="bi bi-play-fill me-1"></i>Jalankan Sekarang
+                        </button>
+
+                        {# Modal Jalankan Manual #}
+                        <div class="modal fade text-start" id="runModal-{{ job.key }}" tabindex="-1" aria-labelledby="modalLabel-{{ job.key }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('settings.run_scheduled_job_manual', key=job.key) }}" class="app-form">
+                                        {% include "components/csrf_token.html" %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modalLabel-{{ job.key }}">Jalankan Tugas: {{ job.label }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="small text-muted mb-3">
+                                                Menjalankan tugas secara manual di luar jadwal rutin. Tetap menghormati idempotensi (periode yang sudah SUCCESS ditolak).
+                                            </p>
+
+                                            {% if job.per_branch %}
+                                            <p class="small text-muted mb-3">Dijalankan untuk cabang Anda.</p>
+                                            {% endif %}
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Kunci Periode (Opsional)</label>
+                                                <input type="text" name="period_key" class="form-control" placeholder="Contoh: 2026-10-08 (kosongkan untuk periode saat ini)">
+                                                <small class="text-muted">Kosongkan untuk menggunakan periode otomatis jam ini / hari ini.</small>
+                                            </div>
+
+                                            {% if current_user.role == 'OWNER' %}
+                                            <div class="border rounded p-3 bg-light mb-3">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="force" value="1" id="forceCheck-{{ job.key }}">
+                                                    <label class="form-check-label fw-bold text-danger" for="forceCheck-{{ job.key }}">
+                                                        Paksa Eksekusi Ulang (Khusus OWNER)
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mb-2">
+                                                    Centang hanya jika periode tersebut sudah SUCCESS dan ingin dijalankan ulang secara paksa. Aksi ini dicatat ke Audit Log.
+                                                </small>
+                                                <div>
+                                                    <label class="form-label small fw-bold">Alasan Pemaksaan (Wajib diisi jika dipaksa)</label>
+                                                    <input type="text" name="force_reason" class="form-control form-control-sm" placeholder="Contoh: Perbaikan data operasional setelah koreksi">
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn app-btn-primary">
+                                                <i class="bi bi-play-circle me-1"></i>Eksekusi Sekarang
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Seksi 2: Riwayat 50 Run Terakhir #}
+<div class="app-card" data-section="scheduled-jobs-history">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h3>Riwayat Eksekusi (50 Terakhir)</h3>
+            <p class="mb-0">Catatan pelaksanaan tugas terjadwal, durasi, percobaan ulang, dan pesan hasil eksekusi.</p>
+        </div>
+
+        {# Filter status #}
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="small text-muted fw-bold">Filter Status:</span>
+            <a href="{{ url_for('settings.scheduled_jobs', job_key=current_job_key) }}"
+               class="btn btn-sm {{ 'app-btn-primary' if not current_status else 'app-btn-secondary' }}">Semua</a>
+            <a href="{{ url_for('settings.scheduled_jobs', status='SUCCESS', job_key=current_job_key) }}"
+               class="btn btn-sm {{ 'btn-success' if current_status == 'SUCCESS' else 'app-btn-secondary' }}">SUCCESS</a>
+            <a href="{{ url_for('settings.scheduled_jobs', status='FAILED', job_key=current_job_key) }}"
+               class="btn btn-sm {{ 'btn-danger' if current_status == 'FAILED' else 'app-btn-secondary' }}">FAILED</a>
+            <a href="{{ url_for('settings.scheduled_jobs', status='RUNNING', job_key=current_job_key) }}"
+               class="btn btn-sm {{ 'btn-warning' if current_status == 'RUNNING' else 'app-btn-secondary' }}">RUNNING</a>
+        </div>
+    </div>
+
+    {% if runs %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Waktu Mulai</th>
+                    <th>Tugas</th>
+                    <th>Cabang</th>
+                    <th>Periode</th>
+                    <th>Percobaan</th>
+                    <th>Status</th>
+                    <th>Selesai / Durasi</th>
+                    <th>Pesan / Hasil</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in runs %}
+                <tr>
+                    <td class="text-nowrap">
+                        <div>{{ run.started_at.strftime('%d/%m/%Y %H.%M') }}</div>
+                        <small class="text-muted">#{{ run.id }}</small>
+                    </td>
+                    <td>
+                        <strong class="d-block">{{ run.job_key }}</strong>
+                    </td>
+                    <td>
+                        {% if run.branch %}
+                        <span class="badge bg-light text-dark border">{{ run.branch.name }}</span>
+                        {% elif run.branch_id %}
+                        <span class="badge bg-light text-dark border">Cabang {{ run.branch_id }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border">Global</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code>{{ run.period_key }}</code>
+                    </td>
+                    <td>
+                        <span class="badge {{ 'bg-warning-subtle text-warning' if run.attempts > 1 else 'bg-light text-dark' }} border">
+                            Ke-{{ run.attempts }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if run.status == 'SUCCESS' %}
+                        <span class="status-badge success">SUCCESS</span>
+                        {% elif run.status == 'FAILED' %}
+                        <span class="status-badge danger">FAILED</span>
+                        {% elif run.status == 'RUNNING' %}
+                        <span class="status-badge warning">RUNNING</span>
+                        {% else %}
+                        <span class="status-badge secondary">{{ run.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        {% if run.finished_at %}
+                        <div>{{ run.finished_at.strftime('%d/%m/%Y %H.%M') }}</div>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="small text-break" style="max-width: 320px;">
+                            {{ run.message or '-' }}
+                            {% if run.result_json %}
+                            <details class="mt-1">
+                                <summary class="text-muted small cursor-pointer">Lihat payload JSON</summary>
+                                <pre class="p-2 bg-light rounded small mt-1 mb-0" style="max-height: 150px; overflow-y: auto;">{{ run.result_json }}</pre>
+                            </details>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 border rounded bg-light">
+        <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+        <h5 class="text-muted">Belum ada riwayat eksekusi</h5>
+        <p class="text-muted small mb-0">
+            {% if current_status %}
+            Tidak ada riwayat eksekusi dengan status <strong>{{ current_status }}</strong>.
+            <a href="{{ url_for('settings.scheduled_jobs') }}" class="d-block mt-2">Hapus filter</a>
+            {% else %}
+            Riwayat akan muncul secara otomatis setelah penjadwal menjalankan tugas.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+</div>
+{% endblock %}

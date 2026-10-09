@@ -41,6 +41,7 @@
 {% set is_change_password = endpoint == "settings.change_password" %}
 {% set is_recovery_center = endpoint == "settings.recovery_center" %}
 {% set is_system_health = endpoint == "settings.system_health" %}
+{% set is_scheduled_jobs = endpoint.startswith("settings.scheduled_jobs") or endpoint == "settings.run_scheduled_job_manual" %}
 {% set is_atomic_transaction_map = endpoint == "settings.atomic_transaction_map" %}
 {% set is_atomic_smoke_simulation = endpoint == "settings.atomic_smoke_simulation" %}
 {% set is_backup_management = endpoint in ["settings.backups", "settings.create_backup", "settings.create_full_backup", "settings.validate_backup_preview", "settings.download_backup", "settings.download_backup_confirm"] %}
@@ -186,6 +187,7 @@
                         {{ nav_link(url_for('operational.orders'), "Order Harian", "bi-journal-plus", is_operational_order) }}
                     {% endif %}
                     {% if has_role(["OWNER", "ADMIN", "DAPUR"]) %}
+                        {{ nav_link(url_for('operational.order_qty_changes'), "Perubahan Porsi", "bi-arrow-left-right", endpoint == "operational.order_qty_changes") }}
                         {{ nav_link(url_for('operational.menu_schedule'), "Jadwal Menu", "bi-calendar-week", endpoint == "operational.menu_schedule") }}
                     {% endif %}
                     {% if has_role(["OWNER", "DAPUR"]) %}
@@ -348,6 +350,7 @@
                     {{ nav_link(url_for('settings.backups'), "Backup & Restore", "bi-database-down", is_backup_management) }}
                 {% endif %}
                 {% if has_role(["OWNER", "ADMIN"]) %}
+                    {{ nav_link(url_for('settings.scheduled_jobs'), "Tugas Otomatis", "bi-clock-history", is_scheduled_jobs) }}
                     {{ nav_link(url_for('settings.system_health'), "Kesehatan Sistem", "bi-heart-pulse", is_system_tools) }}
                 {% endif %}
                 {{ nav_link(url_for('settings.account'), "Akun Saya", "bi-person-circle", endpoint == 'settings.account') }}

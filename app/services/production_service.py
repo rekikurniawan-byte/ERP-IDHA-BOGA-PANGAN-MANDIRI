@@ -114,7 +114,7 @@ def sync_single_production(daily_order, production_type, planned_qty, created_by
     return "SYNCED"
 
 
-def generate_production_from_order(daily_order, created_by):
+def generate_production_from_order(daily_order, created_by, commit=True):
     if not daily_order.is_locked:
         return False, "Produksi hanya bisa dibuat dari order yang sudah LOCKED."
 
@@ -146,6 +146,11 @@ def generate_production_from_order(daily_order, created_by):
     if not results:
         return False, "Tidak ada porsi siang atau sore untuk dibuat produksi."
 
-    db.session.commit()
+    # commit=False: pemanggil (mis. ubah porsi Fase 5) menyimpan semuanya dalam
+    # satu transaksi, supaya produksi tidak tersimpan sendiri kalau langkah lain gagal.
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
 
     return True, "Produksi berhasil disinkronkan: " + ", ".join(results)

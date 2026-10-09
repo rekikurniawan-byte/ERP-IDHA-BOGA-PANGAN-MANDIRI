@@ -528,6 +528,9 @@ def create_driver():
         if not name:
             flash("Nama driver wajib diisi.", "warning")
             return redirect(url_for("master.create_driver"))
+        if user_id and user_id not in {u.id for u in _eligible_pengantar_users(current_user.branch_id)}:
+            flash("Akun login harus akun PENGANTAR aktif di cabang ini yang belum terhubung ke driver lain.", "warning")
+            return redirect(url_for("master.create_driver"))
 
         create_driver_record(
             branch_id=current_user.branch_id,
@@ -564,6 +567,10 @@ def edit_driver(driver_id):
 
         if not name:
             flash("Nama driver wajib diisi.", "warning")
+            return redirect(url_for("master.edit_driver", driver_id=driver.id))
+        eligible_ids = {u.id for u in _eligible_pengantar_users(current_user.branch_id, current_driver_id=driver.id)}
+        if user_id and user_id not in eligible_ids:
+            flash("Akun login harus akun PENGANTAR aktif di cabang ini yang belum terhubung ke driver lain.", "warning")
             return redirect(url_for("master.edit_driver", driver_id=driver.id))
 
         update_driver_record(

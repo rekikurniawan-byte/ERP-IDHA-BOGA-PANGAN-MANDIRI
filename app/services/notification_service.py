@@ -39,6 +39,18 @@ def equivalent_target_roles(role: Optional[str]) -> set[str]:
             roles.add(old_role)
     return roles
 
+def visible_target_roles(role: Optional[str]) -> set[str]:
+    """Role-target yang boleh DILIHAT user ini.
+
+    OWNER memantau dan ikut menyetujui pekerjaan ADMIN (bukti bayar, pesanan
+    portal, persetujuan kredit), jadi notifikasi untuk ADMIN juga tampil untuknya.
+    """
+    roles = equivalent_target_roles(role)
+    if effective_role(role) == "OWNER":
+        roles |= equivalent_target_roles("ADMIN")
+    return roles
+
+
 # Finance and stock reminders used to target FINANCE and LOGISTICS. Those
 # roles are retired and ADMIN does the work (app/utils/roles.py), so a
 # reminder addressed to them would have been stored for nobody and never
@@ -152,7 +164,7 @@ def can_user_access_notification(notification: Notification, user: Any) -> bool:
 
     # 2. Targeted to a role
     if notification.target_role:
-        allowed = equivalent_target_roles(eff_role)
+        allowed = visible_target_roles(eff_role)
         return notification.target_role in allowed
 
     # 3. General branch notification (target_user_id is None and target_role is None)
@@ -181,7 +193,7 @@ def list_notifications(
         eff_role = effective_role(user_role)
         user_id = getattr(user, "id", None)
         is_portal = eff_role in PORTAL_ROLES
-        allowed_roles = equivalent_target_roles(eff_role)
+        allowed_roles = visible_target_roles(eff_role)
 
         conditions = []
         # 1. Target spesifik user ID ini

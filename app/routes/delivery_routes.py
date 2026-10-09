@@ -32,6 +32,7 @@ from app.services.digital_attachment_service import (
     soft_delete_attachment,
 )
 from app.utils.decorators import role_required
+from app.utils.roles import effective_role
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context
 from app.services.atomic_transaction_service import atomic_business_action
 
@@ -273,6 +274,15 @@ def receive(detail_id):
     w = request.args.get("w", type=int)
     n = request.args.get("n", type=int)
     from_scan = request.args.get("from_scan") == "1" or request.form.get("from_scan") == "1"
+
+    if request.method == "POST" and delivery_detail.receipt and effective_role(current_user.role) == "PENGANTAR":
+        # Form disembunyikan di layar, tapi kiriman ulang (klik dua kali, tombol
+        # kembali) tetap harus ditolak: angka terima yang sudah jadi dasar invoice
+        # tidak boleh berubah dari HP pengantar. Koreksi lewat admin.
+        flash("Pesanan ini sudah tercatat diterima. Koreksi hanya bisa lewat admin.", "warning")
+        if from_scan:
+            return redirect(url_for("delivery.scan"))
+        return redirect(url_for("delivery.receive", detail_id=delivery_detail.id))
 
     if request.method == "POST":
         delivered_qty = request.form.get("delivered_qty")
@@ -721,13 +731,19 @@ def scan_qr(daily_order_detail_id, sesi):
     )
 
     if not delivery_detail:
-        delivery_detail = (
+        # Cadangan hanya untuk pengiriman lama yang tidak mencatat sesi. Pengiriman
+        # sesi LAIN tidak boleh dipakai: label Malam tidak boleh membuka pesanan Siang.
+        legacy = (
             DeliveryDetail.query.join(Delivery)
             .filter(
                 DeliveryDetail.daily_order_detail_id == daily_order_detail_id,
                 Delivery.status != "CANCELLED",
             )
-            .first()
+            .all()
+        )
+        delivery_detail = next(
+            (row for row in legacy if get_delivery_type_from_notes(row.delivery.notes) == "-"),
+            None,
         )
 
     if not delivery_detail:

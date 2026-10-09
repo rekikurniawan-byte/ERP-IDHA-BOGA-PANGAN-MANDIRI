@@ -57,8 +57,8 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 | T1 | "Akun Saya" semua role + menu harian dengan foto | Gemini | ⏳ `PROMPT_GEMINI_AKUN_MENU.md` |
 | T2 | Reminder sesuai role | Gemini | ⏳ `PROMPT_GEMINI_REMINDER_ROLE.md` |
 | 3 | Pengaturan kontrak | Gemini + cek Claude | ✅ (belum commit) |
-| 4 | Penjadwal otomatis | Gemini + cek Claude | 🔜 |
-| 5 | Pesanan otomatis | Gemini + cek Claude | 🔜 |
+| 4 | Penjadwal otomatis | Gemini + perbaikan Claude | ✅ (799 test lulus) |
+| 5 | Pesanan otomatis | Gemini + perbaikan Claude | ✅ (799 test lulus) |
 | 6 | Invoice otomatis | **Claude** | 🔜 |
 | 7 | Kontrol kredit syariah + ta'zir | **Claude** | 🔜 |
 | 8 | Pajak | **Claude** | 🔜 (tunggu konsultan pajak) |
@@ -295,6 +295,9 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - **Pembersihan CSS** yang tidak terpakai setelah fitur besar selesai.
 - Mengganti `Query.get()` lama (peringatan SQLAlchemy) — tidak mendesak.
 
+- **Zona waktu server wajib `Asia/Jakarta` saat online.** Masih ada ±51 file lama yang memakai `date.today()` / `datetime.now()` (jam server). Di laptop owner benar karena jam laptop WIB; di server UTC tanggal akan meleset antara 00.00–07.00 WIB.
+- **Test penjadwal**: database test berisi ribuan cabang sisa test lain. Setiap test yang memanggil `run_due_jobs` wajib membatasi dengan `job_keys=[...]` dan `branch_ids=[...]`, kalau tidak test berjalan puluhan menit.
+
 ## 13. Hal yang harus disiapkan owner
 - Gmail PT + **App Password** di `.env` (lupa password) — jangan diberikan ke AI.
 - **HTTPS/domain** saat online (kamera scan di dalam aplikasi).
@@ -307,3 +310,5 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - 2026-10-06: seluruh keputusan paket kontrak, pesanan otomatis, invoice otomatis, kredit syariah, surat kontrak, rekap dapur & label; tempo 7 hari; pengadilan Pangkalan Balai/Kayuagung; ta'zir Dana Sosial disetujui.
 - 2026-10-07: email wajib akun portal; tombol scan pengantar; menu = pelanggan melihat saja; Akun Saya semua role; reminder per role.
 - 2026-10-07: Fase 3 — Fondasi pengaturan kontrak (jam lock, libur rutin & khusus, siklus & anchor tagihan, tempo 7 hari, pengadilan sengketa, nominal ta'zir, mode tagih sub client, Driver.user_id link).
+- 2026-10-08: Fase 5 — Pesanan otomatis untuk Client/Sub Client kontrak (tugas 18.00 WIB auto_daily_orders, porsi hari kerja terakhir, standing_order_states, kartu 'Pesanan Hari Ini & Besok' di portal, kontrol kredit & jam lock, 6 alasan porsi 0, riwayat order_qty_changes, dan aksi admin).
+- 2026-10-09: Review Claude Fase 1–5 & perbaikan: kredit TAHAN/BLOKIR benar-benar menahan pesanan otomatis; portal hanya bisa ubah porsi lokasinya sendiri; pesanan manual besok tidak disentuh; tidak ada pesanan Rp0; tugas baru tidak mundur 7 hari; tugas terputus diulang; syarat anti-kabur di halaman kontrak; scan label sesuai sesi; angka terima tidak bisa diubah pengantar; notifikasi admin tampil untuk owner. test_db dibersihkan (test lengkap ±12 menit).

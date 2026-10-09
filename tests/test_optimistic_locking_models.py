@@ -58,6 +58,12 @@ user_menu_migration = importlib.import_module(
 contract_settings_migration = importlib.import_module(
     "migrations.versions.d2e3f4a5b6c7_contract_settings_and_driver_user"
 )
+scheduler_migration = importlib.import_module(
+    "migrations.versions.e3f4a5b6c7d8_scheduled_job_runs"
+)
+auto_order_migration = importlib.import_module(
+    "migrations.versions.f4a5b6c7d8e9_standing_orders_and_qty_changes"
+)
 
 
 def _versioned_model_tables():
@@ -96,6 +102,8 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(reset_tokens_migration.VERSIONED_TABLES)
     migration_tables.update(user_menu_migration.VERSIONED_TABLES)
     migration_tables.update(contract_settings_migration.VERSIONED_TABLES)
+    migration_tables.update(scheduler_migration.VERSIONED_TABLES)
+    migration_tables.update(auto_order_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

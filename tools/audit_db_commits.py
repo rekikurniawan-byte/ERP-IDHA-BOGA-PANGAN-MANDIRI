@@ -25,6 +25,7 @@ INFRA_SERVICE_NAMES = {
     "production_logging_service.py",
     "production_runtime_health_service.py",
     "system_health_service.py",
+    "scheduler_service.py",
     "visual_sweep_service.py",
     "final_visual_browser_qa_service.py",
 }

@@ -39,6 +39,8 @@
 
     {{ ph_alerts(center.alerts) }}
 
+    {% include "portal/_standing_orders_card.html" %}
+
     <div class="ph-kpis">
         {{ ph_kpi("bi-receipt", "brand", "Total ditagihkan", invoices.total_amount|rupiah, invoices.invoice_count ~ " invoice", url_for('portal.pt_invoices')) }}
         {{ ph_kpi("bi-check2-circle", "success", "Sudah dibayar", invoices.paid_amount|rupiah, (payments.payment_count or 0) ~ " pembayaran", url_for('portal.pt_payments')) }}

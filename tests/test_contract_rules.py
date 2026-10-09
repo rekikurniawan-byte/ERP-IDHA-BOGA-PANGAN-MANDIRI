@@ -475,6 +475,52 @@ def test_update_rules_role_permission_and_audit_log(ctx):
             dinner_lock_time="14:00",
         )
 
+    # Pihak tagih per sub client mengikuti aturan halaman Kredit (anti-kabur):
+    # ADMIN tidak boleh mengubahnya.
+    with pytest.raises(CustomerContractError, match="hanya boleh dilakukan OWNER"):
+        update_customer_contract_rules(
+            contract.id,
+            branch_id=s.branch.id,
+            actor=s.admin,
+            lunch_lock_time="09:15",
+            dinner_lock_time="14:15",
+            subclient_billing_modes={s.mandor.id: BILLING_DIRECT},
+        )
+    # OWNER pun ditolak selama syarat kredit langsung (limit, termin, NIK, alamat) belum lengkap.
+    with pytest.raises(CustomerContractError, match="belum bisa ditagih langsung"):
+        update_customer_contract_rules(
+            contract.id,
+            branch_id=s.branch.id,
+            actor=s.owner,
+            lunch_lock_time="09:15",
+            dinner_lock_time="14:15",
+            subclient_billing_modes={s.mandor.id: BILLING_DIRECT},
+        )
+    # Sub client milik client lain (ID dari form yang diakali) ditolak.
+    other_client = Client(name=f"Client Lain {uuid4().hex[:6]}", customer_path="KONTRAK", is_active=True)
+    ctx.session.add(other_client)
+    ctx.session.flush()
+    other_mandor = Mandor(branch_id=s.branch.id, client_id=other_client.id, name="Mandor Lain", is_active=True)
+    ctx.session.add(other_mandor)
+    ctx.session.flush()
+    with pytest.raises(CustomerContractError, match="tidak termasuk client kontrak"):
+        update_customer_contract_rules(
+            contract.id,
+            branch_id=s.branch.id,
+            actor=s.owner,
+            lunch_lock_time="09:15",
+            dinner_lock_time="14:15",
+            subclient_billing_modes={other_mandor.id: BILLING_DIRECT},
+        )
+
+    # Syarat kredit langsung dilengkapi (seperti lewat halaman Kredit).
+    credit = get_or_create_credit_account(s.branch.id, "MANDOR", s.mandor.id)
+    credit.credit_limit = Decimal("5000000")
+    credit.payment_terms_days = 7
+    s.mandor.id_number = f"3201{uuid4().int % 10**12:012d}"
+    s.mandor.address = "Jl. Proyek No. 1"
+    ctx.session.flush()
+
     # OWNER berhasil mengubah aturan
     update_customer_contract_rules(
         contract.id,

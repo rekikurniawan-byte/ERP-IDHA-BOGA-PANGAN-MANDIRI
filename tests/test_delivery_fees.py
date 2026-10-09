@@ -224,6 +224,7 @@ def test_jurnal_invoice_mencatat_ongkir_di_4005(ctx):
     s = _setup(ctx)
     # test_db tidak membawa COA lengkap; akun yang dipakai jurnal disiapkan di sini.
     for code, name, kind in (
+        ("1004", "Piutang Usaha", "ASSET"), ("4005", "Pendapatan Ongkos Kirim", "REVENUE"),
         ("1005", "Piutang Karyawan", "ASSET"), ("4001", "Pendapatan Catering Proyek", "REVENUE"),
         ("4002", "Pendapatan Catering Harian", "REVENUE"), ("4003", "Pendapatan Warung", "REVENUE"),
         ("4004", "Pendapatan Lain-Lain", "REVENUE"),

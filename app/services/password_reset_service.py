@@ -163,7 +163,15 @@ def execute_password_reset(
 
     user = token_record.user
     user.password_hash = generate_password_hash(new_password)
-    token_record.used_at = now_wib()
+    used_at = now_wib()
+    token_record.used_at = used_at
+    # Link reset lain milik user ini yang belum dipakai ikut hangus, supaya link
+    # lama (mis. dari email yang bocor) tidak bisa dipakai setelah password diganti.
+    PasswordResetToken.query.filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.id != token_record.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({PasswordResetToken.used_at: used_at}, synchronize_session=False)
 
     boundary = (
         atomic_business_action(

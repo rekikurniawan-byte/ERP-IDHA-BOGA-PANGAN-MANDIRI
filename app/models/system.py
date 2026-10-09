@@ -241,3 +241,29 @@ class PasswordResetToken(BaseModel):
 
     user = db.relationship("User", foreign_keys=[user_id], lazy="joined")
 
+
+class ScheduledJobRun(BaseModel):
+    __tablename__ = "scheduled_job_runs"
+    __table_args__ = (
+        db.UniqueConstraint("job_key", "branch_id", "period_key", name="uq_scheduled_job_runs_job_branch_period"),
+        db.Index(
+            "uq_scheduled_job_runs_null_branch",
+            "job_key",
+            "period_key",
+            unique=True,
+            postgresql_where=db.text("branch_id IS NULL"),
+        ),
+    )
+
+    job_key = db.Column(db.String(80), nullable=False, index=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey("branches.id"), nullable=True, index=True)
+    period_key = db.Column(db.String(40), nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default="RUNNING", index=True)
+    started_at = db.Column(db.DateTime, nullable=False, index=True)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    attempts = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    message = db.Column(db.Text, nullable=True)
+    result_json = db.Column(db.Text, nullable=True)
+
+    branch = db.relationship("Branch", foreign_keys=[branch_id], lazy="joined")
+

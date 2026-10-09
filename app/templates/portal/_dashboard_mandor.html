@@ -34,6 +34,8 @@
 
     {{ ph_alerts(center.alerts) }}
 
+    {% include "portal/_standing_orders_card.html" %}
+
     <div class="ph-kpis">
         {{ ph_kpi("bi-bag-check", "brand", "Pesanan", orders.total, (orders.rows|selectattr("stage", "equalto", "DELIVERED")|list|length) ~ " sudah diterima", url_for('portal.order_status')) }}
         {{ ph_kpi("bi-receipt", "warning", "Sisa tagihan", invoices.active_outstanding_amount|rupiah, (invoices.active_invoice_count or 0) ~ " invoice aktif", url_for('portal.mandor_invoices')) }}
