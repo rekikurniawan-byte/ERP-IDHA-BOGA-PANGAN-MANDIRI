@@ -173,13 +173,22 @@ def resolve_billing_party(branch_id, client_id=None, mandor_id=None):
 
 
 def _invoice_query(branch_id, party_type, party_id):
+    from app.services.accounting_service import CREDIT_CHARGE_INVOICE_SOURCES
+
     query = Invoice.query.filter(
         Invoice.branch_id == branch_id,
         Invoice.status.notin_(SETTLED_INVOICE_STATUSES),
+        # Tagihan ta'zir/ta'widh tidak ikut menaikkan status kredit: telat
+        # membayar ta'zir tidak boleh melahirkan ta'zir baru (denda atas denda).
+        db.or_(Invoice.source_type.is_(None), Invoice.source_type.notin_(CREDIT_CHARGE_INVOICE_SOURCES)),
     )
     if party_type == PARTY_MANDOR:
         return query.filter(Invoice.mandor_id == party_id)
-    return query.filter(Invoice.client_id == party_id)
+    # Invoice yang ditagih langsung ke sub client bukan hutang client-nya.
+    return query.filter(
+        Invoice.client_id == party_id,
+        db.or_(Invoice.bill_to_type.is_(None), Invoice.bill_to_type.notlike("MANDOR%")),
+    )
 
 
 def outstanding_and_aging(branch_id, party_type, party_id, today=None):
@@ -367,7 +376,15 @@ def is_promise_kept(made_on, promised_for, payment_dates):
 
 
 def broken_promise_count(branch_id, party_type, party_id, today=None):
-    """Berapa janji bayar yang lewat tanggalnya tanpa pembayaran masuk.
+    """Berapa janji bayar yang lewat tanggalnya tanpa pembayaran masuk."""
+    return len(broken_promises(branch_id, party_type, party_id, today))
+
+
+def broken_promises(branch_id, party_type, party_id, today=None):
+    """Daftar janji bayar yang meleset: [(invoice_id, tanggal janji)], terurut.
+
+    Tiap pasangan adalah satu kejadian; dipakai juga sebagai kunci usulan
+    ta'zir supaya satu janji meleset hanya diusulkan sekali.
 
     Sinyal paling awal dan paling akurat dari niat kabur -- jauh lebih cepat
     ketahuan daripada menunggu umur tunggakan menua.
@@ -381,14 +398,14 @@ def broken_promise_count(branch_id, party_type, party_id, today=None):
     """
     today = today or date.today()
     if not branch_id or not party_type or not party_id:
-        return 0
+        return []
 
     invoice_ids = [
         row.id for row in _invoice_query(branch_id, party_type, party_id)
         .with_entities(Invoice.id).all()
     ]
     if not invoice_ids:
-        return 0
+        return []
 
     promises = {}
     rows = InvoiceCollectionLog.query.filter(
@@ -407,17 +424,15 @@ def broken_promise_count(branch_id, party_type, party_id, today=None):
         if key not in promises or (made_on and made_on < promises[key]):
             promises[key] = made_on
     if not promises:
-        return 0
+        return []
 
-    payment_dates = {}
-    for invoice_id, paid_on in Payment.query.filter(
-        Payment.invoice_id.in_(invoice_ids),
-        Payment.amount > 0,
-    ).with_entities(Payment.invoice_id, Payment.payment_date).all():
-        payment_dates.setdefault(invoice_id, []).append(paid_on)
+    # Pelunasan lewat potong DP/deposit juga menepati janji, bukan hanya kas/bank.
+    from app.services.invoice_payment_history_service import payment_dates_by_invoice
 
-    return sum(
-        1
+    payment_dates = payment_dates_by_invoice(invoice_ids)
+
+    return sorted(
+        (invoice_id, promised_for)
         for (invoice_id, promised_for), made_on in promises.items()
         if not is_promise_kept(made_on, promised_for, payment_dates.get(invoice_id, ()))
     )
@@ -501,6 +516,18 @@ class CreditDecision:
     message: str = ""
 
 
+def is_enforced(branch_id, party_type, party_id, account):
+    """Tangga eskalasi berlaku untuk pihak ini?
+
+    Pihak yang kreditnya disetel OWNER (punya akun), dan -- sejak Fase 7 --
+    client yang punya kontrak aktif: aturan kontrak (tempo dari kontrak)
+    berlaku untuk semua client kontrak, bukan hanya sub client kredit.
+    """
+    if account is not None:
+        return True
+    return party_type == PARTY_CLIENT and active_contract(branch_id, party_id) is not None
+
+
 def evaluate_credit(branch_id, client_id=None, mandor_id=None, pending_amount=0, today=None):
     """Keputusan kredit untuk satu order yang mau masuk.
 
@@ -565,6 +592,15 @@ def evaluate_party(branch_id, party_type, party_id, account, pending_amount=0, t
         reason = derived_reason if status == derived_status else (
             getattr(account, "status_reason", None) or derived_reason
         )
+        grace_until = getattr(account, "grace_until", None)
+        if grace_until and today <= grace_until and status != STATUS_WRITE_OFF:
+            # Kelonggaran (QS 2:280): utang lama ditangguhkan, status tidak naik
+            # melewati TAHAN; pesanan baru tetap wajib bayar di muka (TAHAN).
+            status = STATUS_HOLD
+            reason = (
+                f"Kelonggaran sampai {grace_until.strftime('%d-%m-%Y')}: utang lama ditangguhkan, "
+                f"pesanan baru wajib bayar di muka. {getattr(account, 'grace_reason', None) or ''}"
+            ).strip()
 
     decision = CreditDecision(
         allowed=True, requires_approval=False, status=status, billing_mode=billing_mode,
@@ -574,7 +610,7 @@ def evaluate_party(branch_id, party_type, party_id, account, pending_amount=0, t
         pending_amount=pending, exposure=exposure, available=available,
         oldest_days_overdue=oldest_days, broken_promises=promises, aging=aging,
         stored_status=stored_status, derived_status=derived_status,
-        enforced=account is not None, reason=reason,
+        enforced=is_enforced(branch_id, party_type, party_id, account), reason=reason,
     )
 
     # Tangga eskalasi hanya ditegakkan untuk pihak yang kreditnya disetel

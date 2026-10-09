@@ -576,6 +576,30 @@ def mandor_unpaid_invoice_total(branch_id, mandor_id):
     return total
 
 
+def _record_invoice_settlement_log(invoice, settlement, settlement_type, amount, created_by):
+    """Log penagihan untuk pelunasan lewat potong DP/deposit, sama seperti pembayaran kas/bank."""
+    from app.models.finance import InvoiceCollectionLog
+
+    source = f"deposit jaminan {T.sub_client_lower}" if settlement_type == DEPOSIT_TO_INVOICE else f"uang muka/DP {T.client_lower}"
+    paid_off = money(invoice.remaining_amount or 0) <= 0
+    amount_label = f"Rp {float(amount or 0):,.0f}".replace(",", ".")
+    db.session.add(InvoiceCollectionLog(
+        branch_id=getattr(invoice, "branch_id", None) or settlement.branch_id,
+        invoice_id=getattr(invoice, "id", None) or settlement.reference_id,
+        follow_up_date=settlement.settlement_date,
+        channel="SYSTEM",
+        contact_person=f"SYSTEM - Potong {source}",
+        response_note=(
+            f"{settlement.settlement_number}: {amount_label} dipotong dari {source}. "
+            + ("Invoice sudah lunas." if paid_off else f"Sisa {invoice.invoice_number}: Rp {float(invoice.remaining_amount or 0):,.0f}.".replace(",", "."))
+        ),
+        promise_date=None,
+        next_action="Invoice sudah lunas. Tidak perlu follow up penagihan." if paid_off else "Follow up pelunasan sisa piutang.",
+        collection_status="PAID" if paid_off else "PARTIAL",
+        created_by=created_by,
+    ))
+
+
 def create_advance_settlement(
     advance,
     settlement_date,
@@ -778,6 +802,7 @@ def create_advance_settlement(
             reference_obj.status = "PARTIAL"
         reference_obj.paid_amount = new_paid
         reference_obj.remaining_amount = new_remaining_invoice
+        _record_invoice_settlement_log(reference_obj, settlement, settlement_type, amount, created_by)
 
     if settlement_type == "SUPPLIER_BILL" and reference_obj:
         new_paid = money(reference_obj.paid_amount or 0) + amount

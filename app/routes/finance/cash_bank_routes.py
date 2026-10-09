@@ -45,6 +45,7 @@ def cash_bank_ledger():
         "FIXED_ASSET_PURCHASE",
         "TRANSPORT_VEHICLE_EXPENSE",
         "OPERATIONAL_EXPENSE",
+        "SOCIAL_FUND_DISBURSEMENT",
     ]
     allowed_reconciliation_statuses = ["ALL", "RECONCILED", "UNRECONCILED"]
 
@@ -396,6 +397,7 @@ def cash_bank_ledger():
         {"value": "FIXED_ASSET_PURCHASE", "label": "Pembelian Aset Tetap"},
         {"value": "TRANSPORT_VEHICLE_EXPENSE", "label": "Transport & BBM"},
         {"value": "OPERATIONAL_EXPENSE", "label": "Biaya Operasional Catering"},
+        {"value": "SOCIAL_FUND_DISBURSEMENT", "label": "Penyaluran Dana Sosial"},
     ]
     reconciliation_status_options = [
         {"value": "ALL", "label": "Semua"},

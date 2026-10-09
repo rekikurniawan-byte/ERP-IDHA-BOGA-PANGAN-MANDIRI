@@ -930,7 +930,10 @@ def create_invoice_from_manual_backfill_batch(*, batch_id, branch_id, created_by
     batch.invoice_id = getattr(invoice, "id", None)
     batch.status = MANUAL_BACKFILL_STATUS_INVOICED
 
-    create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
+    # Invoice tanpa jurnal = piutang tidak cocok dengan buku besar: batalkan semuanya.
+    journal_ok, journal_message, _ = create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
+    if not journal_ok:
+        raise ManualBackfillBillingError(f"Jurnal piutang gagal dibuat: {journal_message}")
 
     record_audit_log(
         module="FINANCE",

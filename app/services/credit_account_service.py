@@ -24,6 +24,7 @@ from app.models.credit import (
     BILLING_DIRECT,
     BILLING_VIA_CLIENT,
     CREDIT_STATUS_ORDER,
+    PARTY_CLIENT,
     PARTY_MANDOR,
     STATUS_ACTIVE,
     STATUS_BLOCKED,
@@ -582,10 +583,17 @@ def confirm_write_off(account, form, actor, today=None):
     for invoice in invoices:
         _require_invoice_journal(invoice)
 
+    from app.services.accounting_service import SOCIAL_FUND_ACCOUNT_CODE
+
     acc_expense = get_account_by_code(WRITE_OFF_ACCOUNT_CODE)
     acc_receivable = get_account_by_code(RECEIVABLE_ACCOUNT_CODE)
     if not acc_expense or not acc_receivable:
         raise CreditActionError("Akun 5013 Beban Piutang Tak Tertagih atau 1004 Piutang Usaha belum tersedia.")
+    # Ta'zir yang tidak tertagih tidak pernah menjadi pendapatan, jadi menghapusnya
+    # mengurangi Dana Sosial yang sudah dicatat, bukan menambah beban.
+    acc_social_fund = get_account_by_code(SOCIAL_FUND_ACCOUNT_CODE)
+    if any(invoice.source_type == "TAZIR" for invoice in invoices) and not acc_social_fund:
+        raise CreditActionError("Akun 2009 Dana Sosial belum tersedia.")
 
     def mutate():
         written_off = ZERO
@@ -609,7 +617,8 @@ def confirm_write_off(account, form, actor, today=None):
             )
             db.session.add(journal)
             db.session.flush()
-            db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_expense.id, debit=float(remaining), credit=0))
+            debit_account = acc_social_fund if invoice.source_type == "TAZIR" else acc_expense
+            db.session.add(JournalDetail(journal_id=journal.id, account_id=debit_account.id, debit=float(remaining), credit=0))
             db.session.add(JournalDetail(journal_id=journal.id, account_id=acc_receivable.id, debit=0, credit=float(remaining)))
             invoice.remaining_amount = 0
             invoice.status = "CLOSED"
@@ -653,38 +662,77 @@ def sweep_credit_statuses(branch_id, actor_id=None, today=None):
     dibekukan di credit_status_events) dan memberi tahu OWNER dan ADMIN.
     Tidak commit; pemanggil yang commit.
     """
+    from app.services.sharia_credit_service import notify_party, propose_tazir_for_account
+
     today = today or date.today()
     accounts = CreditAccount.query.filter(
         CreditAccount.branch_id == branch_id,
         CreditAccount.is_active.is_(True),
         CreditAccount.billing_mode != BILLING_CASH,
     ).all()
+    # Client kontrak juga tunduk pada aturan kontrak (Fase 7): semuanya didaftarkan
+    # supaya tampil di Kontrol Kredit sejak awal, bukan baru setelah statusnya naik.
+    for client_id in contract_clients_without_account(branch_id):
+        accounts.append(get_or_create_credit_account(branch_id, PARTY_CLIENT, client_id))
+    checked = len(accounts)
 
     escalated = []
+    proposals = []
     for account in accounts:
         decision = evaluate_party(branch_id, account.party_type, account.party_id, account, today=today)
-        if not decision.enforced or _rank(decision.status) <= _rank(account.status):
-            continue
-        from_status = account.status
-        account.status = decision.status
-        account.status_reason = decision.reason
-        account.status_changed_at = datetime.utcnow()
-        account.status_changed_by = actor_id
-        _record_event(account, from_status, decision.status, "SWEEP", decision.reason, decision, actor_id)
-        name = party_name(account)
-        _notify(
-            account,
-            title=f"Kredit {name}: {STATUS_LABELS[decision.status]}",
-            message=(
-                f"Naik dari {STATUS_LABELS.get(from_status, from_status)}. {decision.reason} "
-                f"Exposure {_rupiah(decision.exposure)} dari limit {_rupiah(decision.credit_limit)}."
-            ),
-            priority=STATUS_PRIORITY.get(decision.status, "INFO"),
-            key_suffix=f"sweep-{decision.status}-{today:%Y%m%d}",
-        )
-        escalated.append({"account_id": account.id, "name": name, "from": from_status, "to": decision.status})
+        if decision.enforced and _rank(decision.status) > _rank(account.status):
+            from_status = account.status
+            account.status = decision.status
+            account.status_reason = decision.reason
+            account.status_changed_at = datetime.utcnow()
+            account.status_changed_by = actor_id
+            _record_event(account, from_status, decision.status, "SWEEP", decision.reason, decision, actor_id)
+            name = party_name(account)
+            _notify(
+                account,
+                title=f"Kredit {name}: {STATUS_LABELS[decision.status]}",
+                message=(
+                    f"Naik dari {STATUS_LABELS.get(from_status, from_status)}. {decision.reason} "
+                    f"Exposure {_rupiah(decision.exposure)} dari limit {_rupiah(decision.credit_limit)}."
+                ),
+                priority=STATUS_PRIORITY.get(decision.status, "INFO"),
+                key_suffix=f"sweep-{decision.status}-{today:%Y%m%d}",
+            )
+            notify_party(
+                account,
+                notification_type="CREDIT_STATUS",
+                title=f"Status pembayaran: {STATUS_LABELS[decision.status]}",
+                message=f"{PARTY_STATUS_MESSAGES.get(decision.status, '')} {decision.reason}".strip(),
+                priority=STATUS_PRIORITY.get(decision.status, "INFO"),
+                key=f"credit-party-{account.id}-{decision.status}-{today:%Y%m%d}",
+            )
+            escalated.append({"account_id": account.id, "name": party_name(account), "from": from_status, "to": decision.status})
+        proposals.extend(propose_tazir_for_account(account, decision, today))
 
-    return {"checked": len(accounts), "escalated": escalated}
+    return {"checked": checked, "escalated": escalated, "tazir_proposed": len(proposals)}
+
+
+# Pesan untuk portal pihak yang ditagih: apa akibatnya dan apa yang harus dilakukan.
+PARTY_STATUS_MESSAGES = {
+    STATUS_WATCH: "Ada tagihan yang lewat jatuh tempo. Mohon segera dibayar agar pesanan tetap lancar.",
+    STATUS_HOLD: "Tagihan sudah lama lewat jatuh tempo. Pesanan baru ditahan dan wajib dibayar di muka sampai tunggakan dibayar.",
+    STATUS_BLOCKED: "Pesanan baru dihentikan karena tunggakan. Hubungi admin dan lunasi tagihan untuk membuka kembali.",
+    STATUS_WRITE_OFF: "Tunggakan sudah sangat lama. Hubungi admin.",
+}
+
+
+def contract_clients_without_account(branch_id):
+    from app.models.contract import CustomerContract
+
+    configured = {
+        row.party_id for row in CreditAccount.query.filter_by(branch_id=branch_id, party_type=PARTY_CLIENT)
+        .with_entities(CreditAccount.party_id).all()
+    }
+    client_ids = {
+        row.client_id for row in CustomerContract.query.filter_by(branch_id=branch_id, status="ACTIVE")
+        .with_entities(CustomerContract.client_id).all()
+    }
+    return sorted(client_ids - configured)
 
 
 def daily_sweep(branch_id, actor_id=None, today=None):
@@ -711,7 +759,12 @@ def run_daily_sweep_if_due(branch_id, today=None):
     branch_settings credit.last_sweep_date mencatat hari terakhirnya.
     Mengembalikan hasil sapuan, atau None kalau hari ini sudah disapu.
     """
-    today = today or date.today()
+    from app.utils.clock import today_wib
+
+    return _sweep_once_and_commit(branch_id, today or today_wib())
+
+
+def _sweep_once_and_commit(branch_id, today):
     if not branch_id:
         return None
     try:
@@ -742,6 +795,28 @@ def _sweep_if_due_locked(branch_id, today):
     return result
 
 
+def run_credit_sweep_job(branch_id=None, period_key=None, now=None):
+    """Tugas penjadwal 07.30 WIB: penyapu kontrak + kredit satu cabang, sekali sehari.
+
+    Memakai penanda hari yang sama dengan pemicu lewat permintaan pertama, jadi
+    keduanya tidak pernah menyapu dua kali di hari yang sama.
+    """
+    from app.utils.clock import today_wib
+
+    try:
+        today = date.fromisoformat(str(period_key)[:10]) if period_key else (now.date() if now else today_wib())
+    except ValueError:
+        today = now.date() if now else today_wib()
+    result = _sweep_once_and_commit(branch_id, today)
+    if result is None:
+        return {"message": "Sudah diperiksa hari ini."}
+    return {
+        "checked": result["checked"],
+        "escalated": len(result["escalated"]),
+        "tazir_proposed": result.get("tazir_proposed", 0),
+    }
+
+
 def run_sweep_now(branch_id, actor_id=None, today=None):
     """Tombol "Periksa Kredit Sekarang": sapu satu cabang dan simpan."""
     return _in_transaction(lambda: daily_sweep(branch_id, actor_id=actor_id, today=today))
@@ -759,6 +834,12 @@ def sweep_all_branches(today=None):
 
 # --- tampilan -------------------------------------------------------------------
 
+def _mode_label(account):
+    if account.party_type == PARTY_CLIENT:
+        return f"{T.client} kontrak (aturan kredit dari kontrak)"
+    return BILLING_MODE_LABELS.get(account.billing_mode, account.billing_mode)
+
+
 def list_credit_overview(branch_id, today=None):
     """Semua akun kredit cabang ini, paling berisiko di atas."""
     today = today or date.today()
@@ -767,7 +848,7 @@ def list_credit_overview(branch_id, today=None):
         decision = evaluate_party(branch_id, account.party_type, account.party_id, account, today=today)
         rows.append({"account": account, "name": party_name(account), "decision": decision,
                      "status_label": STATUS_LABELS.get(decision.status, decision.status),
-                     "mode_label": BILLING_MODE_LABELS.get(account.billing_mode, account.billing_mode)})
+                     "mode_label": _mode_label(account)})
     rows.sort(key=lambda row: (
         -_rank(row["decision"].status),
         -row["decision"].oldest_days_overdue,
@@ -787,7 +868,7 @@ def credit_account_detail(account, today=None):
         "name": party_name(account),
         "decision": decision,
         "status_label": STATUS_LABELS.get(decision.status, decision.status),
-        "mode_label": BILLING_MODE_LABELS.get(account.billing_mode, account.billing_mode),
+        "mode_label": _mode_label(account),
         "events": CreditStatusEvent.query.filter_by(credit_account_id=account.id)
         .order_by(CreditStatusEvent.changed_at.desc(), CreditStatusEvent.id.desc()).limit(50).all(),
         "mandor": None,
@@ -798,16 +879,27 @@ def credit_account_detail(account, today=None):
         "deposit_settlements": [],
         "manual_statuses": [(status, STATUS_LABELS[status]) for status in MANUAL_STATUSES],
         "can_write_off": decision.derived_status == STATUS_WRITE_OFF or account.status == STATUS_WRITE_OFF,
+        "charges": [],
+        "grace_active": account.grace_active(today),
+        "tazir_amount": ZERO,
     }
-    if account.party_type != PARTY_MANDOR:
-        return detail
+    from app.services.sharia_credit_service import list_charges, tazir_amount_for
 
-    mandor = db.session.get(Mandor, account.party_id)
-    detail["mandor"] = mandor
-    invoices = (
-        Invoice.query.filter(Invoice.branch_id == account.branch_id, Invoice.mandor_id == mandor.id)
-        .order_by(Invoice.invoice_date.desc(), Invoice.id.desc()).limit(60).all()
-    )
+    detail["charges"] = list_charges(account.branch_id, account_id=account.id, limit=50)
+    detail["tazir_amount"], detail["contract"] = tazir_amount_for(account, today)
+
+    invoice_query = Invoice.query.filter(Invoice.branch_id == account.branch_id)
+    if account.party_type == PARTY_MANDOR:
+        mandor = db.session.get(Mandor, account.party_id)
+        detail["mandor"] = mandor
+        invoice_query = invoice_query.filter(Invoice.mandor_id == mandor.id)
+    else:
+        mandor = None
+        invoice_query = invoice_query.filter(
+            Invoice.client_id == account.party_id,
+            sa.or_(Invoice.bill_to_type.is_(None), Invoice.bill_to_type.notlike("MANDOR%")),
+        )
+    invoices = invoice_query.order_by(Invoice.invoice_date.desc(), Invoice.id.desc()).limit(60).all()
     detail["invoices"] = [
         {
             "invoice": invoice,
@@ -818,10 +910,9 @@ def credit_account_detail(account, today=None):
     ]
     invoice_ids = [invoice.id for invoice in invoices]
     if invoice_ids:
-        detail["payments"] = (
-            Payment.query.filter(Payment.invoice_id.in_(invoice_ids))
-            .order_by(Payment.payment_date.desc(), Payment.id.desc()).limit(60).all()
-        )
+        from app.services.invoice_payment_history_service import payment_events
+
+        detail["payments"] = payment_events(invoice_ids, limit=60)
         detail["promises"] = (
             InvoiceCollectionLog.query.filter(
                 InvoiceCollectionLog.invoice_id.in_(invoice_ids),
@@ -829,6 +920,8 @@ def credit_account_detail(account, today=None):
             )
             .order_by(InvoiceCollectionLog.promise_date.desc(), InvoiceCollectionLog.id.desc()).limit(40).all()
         )
+    if mandor is None:
+        return detail
     deposits = (
         AdvanceTransaction.query.filter(
             AdvanceTransaction.branch_id == account.branch_id,

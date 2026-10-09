@@ -70,7 +70,8 @@ def create_invoice_payment(invoice_id):
 
     # RISK_VALIDATION_PAYMENT_DATE_STEP_RISK1B
     try:
-        assert_not_future_date(payment_date, datetime.now().date(), label="Tanggal pembayaran")
+        from app.utils.clock import today_wib
+        assert_not_future_date(payment_date, today_wib(), label="Tanggal pembayaran")
         assert_date_not_before(payment_date, invoice.invoice_date, label="Tanggal pembayaran", reference_label="tanggal invoice")
         payment_method = validate_choice(payment_method, CUSTOMER_PAYMENT_METHODS, "Metode pembayaran")
     except BusinessRuleError as error:
@@ -170,91 +171,10 @@ def create_invoice_payment(invoice_id):
             branch_id=current_user.branch_id,
             metadata={"invoice_id": invoice.id, "invoice_number": invoice.invoice_number, "amount": amount, "method": payment_method},
         ) as atomic:
-            db.session.add(payment)
-
-            new_paid = float(invoice.paid_amount or 0) + amount
-            new_remaining = float(invoice.total_amount or 0) - new_paid
-
-            if new_remaining <= 0:
-                new_remaining = 0
-
-            invoice.status = resolve_invoice_status_after_payment(invoice.total_amount, new_paid)
-            invoice.paid_amount = new_paid
-            invoice.remaining_amount = new_remaining
-
-            from app.services.manual_backfill_billing_service import sync_manual_backfill_batch_status_from_invoice
-            sync_manual_backfill_batch_status_from_invoice(
-                invoice,
-                updated_by=current_user.id,
-                commit=False,
-            )
-
-            # AUTO_JOURNAL_PAYMENT_STEP10F4B
-            db.session.flush()
-
-            from app.services.accounting_service import create_payment_journal_for_payment
-            create_payment_journal_for_payment(
-                payment=payment,
-                created_by=current_user.id,
-                commit=False
-            )
-
-            # PRODUCTION_CASH_BANK_LEDGER_CUSTOMER_PAYMENT
-            from app.services.cash_bank_service import create_customer_payment_cash_bank_transaction
-            create_customer_payment_cash_bank_transaction(
-                payment=payment,
-                created_by=current_user.id,
-                commit=False
-            )
-
-            # AUTO_COLLECTION_LOG_PAYMENT_STEP12B2B
-            from app.models.finance import InvoiceCollectionLog
-
-            def _collection_money(value):
-                try:
-                    return f"Rp {float(value or 0):,.0f}".replace(",", ".")
-                except Exception:
-                    logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:1797")
-                    return "Rp 0"
-
-            if invoice.status == "PAID" or float(invoice.remaining_amount or 0) <= 0:
-                collection_status = "PAID"
-                next_action = "Invoice sudah lunas. Tidak perlu follow up penagihan."
-                response_note = (
-                    f"Pembayaran {payment.payment_number} sebesar {_collection_money(payment.amount)} "
-                    f"diterima melalui {payment.payment_method}. "
-                    f"Invoice {invoice.invoice_number} sudah lunas."
-                )
-            else:
-                collection_status = "PARTIAL"
-                next_action = "Follow up pelunasan sisa piutang."
-                response_note = (
-                    f"Pembayaran {payment.payment_number} sebesar {_collection_money(payment.amount)} "
-                    f"diterima melalui {payment.payment_method}. "
-                    f"Sisa piutang invoice {invoice.invoice_number}: {_collection_money(invoice.remaining_amount)}."
-                )
-
-            if payment.reference_number:
-                response_note += f" Referensi: {payment.reference_number}."
-
-            if payment.notes:
-                response_note += f" Catatan payment: {payment.notes}."
-
-            collection_log = InvoiceCollectionLog(
-                branch_id=current_user.branch_id,
-                invoice_id=invoice.id,
-                follow_up_date=payment.payment_date,
-                channel="SYSTEM",
-                contact_person="SYSTEM - Pembayaran Masuk",
-                response_note=response_note,
-                promise_date=None,
-                next_action=next_action,
-                collection_status=collection_status,
-                created_by=current_user.id
-            )
-
-            db.session.add(collection_log)
-            db.session.flush()
+            # Satu jalur yang sama dengan bayar dari bukti portal: invoice, jurnal,
+            # buku kas/bank, dan log penagihan selalu tercatat bersama.
+            from app.services.customer_payment_service import apply_customer_payment
+            apply_customer_payment(invoice, payment, actor_id=current_user.id, source_label="Pembayaran Masuk")
             mark_idempotency_completed(
                 idempotency_record,
                 reference_type="PAYMENT",

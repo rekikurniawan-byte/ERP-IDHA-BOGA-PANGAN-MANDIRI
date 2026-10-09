@@ -325,7 +325,10 @@ def create_manual_billing_invoice(branch_id, mandor_id, period_start, period_end
     batch.invoice_id = invoice.id
     batch.status = "INVOICED"
 
-    create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
+    # Invoice tanpa jurnal = piutang tidak cocok dengan buku besar: batalkan semuanya.
+    journal_ok, journal_message, _ = create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
+    if not journal_ok:
+        raise ManualBillingError(f"Jurnal piutang gagal dibuat: {journal_message}")
 
     record_audit_log(
         module="FINANCE",

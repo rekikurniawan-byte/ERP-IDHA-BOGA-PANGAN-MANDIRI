@@ -118,19 +118,13 @@ def contract_detail(contract_id):
         flash("Kontrak customer tidak ditemukan.", "warning")
         return redirect(url_for("customer_success.contracts"))
     from app.services.pricing_service import quote_price
-    from app.services.credit_control_service import get_credit_account
-    from app.models.credit import PARTY_MANDOR
+    from app.services.contract_rules_service import billing_mode_for
 
     subclients = Mandor.query.filter_by(branch_id=current_user.branch_id, client_id=contract.client_id).order_by(Mandor.name.asc()).all()
-    subclient_data = []
-    for m in subclients:
-        acc = get_credit_account(current_user.branch_id, PARTY_MANDOR, m.id)
-        mode = acc.billing_mode if acc and acc.billing_mode else None
-        subclient_data.append({
-            "mandor": m,
-            "billing_mode": mode,
-            "resolved_mode": mode or contract.default_billing_mode,
-        })
+    subclient_data = [
+        {"mandor": m, "billing_mode": billing_mode_for(m.id, branch_id=current_user.branch_id)}
+        for m in subclients
+    ]
 
     weekly_holidays_set = set(contract.weekly_holidays.split(",")) if contract.weekly_holidays else set()
 

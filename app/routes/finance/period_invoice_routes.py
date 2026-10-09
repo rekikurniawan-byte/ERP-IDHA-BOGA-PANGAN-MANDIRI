@@ -403,168 +403,16 @@ def generate_period_invoice_preview():
 
 # === PATCH_PERIOD_INVOICE_SAVE ===
 def _period_generate_invoice_number(invoice_date):
-    from app.models.finance import Invoice
+    from app.services.auto_invoice_service import generate_invoice_number
 
-    prefix = f"INV-{invoice_date.strftime('%Y%m%d')}"
-    counter = Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}-%")).count() + 1
-
-    while True:
-        invoice_number = f"{prefix}-{counter:03d}"
-        existing = Invoice.query.filter_by(invoice_number=invoice_number).first()
-
-        if not existing:
-            return invoice_number
-
-        counter += 1
+    return generate_invoice_number(invoice_date)
 
 
 def _build_period_invoice_lines_for_save(mandor_id, period_start, period_end, branch_id):
-    from app.models.operational import DailyOrder
-    from app.models.finance import Invoice
-    from app.models.canteen import WorkerDebt
-    from app.services.canteen_service import get_debt_paid_amount, get_debt_remaining_amount
+    # Satu aturan tagih untuk invoice periode manual dan invoice otomatis (Fase 6).
+    from app.services.auto_invoice_service import build_period_invoice_lines
 
-    mandor_id = int(mandor_id)
-    lines = []
-
-    orders = DailyOrder.query.filter(
-        DailyOrder.branch_id == branch_id,
-        DailyOrder.status == "LOCKED",
-        DailyOrder.order_date >= period_start,
-        DailyOrder.order_date <= period_end
-    ).order_by(
-        DailyOrder.order_date.asc(),
-        DailyOrder.id.asc()
-    ).all()
-
-    for order in orders:
-        old_order_invoice = Invoice.query.filter_by(
-            branch_id=branch_id,
-            source_type="DAILY_ORDER",
-            source_order_id=order.id,
-            mandor_id=mandor_id
-        ).first()
-
-        for detail in order.details:
-            if int(detail.mandor_id) != mandor_id:
-                continue
-
-            mandor_name = _period_safe_label(getattr(detail, "mandor", None))
-            location_name = _period_safe_label(getattr(detail, "delivery_location", None))
-
-            lunch_qty, dinner_qty, short_qty = billable_base_quantities(
-                detail,
-                _period_is_after_lock_increase,
-            )
-            total_qty = lunch_qty + dinner_qty
-            price = money(getattr(detail, "price_per_portion", 0) or 0)
-            subtotal = total_qty * price
-
-            if total_qty > 0 and subtotal >= 0:
-                if not old_order_invoice and not _period_invoice_item_exists("ORDER_DETAIL", detail.id):
-                    lines.append({
-                        "item_type": "CATERING",
-                        "description": (
-                            f"{order.order_number} | PIC {mandor_name} | {location_name} | "
-                            f"Terkunci: Siang {lunch_qty}, Sore {dinner_qty}"
-                            f"{shortage_note(short_qty)}"
-                        ),
-                        "qty": total_qty,
-                        "unit_price": price,
-                        "subtotal": subtotal,
-                        "source_type": "ORDER_DETAIL",
-                        "source_id": detail.id,
-                    })
-
-            for revision in getattr(detail, "revisions", []) or []:
-                if not _period_is_after_lock_increase(revision):
-                    continue
-
-                lunch_change = int(getattr(revision, "lunch_qty_change", 0) or 0)
-                dinner_change = int(getattr(revision, "dinner_qty_change", 0) or 0)
-                qty_change = lunch_change + dinner_change
-
-                if qty_change <= 0:
-                    continue
-
-                revision_price = getattr(revision, "price_per_portion", None)
-
-                if revision_price is None:
-                    revision_price = price
-
-                revision_price = money(revision_price or 0)
-                revision_subtotal = qty_change * revision_price
-
-                if not old_order_invoice and not _period_invoice_item_exists("ORDER_REVISION", revision.id):
-                    lines.append({
-                        "item_type": "REVISION_INCREASE",
-                        "description": (
-                            f"{order.order_number} | PIC {mandor_name} | {location_name} | "
-                            f"Revisi tambah: Lunch +{lunch_change}, Dinner +{dinner_change}"
-                        ),
-                        "qty": qty_change,
-                        "unit_price": revision_price,
-                        "subtotal": revision_subtotal,
-                        "source_type": "ORDER_REVISION",
-                        "source_id": revision.id,
-                    })
-
-            if not old_order_invoice:
-                for fee_line in delivery_fee_invoice_lines(order, detail):
-                    if not _period_invoice_item_exists(fee_line["source_type"], detail.id):
-                        lines.append(fee_line)
-
-    debts = WorkerDebt.query.filter_by(
-        branch_id=branch_id
-    ).order_by(
-        WorkerDebt.id.asc()
-    ).all()
-
-    for debt in debts:
-        worker = getattr(debt, "worker", None)
-        sale = getattr(debt, "sale", None)
-
-        if not worker or not sale:
-            continue
-
-        if int(getattr(worker, "mandor_id", 0) or 0) != mandor_id:
-            continue
-
-        sale_date = getattr(sale, "sale_date", None)
-
-        if hasattr(sale_date, "date"):
-            sale_date = sale_date.date()
-
-        if not sale_date:
-            continue
-
-        if sale_date < period_start or sale_date > period_end:
-            continue
-
-        remaining = money(get_debt_remaining_amount(debt) or 0)
-
-        if remaining <= 0:
-            continue
-
-        if _period_invoice_item_exists("WORKER_DEBT", debt.id):
-            continue
-
-        paid = money(get_debt_paid_amount(debt) or 0)
-
-        lines.append({
-            "item_type": "WARUNG_DEBT",
-            "description": (
-                f"Hutang warung pekerja {_period_safe_label(worker)} | "
-                f"Hutang {float(debt.debt_amount or 0):,.0f} | Dibayar {paid:,.0f} | Sisa {remaining:,.0f}"
-            ),
-            "qty": 1,
-            "unit_price": remaining,
-            "subtotal": remaining,
-            "source_type": "WORKER_DEBT",
-            "source_id": debt.id,
-        })
-
-    return lines
+    return build_period_invoice_lines(mandor_id, period_start, period_end, branch_id)
 
 
 @finance_bp.route("/invoices/generate-period/save", methods=["POST"])
@@ -716,12 +564,9 @@ def generate_period_invoice_save():
             # AUTO_JOURNAL_PERIOD_INVOICE_STEP10F4B
             db.session.flush()
 
-            from app.services.accounting_service import create_invoice_journal_for_invoice
-            create_invoice_journal_for_invoice(
-                invoice=invoice,
-                created_by=current_user.id,
-                commit=False
-            )
+            # Jurnal gagal -> seluruh invoice batal (atomic), bukan invoice tanpa jurnal.
+            from app.services.accounting_service import post_invoice_journal_or_raise
+            post_invoice_journal_or_raise(invoice, current_user.id)
 
         record_audit_log(
             module="FINANCE",

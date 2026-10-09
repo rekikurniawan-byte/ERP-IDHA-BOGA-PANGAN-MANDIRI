@@ -336,8 +336,10 @@ def test_billing_mode_for_subclient_override_and_fallback(ctx):
         default_billing_mode=BILLING_DIRECT,
     )
 
-    # Subclient 1: belum ada override di CreditAccount -> pakai default kontrak (BILLING_DIRECT)
-    assert billing_mode_for(s.mandor.id) == BILLING_DIRECT
+    # Subclient 1: tanpa akun kredit. Bawaan DIRECT tidak bisa dipukul rata (syarat
+    # anti-kabur per sub client), jadi tetap lewat client, sama dengan invoice.
+    assert billing_mode_for(s.mandor.id) == BILLING_VIA_CLIENT
+    assert get_credit_account_for_test(s) is None
 
     # Subclient 2: override langsung di CreditAccount -> override harus menang
     mandor2 = Mandor(branch_id=s.branch.id, client_id=s.client.id, name="Mandor Khusus Cash", is_active=True)
@@ -357,6 +359,54 @@ def test_billing_mode_for_subclient_override_and_fallback(ctx):
     ctx.session.add(mandor3)
     ctx.session.flush()
     assert billing_mode_for(mandor3.id) == BILLING_VIA_CLIENT
+
+
+def get_credit_account_for_test(s):
+    return CreditAccount.query.filter_by(branch_id=s.branch.id, party_type=PARTY_MANDOR, party_id=s.mandor.id).first()
+
+
+def test_contract_cash_default_applies_to_unset_subclients_only_by_owner(ctx):
+    from app.services.credit_control_service import resolve_billing_party
+
+    s = _make_fixtures(ctx)
+    contract = create_customer_contract(
+        branch_id=s.branch.id,
+        client_id=s.client.id,
+        title="Kontrak Bawaan Cash",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 31),
+        payment_terms="Net 7",
+        status=CONTRACT_STATUS_ACTIVE,
+        created_by=s.owner.id,
+    )
+    already_set = Mandor(branch_id=s.branch.id, client_id=s.client.id, name="Sub Sudah Disetel", is_active=True)
+    ctx.session.add(already_set)
+    ctx.session.flush()
+    get_or_create_credit_account(s.branch.id, PARTY_MANDOR, already_set.id).billing_mode = BILLING_VIA_CLIENT
+    ctx.session.flush()
+
+    rules = dict(lunch_lock_time="10:00", dinner_lock_time="15:00", default_billing_mode=BILLING_CASH)
+    with pytest.raises(CustomerContractError, match="hanya boleh dilakukan OWNER"):
+        update_customer_contract_rules(contract.id, branch_id=s.branch.id, actor=s.admin, commit=False, **rules)
+
+    update_customer_contract_rules(
+        contract.id,
+        branch_id=s.branch.id,
+        actor=s.owner,
+        commit=False,
+        subclient_billing_modes={s.mandor.id: BILLING_VIA_CLIENT, already_set.id: BILLING_VIA_CLIENT},
+        **rules,
+    )
+
+    # Sub client tanpa pengaturan ikut bawaan, yang sudah disetel tidak disentuh.
+    assert billing_mode_for(s.mandor.id) == BILLING_CASH
+    assert billing_mode_for(already_set.id) == BILLING_VIA_CLIENT
+    # Pesanan otomatis dan invoice membaca sumber yang sama.
+    party_type, party_id, _account = resolve_billing_party(s.branch.id, s.client.id, s.mandor.id)
+    assert (party_type, party_id) == (PARTY_MANDOR, s.mandor.id)
+
+    # ADMIN menyimpan ulang tanpa mengubah bawaan: tetap boleh.
+    update_customer_contract_rules(contract.id, branch_id=s.branch.id, actor=s.admin, commit=False, **rules)
 
 
 def test_due_days_for_and_invoice_due_date(ctx):

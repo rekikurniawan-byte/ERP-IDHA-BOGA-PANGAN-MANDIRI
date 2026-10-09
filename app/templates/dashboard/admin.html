@@ -41,6 +41,15 @@
     <a href="{{ url_for('settings.scheduled_jobs') }}" class="btn btn-sm btn-danger text-nowrap">Buka Tugas Otomatis</a>
 </div>
 {% endif %}
+{% if auto_invoice_failures %}
+<div class="alert alert-danger d-flex justify-content-between align-items-center gap-3 mb-3" data-auto-invoice-failures="true">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-receipt-cutoff fs-5"></i>
+        <span><strong>{{ auto_invoice_failures }} invoice otomatis gagal terbit.</strong> Tagihan belum terkirim ke pelanggan sampai penyebabnya diperbaiki.</span>
+    </div>
+    <a href="{{ url_for('finance.auto_invoices') }}" class="btn btn-sm btn-danger text-nowrap">Buka Invoice Otomatis</a>
+</div>
+{% endif %}
 
 <section class="dashboard-section dashboard-command-decision" data-dashboard-section="admin-decision">
     <div class="dashboard-command-hero dashboard-command-hero-{{ command.decision.status_class }}">

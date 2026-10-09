@@ -1,0 +1,41 @@
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Ta'zir &amp; Ta'widh</h5>
+            <p>
+                Ta'zir kontrak: <strong>{{ detail.tazir_amount|rupiah }}</strong> per kejadian, nominal tetap (bukan persen, tidak bertambah per hari).
+                Sistem hanya mengusulkan saat janji bayar meleset atau status Blokir; Owner yang memutuskan.
+                Uangnya masuk Dana Sosial, bukan pendapatan.
+            </p>
+        </div>
+        <a class="btn app-btn-secondary btn-sm" href="{{ url_for('credit.social_fund') }}"><i class="bi bi-heart"></i> Dana Sosial</a>
+    </div>
+
+    {% if detail.charges %}
+        {% with rows=detail.charges, show_party=False %}{% include "credit/_charge_table.html" %}{% endwith %}
+    {% else %}
+        <p class="small mb-0">Belum ada usulan ta'zir atau tagihan ta'widh.</p>
+    {% endif %}
+
+    {% if is_owner %}
+    <hr>
+    <h6>Tagih Ta'widh (biaya penagihan riil)</h6>
+    <p class="small">Hanya biaya yang benar-benar dikeluarkan untuk menagih (mis. ongkos ke lokasi), dengan bukti nota. Bukan keuntungan yang hilang. Ditagih sebagai tagihan terpisah.</p>
+    <form method="POST" action="{{ url_for('credit.tawidh_create', account_id=account.id) }}" enctype="multipart/form-data" class="row g-3 app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Nominal (Rp)</label>
+            <input type="text" name="amount" class="form-control" inputmode="numeric" placeholder="150000" required>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Rincian biaya</label>
+            <input type="text" name="reason" class="form-control" placeholder="Ongkos 3x ke lokasi menagih, nota terlampir" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Bukti (foto/PDF)</label>
+            <input type="file" name="evidence" class="form-control" accept="image/*,application/pdf" required>
+        </div>
+        <div class="col-12"><button type="submit" class="btn app-btn-secondary btn-sm">Terbitkan Tagihan Ta'widh</button></div>
+    </form>
+    {% endif %}
+</div>

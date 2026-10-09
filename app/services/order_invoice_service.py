@@ -114,6 +114,21 @@ def generate_invoice_number(invoice_date):
         counter += 1
 
 
+def _already_billed_invoice_numbers(lines):
+    """Nomor invoice lain yang sudah memuat salah satu sumber baris ini."""
+    numbers = set()
+    for line in lines:
+        if not line.get("source_type") or not line.get("source_id"):
+            continue
+        rows = (
+            Invoice.query.join(InvoiceItem, InvoiceItem.invoice_id == Invoice.id)
+            .filter(InvoiceItem.source_type == line["source_type"], InvoiceItem.source_id == line["source_id"])
+            .with_entities(Invoice.invoice_number).all()
+        )
+        numbers.update(row.invoice_number for row in rows)
+    return sorted(numbers)
+
+
 def find_order_invoice(branch_id, order_id, mandor_id):
     return Invoice.query.filter_by(
         branch_id=branch_id,
@@ -159,6 +174,13 @@ def create_order_invoice(order, mandor, *, created_by, client_pic_id=None, prepa
         raise OrderInvoiceError(client_pic_error)
 
     lines = build_order_invoice_lines(order, mandor.id)
+    already_billed = _already_billed_invoice_numbers(lines)
+    if already_billed:
+        # Invoice periode/otomatis menjaga arah sebaliknya; ini menjaga arah ini.
+        raise OrderInvoiceError(
+            "Pesanan ini sudah ditagih di invoice " + ", ".join(already_billed)
+            + ". Tidak dibuat invoice per pesanan agar tidak tertagih dua kali."
+        )
     total_amount = sum(line["subtotal"] for line in lines)
     if not lines or total_amount <= 0:
         raise OrderInvoiceError(f"Tidak ada item invoice yang valid untuk order dan {T.sub_client_lower} ini.")

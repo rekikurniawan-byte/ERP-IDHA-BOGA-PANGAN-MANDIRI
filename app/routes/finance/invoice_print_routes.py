@@ -263,13 +263,10 @@ def invoice_print(invoice_id):
         flash("Data invoice tidak sesuai cabang user.", "danger")
         return redirect(url_for("finance.invoices"))
 
-    payments = Payment.query.filter_by(
-        branch_id=current_user.branch_id,
-        invoice_id=invoice.id
-    ).order_by(
-        Payment.payment_date.desc(),
-        Payment.id.desc()
-    ).all()
+    # Termasuk pelunasan lewat potong DP/deposit, supaya cetakan sama dengan sisa tagihannya.
+    from app.services.invoice_payment_history_service import payment_events
+
+    payments = payment_events([invoice.id])
 
     client_name = "-"
     mandor_name = "-"

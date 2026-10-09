@@ -64,6 +64,9 @@ scheduler_migration = importlib.import_module(
 auto_order_migration = importlib.import_module(
     "migrations.versions.f4a5b6c7d8e9_standing_orders_and_qty_changes"
 )
+sharia_credit_migration = importlib.import_module(
+    "migrations.versions.g5b6c7d8e9f0_sharia_credit_tazir"
+)
 
 
 def _versioned_model_tables():
@@ -104,6 +107,7 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(contract_settings_migration.VERSIONED_TABLES)
     migration_tables.update(scheduler_migration.VERSIONED_TABLES)
     migration_tables.update(auto_order_migration.VERSIONED_TABLES)
+    migration_tables.update(sharia_credit_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

@@ -260,7 +260,7 @@
                     <!-- Mode Tagih per Sub Client -->
                     <div class="col-12 mt-4">
                         <label class="form-label fw-bold mb-1">Mode Penagihan per {{ term('sub_client') }}</label>
-                        <p class="text-muted small mb-2">Sumber data tersimpan di akun kredit {{ term('sub_client') }}. Jika memilih "Bawaan Kontrak", sistem menggunakan bawaan kontrak aktif.</p>
+                        <p class="text-muted small mb-2">Mode di sini yang dipakai pesanan otomatis dan invoice. Mengubahnya hanya Owner. Bawaan Pihak Ditagih kontrak diterapkan ke {{ term('sub_client') }} yang belum punya pengaturan saat Owner mengubah bawaannya; "Langsung ke sub client" tetap disetel satu per satu setelah syarat kreditnya lengkap.</p>
                         <div class="table-responsive app-table-wrapper">
                             <table class="table app-table align-middle">
                                 <thead>
@@ -278,20 +278,17 @@
                                             <td>{{ item.mandor.code or '-' }} / {{ item.mandor.phone or '-' }}</td>
                                             <td>
                                                 <span class="status-badge neutral">
-                                                    {% if item.billing_mode == 'VIA_CLIENT' %}
-                                                        Lewat client
-                                                    {% elif item.billing_mode == 'DIRECT' %}
+                                                    {% if item.billing_mode == 'DIRECT' %}
                                                         Langsung ke sub client
                                                     {% elif item.billing_mode == 'CASH' %}
                                                         Bayar di muka
                                                     {% else %}
-                                                        Bawaan Kontrak ({{ contract.default_billing_mode }})
+                                                        Lewat client
                                                     {% endif %}
                                                 </span>
                                             </td>
                                             <td>
                                                 <select class="form-select app-input form-select-sm" name="subclient_billing_{{ item.mandor.id }}">
-                                                    <option value="" {% if not item.billing_mode %}selected{% endif %}>Bawaan Kontrak ({{ contract.default_billing_mode }})</option>
                                                     <option value="VIA_CLIENT" {% if item.billing_mode == 'VIA_CLIENT' %}selected{% endif %}>Lewat client</option>
                                                     <option value="DIRECT" {% if item.billing_mode == 'DIRECT' %}selected{% endif %}>Langsung ke sub client</option>
                                                     <option value="CASH" {% if item.billing_mode == 'CASH' %}selected{% endif %}>Bayar di muka</option>

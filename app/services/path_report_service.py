@@ -66,6 +66,9 @@ def build_path_summary(branch_id, today=None):
     for invoice in invoices:
         row = rows[invoice.customer_path]
         row["receivable"] += _money(invoice.remaining_amount)
+        # Ta'zir masuk Dana Sosial, bukan omzet.
+        if invoice.source_type == "TAZIR":
+            continue
         if start <= invoice.invoice_date <= end:
             row["revenue"] += _money(invoice.total_amount)
             row["invoice_count"] += 1

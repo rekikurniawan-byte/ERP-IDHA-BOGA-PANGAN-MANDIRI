@@ -59,8 +59,8 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 | 3 | Pengaturan kontrak | Gemini + cek Claude | ✅ (belum commit) |
 | 4 | Penjadwal otomatis | Gemini + perbaikan Claude | ✅ (799 test lulus) |
 | 5 | Pesanan otomatis | Gemini + perbaikan Claude | ✅ (799 test lulus) |
-| 6 | Invoice otomatis | **Claude** | 🔜 |
-| 7 | Kontrol kredit syariah + ta'zir | **Claude** | 🔜 |
+| 6 | Invoice otomatis | **Claude** | ✅ (belum commit) |
+| 7 | Kontrol kredit syariah + ta'zir | **Claude** | ✅ (belum commit; migrasi `g5b6c7d8e9f0`) |
 | 8 | Pajak | **Claude** | 🔜 (tunggu konsultan pajak) |
 | 9 | Surat kontrak otomatis | Gemini + cek Claude | 🔜 (paling akhir) |
 
@@ -231,6 +231,15 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - **Ta'widh**: hanya ganti biaya penagihan **riil** yang ada buktinya; bukan keuntungan yang hilang.
 - Rumusan pasal sebaiknya dikonfirmasi ke ustadz/ahli fiqih muamalah.
 
+### 9.3 Yang dibangun (2026-10-09)
+- **Penyapu kredit di penjadwal 07.30 WIB** (`credit_daily_sweep`); client yang punya kontrak aktif ikut tunduk pada tangga kredit (akunnya dibuat otomatis saat status perlu naik). Status naik → notifikasi ke portal pihak yang ditagih.
+- **Usulan ta'zir** otomatis (satu per kejadian: janji meleset ≤30 hari terakhir, atau satu kali masuk Blokir), nominal dari kontrak; Owner memilih Kenakan/Tidak (alasan wajib bila tidak). Dikenakan → **invoice terpisah** `source_type=TAZIR`, jurnal Dr 1004 / Cr **2009 Dana Sosial**.
+- **Ta'widh**: Owner menerbitkan tagihan terpisah `TAWIDH` dengan bukti wajib; jurnal Dr 1004 / Cr 4004.
+- Tagihan ta'zir/ta'widh **tidak dihitung** dalam umur tunggakan/limit (tidak ada denda atas denda); invoice yang ditagih langsung ke sub client tidak dihitung sebagai hutang client-nya.
+- **Kelonggaran**: Owner mencatat sampai tanggal + alasan → status maksimal Tahan (pesanan baru bayar di muka), tanpa usulan ta'zir, usulan yang menunggu gugur.
+- **Dana Sosial** (menu Keuangan → Dana Sosial): ringkasan ditagihkan/diterima/disalurkan/siap salur, usulan menunggu, catat penyaluran (Owner, bukti wajib, maksimal dana yang sudah diterima; kas/bank keluar + Dr 2009 / Cr kas/bank), laporan penyaluran.
+- Hapus buku: sisa tagihan ta'zir didebit ke 2009 (bukan beban 5013).
+
 ---
 
 ## 10. Fase 8 — Pajak (Claude, setelah konsultan pajak)
@@ -288,7 +297,6 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 ---
 
 ## 12. Daftar tunggu lain (belum dijadwalkan)
-- **(Fase 6, Claude) Pilihan "Bawaan kontrak" untuk pihak ditagih per sub client belum berfungsi**: `CreditAccount.billing_mode` wajib terisi (bawaan `VIA_CLIENT`), jadi sub client yang sudah punya akun kredit tidak pernah mengikuti `default_billing_mode` kontrak, dan pilihan "Bawaan kontrak" di halaman kontrak diabaikan. Selesaikan saat Fase 6 (invoice otomatis memakai `billing_mode_for`), sekalian penagihan nyata membaca aturan yang sama.
 - **Dua tempat tempo di kontrak**: teks lama `payment_terms` ("net 30") dan angka baru `due_days`. Sistem kini memakai `due_days` (kontrak lama sudah diisi dari teksnya saat migrasi). Saat Fase 9 (surat kontrak), teks tempo dibuat otomatis dari `due_days` supaya tidak bisa berbeda.
 - **Hubungkan akun pengantar ke data Driver secara pasti** (kolom `drivers.user_id` atau pilihan "Akun login" di master Driver). Sekarang reminder pengantar mencocokkan lewat nama/no. HP — rapuh kalau nama berbeda. Kerjakan bersama Fase 3.
 - Lupa password lewat **WhatsApp OTP** (butuh layanan WA berbayar) — nanti.
@@ -311,4 +319,8 @@ Angka ini masuk pasal kontrak apa adanya supaya surat = perilaku sistem.
 - 2026-10-07: email wajib akun portal; tombol scan pengantar; menu = pelanggan melihat saja; Akun Saya semua role; reminder per role.
 - 2026-10-07: Fase 3 — Fondasi pengaturan kontrak (jam lock, libur rutin & khusus, siklus & anchor tagihan, tempo 7 hari, pengadilan sengketa, nominal ta'zir, mode tagih sub client, Driver.user_id link).
 - 2026-10-08: Fase 5 — Pesanan otomatis untuk Client/Sub Client kontrak (tugas 18.00 WIB auto_daily_orders, porsi hari kerja terakhir, standing_order_states, kartu 'Pesanan Hari Ini & Besok' di portal, kontrol kredit & jam lock, 6 alasan porsi 0, riwayat order_qty_changes, dan aksi admin).
+- 2026-10-09: Fase 6 — keputusan owner: invoice otomatis **satu per sub client** (atas nama pihak yang ditagih; PT melihat semua + rekap), **hutang warung pekerja ikut ditagih** (bila modul aktif), **pratinjau H-1 jam 07.00**, terbit 06.00 hari potong.
 - 2026-10-09: Review Claude Fase 1–5 & perbaikan: kredit TAHAN/BLOKIR benar-benar menahan pesanan otomatis; portal hanya bisa ubah porsi lokasinya sendiri; pesanan manual besok tidak disentuh; tidak ada pesanan Rp0; tugas baru tidak mundur 7 hari; tugas terputus diulang; syarat anti-kabur di halaman kontrak; scan label sesuai sesi; angka terima tidak bisa diubah pengantar; notifikasi admin tampil untuk owner. test_db dibersihkan (test lengkap ±12 menit).
+- 2026-10-09: Pihak yang ditagih **satu sumber**: pengaturan kredit per sub client (dibaca pesanan otomatis *dan* invoice; dulu bisa berbeda). Pilihan "Bawaan Kontrak" per sub client dihapus. Bawaan Pihak Ditagih kontrak hanya Owner yang boleh mengubah; saat diubah ke "Bayar di muka" langsung diterapkan ke sub client yang belum punya pengaturan. "Ditagih langsung" tidak bisa dipukul rata — disetel per sub client setelah syarat anti-kabur lengkap.
+- 2026-10-09: **Audit integrasi keuangan end-to-end** (atas permintaan owner, sebelum fitur berikutnya). Cocok: buku besar = buku pembantu (kas, bank, piutang, hutang supplier, persediaan, aset), semua pembayaran berjurnal & tercatat di buku kas, tidak ada jurnal tidak seimbang / tagihan dobel. Diperbaiki: (1) **potong DP/deposit ke invoice dihitung sebagai pelunasan** di satu sumber riwayat (`invoice_payment_history_service`) — janji bayar ditepati, riwayat di detail kredit/detail & cetak invoice/portal, log penagihan otomatis; (2) invoice periode manual, Tagihan Manual, dan input susulan **batal total bila jurnal gagal**; (3) invoice per pesanan **menolak pesanan yang sudah ditagih** di invoice lain; (4) **semua client kontrak** masuk Kontrol Kredit sejak awal; (5) bayar manual & bayar dari bukti portal **satu fungsi** (`customer_payment_service.apply_customer_payment`), validasi tanggal bayar pakai WIB. **Aturan ke depan:** setiap jalur baru yang mengubah sisa invoice wajib lewat salah satu dari dua pintu itu (pembayaran kas/bank atau potongan DP/deposit), dan setiap invoice baru wajib `post_invoice_journal_or_raise`.
+- 2026-10-09: Fase 7 — keputusan owner: ta'zir ditagih sebagai **tagihan terpisah** (bukan baris di invoice makanan); selama **kelonggaran** (tidak mampu) utang lama ditangguhkan tanpa ta'zir tetapi **pesanan baru wajib bayar di muka**; **penyaluran Dana Sosial hanya dicatat Owner** (dengan bukti); **ta'widh dibuat sekarang** (biaya penagihan riil + bukti, diputuskan Owner, tagihan terpisah). Tambahan: pemeriksaan kredit masuk penjadwal harian, client kontrak ikut diperiksa, peringatan status sampai ke portal pihak yang ditagih.

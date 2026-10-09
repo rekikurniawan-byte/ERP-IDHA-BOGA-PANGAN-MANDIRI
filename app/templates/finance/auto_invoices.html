@@ -1,0 +1,150 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% macro invoice_rows(rows, show_reason=false) %}
+    {% for p in rows %}
+        <tr>
+            <td>
+                <strong>{{ p.mandor.name }}</strong>
+                <small class="text-muted d-block">{{ p.client.name if p.client else "-" }} · {{ p.contract.contract_number }}</small>
+            </td>
+            <td>
+                {{ p.bill_to_name }}
+                <small class="text-muted d-block">{{ "Ditagih langsung" if p.bill_to_type == "MANDOR" else "Lewat " ~ term('client', lower=True) }}</small>
+            </td>
+            <td>{{ p.period_start.strftime('%d-%m-%Y') }} s/d {{ p.period_end.strftime('%d-%m-%Y') }}</td>
+            <td class="text-end">{{ p.lines|length }}</td>
+            <td class="text-end"><strong>{{ p.total|rupiah }}</strong></td>
+            <td>{{ p.due_date.strftime('%d-%m-%Y') if p.due_date else "-" }}</td>
+            {% if show_reason %}<td class="text-danger">{{ p.error }}</td>{% endif %}
+        </tr>
+    {% endfor %}
+{% endmacro %}
+
+{% block content %}
+<section class="page-section" data-ui-page="auto-invoices">
+    {{ page_header(
+        "Invoice Otomatis",
+        "Invoice per " ~ term('sub_client', lower=True) ~ " terbit sendiri jam 06.00 di hari potong siklus kontrak. Hanya pengiriman yang sudah diterima yang ditagih; sisanya ikut invoice berikutnya.",
+        eyebrow="Keuangan",
+        actions=[{"label": "Daftar Invoice", "url": url_for('finance.invoices'), "icon": "bi-receipt", "variant": "secondary"}]
+    ) }}
+
+    <div class="app-card mb-4">
+        <form method="GET" action="{{ url_for('finance.auto_invoices') }}">
+            <div class="app-filter">
+                <div class="form-group">
+                    <label for="autoInvoiceDate">Hari potong</label>
+                    <input type="date" id="autoInvoiceDate" name="date" class="form-control" value="{{ cutoff_date.isoformat() }}">
+                </div>
+                <div class="form-group d-flex align-items-end gap-2">
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-funnel"></i> Tampilkan</button>
+                    <a href="{{ url_for('finance.auto_invoices') }}" class="btn app-btn-ghost">Besok</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="app-stat-grid mb-4">
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-success"><i class="bi bi-receipt"></i></div>
+            <div><p>Siap terbit</p><h3>{{ ready|length }}</h3><small>{{ ready_total|rupiah }}</small></div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-octagon"></i></div>
+            <div><p>Bermasalah</p><h3>{{ problems|length }}</h3><small>perbaiki sebelum jam 06.00</small></div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-info"><i class="bi bi-check2-circle"></i></div>
+            <div><p>Sudah terbit</p><h3>{{ issued|length }}</h3><small>periode ini</small></div>
+        </div>
+        <div class="app-stat-card">
+            <div class="app-stat-icon stat-warning"><i class="bi bi-hourglass"></i></div>
+            <div><p>Belum ada tagihan</p><h3>{{ empty|length }}</h3><small>belum ada kiriman diterima</small></div>
+        </div>
+    </div>
+
+    {% if not plans %}
+        <div class="app-card">
+            <div class="app-empty-state">
+                <i class="bi bi-calendar-x"></i>
+                <p>Tidak ada kontrak yang hari potongnya {{ cutoff_date.strftime('%d-%m-%Y') }}.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if problems %}
+        <div class="app-card mb-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5 class="text-danger"><i class="bi bi-exclamation-octagon"></i> Bermasalah — tidak akan terbit</h5>
+                    <p>Perbaiki penyebabnya hari ini. Kalau sudah lewat jam 06.00, terbitkan ulang dengan tombol di bawah.</p>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table app-table align-middle mb-0">
+                    <thead><tr><th>{{ term('sub_client') }}</th><th>Ditagih ke</th><th>Periode</th><th class="text-end">Baris</th><th class="text-end">Total</th><th>Jatuh tempo</th><th>Penyebab</th></tr></thead>
+                    <tbody>{{ invoice_rows(problems, show_reason=true) }}</tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if ready %}
+        <div class="app-card mb-4">
+            <div class="card-header-clean d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>Siap terbit {{ cutoff_date.strftime('%d-%m-%Y') }} jam 06.00</h5>
+                    <p>Angka di sini dihitung ulang saat terbit; pengiriman yang diterima sebelum jam 06.00 ikut masuk.</p>
+                </div>
+                {% if can_issue_now %}
+                    <form method="POST" action="{{ url_for('finance.issue_auto_invoices') }}" data-app-confirm="Terbitkan sekarang semua invoice yang siap untuk hari potong ini?">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="date" value="{{ cutoff_date.isoformat() }}">
+                        <button type="submit" class="btn app-btn-primary"><i class="bi bi-send-check"></i> Terbitkan sekarang</button>
+                    </form>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table app-table align-middle mb-0">
+                    <thead><tr><th>{{ term('sub_client') }}</th><th>Ditagih ke</th><th>Periode</th><th class="text-end">Baris</th><th class="text-end">Total</th><th>Jatuh tempo</th></tr></thead>
+                    <tbody>{{ invoice_rows(ready) }}</tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="app-card">
+        <div class="card-header-clean">
+            <div>
+                <h5>Invoice otomatis terakhir</h5>
+                <p>30 invoice otomatis terbaru di cabang ini.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle mb-0">
+                <thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Ditagih ke</th><th>Periode</th><th class="text-end">Total</th><th class="text-end">Sisa</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for invoice in recent %}
+                        <tr>
+                            <td><a href="{{ url_for('finance.invoice_detail', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                            <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}</td>
+                            <td>{{ invoice.client_name_snapshot or "-" }}</td>
+                            <td>
+                                {% if invoice.period_start and invoice.period_end %}
+                                    {{ invoice.period_start.strftime('%d-%m-%Y') }} s/d {{ invoice.period_end.strftime('%d-%m-%Y') }}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td class="text-end">{{ invoice.total_amount|rupiah }}</td>
+                            <td class="text-end">{{ invoice.remaining_amount|rupiah }}</td>
+                            <td><span class="status-badge neutral">{{ invoice.status|status_label('invoice') }}</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7" class="text-center text-muted">Belum ada invoice otomatis.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

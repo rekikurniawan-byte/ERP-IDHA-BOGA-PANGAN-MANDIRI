@@ -1,0 +1,58 @@
+{# Tabel ta'zir/ta'widh. Variabel: rows (list_charges), is_owner, show_party, hide_invoice (bool), next_page. #}
+<div class="table-responsive" data-mobile-table="scroll">
+    <table class="table app-table align-middle">
+        <thead>
+            <tr>
+                <th>Tanggal</th>
+                {% if show_party %}<th>Pihak</th>{% endif %}
+                <th>Jenis</th>
+                <th style="min-width: 180px;">Alasan</th>
+                <th class="text-end">Nominal</th>
+                <th>Status</th>
+                {% if not hide_invoice %}<th>Tagihan / Bukti</th>{% endif %}
+                {% if is_owner %}<th style="min-width: 190px;">Keputusan Owner</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            {% set charge = row.charge %}
+            <tr>
+                <td class="text-nowrap">{{ charge.created_at|wib('%d-%m-%Y') }}</td>
+                {% if show_party %}<td><a href="{{ url_for('credit.account_detail', account_id=charge.credit_account_id) }}">{{ row.name }}</a></td>{% endif %}
+                <td>{{ row.type_label }}<div class="small text-muted">{{ row.trigger_label }}</div></td>
+                <td class="small">{{ charge.reason }}{% if charge.decision_note %}<div class="text-muted">Catatan: {{ charge.decision_note }}</div>{% endif %}</td>
+                <td class="text-end text-nowrap">{{ charge.amount|rupiah }}</td>
+                <td>
+                    <span class="status-badge {{ 'warning' if charge.status == 'PROPOSED' else ('success' if charge.status == 'IMPOSED' else 'muted') }}">{{ row.status_label }}</span>
+                </td>
+                {% if not hide_invoice %}
+                <td class="small">
+                    {% if charge.invoice %}
+                        <a href="{{ url_for('finance.invoice_detail', invoice_id=charge.invoice.id) }}">{{ charge.invoice.invoice_number }}</a>
+                        <div class="text-muted">{{ charge.invoice.status|status_label('invoice') }}</div>
+                    {% else %}-{% endif %}
+                    {% if charge.evidence_attachment_id %}
+                        <div><a href="{{ url_for('credit.view_attachment', attachment_id=charge.evidence_attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Bukti</a></div>
+                    {% endif %}
+                </td>
+                {% endif %}
+                {% if is_owner %}
+                <td>
+                    {% if charge.status == 'PROPOSED' %}
+                    <form method="POST" action="{{ url_for('credit.charge_decide', charge_id=charge.id) }}" class="app-form">
+                        {% include "components/csrf_token.html" %}
+                        {% if next_page %}<input type="hidden" name="next" value="{{ next_page }}">{% endif %}
+                        <input type="text" name="note" class="form-control form-control-sm mb-2" placeholder="Catatan (wajib bila tidak)">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" name="decision" value="IMPOSE" class="btn app-btn-primary btn-sm">Kenakan</button>
+                            <button type="submit" name="decision" value="DECLINE" class="btn app-btn-secondary btn-sm">Tidak</button>
+                        </div>
+                    </form>
+                    {% else %}-{% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

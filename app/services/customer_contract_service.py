@@ -192,6 +192,44 @@ def _save_subclient_billing_modes(
         get_or_create_credit_account(branch_id, PARTY_MANDOR, mandor.id).billing_mode = mode_clean
 
 
+def _modes_with_contract_default(
+    branch_id: int,
+    client_id: int,
+    default_mode: str,
+    old_default: str | None,
+    modes: dict[int, str] | None,
+    *,
+    actor_role: str | None,
+) -> dict[int, str]:
+    """Terapkan bawaan pihak tagih kontrak ke sub client yang belum punya pengaturan.
+
+    Pengaturan kredit per sub client tetap satu-satunya penentu (dibaca pesanan
+    otomatis dan invoice). Bawaan kontrak hanya mengisi akun yang belum disetel,
+    saat bawaannya diubah, dan hanya OWNER yang boleh mengubahnya. "Ditagih
+    langsung" tidak bisa dipukul rata: syarat anti-kaburnya per sub client.
+    """
+    from app.models.credit import BILLING_CASH, BILLING_VIA_CLIENT, PARTY_MANDOR
+    from app.services.credit_control_service import get_credit_account
+
+    merged = dict(modes or {})
+    if default_mode == (old_default or BILLING_VIA_CLIENT):
+        return merged
+    if actor_role != "OWNER":
+        raise CustomerContractError("Mengubah bawaan pihak yang ditagih hanya boleh dilakukan OWNER.")
+    if default_mode != BILLING_CASH:
+        return merged
+
+    subclients = Mandor.query.filter_by(branch_id=branch_id, client_id=client_id).all()
+    for mandor in subclients:
+        if getattr(mandor, "is_direct_unit", False):
+            continue
+        if get_credit_account(branch_id, PARTY_MANDOR, mandor.id) is not None:
+            continue
+        if str(merged.get(mandor.id) or BILLING_VIA_CLIENT).upper() == BILLING_VIA_CLIENT:
+            merged[mandor.id] = BILLING_CASH
+    return merged
+
+
 def generate_customer_contract_number(contract_date: date) -> str:
     prefix = f"CC-{contract_date.strftime('%Y%m%d')}"
     counter = CustomerContract.query.filter(CustomerContract.contract_number.like(f"{prefix}-%")).count() + 1
@@ -277,6 +315,10 @@ def create_customer_contract(
         dispute_court=court,
         tazir_amount=tazir_dec,
     )
+    creator_role = _actor_role_for(created_by)
+    modes = _modes_with_contract_default(
+        branch_id, client_id, def_billing, None, subclient_billing_modes, actor_role=creator_role
+    )
 
     boundary = (
         atomic_business_action(
@@ -298,9 +340,7 @@ def create_customer_contract(
         db.session.flush()
 
         _save_contract_holidays(contract, holidays, start_date, end_date)
-        _save_subclient_billing_modes(
-            branch_id, subclient_billing_modes, client_id=client_id, actor_role=_actor_role_for(created_by)
-        )
+        _save_subclient_billing_modes(branch_id, modes, client_id=client_id, actor_role=creator_role)
 
         record_audit_log(
             module="CONTRACT",
@@ -473,6 +513,15 @@ def update_customer_contract_rules(
         "dispute_court": court,
         "tazir_amount": str(tazir_dec),
     }
+    # Cek hak ubah bawaan pihak tagih sebelum kontrak disentuh.
+    modes = _modes_with_contract_default(
+        branch_id,
+        contract.client_id,
+        def_billing,
+        old_values["default_billing_mode"],
+        subclient_billing_modes,
+        actor_role=actor_role,
+    )
 
     boundary = (
         atomic_business_action(
@@ -503,9 +552,7 @@ def update_customer_contract_rules(
         contract.updated_by = actor_id
 
         _save_contract_holidays(contract, holidays, contract.start_date, contract.end_date)
-        _save_subclient_billing_modes(
-            branch_id, subclient_billing_modes, client_id=contract.client_id, actor_role=actor_role
-        )
+        _save_subclient_billing_modes(branch_id, modes, client_id=contract.client_id, actor_role=actor_role)
 
         db.session.flush()
 

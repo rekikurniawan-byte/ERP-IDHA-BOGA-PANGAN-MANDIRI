@@ -6,9 +6,31 @@
 <div class="finance-page-shell" data-ui-finance-page="UI">
 {{ page_header(
     "Kontrol Kredit",
-    (term('sub_client') ~ " yang ditagih langsung, diurutkan dari yang paling berisiko. Status naik otomatis tiap hari; hanya OWNER yang bisa menurunkannya."),
-    "Keuangan • Kredit"
+    (term('client') ~ " kontrak dan " ~ term('sub_client', lower=True) ~ " yang ditagih langsung, diurutkan dari yang paling berisiko. Status naik otomatis tiap hari jam 07.30; hanya OWNER yang bisa menurunkannya."),
+    "Keuangan • Kredit",
+    actions=[{"label": "Dana Sosial", "url": url_for('credit.social_fund'), "icon": "bi-heart"}]
 ) }}
+
+{% if unlisted_contract_clients %}
+<div class="app-card mb-4">
+    <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div><i class="bi bi-info-circle"></i> <strong>{{ unlisted_contract_clients }}</strong> {{ term('client', lower=True) }} kontrak baru belum masuk daftar. Otomatis masuk saat pemeriksaan jam 07.30, atau klik tombol di samping.</div>
+        <form method="POST" action="{{ url_for('credit.sweep') }}">
+            {% include "components/csrf_token.html" %}
+            <button type="submit" class="btn app-btn-secondary btn-sm"><i class="bi bi-arrow-repeat"></i> Periksa Kredit Sekarang</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if pending_tazir %}
+<div class="app-card mb-4">
+    <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div><i class="bi bi-hourglass-split"></i> Ada <strong>{{ pending_tazir }}</strong> usulan ta'zir menunggu keputusan Owner.</div>
+        <a href="{{ url_for('credit.social_fund') }}" class="btn app-btn-secondary btn-sm">Lihat Usulan</a>
+    </div>
+</div>
+{% endif %}
 
 {% set counts = {"AKTIF": 0, "PANTAU": 0, "TAHAN": 0, "BLOKIR": 0, "HAPUS_BUKU": 0} %}
 {% for row in rows %}{% do counts.update({row.decision.status: counts.get(row.decision.status, 0) + 1}) %}{% endfor %}

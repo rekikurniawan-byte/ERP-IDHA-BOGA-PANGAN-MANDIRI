@@ -98,6 +98,52 @@ def register_default_jobs() -> None:
             enabled=True,
             description="Membuat pesanan harian untuk hari esok pada jam 18:00 WIB untuk client/sub client kontrak.",
         )
+    if "auto_period_invoices" not in _JOB_REGISTRY:
+        from app.services.auto_invoice_service import (
+            run_auto_invoice_preview,
+            run_auto_period_invoices,
+            run_invoice_payment_reminders,
+        )
+
+        register_job(
+            key="auto_period_invoices",
+            label="Invoice Otomatis (Hari Potong)",
+            schedule=daily_at("06:00"),
+            handler=run_auto_period_invoices,
+            per_branch=True,
+            enabled=True,
+            description="Menerbitkan invoice per sub client pada hari potong siklus kontrak, hanya dari pengiriman yang sudah diterima.",
+        )
+        register_job(
+            key="auto_invoice_preview",
+            label="Pratinjau Invoice Besok",
+            schedule=daily_at("07:00"),
+            handler=run_auto_invoice_preview,
+            per_branch=True,
+            enabled=True,
+            description="Memberi tahu admin & owner invoice yang akan terbit besok jam 06.00, beserta yang bermasalah.",
+        )
+        register_job(
+            key="invoice_payment_reminders",
+            label="Pengingat Bayar Invoice",
+            schedule=daily_at("08:00"),
+            handler=run_invoice_payment_reminders,
+            per_branch=True,
+            enabled=True,
+            description="Mengingatkan pihak yang ditagih pada H-3, H, dan H+7 jatuh tempo.",
+        )
+    if "credit_daily_sweep" not in _JOB_REGISTRY:
+        from app.services.credit_account_service import run_credit_sweep_job
+
+        register_job(
+            key="credit_daily_sweep",
+            label="Pemeriksaan Kredit Harian",
+            schedule=daily_at("07:30"),
+            handler=run_credit_sweep_job,
+            per_branch=True,
+            enabled=True,
+            description="Menaikkan status kredit yang menunggak (Pantau/Tahan/Blokir), memberi tahu pelanggan, dan mengusulkan ta'zir ke Owner.",
+        )
 
 
 def unregister_job(key: str) -> None:

@@ -21,6 +21,9 @@
     {% if account.release_until %}
         <p class="mt-2 mb-0 small">Dilepas sementara oleh OWNER sampai <strong>{{ account.release_until.strftime('%d-%m-%Y') }}</strong>.</p>
     {% endif %}
+    {% if detail.grace_active %}
+        <p class="mt-2 mb-0 small"><i class="bi bi-heart"></i> Kelonggaran sampai <strong>{{ account.grace_until.strftime('%d-%m-%Y') }}</strong>: utang lama ditangguhkan tanpa ta'zir, pesanan baru bayar di muka. {{ account.grace_reason or '' }}</p>
+    {% endif %}
 </div>
 
 <div class="app-stat-grid mt-4">
@@ -186,10 +189,33 @@
         <div class="col-12"><button type="submit" class="btn app-btn-primary btn-sm">Simpan Keputusan</button></div>
     </form>
 
+    <hr>
+    <h6>Kelonggaran (benar-benar tidak mampu)</h6>
+    <p class="small">QS Al-Baqarah 280: utang lama ditangguhkan sampai tanggal yang Bapak tentukan, tanpa ta'zir, dan status tidak naik ke Blokir. Selama itu pesanan baru tetap wajib bayar di muka. Untuk yang mampu tapi menunda, jangan pakai ini.</p>
+    {% if detail.grace_active %}
+    <form method="POST" action="{{ url_for('credit.grace_end', account_id=account.id) }}" class="app-form">
+        {% include "components/csrf_token.html" %}
+        <button type="submit" class="btn app-btn-secondary btn-sm">Akhiri Kelonggaran</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('credit.grace_set', account_id=account.id) }}" class="row g-3 app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Ditangguhkan sampai</label>
+            <input type="date" name="grace_until" class="form-control" min="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-9">
+            <label class="form-label">Alasan (wajib)</label>
+            <input type="text" name="grace_reason" class="form-control" placeholder="Contoh: proyek berhenti, pembayaran dari pemilik proyek tertunda" required>
+        </div>
+        <div class="col-12"><button type="submit" class="btn app-btn-secondary btn-sm">Beri Kelonggaran</button></div>
+    </form>
+    {% endif %}
+
     {% if detail.can_write_off %}
     <hr>
     <h6 class="text-danger">Hapus Buku</h6>
-    <p class="small">Deposit dipotong dulu ke invoice tertua, sisanya dijurnal ke 5013 Beban Piutang Tak Tertagih, invoice ditutup, {{ term('sub_client', lower=True) }} dinonaktifkan, dan NIK-nya masuk daftar cekal. Tidak bisa dibatalkan dari layar.</p>
+    <p class="small">Deposit dipotong dulu ke invoice tertua, sisanya dijurnal ke 5013 Beban Piutang Tak Tertagih (tagihan ta'zir mengurangi Dana Sosial 2009, bukan beban), invoice ditutup, {{ term('sub_client', lower=True) }} dinonaktifkan, dan NIK-nya masuk daftar cekal. Tidak bisa dibatalkan dari layar.</p>
     <form method="POST" action="{{ url_for('credit.write_off', account_id=account.id) }}" class="row g-3 app-form">
         {% include "components/csrf_token.html" %}
         <div class="col-md-9"><input type="text" name="reason" class="form-control" placeholder="Alasan hapus buku (wajib)" required></div>
@@ -199,7 +225,8 @@
 </div>
 {% endif %}
 
-{% if detail.mandor %}
+{% include "credit/_charges.html" %}
+
 <div class="app-card mt-4">
     <div class="card-header-clean"><div><h5>Invoice</h5></div></div>
     {% if detail.invoices %}
@@ -248,7 +275,6 @@
         </div>
     </div>
 </div>
-{% endif %}
 
 <div class="app-card mt-4">
     <div class="card-header-clean"><div><h5>Riwayat Status</h5><p>Tanggal dan angka dibekukan saat status berpindah.</p></div></div>

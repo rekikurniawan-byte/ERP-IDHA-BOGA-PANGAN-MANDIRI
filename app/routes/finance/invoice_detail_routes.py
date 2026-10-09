@@ -90,11 +90,13 @@ def invoice_detail(invoice_id):
 
     from app.services.billing_trace_service import build_invoice_billing_trace_context
     billing_trace = build_invoice_billing_trace_context(invoice)
+    from app.services.invoice_payment_history_service import invoice_settlements
 
     return render_template(
         "finance/invoice_detail.html",
         invoice=invoice,
         payments=payments,
+        invoice_settlements=invoice_settlements([invoice.id]),
         collection_logs=collection_logs,
         client_pics=client_pics,
         active_bank_accounts=active_bank_accounts,

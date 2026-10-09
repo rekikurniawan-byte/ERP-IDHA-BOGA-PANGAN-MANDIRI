@@ -31,6 +31,8 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("2006", "Hutang Lain-lain", "LIABILITY"),
     ("2007", "Deposit Jaminan Pelanggan", "LIABILITY"),
     ("2008", "Uang Muka Pelanggan", "LIABILITY"),
+    # Ta'zir (Fase 7): dana titipan untuk disalurkan, bukan pendapatan.
+    ("2009", "Dana Sosial (Ta'zir)", "LIABILITY"),
     ("2101", "Akumulasi Penyusutan Peralatan", "CONTRA_ASSET"),
     ("2102", "Akumulasi Penyusutan Kendaraan", "CONTRA_ASSET"),
     ("2103", "Akumulasi Penyusutan Bangunan", "CONTRA_ASSET"),

@@ -510,15 +510,23 @@ def create_app():
             from app.services.scheduler_service import get_scheduler_warning
 
             if current_user.is_authenticated and role_in(current_user.role, ("OWNER", "ADMIN")):
+                from app.services.auto_invoice_service import unresolved_failure_count
+
                 warning = get_cached_value(
                     ("scheduler_warning",),
                     get_scheduler_warning,
                     ttl_seconds=30,
                 )
-                return {"scheduler_warning": warning}
+                branch_id = current_user.branch_id
+                failures = get_cached_value(
+                    ("auto_invoice_failures", branch_id),
+                    lambda: unresolved_failure_count(branch_id),
+                    ttl_seconds=30,
+                )
+                return {"scheduler_warning": warning, "auto_invoice_failures": failures}
         except Exception:
             flask_app.logger.exception("Gagal memuat status peringatan penjadwal.")
-        return {"scheduler_warning": None}
+        return {"scheduler_warning": None, "auto_invoice_failures": 0}
 
     @flask_app.context_processor
     def inject_portal_feature_flags():

@@ -124,28 +124,26 @@ def billing_mode_for(
     *,
     branch_id: int | None = None,
 ) -> str:
-    """Pihak yang ditagih: CreditAccount.billing_mode sub client bila disetel,
-    else default_billing_mode kontrak aktif client-nya, else VIA_CLIENT.
+    """Pihak yang ditagih, satu sumber dengan resolve_billing_party (invoice).
+
+    Hanya akun kredit sub client yang menentukan: DIRECT/CASH berarti sub client
+    yang ditagih, selain itu VIA_CLIENT. Bawaan kontrak diterapkan ke akun saat
+    Owner menyimpan kontrak, bukan dibaca di sini, supaya pesanan otomatis dan
+    invoice tidak pernah berbeda pendapat.
     """
     if not mandor_id:
         return BILLING_VIA_CLIENT
 
-    mandor = db.session.get(Mandor, mandor_id) if hasattr(db.session, "get") else Mandor.query.get(mandor_id)
+    mandor = db.session.get(Mandor, mandor_id)
     target_branch = branch_id or (mandor.branch_id if mandor else None)
+    if not target_branch:
+        return BILLING_VIA_CLIENT
 
-    if target_branch:
-        from app.services.credit_control_service import get_credit_account
+    from app.services.credit_control_service import resolve_billing_party
 
-        account = get_credit_account(target_branch, PARTY_MANDOR, mandor_id)
-        if account and account.billing_mode:
-            return account.billing_mode
-
-    # Jika sub client belum punya pengaturan akun kredit khusus, baca bawaan kontrak client-nya
-    if mandor and mandor.client_id:
-        contract = active_contract_for(mandor.client_id, on_date, branch_id=target_branch)
-        if contract and contract.default_billing_mode:
-            return contract.default_billing_mode
-
+    party_type, _party_id, account = resolve_billing_party(target_branch, None, mandor_id)
+    if party_type == PARTY_MANDOR and account is not None:
+        return account.billing_mode
     return BILLING_VIA_CLIENT
 
 

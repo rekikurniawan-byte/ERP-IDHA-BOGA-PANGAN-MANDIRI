@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div class="finance-page-shell" data-ui-finance-page="UI">
+{{ page_header(
+    "Dana Sosial",
+    "Uang ta'zir dari pelanggan yang mampu tapi menunda bayar. Bukan pendapatan perusahaan: dicatat di akun 2009 dan seluruhnya disalurkan.",
+    "Keuangan • Kredit",
+    actions=[{"label": "Kontrol Kredit", "url": url_for('credit.overview'), "icon": "bi-arrow-left"}]
+) }}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div><span>Ta'zir Ditagihkan</span><h3>{{ summary.billed|rupiah }}</h3><p>Belum dibayar {{ summary.unpaid|rupiah }}</p></div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-cash-coin"></i></div>
+        <div><span>Sudah Diterima</span><h3>{{ summary.collected|rupiah }}</h3><p>Uang ta'zir yang sudah dibayar</p></div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-warning"><i class="bi bi-box-arrow-up-right"></i></div>
+        <div><span>Sudah Disalurkan</span><h3>{{ summary.disbursed|rupiah }}</h3><p>{{ disbursements|length }} penyaluran</p></div>
+    </div>
+    <div class="app-stat-card">
+        <div class="app-stat-icon stat-success"><i class="bi bi-heart"></i></div>
+        <div><span>Siap Disalurkan</span><h3>{{ summary.available|rupiah }}</h3><p>Diterima − disalurkan</p></div>
+    </div>
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Usulan Ta'zir Menunggu Keputusan</h5>
+            <p>Diusulkan otomatis saat janji bayar meleset atau status Blokir. Kenakan hanya untuk yang mampu tapi menunda; yang benar-benar tidak mampu diberi kelonggaran di halaman akunnya.</p>
+        </div>
+    </div>
+    {% if proposals %}
+        {% with rows=proposals, show_party=True, hide_invoice=True, next_page="social_fund" %}{% include "credit/_charge_table.html" %}{% endwith %}
+    {% else %}
+        <p class="small mb-0">Tidak ada usulan yang menunggu.</p>
+    {% endif %}
+</div>
+
+{% if is_owner %}
+<div class="app-card mt-4">
+    <div class="card-header-clean">
+        <div>
+            <h5>Catat Penyaluran</h5>
+            <p>Hanya dari dana yang sudah diterima. Kas/bank keluar dan jurnal (Dr 2009 Dana Sosial / Cr Kas/Bank) tercatat otomatis.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('credit.social_fund_disburse') }}" enctype="multipart/form-data" class="row g-3 app-form">
+        {% include "components/csrf_token.html" %}
+        <div class="col-md-3">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="disbursed_on" class="form-control" value="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Penerima</label>
+            <input type="text" name="recipient" class="form-control" placeholder="Masjid / panti / warga yang dibantu" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Nominal (Rp)</label>
+            <input type="text" name="amount" class="form-control" inputmode="numeric" placeholder="Maks. {{ summary.available|rupiah }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Tujuan</label>
+            <input type="text" name="purpose" class="form-control" placeholder="Contoh: bantuan pembangunan musala" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Dari</label>
+            <select name="account_type" class="form-select" required>
+                <option value="CASH">Kas</option>
+                <option value="BANK">Bank</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Rekening (kalau bank)</label>
+            <select name="bank_account_id" class="form-select">
+                <option value="">-</option>
+                {% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Bukti penyaluran (foto/PDF)</label>
+            <input type="file" name="evidence" class="form-control" accept="image/*,application/pdf" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn app-btn-primary btn-sm" {% if summary.available <= 0 %}disabled{% endif %}>Catat Penyaluran</button>
+            {% if summary.available <= 0 %}<span class="small text-muted ms-2">Belum ada dana yang diterima untuk disalurkan.</span>{% endif %}
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="app-card mt-4">
+    <div class="card-header-clean"><div><h5>Laporan Penyaluran</h5></div></div>
+    {% if disbursements %}
+    <div class="table-responsive" data-mobile-table="scroll">
+        <table class="table app-table align-middle">
+            <thead><tr><th>Tanggal</th><th>Penerima</th><th>Tujuan</th><th>Dari</th><th class="text-end">Nominal</th><th>Bukti</th></tr></thead>
+            <tbody>
+                {% for row in disbursements %}
+                <tr>
+                    <td>{{ row.disbursed_on.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ row.recipient }}</td>
+                    <td class="small">{{ row.purpose }}</td>
+                    <td>{{ "Kas" if row.account_type == "CASH" else "Bank" }}</td>
+                    <td class="text-end">{{ row.amount|rupiah }}</td>
+                    <td>{% if row.evidence_attachment_id %}<a href="{{ url_for('credit.view_attachment', attachment_id=row.evidence_attachment_id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Lihat</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="small mb-0">Belum ada penyaluran.</p>
+    {% endif %}
+</div>
+
+<div class="app-card mt-4">
+    <div class="card-header-clean"><div><h5>Riwayat Ta'zir &amp; Ta'widh</h5><p>Ta'widh (ganti biaya penagihan riil) bukan Dana Sosial; tercatat di sini supaya semua keputusan terlihat di satu tempat.</p></div></div>
+    {% if charges %}
+        {% with rows=charges, show_party=True, next_page="social_fund", is_owner=False %}{% include "credit/_charge_table.html" %}{% endwith %}
+    {% else %}
+        <p class="small mb-0">Belum ada riwayat.</p>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

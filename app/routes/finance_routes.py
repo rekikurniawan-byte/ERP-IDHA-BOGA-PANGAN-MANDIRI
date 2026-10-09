@@ -180,6 +180,7 @@ from app.routes.finance import export_print_routes as _finance_export_print_rout
 from app.routes.finance import invoice_detail_routes as _finance_invoice_detail_routes  # noqa: F401,E402
 from app.routes.finance import realtime_invoice_routes as _finance_realtime_invoice_routes  # noqa: F401,E402
 from app.routes.finance import period_invoice_routes as _finance_period_invoice_routes  # noqa: F401,E402
+from app.routes.finance import auto_invoice_routes as _finance_auto_invoice_routes  # noqa: F401,E402
 from app.routes.finance import payment_routes as _finance_payment_routes  # noqa: F401,E402
 from app.routes.finance import invoice_print_routes as _finance_invoice_print_routes  # noqa: F401,E402
 from app.routes.finance import invoice_communication_routes as _finance_invoice_communication_routes  # noqa: F401,E402

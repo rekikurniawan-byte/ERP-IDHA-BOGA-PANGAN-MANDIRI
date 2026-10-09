@@ -107,7 +107,9 @@ from app.models.contract import (
 
 from app.models.credit import (
     CreditAccount,
+    CreditCharge,
     CreditStatusEvent,
+    SocialFundDisbursement,
 )
 
 from app.models.pricing import (

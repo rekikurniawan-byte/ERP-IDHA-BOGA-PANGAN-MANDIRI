@@ -222,9 +222,11 @@
                 {% call nav_group("Keuangan", "bi-cash-coin", is_finance_group) %}
                     {{ nav_link(url_for('finance.index'), "Pusat Keuangan", "bi-wallet2", is_finance_hub) }}
                     {{ nav_link(url_for('finance.invoices'), "Invoice & Pembayaran", "bi-receipt", is_finance_invoice or is_finance_payment) }}
+                    {{ nav_link(url_for('finance.auto_invoices'), "Invoice Otomatis", "bi-calendar2-check", endpoint in ["finance.auto_invoices"]) }}
                     {{ nav_link(url_for('finance.receivables'), "Piutang", "bi-cash-stack", is_finance_receivable) }}
                     {% if has_role(["OWNER", "ADMIN"]) %}
-                        {{ nav_link(url_for('credit.overview'), "Kontrol Kredit", "bi-speedometer2", endpoint.startswith("credit.")) }}
+                        {{ nav_link(url_for('credit.overview'), "Kontrol Kredit", "bi-speedometer2", endpoint.startswith("credit.") and endpoint != "credit.social_fund") }}
+                        {{ nav_link(url_for('credit.social_fund'), "Dana Sosial", "bi-heart", endpoint == "credit.social_fund") }}
                     {% endif %}
                     {{ nav_link(url_for('finance.cash_bank_ledger'), "Buku Kas/Bank", "bi-bank", is_finance_ledger) }}
                     {{ nav_link(url_for('finance.finance_transactions'), "Biaya & Pengeluaran", "bi-pencil-square", is_finance_transaction and not is_queue_advances) }}

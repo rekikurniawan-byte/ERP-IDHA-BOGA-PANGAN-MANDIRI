@@ -68,7 +68,12 @@ def get_active_account_by_code(account_code):
 
 CATERING_REVENUE_PROJECT_CODE = "4001"
 CATERING_REVENUE_DAILY_CODE = "4002"
-SUPPORTED_INVOICE_JOURNAL_SOURCES = {"PERIOD_INVOICE", "DAILY_ORDER", "MANUAL_BILLING_RECAP"}
+SUPPORTED_INVOICE_JOURNAL_SOURCES = {"PERIOD_INVOICE", "DAILY_ORDER", "MANUAL_BILLING_RECAP", "TAZIR", "TAWIDH"}
+# Tagihan ta'zir/ta'widh (Fase 7) ditagih terpisah dari invoice makanan.
+CREDIT_CHARGE_INVOICE_SOURCES = ("TAZIR", "TAWIDH")
+# Ta'zir masuk Dana Sosial (kewajiban), tidak pernah ke akun pendapatan.
+SOCIAL_FUND_ITEM_TYPES = {"TAZIR"}
+SOCIAL_FUND_ACCOUNT_CODE = "2009"
 CATERING_ITEM_TYPES = {"CATERING", "REVISION_INCREASE"}
 WARUNG_ITEM_TYPES = {"WARUNG_DEBT", "WARUNG"}
 # Ongkir punya akun sendiri supaya bisa dibandingkan dengan 5003 Beban Transport / BBM.
@@ -165,6 +170,7 @@ def build_invoice_journal_amounts(invoice):
     warung_total = 0
     warung_transfer_total = 0
     delivery_fee_total = 0
+    social_fund_total = 0
     other_total = 0
 
     items = InvoiceItem.query.filter_by(
@@ -197,6 +203,8 @@ def build_invoice_journal_amounts(invoice):
                 warung_total += subtotal
         elif item_type in DELIVERY_FEE_ITEM_TYPES:
             delivery_fee_total += subtotal
+        elif item_type in SOCIAL_FUND_ITEM_TYPES:
+            social_fund_total += subtotal
         else:
             other_total += subtotal
 
@@ -210,10 +218,11 @@ def build_invoice_journal_amounts(invoice):
         "warung_total": warung_total,
         "warung_transfer_total": warung_transfer_total,
         "delivery_fee_total": delivery_fee_total,
+        "social_fund_total": social_fund_total,
         "other_total": other_total,
         "total_credit": (
             catering_total + unresolved_catering_total + warung_total + warung_transfer_total
-            + delivery_fee_total + other_total
+            + delivery_fee_total + social_fund_total + other_total
         ),
         "total_debit": money(invoice.total_amount or 0),
         "revenue_rule": revenue_rule,
@@ -265,6 +274,7 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
     acc_piutang_karyawan = get_active_account_by_code("1005")
     acc_lain = get_active_account_by_code("4004")
     acc_delivery = get_active_account_by_code(DELIVERY_FEE_REVENUE_CODE)
+    acc_social_fund = get_active_account_by_code(SOCIAL_FUND_ACCOUNT_CODE)
 
     missing_accounts = []
 
@@ -282,6 +292,8 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
         missing_accounts.append("1005 Piutang Karyawan")
     if not acc_delivery and amounts.get("delivery_fee_total", 0) > 0:
         missing_accounts.append("4005 Pendapatan Ongkos Kirim")
+    if not acc_social_fund and amounts.get("social_fund_total", 0) > 0:
+        missing_accounts.append("2009 Dana Sosial (Ta'zir)")
 
     if missing_accounts:
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing_accounts))
@@ -348,6 +360,14 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
             credit=amounts["delivery_fee_total"]
         ))
 
+    if amounts.get("social_fund_total", 0) > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_social_fund.id,
+            debit=0,
+            credit=amounts["social_fund_total"]
+        ))
+
     if amounts["other_total"] > 0:
         db.session.add(JournalDetail(
             journal_id=journal.id,
@@ -383,6 +403,25 @@ def create_invoice_journal_for_invoice(invoice, created_by, commit=False):
         db.session.commit()
 
     return True, "Jurnal invoice berhasil dibuat.", journal
+
+class InvoiceJournalError(ValueError):
+    """Jurnal piutang invoice gagal; invoice tidak boleh tersimpan tanpa jurnal."""
+
+
+def post_invoice_journal_or_raise(invoice, created_by):
+    """Jurnal invoice wajib ada. Gagal -> lempar error supaya seluruh transaksi batal.
+
+    Invoice tanpa jurnal membuat sisa piutang di buku pembantu tidak cocok dengan
+    1004 di buku besar. Semua jalur pembuatan invoice memakai ini. Tidak commit.
+    """
+    try:
+        ok, message, journal = create_invoice_journal_for_invoice(invoice=invoice, created_by=created_by, commit=False)
+    except Exception as error:  # akun COA kurang, jurnal tidak seimbang, dll.
+        raise InvoiceJournalError(f"Jurnal piutang gagal dibuat: {error}") from error
+    if not ok:
+        raise InvoiceJournalError(f"Jurnal piutang gagal dibuat: {message}")
+    return journal
+
 
 def create_payment_journal_for_payment(payment, created_by, commit=False):
     if not payment:

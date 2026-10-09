@@ -5,9 +5,8 @@ from contextlib import nullcontext
 from datetime import date, datetime
 
 from app.extensions import db
-from app.models.finance import BankAccount, Invoice, InvoiceCollectionLog, Payment
+from app.models.finance import BankAccount, Invoice, Payment
 from app.models.system import DigitalAttachment
-from app.services.accounting_service import create_payment_journal_for_payment
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.business_logic_guard_service import (
@@ -18,16 +17,13 @@ from app.services.business_logic_guard_service import (
     assert_not_future_date,
     assert_payment_amount_not_over_remaining,
     decimal_money,
-    resolve_invoice_status_after_payment,
     validate_choice,
 )
-from app.services.cash_bank_service import create_customer_payment_cash_bank_transaction
 from app.services.idempotency_service import (
     IdempotencyConflictError,
     mark_idempotency_completed,
     reserve_idempotency_key,
 )
-from app.services.manual_backfill_billing_service import sync_manual_backfill_batch_status_from_invoice
 from app.services.notification_service import create_or_update_notification
 from app.services.portal_payment_proof_service import (
     PAYMENT_PROOF_REFERENCE_TYPE,
@@ -105,7 +101,9 @@ def create_payment_from_verified_proof(
 
     _assert_invoice_payable(invoice)
     try:
-        assert_not_future_date(payment_date, date.today(), label="Tanggal pembayaran")
+        from app.utils.clock import today_wib
+
+        assert_not_future_date(payment_date, today_wib(), label="Tanggal pembayaran")
         assert_date_not_before(payment_date, invoice.invoice_date, label="Tanggal pembayaran", reference_label="tanggal invoice")
         assert_payment_amount_not_over_remaining(amount_input, invoice.remaining_amount, label="Nominal pembayaran")
         amount = decimal_money(amount_input, label="Nominal pembayaran")
@@ -147,32 +145,12 @@ def create_payment_from_verified_proof(
     )
 
     with boundary:
-        db.session.add(payment)
-        db.session.flush()
+        # Satu jalur yang sama dengan bayar manual: invoice, jurnal, kas/bank, log penagihan.
+        from app.services.customer_payment_service import apply_customer_payment
 
-        new_paid = float(invoice.paid_amount or 0) + float(amount or 0)
-        new_remaining = max(float(invoice.total_amount or 0) - new_paid, 0)
-        invoice.status = resolve_invoice_status_after_payment(invoice.total_amount, new_paid)
-        invoice.paid_amount = new_paid
-        invoice.remaining_amount = new_remaining
-
-        sync_manual_backfill_batch_status_from_invoice(
-            invoice,
-            updated_by=getattr(finance_user, "id", None),
-            commit=False,
+        apply_customer_payment(
+            invoice, payment, actor_id=getattr(finance_user, "id", None), source_label="Portal Payment Verified"
         )
-
-        create_payment_journal_for_payment(
-            payment=payment,
-            created_by=getattr(finance_user, "id", None),
-            commit=False,
-        )
-        create_customer_payment_cash_bank_transaction(
-            payment=payment,
-            created_by=getattr(finance_user, "id", None),
-            commit=False,
-        )
-        db.session.add(_build_collection_log(invoice, payment, getattr(finance_user, "id", None)))
 
         attachment.attachment_type = PAYMENT_PROOF_PAYMENT_CREATED_TYPE
         attachment.notes = _append_payment_created_note(attachment.notes, payment.payment_number)
@@ -238,7 +216,9 @@ def create_prepayment_from_verified_draft_proof(
         raise PortalPaymentCreationError("Draft pesanan untuk bukti ini tidak ditemukan.")
     payment_date = _normalize_payment_date(payment_date)
     try:
-        assert_not_future_date(payment_date, date.today(), label="Tanggal pembayaran")
+        from app.utils.clock import today_wib
+
+        assert_not_future_date(payment_date, today_wib(), label="Tanggal pembayaran")
     except BusinessRuleError as error:
         raise PortalPaymentCreationError(str(error)) from error
 
@@ -381,36 +361,6 @@ def _generate_payment_number(payment_date: date) -> str:
         if not Payment.query.filter_by(payment_number=payment_number).first():
             return payment_number
         counter += 1
-
-
-def _build_collection_log(invoice: Invoice, payment: Payment, user_id: int | None) -> InvoiceCollectionLog:
-    paid = float(payment.amount or 0)
-    if invoice.status == "PAID" or float(invoice.remaining_amount or 0) <= 0:
-        collection_status = "PAID"
-        next_action = "Invoice sudah lunas. Tidak perlu follow up penagihan."
-        response_note = f"Pembayaran {payment.payment_number} sebesar {_money(paid)} diterima melalui {payment.payment_method}. Invoice {invoice.invoice_number} sudah lunas."
-    else:
-        collection_status = "PARTIAL"
-        next_action = "Follow up pelunasan sisa piutang."
-        response_note = f"Pembayaran {payment.payment_number} sebesar {_money(paid)} diterima melalui {payment.payment_method}. Sisa piutang invoice {invoice.invoice_number}: {_money(invoice.remaining_amount)}."
-
-    if payment.reference_number:
-        response_note += f" Referensi: {payment.reference_number}."
-    if payment.notes:
-        response_note += f" Catatan payment: {payment.notes}."
-
-    return InvoiceCollectionLog(
-        branch_id=invoice.branch_id,
-        invoice_id=invoice.id,
-        follow_up_date=payment.payment_date,
-        channel="SYSTEM",
-        contact_person="SYSTEM - Portal Payment Verified",
-        response_note=response_note,
-        promise_date=None,
-        next_action=next_action,
-        collection_status=collection_status,
-        created_by=user_id,
-    )
 
 
 def _append_payment_created_note(existing: str | None, payment_number: str) -> str:

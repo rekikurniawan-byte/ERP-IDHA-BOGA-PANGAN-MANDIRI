@@ -161,7 +161,11 @@ def _proof_summary(proofs: list[dict]) -> dict:
 
 
 def _payment_sum(invoice: Invoice) -> Decimal:
-    return sum((_money(payment.amount) for payment in invoice.payments), Decimal("0"))
+    """Pembayaran kas/bank + potongan DP/deposit: sama dengan yang membentuk paid_amount."""
+    from app.services.invoice_payment_history_service import settlement_total
+
+    paid = sum((_money(payment.amount) for payment in invoice.payments), Decimal("0"))
+    return paid + _money(settlement_total(invoice.id))
 
 
 def _ownership_filter_for_scope(user, scope):
@@ -337,6 +341,9 @@ def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
         .all()
     )
     rows = [_payment_row(payment) for payment in payments]
+    rows.extend(_settlement_rows(ownership_filter, limit))
+    rows.sort(key=lambda row: (row["payment_date"], row["payment_number"] or ""), reverse=True)
+    rows = rows[:limit]
 
     return {
         "allowed": True,
@@ -345,6 +352,33 @@ def build_portal_payment_history_read_model(user, *, limit: int = 100) -> dict:
         "payments": rows,
         "totals": _build_payment_totals(rows),
     }
+
+
+def _settlement_rows(ownership_filter, limit: int) -> list[dict]:
+    """Pelunasan lewat potong DP/deposit, dalam bentuk baris riwayat yang sama."""
+    from app.services.invoice_payment_history_service import SETTLEMENT_METHODS, invoice_settlements
+
+    invoices = {invoice.id: invoice for invoice in Invoice.query.filter(ownership_filter).all()}
+    rows = []
+    for settlement in invoice_settlements(list(invoices))[:limit]:
+        invoice = invoices.get(settlement.reference_id)
+        rows.append({
+            "payment_id": None,
+            "payment_number": settlement.settlement_number,
+            "payment_date": settlement.settlement_date,
+            "payment_method": SETTLEMENT_METHODS.get(settlement.settlement_type, settlement.settlement_type),
+            "amount": _money(settlement.amount),
+            "reference_number": None,
+            "notes": settlement.notes,
+            "bank_account": {"bank_name": None, "account_name": None, "account_number": None},
+            "invoice_id": settlement.reference_id,
+            "invoice_number": invoice.invoice_number if invoice else None,
+            "invoice_status": _normalized_status(invoice.status) if invoice else None,
+            "invoice_status_label": _status_label(invoice.status) if invoice else "-",
+            "invoice_active_receivable": _is_active_receivable(invoice) if invoice else False,
+            "invoice_remaining_amount": _money(invoice.remaining_amount) if invoice else Decimal("0"),
+        })
+    return rows
 
 
 def _payment_row(payment: Payment) -> dict:

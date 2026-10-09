@@ -704,6 +704,7 @@
                     </td>
                 </tr>
                 {% else %}
+                {% if not invoice_settlements %}
                 <tr>
                     <td colspan="7">
                         <div class="empty-state">
@@ -711,6 +712,18 @@
                             <p>Belum ada pembayaran untuk invoice ini.</p>
                         </div>
                     </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% for settlement in invoice_settlements %}
+                <tr>
+                    <td><strong>{{ settlement.settlement_number }}</strong></td>
+                    <td>{{ settlement.settlement_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ ('POTONG_DEPOSIT' if settlement.settlement_type == 'DEPOSIT_TO_INVOICE' else 'POTONG_DP')|status_label }}</td>
+                    <td><span class="small text-muted">Dari saldo yang sudah diterima sebelumnya (tanpa kas masuk baru)</span></td>
+                    <td>{{ settlement.amount|rupiah }}</td>
+                    <td>{{ settlement.notes or "-" }}</td>
+                    <td>-</td>
                 </tr>
                 {% endfor %}
             </tbody>
