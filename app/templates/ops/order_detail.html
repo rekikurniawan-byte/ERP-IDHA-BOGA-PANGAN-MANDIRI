@@ -1,0 +1,264 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    {# Header Order #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+        <div class="flex items-start justify-between gap-2">
+            <div>
+                <span class="font-micro-meta text-[11px] text-text-muted uppercase">Nomor Order</span>
+                <h1 class="font-headline-sm text-lg font-bold text-text-heading">{{ daily_order.order_number }}</h1>
+                <span class="font-caption-regular text-xs text-text-muted">Tanggal: {{ daily_order.order_date.strftime('%d-%m-%Y') }}</span>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+                {% if daily_order.is_locked %}
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-success-bg text-status-success-text flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">lock</span>
+                        Terkunci
+                    </span>
+                {% else %}
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-info-bg text-status-info-text flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">lock_open</span>
+                        Terbuka
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Ringkasan Porsi #}
+        <div class="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-card-border/60">
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Siang</span>
+                <strong class="font-bold text-text-heading">{{ total_lunch }}</strong>
+                <span class="font-micro-meta text-[10px] text-text-muted block">porsi</span>
+            </div>
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Malam</span>
+                <strong class="font-bold text-text-heading">{{ total_dinner }}</strong>
+                <span class="font-micro-meta text-[10px] text-text-muted block">porsi</span>
+            </div>
+            <div class="rounded-xl p-2 bg-primary-fixed/20 border border-primary/20">
+                <span class="font-micro-meta text-[10px] text-primary font-bold block">Total</span>
+                <strong class="font-bold text-primary">{{ total_lunch + total_dinner }}</strong>
+                <span class="font-micro-meta text-[10px] text-primary block">porsi</span>
+            </div>
+        </div>
+    </div>
+
+    {# Aksi Kunci / Tambah Porsi / Sinkron Produksi #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+        <h2 class="font-body-bold text-xs text-text-heading">Aksi Pesanan</h2>
+        {% if not daily_order.is_locked %}
+            <div class="flex flex-col gap-2">
+                <form method="POST" action="{{ url_for('operational.lock_order', order_id=daily_order.id) }}" data-app-confirm="Kunci pesanan ini? Produksi otomatis dibuat dan perubahan porsi harus menyertakan alasan." data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="w-full h-11 rounded-xl bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-[18px]">lock</span>
+                        Kunci Order Sekarang
+                    </button>
+                </form>
+                <a href="{{ url_for('operational.add_order_detail', order_id=daily_order.id) }}" class="w-full h-10 rounded-xl bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">add_location_alt</span>
+                    Tambah Lokasi / {{ term('sub_client') }}
+                </a>
+            </div>
+        {% else %}
+            <div class="flex flex-col gap-2">
+                <a href="{{ url_for('operational.add_increase_after_lock_route', order_id=daily_order.id) }}" class="w-full h-11 rounded-xl bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                    Tambah Porsi Setelah Lock
+                </a>
+                <form method="POST" action="{{ url_for('operational.generate_production', order_id=daily_order.id) }}" data-app-confirm="Sinkronkan pesanan ini ke jadwal produksi dapur?" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="w-full h-10 rounded-xl bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">sync</span>
+                        Sinkron Produksi Dapur
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    {# Cetak Rekap Dapur & Label Wadah (Jika terkunci) #}
+    {% if daily_order.is_locked %}
+        <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+            <h2 class="font-body-bold text-xs text-text-heading flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-primary text-[18px]">print</span>
+                Cetak Rekap Dapur & Label
+            </h2>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                {# Siang #}
+                <div class="rounded-xl p-3 bg-surface-container-low border border-card-border/60 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <strong class="font-bold text-text-heading">Sesi Siang</strong>
+                        <span class="font-micro-meta text-[10px] text-text-muted">{{ total_lunch }} p</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <a href="{{ url_for('operational.kitchen_recap', order_id=daily_order.id, sesi='LUNCH') }}" target="_blank" class="w-full h-8 rounded-lg bg-card-surface border border-card-border hover:bg-surface-container text-text-heading font-body-bold text-[11px] flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">receipt</span>
+                            Rekap Dapur
+                        </a>
+                        <a href="{{ url_for('operational.container_labels', order_id=daily_order.id, sesi='LUNCH') }}" target="_blank" class="w-full h-8 rounded-lg bg-card-surface border border-card-border hover:bg-surface-container text-text-heading font-body-bold text-[11px] flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">label</span>
+                            Label Wadah
+                        </a>
+                    </div>
+                </div>
+
+                {# Malam #}
+                <div class="rounded-xl p-3 bg-surface-container-low border border-card-border/60 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <strong class="font-bold text-text-heading">Sesi Malam</strong>
+                        <span class="font-micro-meta text-[10px] text-text-muted">{{ total_dinner }} p</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <a href="{{ url_for('operational.kitchen_recap', order_id=daily_order.id, sesi='DINNER') }}" target="_blank" class="w-full h-8 rounded-lg bg-card-surface border border-card-border hover:bg-surface-container text-text-heading font-body-bold text-[11px] flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">receipt</span>
+                            Rekap Dapur
+                        </a>
+                        <a href="{{ url_for('operational.container_labels', order_id=daily_order.id, sesi='DINNER') }}" target="_blank" class="w-full h-8 rounded-lg bg-card-surface border border-card-border hover:bg-surface-container text-text-heading font-body-bold text-[11px] flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">label</span>
+                            Label Wadah
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Pengiriman Siap Dibuat #}
+    {% if delivery_ready_actions %}
+        <div class="rounded-2xl p-4 bg-status-info-bg/40 border border-status-info-text/20 flex flex-col gap-2.5">
+            <span class="font-body-bold text-xs text-status-info-text flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+                Produksi Selesai · Siap Dibuat Pengiriman
+            </span>
+            {% for action in delivery_ready_actions %}
+                <div class="rounded-xl p-3 bg-card-surface border border-card-border flex flex-col gap-2">
+                    <div>
+                        <strong class="font-body-bold text-xs text-text-heading block">{{ action.title }}</strong>
+                        <span class="font-caption-regular text-xs text-text-muted">{{ action.description }} · Sisa {{ action.remaining_qty }} porsi</span>
+                    </div>
+                    {% if action.can_create_delivery %}
+                        <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=daily_order.id, delivery_type=action.delivery_type) }}" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button type="submit" class="w-full h-9 rounded-lg bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                                {{ action.action_label }}
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="text-xs text-status-danger-text font-medium">{{ action.blocking_reason }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# Rincian Lokasi & Mandor #}
+    <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between px-1">
+            <h2 class="font-body-bold text-xs text-text-heading">Rincian Lokasi ({{ daily_order.details|length }})</h2>
+            <span class="font-micro-meta text-[11px] text-text-muted">{{ unique_mandors }} {{ term('sub_client', lower=True) }}</span>
+        </div>
+
+        {% for detail in daily_order.details %}
+            <div class="rounded-2xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <span class="font-micro-meta text-[10px] text-text-muted uppercase block">{{ term('sub_client') }}</span>
+                        <strong class="font-body-bold text-xs text-text-heading block">{{ detail.mandor.name if detail.mandor else '-' }}</strong>
+                        <span class="font-caption-regular text-xs text-text-muted">{{ detail.location.name if detail.location else '-' }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-body-bold text-xs text-primary">{{ detail.total_qty }} Porsi</span>
+                        <span class="font-micro-meta text-[10px] text-text-muted block">Siang: {{ detail.lunch_qty }} · Malam: {{ detail.dinner_qty }}</span>
+                    </div>
+                </div>
+
+                {# Nominal (ADMIN_OPERASIONAL boleh melihat nominal tapi tidak boleh mengubah/membuat invoice) #}
+                <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-surface-container-low border border-card-border/40">
+                    <span class="text-text-muted">Harga / Porsi: <strong>{{ detail.price_per_portion|rupiah if detail.price_per_portion else '-' }}</strong></span>
+                    <span class="text-text-muted">Total: <strong>{{ (detail.total_qty * (detail.price_per_portion or 0))|rupiah }}</strong></span>
+                </div>
+
+                {% if detail.notes %}
+                    <p class="font-caption-regular text-xs text-text-body bg-surface-container-low/60 p-2 rounded-lg m-0">
+                        <span class="text-text-muted">Catatan:</span> {{ detail.notes }}
+                    </p>
+                {% endif %}
+
+                <div class="flex items-center justify-end gap-2 pt-1 border-t border-card-border/40">
+                    <button type="button" onclick="document.getElementById('dialog-change-qty-{{ detail.id }}').showModal()" class="h-8 px-3 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[15px]">edit_note</span>
+                        Ubah Porsi
+                    </button>
+                    <a href="{{ url_for('operational.create_revision', detail_id=detail.id) }}" class="h-8 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">history_edu</span>
+                        Revisi
+                    </a>
+                </div>
+
+                {# Bottom-Sheet Dialog Ubah Porsi #}
+                <dialog id="dialog-change-qty-{{ detail.id }}" class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xl backdrop:bg-black/60 w-full max-w-sm m-auto text-left">
+                    <form method="POST" action="{{ url_for('operational.change_order_detail_qty', detail_id=detail.id) }}" class="app-form flex flex-col gap-3" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <div class="flex items-center justify-between pb-2 border-b border-card-border/60">
+                            <h3 class="font-body-bold text-xs text-text-heading font-bold">Ubah Porsi: {{ detail.mandor.name if detail.mandor else 'Sub Client' }}</h3>
+                            <button type="button" onclick="document.getElementById('dialog-change-qty-{{ detail.id }}').close()" class="p-1 rounded-lg text-text-muted hover:bg-surface-container">
+                                <span class="material-symbols-outlined text-[18px]">close</span>
+                            </button>
+                        </div>
+
+                        <div>
+                            <label class="font-body-bold text-xs text-text-heading block mb-1">Pilih Sesi <span class="text-status-danger-text">*</span></label>
+                            <select name="meal_type" class="w-full h-10 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20" required>
+                                <option value="LUNCH">Siang (Porsi saat ini: {{ detail.lunch_qty }})</option>
+                                <option value="DINNER">Malam (Porsi saat ini: {{ detail.dinner_qty }})</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-body-bold text-xs text-text-heading block mb-1">Jumlah Porsi Baru <span class="text-status-danger-text">*</span></label>
+                            <input type="number" name="new_qty" class="w-full h-10 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20" min="0" placeholder="Contoh: 35" required>
+                        </div>
+
+                        <div>
+                            <label class="font-body-bold text-xs text-text-heading block mb-1">Alasan Perubahan</label>
+                            <textarea name="reason" class="w-full h-16 p-2.5 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" rows="2" placeholder="Wajib jika order terkunci atau porsi jadi 0"></textarea>
+                            <span class="font-micro-meta text-[10px] text-text-muted block mt-0.5">Setelah order dikunci, alasan wajib dicantumkan.</span>
+                        </div>
+
+                        <div>
+                            <label class="font-body-bold text-xs text-text-heading block mb-1">Kategori Alasan (Jika porsi 0)</label>
+                            <select name="reason_code" class="w-full h-10 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="">-- Pilih jika porsi diubah ke 0 --</option>
+                                <option value="OFF_TODAY">Libur hari ini saja (aktif kembali besok)</option>
+                                <option value="OFF_UNTIL">Libur sementara sampai tanggal tertentu</option>
+                                <option value="PAUSE">Berhenti sementara (STOPPED)</option>
+                                <option value="PROJECT_DONE">Proyek selesai (STOPPED + tinjau kontrak)</option>
+                                <option value="NO_WORKERS">Pekerja tidak di lokasi</option>
+                                <option value="OTHER">Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div class="p-2.5 rounded-xl bg-status-warning-bg/40 border border-status-warning-text/20 text-[11px] text-status-warning-text">
+                            Perubahan ditolak sistem jika pengiriman sudah berjalan (on the way) atau diterima.
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button type="button" onclick="document.getElementById('dialog-change-qty-{{ detail.id }}').close()" class="flex-1 h-10 rounded-xl bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs">
+                                Batal
+                            </button>
+                            <button type="submit" class="flex-1 h-10 rounded-xl bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">check</span>
+                                Simpan
+                            </button>
+                        </div>
+                    </form>
+                </dialog>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

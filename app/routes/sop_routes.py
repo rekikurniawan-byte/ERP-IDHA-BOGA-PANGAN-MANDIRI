@@ -10,6 +10,7 @@ from app.services.disaster_recovery_sop_service import (
 )
 from app.utils.roles import effective_role
 from app.utils.terms import L
+from app.services.ops_navigation_service import uses_ops_ui
 
 
 sop_bp = Blueprint("sop", __name__, url_prefix="/sop")
@@ -603,6 +604,7 @@ def _safe_url(endpoint):
 ROLE_SOP_MAP = {
     "OWNER": ["owner"],
     "ADMIN": ["admin", "finance", "accounting", "canteen", "logistics", "hr", "master", "settings", "ui"],
+    "ADMIN_OPERASIONAL": ["admin", "delivery"],
     "DAPUR": ["dapur"],
     "PENGANTAR": ["delivery"],
 }
@@ -707,7 +709,9 @@ def role_sop(slug):
     if slug not in allowed_slugs:
         abort(403)
 
-    template_name = "driver/sop.html" if current_user.role == "PENGANTAR" else "sop/role_sop.html"
+    template_name = "driver/sop.html" if current_user.role == "PENGANTAR" else (
+        "ops/sop.html" if uses_ops_ui(current_user) else "sop/role_sop.html"
+    )
     return render_template(
         template_name,
         sop=_hydrate_sop(slug),

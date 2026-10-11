@@ -9,6 +9,7 @@ from app.utils.terms import L, T
 
 ROLE_OWNER = "OWNER"
 ROLE_ADMIN = "ADMIN"
+ROLE_ADMIN_OPERASIONAL = "ADMIN_OPERASIONAL"
 ROLE_FINANCE = "FINANCE"
 ROLE_ACCOUNTING = "ACCOUNTING"
 ROLE_LOGISTICS = "LOGISTICS"
@@ -54,6 +55,7 @@ PORTAL_ROLE_LANDING_ENDPOINTS = {
 ALLOWED_ROLES = [
     ROLE_OWNER,
     ROLE_ADMIN,
+    ROLE_ADMIN_OPERASIONAL,
     ROLE_DAPUR,
     ROLE_PENGANTAR,
     ROLE_PORTAL_CLIENT,
@@ -63,7 +65,8 @@ ALLOWED_ROLES = [
 
 ROLE_LABELS = {
     ROLE_OWNER: "Owner / Pemilik",
-    ROLE_ADMIN: "Admin Operasional",
+    ROLE_ADMIN: "Admin",
+    ROLE_ADMIN_OPERASIONAL: "Admin Operasional",
     ROLE_FINANCE: "Finance",
     ROLE_ACCOUNTING: "Accounting",
     ROLE_LOGISTICS: "Logistics / Stok",
@@ -79,6 +82,7 @@ ROLE_LABELS = {
 ROLE_DESCRIPTIONS = {
     ROLE_OWNER: "Akses penuh, pengaturan sistem, backup, user, audit, dan semua modul.",
     ROLE_ADMIN: "Akses operasional penuh: order, keuangan, akuntansi, stok & pembelian, SDM & payroll, dan customer success.",
+    ROLE_ADMIN_OPERASIONAL: "Hanya operasional: pesanan harian, draf portal, jadwal menu, produksi, pengiriman, dan serah terima (tanpa akses keuangan, akuntansi, HR, atau master/pengaturan).",
     ROLE_FINANCE: "Disiapkan untuk invoice, pembayaran, kas/bank, piutang, hutang supplier, dan profit invoice.",
     ROLE_ACCOUNTING: "Disiapkan untuk jurnal, laporan akuntansi, COA mapping, opening balance, dan closing/checking.",
     ROLE_LOGISTICS: "Disiapkan untuk stok, prediksi bahan, pembelian, supplier, kartu stok, dan bukti nota.",

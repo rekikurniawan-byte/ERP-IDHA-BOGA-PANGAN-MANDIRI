@@ -1,0 +1,159 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-4">
+    {# Tanggal & Identitas Hari Ini #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex items-center justify-between">
+        <div>
+            <span class="font-micro-meta text-[11px] text-text-muted uppercase font-bold block">Operasional Hari Ini</span>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading mt-0.5">
+                {{ data.today.strftime('%d %B %Y') }}
+            </h1>
+        </div>
+        <div class="flex flex-col items-end">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ 'bg-status-success-bg text-status-success-text' if data.orders.all_locked else 'bg-status-warning-bg text-status-warning-text' }}">
+                {{ 'Semua Terkunci' if data.orders.all_locked else 'Belum Dikunci' }}
+            </span>
+        </div>
+    </div>
+
+    {# 1. Ringkasan Pesanan & Porsi Hari Ini #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Pesanan & Porsi Hari Ini</span>
+            </div>
+            <span class="font-body-bold text-xs text-text-heading">{{ data.orders.total_orders }} Pesanan</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Siang</span>
+                <strong class="font-headline-sm text-base text-text-heading block mt-0.5">{{ data.orders.total_lunch }}</strong>
+                <span class="font-micro-meta text-[10px] text-text-muted">porsi</span>
+            </div>
+            <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Malam / Sore</span>
+                <strong class="font-headline-sm text-base text-text-heading block mt-0.5">{{ data.orders.total_dinner }}</strong>
+                <span class="font-micro-meta text-[10px] text-text-muted">porsi</span>
+            </div>
+            <div class="rounded-xl p-2.5 bg-primary-fixed/20 border border-primary/20">
+                <span class="font-micro-meta text-[10px] uppercase text-primary font-bold block">Total Porsi</span>
+                <strong class="font-headline-sm text-base text-primary block mt-0.5">{{ data.orders.total_portions }}</strong>
+                <span class="font-micro-meta text-[10px] text-primary">porsi</span>
+            </div>
+        </div>
+    </div>
+
+    {# 2. Draf Portal Menunggu Review #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-status-warning-bg text-status-warning-text flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">pending_actions</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Draf Portal Menunggu</span>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {{ 'bg-status-warning-bg text-status-warning-text' if data.drafts.count > 0 else 'bg-surface-container text-text-muted' }}">
+                {{ data.drafts.count }} menunggu
+            </span>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-1 border-t border-card-border/40">
+            <span class="text-text-muted">Total porsi dari draf pelanggan</span>
+            <strong class="text-text-heading">{{ data.drafts.portions }} porsi</strong>
+        </div>
+    </div>
+
+    {# 3. Status Produksi Dapur #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-status-info-bg text-status-info-text flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">skillet</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Produksi Dapur</span>
+            </div>
+            <span class="font-body-bold text-xs text-text-heading">{{ data.production.total }} Batch</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Konsep</span>
+                <strong class="font-bold text-text-heading block mt-0.5">{{ data.production.draft }}</strong>
+            </div>
+            <div class="rounded-xl p-2 bg-status-warning-bg/40 border border-status-warning-text/20">
+                <span class="font-micro-meta text-[10px] text-status-warning-text block">Proses</span>
+                <strong class="font-bold text-status-warning-text block mt-0.5">{{ data.production.in_progress }}</strong>
+            </div>
+            <div class="rounded-xl p-2 bg-status-success-bg/40 border border-status-success-text/20">
+                <span class="font-micro-meta text-[10px] text-status-success-text block">Selesai</span>
+                <strong class="font-bold text-status-success-text block mt-0.5">{{ data.production.completed }}</strong>
+            </div>
+        </div>
+    </div>
+
+    {# 4. Status Pengiriman Berjalan #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">local_shipping</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Pengiriman Berjalan</span>
+            </div>
+            <span class="font-body-bold text-xs text-text-heading">{{ data.delivery.total }} Pengiriman</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Direncanakan</span>
+                <strong class="font-bold text-text-heading block mt-0.5">{{ data.delivery.planned }}</strong>
+            </div>
+            <div class="rounded-xl p-2 bg-status-info-bg/40 border border-status-info-text/20">
+                <span class="font-micro-meta text-[10px] text-status-info-text block">Jalan</span>
+                <strong class="font-bold text-status-info-text block mt-0.5">{{ data.delivery.dispatched }}</strong>
+            </div>
+            <div class="rounded-xl p-2 bg-status-success-bg/40 border border-status-success-text/20">
+                <span class="font-micro-meta text-[10px] text-status-success-text block">Terkirim</span>
+                <strong class="font-bold text-status-success-text block mt-0.5">{{ data.delivery.delivered }}</strong>
+            </div>
+        </div>
+    </div>
+
+    {# 5. Kendala Operasional (Kurang Kirim & Komplain) #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-status-danger-bg text-status-danger-text flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">report_problem</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Kendala & Perhatian</span>
+            </div>
+            {% set total_issues = data.issues.shortage_count + data.issues.complaints_count %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {{ 'bg-status-danger-bg text-status-danger-text' if total_issues > 0 else 'bg-status-success-bg text-status-success-text' }}">
+                {{ total_issues }} catatan
+            </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border/60 flex items-center justify-between">
+                <div>
+                    <span class="font-micro-meta text-[10px] text-text-muted block">Kurang Kirim</span>
+                    <strong class="font-bold text-text-heading">{{ data.issues.shortage_count }}</strong>
+                </div>
+                <span class="material-symbols-outlined text-text-muted text-[18px]">inventory</span>
+            </div>
+            <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border/60 flex items-center justify-between">
+                <div>
+                    <span class="font-micro-meta text-[10px] text-text-muted block">Komplain Aktif</span>
+                    <strong class="font-bold text-text-heading">{{ data.issues.complaints_count }}</strong>
+                </div>
+                <span class="material-symbols-outlined text-text-muted text-[18px]">chat_bubble_outline</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

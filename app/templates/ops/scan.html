@@ -1,0 +1,74 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block content %}
+<div class="delivery-scan-shell flex flex-col gap-3.5 pb-4" data-ui-page="delivery-scan">
+    {# Judul & Petunjuk Pemindaian #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs">
+        <h1 class="font-headline-sm text-sm font-bold text-text-heading mb-1">Scan Label Wadah</h1>
+        <p class="font-caption-regular text-xs text-text-muted leading-relaxed">
+            Arahkan kamera ke QR code label wadah makanan untuk membuka form serah terima secara otomatis.
+        </p>
+    </div>
+
+    {# Alert jika bukan HTTPS / Localhost (Kamera Butuh Secure Context) #}
+    <div id="scan-secure-warning" class="rounded-xl p-3 bg-status-warning-bg text-status-warning-text border border-status-warning-text/30" style="display: none;">
+        <div class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 mt-0.5">warning</span>
+            <div class="text-xs">
+                <strong class="font-bold block">Kamera butuh HTTPS atau localhost</strong>
+                <p class="mt-0.5 leading-relaxed">
+                    Jika kamera browser tidak terbuka, gunakan kamera bawaan HP untuk memindai QR code, atau masukkan nomor kode di input manual bawah.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# Kamera Scanner Viewport Box #}
+    <div class="rounded-2xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+            <span class="font-body-bold text-xs text-text-heading">Kamera Pemindai QR</span>
+            <span class="font-micro-meta text-[11px] text-primary font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                Kamera Belakang
+            </span>
+        </div>
+
+        <div class="scanner-viewport-wrapper w-full overflow-hidden rounded-xl bg-text-heading/95 aspect-square relative flex items-center justify-center">
+            <div id="qr-reader" class="scanner-viewport-box w-full h-full flex items-center justify-center">
+                <div class="scanner-placeholder text-center text-white/70 p-4">
+                    <span class="material-symbols-outlined text-4xl text-white/60 block mb-2">photo_camera</span>
+                    <span class="font-caption-regular text-xs block">Menyiapkan kamera HP...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="scan-status-message" class="alert alert-info p-2.5 rounded-lg text-center text-xs font-medium">
+            Menyiapkan kamera pemindai...
+        </div>
+        <div id="scan-error-alert" class="alert alert-danger p-2.5 rounded-lg text-xs font-medium" style="display: none;"></div>
+    </div>
+
+    {# Cadangan Input Manual Jika Kamera Terkendala #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+        <div>
+            <h2 class="font-body-bold text-xs text-text-heading">Input Manual / Kode Label</h2>
+            <p class="font-caption-regular text-xs text-text-muted mt-0.5">
+                Bila label basah atau kamera bermasalah, ketik kode label di bawah atau buka tab Antar untuk Pilih dari Daftar.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <input type="text" id="manual-scan-input" class="flex-1 h-11 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Contoh: 123/LUNCH" autocomplete="off">
+            <button type="button" id="manual-scan-btn" class="h-11 px-4 rounded-xl bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors active:scale-95 whitespace-nowrap">
+                <span>Buka</span>
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# Library html5-qrcode fallback persis seperti delivery/scan.html lama #}
+<script src="{{ url_for('static', filename='vendor/html5-qrcode/html5-qrcode.min.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{# Versi HP dari operational/revision_form.html. Field form identik. #}
+{% block ops_content %}
+{% set field = "w-full h-12 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-body-default text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20" %}
+{% set label_cls = "font-caption-regular text-caption-regular font-bold text-text-heading block mb-1" %}
+<div class="flex flex-col gap-3.5 pb-28" data-ui-page="revision_form">
+    <div>
+        <span class="font-micro-meta text-micro-meta uppercase font-bold text-primary">Revisi Order · {{ daily_order.order_number }}</span>
+        <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight">{{ detail.mandor.name }}</h1>
+        <p class="font-caption-regular text-caption-regular text-text-muted">Lokasi: {{ detail.delivery_location.location_name }}</p>
+    </div>
+
+    <section class="grid grid-cols-3 gap-2">
+        {% for label, value in [("Siang", detail.lunch_qty), ("Sore", detail.dinner_qty), ("Total", detail.total_qty)] %}
+            <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs text-center">
+                <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">{{ label }}</span>
+                <strong class="font-headline-sm text-headline-sm text-text-heading">{{ value }}</strong>
+            </div>
+        {% endfor %}
+    </section>
+
+    <div class="p-3 rounded-xl font-caption-regular text-caption-regular flex items-start gap-2 {{ 'bg-status-warning-bg text-status-warning-text' if daily_order.is_locked else 'bg-status-info-bg text-status-info-text' }}">
+        <span class="material-symbols-outlined text-[18px]">{{ 'lock' if daily_order.is_locked else 'lock_open' }}</span>
+        <span>{{ "Order sudah dikunci. Hanya boleh revisi tambah." if daily_order.is_locked else "Order belum dikunci. Boleh revisi tambah atau kurang." }} · {{ daily_order.status|status_label }}</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('operational.create_revision', detail_id=detail.id) }}" data-ui-form="true" class="flex flex-col gap-3.5">
+        {% include "components/csrf_token.html" %}
+        <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+            <div>
+                <label class="{{ label_cls }}">Jenis Konfirmasi</label>
+                <select name="revision_type" class="{{ field }}" required>
+                    <option value="">Pilih Jenis</option>
+                    <option value="PHONE">{{ "PHONE"|status_label }}</option>
+                    <option value="WHATSAPP">{{ "WHATSAPP"|status_label }}</option>
+                    <option value="MANUAL">{{ "MANUAL"|status_label }}</option>
+                </select>
+            </div>
+            <div>
+                <label class="{{ label_cls }}">Arah Revisi</label>
+                <select name="revision_direction" class="{{ field }}" required>
+                    <option value="">Pilih Revisi</option>
+                    <option value="INCREASE">Tambah Porsi</option>
+                    {% if not daily_order.is_locked %}
+                        <option value="DECREASE">Kurangi Porsi</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="{{ label_cls }}">Perubahan Siang</label>
+                    <input type="number" name="lunch_qty_change" class="{{ field }} text-center font-headline-sm text-headline-sm" value="0" min="0" inputmode="numeric" required>
+                </div>
+                <div>
+                    <label class="{{ label_cls }}">Perubahan Sore</label>
+                    <input type="number" name="dinner_qty_change" class="{{ field }} text-center font-headline-sm text-headline-sm" value="0" min="0" inputmode="numeric" required>
+                </div>
+            </div>
+            <div>
+                <label class="{{ label_cls }}">Alasan / Catatan Revisi</label>
+                <textarea name="reason" rows="3" class="w-full p-3 rounded-xl border border-card-border bg-background-surface font-body-default text-body-default text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Contoh: {{ term('sub_client') }} meminta tambahan porsi lewat WhatsApp"></textarea>
+            </div>
+        </section>
+
+        <div class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 max-w-[480px] mx-auto px-margin py-2.5 bg-card-surface/95 backdrop-blur-md border-t border-card-border z-40">
+            <button type="submit" class="w-full h-12 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 shadow-md">
+                <span class="material-symbols-outlined text-[20px]">save</span> Simpan Revisi
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

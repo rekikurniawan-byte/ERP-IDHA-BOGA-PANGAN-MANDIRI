@@ -1,0 +1,112 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+        <div class="flex items-start justify-between gap-2">
+            <div>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ 'bg-status-warning-bg text-status-warning-text' if production.production_type == 'LUNCH' else 'bg-primary-fixed text-primary' }}">
+                    {{ 'Sesi Siang' if production.production_type == 'LUNCH' else 'Sesi Sore / Malam' }}
+                </span>
+                <h1 class="font-headline-sm text-lg font-bold text-text-heading mt-1">
+                    Produksi #{{ production.id }}
+                </h1>
+                <span class="font-caption-regular text-xs text-text-muted">
+                    Tanggal: {{ production.production_date.strftime('%d-%m-%Y') }}
+                </span>
+            </div>
+            <div class="text-right">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ 'bg-status-success-bg text-status-success-text' if 'success' in production_sla.badge_class else 'bg-surface-container text-text-muted' }}">
+                    {{ production_sla.label }}
+                </span>
+                <span class="font-micro-meta text-[10px] text-text-muted block mt-0.5">Target: {{ production_sla.target_ready_label }}</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-center text-xs pt-2 border-t border-card-border/60">
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Rencana</span>
+                <strong class="font-bold text-text-heading">{{ production.planned_qty or 0 }} porsi</strong>
+            </div>
+            <div class="rounded-xl p-2 bg-surface-container-low border border-card-border/60">
+                <span class="font-micro-meta text-[10px] text-text-muted block">Realisasi</span>
+                <strong class="font-bold {{ 'text-status-success-text' if production.actual_qty else 'text-text-muted' }}">
+                    {{ production.actual_qty or '-' }} porsi
+                </strong>
+            </div>
+        </div>
+    </div>
+
+    {# Form Update Realisasi #}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+        <h2 class="font-body-bold text-xs text-text-heading">Perbarui Realisasi Produksi</h2>
+        <form method="POST" action="{{ url_for('production.update_realization', production_id=production.id) }}" data-ui-form="true">
+            {% include "components/csrf_token.html" %}
+            <div class="flex flex-col gap-2">
+                <div>
+                    <label class="font-micro-meta text-[10px] uppercase text-text-muted block mb-1">Jumlah Realisasi (Porsi)</label>
+                    <input type="number" name="actual_qty" class="w-full h-11 px-3.5 rounded-xl border border-card-border bg-background-surface font-body-default text-sm text-text-heading" value="{{ production.actual_qty or production.planned_qty }}" required min="0">
+                </div>
+                <div>
+                    <label class="font-micro-meta text-[10px] uppercase text-text-muted block mb-1">Status Produksi</label>
+                    <select name="status" class="w-full h-11 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading">
+                        <option value="DRAFT" {% if production.status == 'DRAFT' %}selected{% endif %}>Konsep</option>
+                        <option value="IN_PROGRESS" {% if production.status == 'IN_PROGRESS' %}selected{% endif %}>Sedang Berjalan</option>
+                        <option value="COMPLETED" {% if production.status == 'COMPLETED' %}selected{% endif %}>Selesai</option>
+                        <option value="CANCELLED" {% if production.status == 'CANCELLED' %}selected{% endif %}>Dibatalkan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-micro-meta text-[10px] uppercase text-text-muted block mb-1">Catatan</label>
+                    <input type="text" name="notes" class="w-full h-10 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-xs text-text-heading" value="{{ production.notes or '' }}" placeholder="Catatan dapur">
+                </div>
+                <button type="submit" class="w-full h-11 rounded-xl bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1.5 transition-colors active:scale-95 mt-1">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Simpan Realisasi
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# Tautan Terkait #}
+    {% if related_daily_order %}
+        <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex items-center justify-between">
+            <div>
+                <span class="font-micro-meta text-[10px] text-text-muted block">Pesanan Terkait</span>
+                <strong class="font-body-bold text-xs text-text-heading">{{ related_daily_order.order_number }}</strong>
+            </div>
+            <a href="{{ url_for('operational.order_detail', order_id=related_daily_order.id) }}" class="h-8 px-3 rounded-lg bg-surface-container text-text-heading font-body-bold text-xs flex items-center justify-center gap-1">
+                Buka Order
+                <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </a>
+        </div>
+    {% endif %}
+
+    {# Pengiriman Lanjutan (Langkah Pengiriman Berikutnya) #}
+    {% if production_delivery_action and (production_delivery_action.needs_attention or production_delivery_action.can_create_delivery or production_delivery_action.blocking_reason) %}
+        <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+            <div class="flex items-start justify-between gap-2">
+                <div>
+                    <span class="font-micro-meta text-[10px] uppercase font-bold text-primary block">Langkah Pengiriman Berikutnya</span>
+                    <strong class="font-body-bold text-xs text-text-heading block mt-0.5">{{ production_delivery_action.title }}</strong>
+                    <p class="font-caption-regular text-[11px] text-text-muted mt-0.5">{{ production_delivery_action.description }}</p>
+                </div>
+            </div>
+
+            {% if production_delivery_action.can_create_delivery %}
+                <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=related_daily_order.id, delivery_type=production_delivery_action.delivery_type) }}" class="app-form" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <button type="submit" class="w-full h-10 rounded-xl bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                        {{ production_delivery_action.action_label }}
+                    </button>
+                </form>
+            {% else %}
+                <div class="p-2.5 rounded-xl bg-status-danger-bg text-status-danger-text text-[11px] font-medium leading-tight">
+                    {{ production_delivery_action.blocking_reason }}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

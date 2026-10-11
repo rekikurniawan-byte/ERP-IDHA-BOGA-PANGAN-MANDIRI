@@ -117,14 +117,18 @@ module.exports = Object.assign({
   content: [
     './app/templates/portal/**/*.html',
     './app/templates/driver/**/*.html',
+    './app/templates/ops/**/*.html',
     './app/templates/layouts/portal_mobile.html',
     './app/templates/layouts/driver_mobile.html',
+    './app/templates/layouts/ops_mobile.html',
     './app/templates/components/**/*.html',
     './app/routes/portal_routes.py',
     './app/routes/delivery_routes.py',
     './app/routes/dashboard_routes.py',
+    './app/routes/operational_routes.py',
     './app/routes/settings/**/*.py',
     './app/services/portal_*.py',
     './app/services/driver_*.py',
+    './app/services/ops_*.py',
   ],
 });

@@ -41,6 +41,7 @@ IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 INTERNAL_STAFF_ROLES = (
     "OWNER",
     "ADMIN",
+    "ADMIN_OPERASIONAL",
     "FINANCE",
     "ACCOUNTING",
     "LOGISTICS",

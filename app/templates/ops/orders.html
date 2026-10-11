@@ -1,0 +1,95 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading">Order Harian</h1>
+            <span class="font-caption-regular text-xs text-text-muted">Kelola pesanan katering dan porsi lokasi</span>
+        </div>
+        <a href="{{ url_for('operational.create_order') }}" class="h-10 px-3.5 rounded-xl bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1.5 transition-colors active:scale-95 shadow-xs">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Input Order
+        </a>
+    </div>
+
+    {% if daily_orders %}
+        <div class="flex flex-col gap-2.5">
+            {% for order in daily_orders %}
+                {% set total = namespace(value=0, lunch=0, dinner=0) %}
+                {% for detail in order.details %}
+                    {% set total.value = total.value + detail.total_qty %}
+                    {% set total.lunch = total.lunch + (detail.lunch_qty or 0) %}
+                    {% set total.dinner = total.dinner + (detail.dinner_qty or 0) %}
+                {% endfor %}
+                <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="font-micro-meta text-[11px] text-text-muted">Order</span>
+                            <h2 class="font-body-bold text-sm text-text-heading font-bold">{{ order.order_number }}</h2>
+                            <span class="font-caption-regular text-xs text-text-muted">{{ order.order_date.strftime('%d-%m-%Y') }}</span>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            {% if order.is_locked %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-success-bg text-status-success-text">
+                                    Terkunci
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-info-bg text-status-info-text">
+                                    Terbuka
+                                </span>
+                            {% endif %}
+                            <span class="font-micro-meta text-[11px] text-text-muted">{{ order.details|length }} Lokasi</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs py-2 px-3 rounded-xl bg-surface-container-low border border-card-border/60">
+                        <div>
+                            <span class="font-micro-meta text-[10px] text-text-muted block">Siang</span>
+                            <strong class="text-text-heading">{{ total.lunch }}</strong>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] text-text-muted block">Malam</span>
+                            <strong class="text-text-heading">{{ total.dinner }}</strong>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] text-primary font-bold block">Total</span>
+                            <strong class="text-primary">{{ total.value }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 border-t border-card-border/40 gap-2">
+                        {% if not order.is_locked %}
+                            <form method="POST" action="{{ url_for('operational.lock_order', order_id=order.id) }}" class="app-form flex-1" data-app-confirm="Kunci order {{ order.order_number }}? Produksi akan otomatis dibuat." data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="w-full h-9 rounded-lg bg-status-warning-bg hover:bg-status-warning-bg/80 text-status-warning-text font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">lock</span>
+                                    Kunci Order
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('operational.generate_production', order_id=order.id) }}" class="app-form flex-1" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="w-full h-9 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">soup_kitchen</span>
+                                    Sinkron Produksi
+                                </button>
+                            </form>
+                        {% endif %}
+                        <a href="{{ url_for('operational.order_detail', order_id=order.id) }}" class="flex-1 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                            <span>Kelola Order</span>
+                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl p-6 bg-card-surface border border-card-border shadow-xs text-center flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-[36px] text-text-muted">receipt_long</span>
+            <span class="font-body-bold text-xs text-text-heading">Belum ada order harian</span>
+            <p class="font-caption-regular text-xs text-text-muted">Klik Input Order untuk mulai mencatat pesanan katering.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

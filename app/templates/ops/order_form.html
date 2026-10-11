@@ -1,0 +1,135 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{# Versi HP dari operational/order_form.html (buat order, tambah detail, tambah setelah lock).
+   Field form identik dengan versi desktop; default HPP sengaja tidak ditampilkan (di luar lingkup operasional). #}
+{% block ops_content %}
+{% set field = "w-full h-12 px-3 rounded-xl border border-card-border bg-background-surface font-body-default text-body-default text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20" %}
+{% set label_cls = "font-caption-regular text-caption-regular font-bold text-text-heading block mb-1" %}
+{% if is_after_lock is defined and is_after_lock %}
+    {% set order_form_title = "Tambah Setelah Dikunci" %}
+    {% set order_form_description = "Order sudah dikunci. Input ini dicatat sebagai revisi tambah, bukan order baru." %}
+{% elif daily_order %}
+    {% set order_form_title = "Tambah " ~ term('sub_client') ~ "/Lokasi" %}
+    {% set order_form_description = "Tambahkan " ~ term('sub_client', lower=True) ~ " atau lokasi sebelum order dikunci." %}
+{% else %}
+    {% set order_form_title = "Input Order Harian" %}
+    {% set order_form_description = "Buat order baru atau tambah detail pada tanggal yang masih draf." %}
+{% endif %}
+<div class="flex flex-col gap-3.5 pb-28" data-ui-page="order_form">
+    <div>
+        <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight">{{ order_form_title }}</h1>
+        <p class="font-caption-regular text-caption-regular text-text-muted">{{ order_form_description }}</p>
+    </div>
+
+    {% if not mandors or not locations %}
+        <div class="p-3 rounded-xl bg-status-warning-bg text-status-warning-text font-caption-regular text-caption-regular">
+            Data {{ term('sub_client', lower=True) }} atau lokasi pengiriman belum tersedia. Minta admin melengkapi master dulu.
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{{ form_action }}" data-ui-form="true" class="flex flex-col gap-3.5">
+        {% include "components/csrf_token.html" %}
+
+        <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+            <div>
+                <label class="{{ label_cls }}">Tanggal Order</label>
+                {% if daily_order %}
+                    <input type="date" name="order_date" class="{{ field }} bg-surface-container" value="{{ daily_order.order_date }}" readonly>
+                {% else %}
+                    <input type="date" name="order_date" class="{{ field }}" required>
+                {% endif %}
+            </div>
+            <div>
+                <label class="{{ label_cls }}">{{ term('sub_client') }}</label>
+                <select name="mandor_id" class="{{ field }}" required>
+                    <option value="">Pilih {{ term('sub_client') }}</option>
+                    {% for mandor in mandors %}
+                        {% set quote = (price_quotes or {}).get(mandor.id) %}
+                        <option value="{{ mandor.id }}">{{ mandor.name }} — {% if quote %}{{ quote.price|rupiah }}/porsi ({{ quote.source_label }}){% else %}harga belum diatur{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ label_cls }}">{{ term('location') }}</label>
+                <select name="delivery_location_id" class="{{ field }}" required>
+                    <option value="">Pilih Lokasi</option>
+                    {% for location in locations %}
+                        <option value="{{ location.id }}">{{ location.mandor.name }} - {{ location.location_name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="font-micro-meta text-micro-meta text-text-muted mt-1">Pastikan lokasi sesuai {{ term('sub_client', lower=True) }}.</p>
+            </div>
+            <div>
+                <label class="{{ label_cls }}">Harga per Porsi</label>
+                {% if current_user.role == 'OWNER' %}
+                    <input type="number" name="price_per_portion" class="{{ field }}" min="0" step="0.01" placeholder="Kosongkan = harga di daftar">
+                    <p class="font-micro-meta text-micro-meta text-text-muted mt-1">Khusus OWNER: isi hanya kalau pesanan ini memakai harga lain. Tercatat di audit log.</p>
+                {% else %}
+                    <p class="h-12 px-3 rounded-xl bg-surface-container flex items-center font-caption-regular text-caption-regular text-text-body">Otomatis dari daftar harga (tertera di pilihan {{ term('sub_client', lower=True) }})</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs grid grid-cols-2 gap-3">
+            <div>
+                <label class="{{ label_cls }}">Porsi Siang</label>
+                <input type="number" name="lunch_qty" class="{{ field }} text-center font-headline-sm text-headline-sm" value="0" min="0" inputmode="numeric" required>
+            </div>
+            <div>
+                <label class="{{ label_cls }}">Porsi Sore</label>
+                <input type="number" name="dinner_qty" class="{{ field }} text-center font-headline-sm text-headline-sm" value="0" min="0" inputmode="numeric" required>
+            </div>
+            <div class="col-span-2">
+                <label class="{{ label_cls }}">Catatan</label>
+                <textarea name="notes" rows="2" class="w-full p-3 rounded-xl border border-card-border bg-background-surface font-body-default text-body-default text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Catatan tambahan jika ada"></textarea>
+            </div>
+        </section>
+
+        {% if not is_after_lock %}
+            <details class="group rounded-2xl bg-card-surface border border-card-border shadow-xs">
+                <summary class="cursor-pointer list-none p-4 flex items-center justify-between gap-2">
+                    <span>
+                        <strong class="font-body-bold text-body-bold text-text-heading block">Pembayaran di muka</strong>
+                        <span class="font-micro-meta text-micro-meta text-text-muted">Wajib untuk pelanggan umum. {{ term('client') }} kontrak kosongkan.</span>
+                    </span>
+                    <span class="material-symbols-outlined text-text-muted transition-transform group-open:rotate-180">expand_more</span>
+                </summary>
+                <div class="px-4 pb-4 grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="{{ label_cls }}">Nominal diterima</label>
+                        <input type="number" name="prepayment_amount" class="{{ field }}" min="0" step="0.01" inputmode="decimal">
+                    </div>
+                    <div>
+                        <label class="{{ label_cls }}">Metode</label>
+                        <select name="prepayment_method" class="{{ field }}">
+                            <option value="CASH">Tunai</option>
+                            <option value="TRANSFER">Transfer</option>
+                            <option value="QRIS">{{ "QRIS"|status_label }}</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="{{ label_cls }}">Rekening</label>
+                        <select name="prepayment_bank_account_id" class="{{ field }}">
+                            <option value="">Pilih jika transfer/QRIS</option>
+                            {% for account in bank_accounts or [] %}
+                                <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="{{ label_cls }}">No. referensi</label>
+                        <input type="text" name="prepayment_reference" class="{{ field }}">
+                    </div>
+                </div>
+            </details>
+        {% endif %}
+
+        <div class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 max-w-[480px] mx-auto px-margin py-2.5 bg-card-surface/95 backdrop-blur-md border-t border-card-border z-40">
+            <button type="submit" class="w-full h-12 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 shadow-md">
+                <span class="material-symbols-outlined text-[20px]">save</span>
+                {% if daily_order %}Simpan {{ term('sub_client') }}{% else %}Simpan Order{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

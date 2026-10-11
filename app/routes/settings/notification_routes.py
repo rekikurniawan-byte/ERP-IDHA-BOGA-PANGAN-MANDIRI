@@ -4,10 +4,11 @@ Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.settings_routes import *  # noqa: F401,F403
 from app.services.live_reminder_service import allowed_reminder_sections
+from app.services.ops_navigation_service import uses_ops_ui
 
 
 @settings_bp.route("/reminders")
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def live_reminders():
     allowed = allowed_reminder_sections(current_user)
     if not allowed:
@@ -46,7 +47,7 @@ def live_reminders():
 
 
 @settings_bp.route("/notifications")
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def notifications():
     status_filter = (request.args.get("status") or "UNREAD").strip().upper()
     priority_filter = (request.args.get("priority") or "").strip().upper()
@@ -85,7 +86,9 @@ def notifications():
     unread_summary = count_unread_notifications(branch_id=current_user.branch_id, user=current_user)
     type_options = sorted({row.notification_type for row in rows if row.notification_type})
 
-    template_name = "driver/notifications.html" if current_user.role == "PENGANTAR" else "settings/notifications.html"
+    template_name = "driver/notifications.html" if current_user.role == "PENGANTAR" else (
+        "ops/notifications.html" if uses_ops_ui(current_user) else "settings/notifications.html"
+    )
     return render_template(
         template_name,
         notifications=rows,
@@ -168,7 +171,7 @@ def _get_accessible_notification_or_404(notification_id):
 
 
 @settings_bp.route("/notifications/<int:notification_id>/read", methods=["POST"])
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def mark_notification_read_route(notification_id):
     notification = _get_accessible_notification_or_404(notification_id)
     mark_notification_read(notification)
@@ -185,7 +188,7 @@ def mark_notification_read_route(notification_id):
 
 
 @settings_bp.route("/notifications/<int:notification_id>/unread", methods=["POST"])
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def mark_notification_unread_route(notification_id):
     notification = _get_accessible_notification_or_404(notification_id)
     mark_notification_unread(notification)
@@ -202,7 +205,7 @@ def mark_notification_unread_route(notification_id):
 
 
 @settings_bp.route("/notifications/<int:notification_id>/dismiss", methods=["POST"])
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def dismiss_notification_route(notification_id):
     notification = _get_accessible_notification_or_404(notification_id)
     mark_notification_dismissed(notification)

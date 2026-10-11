@@ -16,7 +16,7 @@ from app.utils.roles import role_in
 
 # The four internal roles after the Blueprint V2 consolidation. role_in() also
 # matches retired roles (FINANCE, ACCOUNTING, ...) through their successor.
-INTERNAL_ROLES = ("OWNER", "ADMIN", "DAPUR", "PENGANTAR")
+INTERNAL_ROLES = ("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "DAPUR", "PENGANTAR")
 
 
 def _static_asset_fingerprint(flask_app: Flask, relative_path: str) -> str:
@@ -505,6 +505,34 @@ def create_app():
             return {"driver_nav": nav, "driver_unread_count": unread_count}
         except Exception:
             flask_app.logger.exception("Gagal menyusun navigasi pengantar.")
+        return {}
+
+    @flask_app.context_processor
+    def inject_ops_navigation():
+        """Peta navigasi mobile operasional (satu pintu per halaman) untuk layout ops_mobile."""
+        try:
+            from flask import request
+            from flask_login import current_user
+
+            if not current_user.is_authenticated:
+                return {}
+            from app.services.ops_navigation_service import build_ops_navigation, is_ops_context
+
+            endpoint = request.endpoint or "dashboard.ops"
+            if not is_ops_context(current_user.role, endpoint):
+                return {}
+            from app.services.notification_service import count_unread_notifications
+
+            nav = build_ops_navigation(endpoint)
+            unread_summary = get_cached_value(
+                ("ops_unread_count", current_user.branch_id, current_user.id),
+                lambda: count_unread_notifications(branch_id=current_user.branch_id, user=current_user),
+                ttl_seconds=30,
+            )
+            unread_count = int(unread_summary.get("total", 0) or 0)
+            return {"ops_nav": nav, "ops_unread_count": unread_count}
+        except Exception:
+            flask_app.logger.exception("Gagal menyusun navigasi operasional.")
         return {}
 
     @flask_app.context_processor

@@ -67,6 +67,8 @@ from app.utils.decorators import role_required
 
 customer_success_bp = Blueprint("customer_success", __name__, url_prefix="/customer-success")
 CUSTOMER_SUCCESS_ROLES = ("ADMIN", ROLE_CUSTOMER_SUCCESS)
+# Admin Operasional belum diberi akses komplain: belum ada halaman versi HP-nya.
+CUSTOMER_COMPLAINT_ROLES = CUSTOMER_SUCCESS_ROLES
 
 
 @customer_success_bp.route("/")
@@ -348,7 +350,7 @@ def check_contracts_now():
 
 
 @customer_success_bp.route("/complaints", methods=["GET", "POST"])
-@role_required(*CUSTOMER_SUCCESS_ROLES)
+@role_required(*CUSTOMER_COMPLAINT_ROLES)
 def complaints():
     if request.method == "POST":
         try:
@@ -381,7 +383,7 @@ def complaints():
 
 
 @customer_success_bp.route("/complaints/<int:complaint_id>")
-@role_required(*CUSTOMER_SUCCESS_ROLES)
+@role_required(*CUSTOMER_COMPLAINT_ROLES)
 def complaint_detail(complaint_id):
     complaint = get_customer_complaint(complaint_id, branch_id=current_user.branch_id)
     if not complaint:
@@ -397,7 +399,7 @@ def complaint_detail(complaint_id):
 
 
 @customer_success_bp.route("/complaints/<int:complaint_id>/status", methods=["POST"])
-@role_required(*CUSTOMER_SUCCESS_ROLES)
+@role_required(*CUSTOMER_COMPLAINT_ROLES)
 def update_complaint_status(complaint_id):
     try:
         transition_customer_complaint(
@@ -415,7 +417,7 @@ def update_complaint_status(complaint_id):
 
 
 @customer_success_bp.route("/complaints/<int:complaint_id>/evidence", methods=["POST"])
-@role_required(*CUSTOMER_SUCCESS_ROLES)
+@role_required(*CUSTOMER_COMPLAINT_ROLES)
 def upload_complaint_evidence(complaint_id):
     try:
         attach_customer_complaint_evidence(

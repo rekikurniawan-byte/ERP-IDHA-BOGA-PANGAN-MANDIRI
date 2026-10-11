@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 NOTIFICATION_STATUSES = {"UNREAD", "READ", "DISMISSED", "RESOLVED"}
 NOTIFICATION_PRIORITIES = {"CRITICAL", "WARNING", "INFO"}
-INTERNAL_ROLES = {"OWNER", "ADMIN", "DAPUR", "PENGANTAR"}
+INTERNAL_ROLES = {"OWNER", "ADMIN", "ADMIN_OPERASIONAL", "DAPUR", "PENGANTAR"}
 PORTAL_ROLES = {"PORTAL_CLIENT", "PORTAL_SUBCLIENT", "PORTAL_CUSTOMER"}
 ROLE_TARGETS = INTERNAL_ROLES | PORTAL_ROLES
 
@@ -44,10 +44,14 @@ def visible_target_roles(role: Optional[str]) -> set[str]:
 
     OWNER memantau dan ikut menyetujui pekerjaan ADMIN (bukti bayar, pesanan
     portal, persetujuan kredit), jadi notifikasi untuk ADMIN juga tampil untuknya.
+    Notifikasi operasional juga dapat dilihat oleh OWNER dan ADMIN.
     """
     roles = equivalent_target_roles(role)
     if effective_role(role) == "OWNER":
         roles |= equivalent_target_roles("ADMIN")
+        roles |= equivalent_target_roles("ADMIN_OPERASIONAL")
+    elif effective_role(role) == "ADMIN":
+        roles |= equivalent_target_roles("ADMIN_OPERASIONAL")
     return roles
 
 

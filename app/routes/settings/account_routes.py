@@ -10,6 +10,7 @@ from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 from app.routes.settings_routes import *  # noqa: F401,F403
+from app.services.ops_navigation_service import uses_ops_ui
 from app.services.branch_module_service import (
     MODULES,
     ModuleChangeError,
@@ -358,7 +359,9 @@ def account():
     )
     last_login_at = last_login.created_at if last_login else None
 
-    template_name = "driver/account.html" if current_user.role == "PENGANTAR" else "settings/account.html"
+    template_name = "driver/account.html" if current_user.role == "PENGANTAR" else (
+        "ops/account.html" if uses_ops_ui(current_user) else "settings/account.html"
+    )
     return render_template(
         template_name,
         user=current_user,
@@ -368,9 +371,9 @@ def account():
 
 
 @settings_bp.route("/change-password", methods=["GET", "POST"])
-@role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def change_password():
-    if current_user.role == "PENGANTAR":
+    if current_user.role == "PENGANTAR" or uses_ops_ui(current_user):
         return redirect(url_for("settings.account", _anchor="ganti-password"))
     from app.services.user_profile_service import (
         UserProfileError,

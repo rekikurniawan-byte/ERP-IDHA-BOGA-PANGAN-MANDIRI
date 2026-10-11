@@ -1,0 +1,99 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading">Rekap Dapur</h1>
+            <span class="font-caption-regular text-xs text-text-muted">Rekap porsi dan alokasi wadah per sesi</span>
+        </div>
+    </div>
+
+    {# Filter Tanggal & Sesi #}
+    <div class="rounded-2xl p-3 bg-card-surface border border-card-border shadow-xs">
+        <form method="GET" action="{{ url_for('operational.kitchen_recap_hub') }}" class="app-filter flex flex-col gap-2">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="font-micro-meta text-[10px] uppercase text-text-muted block mb-1">Tanggal</label>
+                    <input type="date" name="date" class="w-full h-9 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading" value="{{ selected_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div>
+                    <label class="font-micro-meta text-[10px] uppercase text-text-muted block mb-1">Sesi</label>
+                    <select name="sesi" class="w-full h-9 px-2 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading">
+                        <option value="LUNCH" {% if selected_sesi == 'LUNCH' %}selected{% endif %}>Siang</option>
+                        <option value="DINNER" {% if selected_sesi == 'DINNER' %}selected{% endif %}>Malam</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="w-full h-9 rounded-lg bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">search</span>
+                Tampilkan Rekap
+            </button>
+        </form>
+    </div>
+
+    {% if daily_order and recap %}
+        {# Aksi Cetak #}
+        <div class="grid grid-cols-2 gap-2">
+            <a href="{{ url_for('operational.kitchen_recap', order_id=daily_order.id, sesi=selected_sesi) }}" target="_blank" class="h-10 px-3 rounded-xl bg-card-surface border border-card-border text-text-heading font-body-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
+                <span class="material-symbols-outlined text-primary text-[18px]">print</span>
+                Cetak Rekap A4
+            </a>
+            <a href="{{ url_for('operational.container_labels', order_id=daily_order.id, sesi=selected_sesi) }}" target="_blank" class="h-10 px-3 rounded-xl bg-card-surface border border-card-border text-text-heading font-body-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
+                <span class="material-symbols-outlined text-primary text-[18px]">label</span>
+                Cetak Label Wadah
+            </a>
+        </div>
+
+        {# Ringkasan Angka #}
+        <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex items-center justify-between">
+            <div>
+                <span class="font-micro-meta text-[10px] uppercase text-text-muted">Total Porsi</span>
+                <strong class="font-headline-sm text-lg text-primary block mt-0.5">{{ recap.total_porsi }} Porsi</strong>
+            </div>
+            <div class="text-right">
+                <span class="font-micro-meta text-[10px] uppercase text-text-muted">Total Wadah</span>
+                <strong class="font-headline-sm text-lg text-text-heading block mt-0.5">{{ recap.total_wadah }} Wadah</strong>
+            </div>
+        </div>
+
+        {# Daftar Rincian Rekap per Lokasi #}
+        <div class="flex flex-col gap-2">
+            <h2 class="font-body-bold text-xs text-text-heading px-1">Rincian Per Lokasi ({{ recap.rows|length }})</h2>
+            {% for row in recap.rows %}
+                <div class="rounded-2xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="font-micro-meta text-[10px] text-text-muted uppercase block">{{ row.mandor_name }}</span>
+                            <strong class="font-body-bold text-xs text-text-heading">{{ row.location_name }}</strong>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-body-bold text-xs text-primary">{{ row.porsi }} Porsi</span>
+                            <span class="font-micro-meta text-[10px] text-text-muted block">{{ row.wadah }} wadah</span>
+                        </div>
+                    </div>
+                    {% if row.menu_name %}
+                        <div class="text-xs text-text-body p-2 rounded-lg bg-surface-container-low border border-card-border/40">
+                            <span class="text-text-muted">Menu:</span> <strong>{{ row.menu_name }}</strong>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl p-6 bg-card-surface border border-card-border shadow-xs text-center flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-[36px] text-text-muted">receipt_long</span>
+            <span class="font-body-bold text-xs text-text-heading">Rekap belum tersedia</span>
+            <p class="font-caption-regular text-xs text-text-muted">
+                {% if not daily_order %}
+                    Tidak ada pesanan harian pada tanggal ini.
+                {% elif not daily_order.is_locked %}
+                    Pesanan harian belum dikunci (lock). Rekap dapur hanya dapat dicetak setelah pesanan dikunci.
+                {% else %}
+                    Tidak ada porsi pada sesi {{ 'Siang' if selected_sesi == 'LUNCH' else 'Malam' }}.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

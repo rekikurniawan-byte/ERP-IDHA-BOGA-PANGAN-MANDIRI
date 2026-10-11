@@ -1,0 +1,75 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{# SOP versi HP untuk operasional. Isi sama dengan sop/role_sop.html; bagian jurnal & tautan halaman kerja tidak relevan di lapangan. #}
+{% block content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    {% if role_nav and role_nav|length > 1 %}
+        <div class="flex gap-1 p-1 rounded-xl bg-surface-container">
+            {% for item in role_nav %}
+                <a href="{{ item.url }}" class="flex-1 py-1.5 rounded-lg text-center font-caption-regular text-xs font-bold transition-colors {{ 'bg-card-surface text-primary shadow-xs' if item.is_active else 'text-text-muted' }}">
+                    {{ item.title }}
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div>
+        <span class="font-micro-meta text-micro-meta uppercase font-bold text-primary">{{ sop.eyebrow }}</span>
+        <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight">{{ sop.title }}</h1>
+        <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5">{{ sop.summary }}</p>
+    </div>
+
+    {% for title, icon, items, tone in [
+        ("Tujuan", "flag", sop.purpose, "bg-primary-fixed text-primary"),
+        ("Kapan dipakai", "event_available", sop.when_used, "bg-status-info-bg text-status-info-text"),
+        ("Yang perlu disiapkan", "inventory_2", sop.prepared_data, "bg-surface-container text-text-heading"),
+    ] %}
+        {% if items %}
+            <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+                <h2 class="flex items-center gap-2 font-body-bold text-body-bold text-text-heading">
+                    <span class="w-8 h-8 rounded-lg {{ tone }} flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">{{ icon }}</span></span>{{ title }}
+                </h2>
+                <ul class="flex flex-col gap-1.5">
+                    {% for item in items %}
+                        <li class="flex items-start gap-2 font-caption-regular text-caption-regular text-text-body"><span class="material-symbols-outlined text-[16px] text-status-success-text mt-0.5">check</span><span>{{ item }}</span></li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    {% endfor %}
+
+    {% if sop.steps %}
+        <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+            <h2 class="flex items-center gap-2 font-body-bold text-body-bold text-text-heading">
+                <span class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">format_list_numbered</span></span>Langkah kerja
+            </h2>
+            <ol class="flex flex-col gap-2">
+                {% for item in sop.steps %}
+                    <li class="flex items-start gap-2.5">
+                        <span class="w-6 h-6 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-micro-meta text-micro-meta font-bold flex-shrink-0">{{ loop.index }}</span>
+                        <p class="font-caption-regular text-caption-regular text-text-body">{{ item }}</p>
+                    </li>
+                {% endfor %}
+            </ol>
+        </section>
+    {% endif %}
+
+    {% for title, icon, items, tone in [
+        ("Hasil di sistem", "task_alt", sop.outputs, "bg-status-success-bg text-status-success-text"),
+        ("Kesalahan yang sering terjadi", "error", sop.common_mistakes, "bg-status-danger-bg text-status-danger-text"),
+    ] %}
+        {% if items %}
+            <section class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+                <h2 class="flex items-center gap-2 font-body-bold text-body-bold text-text-heading">
+                    <span class="w-8 h-8 rounded-lg {{ tone }} flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">{{ icon }}</span></span>{{ title }}
+                </h2>
+                <ul class="flex flex-col gap-1.5">
+                    {% for item in items %}
+                        <li class="flex items-start gap-2 font-caption-regular text-caption-regular text-text-body"><span class="material-symbols-outlined text-[16px] text-text-muted mt-0.5">chevron_right</span><span>{{ item }}</span></li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

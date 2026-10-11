@@ -78,6 +78,8 @@ def allowed_reminder_sections(user: Any) -> set[str]:
     role = effective_role(role_raw)
     if role in ("OWNER", "ADMIN"):
         return set(SECTION_LABELS.keys())
+    if role == "ADMIN_OPERASIONAL":
+        return {"delivery", "digital_proof"}
     if role == "DAPUR":
         return {"stock", "hpp_order"}
     if role == "PENGANTAR":

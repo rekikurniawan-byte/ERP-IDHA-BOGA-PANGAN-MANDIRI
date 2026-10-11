@@ -1,0 +1,140 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading">Pengiriman Hari Ini</h1>
+            <span class="font-caption-regular text-xs text-text-muted">Pantau status armada dan keberangkatan pengiriman</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-primary-fixed text-primary">
+            {{ deliveries|length }} Pengiriman
+        </span>
+    </div>
+
+    {# Filter Tanggal #}
+    <div class="rounded-2xl p-3 bg-card-surface border border-card-border shadow-xs">
+        <form method="GET" action="{{ url_for('delivery.today') }}" class="app-filter flex items-center gap-2">
+            <input type="date" name="date" class="flex-1 h-9 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading" value="{{ selected_date_text }}">
+            <button type="submit" class="h-9 px-3.5 rounded-lg bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1">
+                Tampilkan
+            </button>
+        </form>
+    </div>
+
+    {# Panel: Pengiriman Belum Dibuat #}
+    {% if delivery_next_actions %}
+    <section class="rounded-2xl p-4 bg-status-warning-bg/30 border border-status-warning-text/20 shadow-xs flex flex-col gap-3" data-delivery-next-action="delivery-today">
+        <div class="flex items-start justify-between gap-2">
+            <div>
+                <span class="font-micro-meta text-[10px] uppercase font-bold text-status-warning-text block">Pengiriman belum dibuat</span>
+                <h2 class="font-body-bold text-xs font-bold text-text-heading mt-0.5">Ada produksi selesai yang belum menjadi pengiriman</h2>
+                <p class="font-caption-regular text-[11px] text-text-muted mt-0.5">Buat pengiriman agar pengantar dapat melihat tugas kirim.</p>
+            </div>
+            <a href="{{ url_for('sop.role_sop', slug='delivery') }}" class="px-2 py-1 rounded-lg bg-card-surface border border-card-border text-[11px] font-bold text-text-heading flex items-center gap-1 flex-shrink-0">
+                <span class="material-symbols-outlined text-[14px]">menu_book</span>
+                SOP
+            </a>
+        </div>
+
+        <div class="flex flex-col gap-2.5">
+            {% for action in delivery_next_actions %}
+                <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2 {% if not action.can_create_delivery %}opacity-80{% endif %}">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <strong class="font-body-bold text-xs text-text-heading block truncate">{{ action.title }}</strong>
+                            <p class="font-caption-regular text-[11px] text-text-muted mt-0.5">
+                                {{ action.order_number }} · {{ action.label }} · sisa {{ action.remaining_qty }} porsi
+                            </p>
+                            <div class="flex items-center gap-2 mt-1 text-[10px] text-text-muted">
+                                <span>Order: {{ action.order_date.strftime('%d-%m-%Y') }}</span>
+                                <span>·</span>
+                                <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-1 border-t border-card-border/40">
+                        {% if action.can_create_delivery %}
+                            <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=action.daily_order_id, delivery_type=action.delivery_type) }}" class="app-form flex-1" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="w-full h-8 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                                    <span class="material-symbols-outlined text-[15px]">local_shipping</span>
+                                    {{ action.action_label }}
+                                </button>
+                            </form>
+                        {% else %}
+                            <div class="flex-1 px-2.5 py-1.5 rounded-lg bg-status-danger-bg text-status-danger-text text-[11px] font-medium leading-tight">
+                                {{ action.blocking_reason }}
+                            </div>
+                        {% endif %}
+                        <a href="{{ url_for('operational.order_detail', order_id=action.daily_order_id) }}" class="h-8 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1 transition-colors flex-shrink-0">
+                            Detail
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if deliveries %}
+        <div class="flex flex-col gap-2.5">
+            {% for deliv in deliveries %}
+                {% set sla = calculate_delivery_sla_summary(deliv) %}
+                {% set deliv_type = get_delivery_type_from_notes(deliv.notes) %}
+                <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ 'bg-status-warning-bg text-status-warning-text' if 'LUNCH' in deliv_type|upper else 'bg-primary-fixed text-primary' }}">
+                                    {{ deliv_type }}
+                                </span>
+                                <span class="font-micro-meta text-[11px] text-text-muted">
+                                    Pengiriman #{{ deliv.id }}
+                                </span>
+                            </div>
+                            <h2 class="font-body-bold text-sm text-text-heading font-bold">
+                                {{ deliv.driver.name if deliv.driver else 'Driver Belum Ditentukan' }}
+                            </h2>
+                            <span class="font-caption-regular text-xs text-text-muted">
+                                {{ deliv.details|length }} Lokasi Tujuan
+                            </span>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {{ 'bg-status-success-bg text-status-success-text' if deliv.status == 'DELIVERED' else ('bg-status-info-bg text-status-info-text' if deliv.status == 'ON_THE_WAY' else 'bg-surface-container text-text-muted') }}">
+                                {{ 'Terkirim' if deliv.status == 'DELIVERED' else ('Dalam Perjalanan' if deliv.status == 'ON_THE_WAY' else ('Direncanakan' if deliv.status == 'PLANNED' else deliv.status)) }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ 'bg-status-success-bg text-status-success-text' if 'success' in sla.dispatch_badge_class else 'bg-surface-container text-text-muted' }}">
+                                {{ sla.dispatch_label }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 border-t border-card-border/40 gap-2">
+                        {% if deliv.status == 'PLANNED' %}
+                            <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=deliv.id) }}" class="flex-1" data-app-confirm="Catat jam berangkat pengiriman #{{ deliv.id }} sekarang?" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="w-full h-9 rounded-lg bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">departure_board</span>
+                                    Berangkatkan
+                                </button>
+                            </form>
+                        {% endif %}
+                        <a href="{{ url_for('delivery.detail', delivery_id=deliv.id) }}" class="flex-1 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                            <span>Detail Pengiriman</span>
+                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl p-6 bg-card-surface border border-card-border shadow-xs text-center flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-[36px] text-text-muted">local_shipping</span>
+            <span class="font-body-bold text-xs text-text-heading">Belum ada pengiriman</span>
+            <p class="font-caption-regular text-xs text-text-muted">Pengiriman dapat dibuat dari halaman Detail Pesanan setelah produksi selesai.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

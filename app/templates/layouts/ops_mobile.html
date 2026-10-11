@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html class="h-full" lang="id">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+    <meta content="mobile_tab" name="shell-type"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }} - Admin Operasional</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    {# Desain mobile operasional dikompilasi lokal (tools/portal_tailwind/build.ps1), bukan CDN. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/portal_tailwind.css', v=css_asset_version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tom-select/tom-select.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
+</head>
+{% set nav = ops_nav or {"tabs": [], "segments": [], "is_child": false} %}
+<body class="bg-background-surface text-text-body font-body-default text-body-default min-h-screen flex flex-col items-center antialiased ops-mobile-body" data-endpoint="{{ request.endpoint or 'dashboard.ops' }}">
+<div class="ops-mobile-shell w-full max-w-[480px] min-h-screen flex flex-col relative bg-background-surface shadow-[0_0_24px_rgba(0,0,0,0.06)]">
+    {# Header: identitas + lonceng notifikasi (satu-satunya pintu notifikasi). #}
+    <header class="fixed top-0 inset-x-0 mx-auto w-full max-w-[480px] z-50 pt-safe bg-card-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <div class="h-16 px-margin flex items-center justify-between gap-space-sm">
+            <div class="flex items-center gap-space-sm min-w-0 flex-1">
+                <span class="relative flex-shrink-0 flex items-center h-9 w-9 rounded-xl bg-primary-fixed text-primary justify-center overflow-hidden [&_img]:h-9 [&_img]:w-9 [&_img]:object-contain">
+                    {% with class_name="flex items-center justify-center w-full h-full" %}
+                        {% include "components/company_logo.html" %}
+                    {% endwith %}
+                </span>
+                <div class="min-w-0 flex flex-col">
+                    <span class="font-body-bold text-body-bold text-text-heading truncate leading-tight">{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</span>
+                    <span class="font-micro-meta text-micro-meta text-text-muted leading-none uppercase truncate">Admin Operasional · {{ current_user.full_name or current_user.username }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('settings.notifications') }}" aria-label="Notifikasi{% if ops_unread_count %} ({{ ops_unread_count }} belum dibaca){% endif %}" class="relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full {{ 'bg-primary-fixed text-primary' if request.endpoint == 'settings.notifications' else 'text-text-heading' }} active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-[24px]">notifications</span>
+                {% if ops_unread_count %}
+                    <span class="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-status-danger-text text-on-primary font-caption-regular text-[10px] leading-none font-bold rounded-full flex items-center justify-center ring-2 ring-card-surface">{{ ops_unread_count if ops_unread_count < 100 else '99+' }}</span>
+                {% endif %}
+            </a>
+        </div>
+        {% if nav.segments %}
+            {# Sub-tab: Hari Ini, Draf Portal, dll #}
+            <nav class="px-margin pb-2 overflow-x-auto no-scrollbar" aria-label="Sub menu operasional">
+                <div class="flex gap-1 p-1 rounded-xl bg-surface-container min-w-max">
+                    {% for segment in nav.segments %}
+                        <a href="{{ segment.url }}" {% if segment.active %}aria-current="page"{% endif %} class="flex-1 px-3.5 h-9 rounded-lg flex items-center justify-center whitespace-nowrap font-caption-regular text-caption-regular font-bold transition-colors {{ 'bg-card-surface text-primary shadow-sm' if segment.active else 'text-text-muted' }}">{{ segment.label }}</a>
+                    {% endfor %}
+                </div>
+            </nav>
+        {% endif %}
+    </header>
+
+    <main class="flex-1 flex flex-col w-full {{ 'pt-[7.75rem]' if nav.segments else 'pt-16' }} pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] bg-background-surface" id="mainContent">
+        {% if nav.is_child and nav.back_url %}
+            {# Halaman rincian: tombol kembali ke daftar asalnya #}
+            <div class="px-margin pt-3">
+                <a href="{{ nav.back_url }}" class="inline-flex items-center gap-1 h-9 pr-2 font-caption-regular text-caption-regular font-bold text-text-muted hover:text-text-heading active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                    {{ nav.back_label or 'Kembali' }}
+                </a>
+            </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="px-margin pt-2" role="status" aria-live="polite">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} p-3 mb-2 rounded-xl text-sm font-medium {% if category == 'success' %}bg-status-success-bg text-status-success-text{% elif category in ['danger', 'error'] %}bg-status-danger-bg text-status-danger-text{% elif category == 'warning' %}bg-status-warning-bg text-status-warning-text{% else %}bg-status-info-bg text-status-info-text{% endif %}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="w-full flex-1 flex flex-col px-margin py-3">
+            {% block ops_content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {# Tab bawah 5: Beranda · Pesanan · Dapur · Antar · Akun #}
+    <nav class="ops-mobile-nav fixed bottom-0 inset-x-0 mx-auto w-full max-w-[480px] z-50 pb-safe bg-card-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.06)] border-t border-card-border/60" aria-label="Navigasi Utama Operasional">
+        <div class="h-16 px-1 grid grid-cols-5 items-center">
+            {% for tab in nav.tabs %}
+                <a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %} class="flex flex-col items-center justify-center h-16 transition-colors {{ 'text-primary font-body-bold' if tab.active else 'text-text-muted hover:text-text-body' }}">
+                    <span class="material-symbols-outlined text-[24px] {{ '[font-variation-settings:\'FILL\'_1]' if tab.active else '' }}">{{ tab.icon }}</span>
+                    <span class="font-caption-regular text-caption-regular leading-none mt-1">{{ tab.label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
+<script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -5,6 +5,7 @@ from app.extensions import db
 from datetime import datetime
 
 from app.utils.clock import today_wib
+from app.services.ops_navigation_service import uses_ops_ui
 
 from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
 from app.models.operational import DailyOrder
@@ -91,7 +92,7 @@ def _delivery_receipt_attachment_map(delivery):
 
 
 @delivery_bp.route("/")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def index():
     deliveries = Delivery.query.filter_by(
         branch_id=current_user.branch_id
@@ -108,7 +109,7 @@ def index():
 
 
 @delivery_bp.route("/<int:delivery_id>")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def detail(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
@@ -133,7 +134,9 @@ def detail(delivery_id):
         for idx, detail_item in enumerate(delivery.details)
     }
 
-    template_name = "driver/detail.html" if current_user.role == "PENGANTAR" else "delivery/detail.html"
+    template_name = "driver/detail.html" if current_user.role == "PENGANTAR" else (
+        "ops/delivery_detail.html" if uses_ops_ui(current_user) else "delivery/detail.html"
+    )
     return render_template(
         template_name,
         delivery=delivery,
@@ -147,7 +150,7 @@ def detail(delivery_id):
     )
 
 @delivery_bp.route("/create-from-order/<int:order_id>/<delivery_type>", methods=["POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def create_from_order(order_id, delivery_type):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -172,7 +175,7 @@ def create_from_order(order_id, delivery_type):
 
 
 @delivery_bp.route("/<int:delivery_id>/dispatch", methods=["POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def mark_dispatch(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
@@ -209,7 +212,7 @@ def mark_dispatch(delivery_id):
 
 
 @delivery_bp.route("/<int:delivery_id>/sla", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def update_sla(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
@@ -261,7 +264,7 @@ def update_sla(delivery_id):
 
 
 @delivery_bp.route("/details/<int:detail_id>/receive", methods=["GET", "POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def receive(detail_id):
     delivery_detail = DeliveryDetail.query.get_or_404(detail_id)
     delivery = delivery_detail.delivery
@@ -396,7 +399,9 @@ def receive(detail_id):
     notes_type = get_delivery_type_from_notes(delivery_detail.delivery.notes)
     session_label = "Siang" if any(k in notes_type.upper() for k in ("LUNCH", "SIANG")) else ("Malam" if any(k in notes_type.upper() for k in ("DINNER", "MALAM")) else notes_type)
 
-    template_name = "driver/receive.html" if current_user.role == "PENGANTAR" else "delivery/receive.html"
+    template_name = "driver/receive.html" if current_user.role == "PENGANTAR" else (
+        "ops/receive.html" if uses_ops_ui(current_user) else "delivery/receive.html"
+    )
     return render_template(
         template_name,
         delivery_detail=delivery_detail,
@@ -422,7 +427,7 @@ def receive(detail_id):
 
 
 @delivery_bp.route("/details/<int:detail_id>/shortage-replacement", methods=["POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def create_shortage_replacement(detail_id):
     delivery_detail = DeliveryDetail.query.get_or_404(detail_id)
     delivery = delivery_detail.delivery
@@ -446,7 +451,7 @@ def create_shortage_replacement(detail_id):
 
 
 @delivery_bp.route("/receipts/<int:receipt_id>/attachments/upload", methods=["POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def upload_receipt_attachment(receipt_id):
     receipt = _delivery_receipt_or_404(receipt_id)
     delivery = receipt.delivery_detail.delivery
@@ -474,7 +479,7 @@ def upload_receipt_attachment(receipt_id):
 
 
 @delivery_bp.route("/attachments/<int:attachment_id>/view")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def view_attachment(attachment_id):
     attachment, receipt = _delivery_attachment_or_404(attachment_id)
 
@@ -494,7 +499,7 @@ def view_attachment(attachment_id):
 
 
 @delivery_bp.route("/attachments/<int:attachment_id>/download")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def download_attachment(attachment_id):
     attachment, receipt = _delivery_attachment_or_404(attachment_id)
 
@@ -526,7 +531,7 @@ def delete_attachment(attachment_id):
 
 # === PATCH_PENGANTAR_DELIVERY_PAGES ===
 @delivery_bp.route("/today")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def today():
     from datetime import date, datetime
 
@@ -551,7 +556,9 @@ def today():
         limit=6,
     )
 
-    template_name = "driver/today.html" if current_user.role == "PENGANTAR" else "delivery/today.html"
+    template_name = "driver/today.html" if current_user.role == "PENGANTAR" else (
+        "ops/today.html" if uses_ops_ui(current_user) else "delivery/today.html"
+    )
     return render_template(
         template_name,
         deliveries=deliveries,
@@ -564,7 +571,7 @@ def today():
 
 
 @delivery_bp.route("/receiving")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def receiving():
     from datetime import date, datetime
 
@@ -595,7 +602,9 @@ def receiving():
         if detail.receipt
     ]
 
-    template_name = "driver/receiving.html" if current_user.role == "PENGANTAR" else "delivery/receiving.html"
+    template_name = "driver/receiving.html" if current_user.role == "PENGANTAR" else (
+        "ops/receiving.html" if uses_ops_ui(current_user) else "delivery/receiving.html"
+    )
     return render_template(
         template_name,
         pending_details=pending_details,
@@ -606,7 +615,7 @@ def receiving():
     )
 
 @delivery_bp.route("/history")
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def history():
     from datetime import date
 
@@ -648,7 +657,9 @@ def history():
 
         deliveries.append(delivery)
 
-    template_name = "driver/history.html" if current_user.role == "PENGANTAR" else "delivery/history.html"
+    template_name = "driver/history.html" if current_user.role == "PENGANTAR" else (
+        "ops/history.html" if uses_ops_ui(current_user) else "delivery/history.html"
+    )
     return render_template(
         template_name,
         deliveries=deliveries,
@@ -681,7 +692,7 @@ def history():
 
 # === PATCH_CANCEL_DELIVERY_ROUTE ===
 @delivery_bp.route("/<int:delivery_id>/cancel", methods=["POST"])
-@role_required("ADMIN", "PENGANTAR")
+@role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def cancel(delivery_id):
     delivery = Delivery.query.get_or_404(delivery_id)
 
@@ -703,14 +714,16 @@ def cancel(delivery_id):
 
 
 @delivery_bp.route("/scan", methods=["GET"])
-@role_required("OWNER", "ADMIN", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def scan():
-    template_name = "driver/scan.html" if current_user.role == "PENGANTAR" else "delivery/scan.html"
+    template_name = "driver/scan.html" if current_user.role == "PENGANTAR" else (
+        "ops/scan.html" if uses_ops_ui(current_user) else "delivery/scan.html"
+    )
     return render_template(template_name)
 
 
 @delivery_bp.route("/scan/<int:daily_order_detail_id>/<string:sesi>")
-@role_required("OWNER", "ADMIN", "PENGANTAR")
+@role_required("OWNER", "ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def scan_qr(daily_order_detail_id, sesi):
 
     from app.models.operational import DailyOrderDetail

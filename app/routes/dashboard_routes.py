@@ -66,6 +66,7 @@ def _role_landing_endpoint(role):
     landing_map = {
         "OWNER": "dashboard.owner",
         "ADMIN": "dashboard.admin",
+        "ADMIN_OPERASIONAL": "dashboard.ops",
         "DAPUR": "dashboard.dapur",
         "PENGANTAR": "dashboard.pengantar",
     }
@@ -165,5 +166,36 @@ def pengantar():
     data = get_pengantar_dashboard_data(current_user.branch_id)
     template_name = "driver/dashboard.html" if current_user.role == "PENGANTAR" else "dashboard/pengantar.html"
     return render_template(template_name, data=data)
+
+
+@dashboard_bp.route("/ops")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL")
+def ops_door():
+    """Satu pintu masuk mode HP operasional untuk OWNER, ADMIN, dan ADMIN_OPERASIONAL."""
+    from flask import session
+    if current_user.role in ("OWNER", "ADMIN"):
+        session["ops_mode"] = True
+    return redirect(url_for("dashboard.ops"))
+
+
+@dashboard_bp.route("/ops/exit", methods=["POST"])
+@role_required("OWNER", "ADMIN")
+def ops_exit():
+    """Keluar dari mode HP operasional untuk OWNER dan ADMIN kembali ke tampilan desktop."""
+    from flask import session
+    session.pop("ops_mode", None)
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/dashboard/ops")
+@role_required("OWNER", "ADMIN", "ADMIN_OPERASIONAL")
+def ops():
+    """Beranda operasional mobile: ringkasan kondisi hari ini tanpa tombol pintasan."""
+    from app.services.ops_navigation_service import get_ops_dashboard_data
+
+    data = get_ops_dashboard_data(current_user.branch_id)
+    return render_template("ops/dashboard.html", data=data)
+
+
 
 

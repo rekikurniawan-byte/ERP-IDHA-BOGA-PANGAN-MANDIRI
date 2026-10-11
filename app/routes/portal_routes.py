@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
+from app.services.ops_navigation_service import uses_ops_ui
 
 from app.models.system import PortalOrderDraft
 from app.services.portal_access_service import (
@@ -1312,7 +1313,7 @@ def order_status():
 
 
 @portal_bp.route("/admin/order-drafts")
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def admin_order_drafts():
     review_queue = build_portal_order_draft_review_queue(current_user)
     drafts = review_queue["drafts"]
@@ -1325,11 +1326,12 @@ def admin_order_drafts():
         "sections": review_queue["sections"],
         "summary": review_queue["totals"],
     }
-    return render_template("portal/admin_order_drafts.html", data=data)
+    template_name = "ops/drafts.html" if uses_ops_ui(current_user) else "portal/admin_order_drafts.html"
+    return render_template(template_name, data=data)
 
 
 @portal_bp.route("/admin/order-drafts/<int:draft_id>/confirm", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def confirm_order_draft(draft_id):
     draft, converted, error = confirm_portal_order_draft(
         draft_id,
@@ -1347,7 +1349,7 @@ def confirm_order_draft(draft_id):
 
 
 @portal_bp.route("/admin/order-drafts/<int:draft_id>/reject", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def reject_order_draft(draft_id):
     _draft, rejected, error = reject_portal_order_draft(
         draft_id,

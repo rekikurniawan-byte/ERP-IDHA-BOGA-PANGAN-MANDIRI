@@ -5,6 +5,7 @@ from flask_login import current_user
 from app.utils.clock import today_wib
 from app.utils.decorators import role_required
 from app.services.audit_log_service import record_audit_log
+from app.services.ops_navigation_service import uses_ops_ui
 
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderHppSnapshot, OrderHppStockConsumption
 from app.models.master import Mandor, DeliveryLocation
@@ -296,7 +297,7 @@ def validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
 
 # === PRODUCTION_LOG_CATERING_REKAP_BULANAN_READONLY ===
 @operational_bp.route("/daily-log")
-@role_required("ADMIN", "FINANCE")
+@role_required("ADMIN", "FINANCE", "ADMIN_OPERASIONAL")
 def daily_catering_log():
     today = today_wib()
     selected_date_value = request.args.get("date", today.strftime("%Y-%m-%d")).strip()
@@ -406,17 +407,18 @@ def monthly_catering_recap():
     )
 
 @operational_bp.route("/orders")
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def orders():
     daily_orders = DailyOrder.query.filter_by(
         branch_id=current_user.branch_id
     ).order_by(DailyOrder.order_date.desc(), DailyOrder.id.desc()).all()
 
-    return render_template("operational/orders.html", daily_orders=daily_orders)
+    template_name = "ops/orders.html" if uses_ops_ui(current_user) else "operational/orders.html"
+    return render_template(template_name, daily_orders=daily_orders)
 
 
 @operational_bp.route("/orders/create", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def create_order():
     mandors, locations = get_form_master_data()
     menus, packaging_profiles, overhead_profiles = get_active_hpp_master_data(current_user.branch_id)
@@ -479,7 +481,7 @@ def create_order():
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
-        "operational/order_form.html",
+        "ops/order_form.html" if uses_ops_ui(current_user) else "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
         bank_accounts=_bank_accounts(),
@@ -493,7 +495,7 @@ def create_order():
     )
 
 @operational_bp.route("/orders/<int:order_id>/add-detail", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def add_order_detail(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -545,7 +547,7 @@ def add_order_detail(order_id):
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
-        "operational/order_form.html",
+        "ops/order_form.html" if uses_ops_ui(current_user) else "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
         bank_accounts=_bank_accounts(),
@@ -556,7 +558,7 @@ def add_order_detail(order_id):
 
 
 @operational_bp.route("/orders/<int:order_id>/add-increase-after-lock", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def add_increase_after_lock_route(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -617,7 +619,7 @@ def add_increase_after_lock_route(order_id):
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
-        "operational/order_form.html",
+        "ops/order_form.html" if uses_ops_ui(current_user) else "operational/order_form.html",
         mandors=mandors,
         price_quotes=_price_quotes(mandors),
         bank_accounts=_bank_accounts(),
@@ -628,7 +630,7 @@ def add_increase_after_lock_route(order_id):
     )
 
 @operational_bp.route("/orders/<int:order_id>")
-@role_required("ADMIN", "DAPUR", "PENGANTAR")
+@role_required("ADMIN", "DAPUR", "PENGANTAR", "ADMIN_OPERASIONAL")
 def order_detail(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -665,8 +667,9 @@ def order_detail(order_id):
     lunch_print_status = get_session_print_history(daily_order, "LUNCH")
     dinner_print_status = get_session_print_history(daily_order, "DINNER")
 
+    template_name = "ops/order_detail.html" if uses_ops_ui(current_user) else "operational/order_detail.html"
     return render_template(
-        "operational/order_detail.html",
+        template_name,
         daily_order=daily_order,
         total_lunch=total_lunch,
         total_dinner=total_dinner,
@@ -718,7 +721,7 @@ def update_order_hpp_defaults_route(order_id):
 
 
 @operational_bp.route("/orders/<int:order_id>/lock", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def lock_order(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -756,7 +759,7 @@ def lock_order(order_id):
 
 
 @operational_bp.route("/orders/<int:order_id>/generate-production", methods=["POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def generate_production(order_id):
     daily_order = DailyOrder.query.get_or_404(order_id)
 
@@ -771,7 +774,7 @@ def generate_production(order_id):
 
 
 @operational_bp.route("/order-details/<int:detail_id>/revision", methods=["GET", "POST"])
-@role_required("ADMIN")
+@role_required("ADMIN", "ADMIN_OPERASIONAL")
 def create_revision(detail_id):
     detail = DailyOrderDetail.query.get_or_404(detail_id)
     daily_order = detail.daily_order
@@ -819,7 +822,7 @@ def create_revision(detail_id):
         return redirect(url_for("operational.order_detail", order_id=daily_order.id))
 
     return render_template(
-        "operational/revision_form.html",
+        "ops/revision_form.html" if uses_ops_ui(current_user) else "operational/revision_form.html",
         detail=detail,
         daily_order=daily_order
     )
@@ -995,7 +998,7 @@ def order_hpp_stock_consumption_detail(order_id, snapshot_id, consumption_id):
 
 
 @operational_bp.route("/orders/<int:order_id>/kitchen-recap/<string:sesi>")
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def kitchen_recap(order_id, sesi):
     from app.services.company_settings_service import get_company_settings
     from app.services.kitchen_recap_service import build_kitchen_recap_data, record_print_event
@@ -1025,8 +1028,51 @@ def kitchen_recap(order_id, sesi):
     )
 
 
+@operational_bp.route("/kitchen-recap")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
+def kitchen_recap_hub():
+    """Halaman Rekap Dapur (pintu sub-tab Dapur)."""
+    from app.services.company_settings_service import get_company_settings
+    from app.services.kitchen_recap_service import build_kitchen_recap_data
+
+    today = today_wib()
+    date_str = request.args.get("date", today.strftime("%Y-%m-%d")).strip()
+    selected_date = parse_date(date_str, today)
+    sesi = (request.args.get("sesi") or "LUNCH").upper().strip()
+    if sesi not in ("LUNCH", "DINNER"):
+        sesi = "LUNCH"
+
+    daily_order = DailyOrder.query.filter_by(
+        branch_id=current_user.branch_id,
+        order_date=selected_date,
+    ).first()
+
+    recap_data = None
+    if daily_order and daily_order.is_locked:
+        try:
+            recap_data = build_kitchen_recap_data(daily_order, sesi)
+        except ValueError:
+            recap_data = None
+
+    company = get_company_settings(current_user.branch_id)
+    if not uses_ops_ui(current_user):
+        if daily_order and daily_order.is_locked:
+            return redirect(url_for("operational.kitchen_recap", order_id=daily_order.id, sesi=sesi))
+        flash("Belum ada order terkunci untuk tanggal ini.", "info")
+        return redirect(url_for("operational.orders"))
+
+    return render_template(
+        "ops/kitchen_recap.html",
+        daily_order=daily_order,
+        recap=recap_data,
+        selected_date=selected_date,
+        selected_sesi=sesi,
+        company=company,
+    )
+
+
 @operational_bp.route("/orders/<int:order_id>/container-labels/<string:sesi>")
-@role_required("ADMIN", "DAPUR", "PENGANTAR")
+@role_required("ADMIN", "DAPUR", "PENGANTAR", "ADMIN_OPERASIONAL")
 def container_labels(order_id, sesi):
     from app.services.company_settings_service import get_company_settings
     from app.services.kitchen_recap_service import build_container_labels_data, record_print_event
@@ -1062,7 +1108,7 @@ def container_labels(order_id, sesi):
 
 
 @operational_bp.route("/menu-schedule", methods=["GET"])
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def menu_schedule():
     """Halaman Jadwal Menu mingguan (grid 7 hari x Siang/Malam)."""
     from datetime import datetime
@@ -1089,8 +1135,9 @@ def menu_schedule():
         .all()
     )
 
+    template_name = "ops/menu_schedule.html" if uses_ops_ui(current_user) else "operational/menu_schedule.html"
     return render_template(
-        "operational/menu_schedule.html",
+        template_name,
         matrix=matrix,
         active_menus=active_menus,
         current_monday=monday,
@@ -1098,7 +1145,7 @@ def menu_schedule():
 
 
 @operational_bp.route("/menu-schedule/save", methods=["POST"])
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def save_menu_schedule_slot():
     """Simpan menu dan catatan untuk slot tanggal & sesi tertentu."""
     from datetime import datetime
@@ -1139,7 +1186,7 @@ def save_menu_schedule_slot():
 
 
 @operational_bp.route("/menu-schedule/copy-last-week", methods=["POST"])
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def copy_last_week_menu_schedule():
     """Salin seluruh jadwal menu dari minggu sebelumnya ke minggu ini."""
     from datetime import datetime
@@ -1172,7 +1219,7 @@ def copy_last_week_menu_schedule():
 
 
 @operational_bp.route("/order-details/<int:detail_id>/change-qty", methods=["POST"])
-@role_required("ADMIN", "OWNER")
+@role_required("ADMIN", "OWNER", "ADMIN_OPERASIONAL")
 def change_order_detail_qty(detail_id):
     """Ubah porsi oleh admin/owner (setelah lock wajib menyertakan alasan)."""
     from app.services.auto_order_service import update_order_qty_from_admin
@@ -1207,7 +1254,7 @@ def change_order_detail_qty(detail_id):
 
 
 @operational_bp.route("/order-qty-changes", methods=["GET"])
-@role_required("OWNER", "ADMIN", "DAPUR")
+@role_required("OWNER", "ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def order_qty_changes():
     """Halaman riwayat perubahan porsi (Fase 5) dengan filter."""
     from app.services.auto_order_service import list_order_qty_changes, PORTION_ZERO_REASONS
@@ -1236,8 +1283,9 @@ def order_qty_changes():
     )
     mandors = get_active_mandors(branch_id)
 
+    template_name = "ops/order_qty_changes.html" if uses_ops_ui(current_user) else "operational/order_qty_changes.html"
     return render_template(
-        "operational/order_qty_changes.html",
+        template_name,
         changes=changes,
         mandors=mandors,
         selected_mandor_id=mandor_id,

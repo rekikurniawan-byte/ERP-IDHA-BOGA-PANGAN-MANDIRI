@@ -1,0 +1,158 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{% block ops_content %}
+<div class="flex flex-col gap-3.5 pb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading">Jadwal Menu</h1>
+            <span class="font-caption-regular text-xs text-text-muted">Menu sesi Siang & Malam mingguan</span>
+        </div>
+        <form method="POST" action="{{ url_for('operational.copy_last_week_menu_schedule') }}" data-app-confirm="Salin menu dari minggu lalu ke minggu ini? Jadwal yang sudah ada akan diperbarui." data-ui-form="true">
+            {% include "components/csrf_token.html" %}
+            <input type="hidden" name="target_week" value="{{ current_monday.strftime('%Y-%m-%d') }}">
+            <button type="submit" class="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-heading font-body-bold text-xs flex items-center justify-center gap-1 transition-colors">
+                <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                Salin Lalu
+            </button>
+        </form>
+    </div>
+
+    {# Navigasi Minggu #}
+    <div class="rounded-xl p-2.5 bg-card-surface border border-card-border shadow-xs flex items-center justify-between gap-1 text-xs">
+        <a href="{{ url_for('operational.menu_schedule', week=matrix.prev_monday.strftime('%Y-%m-%d')) }}" class="h-8 px-2 rounded-lg bg-surface-container text-text-muted hover:text-text-heading flex items-center justify-center">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </a>
+        <div class="text-center">
+            <strong class="text-text-heading block">{{ matrix.start_monday.strftime('%d %b') }} — {{ matrix.end_sunday.strftime('%d %b %Y') }}</strong>
+        </div>
+        <a href="{{ url_for('operational.menu_schedule', week=matrix.next_monday.strftime('%Y-%m-%d')) }}" class="h-8 px-2 rounded-lg bg-surface-container text-text-muted hover:text-text-heading flex items-center justify-center">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </a>
+    </div>
+
+    {# Daftar Hari #}
+    <div class="flex flex-col gap-3">
+        {% for day in matrix.days %}
+            <div class="rounded-2xl p-3.5 bg-card-surface border {{ 'border-primary ring-1 ring-primary/20' if day.is_today else 'border-card-border' }} shadow-xs flex flex-col gap-2.5">
+                <div class="flex items-center justify-between pb-1.5 border-b border-card-border/60">
+                    <div class="flex items-center gap-2">
+                        <strong class="font-body-bold text-xs text-text-heading">{{ day.day_name }}</strong>
+                        <span class="font-caption-regular text-xs text-text-muted">{{ day.date.strftime('%d %b %Y') }}</span>
+                    </div>
+                    {% if day.is_today %}
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary text-on-primary">Hari Ini</span>
+                    {% endif %}
+                </div>
+
+                {# Sesi Siang #}
+                <div class="rounded-xl p-3 bg-surface-container-low border border-card-border/40 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-micro-meta text-[10px] uppercase font-bold text-status-warning-text flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">sunny</span>
+                            Siang
+                        </span>
+                        {% if day.lunch.menu %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-status-success-bg text-status-success-text">Terjadwal</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-container text-text-muted">Kosong</span>
+                        {% endif %}
+                    </div>
+
+                    {% if day.lunch.menu %}
+                        <div class="flex items-center gap-2 p-2 rounded-lg bg-card-surface border border-card-border/60">
+                            {% if day.lunch.photo %}
+                                <img src="{{ url_for('menu_photos.view', attachment_id=day.lunch.photo.id) }}" alt="{{ day.lunch.menu.menu_name }}" class="w-9 h-9 rounded-md object-cover flex-shrink-0">
+                            {% else %}
+                                <div class="w-9 h-9 rounded-md bg-surface-container flex items-center justify-center text-text-muted flex-shrink-0">
+                                    <span class="material-symbols-outlined text-[18px]">restaurant</span>
+                                </div>
+                            {% endif %}
+                            <div class="min-w-0 flex-1">
+                                <strong class="font-body-bold text-xs text-text-heading block truncate">{{ day.lunch.menu.menu_name }}</strong>
+                                {% if day.lunch.notes %}
+                                    <span class="font-caption-regular text-[11px] text-text-muted block truncate">{{ day.lunch.notes }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('operational.save_menu_schedule_slot') }}" class="app-form flex flex-col gap-1.5" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <input type="hidden" name="menu_date" value="{{ day.date_str }}">
+                        <input type="hidden" name="meal_type" value="LUNCH">
+                        <input type="hidden" name="week_ref" value="{{ current_monday.strftime('%Y-%m-%d') }}">
+                        <div class="flex items-center gap-1.5">
+                            <select name="menu_id" class="flex-1 h-9 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="">-- Pilih Menu Siang --</option>
+                                {% for m in active_menus %}
+                                    <option value="{{ m.id }}" {% if day.lunch.menu and day.lunch.menu.id == m.id %}selected{% endif %}>
+                                        {{ m.menu_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="h-9 px-3 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center flex-shrink-0">
+                                Simpan
+                            </button>
+                        </div>
+                        <input type="text" name="notes" class="w-full h-8 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-[11px] text-text-heading placeholder:text-text-muted/60 focus:outline-none" placeholder="Catatan sesi (opsional)" value="{{ day.lunch.notes or '' }}">
+                    </form>
+                </div>
+
+                {# Sesi Malam #}
+                <div class="rounded-xl p-3 bg-surface-container-low border border-card-border/40 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-micro-meta text-[10px] uppercase font-bold text-primary flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">bedtime</span>
+                            Malam / Sore
+                        </span>
+                        {% if day.dinner.menu %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-status-success-bg text-status-success-text">Terjadwal</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-container text-text-muted">Kosong</span>
+                        {% endif %}
+                    </div>
+
+                    {% if day.dinner.menu %}
+                        <div class="flex items-center gap-2 p-2 rounded-lg bg-card-surface border border-card-border/60">
+                            {% if day.dinner.photo %}
+                                <img src="{{ url_for('menu_photos.view', attachment_id=day.dinner.photo.id) }}" alt="{{ day.dinner.menu.menu_name }}" class="w-9 h-9 rounded-md object-cover flex-shrink-0">
+                            {% else %}
+                                <div class="w-9 h-9 rounded-md bg-surface-container flex items-center justify-center text-text-muted flex-shrink-0">
+                                    <span class="material-symbols-outlined text-[18px]">restaurant</span>
+                                </div>
+                            {% endif %}
+                            <div class="min-w-0 flex-1">
+                                <strong class="font-body-bold text-xs text-text-heading block truncate">{{ day.dinner.menu.menu_name }}</strong>
+                                {% if day.dinner.notes %}
+                                    <span class="font-caption-regular text-[11px] text-text-muted block truncate">{{ day.dinner.notes }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('operational.save_menu_schedule_slot') }}" class="app-form flex flex-col gap-1.5" data-ui-form="true">
+                        {% include "components/csrf_token.html" %}
+                        <input type="hidden" name="menu_date" value="{{ day.date_str }}">
+                        <input type="hidden" name="meal_type" value="DINNER">
+                        <input type="hidden" name="week_ref" value="{{ current_monday.strftime('%Y-%m-%d') }}">
+                        <div class="flex items-center gap-1.5">
+                            <select name="menu_id" class="flex-1 h-9 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="">-- Pilih Menu Malam --</option>
+                                {% for m in active_menus %}
+                                    <option value="{{ m.id }}" {% if day.dinner.menu and day.dinner.menu.id == m.id %}selected{% endif %}>
+                                        {{ m.menu_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="h-9 px-3 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center flex-shrink-0">
+                                Simpan
+                            </button>
+                        </div>
+                        <input type="text" name="notes" class="w-full h-8 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-[11px] text-text-heading placeholder:text-text-muted/60 focus:outline-none" placeholder="Catatan sesi (opsional)" value="{{ day.dinner.notes or '' }}">
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

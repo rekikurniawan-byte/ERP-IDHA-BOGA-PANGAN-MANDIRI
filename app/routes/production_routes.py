@@ -10,6 +10,7 @@ from app.services.delivery_sla_service import calculate_production_sla, get_prod
 from app.utils.decorators import role_required
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
+from app.services.ops_navigation_service import uses_ops_ui
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ ALLOWED_STATUS = ["DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 
 
 @production_bp.route("/")
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def index():
     date_filter = resolve_date_filter(request.args, default_preset="this_month")
     status_filter = (request.args.get("status") or "ALL").upper().strip()
@@ -39,8 +40,9 @@ def index():
         Production.id.desc()
     ).all()
 
+    template_name = "ops/production.html" if uses_ops_ui(current_user) else "production/index.html"
     return render_template(
-        "production/index.html",
+        template_name,
         productions=productions,
         calculate_production_sla=calculate_production_sla,
         filter_bar=build_filter_bar_context(
@@ -57,7 +59,7 @@ def index():
 
 
 @production_bp.route("/<int:production_id>")
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def detail(production_id):
     production = Production.query.get_or_404(production_id)
 
@@ -81,8 +83,9 @@ def detail(production_id):
 
     production_sla = calculate_production_sla(production)
 
+    template_name = "ops/production_detail.html" if uses_ops_ui(current_user) else "production/detail.html"
     return render_template(
-        "production/detail.html",
+        template_name,
         production=production,
         production_sla=production_sla,
         can_update_production=can_update_production,
@@ -92,7 +95,7 @@ def detail(production_id):
 
 
 @production_bp.route("/<int:production_id>/realization", methods=["POST"])
-@role_required("ADMIN", "DAPUR")
+@role_required("ADMIN", "DAPUR", "ADMIN_OPERASIONAL")
 def update_realization(production_id):
     production = Production.query.get_or_404(production_id)
 

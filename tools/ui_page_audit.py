@@ -45,6 +45,7 @@ ACCOUNT_SETS = {
         "mandor": ("mandor.budi", "PilotUser#2026"),
         "customer": ("rina.cust", "PilotUser#2026"),
         "driver": ("antar.pilot", "PilotUser#2026"),
+        "ops": ("ops.pilot", "PilotUser#2026"),
     },
     "demo": {
         "owner": ("owner", os.environ.get("DEMO_OWNER_PASSWORD", "DemoOwner#2026")),

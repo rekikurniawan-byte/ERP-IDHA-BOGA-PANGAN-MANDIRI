@@ -204,6 +204,9 @@
                     {% if has_role(["OWNER", "ADMIN"]) and module_enabled('warung') %}
                         {{ nav_link(url_for('canteen.index'), "Warung", "bi-shop", endpoint.startswith("canteen.")) }}
                     {% endif %}
+                    {% if has_role(["OWNER", "ADMIN"]) %}
+                        {{ nav_link('/ops', "Mode HP Operasional", "bi-phone", False) }}
+                    {% endif %}
                 {% endcall %}
             {% endif %}
 
