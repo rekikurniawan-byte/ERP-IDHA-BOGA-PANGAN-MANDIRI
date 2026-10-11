@@ -5,6 +5,7 @@ Route functions moved out of app.routes.finance_routes without changing URL rule
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.routes.finance.payment_routes import _parse_payment_amount
 from app.routes.finance.period_invoice_routes import _period_parse_date
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 
@@ -155,7 +156,7 @@ def finance_transactions():
 
     return render_template(
         "finance/transactions.html",
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         selected_tx=selected_tx,
         schema_ready=schema_ready,
         bank_accounts=bank_accounts,
@@ -183,7 +184,7 @@ def manual_billing():
         get_active_client_pics_for_mandor,
     )
 
-    today_value = date.today().isoformat()
+    today_value = today_wib().isoformat()
     selected_mandor_id = (request.form.get("mandor_id") if request.method == "POST" else request.args.get("mandor_id")) or ""
     period_start_value = (request.form.get("period_start") if request.method == "POST" else request.args.get("period_start")) or today_value
     period_end_value = (request.form.get("period_end") if request.method == "POST" else request.args.get("period_end")) or today_value
@@ -514,7 +515,7 @@ def manual_billing_backfill_form():
         create_manual_backfill_batch_record,
     )
 
-    today_value = date.today().isoformat()
+    today_value = today_wib().isoformat()
     mandors = Mandor.query.filter_by(
         branch_id=current_user.branch_id,
         is_active=True,

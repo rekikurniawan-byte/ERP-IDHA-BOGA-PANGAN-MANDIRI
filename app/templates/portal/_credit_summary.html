@@ -1,26 +1,50 @@
-{# Ringkasan kredit mandor yang ditagih langsung. Sengaja hanya angka yang
-   mendorong bayar; alasan dan keputusan OWNER tidak ditampilkan di portal. #}
+{# Ringkasan kredit mandor yang ditagih langsung. #}
 {% for credit in credit_summaries %}
-<section class="portal-home-panel portal-credit-panel">
-    <div class="portal-home-panel-head">
-        <div>
-            <span>Kredit {{ credit.mandor_name }}</span>
-            <h2>
-                {% if credit.can_order %}Sisa limit {{ credit.available|rupiah }}
-                {% else %}Order baru sedang ditahan{% endif %}
-            </h2>
+<section class="px-margin pt-3">
+<div class="bg-card-surface rounded-xl p-4 shadow-sm border-l-4 {{ 'border-status-success-text' if credit.can_order else 'border-status-danger-text' }} flex flex-col gap-3">
+    <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 {{ 'bg-status-success-bg text-status-success-text' if credit.status == 'AKTIF' else 'bg-status-danger-bg text-status-danger-text' }}">
+                <span class="material-symbols-outlined text-[22px]">{{ 'shield_with_heart' if credit.status == 'AKTIF' else 'shield_locked' }}</span>
+            </span>
+            <div class="min-w-0">
+                <span class="font-micro-meta text-micro-meta uppercase font-bold text-text-muted block">Kredit {{ term('sub_client') }}</span>
+                <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ credit.mandor_name }}</strong>
+            </div>
         </div>
-        <i class="bi {{ 'bi-shield-check' if credit.status == 'AKTIF' else 'bi-shield-exclamation' }}"></i>
+        <span class="flex-shrink-0 px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ 'bg-status-success-bg text-status-success-text' if credit.status == 'AKTIF' else 'bg-status-warning-bg text-status-warning-text' }}">{{ credit.status_label }}</span>
     </div>
-    <p class="mb-1">Status: <strong>{{ credit.status_label }}</strong></p>
-    <p class="mb-1">Hutang berjalan {{ credit.used|rupiah }} dari limit {{ credit.credit_limit|rupiah }} · deposit {{ credit.deposit|rupiah }}</p>
+
+    <div class="bg-surface-container-low rounded-lg p-3">
+        <span class="font-micro-meta text-micro-meta text-text-muted block">Sisa Limit Pesanan</span>
+        <div class="flex items-baseline gap-1 mt-0.5 flex-wrap">
+            <strong class="font-headline-sm text-headline-sm font-bold {{ 'text-text-heading' if credit.can_order else 'text-status-danger-text' }}">{% if credit.can_order %}{{ credit.available|rupiah }}{% else %}Order Ditahan{% endif %}</strong>
+            {% if credit.can_order %}<span class="font-micro-meta text-micro-meta text-text-muted">dari {{ credit.credit_limit|rupiah }}</span>{% endif %}
+        </div>
+        <div class="flex justify-between font-micro-meta text-micro-meta text-text-body mt-2 pt-2 border-t border-dashed border-card-border">
+            <span>Hutang: <strong>{{ credit.used|rupiah }}</strong></span>
+            <span>Deposit: <strong>{{ credit.deposit|rupiah }}</strong></span>
+        </div>
+    </div>
+
     {% if credit.next_due_date %}
-        <p class="mb-1">Jatuh tempo terdekat <strong>{{ credit.next_due_date.strftime('%d-%m-%Y') }}</strong>: {{ credit.next_due_amount|rupiah }}</p>
+        <div class="flex items-center justify-between font-micro-meta text-micro-meta text-text-muted">
+            <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-primary">event</span>Jatuh tempo {{ credit.next_due_date.strftime('%d-%m-%Y') }}</span>
+            <strong class="text-text-heading">{{ credit.next_due_amount|rupiah }}</strong>
+        </div>
     {% endif %}
+
     {% if credit.oldest_days_overdue %}
-        <p class="mb-0 text-danger">Ada tagihan terlambat {{ credit.oldest_days_overdue }} hari. Segera lunasi agar order tidak diblokir.</p>
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-status-danger-bg text-status-danger-text font-micro-meta text-micro-meta font-semibold">
+            <span class="material-symbols-outlined text-[16px]">warning</span>
+            <span>Ada tagihan terlambat {{ credit.oldest_days_overdue }} hari. Segera lunasi agar order lancar.</span>
+        </div>
     {% elif not credit.can_order %}
-        <p class="mb-0 text-danger">Hubungi admin untuk membuka kembali order.</p>
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-status-danger-bg text-status-danger-text font-micro-meta text-micro-meta font-semibold">
+            <span class="material-symbols-outlined text-[16px]">lock</span>
+            <span>Hubungi admin katering untuk membuka kembali akses order.</span>
+        </div>
     {% endif %}
+</div>
 </section>
 {% endfor %}

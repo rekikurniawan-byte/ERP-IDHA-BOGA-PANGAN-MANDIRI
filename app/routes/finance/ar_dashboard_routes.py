@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 
@@ -37,7 +38,7 @@ def build_invoice_ar_warning(invoice):
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:2543")
         InvoiceCollectionLog = None
 
-    today = date.today()
+    today = today_wib()
 
     total = float(invoice.total_amount or 0)
     paid = float(invoice.paid_amount or 0)

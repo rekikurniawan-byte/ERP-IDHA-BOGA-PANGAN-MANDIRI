@@ -5,6 +5,8 @@ from collections import OrderedDict
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
+from app.utils.clock import today_wib
+
 from flask import url_for
 from sqlalchemy import func, or_
 
@@ -577,7 +579,7 @@ def build_live_reminder_center(
     Read-only. Filtered by role and user scope according to allowed_reminder_sections.
     Sections not allowed for user are NOT queried at all.
     """
-    today = date.today()
+    today = today_wib()
     try:
         due_days = max(0, min(int(due_days), 60))
     except (TypeError, ValueError):
@@ -677,7 +679,7 @@ def build_empty_live_reminder_center(
     Read-only fallback. Dipakai supaya halaman Reminder Live tidak menjadi 500
     kalau ada satu query reminder yang belum cocok dengan database aktif.
     """
-    today = date.today()
+    today = today_wib()
     try:
         due_days = max(0, min(int(due_days), 60))
     except (TypeError, ValueError):

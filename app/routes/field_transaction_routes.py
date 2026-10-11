@@ -2,6 +2,8 @@ import logging
 from datetime import date, datetime
 from types import SimpleNamespace
 
+from app.utils.clock import today_wib
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
 from sqlalchemy import or_
@@ -294,8 +296,8 @@ def _load_field_transaction_form_options(branch_id):
 
 def _build_field_transaction_form_data(source):
     return {
-        "transaction_date": getattr(source, "transaction_date", None).isoformat() if getattr(source, "transaction_date", None) else date.today().isoformat(),
-        "entry_date": getattr(source, "entry_date", None).isoformat() if getattr(source, "entry_date", None) else date.today().isoformat(),
+        "transaction_date": getattr(source, "transaction_date", None).isoformat() if getattr(source, "transaction_date", None) else today_wib().isoformat(),
+        "entry_date": getattr(source, "entry_date", None).isoformat() if getattr(source, "entry_date", None) else today_wib().isoformat(),
         "amount": getattr(source, "amount", "") or "",
         "business_event_type": getattr(source, "business_event_type", "") or "",
         "field_channel": getattr(source, "field_channel", "MANUAL") or "MANUAL",

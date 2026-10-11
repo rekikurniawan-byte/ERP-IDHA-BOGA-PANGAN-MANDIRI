@@ -4,6 +4,8 @@ from collections import Counter
 from datetime import date, timedelta
 from decimal import Decimal
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import false, or_
 
 from app.models.complaint import CustomerComplaint
@@ -29,6 +31,8 @@ def _empty_model(reason, scope, totals=None):
         "scope_mode": getattr(scope, "scope_mode", "NO_SCOPE"),
         "reason": reason,
         "rows": [],
+        "sections": {},
+        "week": [],
         "totals": totals or {"total": 0},
     }
 
@@ -254,7 +258,7 @@ def build_portal_calendar_model(user, *, days=45):
                 "next_7_days": 0,
             },
         )
-    start = date.today()
+    start = today_wib()
     end = start + timedelta(days=days)
     rows = []
     draft_rows = (
@@ -297,6 +301,7 @@ def build_portal_calendar_model(user, *, days=45):
                     "status": invoice.status,
                     "source": "invoices",
                     "amount": _money(invoice.remaining_amount),
+                    "invoice_id": invoice.id,
                 }
             )
         contract_rows = (
@@ -317,6 +322,7 @@ def build_portal_calendar_model(user, *, days=45):
                     "title": contract.contract_number,
                     "status": contract.status,
                     "source": "customer_contracts",
+                    "contract_id": contract.id,
                 }
             )
     if scope.mandor_ids or scope.delivery_location_ids:
@@ -377,4 +383,14 @@ def build_portal_calendar_model(user, *, days=45):
             "today": len(sections["today"]),
             "next_7_days": len(sections["next_7_days"]),
         },
+        # Strip 7 hari di kalender portal: tanggal + jenis agenda yang jatuh di hari itu.
+        "week": [
+            {
+                "date": day,
+                "is_today": day == start,
+                "types": sorted({row["type"] for row in rows if row["date"] == day}),
+                "count": sum(1 for row in rows if row["date"] == day),
+            }
+            for day in (start + timedelta(days=offset) for offset in range(7))
+        ],
     }

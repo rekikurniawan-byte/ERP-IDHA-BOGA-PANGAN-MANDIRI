@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+from app.utils.clock import now_wib
+
 from app.models.accounting import Account, Journal, JournalDetail
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, InvoiceItem, Payment
@@ -495,7 +497,7 @@ def _empty_report(branch_id, selected_order_number, order_options):
         message = "Nomor order tidak ditemukan pada cabang ini."
 
     return {
-        "generated_at": datetime.now(),
+        "generated_at": now_wib(),
         "branch_id": branch_id,
         "selected_order_number": selected_order_number,
         "order_options": order_options,
@@ -557,7 +559,7 @@ def get_order_to_cash_trace_report(branch_id, selected_order_number=""):
         overall_status = "Belum lengkap"
 
     return {
-        "generated_at": datetime.now(),
+        "generated_at": now_wib(),
         "branch_id": branch_id,
         "selected_order_number": selected_order_number,
         "order_options": order_options,

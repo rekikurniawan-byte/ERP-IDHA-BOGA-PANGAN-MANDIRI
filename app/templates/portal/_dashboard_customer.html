@@ -1,123 +1,81 @@
 {% from "portal/_home_kit.html" import ph_kpi, ph_track, ph_alerts %}
+{# Beranda = ringkasan. Tidak ada tombol ke halaman lain: semua pintu ada di tab bawah. #}
 {% set center = data.center %}
 {% set models = center.models %}
 {% set orders = models.orders %}
-{% set invoices = models.invoices.totals %}
-{% set payments = models.payments.totals %}
-{% set complaints = models.complaints.totals %}
-{% set notifications = models.notifications.totals %}
 {% set on_the_way = orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|length %}
 {% set received = orders.rows|selectattr("stage", "equalto", "DELIVERED")|list|length %}
+{% set active_order = (orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|first) or (orders.rows|selectattr("stage", "equalto", "WAITING_ADMIN")|list|first) or (orders.rows|rejectattr("stage", "in", ["DELIVERED", "REJECTED"])|list|first) %}
 
 <!-- {{ data.scope.scope_mode }} -->
-<section class="ph">
-    <header class="ph-hero">
-        <div class="ph-hero-text">
-            <p>Portal Pelanggan</p>
-            <h1>Halo, {{ current_user.full_name }}</h1>
-            <ul class="ph-facts">
-                <li><i class="bi bi-hourglass"></i>{{ orders.pending }} menunggu konfirmasi</li>
-                <li><i class="bi bi-truck"></i>{{ on_the_way }} sedang diantar</li>
-                <li><i class="bi bi-check2-all"></i>{{ received }} sudah diterima</li>
-            </ul>
-        </div>
-        <div class="ph-hero-kpi">
-            <span>Mau pesan lagi?</span>
-            <strong class="ph-hero-cta-title">Tanpa minimal porsi</strong>
-            <small>Pesan sebelum batas jam, bayar di muka, kami antar ke titik alamat Anda.</small>
-            <div class="ph-hero-actions">
-                <a class="btn app-btn-primary" href="{{ url_for('portal.customer_order') }}"><i class="bi bi-bag-plus"></i> Pesan sekarang</a>
-                <a class="btn ph-btn-ghost" href="{{ url_for('portal.customer_tracking') }}"><i class="bi bi-geo-alt"></i> Lacak</a>
-            </div>
-        </div>
-    </header>
+<div class="flex flex-col w-full px-margin pb-6 gap-5 pt-3">
+  <div class="flex flex-col gap-0.5">
+    <h1 class="font-headline-sm text-headline-sm text-text-heading tracking-tight">Halo, {{ current_user.full_name or current_user.username }}</h1>
+    <p class="font-caption-regular text-caption-regular text-text-muted">Pesan di tab <strong>Pesanan</strong>, bayar di tab <strong>Tagihan</strong>.</p>
+  </div>
 
-    {{ ph_alerts(center.alerts) }}
+  {{ ph_alerts(center.alerts) }}
 
-    <div class="ph-kpis">
-        {{ ph_kpi("bi-bag-check", "brand", "Pesanan saya", orders.total, orders.pending ~ " menunggu admin", url_for('portal.customer_order_history')) }}
-        {{ ph_kpi("bi-hourglass-split", "warning", "Menunggu admin", orders.pending, "dicek setelah bayar", url_for('portal.customer_order')) }}
-        {{ ph_kpi("bi-truck", "success", "Sudah diterima", received, (on_the_way ~ " sedang diantar"), url_for('portal.customer_tracking')) }}
+  {% if active_order %}
+    <div class="w-full bg-card-surface rounded-xl p-4 shadow-sm relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+      <div class="flex items-start justify-between gap-2 pt-1 pb-3">
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta font-bold text-primary uppercase tracking-wider">Pesanan berjalan · {{ active_order.meal_type_label }}</span>
+          <h2 class="font-title-menu text-title-menu text-text-heading mt-0.5">{{ active_order.order_date.strftime('%d-%m-%Y') if active_order.order_date else '' }} · {{ active_order.portion_qty }} porsi</h2>
+          <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ active_order.location_name }}</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-full bg-status-warning-bg text-status-warning-text font-micro-meta text-micro-meta font-semibold shrink-0">{{ active_order.stage_label }}</span>
+      </div>
+      {{ ph_track(active_order.stage) }}
+      {% if active_order.stage == 'WAITING_ADMIN' %}
+        <p class="mt-3 p-2.5 rounded-lg bg-status-info-bg text-status-info-text font-caption-regular text-caption-regular leading-snug">Pesanan diproses setelah pembayaran di muka diperiksa admin. Belum bayar? Buka tab Tagihan.</p>
+      {% endif %}
     </div>
+  {% endif %}
 
-    {% if data.today_tomorrow_menus %}
-    <section class="ph-panel" style="margin-bottom: var(--space-4);">
-        <header class="ph-panel-head">
-            <div>
-                <h2><i class="bi bi-calendar-check me-2" style="color: var(--brand-solid);"></i>Menu Hari Ini &amp; Besok</h2>
-                <p>Jadwal menu hidangan yang disiapkan dapur untuk Anda.</p>
-            </div>
-            <a href="{{ url_for('portal.customer_order') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bag-plus"></i> Pesan Sekarang</a>
-        </header>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-4);">
-            {% for item in data.today_tomorrow_menus %}
-            <article style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3); display: flex; gap: var(--space-3); align-items: center;">
-                <div style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); display: flex; align-items: center; justify-content: center;">
-                    {% if item.photo_id %}
-                        <img src="{{ url_for('menu_photos.view_photo', attachment_id=item.photo_id) }}" alt="{{ item.menu_name }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
-                    {% else %}
-                        <i class="bi bi-egg-fried" style="font-size: 1.5rem; color: var(--text-muted);"></i>
-                    {% endif %}
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: var(--space-1); margin-bottom: 2px;">
-                        <span class="badge" style="background: var(--brand-subtle); color: var(--brand-solid); font-size: var(--text-xs); border-radius: var(--radius); padding: 2px 6px;">{{ item.date_label }} · {{ item.meal_label }}</span>
-                    </div>
-                    <strong style="display: block; font-size: var(--text-sm); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.menu_name or "Akan diinformasikan" }}</strong>
-                    {% if item.description %}
-                        <small style="display: block; color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.description }}</small>
-                    {% else %}
-                        <small style="display: block; color: var(--text-muted); font-size: var(--text-xs);">{{ "Menu dapur" if item.scheduled else "Belum dijadwalkan" }}</small>
-                    {% endif %}
-                </div>
-            </article>
-            {% endfor %}
+  <div class="grid grid-cols-3 gap-2">
+    {{ ph_kpi("shopping_bag", "brand", "Pesanan", orders.total, orders.pending ~ " menunggu") }}
+    {{ ph_kpi("local_shipping", "info", "Diantar", on_the_way, "sedang jalan") }}
+    {{ ph_kpi("check_circle", "success", "Diterima", received, "selesai") }}
+  </div>
+
+  {% if data.today_tomorrow_menus %}
+    <div class="flex flex-col gap-3">
+      <div>
+        <h3 class="font-headline-sm text-headline-sm text-text-heading">Menu Hari Ini &amp; Besok</h3>
+        <p class="font-caption-regular text-caption-regular text-text-muted">Jadwal menu yang disiapkan dapur.</p>
+      </div>
+      {% for item in data.today_tomorrow_menus %}
+        <div class="bg-card-surface rounded-xl p-3 shadow-sm flex gap-3 items-center">
+          <div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container-high flex items-center justify-center">
+            {% if item.photo_id %}
+              <img class="w-full h-full object-cover" alt="{{ item.menu_name }}" src="{{ url_for('menu_photos.view_photo', attachment_id=item.photo_id) }}" loading="lazy">
+            {% else %}
+              <span class="material-symbols-outlined text-[32px] text-text-muted">restaurant</span>
+            {% endif %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-primary-fixed text-primary font-micro-meta text-micro-meta font-bold">{{ item.date_label }} · {{ item.meal_label }}</span>
+            <h4 class="font-body-bold text-body-bold text-text-heading truncate mt-1">{{ item.menu_name or "Akan diinformasikan" }}</h4>
+            <p class="font-caption-regular text-caption-regular text-text-muted truncate mt-0.5">{{ item.description or ("Menu dapur" if item.scheduled else "Belum dijadwalkan") }}</p>
+          </div>
         </div>
-    </section>
-    {% endif %}
-
-    <div class="ph-grid">
-        <section class="ph-panel">
-            <header class="ph-panel-head">
-                <div><h2>Pesanan terbaru</h2><p>Pantau sampai makanan diterima.</p></div>
-                <a href="{{ url_for('portal.customer_order_history') }}">Semua <i class="bi bi-arrow-right"></i></a>
-            </header>
-            <div class="ph-list">
-                {% for order in orders.rows[:5] %}
-                    <article class="ph-order">
-                        <div class="ph-order-top">
-                            <div>
-                                <strong>{{ order.meal_type_label }} · {{ order.portion_qty }} porsi</strong>
-                                <small>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} · {{ order.location_name }}</small>
-                            </div>
-                            <span class="ph-pill tone-{{ 'success' if order.stage == 'DELIVERED' else ('danger' if order.stage == 'REJECTED' else ('warning' if order.stage == 'WAITING_ADMIN' else 'info')) }}">{{ order.stage_label }}</span>
-                        </div>
-                        {{ ph_track(order.stage) }}
-                    </article>
-                {% else %}
-                    <div class="ph-empty"><i class="bi bi-bag"></i><span>Belum ada pesanan. <a href="{{ url_for('portal.customer_order') }}">Pesan sekarang</a>.</span></div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <aside class="ph-side">
-            <section class="ph-panel">
-                <header class="ph-panel-head"><div><h2>Cara pesan</h2></div></header>
-                <ol class="ph-howto">
-                    <li><strong>Pilih tanggal &amp; porsi</strong><span>Gratis ongkir mulai 10 porsi; di bawahnya ongkir dihitung dari jarak.</span></li>
-                    <li><strong>Bayar di muka</strong><span>Bayar di muka tetap wajib: transfer, lalu unggah bukti di halaman Pesan.</span></li>
-                    <li><strong>Kami antar</strong><span>Pengantar memakai titik peta alamat Anda.</span></li>
-                </ol>
-                <a class="btn app-btn-secondary w-100" href="{{ url_for('portal.addresses') }}"><i class="bi bi-pin-map"></i> Atur alamat &amp; titik peta</a>
-            </section>
-
-            <section class="ph-panel">
-                <header class="ph-panel-head"><div><h2>Butuh bantuan?</h2><p>Makanan kurang, terlambat, atau tidak sesuai.</p></div></header>
-                <div class="ph-help">
-                    <a class="btn app-btn-secondary" href="{{ url_for('portal.customer_complaints') }}"><i class="bi bi-chat-square-text"></i> Kirim komplain{% if complaints.open_count %} <span class="ph-pill tone-warning">{{ complaints.open_count }} aktif</span>{% endif %}</a>
-                    <a class="btn app-btn-secondary" href="{{ url_for('portal.customer_payments') }}"><i class="bi bi-credit-card"></i> Riwayat pembayaran</a>
-                </div>
-            </section>
-        </aside>
+      {% endfor %}
     </div>
-</section>
+  {% endif %}
+
+  <div class="bg-card-surface rounded-xl p-4 shadow-sm flex flex-col gap-2.5">
+    <h3 class="font-headline-sm text-headline-sm text-text-heading">Cara pesan</h3>
+    <ol class="flex flex-col gap-2">
+      {% for title, text in [("Pilih tanggal & porsi", "Tanpa minimal porsi. Di atas jumlah porsi tertentu ongkir gratis; di bawahnya dihitung dari jarak (terlihat saat memesan)."),
+                             ("Bayar di muka", "Bayar di muka tetap wajib: transfer, lalu unggah bukti di tab Tagihan."),
+                             ("Kami antar", "Pengantar memakai titik peta alamat Anda (Akun › Alamat Antar).")] %}
+        <li class="flex items-start gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-micro-meta text-micro-meta font-bold flex-shrink-0">{{ loop.index }}</span>
+          <span class="min-w-0"><strong class="font-body-bold text-caption-regular text-text-heading block">{{ title }}</strong><span class="font-caption-regular text-caption-regular text-text-muted">{{ text }}</span></span>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+</div>

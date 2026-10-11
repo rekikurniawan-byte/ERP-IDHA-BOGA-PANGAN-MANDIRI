@@ -158,8 +158,7 @@ def create_app():
         if flask_app.config.get("TESTING") or request.endpoint in (None, "static"):
             return
         try:
-            from datetime import date as _date
-
+            from app.utils.clock import today_wib
             from flask_login import current_user
             from app.services.credit_account_service import run_daily_sweep_if_due
 
@@ -167,7 +166,7 @@ def create_app():
                 return
             branch_id = current_user.branch_id
             get_cached_value(
-                ("credit_daily_sweep", branch_id, _date.today().isoformat()),
+                ("credit_daily_sweep", branch_id, today_wib().isoformat()),
                 lambda: run_daily_sweep_if_due(branch_id) or {},
                 ttl_seconds=3600,
             )
@@ -430,6 +429,83 @@ def create_app():
                 "read_only": True,
             }
         }
+
+    @flask_app.context_processor
+    def inject_portal_unread_count():
+        """Jumlah notifikasi belum dibaca untuk badge lonceng portal (akun pelanggan)."""
+        try:
+            from flask_login import current_user
+            from app.services.notification_service import count_unread_notifications
+
+            if current_user.is_authenticated and str(current_user.role or "").startswith("PORTAL_"):
+                summary = get_cached_value(
+                    ("portal_unread_count", current_user.branch_id, current_user.id),
+                    lambda: count_unread_notifications(branch_id=current_user.branch_id, user=current_user),
+                    ttl_seconds=30,
+                )
+                return {"portal_unread_count": int(summary.get("total", 0) or 0)}
+        except Exception:
+            flask_app.logger.exception("Gagal memuat jumlah notifikasi portal.")
+        return {"portal_unread_count": 0}
+
+    @flask_app.context_processor
+    def inject_portal_navigation():
+        """Peta navigasi portal (satu pintu per halaman) untuk layout & halaman Akun."""
+        try:
+            from flask import request
+            from flask_login import current_user
+
+            if not current_user.is_authenticated or not (request.endpoint or "").startswith("portal."):
+                return {}
+            from app.services.branch_module_service import WORKER_DEBT, module_enabled
+            from app.services.portal_navigation_service import build_portal_navigation
+
+            role = current_user.role
+            direct_ordering = False
+            if role == "PORTAL_CLIENT":
+                from app.services.portal_mapping_service import build_portal_external_scope
+                from app.services.portal_order_draft_service import orderable_location_ids
+
+                direct_ordering = get_cached_value(
+                    ("portal_direct_ordering", current_user.branch_id, current_user.id),
+                    lambda: bool(orderable_location_ids(current_user, build_portal_external_scope(current_user))),
+                    ttl_seconds=30,
+                )
+            nav = build_portal_navigation(
+                role,
+                request.endpoint,
+                worker_debt_on=module_enabled(WORKER_DEBT, current_user.branch_id),
+                direct_ordering=direct_ordering,
+            )
+            return {"portal_nav": nav}
+        except Exception:
+            flask_app.logger.exception("Gagal menyusun navigasi portal.")
+        return {}
+
+    @flask_app.context_processor
+    def inject_driver_navigation():
+        """Peta navigasi mobile pengantar (satu pintu per halaman) untuk layout driver_mobile."""
+        try:
+            from flask import request
+            from flask_login import current_user
+
+            if not current_user.is_authenticated or current_user.role != "PENGANTAR":
+                return {}
+            from app.services.driver_navigation_service import build_driver_navigation
+            from app.services.notification_service import count_unread_notifications
+
+            endpoint = request.endpoint or "dashboard.pengantar"
+            nav = build_driver_navigation(endpoint)
+            unread_summary = get_cached_value(
+                ("driver_unread_count", current_user.branch_id, current_user.id),
+                lambda: count_unread_notifications(branch_id=current_user.branch_id, user=current_user),
+                ttl_seconds=30,
+            )
+            unread_count = int(unread_summary.get("total", 0) or 0)
+            return {"driver_nav": nav, "driver_unread_count": unread_count}
+        except Exception:
+            flask_app.logger.exception("Gagal menyusun navigasi pengantar.")
+        return {}
 
     @flask_app.context_processor
     def inject_persistent_notification_badge():

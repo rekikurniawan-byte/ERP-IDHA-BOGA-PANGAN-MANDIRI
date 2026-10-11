@@ -19,6 +19,7 @@ import sqlalchemy as sa
 
 from app.extensions import db
 from app.models.accounting import Journal, JournalDetail
+from app.utils.clock import today_wib
 from app.models.credit import (
     BILLING_CASH,
     BILLING_DIRECT,
@@ -367,7 +368,7 @@ def receive_deposit(mandor, form, actor, today=None):
     amount = parse_money(form.get("amount"))
     if amount <= 0:
         raise CreditActionError("Nominal deposit harus lebih dari 0.")
-    deposit_date = _parse_date(form.get("deposit_date")) or (today or date.today())
+    deposit_date = _parse_date(form.get("deposit_date")) or (today or today_wib())
 
     def mutate():
         _, _, advance = create_advance_transaction(
@@ -456,7 +457,7 @@ def apply_deposit_to_invoice(mandor, form, actor, today=None):
 
     def mutate():
         applied = _apply_deposit(
-            mandor, invoice, amount, actor, today or date.today(),
+            mandor, invoice, amount, actor, today or today_wib(),
             _clean(form.get("notes")) or "Deposit dipotong oleh OWNER.",
         )
         if applied <= 0:
@@ -485,7 +486,7 @@ def refund_deposit(mandor, form, actor, today=None):
             part = min(_money(advance.remaining_amount), remaining)
             create_advance_settlement(
                 advance=advance,
-                settlement_date=today or date.today(),
+                settlement_date=today or today_wib(),
                 settlement_type=DEPOSIT_REFUND,
                 amount=float(part),
                 created_by=actor.id,
@@ -511,7 +512,7 @@ def change_credit_status(account, form, actor, today=None):
     mengisi "lepas sampai": sampai tanggal itu status OWNER yang berlaku.
     """
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     to_status = str(form.get("status") or "").strip().upper()
     if to_status not in MANUAL_STATUSES:
         raise CreditActionError("Status tidak valid. Hapus buku dilakukan lewat tombol hapus buku.")
@@ -563,7 +564,7 @@ def confirm_write_off(account, form, actor, today=None):
     from app.services.advance_service import get_account_by_code
 
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     if account.party_type != PARTY_MANDOR:
         raise CreditActionError(f"Hapus buku lewat kontrol kredit hanya untuk {T.sub_client_lower}.")
     decision = evaluate_party(account.branch_id, account.party_type, account.party_id, account, today=today)
@@ -664,7 +665,7 @@ def sweep_credit_statuses(branch_id, actor_id=None, today=None):
     """
     from app.services.sharia_credit_service import notify_party, propose_tazir_for_account
 
-    today = today or date.today()
+    today = today or today_wib()
     accounts = CreditAccount.query.filter(
         CreditAccount.branch_id == branch_id,
         CreditAccount.is_active.is_(True),
@@ -743,7 +744,7 @@ def daily_sweep(branch_id, actor_id=None, today=None):
     """
     from app.services.contract_lifecycle_service import sweep_contracts
 
-    today = today or date.today()
+    today = today or today_wib()
     contracts = sweep_contracts(branch_id, today, actor_id=actor_id)
     result = sweep_credit_statuses(branch_id, actor_id=actor_id, today=today)
     result["contracts"] = contracts
@@ -842,7 +843,7 @@ def _mode_label(account):
 
 def list_credit_overview(branch_id, today=None):
     """Semua akun kredit cabang ini, paling berisiko di atas."""
-    today = today or date.today()
+    today = today or today_wib()
     rows = []
     for account in CreditAccount.query.filter_by(branch_id=branch_id, is_active=True).all():
         decision = evaluate_party(branch_id, account.party_type, account.party_id, account, today=today)
@@ -861,7 +862,7 @@ def credit_account_detail(account, today=None):
     """Semua yang dibutuhkan OWNER untuk memutuskan: angka, invoice, janji, jejak."""
     from app.services.advance_service import MANDOR_SECURITY_DEPOSIT
 
-    today = today or date.today()
+    today = today or today_wib()
     decision = evaluate_party(account.branch_id, account.party_type, account.party_id, account, today=today)
     detail = {
         "account": account,
@@ -947,7 +948,7 @@ def portal_credit_summary(mandor, today=None):
     yang mendorong bayar -- sisa limit, jatuh tempo terdekat, status -- tanpa
     detail internal seperti alasan atau jejak keputusan OWNER.
     """
-    today = today or date.today()
+    today = today or today_wib()
     account = _mandor_account(mandor)
     if account is None or account.billing_mode != BILLING_DIRECT:
         return None

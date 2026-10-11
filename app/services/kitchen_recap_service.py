@@ -4,7 +4,10 @@ import math
 from typing import Any
 
 from flask import url_for
-import segno
+try:
+    import segno
+except ImportError:
+    segno = None
 
 from app.extensions import db
 from app.models.delivery import Delivery, DeliveryDetail
@@ -342,8 +345,11 @@ def build_container_labels_data(daily_order: DailyOrder, meal_type: str, paper_s
                 n=n_wadah,
                 _external=True,
             )
-            container_qr_obj = segno.make(container_scan_url, error="m")
-            container_qr_svg = container_qr_obj.svg_inline(scale=2, border=1)
+            if segno is not None:
+                container_qr_obj = segno.make(container_scan_url, error="m")
+                container_qr_svg = container_qr_obj.svg_inline(scale=2, border=1)
+            else:
+                container_qr_svg = ""
 
             labels.append({
                 "detail_id": detail.id,

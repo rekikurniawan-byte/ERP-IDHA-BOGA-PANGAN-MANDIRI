@@ -1,130 +1,109 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-<section class="portal-feature-page">
-    <div class="portal-feature-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.portal_contracts') if current_user.role == 'PORTAL_SUBCLIENT' else url_for('portal.pt_contracts') }}">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <div>
-            <p>{{ contract.client.name }}</p>
-            <h1>Dokumen &amp; Surat Kontrak</h1>
-            <span>{{ contract.contract_number }}</span>
-        </div>
-        <div class="portal-hero-proof">
-            <i class="bi bi-file-earmark-check"></i>
-            <span>Resmi</span>
-        </div>
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <a href="{{ url_for('portal.portal_contracts') }}" aria-label="Kembali ke daftar kontrak" class="w-10 h-10 rounded-full bg-card-surface shadow-md flex items-center justify-center text-text-heading active:scale-95 transition-transform flex-shrink-0">
+      <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    </a>
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">Dokumen &amp; Surat Kontrak</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ contract.contract_number }} · {{ contract.client.name if contract.client else "" }}</p>
     </div>
+  </section>
 
-    <!-- Info Singkat Kontrak -->
-    <div class="portal-card mb-3 p-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="text-muted small">Status Kontrak</span>
-            <span class="status-badge {{ 'green' if contract.status == 'ACTIVE' else 'neutral' }}">{{ contract.status|status_label }}</span>
-        </div>
-        <h2 class="h6 mb-1">{{ contract.title }}</h2>
-        <div class="small text-muted mb-2">Periode: {{ contract.start_date.strftime('%d-%m-%Y') }} s/d {{ contract.end_date.strftime('%d-%m-%Y') }}</div>
-        <div class="d-flex justify-content-between small text-muted pt-2 border-top">
-            <span>Jatuh Tempo: <strong>{{ contract.due_days }} hari</strong></span>
-            <span>Limit Kredit: <strong>{{ contract.credit_limit|rupiah }}</strong></span>
-        </div>
+  <section class="px-margin mb-4">
+    <div class="bg-card-surface rounded-xl shadow-sm p-4 flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-2">
+        <span class="font-caption-regular text-caption-regular text-text-muted">Status kontrak</span>
+        <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ 'bg-status-success-bg text-status-success-text' if contract.status == 'ACTIVE' else 'bg-surface-container text-text-body' }}">{{ contract.status|status_label }}</span>
+      </div>
+      <h2 class="font-body-bold text-body-bold text-text-heading">{{ contract.title }}</h2>
+      <p class="font-caption-regular text-caption-regular text-text-muted">Periode {{ contract.start_date.strftime('%d-%m-%Y') if contract.start_date else "-" }} s.d. {{ contract.end_date.strftime('%d-%m-%Y') if contract.end_date else "-" }}</p>
+      <div class="flex justify-between font-caption-regular text-caption-regular text-text-muted pt-2 border-t border-card-border">
+        <span>Jatuh tempo <strong class="text-text-heading">{{ contract.due_days }} hari</strong></span>
+        <span>Limit <strong class="text-text-heading">{{ (contract.credit_limit or 0)|rupiah }}</strong></span>
+      </div>
     </div>
+  </section>
 
-    <div class="portal-section-heading">
-        <h2>Daftar Surat Kontrak &amp; Adendum</h2>
-        <span>{{ documents|length }} dokumen</span>
+  <section class="px-margin flex flex-col gap-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title-menu text-title-menu text-text-heading">Surat Kontrak &amp; Adendum</h2>
+      <span class="font-caption-regular text-caption-regular text-text-muted">{{ documents|length }} dokumen</span>
     </div>
-
     {% for doc in documents %}
-        <article class="portal-card mb-3 p-3">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <span class="badge {{ 'bg-primary' if doc.document_type == 'KONTRAK' else 'bg-info text-dark' }} me-1">
-                        {{ doc.document_type }}
-                    </span>
-                    <strong class="d-block mt-1">{{ doc.document_number }}</strong>
-                    <div class="small text-muted">{{ doc.title }}</div>
-                </div>
-                <div>
-                    {% if doc.status == 'DITANDATANGANI' %}
-                        <span class="status-badge green">Ditandatangani</span>
-                    {% elif doc.status == 'MENUNGGU_TTD' %}
-                        <span class="status-badge orange">Menunggu TTD</span>
-                    {% else %}
-                        <span class="status-badge neutral">{{ doc.status }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Tanda Tangan Status -->
-            <div class="py-2 my-2 border-top border-bottom small">
-                {% if doc.status == 'DITANDATANGANI' %}
-                    {% if doc.signing_method == 'PORTAL_EMAIL_OTP' %}
-                        <div class="text-success">
-                            <i class="bi bi-patch-check-fill"></i> <strong>Persetujuan Digital (OTP)</strong><br>
-                            Ditandatangani oleh: <strong>{{ doc.signed_by_name }}</strong><br>
-                            Waktu: {{ doc.portal_signed_at.strftime('%d-%m-%Y %H:%M WIB') if doc.portal_signed_at else '-' }}
-                        </div>
-                    {% elif doc.signing_method == 'WET_STAMP' %}
-                        <div class="text-success">
-                            <i class="bi bi-file-earmark-check"></i> <strong>Tanda Tangan Basah Bermeterai</strong><br>
-                            Terverifikasi pada: {{ doc.signed_at.strftime('%d-%m-%Y') if doc.signed_at else '-' }}
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="text-muted">
-                        <i class="bi bi-info-circle"></i> Surat perjanjian ini belum ditandatangani. Anda dapat menandatanganinya secara digital melalui verifikasi OTP email di bawah ini.
-                    </div>
-                {% endif %}
-            </div>
-
-            <!-- Aksi Dokumen -->
-            <div class="d-flex flex-wrap gap-2 mt-2">
-                <a href="{{ url_for('portal.portal_contract_document_print', contract_id=contract.id, document_id=doc.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-file-earmark-text"></i> Baca &amp; Cetak Surat (A4)
-                </a>
-
-                {% if doc.scan_attachment_id %}
-                    <a href="{{ url_for('portal.portal_contract_document_scan', contract_id=contract.id, document_id=doc.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-download"></i> Unduh Berkas Scan
-                    </a>
-                {% endif %}
-            </div>
-
-            <!-- Form Tanda Tangan OTP (Jika Belum TTD) -->
-            {% if doc.status == 'MENUNGGU_TTD' %}
-                <div class="mt-3 p-3 bg-light rounded-3 border">
-                    <h3 class="h6 mb-2 text-dark"><i class="bi bi-pen"></i> Tanda Tangan Digital via OTP Email</h3>
-                    <p class="small text-muted mb-3">
-                        Dengan memasukkan kode OTP yang dikirimkan ke email akun Anda (<strong>{{ current_user.email or 'Email belum diatur' }}</strong>), Anda menyatakan menyetujui seluruh 17 pasal surat perjanjian kerjasama ini.
-                    </p>
-
-                    <div class="d-flex flex-column gap-2">
-                        <form method="post" action="{{ url_for('portal.portal_contract_document_request_otp', contract_id=contract.id, document_id=doc.id) }}">
-                            {% include "components/csrf_token.html" %}
-                            <button type="submit" class="btn btn-sm btn-outline-success w-100 mb-2">
-                                <i class="bi bi-envelope-paper"></i> Kirim Kode OTP ke Email Saya
-                            </button>
-                        </form>
-
-                        <form method="post" action="{{ url_for('portal.portal_contract_document_verify_otp', contract_id=contract.id, document_id=doc.id) }}" class="d-flex gap-2">
-                            {% include "components/csrf_token.html" %}
-                            <input type="text" name="otp_code" class="form-control form-control-sm" placeholder="Masukkan 6 Digit OTP" maxlength="6" pattern="[0-9]{6}" required>
-                            <button type="submit" class="btn btn-sm btn-primary text-nowrap">
-                                <i class="bi bi-check2-circle"></i> Setujui &amp; TTD
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            {% endif %}
-        </article>
-    {% else %}
-        <div class="portal-empty-state">
-            <i class="bi bi-file-earmark-text"></i>
-            <strong>Belum ada dokumen surat kontrak</strong>
-            <p>Admin sedang menyusun surat perjanjian untuk kontrak ini. Dokumen akan tampil di sini setelah diterbitkan.</p>
+      <article class="bg-card-surface rounded-xl shadow-sm p-4 flex flex-col gap-3">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <span class="inline-block px-2 py-0.5 rounded-md font-micro-meta text-micro-meta font-bold {{ 'bg-primary-fixed text-primary' if doc.document_type == 'KONTRAK' else 'bg-status-info-bg text-status-info-text' }}">{{ doc.document_type }}</span>
+            <strong class="font-body-bold text-body-bold text-text-heading block mt-1 truncate">{{ doc.document_number }}</strong>
+            <span class="font-caption-regular text-caption-regular text-text-muted block">{{ doc.title }}</span>
+          </div>
+          {% if doc.status == 'DITANDATANGANI' %}
+            <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold bg-status-success-bg text-status-success-text flex-shrink-0">Ditandatangani</span>
+          {% elif doc.status == 'MENUNGGU_TTD' %}
+            <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold bg-status-warning-bg text-status-warning-text flex-shrink-0">Menunggu TTD</span>
+          {% else %}
+            <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold bg-surface-container text-text-body flex-shrink-0">{{ doc.status|status_label }}</span>
+          {% endif %}
         </div>
+
+        <div class="p-3 rounded-lg font-caption-regular text-caption-regular {{ 'bg-status-success-bg/60 text-status-success-text' if doc.status == 'DITANDATANGANI' else 'bg-surface-container-low text-text-body' }}">
+          {% if doc.status == 'DITANDATANGANI' and doc.signing_method == 'PORTAL_EMAIL_OTP' %}
+            <p class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span>Persetujuan Digital (OTP)</p>
+            <p>Ditandatangani oleh <strong>{{ doc.signed_by_name }}</strong> · {{ doc.portal_signed_at.strftime('%d-%m-%Y %H:%M WIB') if doc.portal_signed_at else '-' }}</p>
+          {% elif doc.status == 'DITANDATANGANI' and doc.signing_method == 'WET_STAMP' %}
+            <p class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">approval</span>Tanda Tangan Basah Bermeterai</p>
+            <p>Terverifikasi {{ doc.signed_at.strftime('%d-%m-%Y') if doc.signed_at else '-' }}</p>
+          {% elif doc.status == 'DITANDATANGANI' %}
+            <p class="font-bold">Sudah ditandatangani.</p>
+          {% else %}
+            <p class="flex items-start gap-1"><span class="material-symbols-outlined text-[16px] flex-shrink-0">info</span>Surat ini belum ditandatangani. Anda bisa menandatanganinya secara digital dengan kode OTP email di bawah.</p>
+          {% endif %}
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <a href="{{ url_for('portal.portal_contract_document_print', contract_id=contract.id, document_id=doc.id) }}" target="_blank" rel="noopener" class="h-10 px-3 rounded-lg bg-primary-fixed text-primary font-caption-regular text-caption-regular font-bold flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">description</span> Baca &amp; Cetak (A4)
+          </a>
+          {% if doc.scan_attachment_id %}
+            <a href="{{ url_for('portal.portal_contract_document_scan', contract_id=contract.id, document_id=doc.id) }}" target="_blank" rel="noopener" class="h-10 px-3 rounded-lg bg-surface-container text-text-heading font-caption-regular text-caption-regular font-bold flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">download</span> Unduh Scan
+            </a>
+          {% endif %}
+        </div>
+
+        {% if doc.status == 'MENUNGGU_TTD' %}
+          <div class="p-3 rounded-xl border border-card-border bg-surface-container-lowest flex flex-col gap-2.5">
+            <h3 class="font-body-bold text-body-bold text-text-heading flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px] text-primary">draw</span>Tanda Tangan Digital via OTP Email</h3>
+            <p class="font-caption-regular text-caption-regular text-text-muted">
+              Dengan memasukkan kode OTP yang dikirim ke email akun Anda (<strong class="text-text-heading">{{ current_user.email or 'email belum diatur' }}</strong>), Anda menyetujui seluruh isi surat perjanjian ini.
+              {% if not current_user.email %}<strong>Isi email dulu di Akun › Data Diri.</strong>{% endif %}
+            </p>
+            <form method="post" action="{{ url_for('portal.portal_contract_document_request_otp', contract_id=contract.id, document_id=doc.id) }}">
+              {% include "components/csrf_token.html" %}
+              <button type="submit" class="w-full h-11 rounded-xl border border-status-success-text/40 text-status-success-text font-body-bold text-body-bold flex items-center justify-center gap-1.5" {% if not current_user.email %}disabled{% endif %}>
+                <span class="material-symbols-outlined text-[18px]">mail</span> Kirim Kode OTP ke Email
+              </button>
+            </form>
+            <form method="post" action="{{ url_for('portal.portal_contract_document_verify_otp', contract_id=contract.id, document_id=doc.id) }}" class="flex gap-2">
+              {% include "components/csrf_token.html" %}
+              <input type="text" name="otp_code" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digit OTP" maxlength="6" pattern="[0-9]{6}" required class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-card-border font-body-medium text-body-medium tracking-widest outline-none focus:ring-2 focus:ring-primary/20">
+              <button type="submit" class="h-11 px-4 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center gap-1 flex-shrink-0">
+                <span class="material-symbols-outlined text-[18px]">check_circle</span> Setujui
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">description</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum ada surat kontrak</strong>
+        <span class="font-caption-regular text-caption-regular">Admin sedang menyusun surat perjanjian. Dokumen tampil di sini setelah diterbitkan.</span>
+      </div>
     {% endfor %}
-</section>
+  </section>
+</div>
 {% endblock %}

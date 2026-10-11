@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.contract import CustomerContract
 from app.services.atomic_transaction_service import atomic_business_action
@@ -31,7 +33,7 @@ def build_contract_expiry_candidates(
     Read-only by design. This does not set contract status to EXPIRED because
     lifecycle mutation remains an explicit service action.
     """
-    today = as_of_date or date.today()
+    today = as_of_date or today_wib()
     due_days = _safe_due_days(due_days)
     limit = _safe_limit(limit)
     max_date = today + timedelta(days=due_days)

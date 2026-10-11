@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.models.complaint import CustomerComplaint
 from app.models.contract import CustomerContract
 from app.models.system import DigitalAttachment
@@ -202,7 +204,7 @@ def build_portal_contract_model(user, *, limit: int = 100) -> dict:
         )
         document_counts = Counter(reference_id for (reference_id,) in attachments)
 
-    today = date.today()
+    today = today_wib()
     health_rows = []
     for contract in rows:
         days_remaining = (contract.end_date - today).days if contract.end_date else None

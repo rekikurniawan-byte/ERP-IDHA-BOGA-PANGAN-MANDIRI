@@ -1,136 +1,146 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
+{% if current_user.role == "PORTAL_CUSTOMER" and data.order_billing is defined %}
+{% include "portal/_customer_billing.html" %}
+{% else %}
 {% set model = data.payments %}
 {% set invoice_totals = data.invoices.totals %}
 {% set is_customer = current_user.role == "PORTAL_CUSTOMER" %}
-<section class="portal-feature-page portal-ledger-page portal-finance-page">
-    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Pembayaran awal" if is_customer else "Riwayat pembayaran" }}</span>
-        </div>
-        <strong class="portal-hero-status">{{ "Bayar dulu" if is_customer else "Aktif" if model.allowed else "Belum aktif" }}</strong>
-    </div>
+{% set outstanding = invoice_totals.active_outstanding_amount or 0 %}
 
-    <div class="portal-ledger-summary portal-finance-summary">
-        <article class="portal-ledger-total">
-            <span>{{ "Pembayaran Awal" if is_customer else "Total Pembayaran" }}</span>
-            <strong>{{ model.totals.payment_amount|rupiah }}</strong>
-            <p>{{ data.page_description }}</p>
-        </article>
-        {% if is_customer %}
-            <article><span>Bukti Bayar</span><strong>{{ invoice_totals.proof_count }}</strong><small>Bukti yang diunggah</small></article>
-            <article><span>Menunggu Cek</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Belum diperiksa</small></article>
-            <article><span>Bukti Sah</span><strong>{{ invoice_totals.verified_proof_count or 0 }}</strong><small>Siap diproses admin</small></article>
-            <article><span>Pesanan Bayar Dulu</span><strong>{{ data.orders.total }}</strong><small>Customer tidak memakai kredit</small></article>
-        {% else %}
-            <article><span>Pembayaran</span><strong>{{ model.totals.payment_count }}</strong><small>Catatan pembayaran</small></article>
-            <article><span>Tagihan</span><strong>{{ invoice_totals.invoice_count }}</strong><small>Tagihan dalam akses</small></article>
-            <article><span>Sisa Tagihan</span><strong>{{ invoice_totals.active_outstanding_amount|rupiah }}</strong><small>Sisa aktif</small></article>
-            <article><span>Bukti Portal</span><strong>{{ invoice_totals.proof_count }}</strong><small>{{ invoice_totals.pending_proof_count }} menunggu</small></article>
-        {% endif %}
-    </div>
+<div class="flex flex-col w-full pb-8">
 
-    <div class="portal-precheck-card tone-{{ 'green' if invoice_totals.active_outstanding_amount == 0 and model.allowed else 'orange' if model.allowed else 'red' }}">
-        <div>
-            <span class="portal-source-pill"><i class="bi bi-shield-check"></i> Cek Sebelum Pesan</span>
-            <h2>
-                {% if is_customer %}
-                    Bayar dulu sebelum pesanan diproses
-                {% elif model.allowed and invoice_totals.active_outstanding_amount == 0 %}
-                    Tidak ada sisa tagihan aktif
-                {% elif model.allowed %}
-                    Masih ada sisa tagihan
-                {% else %}
-                    Pembayaran belum dibuka
-                {% endif %}
-            </h2>
-            <p>
-                {% if is_customer %}
-                    Pelanggan umum tidak memiliki fasilitas kredit. Pesanan menunggu bukti pembayaran diperiksa, lalu admin memproses ke operasional.
-                {% elif model.allowed %}
-                    Pembayaran dan bukti transfer ditampilkan sesuai data yang tercatat.
-                {% else %}
-                    {{ model.reason }}
-                {% endif %}
-            </p>
-        </div>
-        <div class="portal-precheck-grid">
-            {% if is_customer %}
-                <article><span>Bukti Menunggu</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Menunggu cek</small></article>
-                <article><span>Bukti Sah</span><strong>{{ invoice_totals.verified_proof_count or 0 }}</strong><small>Bisa diproses admin</small></article>
-                <article><span>Perlu Cek</span><strong>{{ invoice_totals.payment_mismatch_count or 0 }}</strong><small>Perlu pemeriksaan</small></article>
-                <article><span>Pesanan Aktif</span><strong>{{ data.orders.pending }}</strong><small>Menunggu admin</small></article>
-            {% else %}
-                <article><span>Bukti Menunggu</span><strong>{{ invoice_totals.pending_proof_count }}</strong><small>Menunggu cek</small></article>
-                <article><span>Bisa Dibayar</span><strong>{{ invoice_totals.payable_invoice_count or 0 }}</strong><small>Tagihan bisa dibayar</small></article>
-                <article><span>Selisih</span><strong>{{ invoice_totals.payment_mismatch_count or 0 }}</strong><small>Perlu dicek</small></article>
-                <article><span>Sisa</span><strong>{{ invoice_totals.active_outstanding_amount|rupiah }}</strong><small>Total aktif</small></article>
-            {% endif %}
-        </div>
+{% if data.pending_payments %}
+    <div class="mb-4">{% with pending_rows = data.pending_payments %}{% include "portal/_pending_payments.html" %}{% endwith %}</div>
+{% endif %}
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted line-clamp-2">{{ data.page_description }}</p>
     </div>
+  </section>
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>{{ "Unggah bukti bayar belum tersedia" if is_customer else "Riwayat pembayaran belum dibuka" }}</h2>
-                <p>{{ "Buat pesanan terlebih dahulu, lalu unggah bukti pembayaran awal dari detail pesanan yang tersedia." if is_customer else model.reason }}</p>
-            </div>
+  <section class="px-margin mb-4">
+    <div class="bg-gradient-to-br from-inverse-surface to-text-heading rounded-2xl p-5 shadow-xl text-on-primary relative overflow-hidden">
+      <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+      <div class="flex items-center gap-1.5 relative z-10">
+        <span class="material-symbols-outlined text-status-success-bg text-[18px]">check_circle</span>
+        <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high font-semibold">{{ "Pembayaran Awal" if is_customer else "Total Pembayaran" }}</span>
+      </div>
+      <div class="mt-2 relative z-10">
+        <span class="font-display-hero text-display-hero text-on-primary font-bold tracking-tight break-words">{{ (model.totals.payment_amount or 0)|rupiah }}</span>
+        <p class="font-caption-regular text-caption-regular text-surface-container-high mt-1 flex items-center gap-1.5 flex-wrap">
+          <span>{{ model.totals.payment_count or 0 }} pembayaran tercatat</span>
+          <span class="inline-block w-1 h-1 rounded-full bg-surface-container-high"></span>
+          <span class="text-status-warning-bg font-medium">{{ invoice_totals.pending_proof_count or 0 }} bukti menunggu cek</span>
+        </p>
+      </div>
+      <div class="mt-4 bg-white/10 rounded-xl p-3 flex items-start gap-2.5 relative z-10">
+        <span class="material-symbols-outlined text-status-warning-bg text-[18px] flex-shrink-0 mt-0.5">shield</span>
+        <p class="font-caption-regular text-caption-regular text-surface-container-lowest leading-relaxed">
+          {% if is_customer %}
+            Pelanggan umum tidak memiliki fasilitas kredit. Bayar di muka; pesanan diproses setelah bukti pembayaran diperiksa admin.
+          {% elif not model.allowed %}
+            {{ model.reason }}
+          {% elif outstanding == 0 %}
+            Tidak ada sisa tagihan aktif.
+          {% else %}
+            Masih ada sisa tagihan {{ outstanding|rupiah }}.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="px-margin mb-4">
+    <div class="grid grid-cols-2 gap-2.5">
+      {% if is_customer %}
+        {% set stats = [
+            ("Bukti Diunggah", invoice_totals.proof_count or 0, "upload_file", "bg-card-surface text-text-heading"),
+            ("Menunggu Cek", invoice_totals.pending_proof_count or 0, "hourglass_top", "bg-status-warning-bg/60 text-status-warning-text"),
+            ("Bukti Sah", invoice_totals.verified_proof_count or 0, "verified", "bg-status-success-bg/60 text-status-success-text"),
+            ("Pesanan Menunggu", data.orders.pending or 0, "pending_actions", "bg-primary-fixed/40 text-primary"),
+        ] %}
+      {% else %}
+        {% set stats = [
+            ("Tagihan", invoice_totals.invoice_count or 0, "receipt_long", "bg-card-surface text-text-heading"),
+            ("Bisa Dibayar", invoice_totals.payable_invoice_count or 0, "payments", "bg-status-success-bg/60 text-status-success-text"),
+            ("Bukti Menunggu", invoice_totals.pending_proof_count or 0, "hourglass_top", "bg-status-warning-bg/60 text-status-warning-text"),
+            ("Sisa Tagihan", outstanding|rupiah, "pending_actions", "bg-primary-fixed/40 text-primary"),
+        ] %}
+      {% endif %}
+      {% for label, value, icon, tone in stats %}
+        <div class="{{ tone }} rounded-xl p-3 shadow-sm flex flex-col justify-between min-w-0">
+          <div class="flex items-center justify-between mb-1 opacity-90">
+            <span class="font-micro-meta text-micro-meta uppercase font-medium">{{ label }}</span>
+            <span class="material-symbols-outlined text-[16px]">{{ icon }}</span>
+          </div>
+          <span class="font-headline-sm text-headline-sm font-bold truncate">{{ value }}</span>
         </div>
+      {% endfor %}
+    </div>
+    {% if invoice_totals.payment_mismatch_count %}
+      <p class="mt-2 p-2.5 rounded-lg bg-status-danger-bg text-status-danger-text font-caption-regular text-caption-regular font-bold">{{ invoice_totals.payment_mismatch_count }} tagihan punya selisih pembayaran dan sedang dicek admin.</p>
     {% endif %}
+  </section>
 
-    <div class="portal-section-heading">
-        <h2>Riwayat Pembayaran</h2>
-        <span>Pembayaran</span>
-    </div>
+  {% if is_customer %}
+    <p class="px-margin -mt-2 mb-4 font-micro-meta text-micro-meta text-text-muted">Customer tidak memakai kredit: setiap pesanan dibayar dulu sebelum diproses.</p>
+  {% endif %}
 
-    <div class="portal-ledger-list portal-payment-history-list">
-        {% for payment in model.payments %}
-            <article class="portal-ledger-card compact portal-payment-card">
-                <div class="portal-ledger-card-main">
-                    <span class="portal-record-icon"><i class="bi bi-credit-card"></i></span>
-                    <div>
-                        <h3>{{ payment.payment_number }}</h3>
-                        <p>
-                            {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }}
-                            | {{ payment.payment_method|status_label }}
-                            | {{ "Referensi" if is_customer else "Tagihan" }} {{ payment.invoice_number or payment.reference_number or "-" }}
-                        </p>
-                        <div class="portal-chip-row">
-                            <span>{{ payment.invoice_status_label or "-" }}</span>
-                            {% if payment.reference_number %}<span>Ref {{ payment.reference_number }}</span>{% endif %}
-                            {% if payment.bank_account.bank_name %}<span>{{ payment.bank_account.bank_name }}</span>{% endif %}
-                            {% if not is_customer %}<span>Sisa invoice {{ payment.invoice_remaining_amount|rupiah }}</span>{% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="portal-ledger-amounts single">
-                    <div><span>Jumlah</span><strong>{{ payment.amount|rupiah }}</strong></div>
-                </div>
-                <div class="portal-finance-proof-strip compact">
-                    <div>
-                        <span>Rekening / Kas</span>
-                        <strong>{{ payment.bank_account.account_name or payment.payment_method|status_label }}</strong>
-                        <small>{{ payment.bank_account.account_number or payment.reference_number or "Tidak ada referensi tambahan" }}</small>
-                    </div>
-                    <div>
-                        <span>Catatan</span>
-                        <strong>{{ payment.notes or "-" }}</strong>
-                        <small>Pembayaran sudah tercatat.</small>
-                    </div>
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-credit-card"></i>
-                <strong>Belum ada pembayaran</strong>
-                <p>{{ "Bukti bayar dan pembayaran awal akan tampil di sini setelah dibuat dari pesanan pelanggan." if is_customer else "Pembayaran yang tercatat akan tampil di sini sesuai akun." }}</p>
+  <section class="px-margin flex flex-col gap-3">
+    <h2 class="font-title-menu text-title-menu text-text-heading">Riwayat Pembayaran</h2>
+    {% for payment in model.payments %}
+      <article class="bg-card-surface rounded-2xl shadow-md p-4 relative overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-success-text"></div>
+        <div class="flex items-start justify-between gap-2 pl-1 mb-2.5">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-status-info-bg text-status-info-text flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-[20px]">account_balance</span>
             </div>
-        {% endfor %}
-    </div>
-</section>
+            <div class="flex flex-col min-w-0">
+              <span class="font-body-bold text-body-bold text-text-heading tracking-tight truncate leading-tight">{{ payment.payment_number }}</span>
+              <span class="font-caption-regular text-caption-regular text-text-muted leading-tight">{{ payment.payment_method|status_label }}</span>
+            </div>
+          </div>
+          <span class="flex items-center gap-1 bg-status-success-bg text-status-success-text font-label-badge text-label-badge px-2.5 py-1 rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-[13px]">check_circle</span>Tercatat
+          </span>
+        </div>
+        <div class="flex flex-col gap-2 bg-surface-bright rounded-xl p-3">
+          <div class="flex items-center justify-between text-text-muted gap-2">
+            <span class="font-micro-meta text-micro-meta flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">event_available</span>
+              {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else "-" }}
+            </span>
+            {% if payment.invoice_status_label %}<span class="bg-surface-container text-text-body font-micro-meta text-micro-meta font-bold px-1.5 py-0.5 rounded">{{ payment.invoice_status_label }}</span>{% endif %}
+          </div>
+          <span class="font-headline-md text-headline-md text-text-heading font-bold">{{ payment.amount|rupiah }}</span>
+          <p class="font-caption-regular text-caption-regular text-text-body leading-tight">
+            {{ "Referensi" if is_customer else "Tagihan" }}:
+            {% if not is_customer and payment.invoice_id %}<a href="{{ url_for('portal.invoice_payment_instruction', invoice_id=payment.invoice_id) }}" class="font-body-bold text-primary underline">{{ payment.invoice_number }}</a>{% else %}<strong class="font-body-bold text-text-heading">{{ payment.invoice_number or payment.reference_number or "-" }}</strong>{% endif %}
+            {% if not is_customer and payment.invoice_remaining_amount is not none %} · sisa {{ payment.invoice_remaining_amount|rupiah }}{% endif %}
+          </p>
+          {% if payment.bank_account.bank_name or payment.reference_number %}
+            <p class="font-micro-meta text-micro-meta text-text-muted">
+              {% if payment.bank_account.bank_name %}{{ payment.bank_account.bank_name }} {{ payment.bank_account.account_number or "" }}{% endif %}
+              {% if payment.reference_number %} · Ref {{ payment.reference_number }}{% endif %}
+            </p>
+          {% endif %}
+        </div>
+        {% if payment.notes %}
+          <p class="pl-1 mt-2 text-text-muted font-caption-regular text-caption-regular italic">Catatan: {{ payment.notes }}</p>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">payments</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">{{ "Unggah bukti bayar belum tersedia" if is_customer and not model.allowed else (data.empty_message or "Belum ada pembayaran") }}</strong>
+        <span class="font-caption-regular text-caption-regular">{{ "Buat pesanan dulu, lalu unggah bukti pembayaran awal di halaman Pesan." if is_customer else "Pembayaran yang diterima akan tampil di sini." }}</span>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+{% endif %}
 {% endblock %}

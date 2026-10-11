@@ -3,6 +3,7 @@ from app.services.manual_backfill_billing_service import *  # noqa: F401,F403
 from app.services.manual_backfill_billing_service import _to_float
 from app.services.manual_backfill_bill_to_service import _clean_text
 from app.services.manual_backfill_duplicate_service import get_manual_backfill_bill_to_context
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 def get_manual_backfill_status_context(status):
@@ -214,7 +215,7 @@ def build_manual_backfill_print_context(batch):
     }
 
     return {
-        "generated_date": date.today(),
+        "generated_date": today_wib(),
         "batch": batch,
         "bill_to_context": get_manual_backfill_bill_to_context(batch),
         "status_context": get_manual_backfill_status_context(getattr(batch, "status", None)),

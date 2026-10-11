@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.master import BranchSetting, Client, Mandor
 from app.models.pricing import PortionPrice
@@ -86,7 +88,7 @@ def _price_rows(branch_id, client_id):
 
 def price_in_effect(branch_id, client_id=None, on_date=None):
     """Baris harga yang berlaku pada tanggal itu (terbaru yang sudah mulai)."""
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     return (
         _price_rows(branch_id, client_id)
         .filter(PortionPrice.effective_from <= on_date)
@@ -96,7 +98,7 @@ def price_in_effect(branch_id, client_id=None, on_date=None):
 
 
 def scheduled_prices(branch_id, client_id=None, after_date=None):
-    after_date = after_date or date.today()
+    after_date = after_date or today_wib()
     return (
         _price_rows(branch_id, client_id)
         .filter(PortionPrice.effective_from > after_date)
@@ -133,7 +135,7 @@ def quote_price_for_mandor(branch_id, mandor_id, on_date=None):
 
 def price_quotes_by_mandor(branch_id, mandors, on_date=None):
     """{mandor_id: PriceQuote|None} untuk form order, tanpa query per baris."""
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     standard = quote_price(branch_id, None, on_date)
     client_ids = {getattr(mandor, "client_id", None) for mandor in mandors} - {None}
     contract = {}
@@ -351,7 +353,7 @@ def order_hpp_warning(daily_order, price):
 
 def client_price_overview(branch_id, on_date=None):
     """Harga kontrak yang tercatat di cabang ini, per client: berlaku sekarang + terjadwal."""
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     client_ids = [
         row.client_id
         for row in db.session.query(PortionPrice.client_id)
@@ -404,7 +406,7 @@ def _fee_rows(branch_id, zone_id=None, client_id=None):
 def fee_in_effect(branch_id, zone_id=None, client_id=None, on_date=None):
     from app.models.pricing import DeliveryFee
 
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     return (
         _fee_rows(branch_id, zone_id, client_id)
         .filter(DeliveryFee.effective_from <= on_date)
@@ -416,7 +418,7 @@ def fee_in_effect(branch_id, zone_id=None, client_id=None, on_date=None):
 def scheduled_fees(branch_id, zone_id=None, client_id=None, after_date=None):
     from app.models.pricing import DeliveryFee
 
-    after_date = after_date or date.today()
+    after_date = after_date or today_wib()
     return (
         _fee_rows(branch_id, zone_id, client_id)
         .filter(DeliveryFee.effective_from > after_date)
@@ -438,7 +440,7 @@ def active_zones(branch_id):
 def zone_overview(branch_id, on_date=None):
     from app.models.pricing import DeliveryZone
 
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     return [
         {
             "zone": zone,
@@ -452,7 +454,7 @@ def zone_overview(branch_id, on_date=None):
 def client_fee_overview(branch_id, on_date=None):
     from app.models.pricing import DeliveryFee
 
-    on_date = on_date or date.today()
+    on_date = on_date or today_wib()
     client_ids = [
         row.client_id
         for row in db.session.query(DeliveryFee.client_id)

@@ -1,6 +1,8 @@
 from collections import defaultdict
 from datetime import datetime
 
+from app.utils.clock import now_wib
+
 from app.models.accounting import Journal
 from app.models.canteen import CanteenSale, WorkerDebt
 from app.models.delivery import Delivery, DeliveryDetail
@@ -856,7 +858,7 @@ def get_data_health_report(branch_id):
         overall_status = "AMAN"
 
     return {
-        "generated_at": datetime.now(),
+        "generated_at": now_wib(),
         "branch_id": branch_id,
         "overall_status": overall_status,
         "overall_status_class": _status_class(overall_status),

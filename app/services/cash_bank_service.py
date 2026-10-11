@@ -381,9 +381,9 @@ def calculate_account_balance(branch_id, account_type, bank_account_id=None):
 
 
 def _next_sequence_number(model, field_name, prefix, branch_id=None):
-    from datetime import date
+    from app.utils.clock import today_wib
 
-    date_part = date.today().strftime("%Y%m%d")
+    date_part = today_wib().strftime("%Y%m%d")
     base = f"{prefix}-{date_part}"
     query = model.query
     if branch_id is not None and hasattr(model, "branch_id"):
@@ -672,13 +672,13 @@ def create_cash_bank_adjustment_record(
 
 
 def reconcile_cash_bank_transaction(transaction, reconciled_by, note=None, commit=False):
-    from datetime import datetime
+    from app.utils.clock import now_wib
 
     if not transaction:
         raise Exception("Transaksi kas/bank tidak ditemukan.")
 
     transaction.is_reconciled = True
-    transaction.reconciled_at = datetime.now()
+    transaction.reconciled_at = now_wib()
     transaction.reconciled_by = reconciled_by
     transaction.reconciliation_note = note
 

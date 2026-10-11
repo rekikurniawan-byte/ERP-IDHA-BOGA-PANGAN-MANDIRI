@@ -1,0 +1,112 @@
+{% extends "layouts/driver_mobile.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-3.5 pb-4">
+    {# Filter Riwayat Mobile #}
+    <div class="rounded-xl p-3.5 bg-card-surface border border-card-border shadow-xs">
+        <form method="GET" action="{{ url_for('delivery.history') }}" class="app-filter flex flex-col gap-2.5" data-ui-form="true">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="font-micro-meta text-[11px] font-bold text-text-muted block mb-1">Dari Tanggal</label>
+                    <input type="date" name="date_from" class="w-full h-10 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" value="{{ date_from_text }}">
+                </div>
+                <div>
+                    <label class="font-micro-meta text-[11px] font-bold text-text-muted block mb-1">Sampai Tanggal</label>
+                    <input type="date" name="date_to" class="w-full h-10 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" value="{{ date_to_text }}">
+                </div>
+            </div>
+
+            <div>
+                <label class="font-micro-meta text-[11px] font-bold text-text-muted block mb-1">Status Pengiriman</label>
+                <select name="status" class="w-full h-10 px-2.5 rounded-lg border border-card-border bg-background-surface font-body-default text-xs text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>Semua Status</option>
+                    <option value="DELIVERED" {% if status_filter == 'DELIVERED' %}selected{% endif %}>DELIVERED (Selesai)</option>
+                    <option value="DISPATCHED" {% if status_filter == 'DISPATCHED' %}selected{% endif %}>DISPATCHED (Jalan)</option>
+                    <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>DRAFT (Menyiapkan)</option>
+                    <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>CANCELLED (Dibatalkan)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <button type="submit" class="flex-1 h-10 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95">
+                    Terapkan Filter
+                </button>
+                <a href="{{ url_for('delivery.history') }}" class="h-10 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-body font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {# Daftar Riwayat Pengiriman #}
+    <div class="flex items-center justify-between mt-1">
+        <h2 class="font-headline-sm text-sm font-bold text-text-heading">Arsip Riwayat</h2>
+        <span class="font-micro-meta text-[11px] text-text-muted">{{ deliveries|length }} data</span>
+    </div>
+
+    {% if deliveries %}
+        <div class="flex flex-col gap-3">
+            {% for delivery in deliveries %}
+                {% set total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% for detail in delivery.details %}
+                    {% set total.planned = total.planned + detail.planned_qty %}
+                    {% set total.delivered = total.delivered + detail.delivered_qty %}
+                    {% set total.shortage = total.shortage + detail.shortage_qty %}
+                {% endfor %}
+                {% set sla = calculate_delivery_sla_summary(delivery) %}
+
+                <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <span class="font-headline-sm text-sm font-bold text-text-heading block truncate">{{ delivery.delivery_number }}</span>
+                            <span class="font-caption-regular text-xs text-text-muted">
+                                {{ delivery.delivery_date.strftime('%d-%m-%Y') }} · {{ get_delivery_type_from_notes(delivery.notes) }}
+                            </span>
+                            {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+                                <span class="inline-block font-micro-meta text-[10px] text-status-warning-text bg-status-warning-bg px-2 py-0.5 rounded-md font-semibold mt-0.5">Pengganti kekurangan</span>
+                            {% endif %}
+                        </div>
+
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 {% if delivery.status == 'DELIVERED' %}bg-status-success-bg text-status-success-text{% elif delivery.status == 'ON_THE_WAY' %}bg-status-info-bg text-status-info-text{% elif delivery.status == 'CANCELLED' %}bg-status-danger-bg text-status-danger-text{% else %}bg-status-warning-bg text-status-warning-text{% endif %}">
+                            {{ delivery.status|status_label }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 py-2 bg-surface-container-low rounded-xl text-center text-xs">
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Rencana</span>
+                            <strong class="font-bold text-text-heading">{{ total.planned }}</strong>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Terkirim</span>
+                            <strong class="font-bold text-status-success-text">{{ total.delivered }}</strong>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Kurang</span>
+                            <strong class="font-bold {{ 'text-status-danger-text' if total.shortage > 0 else 'text-text-muted' }}">{{ total.shortage }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 text-xs">
+                        <div class="flex items-center gap-1.5 text-text-muted font-caption-regular">
+                            <span class="material-symbols-outlined text-[16px]">schedule</span>
+                            <span>{{ sla.label }}{% if sla.max_minutes_late %} (+{{ sla.max_minutes_late }}m){% endif %}</span>
+                        </div>
+                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="h-9 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-body-bold text-xs inline-flex items-center justify-center transition-colors active:scale-95">
+                            Detail
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl p-8 bg-card-surface border border-dashed border-card-border text-center flex flex-col items-center justify-center">
+            <span class="material-symbols-outlined text-4xl text-text-muted mb-2">history</span>
+            <span class="font-body-bold text-sm text-text-heading mb-1">Riwayat Tidak Ditemukan</span>
+            <p class="font-caption-regular text-xs text-text-muted max-w-[260px]">
+                Tidak ada data pengiriman katering yang sesuai dengan filter tanggal atau status di atas.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

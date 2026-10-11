@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 from app.services.mandor_invoice_helper_service import (
     delivery_fee_invoice_lines,
     billable_base_quantities,
@@ -144,7 +145,7 @@ def generate_period_invoice_preview():
 
     mandors = mandor_query.order_by(Mandor.id.asc()).all()
 
-    today_value = date.today().strftime("%Y-%m-%d")
+    today_value = today_wib().strftime("%Y-%m-%d")
 
     selected_mandor_id = ""
     period_start_value = today_value
@@ -462,7 +463,7 @@ def generate_period_invoice_save():
     from app.services.credit_control_service import invoice_billing_terms
     from app.services.invoice_identity_service import invoice_contact_snapshot
 
-    invoice_date = date.today()
+    invoice_date = today_wib()
     # Jatuh tempo dari termin (akun kredit, lalu kontrak), dan mandor yang
     # ditagih langsung mendapat invoice atas namanya sendiri -- dengan dirinya
     # sebagai kontak, tanpa mewajibkan PIC client.

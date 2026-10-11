@@ -1,0 +1,64 @@
+{# Pesanan yang menunggu pembayaran di muka: transfer lalu unggah bukti. Dipakai di tab Tagihan. #}
+{% set pay_rows = pending_rows or [] %}
+{% set company = global_company_settings or {} %}
+{% if pay_rows %}
+            <section class="px-margin pt-1" aria-labelledby="poPayTitle">
+                <div class="p-3.5 rounded-xl bg-status-warning-bg/50 border border-status-warning-text/20 shadow-sm flex flex-col gap-2.5">
+                    <div class="flex items-center gap-2 text-status-warning-text">
+                        <span class="material-symbols-outlined text-[20px]">pending_actions</span>
+                        <h2 id="poPayTitle" class="font-body-bold text-body-bold">{{ pay_rows|length }} pesanan menunggu pembayaran</h2>
+                    </div>
+                    <p class="font-caption-regular text-caption-regular text-text-body leading-snug">
+                        Transfer {% if company.payment_account_number %}ke <strong class="font-bold">{{ company.payment_bank_name }} {{ company.payment_account_number }}</strong> a.n. {{ company.payment_account_name }}{% endif %}, lalu unggah buktinya. Pesanan diproses setelah pembayaran diperiksa.
+                    </p>
+                    {% for row in pay_rows %}
+                        {% set draft = row.draft %}
+                        <div class="p-3 rounded-lg bg-card-surface border {{ 'border-status-danger-text/40' if row.is_closed else 'border-card-border' }} flex flex-col gap-2">
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="min-w-0">
+                                    <strong class="font-body-bold text-caption-regular text-text-heading block">{{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</strong>
+                                    <span class="font-micro-meta text-micro-meta text-text-muted block truncate">{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} · {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</span>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    {% if not row.is_closed and row.unique_code and row.transfer_amount %}
+                                        {% set tr_str = (row.transfer_amount|rupiah) %}
+                                        <span class="font-micro-meta text-micro-meta text-text-muted block">Transfer TEPAT</span>
+                                        <strong class="font-body-bold text-body-bold text-text-heading">{{ tr_str[:-3] }}<span class="text-primary font-extrabold">{{ tr_str[-3:] }}</span></strong>
+                                    {% else %}
+                                        <span class="font-micro-meta text-micro-meta text-text-muted block">Sisa bayar</span>
+                                        <strong class="font-body-bold text-body-bold text-text-heading">{{ (row.amount_due or 0)|rupiah }}</strong>
+                                    {% endif %}
+                                    {% if row.paid_amount %}<span class="font-micro-meta text-micro-meta text-text-muted block">tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</span>{% endif %}
+                                </div>
+                            </div>
+                            {% if row.is_closed %}
+                                <div class="flex items-center gap-1.5 p-2 rounded-lg bg-status-danger-bg text-status-danger-text font-caption-regular text-caption-regular font-bold">
+                                    <span class="material-symbols-outlined text-[16px]">warning</span>
+                                    Pesanan ini sudah lewat batas waktu dan tidak bisa diproses. Hubungi admin.
+                                </div>
+                            {% else %}
+                                {% if row.unique_code and row.transfer_amount %}
+                                    <p class="font-micro-meta text-micro-meta text-text-muted leading-snug">3 angka terakhir adalah kode unik pesanan Anda agar pembayaran cepat dicocokkan. Mohon jangan dibulatkan.</p>
+                                {% endif %}
+                                <form method="post" enctype="multipart/form-data" action="{{ url_for('portal.upload_draft_payment_proof', draft_id=draft.id) }}" class="flex flex-col gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="notes" value="">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="flex flex-col gap-0.5"><span class="font-micro-meta text-micro-meta text-text-muted">Nominal</span><input type="number" name="paid_amount" min="1" step="1" value="{{ (row.transfer_amount if row.unique_code and row.transfer_amount is not none else row.amount_due)|int if (row.transfer_amount or row.amount_due) else '' }}" required class="h-10 px-2.5 rounded-lg border border-card-border font-caption-regular text-caption-regular outline-none"></label>
+                                        <label class="flex flex-col gap-0.5"><span class="font-micro-meta text-micro-meta text-text-muted">Nama pengirim</span><input type="text" name="sender_name" maxlength="120" required placeholder="Pemilik rekening" class="h-10 px-2.5 rounded-lg border border-card-border font-caption-regular text-caption-regular outline-none"></label>
+                                    </div>
+                                    <label class="flex flex-col gap-0.5"><span class="font-micro-meta text-micro-meta text-text-muted">No. referensi transfer (opsional)</span><input type="text" name="transfer_reference" maxlength="80" class="h-10 px-2.5 rounded-lg border border-card-border font-caption-regular text-caption-regular outline-none"></label>
+                                    <div class="flex gap-2">
+                                        <input type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required aria-label="Bukti transfer" class="flex-1 min-w-0 h-10 p-1.5 rounded-lg border border-card-border text-[11px] font-caption-regular">
+                                        <button type="submit" class="h-10 px-4 rounded-lg bg-primary text-on-primary font-body-bold text-caption-regular flex items-center justify-center gap-1 shadow-sm flex-shrink-0">
+                                            <span class="material-symbols-outlined text-[16px]">upload</span><span>Unggah</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+

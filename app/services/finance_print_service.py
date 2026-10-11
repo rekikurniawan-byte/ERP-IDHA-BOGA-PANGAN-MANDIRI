@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Dict, Mapping, Optional
 
+from app.utils.clock import today_wib
+
 from app.models.finance import BankAccount, Invoice
 from app.models.master import Client, Mandor, Supplier
 from app.services.company_settings_service import get_company_settings
@@ -16,7 +18,7 @@ from app.services.finance_export_service import (
 
 
 def _today() -> date:
-    return date.today()
+    return today_wib()
 
 
 def _parse_int(value: Any) -> Optional[int]:

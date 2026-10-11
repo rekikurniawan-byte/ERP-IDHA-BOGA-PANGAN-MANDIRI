@@ -2,14 +2,9 @@
 
 {% block portal_content %}
     {% if not current_user.email %}
-    <div class="portal-email-banner" role="alert" data-banner="portal-email-reminder">
-        <div class="portal-email-banner-content">
-            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-            <span>Lengkapi email Anda agar bisa reset password jika lupa.</span>
-        </div>
-        <a href="{{ url_for('portal.profile') }}" class="btn btn-sm app-btn-primary text-nowrap">
-            Ke Profil
-        </a>
+    <div class="mx-margin mt-3 p-3 rounded-xl bg-status-warning-bg text-status-warning-text flex items-center gap-3" role="alert" data-banner="portal-email-reminder">
+        <span class="material-symbols-outlined text-[20px] flex-shrink-0">warning</span>
+        <span class="font-caption-regular text-caption-regular flex-1">Lengkapi email Anda agar bisa reset password jika lupa. Isi di tab <strong>Akun</strong>.</span>
     </div>
     {% endif %}
 

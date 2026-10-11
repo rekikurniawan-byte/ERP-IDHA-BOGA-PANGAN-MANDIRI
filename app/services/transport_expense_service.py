@@ -1,6 +1,8 @@
 import logging
 from datetime import date
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import inspect
 
 from app.extensions import db
@@ -213,7 +215,7 @@ def create_transport_vehicle_expense(
     amount = float(amount or 0)
     if amount <= 0:
         raise Exception("Nominal biaya harus lebih dari 0.")
-    if expense_date > date.today():
+    if expense_date > today_wib():
         raise Exception("Tanggal biaya tidak boleh lebih dari hari ini.")
 
     account_type, bank_account_id = validate_cash_bank(branch_id, payment_method, bank_account_id)

@@ -163,6 +163,7 @@ def dapur():
 @role_required("PENGANTAR")
 def pengantar():
     data = get_pengantar_dashboard_data(current_user.branch_id)
-    return render_template("dashboard/pengantar.html", data=data)
+    template_name = "driver/dashboard.html" if current_user.role == "PENGANTAR" else "dashboard/pengantar.html"
+    return render_template(template_name, data=data)
 
 

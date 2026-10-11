@@ -1,0 +1,130 @@
+{% extends "layouts/driver_mobile.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-4 pb-4">
+    {# Sambutan & Status Operasional Hari Ini #}
+    <div class="rounded-2xl p-4 bg-gradient-to-br from-primary to-brand-primary-hover text-on-primary shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <span class="font-micro-meta text-[11px] font-bold uppercase tracking-wider text-primary-fixed/90">Ringkasan Hari Ini</span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md">
+                <span class="w-1.5 h-1.5 rounded-full bg-status-success-bg animate-pulse"></span>
+                Operasional Aktif
+            </span>
+        </div>
+        <h1 class="font-headline-md text-headline-md font-bold leading-tight text-white mb-1">Halo, {{ current_user.full_name or current_user.username }}</h1>
+        <p class="font-caption-regular text-xs text-primary-fixed leading-relaxed">
+            Pantau status armada dan catatan pengiriman katering Anda secara real-time.
+        </p>
+    </div>
+
+    {# KPI Grid: Angka besar, kontras tinggi untuk pemakaian di luar ruangan #}
+    <div class="grid grid-cols-2 gap-2.5">
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-text-muted mb-1">
+                <span class="font-caption-regular text-xs">Total Pengiriman</span>
+                <span class="material-symbols-outlined text-primary text-[20px]">local_shipping</span>
+            </div>
+            <div class="font-display-hero text-2xl font-bold text-text-heading leading-tight">{{ data.today_deliveries|length }}</div>
+            <span class="font-micro-meta text-[11px] text-text-muted mt-0.5">Jadwal hari ini</span>
+        </div>
+
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-text-muted mb-1">
+                <span class="font-caption-regular text-xs">Menyiapkan</span>
+                <span class="material-symbols-outlined text-status-warning-text text-[20px]">inventory_2</span>
+            </div>
+            <div class="font-display-hero text-2xl font-bold {{ 'text-status-warning-text' if data.preparing_count > 0 else 'text-text-heading' }} leading-tight">{{ data.preparing_count }}</div>
+            <span class="font-micro-meta text-[11px] text-text-muted mt-0.5">Belum berangkat</span>
+        </div>
+
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-text-muted mb-1">
+                <span class="font-caption-regular text-xs">Dalam Jalan</span>
+                <span class="material-symbols-outlined text-status-info-text text-[20px]">near_me</span>
+            </div>
+            <div class="font-display-hero text-2xl font-bold {{ 'text-status-info-text' if data.on_the_way_count > 0 else 'text-text-heading' }} leading-tight">{{ data.on_the_way_count }}</div>
+            <span class="font-micro-meta text-[11px] text-text-muted mt-0.5">Sedang diantar</span>
+        </div>
+
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-text-muted mb-1">
+                <span class="font-caption-regular text-xs">Kurang Kirim</span>
+                <span class="material-symbols-outlined text-status-danger-text text-[20px]">error</span>
+            </div>
+            <div class="font-display-hero text-2xl font-bold {{ 'text-status-danger-text' if data.shortage_total > 0 else 'text-status-success-text' }} leading-tight">{{ data.shortage_total }}</div>
+            <span class="font-micro-meta text-[11px] text-text-muted mt-0.5">Porsi selisih</span>
+        </div>
+    </div>
+
+    {# Strip Prioritas Status #}
+    <div class="grid grid-cols-2 gap-2">
+        <div class="rounded-xl p-3 bg-surface-container border border-card-border flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-card-surface flex items-center justify-center text-primary flex-shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[18px]">timelapse</span>
+            </div>
+            <div class="min-w-0">
+                <div class="font-body-bold text-xs text-text-heading leading-tight truncate">{{ data.preparing_count + data.on_the_way_count }} Aktif</div>
+                <div class="font-micro-meta text-[10px] text-text-muted leading-tight">Perlu dipantau</div>
+            </div>
+        </div>
+
+        <div class="rounded-xl p-3 bg-surface-container border border-card-border flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-card-surface flex items-center justify-center text-status-success-text flex-shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            </div>
+            <div class="min-w-0">
+                <div class="font-body-bold text-xs text-text-heading leading-tight truncate">{{ data.delivered_count }} Diterima</div>
+                <div class="font-micro-meta text-[10px] text-text-muted leading-tight">Tugas selesai</div>
+            </div>
+        </div>
+    </div>
+
+    {# Daftar Pengiriman Terbaru (Hanya link ke rincian kartu itu) #}
+    <div class="flex flex-col gap-2.5 mt-1">
+        <div class="flex items-center justify-between">
+            <h2 class="font-headline-sm text-sm font-bold text-text-heading">Pengiriman Terbaru</h2>
+            <span class="font-micro-meta text-[11px] text-text-muted">{{ data.recent_deliveries|length }} data</span>
+        </div>
+
+        {% if data.recent_deliveries %}
+            <div class="flex flex-col gap-2.5">
+                {% for delivery in data.recent_deliveries %}
+                    <div class="rounded-xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="font-body-bold text-sm text-text-heading block truncate">{{ delivery.delivery_number }}</span>
+                                <span class="font-micro-meta text-[11px] text-text-muted flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px]">calendar_today</span>
+                                    {{ delivery.delivery_date.strftime('%d-%m-%Y') }}
+                                </span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 {% if delivery.status == 'DELIVERED' %}bg-status-success-bg text-status-success-text{% elif delivery.status == 'ON_THE_WAY' %}bg-status-info-bg text-status-info-text{% elif delivery.status == 'CANCELLED' %}bg-status-danger-bg text-status-danger-text{% else %}bg-status-warning-bg text-status-warning-text{% endif %}">
+                                {{ delivery.status|status_label }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-card-border/60 text-xs">
+                            <span class="text-text-muted font-caption-regular">
+                                Total: <strong class="text-text-heading">{{ delivery.details|length }} titik</strong>
+                                {% if delivery.driver %}· {{ delivery.driver.name }}{% endif %}
+                            </span>
+                            <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-body-bold text-xs transition-colors active:scale-95">
+                                Detail
+                                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-2xl p-6 bg-card-surface border border-dashed border-card-border text-center flex flex-col items-center justify-center">
+                <span class="material-symbols-outlined text-4xl text-text-muted mb-2">local_shipping</span>
+                <span class="font-body-bold text-sm text-text-heading mb-0.5">Belum Ada Pengiriman</span>
+                <p class="font-caption-regular text-xs text-text-muted max-w-[260px]">
+                    Pengiriman baru akan muncul di sini setelah dibuat dari pesanan operasional.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

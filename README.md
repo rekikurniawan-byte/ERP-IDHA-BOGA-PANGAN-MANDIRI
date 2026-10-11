@@ -12,6 +12,14 @@ PANDUAN_TEMAN_JALANKAN_PROJECT.md
 
 File itu berisi langkah detail dari install Git, Python, PostgreSQL, clone repo, restore database, sampai menjalankan aplikasi.
 
+## Panduan Arsitektur & Kamus Sistem (Wajib untuk Developer & AI)
+
+Seluruh struktur kode, aturan non-negotiable arsitektur, kamus data model, alur bisnis katering, aturan syariat, kontrol kredit, dan penjadwal terdokumentasi lengkap di:
+
+```text
+DOKUMENTASI_LENGKAP_SISTEM_ERP_IDHA_BOGA.md
+```
+
 ## Isi Repository
 
 - Source code aplikasi Flask ada di `app/`.

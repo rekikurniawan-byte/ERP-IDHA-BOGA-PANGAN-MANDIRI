@@ -9,97 +9,106 @@
 {% set invoice_rows = models.invoices.invoices %}
 {% set company_name = (invoice_rows[0].party.client_name if invoice_rows and invoice_rows[0].party.client_name else term('client')) %}
 {% set open_rows = invoice_rows|rejectattr("status", "equalto", "PAID")|list %}
+{% set overdue_count = invoices.overdue_invoice_count or 0 %}
 
 <!-- {{ data.scope.scope_mode }} -->
-<section class="ph">
-    <header class="ph-hero">
-        <div class="ph-hero-text">
-            <p>Portal {{ term('client') }}</p>
-            <h1>{{ company_name }}</h1>
-            <ul class="ph-facts">
-                <li><i class="bi bi-diagram-3"></i>{{ scope.mandor_ids|length }} {{ term('sub_client', lower=True) }}</li>
-                <li><i class="bi bi-geo-alt"></i>{{ scope.delivery_location_ids|length }} lokasi</li>
-                <li><i class="bi bi-file-earmark-check"></i>{{ contracts.active_count or 0 }} kontrak aktif</li>
-            </ul>
-        </div>
-        <div class="ph-hero-kpi">
-            <span>Sisa tagihan perusahaan</span>
-            <strong>{{ invoices.active_outstanding_amount|rupiah }}</strong>
-            <small>{{ invoices.active_invoice_count or 0 }} invoice aktif · {{ invoices.overdue_invoice_count or 0 }} lewat jatuh tempo</small>
-            <div class="ph-hero-actions">
-                <a class="btn app-btn-primary" href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i> Lihat piutang</a>
-                {% if direct_ordering_enabled %}
-                    <a class="btn ph-btn-ghost" href="{{ url_for('portal.draft_order') }}"><i class="bi bi-bag-plus"></i> Pesan</a>
-                {% else %}
-                    <a class="btn ph-btn-ghost" href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i> Invoice</a>
-                {% endif %}
-            </div>
-        </div>
-    </header>
+<div class="flex flex-col w-full px-margin pb-space-xl space-y-space-lg pt-space-sm">
+  <section class="bg-card-surface rounded-xl p-space-md shadow-sm space-y-space-sm">
+    <div class="flex items-center gap-space-sm min-w-0">
+      <div class="w-12 h-12 rounded-xl bg-inverse-surface flex items-center justify-center flex-shrink-0 shadow-sm text-surface-container-lowest">
+        <span class="material-symbols-outlined text-[26px]">corporate_fare</span>
+      </div>
+      <div class="flex flex-col min-w-0">
+        <h1 class="font-headline-sm text-headline-sm text-text-heading truncate">{{ company_name }}</h1>
+        <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ current_user.full_name or current_user.username }} · Portal {{ term('client') }}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <div class="bg-surface-container-low rounded-lg p-2 text-center">
+        <strong class="font-body-bold text-body-bold text-text-heading block">{{ scope.mandor_ids|length }}</strong>
+        <span class="font-micro-meta text-micro-meta text-text-muted">{{ term('sub_client') }}</span>
+      </div>
+      <div class="bg-surface-container-low rounded-lg p-2 text-center">
+        <strong class="font-body-bold text-body-bold text-text-heading block">{{ scope.delivery_location_ids|length }}</strong>
+        <span class="font-micro-meta text-micro-meta text-text-muted">Lokasi</span>
+      </div>
+      <div class="bg-surface-container-low rounded-lg p-2 text-center">
+        <strong class="font-body-bold text-body-bold text-text-heading block">{{ contracts.active_count or 0 }}</strong>
+        <span class="font-micro-meta text-micro-meta text-text-muted">Kontrak aktif</span>
+      </div>
+    </div>
+  </section>
 
-    {{ ph_alerts(center.alerts) }}
+  {{ ph_alerts(center.alerts) }}
 
-    {% include "portal/_standing_orders_card.html" %}
-
-    <div class="ph-kpis">
-        {{ ph_kpi("bi-receipt", "brand", "Total ditagihkan", invoices.total_amount|rupiah, invoices.invoice_count ~ " invoice", url_for('portal.pt_invoices')) }}
-        {{ ph_kpi("bi-check2-circle", "success", "Sudah dibayar", invoices.paid_amount|rupiah, (payments.payment_count or 0) ~ " pembayaran", url_for('portal.pt_payments')) }}
-        {{ ph_kpi("bi-hourglass-split", "warning", "Belum dibayar", invoices.active_outstanding_amount|rupiah, (invoices.payable_invoice_count or 0) ~ " bisa dibayar", url_for('portal.pt_receivables')) }}
-        {{ ph_kpi("bi-people", "info", term('sub_client') ~ " aktif", scope.mandor_ids|length, "hutang " ~ term('worker', lower=True) ~ " " ~ (debts.active_remaining_amount or 0)|rupiah, url_for('portal.pt_mandors')) }}
+  <section class="relative overflow-hidden rounded-xl bg-gradient-to-br from-inverse-surface to-text-heading p-space-lg text-surface-container-lowest shadow-xl space-y-space-md">
+    <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-primary/10 pointer-events-none blur-2xl"></div>
+    <div class="flex items-start justify-between gap-space-sm relative z-10">
+      <div class="min-w-0">
+        <span class="font-micro-meta text-micro-meta text-outline-variant tracking-wider uppercase font-semibold">Sisa tagihan perusahaan</span>
+        <div class="font-display-hero text-display-hero text-surface-container-lowest tracking-tight mt-1 break-words">{{ (invoices.active_outstanding_amount or 0)|rupiah }}</div>
+      </div>
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-badge text-label-badge flex-shrink-0 {{ 'bg-status-danger-bg text-status-danger-text' if overdue_count else 'bg-status-success-bg text-status-success-text' }}">
+        <span class="material-symbols-outlined text-[14px]">{{ 'warning' if overdue_count else 'check_circle' }}</span>
+        <span>{{ overdue_count ~ " lewat tempo" if overdue_count else "Tidak ada yang lewat tempo" }}</span>
+      </span>
     </div>
 
-    <div class="ph-grid">
-        <section class="ph-panel">
-            <header class="ph-panel-head">
-                <div><h2>Tagihan berjalan</h2><p>Progres pembayaran tiap invoice.</p></div>
-                <a href="{{ url_for('portal.pt_invoices') }}">Semua invoice <i class="bi bi-arrow-right"></i></a>
-            </header>
-            <div class="ph-list">
-                {% for invoice in (open_rows or invoice_rows)[:5] %}
-                    {{ ph_invoice(invoice) }}
-                {% else %}
-                    <div class="ph-empty"><i class="bi bi-receipt"></i><span>Belum ada invoice perusahaan.</span></div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <aside class="ph-side">
-            <section class="ph-panel">
-                <header class="ph-panel-head"><div><h2>Komposisi tagihan</h2><p>Arahkan kursor untuk detail.</p></div></header>
-                {% set donut = {"kind": "donut", "format": "rupiah", "height": 230, "center_label": "Ditagihkan",
-                                "center_value": "Rp " ~ (invoices.total_amount|rupiah_short),
-                                "series": [{"name": "Sudah dibayar", "value": invoices.paid_amount|float, "color": "chart-green"},
-                                           {"name": "Belum dibayar", "value": invoices.active_outstanding_amount|float, "color": "brand-600"}]} %}
-                <div class="app-chart ph-chart" data-apex-chart role="img" aria-label="Sudah dibayar dibanding belum dibayar">
-                    <script type="application/json">{{ donut|tojson }}</script>
-                </div>
-                <ul class="ph-legend">
-                    <li><i class="dot tone-success"></i>Sudah dibayar<strong>{{ invoices.paid_amount|rupiah }}</strong></li>
-                    <li><i class="dot tone-brand"></i>Belum dibayar<strong>{{ invoices.active_outstanding_amount|rupiah }}</strong></li>
-                </ul>
-            </section>
-
-            <section class="ph-panel">
-                <header class="ph-panel-head">
-                    <div><h2>Kontrak</h2></div>
-                    <a href="{{ url_for('portal.pt_contracts') }}">Detail <i class="bi bi-arrow-right"></i></a>
-                </header>
-                {% for contract in models.contracts.rows[:3] %}
-                    {% set days_left = (contract.end_date - today_wib()).days if contract.end_date else none %}
-                    <article class="ph-contract">
-                        <div>
-                            <strong>{{ contract.contract_number }}</strong>
-                            <small>{{ contract.title }}</small>
-                        </div>
-                        <div class="ph-contract-end">
-                            <span class="ph-pill tone-{{ 'success' if contract.status == 'ACTIVE' else 'neutral' }}">{{ contract.status|status_label }}</span>
-                            {% if days_left is not none %}<small>{{ "berakhir " ~ contract.end_date.strftime('%d-%m-%Y') if days_left >= 0 else "berakhir" }}{% if 0 <= days_left <= 60 %} · {{ days_left }} hari lagi{% endif %}</small>{% endif %}
-                        </div>
-                    </article>
-                {% else %}
-                    <div class="ph-empty"><i class="bi bi-file-earmark-text"></i><span>Belum ada kontrak.</span></div>
-                {% endfor %}
-            </section>
-        </aside>
+    <div class="grid grid-cols-3 gap-2 py-3 px-3.5 bg-white/5 rounded-xl relative z-10">
+      <div class="flex flex-col min-w-0">
+        <span class="font-micro-meta text-micro-meta text-outline-variant">Ditagihkan</span>
+        <span class="font-body-bold text-body-bold text-surface-container-lowest mt-0.5 truncate">{{ (invoices.total_amount or 0)|rupiah_short }}</span>
+      </div>
+      <div class="flex flex-col min-w-0">
+        <span class="font-micro-meta text-micro-meta text-outline-variant">Dibayar</span>
+        <span class="font-body-bold text-body-bold text-surface-container-lowest mt-0.5 truncate">{{ (invoices.paid_amount or 0)|rupiah_short }}</span>
+      </div>
+      <div class="flex flex-col min-w-0">
+        <span class="font-micro-meta text-micro-meta text-outline-variant">Invoice aktif</span>
+        <span class="font-body-bold text-body-bold text-surface-container-lowest mt-0.5">{{ invoices.active_invoice_count or 0 }}</span>
+      </div>
     </div>
-</section>
+
+  </section>
+
+  {% include "portal/_standing_orders_card.html" %}
+
+  <div class="grid grid-cols-2 gap-2">
+    {{ ph_kpi("check_circle", "success", "Sudah dibayar", (invoices.paid_amount or 0)|rupiah, (payments.payment_count or 0) ~ " pembayaran") }}
+    {{ ph_kpi("groups", "info", term('sub_client') ~ " aktif", scope.mandor_ids|length, ("hutang " ~ term('worker', lower=True) ~ " " ~ (debts.active_remaining_amount or 0)|rupiah) if module_enabled('worker_debt') else "dalam akses akun") }}
+  </div>
+
+  <section class="space-y-space-sm">
+    <div class="flex items-center justify-between px-1">
+      <h2 class="font-title-menu text-title-menu text-text-heading">Tagihan Berjalan</h2>
+    </div>
+    <div class="space-y-2">
+      {% for invoice in (open_rows or invoice_rows)[:4] %}
+        {{ ph_invoice(invoice, url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id)) }}
+      {% else %}
+        <div class="bg-card-surface rounded-xl p-6 text-center text-text-muted shadow-sm font-caption-regular text-caption-regular">Belum ada invoice perusahaan.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="space-y-space-sm">
+    <div class="flex items-center justify-between px-1">
+      <h2 class="font-title-menu text-title-menu text-text-heading">Kontrak</h2>
+    </div>
+    {% for contract in models.contracts.rows[:3] %}
+      {% set days_left = (contract.end_date - today_wib()).days if contract.end_date else none %}
+      <a href="{{ url_for('portal.portal_contract_documents', contract_id=contract.id) }}" class="bg-card-surface rounded-xl p-3 shadow-sm flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ contract.contract_number }}</strong>
+          <span class="font-micro-meta text-micro-meta text-text-muted block truncate">{{ contract.title }}</span>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ 'bg-status-success-bg text-status-success-text' if contract.status == 'ACTIVE' else 'bg-surface-container text-text-body' }}">{{ contract.status|status_label }}</span>
+          {% if days_left is not none %}<span class="font-micro-meta text-micro-meta text-text-muted block mt-1">{{ "s.d. " ~ contract.end_date.strftime('%d-%m-%Y') if days_left >= 0 else "berakhir" }}{% if 0 <= days_left <= 60 %} · {{ days_left }} hari lagi{% endif %}</span>{% endif %}
+        </div>
+      </a>
+    {% else %}
+      <div class="bg-card-surface rounded-xl p-6 text-center text-text-muted shadow-sm font-caption-regular text-caption-regular">Belum ada kontrak.</div>
+    {% endfor %}
+  </section>
+</div>

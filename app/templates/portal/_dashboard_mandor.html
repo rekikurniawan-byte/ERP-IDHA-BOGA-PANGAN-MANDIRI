@@ -8,101 +8,131 @@
 {% set scope = models.scope %}
 {% set worker_debt_on = module_enabled('worker_debt') %}
 {% set responsibility = invoices.active_outstanding_amount + (debts.active_remaining_amount if worker_debt_on else 0) %}
+{% set active_delivery = orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|first %}
 
 <!-- Dashboard Mandor {{ data.scope.scope_mode }} -->
-<section class="ph">
-    <header class="ph-hero">
-        <div class="ph-hero-text">
-            <p>Portal {{ term('sub_client') }}</p>
-            <h1>Halo, {{ current_user.full_name }}</h1>
-            <ul class="ph-facts">
-                <li><i class="bi bi-hourglass"></i>{{ orders.pending }} pesanan menunggu admin</li>
-                <li><i class="bi bi-truck"></i>{{ orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|length }} sedang diantar</li>
-                <li><i class="bi bi-geo-alt"></i>{{ scope.delivery_location_ids|length }} lokasi</li>
-            </ul>
+<div class="flex flex-col w-full pb-10">
+    <!-- 1. GREETING & CONTEXT BANNER -->
+    <section class="px-margin pt-4 pb-2 flex flex-col gap-1">
+        <span class="font-headline-md text-headline-md text-text-heading">Halo, {{ current_user.full_name or current_user.username }}</span>
+        <div class="flex items-center gap-1.5 text-text-muted">
+            <span class="material-symbols-outlined text-[16px] text-primary">pin_drop</span>
+            <p class="font-caption-regular text-caption-regular text-text-muted">{{ scope.delivery_location_ids|length }} lokasi antar · {{ orders.pending }} pesanan menunggu admin</p>
         </div>
-        <div class="ph-hero-kpi">
-            <span>{{ "Total tanggungan" if worker_debt_on else "Sisa tagihan catering" }}</span>
-            <strong>{{ responsibility|rupiah }}</strong>
-            <small>{% if worker_debt_on %}tagihan catering {{ invoices.active_outstanding_amount|rupiah }} + hutang warung {{ debts.active_remaining_amount|rupiah }}{% else %}{{ invoices.active_invoice_count or 0 }} invoice aktif{% endif %}</small>
-            <div class="ph-hero-actions">
-                <a class="btn app-btn-primary" href="{{ url_for('portal.mandor_order') }}"><i class="bi bi-bag-plus"></i> Pesan catering</a>
-                <a class="btn ph-btn-ghost" href="{{ url_for('portal.order_status') }}"><i class="bi bi-list-check"></i> Status pesanan</a>
-            </div>
-        </div>
-    </header>
+    </section>
 
-    {{ ph_alerts(center.alerts) }}
+    <section class="px-margin">{{ ph_alerts(center.alerts) }}</section>
 
-    {% include "portal/_standing_orders_card.html" %}
-
-    <div class="ph-kpis">
-        {{ ph_kpi("bi-bag-check", "brand", "Pesanan", orders.total, (orders.rows|selectattr("stage", "equalto", "DELIVERED")|list|length) ~ " sudah diterima", url_for('portal.order_status')) }}
-        {{ ph_kpi("bi-receipt", "warning", "Sisa tagihan", invoices.active_outstanding_amount|rupiah, (invoices.active_invoice_count or 0) ~ " invoice aktif", url_for('portal.mandor_invoices')) }}
-        {{ ph_kpi("bi-check2-circle", "success", "Sudah dibayar", payments.payment_amount|rupiah, (payments.payment_count or 0) ~ " pembayaran", url_for('portal.mandor_payments')) }}
-        {% if worker_debt_on %}
-            {{ ph_kpi("bi-shop", "info", "Hutang warung " ~ term('worker', lower=True), debts.active_remaining_amount|rupiah, (debts.active_debt_count or 0) ~ " hutang aktif", url_for('portal.mandor_canteen_debts')) }}
-        {% else %}
-            {{ ph_kpi("bi-geo-alt", "info", "Lokasi", scope.delivery_location_ids|length, "dalam akses akun", url_for('portal.addresses')) }}
-        {% endif %}
-    </div>
-
-    <div class="ph-grid">
-        <section class="ph-panel">
-            <header class="ph-panel-head">
-                <div><h2>Pesanan terbaru</h2><p>Dari kirim sampai diterima di lokasi.</p></div>
-                <a href="{{ url_for('portal.order_status') }}">Semua <i class="bi bi-arrow-right"></i></a>
-            </header>
-            <div class="ph-list">
-                {% for order in orders.rows[:5] %}
-                    <article class="ph-order">
-                        <div class="ph-order-top">
-                            <div>
-                                <strong>{{ order.meal_type_label }} · {{ order.portion_qty }} porsi</strong>
-                                <small>{{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} · {{ order.location_name }}</small>
-                            </div>
-                            <span class="ph-pill tone-{{ 'success' if order.stage == 'DELIVERED' else ('danger' if order.stage == 'REJECTED' else 'info') }}">{{ order.stage_label }}</span>
-                        </div>
-                        {{ ph_track(order.stage) }}
-                    </article>
-                {% else %}
-                    <div class="ph-empty"><i class="bi bi-bag"></i><span>Belum ada pesanan. <a href="{{ url_for('portal.mandor_order') }}">Pesan sekarang</a>.</span></div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <aside class="ph-side">
-            <section class="ph-panel">
-                <header class="ph-panel-head">
-                    <div><h2>Tagihan</h2></div>
-                    <a href="{{ url_for('portal.mandor_invoices') }}">Semua <i class="bi bi-arrow-right"></i></a>
-                </header>
-                <div class="ph-list">
-                    {% for invoice in models.invoices.invoices[:3] %}
-                        {{ ph_invoice(invoice) }}
-                    {% else %}
-                        <div class="ph-empty"><i class="bi bi-receipt"></i><span>Belum ada invoice.</span></div>
-                    {% endfor %}
+    <!-- 2. FINANCIAL HERO CARD (SUPERAPP WALLET PATTERN) -->
+    <section class="px-margin py-2">
+        <div class="relative overflow-hidden rounded-xl bg-inverse-surface text-inverse-on-surface p-space-lg shadow-xl">
+            <div class="absolute -right-8 -top-8 w-36 h-36 bg-primary/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-surface-container-highest/10 rounded-full blur-xl pointer-events-none"></div>
+            
+            <div class="relative z-10 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-primary-fixed">verified_user</span>
+                    <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-outline-variant font-bold">
+                        {{ "Total Tanggungan (Katering + Warung)" if worker_debt_on else "Sisa Tagihan Katering" }}
+                    </span>
                 </div>
-            </section>
+            </div>
 
-            {% if worker_debt_on %}
-                <section class="ph-panel">
-                    <header class="ph-panel-head">
-                        <div><h2>Hutang {{ term('worker', lower=True) }}</h2></div>
-                        <a href="{{ url_for('portal.mandor_canteen_debts') }}">Detail <i class="bi bi-arrow-right"></i></a>
-                    </header>
-                    {% for debt in models.debts.debts[:5] %}
-                        <article class="ph-mini-row">
-                            <span class="ph-avatar">{{ debt.worker_name[:1] }}</span>
-                            <div><strong>{{ debt.worker_name }}</strong><small>{{ debt.payment_count }}x bayar</small></div>
-                            <b>{{ debt.remaining_amount|rupiah }}</b>
-                        </article>
+            <div class="relative z-10 mt-3 mb-1">
+                <div class="flex items-baseline gap-1.5">
+                    <span class="font-display-hero text-display-hero text-on-primary font-bold tracking-tight">
+                        {{ responsibility|rupiah }}
+                    </span>
+                </div>
+                <p class="font-caption-regular text-caption-regular text-outline-variant mt-0.5">
+                    {% if worker_debt_on %}
+                        {{ invoices.active_invoice_count or 0 }} Invoice Aktif · {{ debts.active_debt_count or 0 }} Hutang Warung {{ term('worker', lower=True) }}
                     {% else %}
-                        <div class="ph-empty"><i class="bi bi-people"></i><span>Tidak ada hutang {{ term('worker', lower=True) }}.</span></div>
-                    {% endfor %}
-                </section>
-            {% endif %}
-        </aside>
+                        {{ invoices.active_invoice_count or 0 }} Invoice Aktif Belum Lunas
+                    {% endif %}
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. PENGIRIMAN AKTIF (data pengiriman asli) -->
+    {% if active_delivery %}
+    <section class="px-margin py-2">
+        <div class="bg-card-surface rounded-xl p-space-md shadow-sm border border-card-border flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-success-bg text-status-success-text font-label-badge text-label-badge font-bold">
+                    <span class="w-2 h-2 rounded-full bg-status-success-text animate-pulse"></span>
+                    Sedang Diantar
+                </span>
+                <span class="font-micro-meta text-micro-meta text-text-muted font-semibold uppercase">{{ active_delivery.meal_type_label }} · {{ active_delivery.order_date.strftime('%d-%m-%Y') if active_delivery.order_date else '' }}</span>
+            </div>
+            <div class="flex items-center gap-3 bg-surface-container-low p-2.5 rounded-lg">
+                <div class="w-11 h-11 rounded-full bg-primary-fixed text-primary flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-[22px]">local_shipping</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="font-body-bold text-body-bold text-text-heading truncate leading-snug">{{ active_delivery.delivery_number }}</h4>
+                    <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ active_delivery.portion_qty }} porsi · {{ active_delivery.location_name }}</p>
+                </div>
+            </div>
+            {{ ph_track(active_delivery.stage) }}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 5. STANDING ORDER CARDS (STEPPER + LOCK COUNTDOWN) -->
+    <div id="standing-orders-section" class="px-margin py-2">
+        {% include "portal/_standing_orders_card.html" %}
     </div>
-</section>
+
+    <!-- 6. RIWAYAT PESANAN TERBARU -->
+    <section class="px-margin py-2">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-headline-sm text-headline-sm text-text-heading">Pesanan Terbaru</h2>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            {% for order in orders.rows[:4] %}
+                <div class="p-3.5 rounded-xl bg-card-surface border border-card-border shadow-sm flex flex-col gap-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-body-bold text-body-bold text-text-heading">
+                                {{ order.meal_type_label }} · {{ order.portion_qty }} Porsi
+                            </div>
+                            <div class="font-caption-regular text-caption-regular text-text-muted">
+                                {{ order.order_date.strftime('%d-%m-%Y') if order.order_date else "-" }} · {{ order.location_name }}
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full font-label-badge text-label-badge font-bold {{ 'bg-status-success-bg text-status-success-text' if order.stage == 'DELIVERED' else ('bg-status-danger-bg text-status-danger-text' if order.stage == 'REJECTED' else 'bg-status-info-bg text-status-info-text') }}">
+                            {{ order.stage_label }}
+                        </span>
+                    </div>
+                    {{ ph_track(order.stage) }}
+                </div>
+            {% else %}
+                <div class="p-6 rounded-xl bg-card-surface border border-card-border text-center text-text-muted">
+                    <span class="material-symbols-outlined text-4xl mb-1 block">lunch_dining</span>
+                    <span class="font-body-medium text-caption-regular">Belum ada pesanan katering.</span>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 7. TAGIHAN & HUTANG MINI CARDS -->
+    <section class="px-margin py-2">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-headline-sm text-headline-sm text-text-heading">Tagihan Belum Lunas</h2>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            {% for invoice in (models.invoices.invoices|rejectattr("status", "equalto", "PAID")|list)[:3] %}
+                {{ ph_invoice(invoice, url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id)) }}
+            {% else %}
+                <div class="p-4 rounded-xl bg-card-surface border border-card-border text-center text-text-muted font-caption-regular text-caption-regular">
+                    Tidak ada tagihan yang belum lunas.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>

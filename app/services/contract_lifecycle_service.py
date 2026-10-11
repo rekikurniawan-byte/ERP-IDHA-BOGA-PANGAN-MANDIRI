@@ -15,6 +15,7 @@ jadwal dan satu kunci untuk semua pekerjaan harian. Tidak commit.
 from datetime import date
 
 from app.models.contract import CustomerContract
+from app.utils.clock import today_wib
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.audit_log_service import record_audit_log
 from app.services.customer_contract_expiry_notification_service import (
@@ -87,7 +88,7 @@ def sweep_contracts(branch_id, today, actor_id=None):
 def run_contract_sweep_now(branch_id, actor_id=None, today=None):
     """Tombol "Periksa Kontrak Sekarang", juga dipanggil sesudah perpanjangan
     supaya pemberitahuan "kontrak berakhir" langsung hilang. Commit."""
-    today = today or date.today()
+    today = today or today_wib()
     with atomic_business_action(
         module="CONTRACT",
         action="CUSTOMER_CONTRACT_SWEEP",

@@ -1,50 +1,124 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.approvals %}
 <!-- approval_requests ERP existing -->
-<section class="portal-feature-page portal-service-page">
-    <div class="portal-feature-hero portal-service-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+{% set model = data.approvals if data and data.approvals else none %}
+
+<div class="flex flex-col w-full pb-6">
+  <!-- 1. Top Subhead Navigation -->
+  <section class="px-margin pt-2 flex flex-col gap-space-sm">
+    <div class="flex items-center justify-between gap-space-sm">
+      <span class="px-3 py-1 rounded-full font-label-badge text-label-badge flex items-center gap-1 shadow-sm {% if model and model.allowed %}bg-status-success-bg text-status-success-text{% else %}bg-status-danger-bg text-status-danger-text{% endif %}">
+        <span class="material-symbols-outlined text-[14px]">{% if model and model.allowed %}verified{% else %}lock{% endif %}</span>
+        <span>{{ "Layanan Aktif" if model and model.allowed else "Belum Aktif" }}</span>
+      </span>
+    </div>
+    <div>
+      <h1 class="font-headline-sm text-headline-sm text-text-heading mt-1">{{ data.page_title or "Persetujuan Operasional" }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5">{{ data.page_description or "Status pengajuan persetujuan operasional dan draf pesanan khusus." }}</p>
+    </div>
+  </section>
+
+  <!-- 2. Metric Grid -->
+  <section class="px-margin mt-space-md">
+    <div class="grid grid-cols-2 gap-2.5">
+      <div class="bg-card-surface p-3 rounded-xl border border-card-border shadow-sm flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-lg bg-status-warning-bg text-status-warning-text flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[20px]">hourglass_top</span>
         </div>
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted uppercase font-bold block">Menunggu</span>
+          <span class="font-body-bold text-body-bold text-status-warning-text">{{ (model.totals.submitted if model and model.totals else 0) }} Review</span>
+        </div>
+      </div>
+      <div class="bg-card-surface p-3 rounded-xl border border-card-border shadow-sm flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-lg bg-primary-fixed text-primary flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[20px]">assignment</span>
+        </div>
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted uppercase font-bold block">Total Diajukan</span>
+          <span class="font-body-bold text-body-bold text-text-heading">{{ (model.totals.total if model and model.totals else 0) }} Berkas</span>
+        </div>
+      </div>
+      <div class="bg-card-surface p-3 rounded-xl border border-card-border shadow-sm flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-lg bg-status-success-bg text-status-success-text flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        </div>
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted uppercase font-bold block">Disetujui</span>
+          <span class="font-body-bold text-body-bold text-status-success-text">{{ (model.totals.approved if model and model.totals else 0) }} Berkas</span>
+        </div>
+      </div>
+      <div class="bg-card-surface p-3 rounded-xl border border-card-border shadow-sm flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-lg bg-status-danger-bg text-status-danger-text flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[20px]">cancel</span>
+        </div>
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted uppercase font-bold block">Ditolak</span>
+          <span class="font-body-bold text-body-bold text-status-danger-text">{{ (model.totals.rejected if model and model.totals else 0) }} Berkas</span>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <div class="portal-service-summary">
-        <article class="primary"><span>Menunggu</span><strong>{{ model.totals.submitted }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Pengajuan user</small></article>
-        <article><span>Disetujui</span><strong>{{ model.totals.approved }}</strong><small>Sudah disetujui</small></article>
-        <article><span>Ditolak</span><strong>{{ model.totals.rejected }}</strong><small>Tidak disetujui</small></article>
-    </div>
-
-    <div class="portal-service-list">
-        {% for approval in model.rows %}
-            <article class="portal-service-card">
-                <div class="portal-service-card-icon"><i class="bi bi-shield-check"></i></div>
-                <div class="portal-service-card-main">
-                    <div class="portal-service-card-title">
-                        <h3>{{ approval.action_key }}</h3>
-                        <strong>{{ approval.status|status_label }}</strong>
-                    </div>
-                    <p>{{ approval.requested_reason }}</p>
-                    <div class="portal-chip-row">
-                        <span>{{ approval.reference_type|status_label }} #{{ approval.reference_id }}</span>
-                        <span>{{ approval.created_at|wib('%d-%m-%Y') if approval.created_at else "-" }}</span>
-                        {% if approval.reviewed_at %}<span>Direview {{ approval.reviewed_at|wib('%d-%m-%Y') }}</span>{% endif %}
-                    </div>
-                    {% if approval.review_note %}<p>{{ approval.review_note }}</p>{% endif %}
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-shield-check"></i>
-                <strong>Belum ada approval</strong>
-                <p>Pengajuan persetujuan yang dibuat user portal akan tampil di sini.</p>
+  <!-- 3. Approval List -->
+  <section class="px-margin mt-space-md flex flex-col gap-3">
+    {% if model and model.rows %}
+      {% for approval in model.rows %}
+        <div class="bg-card-surface p-space-md rounded-2xl border border-card-border shadow-sm flex flex-col gap-2.5">
+          <div class="flex items-start justify-between gap-2.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-primary-fixed text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[22px]">verified_user</span>
+              </div>
+              <div>
+                <strong class="font-body-bold text-body-bold text-text-heading block leading-snug">{{ approval.action_key }}</strong>
+                <span class="font-caption-regular text-caption-regular text-text-muted">{{ approval.reference_type|status_label }} #{{ approval.reference_id }}</span>
+              </div>
             </div>
-        {% endfor %}
-    </div>
-</section>
+            <span class="px-2.5 py-1 rounded-full font-label-badge text-label-badge shrink-0
+              {% if approval.status in ('APPROVED', 'DISETUJUI') %}
+                bg-status-success-bg text-status-success-text
+              {% elif approval.status in ('REJECTED', 'DITOLAK') %}
+                bg-status-danger-bg text-status-danger-text
+              {% else %}
+                bg-status-warning-bg text-status-warning-text
+              {% endif %}">
+              {{ approval.status|status_label }}
+            </span>
+          </div>
+
+          {% if approval.requested_reason %}
+            <p class="font-body-default text-body-default text-text-body bg-surface-container-low p-2.5 rounded-xl border border-card-border/60">
+              {{ approval.requested_reason }}
+            </p>
+          {% endif %}
+
+          <div class="flex flex-wrap items-center gap-2 font-caption-regular text-caption-regular text-text-muted pt-2 border-t border-card-border">
+            <span>Diajukan: {{ approval.created_at|wib('%d-%m-%Y %H:%M') if approval.created_at else "-" }}</span>
+            {% if approval.reviewed_at %}
+              <span>·</span>
+              <span class="text-text-heading font-medium">Direview: {{ approval.reviewed_at|wib('%d-%m-%Y %H:%M') }}</span>
+            {% endif %}
+          </div>
+
+          {% if approval.review_note %}
+            <div class="bg-surface-container rounded-xl p-2.5 font-caption-regular text-caption-regular text-text-heading">
+              <strong class="font-micro-meta text-micro-meta text-text-muted uppercase block mb-0.5">Catatan Reviewer:</strong>
+              {{ approval.review_note }}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="bg-card-surface rounded-2xl p-8 text-center border border-card-border shadow-sm flex flex-col items-center">
+        <div class="w-14 h-14 rounded-2xl bg-surface-container text-text-muted flex items-center justify-center mb-2.5">
+          <span class="material-symbols-outlined text-[28px]">task_alt</span>
+        </div>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum Ada Pengajuan Persetujuan</strong>
+        <p class="font-caption-regular text-caption-regular text-text-muted mt-1 max-w-[260px]">Pengajuan persetujuan seperti perubahan porsi darurat atau draf pesanan akan tampil di sini.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

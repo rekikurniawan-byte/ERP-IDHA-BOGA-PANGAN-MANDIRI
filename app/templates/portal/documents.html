@@ -1,87 +1,74 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.documents %}
 <!-- digital_attachments ERP existing -->
-<section class="portal-feature-page portal-service-page portal-document-page">
-    <div class="portal-feature-hero portal-service-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
-        </div>
-        <strong class="portal-hero-status">Arsip Digital</strong>
+{% set model = data.documents %}
+{% set can_contracts = current_user.role in ["PORTAL_CLIENT", "PORTAL_SUBCLIENT"] %}
+
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ data.page_description }}</p>
     </div>
+  </section>
 
-    <div class="portal-service-summary portal-document-summary">
-        <article class="primary"><span>Dokumen</span><strong>{{ model.totals.total }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Unggahan Saya</span><strong>{{ model.totals.own_upload }}</strong><small>Diunggah user ini</small></article>
-        <article><span>Bukti Bayar</span><strong>{{ model.totals.payment_proof }}</strong><small>Bukti pembayaran portal</small></article>
-        <article><span>Bukti Komplain</span><strong>{{ model.totals.complaint_evidence }}</strong><small>Bukti komplain</small></article>
-        <article><span>Kontrak</span><strong>{{ model.totals.contract_document }}</strong><small>Dokumen kontrak</small></article>
+  {% if not model.allowed %}
+    <div class="px-margin mb-4">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Dokumen belum dibuka</p><p class="font-caption-regular text-caption-regular">{{ model.reason }}</p></div>
+      </div>
     </div>
+  {% endif %}
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Dokumen belum dibuka</h2>
-                <p>{{ model.reason }}</p>
-            </div>
-        </div>
-    {% endif %}
-
-    {% for section in model.sections %}
-        <div class="portal-section-heading">
-            <h2>{{ section.title }}</h2>
-            <span>{{ section.rows|length }} file</span>
-        </div>
-
-        <div class="portal-document-grid">
-            {% for document in section.rows %}
-                <article class="portal-document-card">
-                    <div class="portal-document-pratinjau">
-                        {% if document.mime_type and document.mime_type.startswith("image/") %}
-                            <i class="bi bi-file-earmark-image"></i>
-                        {% elif document.mime_type == "application/pdf" %}
-                            <i class="bi bi-file-earmark-pdf"></i>
-                        {% else %}
-                            <i class="bi bi-file-earmark"></i>
-                        {% endif %}
-                    </div>
-                    <div class="portal-document-body">
-                        <h3>{{ document.original_filename }}</h3>
-                        <p>{{ document.module }} | {{ document.reference_type|status_label }} #{{ document.reference_id }}</p>
-                        <div class="portal-chip-row">
-                            <span>{{ document.attachment_type|status_label }}</span>
-                            <span>{{ document.mime_type or "-" }}</span>
-                            <span>{{ document.file_size }} B</span>
-                            <span>{{ document.created_at|wib('%d-%m-%Y') if document.created_at else "-" }}</span>
-                        </div>
-                        {% if document.notes %}<p>{{ document.notes }}</p>{% endif %}
-                        <div class="portal-inline-actions">
-                            {% if document.mime_type in ["application/pdf", "image/jpeg", "image/png", "image/webp"] %}
-                                <a class="portal-action-link" target="_blank" href="{{ url_for('portal.view_document', attachment_id=document.id) }}">
-                                    <i class="bi bi-eye"></i>
-                                    <span>Lihat</span>
-                                </a>
-                            {% endif %}
-                            <a class="portal-action-link secondary" href="{{ url_for('portal.download_document', attachment_id=document.id) }}">
-                                <i class="bi bi-download"></i>
-                                <span>Unduh</span>
-                            </a>
-                        </div>
-                    </div>
-                </article>
-            {% else %}
-                <div class="portal-empty-state">
-                    <i class="bi bi-folder2-open"></i>
-                    <strong>Belum ada {{ section.title|lower }}</strong>
-                    <p>File akan muncul jika ada referensi dalam kepemilikan portal.</p>
-                </div>
-            {% endfor %}
-        </div>
+  <section class="px-margin mb-4 grid grid-cols-2 gap-2">
+    {% for label, value, icon in [
+        ("Semua dokumen", model.totals.total or 0, "folder_open"),
+        ("Unggahan saya", model.totals.own_upload or 0, "upload_file"),
+        ("Bukti bayar", model.totals.payment_proof or 0, "receipt"),
+        ("Bukti komplain", model.totals.complaint_evidence or 0, "report"),
+    ] %}
+      <div class="bg-card-surface rounded-xl p-3 shadow-sm flex items-center gap-2.5 min-w-0">
+        <span class="w-9 h-9 rounded-lg bg-primary-fixed text-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-[20px]">{{ icon }}</span></span>
+        <span class="min-w-0">
+          <span class="font-micro-meta text-micro-meta uppercase text-text-muted block truncate">{{ label }}</span>
+          <strong class="font-headline-sm text-headline-sm text-text-heading leading-none">{{ value }}</strong>
+        </span>
+      </div>
     {% endfor %}
-</section>
+  </section>
+
+  {% for section in model.sections %}
+    <section class="px-margin mb-4 flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <h2 class="font-title-menu text-title-menu text-text-heading">{{ section.title }}</h2>
+        <span class="font-caption-regular text-caption-regular text-text-muted">{{ section.rows|length }} file</span>
+      </div>
+      {% for document in section.rows %}
+        {% set is_image = document.mime_type and document.mime_type.startswith("image/") %}
+        {% set is_pdf = document.mime_type == "application/pdf" %}
+        <article class="bg-card-surface rounded-xl shadow-sm p-3 flex items-start gap-3">
+          <span class="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 {{ 'bg-status-info-bg text-status-info-text' if is_image else ('bg-status-danger-bg text-status-danger-text' if is_pdf else 'bg-surface-container text-text-body') }}">
+            <span class="material-symbols-outlined text-[22px]">{{ 'image' if is_image else ('picture_as_pdf' if is_pdf else 'description') }}</span>
+          </span>
+          <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+            <strong class="font-body-bold text-caption-regular text-text-heading truncate">{{ document.original_filename }}</strong>
+            <span class="font-micro-meta text-micro-meta text-text-muted truncate">{{ document.attachment_type|status_label }} · {{ document.reference_type|status_label }} #{{ document.reference_id }}</span>
+            <span class="font-micro-meta text-micro-meta text-text-muted">{{ document.created_at|wib('%d-%m-%Y') if document.created_at else "-" }}{% if document.file_size %} · {{ (document.file_size / 1024)|round(0)|int }} KB{% endif %}</span>
+            {% if document.notes %}<p class="font-micro-meta text-micro-meta text-text-body">{{ document.notes }}</p>{% endif %}
+            <div class="flex gap-2 mt-1.5">
+              {% if document.mime_type in ["application/pdf", "image/jpeg", "image/png", "image/webp"] %}
+                <a target="_blank" rel="noopener" href="{{ url_for('portal.view_document', attachment_id=document.id) }}" class="h-8 px-3 rounded-lg bg-surface-container text-text-heading font-caption-regular text-caption-regular font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">visibility</span>Lihat</a>
+              {% endif %}
+              <a href="{{ url_for('portal.download_document', attachment_id=document.id) }}" class="h-8 px-3 rounded-lg bg-primary-fixed text-primary font-caption-regular text-caption-regular font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">download</span>Unduh</a>
+            </div>
+          </div>
+        </article>
+      {% else %}
+        <div class="p-5 rounded-xl bg-card-surface border border-card-border text-center text-text-muted font-caption-regular text-caption-regular">Belum ada {{ section.title|lower }}.</div>
+      {% endfor %}
+    </section>
+  {% endfor %}
+</div>
 {% endblock %}

@@ -5,6 +5,7 @@ Lihat app/services/pricing_service.py untuk aturan harganya.
 from datetime import date, datetime
 
 from app.routes.settings_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 from app.models.master import Client
 from app.services.geo_service import distance_fee_settings, picker_context
 from app.services.pricing_service import (
@@ -30,12 +31,12 @@ def _effective_date(value):
     """Tanggal berlaku dari form: kosong = hari ini; tidak boleh mundur."""
     value = (value or "").strip()
     if not value:
-        return date.today()
+        return today_wib()
     try:
         parsed = datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         raise PricingError("Tanggal berlaku tidak valid.")
-    if parsed < date.today():
+    if parsed < today_wib():
         raise PricingError(
             "Tanggal berlaku tidak boleh sebelum hari ini: harga pesanan yang sudah dibuat "
             "sudah terkunci dan tidak ikut berubah."
@@ -62,7 +63,7 @@ def pricing():
         free_delivery_min=free_delivery_min_portions(branch_id),
         distance=distance_fee_settings(branch_id),
         geo=picker_context(branch_id),
-        today=date.today(),
+        today=today_wib(),
     )
 
 
@@ -84,7 +85,7 @@ def pricing_set_price():
         return redirect(url_for("settings.pricing"))
 
     target = f"harga kontrak {row.client.name}" if row.client else "harga standar"
-    when = "mulai hari ini" if row.effective_from == date.today() else f"mulai {row.effective_from.strftime('%d-%m-%Y')}"
+    when = "mulai hari ini" if row.effective_from == today_wib() else f"mulai {row.effective_from.strftime('%d-%m-%Y')}"
     flash(f"Harga baru {target} Rp {row.price_per_portion:,.0f}/porsi berlaku {when}.", "success")
     return redirect(url_for("settings.pricing"))
 

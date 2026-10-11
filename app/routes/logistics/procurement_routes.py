@@ -4,6 +4,7 @@ Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.logistics_routes import *  # noqa: F401,F403
 from app.routes.logistics_routes import _procurement_attachment_or_404, _procurement_or_404
+from app.utils.clock import today_wib
 
 
 @logistics_bp.route("/purchases")
@@ -439,7 +440,7 @@ def create_purchase():
         suppliers=suppliers,
         active_bank_accounts=active_bank_accounts,
         selected_supplier_id=selected_supplier_id,
-        today=date.today(),
+        today=today_wib(),
         allowed_extensions=sorted(get_allowed_extensions()),
         max_upload_mb=round(get_max_upload_bytes() / (1024 * 1024), 2),
     )

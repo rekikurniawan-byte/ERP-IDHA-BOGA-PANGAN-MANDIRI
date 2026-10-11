@@ -1,0 +1,52 @@
+{# Tab Tagihan pelanggan umum: tagihan = pesanan bayar di muka. Bayar di sini, riwayat di bawah. #}
+{% set billing = data.order_billing %}
+{% set month_short = "Jan Feb Mar Apr Mei Jun Jul Agu Sep Okt Nov Des".split() %}
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-3 pb-3">
+    <h1 class="font-headline-md text-headline-md text-text-heading leading-tight">{{ data.page_title }}</h1>
+    <p class="font-caption-regular text-caption-regular text-text-muted">{{ data.page_description }}</p>
+  </section>
+
+  <section class="px-margin mb-4">
+    <div class="bg-gradient-to-br from-inverse-surface to-text-heading rounded-2xl p-5 shadow-xl text-on-primary">
+      <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high font-semibold">{{ "Perlu dibayar" if billing.amount_due else "Pembayaran Awal" }}</span>
+      <div class="mt-1 font-display-hero text-display-hero font-bold tracking-tight break-words">{{ (billing.amount_due if billing.amount_due else billing.paid_amount)|rupiah }}</div>
+      <p class="font-caption-regular text-caption-regular text-surface-container-high mt-1">
+        {% if billing.amount_due %}{{ billing.needs_payment_count }} pesanan menunggu pembayaran{% else %}Total sudah dibayar untuk {{ billing.paid_count }} pesanan{% endif %}
+      </p>
+      <p class="mt-3 p-3 rounded-xl bg-white/10 font-caption-regular text-caption-regular text-surface-container-lowest leading-relaxed">Pelanggan umum tidak memiliki fasilitas kredit. Customer tidak memakai kredit: setiap pesanan dibayar dulu, lalu diproses setelah bukti diperiksa admin.</p>
+    </div>
+  </section>
+
+  {% if data.pending_payments %}
+    <div class="mb-4">{% with pending_rows = data.pending_payments %}{% include "portal/_pending_payments.html" %}{% endwith %}</div>
+  {% endif %}
+
+  <section class="px-margin flex flex-col gap-2">
+    <h2 class="font-title-menu text-title-menu text-text-heading">Riwayat Tagihan Pesanan</h2>
+    {% for row in billing.rows %}
+      {% set draft = row.draft %}
+      <article class="bg-card-surface rounded-xl shadow-sm p-3 flex items-start gap-3">
+        <span class="w-11 h-11 rounded-lg bg-surface-container flex flex-col items-center justify-center flex-shrink-0 leading-none">
+          <strong class="font-body-bold text-body-bold text-text-heading">{{ draft.order_date.strftime('%d') if draft.order_date else "-" }}</strong>
+          <small class="font-micro-meta text-[10px] text-text-muted uppercase">{{ month_short[draft.order_date.month - 1] if draft.order_date else "" }}</small>
+        </span>
+        <div class="flex flex-col min-w-0 flex-1">
+          <strong class="font-body-bold text-caption-regular text-text-heading">{{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</strong>
+          <span class="font-micro-meta text-micro-meta text-text-muted truncate">{{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</span>
+          <span class="font-micro-meta text-micro-meta text-text-muted">Dibayar {{ row.received_amount|rupiah }} dari {{ (row.total_amount or 0)|rupiah }}</span>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          <strong class="font-caption-regular text-caption-regular text-text-heading">{{ (row.total_amount or 0)|rupiah }}</strong>
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ {'success': 'bg-status-success-bg text-status-success-text', 'danger': 'bg-status-danger-bg text-status-danger-text', 'warning': 'bg-status-warning-bg text-status-warning-text'}.get(row.billing_tone, 'bg-status-info-bg text-status-info-text') }}">{{ row.billing_status }}</span>
+        </div>
+      </article>
+    {% else %}
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">receipt_long</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum ada tagihan</strong>
+        <span class="font-caption-regular text-caption-regular">Setiap pesanan yang Anda kirim di tab Pesanan muncul di sini untuk dibayar.</span>
+      </div>
+    {% endfor %}
+  </section>
+</div>

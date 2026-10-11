@@ -1,6 +1,8 @@
 import logging
 from datetime import date, datetime
 
+from app.utils.clock import now_wib, today_wib
+
 from app.models.accounting import Journal
 from app.models.canteen import CashDaily, CanteenSale, DebtPayment, WorkerDebt
 from app.models.delivery import Delivery
@@ -151,7 +153,7 @@ def _resolve_target_date(branch_id, selected_date_value):
     if candidates:
         return max(candidates)
 
-    return date.today()
+    return today_wib()
 
 
 def _date_value(value):
@@ -683,7 +685,7 @@ def get_daily_closing_report(branch_id, selected_date_value=None):
         overall = "AMAN"
 
     return {
-        "generated_at": datetime.now(),
+        "generated_at": now_wib(),
         "selected_date": target_date,
         "selected_date_label": _safe_date(target_date),
         "selected_date_value": _date_value(target_date),

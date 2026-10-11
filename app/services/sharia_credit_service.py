@@ -19,6 +19,7 @@ Fungsi penyapu tidak commit; penyapu yang commit.
 from datetime import date, datetime, timedelta
 
 from app.extensions import db
+from app.utils.clock import today_wib
 from app.models.credit import (
     BILLING_CASH,
     CHARGE_DECLINED,
@@ -336,7 +337,7 @@ def _notify_charge_invoice(account, charge, invoice):
 def decide_tazir(charge, form, actor, today=None):
     """OWNER memutuskan usulan ta'zir: dikenakan (tagihan terpisah) atau tidak."""
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     if charge.charge_type != CHARGE_TAZIR or charge.status != CHARGE_PROPOSED:
         raise CreditActionError("Usulan ini sudah diputuskan.")
     decision = str(form.get("decision") or "").strip().upper()
@@ -385,7 +386,7 @@ def create_tawidh(account, form, evidence_file, actor, today=None):
     from app.services.digital_attachment_service import AttachmentValidationError, stage_digital_attachment
 
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     amount = parse_money(form.get("amount"))
     if amount <= ZERO:
         raise CreditActionError("Nominal biaya penagihan harus lebih dari 0.")
@@ -444,7 +445,7 @@ def set_grace(account, form, actor, today=None):
     from app.services.credit_control_service import evaluate_party
 
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     until = _parse_date(form.get("grace_until"))
     if until is None or until < today:
         raise CreditActionError("Tanggal akhir kelonggaran wajib diisi dan tidak boleh sebelum hari ini.")
@@ -491,7 +492,7 @@ def end_grace(account, actor, today=None):
     from app.services.credit_control_service import evaluate_party
 
     _require_owner(actor)
-    today = today or date.today()
+    today = today or today_wib()
     if not account.grace_until:
         raise CreditActionError("Pihak ini tidak sedang dalam kelonggaran.")
     decision = evaluate_party(account.branch_id, account.party_type, account.party_id, account, today=today)
@@ -551,7 +552,7 @@ def record_disbursement(branch_id, form, evidence_file, actor):
     from app.services.digital_attachment_service import AttachmentValidationError, stage_digital_attachment
 
     _require_owner(actor)
-    disbursed_on = _parse_date(form.get("disbursed_on")) or date.today()
+    disbursed_on = _parse_date(form.get("disbursed_on")) or today_wib()
     recipient = _clean(form.get("recipient"))
     purpose = _clean(form.get("purpose"))
     amount = parse_money(form.get("amount"))

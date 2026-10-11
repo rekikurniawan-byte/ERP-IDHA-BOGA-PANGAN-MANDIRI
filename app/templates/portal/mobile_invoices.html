@@ -1,110 +1,193 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.invoice_model %}
-{% set totals = model.totals %}
-{% set aging = totals.aging %}
-{% set aging_total = (aging.CURRENT or 0) + (aging.DUE_1_7 or 0) + (aging.DUE_8_30 or 0) + (aging.DUE_OVER_30 or 0) %}
-{% set rows = model.invoices %}
+{% set model = data.invoice_model if data.invoice_model is defined else (data.model if data.model is defined else {}) %}
+{% set totals = model.totals if model else {} %}
+{% set rows = model.invoices if model else [] %}
 {% set open_rows = rows|rejectattr("status", "in", ["PAID", "CANCELLED", "CANCELED", "VOID", "CLOSED"])|list %}
 {% set overdue_rows = rows|selectattr("days_overdue", "gt", 0)|list %}
-<section class="portal-feature-page portal-finance-page po">
-    <header class="po-head">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}" aria-label="Kembali"><i class="bi bi-arrow-left"></i></a>
-        <div class="po-head-text">
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-        </div>
-        <ul class="po-rules">
-            <li><i class="bi bi-receipt"></i><span>Tagihan</span><strong>{{ totals.invoice_count }}</strong></li>
-            <li><i class="bi bi-upload"></i><span>Bukti diperiksa</span><strong>{{ totals.pending_proof_count or 0 }}</strong></li>
-        </ul>
-    </header>
+{% set first_open = open_rows|first %}
+{% set next_due = open_rows|selectattr("due_date")|sort(attribute="due_date")|first %}
+{% set company = global_company_settings or {} %}
 
-    <section class="pi-summary">
-        <div class="pi-summary-main">
-            <span>Sisa tagihan aktif</span>
-            <strong>{{ totals.active_outstanding_amount|rupiah }}</strong>
-            <small>{{ totals.payable_invoice_count or 0 }} invoice bisa dibayar · {{ totals.overdue_invoice_count or 0 }} lewat jatuh tempo ({{ (totals.overdue_outstanding_amount or 0)|rupiah }})</small>
-        </div>
-        <div class="pi-aging">
-            <span class="pi-aging-title">Umur tagihan</span>
-            <div class="pi-aging-bar" role="img" aria-label="Komposisi umur tagihan">
-                {% for key, tone in (("CURRENT", "ok"), ("DUE_1_7", "warn"), ("DUE_8_30", "late"), ("DUE_OVER_30", "bad")) %}
-                    {% set value = aging[key] or 0 %}
-                    {% if value and aging_total %}<span class="seg-{{ tone }}" style="width: {{ (value / aging_total * 100)|round(1) }}%" title="{{ value|rupiah }}"></span>{% endif %}
-                {% endfor %}
-            </div>
-            <ul class="pi-aging-legend">
-                <li><i class="seg-ok"></i>Belum jatuh tempo<strong>{{ (aging.CURRENT or 0)|rupiah }}</strong></li>
-                <li><i class="seg-warn"></i>Lewat 1-7 hari<strong>{{ (aging.DUE_1_7 or 0)|rupiah }}</strong></li>
-                <li><i class="seg-late"></i>Lewat 8-30 hari<strong>{{ (aging.DUE_8_30 or 0)|rupiah }}</strong></li>
-                <li><i class="seg-bad"></i>Lewat &gt;30 hari<strong>{{ (aging.DUE_OVER_30 or 0)|rupiah }}</strong></li>
-            </ul>
-        </div>
-    </section>
+<div class="flex flex-col w-full pb-10">
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Tagihan belum dibuka</h2>
-                <p>{{ model.reason }}</p>
+{% if data.pending_payments %}
+    <div class="mb-4">{% with pending_rows = data.pending_payments %}{% include "portal/_pending_payments.html" %}{% endwith %}</div>
+{% endif %}
+    <!-- SUB-HEADER NAVIGATION -->
+    <div class="px-margin pt-space-md pb-space-xs flex flex-col gap-1">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-space-sm">
+                <h1 class="font-headline-md text-headline-md text-text-heading tracking-tight">{{ data.page_title or "Tagihan" }}</h1>
             </div>
         </div>
-    {% endif %}
-
-    <div class="pt-filter" data-filter-group>
-        <button type="button" class="is-active" data-filter="all">Semua <span>{{ rows|length }}</span></button>
-        <button type="button" data-filter="open">Belum lunas <span>{{ open_rows|length }}</span></button>
-        <button type="button" data-filter="paid">Lunas <span>{{ rows|length - open_rows|length }}</span></button>
-        {% if overdue_rows %}<button type="button" data-filter="overdue">Lewat tempo <span>{{ overdue_rows|length }}</span></button>{% endif %}
+        {% if data.page_description %}<p class="font-body-default text-body-default text-text-muted">{{ data.page_description }}</p>{% endif %}
     </div>
 
-    <div class="pi-list" data-filter-list>
+    <!-- FILTER CHIPS -->
+    <div class="w-full overflow-x-auto no-scrollbar py-space-sm px-margin">
+        <div class="flex items-center gap-2 min-w-max" id="filterChipsContainer">
+            <button class="filter-chip active flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary-container text-on-primary font-label-badge text-label-badge shadow-sm transition-all" data-filter="all" type="button">
+                <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                Semua ({{ rows|length }})
+            </button>
+            <button class="filter-chip flex items-center gap-1.5 px-4 h-9 rounded-full bg-card-surface text-text-body font-label-badge text-label-badge shadow-sm hover:bg-surface-container active:scale-95 transition-all" data-filter="open" type="button">
+                <span class="w-2 h-2 rounded-full bg-status-warning-text"></span>
+                Belum Lunas ({{ open_rows|length }})
+            </button>
+            <button class="filter-chip flex items-center gap-1.5 px-4 h-9 rounded-full bg-card-surface text-text-body font-label-badge text-label-badge shadow-sm hover:bg-surface-container active:scale-95 transition-all" data-filter="paid" type="button">
+                <span class="w-2 h-2 rounded-full bg-status-success-text"></span>
+                Riwayat Lunas ({{ rows|length - open_rows|length }})
+            </button>
+        </div>
+    </div>
+
+    <!-- FINANCIAL HERO CARD -->
+    <div class="px-margin my-space-xs">
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-inverse-surface via-text-heading to-inverse-surface text-on-primary p-5 shadow-xl">
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high opacity-80 font-bold">TOTAL BELUM DIBAYAR</span>
+                {% if totals.overdue_invoice_count %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-status-danger-bg text-status-danger-text font-caption-regular text-caption-regular font-bold">
+                        <span class="material-symbols-outlined text-[14px]">warning</span>
+                        {{ totals.overdue_invoice_count }} Lewat Jatuh Tempo
+                    </span>
+                {% else %}
+                    {% if next_due %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-status-warning-bg text-status-warning-text font-caption-regular text-caption-regular font-bold">
+                        <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
+                        Tempo {{ next_due.due_date.strftime('%d-%m-%Y') }}
+                    </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="flex items-baseline gap-1 my-1">
+                <span class="font-headline-lg text-headline-lg tracking-tight font-bold text-on-primary">{{ (totals.active_outstanding_amount or 0)|rupiah }}</span>
+            </div>
+            <div class="mt-3 pt-3 flex items-center gap-2 bg-white/5 rounded-lg p-2.5">
+                <span class="material-symbols-outlined text-primary-fixed-dim text-[18px] flex-shrink-0">event_available</span>
+                <p class="font-caption-regular text-caption-regular text-surface-container-high opacity-90 leading-tight">
+                    {{ totals.payable_invoice_count or 0 }} tagihan bisa dibayar · {{ open_rows|length }} belum lunas
+                </p>
+            </div>
+            <div class="mt-4 pt-3 flex items-center justify-between gap-2 border-t border-white/10">
+                <div class="flex items-center gap-1.5 text-surface-container-high opacity-80 min-w-0">
+                    {% if company.payment_account_number %}
+                    <span class="material-symbols-outlined text-[16px]">account_balance</span>
+                    <span class="font-micro-meta text-micro-meta truncate">{{ company.payment_bank_name }} {{ company.payment_account_number }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION TITLE -->
+    <div class="px-margin mt-space-md mb-space-sm flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[20px]">feed</span>
+            <h2 class="font-title-menu text-title-menu text-text-heading">Daftar Faktur &amp; Siklus</h2>
+        </div>
+        <span class="font-caption-regular text-caption-regular text-text-muted">Total {{ rows|length }} Invoice</span>
+    </div>
+
+    <!-- INVOICE LIST -->
+    <div class="px-margin flex flex-col gap-space-md" id="invoiceList">
         {% for invoice in rows %}
             {% set total = invoice.total_amount or 0 %}
             {% set paid = invoice.paid_amount or 0 %}
-            {% set ratio = ((paid / total * 100) if total else 0)|round|int %}
             {% set is_open = invoice in open_rows %}
             {% set overdue = invoice.days_overdue > 0 %}
-            <article class="pi-card {{ 'is-overdue' if overdue else '' }}" data-filter-item="{{ 'overdue' if overdue else ('open' if is_open else 'paid') }}">
-                <div class="pi-card-head">
-                    <span class="pi-icon"><i class="bi bi-receipt"></i></span>
-                    <div class="pi-card-title">
-                        <strong>{{ invoice.invoice_number }}</strong>
-                        <span>{{ invoice.party.mandor_name or invoice.party.label }} · terbit {{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}</span>
+            <a href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}" class="invoice-card rounded-xl bg-card-surface shadow-md p-4 transition-all border border-card-border flex flex-col gap-2 active:scale-[0.99]" data-filter-item="{{ 'open' if is_open else 'paid' }}">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-body-bold text-body-bold text-text-heading font-bold">#{{ invoice.invoice_number }}</span>
+                            {% if is_open %}
+                                <span class="w-1.5 h-1.5 rounded-full bg-status-warning-text animate-pulse"></span>
+                            {% endif %}
+                        </div>
+                        <span class="font-caption-regular text-caption-regular text-text-muted">{{ invoice.party.mandor_name or invoice.party.label }} · terbit {{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else "-" }}</span>
                     </div>
-                    <span class="ph-pill tone-{{ 'success' if not is_open else ('danger' if overdue else ('info' if paid else 'warning')) }}">{{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}</span>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-badge text-label-badge font-bold flex-shrink-0 {{ 'bg-status-success-bg text-status-success-text' if not is_open else ('bg-status-danger-bg text-status-danger-text' if overdue else 'bg-status-warning-bg text-status-warning-text') }}">
+                        {{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}
+                    </span>
                 </div>
-                <div class="pi-amounts">
-                    <div><span>Total</span><strong>{{ total|rupiah }}</strong></div>
-                    <div><span>Dibayar</span><strong>{{ paid|rupiah }}</strong></div>
-                    <div class="is-due"><span>Sisa</span><strong>{{ (invoice.remaining_amount or 0)|rupiah }}</strong></div>
+
+                <div class="my-2 p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+                    <div class="flex items-center justify-between text-text-body">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-text-muted text-[16px]">restaurant</span>
+                            <span class="font-body-default text-body-default">Total Tagihan</span>
+                        </div>
+                        <strong class="font-body-medium text-body-medium text-text-heading">{{ total|rupiah }}</strong>
+                    </div>
+                    {% if paid > 0 %}
+                        <div class="flex items-center justify-between text-text-body">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-status-success-text text-[16px]">check_circle</span>
+                                <span class="font-body-default text-body-default">Sudah Dibayar / DP</span>
+                            </div>
+                            <strong class="font-body-medium text-body-medium text-status-success-text">- {{ paid|rupiah }}</strong>
+                        </div>
+                    {% endif %}
+                    <div class="flex items-center justify-between pt-1 border-t border-card-border/60">
+                        <span class="font-body-bold text-body-bold text-text-heading">Sisa Tagihan</span>
+                        <strong class="font-headline-sm text-headline-sm text-primary font-bold">{{ (invoice.remaining_amount or 0)|rupiah }}</strong>
+                    </div>
                 </div>
-                <div class="ph-inv-bar" role="img" aria-label="Terbayar {{ ratio }} persen"><span style="width: {{ ratio }}%"></span></div>
-                <div class="pi-card-foot">
-                    <span class="pi-meta">
-                        <i class="bi bi-calendar-event"></i> Jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}
-                        · <i class="bi bi-credit-card"></i> {{ invoice.payment_count }} pembayaran
-                        {% if invoice.proof_summary.count %}· <i class="bi bi-paperclip"></i> bukti: {{ invoice.proof_summary.latest_status|status_label }}{% endif %}
-                        {% if invoice.payment_mismatch %}· <span class="text-danger">selisih pembayaran</span>{% endif %}
+
+                <p class="font-micro-meta text-micro-meta text-text-muted flex flex-wrap gap-x-2">
+                    <span>{{ invoice.payment_count }} pembayaran</span>
+                    {% if invoice.proof_summary.count %}<span>· bukti: {{ invoice.proof_summary.latest_status|status_label }}</span>{% endif %}
+                    {% if invoice.payment_mismatch %}<span class="text-status-danger-text font-bold">· selisih pembayaran</span>{% endif %}
+                </p>
+                <div class="flex items-center justify-between pt-1">
+                    <span class="font-caption-regular text-caption-regular text-text-muted flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[15px]">calendar_today</span>
+                        Tempo: {{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else "-" }}
                     </span>
                     {% if invoice.payable %}
-                        <a class="btn btn-sm app-btn-primary" href="{{ url_for('portal.invoice_payment_instruction', invoice_id=invoice.invoice_id) }}"><i class="bi bi-credit-card"></i> Bayar / unggah bukti</a>
-                    {% elif not is_open %}
-                        <span class="pi-done"><i class="bi bi-check2-circle"></i> Lunas</span>
+                        <span class="h-9 px-4 rounded-lg bg-primary text-on-primary font-body-bold text-caption-regular flex items-center gap-1.5 shadow-sm">
+                            Lihat rincian &amp; bayar
+                            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                        </span>
+                    {% else %}
+                        <span class="h-9 px-3 rounded-lg bg-surface-container text-text-heading font-body-bold text-caption-regular flex items-center gap-1">
+                            Lihat rincian
+                            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                        </span>
                     {% endif %}
                 </div>
-            </article>
+            </a>
         {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-receipt"></i>
-                <strong>Belum ada invoice</strong>
-                <p>Tagihan untuk akun ini akan tampil di sini.</p>
+            <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center">
+                <span class="material-symbols-outlined text-5xl mb-2 text-text-muted">receipt_long</span>
+                <strong class="font-body-bold text-body-bold text-text-heading">{{ data.empty_message or "Belum ada invoice" }}</strong>
+                <span class="font-caption-regular text-caption-regular text-text-muted mt-0.5">Tagihan katering Anda akan tampil otomatis di sini.</span>
             </div>
         {% endfor %}
-        <div class="ph-empty pt-filter-empty" data-filter-empty hidden><i class="bi bi-funnel"></i><span>Tidak ada invoice dengan status ini.</span></div>
     </div>
-</section>
+</div>
+
+<script>
+document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(b => {
+            b.className = 'filter-chip flex items-center gap-1.5 px-4 h-9 rounded-full bg-card-surface text-text-body font-label-badge text-label-badge shadow-sm hover:bg-surface-container active:scale-95 transition-all';
+        });
+        this.className = 'filter-chip active flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary-container text-on-primary font-label-badge text-label-badge shadow-sm transition-all';
+
+        const filter = this.getAttribute('data-filter');
+        document.querySelectorAll('#invoiceList .invoice-card').forEach(card => {
+            if (filter === 'all' || card.getAttribute('data-filter-item') === filter) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -11,6 +11,7 @@ from datetime import date
 from app.extensions import db
 from app.models.finance import Invoice, InvoiceItem
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
+from app.utils.clock import today_wib
 from app.services.mandor_invoice_helper_service import (
     billable_base_quantities,
     shortage_note,
@@ -164,7 +165,7 @@ def create_order_invoice(order, mandor, *, created_by, client_pic_id=None, prepa
             f"Invoice untuk order dan {T.sub_client_lower} ini sudah pernah dibuat ({existing.invoice_number})."
         )
 
-    invoice_date = date.today()
+    invoice_date = today_wib()
     # Aturan yang sama dengan invoice periode: termin dari akun kredit atau
     # kontrak; mandor yang ditagih langsung ditagih atas namanya sendiri dan
     # menjadi kontak invoice, tanpa mewajibkan PIC client.

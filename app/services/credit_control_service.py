@@ -17,6 +17,7 @@ from decimal import Decimal
 import re
 
 from app.extensions import db
+from app.utils.clock import today_wib
 from app.models.credit import (
     BILLING_CASH,
     BILLING_DIRECT,
@@ -197,7 +198,7 @@ def outstanding_and_aging(branch_id, party_type, party_id, today=None):
     Umur tunggakan ini yang selama ini tidak pernah dilihat gerbang: mandor
     yang masih di bawah limit tapi telat 90 hari selalu lolos.
     """
-    today = today or date.today()
+    today = today or today_wib()
     aging = {bucket: ZERO for bucket in AGING_BUCKETS}
     total = ZERO
     oldest_days = 0
@@ -396,7 +397,7 @@ def broken_promises(branch_id, party_type, party_id, today=None):
     kalau tidak, admin yang rajin mencatat follow up justru membuat mandor
     langsung terblokir karena "ingkar dua kali".
     """
-    today = today or date.today()
+    today = today or today_wib()
     if not branch_id or not party_type or not party_id:
         return []
 
@@ -542,7 +543,7 @@ def evaluate_party(branch_id, party_type, party_id, account, pending_amount=0, t
 
     Dipakai evaluate_credit (lewat order) dan penyapu harian (lewat akun).
     """
-    today = today or date.today()
+    today = today or today_wib()
     pending = _money(pending_amount)
 
     if not party_type:
@@ -726,7 +727,7 @@ def suggest_credit_limit(branch_id, mandor_id, terms_days, today=None, lookback_
     from datetime import timedelta
     from decimal import ROUND_CEILING
 
-    today = today or date.today()
+    today = today or today_wib()
     if not branch_id or not mandor_id:
         return ZERO
 

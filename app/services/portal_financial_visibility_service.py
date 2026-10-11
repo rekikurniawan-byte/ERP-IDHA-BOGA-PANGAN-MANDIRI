@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import false
 
 from app.models.finance import Invoice, Payment
@@ -71,7 +73,7 @@ def _days_overdue(invoice: Invoice) -> int:
         return 0
     if _money(invoice.remaining_amount) <= 0:
         return 0
-    return max((date.today() - invoice.due_date).days, 0)
+    return max((today_wib() - invoice.due_date).days, 0)
 
 
 def _aging_bucket(days_overdue: int) -> str:

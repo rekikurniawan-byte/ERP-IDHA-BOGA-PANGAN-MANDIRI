@@ -18,7 +18,7 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.utils.terms import T
-from app.utils.clock import now_wib, to_wib
+from app.utils.clock import now_wib, to_wib, today_wib
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ MONTH_FULL_LABELS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Ju
 
 
 def _today() -> date:
-    return date.today()
+    return today_wib()
 
 
 def _safe_year(year: Optional[Any]) -> int:

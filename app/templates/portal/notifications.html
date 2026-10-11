@@ -1,77 +1,125 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.notifications %}
 <!-- notifications ERP existing -->
-<section class="portal-feature-page portal-service-page portal-notification-page">
-    <div class="portal-feature-hero portal-service-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+{% set model = data.notifications %}
+
+<div class="px-margin pt-space-md pb-space-xl flex flex-col gap-space-sm">
+    <!-- Sub-Header Context Bar -->
+    <div class="flex items-center justify-between py-2">
+        <div class="flex items-center gap-space-sm">
+            <div class="flex items-center gap-2">
+                <h1 class="font-headline-sm text-headline-sm text-text-heading font-bold">Notifikasi</h1>
+                {% if model.totals.unread %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-status-danger-bg text-status-danger-text font-label-badge text-caption-regular font-bold">
+                        {{ model.totals.unread }} Baru
+                    </span>
+                {% endif %}
+            </div>
         </div>
-        <strong class="portal-hero-status">{{ model.totals.unread }} belum dibaca</strong>
     </div>
 
-    <div class="portal-service-summary portal-notification-summary">
-        <article class="primary"><span>Belum Dibaca</span><strong>{{ model.totals.unread }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Butuh Tindakan</span><strong>{{ model.totals.actionable }}</strong><small>Punya tautan tindak lanjut</small></article>
-        <article><span>Kritis</span><strong>{{ model.totals.critical }}</strong><small>Prioritas tertinggi</small></article>
-        <article><span>Peringatan</span><strong>{{ model.totals.warning }}</strong><small>Perlu dipantau</small></article>
-        <article><span>Total</span><strong>{{ model.totals.total }}</strong><small>Semua status</small></article>
+    <!-- Metric Bar -->
+    <div class="grid grid-cols-4 gap-2 mb-2">
+        <div class="bg-card-surface border border-card-border rounded-xl p-2.5 text-center shadow-xs">
+            <span class="font-micro-meta text-[10px] uppercase text-text-muted font-bold block">Baru</span>
+            <strong class="font-headline-sm text-headline-sm {{ 'text-primary' if model.totals.unread else 'text-text-heading' }} block mt-0.5">{{ model.totals.unread }}</strong>
+        </div>
+        <div class="bg-card-surface border border-card-border rounded-xl p-2.5 text-center shadow-xs">
+            <span class="font-micro-meta text-[10px] uppercase text-text-muted font-bold block">Tindakan</span>
+            <strong class="font-headline-sm text-headline-sm text-status-info-text block mt-0.5">{{ model.totals.actionable }}</strong>
+        </div>
+        <div class="bg-card-surface border border-card-border rounded-xl p-2.5 text-center shadow-xs">
+            <span class="font-micro-meta text-[10px] uppercase text-text-muted font-bold block">Penting</span>
+            <strong class="font-headline-sm text-headline-sm text-status-danger-text block mt-0.5">{{ model.totals.critical }}</strong>
+        </div>
+        <div class="bg-card-surface border border-card-border rounded-xl p-2.5 text-center shadow-xs">
+            <span class="font-micro-meta text-[10px] uppercase text-text-muted font-bold block">Total</span>
+            <strong class="font-headline-sm text-headline-sm text-text-heading block mt-0.5">{{ model.totals.total }}</strong>
+        </div>
     </div>
 
+    <!-- Notification Groups -->
     {% for section in model.sections %}
-        <div class="portal-section-heading">
-            <h2>{{ section.title }}</h2>
-            <span>{{ section.rows|length }} notifikasi</span>
+        <div class="flex items-center justify-between mt-3 mb-1">
+            <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+                <h2 class="font-label-badge text-micro-meta text-text-muted uppercase tracking-wider font-bold">{{ section.title }}</h2>
+            </div>
+            <span class="font-micro-meta text-micro-meta text-text-muted">{{ section.rows|length }} Notifikasi</span>
         </div>
 
-        <div class="portal-service-list portal-notification-list">
+        <div class="flex flex-col gap-2.5">
             {% for notification in section.rows %}
-                <article class="portal-service-card portal-notification-card priority-{{ notification.priority|lower }}">
-                    <div class="portal-service-card-icon"><i class="bi bi-bell"></i></div>
-                    <div class="portal-service-card-main">
-                        <div class="portal-service-card-title">
-                            <h3>{{ notification.title }}</h3>
-                            <strong>{{ notification.status|status_label }}</strong>
+                {% set is_unread = notification.status == 'UNREAD' %}
+                <div class="relative overflow-hidden rounded-2xl bg-card-surface shadow-sm border border-card-border p-4 transition-all">
+                    <!-- Accent indicator strip -->
+                    <div class="absolute top-0 left-0 bottom-0 w-1.5 {{ 'bg-primary' if is_unread else 'bg-card-border' }} rounded-l-2xl"></div>
+                    <div class="flex items-start gap-3 pl-1">
+                        <div class="w-10 h-10 rounded-xl {{ 'bg-primary-fixed text-primary' if is_unread else 'bg-surface-container text-text-muted' }} flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[22px]">
+                                {{ 'notifications_active' if is_unread else 'notifications' }}
+                            </span>
                         </div>
-                        <p>{{ notification.message }}</p>
-                        <div class="portal-chip-row">
-                            <span>Prioritas {{ notification.priority|status_label }}</span>
-                            {% if notification.due_date %}<span>Jatuh tempo {{ notification.due_date.strftime('%d-%m-%Y') }}</span>{% endif %}
-                        </div>
-                        <div class="portal-inline-actions">
-                            {% if notification.action_url %}
-                                <a class="portal-action-link" href="{{ notification.action_url }}">
-                                    <i class="bi bi-box-arrow-up-right"></i>
-                                    <span>Buka</span>
-                                </a>
-                            {% endif %}
-                            {% if notification.status == "UNREAD" %}
-                                <form method="post" action="{{ url_for('portal.read_notification', notification_id=notification.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button class="portal-action-link" type="submit"><i class="bi bi-check2"></i><span>Dibaca</span></button>
-                                </form>
-                            {% endif %}
-                            {% if notification.status != "DISMISSED" %}
-                                <form method="post" action="{{ url_for('portal.dismiss_notification', notification_id=notification.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button class="portal-action-link secondary" type="submit"><i class="bi bi-eye-slash"></i><span>Sembunyikan</span></button>
-                                </form>
-                            {% endif %}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    {% if is_unread %}
+                                        <span class="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse"></span>
+                                    {% endif %}
+                                    <span class="px-2 py-0.5 rounded-full {{ 'bg-primary-fixed text-primary' if is_unread else 'bg-surface-container text-text-muted' }} font-label-badge text-[11px] font-bold">
+                                        {{ notification.status|status_label }}
+                                    </span>
+                                </div>
+                            </div>
+                            <h3 class="font-title-menu text-body-bold text-text-heading mb-1 leading-snug font-bold">
+                                {{ notification.title }}
+                            </h3>
+                            <p class="font-body-default text-caption-regular text-text-body mb-2 leading-relaxed">
+                                {{ notification.message }}
+                            </p>
+                            <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-card-border/60">
+                                <span class="font-caption-regular text-[11px] text-text-muted">
+                                    Prioritas {{ notification.priority|status_label }}{% if notification.due_date %} · tempo {{ notification.due_date.strftime('%d-%m-%Y') }}{% endif %}
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    {% if notification.action_url %}
+                                        <a href="{{ notification.action_url }}" class="h-7 px-3 rounded-lg bg-primary text-on-primary font-caption-regular text-[11px] font-bold flex items-center gap-1 shadow-xs transition-all">
+                                            <span>Buka</span>
+                                            <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                                        </a>
+                                    {% endif %}
+                                    {% if is_unread %}
+                                        <form method="post" action="{{ url_for('portal.read_notification', notification_id=notification.id) }}" class="inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="h-7 px-2.5 rounded-lg border border-card-border text-text-muted hover:text-text-heading font-caption-regular text-[11px] flex items-center gap-1 transition-all">
+                                                <span class="material-symbols-outlined text-[14px]">check</span>
+                                                <span>Dibaca</span>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if notification.status != "DISMISSED" %}
+                                        <form method="post" action="{{ url_for('portal.dismiss_notification', notification_id=notification.id) }}" class="inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="h-7 px-2.5 rounded-lg border border-card-border text-text-muted font-caption-regular text-[11px] flex items-center gap-1" aria-label="Sembunyikan notifikasi">
+                                                <span class="material-symbols-outlined text-[14px]">visibility_off</span>
+                                                <span>Sembunyikan</span>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </article>
+                </div>
             {% else %}
-                <div class="portal-empty-state">
-                    <i class="bi bi-bell"></i>
-                    <strong>Tidak ada {{ section.title|lower }}</strong>
-                    <p>Notifikasi untuk akun ini akan tampil di sini.</p>
+                <div class="p-6 rounded-xl bg-card-surface border border-card-border text-center text-text-muted">
+                    <span class="material-symbols-outlined text-3xl mb-1 text-text-muted block">notifications_off</span>
+                    <strong class="font-body-bold text-caption-regular text-text-heading block">Tidak Ada {{ section.title }}</strong>
+                    <span class="font-caption-regular text-[11px] text-text-muted">Notifikasi untuk akun ini akan tampil di sini.</span>
                 </div>
             {% endfor %}
         </div>
     {% endfor %}
-</section>
+</div>
 {% endblock %}

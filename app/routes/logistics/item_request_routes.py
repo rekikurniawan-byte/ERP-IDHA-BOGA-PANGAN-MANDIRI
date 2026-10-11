@@ -3,6 +3,7 @@
 Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.logistics_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 
 
 @logistics_bp.route("/item-requests")
@@ -140,7 +141,7 @@ def create_item_request():
     return render_template(
         "logistics/item_request_form.html",
         item_rows=item_rows,
-        today=date.today()
+        today=today_wib()
     )
 
 

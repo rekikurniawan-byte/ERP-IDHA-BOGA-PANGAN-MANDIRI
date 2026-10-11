@@ -8,6 +8,7 @@ from app.routes.finance_routes import (
     _supplier_payment_attachment_or_404,
     _supplier_payment_or_404,
 )
+from app.utils.clock import today_wib
 
 
 @finance_bp.route("/accounts-payable-aging")
@@ -21,11 +22,11 @@ def accounts_payable_aging():
     supplier_id_raw = (request.args.get("supplier_id") or "").strip()
 
     try:
-        as_of_date = datetime.strptime(as_of_raw, "%Y-%m-%d").date() if as_of_raw else date.today()
+        as_of_date = datetime.strptime(as_of_raw, "%Y-%m-%d").date() if as_of_raw else today_wib()
     except Exception:
         logger.exception("Suppressed unexpected exception in app/routes/finance_routes.py:4591")
         flash("Tanggal umur hutang tidak valid. Sistem memakai tanggal hari ini.", "warning")
-        as_of_date = date.today()
+        as_of_date = today_wib()
 
     supplier_id = None
     if supplier_id_raw:
@@ -127,7 +128,7 @@ def supplier_bills():
         SupplierBill.id.desc()
     ).all()
 
-    today = date.today()
+    today = today_wib()
     rows = []
     summary = {
         "total_open": 0,
@@ -291,9 +292,9 @@ def supplier_bill_detail(bill_id):
         journal_by_payment=journal_by_payment,
         ledger_by_payment=ledger_by_payment,
         active_bank_accounts=active_bank_accounts,
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         supplier_payment_form_idempotency_key=uuid4().hex,
-        aging=supplier_bill_aging_stage(bill, date.today()),
+        aging=supplier_bill_aging_stage(bill, today_wib()),
         supplier_payment_attachments=supplier_payment_attachments,
         allowed_extensions=sorted(get_allowed_extensions()),
         max_upload_mb=round(get_max_upload_bytes() / (1024 * 1024), 2),
@@ -336,7 +337,7 @@ def create_supplier_bill_payment(bill_id):
         flash("Tanggal pembayaran hutang supplier tidak valid.", "warning")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 
-    if payment_date > datetime.now().date():
+    if payment_date > today_wib():
         flash("Tanggal pembayaran hutang supplier tidak boleh lebih dari hari ini.", "warning")
         return redirect(url_for("finance.supplier_bill_detail", bill_id=bill.id))
 

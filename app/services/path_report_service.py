@@ -16,6 +16,8 @@ Keputusan owner 2026-09-27: omzet, kas masuk, dan piutang dipisah per jalur
 from datetime import date
 from decimal import Decimal
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import func, or_
 
 from app.extensions import db
@@ -54,7 +56,7 @@ def _ledger_total(account_code, column, start, end):
 
 
 def build_path_summary(branch_id, today=None):
-    today = today or date.today()
+    today = today or today_wib()
     start, end = today.replace(day=1), today
     rows = {path: _zero_row() for path in PATHS}
 

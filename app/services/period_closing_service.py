@@ -5,6 +5,8 @@ from calendar import monthrange
 from datetime import date
 from typing import Any
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import inspect
 
 from app.extensions import db
@@ -47,7 +49,7 @@ def is_period_closing_schema_ready() -> bool:
 
 
 def get_period_bounds(year: Any, month: Any) -> tuple[int, int, date, date]:
-    today = date.today()
+    today = today_wib()
     y = _safe_int(year, today.year)
     m = _safe_int(month, today.month)
     if y < 2000 or y > 2100:

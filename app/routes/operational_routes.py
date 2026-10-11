@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
+from app.utils.clock import today_wib
 from app.utils.decorators import role_required
 from app.services.audit_log_service import record_audit_log
 
@@ -297,7 +298,7 @@ def validate_location_belongs_to_mandor(mandor_id, delivery_location_id):
 @operational_bp.route("/daily-log")
 @role_required("ADMIN", "FINANCE")
 def daily_catering_log():
-    today = date.today()
+    today = today_wib()
     selected_date_value = request.args.get("date", today.strftime("%Y-%m-%d")).strip()
     selected_date = parse_date(selected_date_value, today)
 
@@ -321,7 +322,7 @@ def daily_catering_log():
 @operational_bp.route("/monthly-recap")
 @role_required("ADMIN", "FINANCE")
 def monthly_catering_recap():
-    today = date.today()
+    today = today_wib()
     selected_mandor_id = request.args.get("mandor_id", "").strip()
 
     # Backward compatibility: if an old ?month=YYYY-MM URL is opened,
@@ -1212,7 +1213,7 @@ def order_qty_changes():
     from app.services.auto_order_service import list_order_qty_changes, PORTION_ZERO_REASONS
     from app.services.catering_report_service import get_active_mandors, parse_date
 
-    today = date.today()
+    today = today_wib()
     start_date_val = request.args.get("start_date", "").strip()
     end_date_val = request.args.get("end_date", "").strip()
     mandor_id_val = request.args.get("mandor_id", "").strip()

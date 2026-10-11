@@ -13,6 +13,8 @@ from typing import Any, Iterable
 
 from flask import url_for
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.accounting import FixedAssetDepreciation, Journal
 from app.models.finance import CashBankTransaction, Invoice, Payment
@@ -483,7 +485,7 @@ def build_accounting_posting_status_report(branch_id: int) -> dict[str, Any]:
     totals = _counter(all_rows)
 
     return {
-        "generated_at": date.today(),
+        "generated_at": today_wib(),
         "sections": sections,
         "summary": totals,
         "attention_total": totals["attention"],

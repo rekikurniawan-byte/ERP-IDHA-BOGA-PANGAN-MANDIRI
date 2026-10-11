@@ -4,6 +4,8 @@ from flask_login import current_user
 from app.extensions import db
 from datetime import datetime
 
+from app.utils.clock import today_wib
+
 from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
 from app.models.operational import DailyOrder
 from app.services.delivery_service import (
@@ -131,8 +133,9 @@ def detail(delivery_id):
         for idx, detail_item in enumerate(delivery.details)
     }
 
+    template_name = "driver/detail.html" if current_user.role == "PENGANTAR" else "delivery/detail.html"
     return render_template(
-        "delivery/detail.html",
+        template_name,
         delivery=delivery,
         delivery_type=get_delivery_type_from_notes(delivery.notes),
         delivery_sla_summary=delivery_sla_summary,
@@ -393,8 +396,9 @@ def receive(detail_id):
     notes_type = get_delivery_type_from_notes(delivery_detail.delivery.notes)
     session_label = "Siang" if any(k in notes_type.upper() for k in ("LUNCH", "SIANG")) else ("Malam" if any(k in notes_type.upper() for k in ("DINNER", "MALAM")) else notes_type)
 
+    template_name = "driver/receive.html" if current_user.role == "PENGANTAR" else "delivery/receive.html"
     return render_template(
-        "delivery/receive.html",
+        template_name,
         delivery_detail=delivery_detail,
         delivery_detail_sla=delivery_detail_sla,
         customer_name=customer_name,
@@ -526,12 +530,12 @@ def delete_attachment(attachment_id):
 def today():
     from datetime import date, datetime
 
-    selected_date_text = request.args.get("date") or date.today().isoformat()
+    selected_date_text = request.args.get("date") or today_wib().isoformat()
 
     try:
         selected_date = datetime.strptime(selected_date_text, "%Y-%m-%d").date()
     except ValueError:
-        selected_date = date.today()
+        selected_date = today_wib()
         selected_date_text = selected_date.isoformat()
 
     deliveries = Delivery.query.filter_by(
@@ -547,8 +551,9 @@ def today():
         limit=6,
     )
 
+    template_name = "driver/today.html" if current_user.role == "PENGANTAR" else "delivery/today.html"
     return render_template(
-        "delivery/today.html",
+        template_name,
         deliveries=deliveries,
         selected_date=selected_date,
         selected_date_text=selected_date_text,
@@ -563,12 +568,12 @@ def today():
 def receiving():
     from datetime import date, datetime
 
-    selected_date_text = request.args.get("date") or date.today().isoformat()
+    selected_date_text = request.args.get("date") or today_wib().isoformat()
 
     try:
         selected_date = datetime.strptime(selected_date_text, "%Y-%m-%d").date()
     except ValueError:
-        selected_date = date.today()
+        selected_date = today_wib()
         selected_date_text = selected_date.isoformat()
 
     details = DeliveryDetail.query.join(Delivery).filter(
@@ -590,8 +595,9 @@ def receiving():
         if detail.receipt
     ]
 
+    template_name = "driver/receiving.html" if current_user.role == "PENGANTAR" else "delivery/receiving.html"
     return render_template(
-        "delivery/receiving.html",
+        template_name,
         pending_details=pending_details,
         received_details=received_details,
         selected_date=selected_date,
@@ -637,13 +643,14 @@ def history():
 
         # Kalau tidak ada filter tanggal, riwayat fokus ke delivery selesai/cancelled/masa lalu.
         if not date_from and not date_to:
-            if delivery.status not in ["DELIVERED", "CANCELLED"] and delivery.delivery_date >= date.today():
+            if delivery.status not in ["DELIVERED", "CANCELLED"] and delivery.delivery_date >= today_wib():
                 continue
 
         deliveries.append(delivery)
 
+    template_name = "driver/history.html" if current_user.role == "PENGANTAR" else "delivery/history.html"
     return render_template(
-        "delivery/history.html",
+        template_name,
         deliveries=deliveries,
         status_filter=status_filter,
         date_from_text=date_from_text,
@@ -698,7 +705,8 @@ def cancel(delivery_id):
 @delivery_bp.route("/scan", methods=["GET"])
 @role_required("OWNER", "ADMIN", "PENGANTAR")
 def scan():
-    return render_template("delivery/scan.html")
+    template_name = "driver/scan.html" if current_user.role == "PENGANTAR" else "delivery/scan.html"
+    return render_template(template_name)
 
 
 @delivery_bp.route("/scan/<int:daily_order_detail_id>/<string:sesi>")

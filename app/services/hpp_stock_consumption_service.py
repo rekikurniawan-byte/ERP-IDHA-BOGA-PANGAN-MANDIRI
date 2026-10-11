@@ -2,6 +2,8 @@ import logging
 from collections import OrderedDict
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.logistics import StockMovement
 from app.models.operational import (
@@ -277,7 +279,7 @@ def get_existing_stock_consumption(snapshot_id):
 
 def _parse_consumption_date(value):
     if not value:
-        return date.today()
+        return today_wib()
 
     if isinstance(value, date):
         return value

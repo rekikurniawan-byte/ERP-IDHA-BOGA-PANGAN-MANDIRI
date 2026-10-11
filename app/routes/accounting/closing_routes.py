@@ -15,7 +15,8 @@ def period_closing():
     from datetime import date
     from app.services.period_closing_service import get_period_closing_preview
 
-    today = date.today()
+    from app.utils.clock import today_wib
+    today = today_wib()
     selected_year = request.args.get("year", today.year)
     selected_month = request.args.get("month", today.month)
     preview = get_period_closing_preview(current_user.branch_id, selected_year, selected_month)

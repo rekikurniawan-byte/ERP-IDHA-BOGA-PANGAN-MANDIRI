@@ -95,7 +95,8 @@ def export_journal_details_csv():
     from datetime import date
     from app.services.accounting_export_service import build_journal_details_export_response
 
-    today = date.today()
+    from app.utils.clock import today_wib
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting_parse_date(request.args.get("end_date"), today)

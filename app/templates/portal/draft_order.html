@@ -4,351 +4,263 @@
 {% set context = data.context %}
 {% set scope = context.scope %}
 {% set summary = context.draft_summary %}
-{% set precheck = context.payment_precheck %}
-{% if current_user.role == "PORTAL_CLIENT" and not context.direct_ordering_enabled %}
-<section class="portal-feature-page portal-workflow-page portal-order-page portal-pt-no-order-page">
-    <div class="portal-feature-hero portal-workflow-hero portal-order-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.pt_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>Portal {{ term('client') }}</p>
-            <h1>{{ term('client') }} tidak membuat pesanan personal.</h1>
-            <span>Akses rekap perusahaan</span>
-        </div>
-        <strong class="portal-hero-status">Pemantauan</strong>
-    </div>
-
-    <div class="portal-home-grid two">
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Alur yang benar</span>
-                    <h2>Order dibuat oleh {{ term('sub_client', lower=True) }} atau pelanggan.</h2>
-                </div>
-                <i class="bi bi-diagram-3"></i>
-            </div>
-            <div class="portal-customer-flow">
-                <article class="done"><i class="bi bi-person-check"></i><strong>{{ term('sub_client') }}/Pelanggan login</strong></article>
-                <article class="done"><i class="bi bi-card-checklist"></i><strong>Membuat draft pesanan</strong></article>
-                <article><i class="bi bi-shield-check"></i><strong>Admin konfirmasi pesanan</strong></article>
-                <article><i class="bi bi-building"></i><strong>{{ term('client') }} memantau rekap tagihan</strong></article>
-            </div>
-        </section>
-
-        <section class="portal-home-panel">
-            <div class="portal-home-panel-head">
-                <div>
-                    <span>Fitur {{ term('client') }}</span>
-                    <h2>Kontrol {{ term('sub_client', lower=True) }}, invoice, piutang, dan kontrak.</h2>
-                </div>
-                <i class="bi bi-building-check"></i>
-            </div>
-            <div class="portal-home-action-grid">
-                <a href="{{ url_for('portal.pt_mandors') }}"><i class="bi bi-diagram-3"></i><strong>Seluruh {{ term('sub_client') }}</strong><small>Perusahaan</small></a>
-                <a href="{{ url_for('portal.pt_receivables') }}"><i class="bi bi-cash-stack"></i><strong>Piutang</strong><small>Total sisa tagihan</small></a>
-                <a href="{{ url_for('portal.pt_invoices') }}"><i class="bi bi-receipt"></i><strong>Invoice</strong><small>Diterbitkan dan belum lunas</small></a>
-                <a href="{{ url_for('portal.pt_payments') }}"><i class="bi bi-credit-card"></i><strong>Pembayaran</strong><small>Riwayat bayar</small></a>
-            </div>
-        </section>
-    </div>
-</section>
-{% else %}
+{% set precheck = context.payment_precheck or {} %}
 {% set is_customer = current_user.role == "PORTAL_CUSTOMER" %}
-{% set pay_rows = context.draft_rows|selectattr("needs_payment")|list %}
-{% set company = global_company_settings or {} %}
-<section class="portal-feature-page portal-order-page po" data-portal-order-page>
-    <header class="po-head">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}" aria-label="Kembali"><i class="bi bi-arrow-left"></i></a>
-        <div class="po-head-text">
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>Pesan Catering</h1>
+{% set is_client_monitoring = current_user.role == "PORTAL_CLIENT" and not context.direct_ordering_enabled %}
+{% set field = "w-full h-11 px-3 rounded-lg bg-surface-container-lowest border border-card-border font-body-medium text-body-medium text-text-heading outline-none focus:ring-2 focus:ring-primary/20" %}
+
+<div class="flex flex-col w-full pb-44">
+    <div class="px-margin pt-3 pb-2 flex items-center gap-space-sm">
+        <div class="flex flex-col min-w-0">
+            <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight truncate">{{ term('client') ~ " tidak membuat pesanan personal" if is_client_monitoring else "Pesan Catering" }}</h1>
+            <p class="font-caption-regular text-caption-regular text-text-muted leading-tight truncate">{{ data.persona.eyebrow }}</p>
         </div>
-        <ul class="po-rules" aria-label="Aturan pesan">
-            <li><i class="bi bi-sun"></i><span>Siang</span><strong>s.d. {{ context.cutoff_times.LUNCH }}</strong></li>
-            <li><i class="bi bi-moon-stars"></i><span>Sore</span><strong>s.d. {{ context.cutoff_times.DINNER }}</strong></li>
-            <li><i class="bi bi-{{ 'wallet2' if context.prepayment_required else 'receipt' }}"></i><span>Bayar</span><strong>{{ "di muka" if context.prepayment_required else "per periode" }}</strong></li>
-        </ul>
-    </header>
+    </div>
 
-    {% if credit_summaries %}{% include "portal/_credit_summary.html" %}{% endif %}
+    {% if is_client_monitoring %}
+        <div class="px-margin pt-2 flex flex-col gap-3">
+            <div class="p-4 rounded-2xl bg-card-surface border border-card-border shadow-sm flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-status-warning-bg text-status-warning-text flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">info</span>
+                    </div>
+                    <div>
+                        <strong class="block font-body-bold text-text-heading text-body-bold">Akses rekap perusahaan</strong>
+                        <span class="font-caption-regular text-caption-regular text-text-muted">Order dibuat oleh {{ term('sub_client', lower=True) }} atau pelanggan.</span>
+                    </div>
+                </div>
+                <ol class="grid grid-cols-2 gap-2 font-caption-regular text-caption-regular">
+                    <li class="p-2 rounded-lg bg-status-success-bg text-status-success-text">1. {{ term('sub_client') }}/Pelanggan login</li>
+                    <li class="p-2 rounded-lg bg-status-success-bg text-status-success-text">2. Membuat draft pesanan</li>
+                    <li class="p-2 rounded-lg bg-surface-container-low text-text-body">3. Admin konfirmasi pesanan</li>
+                    <li class="p-2 rounded-lg bg-surface-container-low text-text-body">4. {{ term('client') }} memantau rekap tagihan</li>
+                </ol>
+            </div>
+        </div>
+    {% else %}
+        {% set pay_rows = context.draft_rows|selectattr("needs_payment")|list %}
+        {% set company = global_company_settings or {} %}
 
-    {% if pay_rows %}
-        <section class="po-pay" aria-labelledby="poPayTitle">
-            <div class="po-pay-head">
-                <span class="po-pay-icon"><i class="bi bi-exclamation-circle"></i></span>
-                <div>
-                    <h2 id="poPayTitle">{{ pay_rows|length }} pesanan menunggu pembayaran</h2>
-                    <p>Transfer {% if company.payment_account_number %}ke <strong>{{ company.payment_bank_name }} {{ company.payment_account_number }}</strong> a.n. {{ company.payment_account_name }}{% endif %}, lalu unggah buktinya. Pesanan diproses setelah pembayaran diperiksa.</p>
+        <div class="px-margin py-2">
+            <div class="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-card-surface shadow-sm border border-card-border">
+                <div class="flex flex-col items-center text-center p-1.5 rounded-lg bg-status-warning-bg/40">
+                    <span class="material-symbols-outlined text-status-warning-text text-[20px] mb-0.5">wb_sunny</span>
+                    <span class="font-micro-meta text-micro-meta text-text-heading font-semibold">Siang</span>
+                    <span class="font-caption-regular text-[10px] text-status-warning-text font-bold">s.d. {{ context.cutoff_times.LUNCH }}</span>
+                </div>
+                <div class="flex flex-col items-center text-center p-1.5 rounded-lg bg-surface-container-low">
+                    <span class="material-symbols-outlined text-secondary text-[20px] mb-0.5">dark_mode</span>
+                    <span class="font-micro-meta text-micro-meta text-text-heading font-semibold">Sore</span>
+                    <span class="font-caption-regular text-[10px] text-secondary font-bold">s.d. {{ context.cutoff_times.DINNER }}</span>
+                </div>
+                <div class="flex flex-col items-center text-center p-1.5 rounded-lg bg-surface-container-high/40">
+                    <span class="material-symbols-outlined text-text-body text-[20px] mb-0.5">{{ 'account_balance_wallet' if context.prepayment_required else 'receipt_long' }}</span>
+                    <span class="font-micro-meta text-micro-meta text-text-heading font-semibold">Bayar</span>
+                    <span class="font-caption-regular text-[10px] text-text-muted font-medium">{{ "di muka" if context.prepayment_required else "per periode" }}</span>
                 </div>
             </div>
-            {% for row in pay_rows %}
-                {% set draft = row.draft %}
-                {% if row.is_closed %}
-                    <div class="po-pay-row po-pay-row-closed" style="background: var(--surface); border: 1px solid var(--danger-border); border-left: 4px solid var(--danger-solid); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-2);">
-                        <div class="po-pay-what">
-                            <strong>{{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</strong>
-                            <span>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} · {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</span>
-                        </div>
-                        <div class="po-pay-amount">
-                            <span>Sisa bayar</span>
-                            <strong>{{ (row.amount_due or 0)|rupiah }}</strong>
-                        </div>
-                        <div class="po-pay-closed-alert" style="grid-column: 1 / -1; color: var(--danger-text); font-size: var(--text-sm); display: flex; align-items: center; gap: 8px;">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <span><strong>Pesanan ini sudah lewat batas waktu dan tidak bisa diproses. Hubungi admin.</strong></span>
-                        </div>
-                    </div>
-                {% else %}
-                    <form method="post" enctype="multipart/form-data" action="{{ url_for('portal.upload_draft_payment_proof', draft_id=draft.id) }}" class="po-pay-row">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="po-pay-what">
-                            <strong>{{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</strong>
-                            <span>{{ draft.order_date.strftime('%d-%m-%Y') if draft.order_date else "-" }} · {{ draft.delivery_location.location_name if draft.delivery_location else "-" }}</span>
-                        </div>
-                        <div class="po-pay-amount">
-                            {% if row.unique_code and row.transfer_amount %}
-                                <span>Transfer TEPAT</span>
-                                {% set tr_str = (row.transfer_amount|rupiah) %}
-                                <strong class="po-transfer-amount">{{ tr_str[:-3] }}<span class="po-unique-code" style="color: #0d6efd; font-weight: 800;">{{ tr_str[-3:] }}</span></strong>
-                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem; line-height: 1.2;">3 angka terakhir adalah kode unik pesanan Anda agar pembayaran cepat dicocokkan. Mohon jangan dibulatkan.</small>
-                                {% if row.paid_amount %}<small class="d-block text-muted">tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</small>{% endif %}
-                            {% else %}
-                                <span>Sisa bayar</span>
-                                <strong>{{ (row.amount_due or 0)|rupiah }}</strong>
-                                {% if row.paid_amount %}<small>tercatat {{ row.paid_amount|rupiah }} dari {{ row.total_amount|rupiah }}</small>{% endif %}
-                            {% endif %}
-                        </div>
-                        <label class="po-pay-field"><span>Nominal</span><input class="form-control" type="number" name="paid_amount" min="1" step="1" value="{{ (row.transfer_amount if row.unique_code and row.transfer_amount is not none else row.amount_due)|int if (row.transfer_amount or row.amount_due) else '' }}" required></label>
-                        <label class="po-pay-field"><span>Nama pemilik rekening pengirim</span><input class="form-control" type="text" name="sender_name" maxlength="120" required placeholder="Nama pengirim"></label>
-                        <label class="po-pay-field"><span>No. referensi transfer (opsional)</span><input class="form-control" type="text" name="transfer_reference" maxlength="80" placeholder="No. referensi bank"></label>
-                        <label class="po-pay-file"><span>Bukti transfer</span><input class="form-control" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></label>
-                        <input type="hidden" name="notes" value="">
-                        <button class="btn app-btn-primary" type="submit"><i class="bi bi-upload"></i> Unggah</button>
-                    </form>
-                {% endif %}
-            {% endfor %}
-        </section>
-    {% endif %}
-
-    {% if precheck.required and precheck.message %}
-        <div class="po-notice tone-{{ precheck.tone }}">
-            <i class="bi bi-{{ 'check2-circle' if precheck.tone == 'green' else 'shield-exclamation' }}"></i>
-            <span><strong>{{ precheck.status|status_label }}.</strong> {{ precheck.message }}</span>
         </div>
-    {% endif %}
 
-    {% if context.allowed %}
-        <form method="post" action="{{ url_for('portal.draft_order') }}" class="po-builder" data-portal-order-form data-order-builder data-app-confirm="Kirim pesanan ini?">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="idempotency_key" value="{{ data.idempotency_key }}">
+        {% if credit_summaries %}{% include "portal/_credit_summary.html" %}{% endif %}
 
-            <div class="po-steps">
-                <section class="po-step"
+        {% if pay_rows %}
+            <div class="px-margin pt-1">
+                <div class="p-3 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-2 font-caption-regular text-caption-regular">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0">pending_actions</span>
+                    <span><strong>{{ pay_rows|length }} pesanan menunggu pembayaran.</strong> Bayar dan unggah buktinya di tab Tagihan.</span>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if precheck.required and precheck.message %}
+            <div class="px-margin pt-2">
+                <div class="p-3 rounded-xl flex items-start gap-2.5 font-caption-regular text-caption-regular {{ 'bg-status-success-bg text-status-success-text' if precheck.tone == 'green' else 'bg-status-warning-bg text-status-warning-text' }}">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0">{{ 'check_circle' if precheck.tone == 'green' else 'gpp_maybe' }}</span>
+                    <span><strong>{{ precheck.status|status_label }}.</strong> {{ precheck.message }}</span>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if context.allowed %}
+            <form method="post" action="{{ url_for('portal.draft_order') }}" data-portal-order-form data-order-builder data-app-confirm="Kirim pesanan ini?" class="flex flex-col gap-space-lg px-margin pt-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="idempotency_key" value="{{ data.idempotency_key }}">
+
+                <section class="po-step flex flex-col gap-2.5"
                          data-today="{{ context.today }}"
                          data-today-sessions='{{ context.today_sessions|tojson }}'
                          data-locked-dates='{{ context.locked_dates|tojson }}'
                          data-menu-schedules='{{ (context.menu_schedules or {})|tojson }}'>
-                    <header><span class="po-num">1</span><h2>Kapan diantar?</h2></header>
-                    <div class="po-when">
-                        <label class="po-field">
-                            <span>Tanggal</span>
-                            <input class="form-control" type="date" name="order_date" min="{{ context.today }}" required data-portal-order-date>
-                        </label>
-                        <div class="po-field">
-                            <span>Waktu makan</span>
-                            <div class="po-segment" role="radiogroup" aria-label="Waktu makan">
-                                {% for value, label in context.meal_types.items() %}
-                                    {% set session_info = context.today_sessions[value] if context.today_sessions and value in context.today_sessions else {} %}
-                                    {% set is_today_closed = session_info.closed if session_info is mapping and 'closed' in session_info else false %}
-                                    {% set lock_str = session_info.lock_time_str if session_info is mapping and 'lock_time_str' in session_info else '' %}
-                                    <label class="po-seg{% if is_today_closed %} is-disabled{% endif %}" data-meal-type="{{ value }}">
-                                        <input type="radio" name="meal_type" value="{{ value }}" {% if is_today_closed %}disabled{% elif loop.first %}checked{% endif %} data-meal-label="{{ label }}">
-                                        <span>
-                                             <i class="bi bi-{{ 'sun' if value == 'LUNCH' else ('moon-stars' if value == 'DINNER' else 'cup-hot') }}"></i>
-                                             {{ label }}
-                                             {% if lock_str and not is_today_closed %}
-                                                 <small class="po-seg-hint text-muted" style="display: block; font-size: 0.72rem;">Pesan sebelum {{ lock_str }} WIB</small>
-                                             {% endif %}
-                                             <small class="po-seg-badge{% if not is_today_closed %} d-none{% endif %}">Sudah tutup</small>
-                                        </span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-micro-meta font-body-bold">1</span>
+                        <h2 class="font-body-bold text-body-bold text-text-heading">Kapan diantar?</h2>
                     </div>
-                    <div class="po-scheduled-menu-wrap" data-menu-card-wrap style="margin-top: var(--space-3);">
-                        <div class="po-scheduled-menu-card" data-menu-card style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3); display: flex; gap: var(--space-3); align-items: flex-start;">
-                            <div data-menu-photo-container style="width: 72px; height: 72px; min-width: 72px; border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-egg-fried" style="font-size: 1.75rem; color: var(--text-muted);" data-menu-photo-placeholder></i>
-                                <img src="" alt="Foto Menu" data-menu-photo style="width: 100%; height: 100%; object-fit: cover; display: none;" loading="lazy">
+                    <label class="flex flex-col gap-1">
+                        <span class="font-caption-regular text-caption-regular text-text-muted font-medium">Tanggal</span>
+                        <input class="{{ field }}" type="date" name="order_date" min="{{ context.today }}" required data-portal-order-date>
+                    </label>
+                    <div class="grid {{ 'grid-cols-3' if context.meal_types|length >= 3 else 'grid-cols-2' }} gap-2" role="radiogroup" aria-label="Waktu makan">
+                        {% for value, label in context.meal_types.items() %}
+                            {% set session_info = context.today_sessions[value] if context.today_sessions and value in context.today_sessions else {} %}
+                            {% set is_today_closed = session_info.closed if session_info is mapping and 'closed' in session_info else false %}
+                            {% set lock_str = session_info.lock_time_str if session_info is mapping and 'lock_time_str' in session_info else '' %}
+                            <label class="po-seg relative cursor-pointer [&.is-disabled]:opacity-50 [&.is-disabled]:pointer-events-none{% if is_today_closed %} is-disabled{% endif %}" data-meal-type="{{ value }}">
+                                <input class="peer sr-only" type="radio" name="meal_type" value="{{ value }}" {% if is_today_closed %}disabled{% elif loop.first %}checked{% endif %} data-meal-label="{{ label }}">
+                                <span class="flex flex-col gap-0.5 p-3 rounded-xl border border-card-border bg-card-surface shadow-sm transition-all peer-checked:bg-primary-fixed/40 peer-checked:border-primary/40 peer-focus-visible:ring-2 peer-focus-visible:ring-primary/30">
+                                    <span class="flex items-center gap-1 text-primary font-caption-regular text-caption-regular font-bold">
+                                        <span class="material-symbols-outlined text-[18px]">{{ 'wb_sunny' if value == 'LUNCH' else ('dark_mode' if value == 'DINNER' else 'free_breakfast') }}</span>{{ label }}
+                                    </span>
+                                    {% if lock_str and not is_today_closed %}<span class="font-micro-meta text-micro-meta text-text-muted">Pesan sebelum {{ lock_str }} WIB</span>{% endif %}
+                                    <span class="po-seg-badge font-micro-meta text-micro-meta font-bold text-status-danger-text{% if not is_today_closed %} d-none{% endif %}">Sudah tutup</span>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div data-menu-card-wrap>
+                        <div data-menu-card class="flex gap-3 p-3 rounded-xl bg-card-surface shadow-sm border border-card-border">
+                            <div class="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[32px] text-text-muted" data-menu-photo-placeholder>restaurant</span>
+                                <img src="" alt="Foto Menu" data-menu-photo class="w-full h-full object-cover" style="display: none;" loading="lazy">
                             </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
-                                    <span style="font-size: var(--text-xs); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-solid);" data-menu-badge>Menu Sesi Ini</span>
-                                </div>
-                                <strong style="display: block; font-size: var(--text-base); color: var(--text); margin-bottom: 4px;" data-menu-title>Menu akan diinformasikan</strong>
-                                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.4;" data-menu-desc>Pilih tanggal dan sesi makan untuk melihat menu pilihan dapur.</p>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-micro-meta text-micro-meta text-primary font-bold uppercase tracking-wider" data-menu-badge>Menu Sesi Ini</span>
+                                <strong class="font-body-bold text-body-bold text-text-heading leading-tight mt-0.5" data-menu-title>Menu akan diinformasikan</strong>
+                                <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5" data-menu-desc>Pilih tanggal dan sesi makan untuk melihat menu pilihan dapur.</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="po-step">
-                    <header>
-                        <span class="po-num">2</span><h2>Ke mana?</h2>
+                <section class="flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-micro-meta font-body-bold">2</span>
+                            <h2 class="font-body-bold text-body-bold text-text-heading">Ke mana?</h2>
+                        </div>
                         {% if current_user.role in ("PORTAL_CUSTOMER", "PORTAL_SUBCLIENT") %}
-                            <a class="po-link" href="{{ url_for('portal.addresses') }}"><i class="bi bi-pin-map"></i> Kelola alamat</a>
+                            <span class="font-micro-meta text-micro-meta text-text-muted">Ubah di Akun › Alamat Antar</span>
                         {% endif %}
-                    </header>
-                    <div class="po-locations" role="radiogroup" aria-label="Lokasi pengiriman">
+                    </div>
+                    <div class="flex flex-col gap-2" role="radiogroup" aria-label="Lokasi pengiriman">
                         {% for location in context.location_cards %}
                             {% set fee = location.fee or {} %}
-                            <label class="po-loc">
-                                <input type="radio" name="delivery_location_id" value="{{ location.id }}" required {% if loop.first %}checked{% endif %}
+                            <label class="relative cursor-pointer">
+                                <input class="peer sr-only" type="radio" name="delivery_location_id" value="{{ location.id }}" required {% if loop.first %}checked{% endif %}
                                        data-price="{{ location.price_per_portion or 0 }}"
                                        data-fee="{{ fee.fee if fee.fee is not none else '' }}"
                                        data-free-from="{{ fee.free_from or 0 }}"
                                        data-included="{{ 1 if fee.included else 0 }}"
                                        data-name="{{ location.name }}">
-                                <span class="po-loc-body">
-                                    {% if location.photo_id %}<img class="po-loc-photo" src="{{ url_for('location_photos.view', attachment_id=location.photo_id) }}" alt="Foto {{ location.name }}" loading="lazy">{% endif %}
-                                    <span class="po-loc-top">
-                                        <strong>{{ location.name }}</strong>
-                                        {% if location.has_point %}<i class="bi bi-geo-alt-fill po-gps" title="Titik GPS tersimpan"></i>{% endif %}
-                                    </span>
-                                    <span class="po-loc-desc">{{ location.description or "Belum ada catatan alamat." }}</span>
-                                    {% if not is_customer %}<span class="po-loc-desc">{{ location.mandor_name }} · {{ location.client_name }}</span>{% endif %}
-                                    <span class="po-loc-meta">
-                                        {% if location.price_per_portion %}<span>{{ location.price_per_portion|rupiah }}/porsi</span>{% endif %}
-                                        {% if not location.photo_id %}<span class="is-warn"><i class="bi bi-camera"></i> Belum ada foto</span>{% endif %}
-                                        {% if fee.error %}<span class="is-warn">Ongkir belum tersedia</span>
-                                        {% elif fee.included %}<span>Ongkir termasuk</span>
-                                        {% elif fee.fee %}<span>{% if fee.km_label %}± {{ fee.km_label }} · {% endif %}ongkir {{ fee.fee|rupiah }}</span>
+                                <span class="flex gap-3 p-3 rounded-xl border border-card-border bg-card-surface shadow-sm transition-all peer-checked:bg-primary-fixed/30 peer-checked:border-primary/40 peer-focus-visible:ring-2 peer-focus-visible:ring-primary/30">
+                                    <span class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center text-text-muted">
+                                        {% if location.photo_id %}
+                                            <img class="w-full h-full object-cover" src="{{ url_for('location_photos.view', attachment_id=location.photo_id) }}" alt="Foto {{ location.name }}" loading="lazy">
+                                        {% else %}
+                                            <span class="material-symbols-outlined text-[22px]">location_on</span>
                                         {% endif %}
+                                    </span>
+                                    <span class="flex flex-col min-w-0 flex-1 gap-0.5">
+                                        <span class="flex items-center gap-1">
+                                            <strong class="font-body-bold text-body-bold text-text-heading truncate">{{ location.name }}</strong>
+                                            {% if location.has_point %}<span class="material-symbols-outlined text-[14px] text-status-success-text" title="Titik GPS tersimpan">my_location</span>{% endif %}
+                                        </span>
+                                        <span class="font-caption-regular text-caption-regular text-text-muted line-clamp-2">{{ location.description or "Belum ada catatan alamat." }}</span>
+                                        {% if not is_customer %}<span class="font-micro-meta text-micro-meta text-text-muted truncate">{{ location.mandor_name }} · {{ location.client_name }}</span>{% endif %}
+                                        <span class="flex flex-wrap gap-x-2 gap-y-0.5 font-micro-meta text-micro-meta mt-0.5">
+                                            {% if location.price_per_portion %}<span class="text-text-heading font-bold">{{ location.price_per_portion|rupiah }}/porsi</span>{% endif %}
+                                            {% if not location.photo_id %}<span class="text-status-warning-text">Belum ada foto</span>{% endif %}
+                                            {% if fee.error %}<span class="text-status-warning-text">Ongkir belum tersedia</span>
+                                            {% elif fee.included %}<span class="text-status-success-text">Ongkir termasuk</span>
+                                            {% elif fee.fee %}<span class="text-text-muted">{% if fee.km_label %}± {{ fee.km_label }} · {% endif %}ongkir {{ fee.fee|rupiah }}</span>
+                                            {% endif %}
+                                        </span>
                                     </span>
                                 </span>
                             </label>
                         {% else %}
-                            <div class="portal-empty-state">
-                                <i class="bi bi-geo-alt"></i>
-                                <strong>Belum ada lokasi aktif</strong>
-                                <p>Tambahkan alamat di menu Alamat, atau hubungi admin.</p>
+                            <div class="p-4 rounded-xl bg-card-surface border border-card-border text-center flex flex-col items-center gap-1">
+                                <span class="material-symbols-outlined text-[28px] text-text-muted">location_off</span>
+                                <strong class="font-body-bold text-body-bold text-text-heading">Belum ada lokasi aktif</strong>
+                                <p class="font-caption-regular text-caption-regular text-text-muted">Tambahkan alamat di menu Alamat, atau hubungi admin.</p>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
 
-                <section class="po-step">
-                    <header><span class="po-num">3</span><h2>Berapa porsi?</h2></header>
+                <section class="flex flex-col gap-2.5">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-micro-meta font-body-bold">3</span>
+                        <h2 class="font-body-bold text-body-bold text-text-heading">Berapa porsi?</h2>
+                    </div>
                     {% set min_portions = (context.location_cards[0].min_portions if context.location_cards else None) %}
-                    <div class="po-qty">
-                        <div class="po-stepper">
-                            <button type="button" class="po-step-btn" data-qty-step="-1" aria-label="Kurangi porsi"><i class="bi bi-dash-lg"></i></button>
-                            <input class="form-control" type="number" name="portion_qty" min="{{ min_portions or 1 }}" step="1" value="{{ 10 if is_customer else 20 }}" inputmode="numeric" required data-portal-portion-input aria-label="Jumlah porsi">
-                            <button type="button" class="po-step-btn" data-qty-step="1" aria-label="Tambah porsi"><i class="bi bi-plus-lg"></i></button>
+                    <div class="flex flex-col p-4 rounded-xl bg-card-surface shadow-sm gap-3 border border-card-border">
+                        <div class="flex items-center justify-between gap-3">
+                            <button type="button" data-qty-step="-1" aria-label="Kurangi porsi" class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-text-heading active:scale-95 transition-transform flex-shrink-0">
+                                <span class="material-symbols-outlined text-[24px]">remove</span>
+                            </button>
+                            <input type="number" name="portion_qty" min="{{ min_portions or 1 }}" step="1" value="{{ 10 if is_customer else 20 }}" inputmode="numeric" required data-portal-portion-input aria-label="Jumlah porsi" class="w-full min-w-0 text-center bg-transparent font-display-hero text-display-hero text-text-heading outline-none">
+                            <button type="button" data-qty-step="1" aria-label="Tambah porsi" class="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center active:scale-95 transition-transform shadow-md flex-shrink-0">
+                                <span class="material-symbols-outlined text-[24px]">add</span>
+                            </button>
                         </div>
-                        <div class="po-quick">
+                        <div class="grid grid-cols-4 gap-1.5">
                             {% for quick in ((5, 10, 20, 50) if is_customer else (20, 30, 50, 100)) %}
-                                <button type="button" data-qty-set="{{ quick }}">{{ quick }}</button>
+                                <button type="button" data-qty-set="{{ quick }}" class="py-1.5 rounded-lg bg-surface-container text-text-heading font-body-bold text-caption-regular text-center transition-all [&.is-active]:bg-primary [&.is-active]:text-on-primary">{{ quick }}</button>
                             {% endfor %}
                         </div>
+                        <p class="font-caption-regular text-caption-regular text-text-muted empty:hidden [&.is-free]:text-status-success-text [&.is-free]:font-bold" data-free-hint></p>
                     </div>
-                    <p class="po-hint" data-free-hint></p>
                 </section>
 
-                <section class="po-step">
-                    <details class="po-more">
-                        <summary><span class="po-num">4</span><h2>Penerima &amp; catatan</h2><small>opsional</small><i class="bi bi-chevron-down"></i></summary>
-                        <div class="po-more-grid">
-                            <label class="po-field"><span>Jam kirim</span><input class="form-control" type="time" name="delivery_time" data-portal-time-input></label>
-                            <label class="po-field"><span>Nama penerima</span><input class="form-control" type="text" name="contact_name" maxlength="120" placeholder="Nama orang di lokasi" data-portal-contact-input></label>
-                            <label class="po-field"><span>HP penerima</span><input class="form-control" type="tel" name="contact_phone" maxlength="40" placeholder="08..." data-portal-phone-input></label>
-                            <label class="po-field is-wide"><span>Catatan</span><textarea class="form-control" name="notes" rows="3" maxlength="1000" placeholder="Contoh: tanpa pedas, tambah sendok, titip ke pos satpam." data-portal-notes data-no-textarea-footer></textarea></label>
+                <section>
+                    <details class="group rounded-xl bg-card-surface shadow-sm border border-card-border">
+                        <summary class="cursor-pointer list-none flex items-center gap-1.5 p-3.5">
+                            <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-micro-meta font-body-bold">4</span>
+                            <h2 class="font-body-bold text-body-bold text-text-heading flex-1">Penerima &amp; catatan <small class="font-caption-regular text-caption-regular text-text-muted font-normal">opsional</small></h2>
+                            <span class="material-symbols-outlined text-[20px] text-text-muted transition-transform group-open:rotate-180">expand_more</span>
+                        </summary>
+                        <div class="grid grid-cols-2 gap-3 px-3.5 pb-3.5">
+                            <label class="flex flex-col gap-1"><span class="font-caption-regular text-caption-regular text-text-muted font-medium">Jam kirim</span><input class="{{ field }}" type="time" name="delivery_time" data-portal-time-input></label>
+                            <label class="flex flex-col gap-1"><span class="font-caption-regular text-caption-regular text-text-muted font-medium">HP penerima</span><input class="{{ field }}" type="tel" name="contact_phone" maxlength="40" placeholder="08..." data-portal-phone-input></label>
+                            <label class="flex flex-col gap-1 col-span-2"><span class="font-caption-regular text-caption-regular text-text-muted font-medium">Nama penerima</span><input class="{{ field }}" type="text" name="contact_name" maxlength="120" placeholder="Nama orang di lokasi" data-portal-contact-input></label>
+                            <label class="flex flex-col gap-1 col-span-2"><span class="font-caption-regular text-caption-regular text-text-muted font-medium">Catatan</span><textarea class="w-full p-2.5 rounded-lg bg-surface-container-lowest border border-card-border font-body-medium text-body-medium text-text-heading outline-none resize-none" name="notes" rows="3" maxlength="1000" placeholder="Contoh: tanpa pedas, tambah sendok, titip ke pos satpam." data-portal-notes data-no-textarea-footer></textarea></label>
                         </div>
                     </details>
                 </section>
-            </div>
 
-            <aside class="po-summary" aria-live="polite">
-                <h2>Ringkasan</h2>
-                <p class="po-sum-title" data-sum-title>Lengkapi tanggal dan porsi</p>
-                <dl>
-                    <dt data-sum-food-label>Makanan</dt><dd data-sum-food>-</dd>
-                    <dt>Ongkir</dt><dd data-sum-fee>-</dd>
-                </dl>
-                <div class="po-sum-total"><span>Total</span><strong data-sum-total>-</strong></div>
-                <button class="btn app-btn-primary po-submit" type="submit">
-                    <i class="bi bi-send"></i> Kirim pesanan
-                </button>
-                <small>{{ "Setelah dikonfirmasi admin, bayar lalu unggah bukti di halaman ini." if context.prepayment_required else "Admin mengonfirmasi pesanan; tagihan mengikuti kontrak." }}</small>
-            </aside>
-        </form>
-    {% else %}
-        <div class="portal-blocked-state portal-order-blocked">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Belum bisa memesan</h2>
-                <p>{{ context.reason or "Akun belum bisa membuat pesanan. Hubungi admin." }}</p>
-                {% if context.prepayment_required %}
-                    <a class="portal-secondary-action" href="{{ url_for('portal.customer_payments') }}">
-                        <i class="bi bi-credit-card"></i>
-                        <span>Lihat Pembayaran</span>
-                    </a>
-                {% endif %}
+                <div class="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] inset-x-0 max-w-[480px] mx-auto z-40 px-margin py-2.5 bg-card-surface/95 backdrop-blur-md shadow-[0_-8px_20px_rgba(15,23,42,0.06)] border-t border-card-border/40" aria-live="polite">
+                    <p class="font-caption-regular text-caption-regular text-text-heading font-bold truncate" data-sum-title>Lengkapi tanggal dan porsi</p>
+                    <dl class="grid grid-cols-[auto_1fr] gap-x-2 font-micro-meta text-micro-meta text-text-muted">
+                        <dt data-sum-food-label>Makanan</dt><dd class="text-right" data-sum-food>-</dd>
+                        <dt>Ongkir</dt><dd class="text-right" data-sum-fee>-</dd>
+                    </dl>
+                    <div class="flex items-center justify-between gap-3 mt-1.5">
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-micro-meta text-micro-meta text-text-muted uppercase">Total</span>
+                            <strong class="font-headline-sm text-headline-sm text-text-heading leading-tight truncate" data-sum-total>-</strong>
+                        </div>
+                        <button type="submit" class="h-12 px-5 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md flex-shrink-0">
+                            <span>Kirim pesanan</span><span class="material-symbols-outlined text-[18px]">send</span>
+                        </button>
+                    </div>
+                    <small class="font-micro-meta text-micro-meta text-text-muted block mt-1">{{ "Setelah dikonfirmasi admin, bayar lalu unggah bukti di halaman ini." if context.prepayment_required else "Admin mengonfirmasi pesanan; tagihan mengikuti kontrak." }}</small>
+                </div>
+            </form>
+        {% else %}
+            <div class="px-margin pt-3">
+                <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+                    <span class="material-symbols-outlined">lock</span>
+                    <div>
+                        <h2 class="font-body-bold text-body-bold">Belum bisa memesan</h2>
+                        <p class="font-caption-regular text-caption-regular mt-0.5">{{ context.reason or "Akun belum bisa membuat pesanan. Hubungi admin." }}</p>
+                        {% if context.prepayment_required %}
+                            <p class="mt-1 font-caption-regular text-caption-regular">Selesaikan pembayaran di tab Tagihan.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-        </div>
+        {% endif %}
+
     {% endif %}
-
-    <section class="po-history" data-tabs>
-        <div class="po-tabs" role="tablist">
-            <button type="button" role="tab" class="is-active" data-tab="drafts">Pesanan saya <span>{{ context.draft_rows|length }}</span></button>
-            <button type="button" role="tab" data-tab="orders">Sudah jadi order <span>{{ context.daily_order_conflicts|length }}</span></button>
-        </div>
-
-        <div class="po-tab-panel is-active" data-tab-panel="drafts">
-            {% for row in context.draft_rows %}
-                {% set draft = row.draft %}
-                <article class="po-row">
-                    <span class="po-row-date"><strong>{{ draft.order_date.strftime('%d') if draft.order_date else "-" }}</strong><small>{{ "Jan Feb Mar Apr Mei Jun Jul Agu Sep Okt Nov Des".split()[draft.order_date.month - 1] if draft.order_date else "" }}</small></span>
-                    <div class="po-row-main">
-                        <strong>{{ row.meal_type_label }} · {{ draft.portion_qty }} porsi</strong>
-                        <span>{{ draft.delivery_location.location_name if draft.delivery_location else "-" }}{% if draft.converted_daily_order %} · {{ draft.converted_daily_order.order_number }}{% endif %}</span>
-                        {% if draft.review_note %}<span class="po-row-note">Admin: {{ draft.review_note }}</span>{% endif %}
-                    </div>
-                    <div class="po-row-side">
-                        {% if draft.price_per_portion %}<strong>{{ (draft.price_per_portion * draft.portion_qty + (draft.delivery_fee or 0))|rupiah }}</strong>{% endif %}
-                        <span class="po-pill status-{{ draft.status|lower }}">{{ row.status_label }}</span>
-                    </div>
-                </article>
-            {% else %}
-                <div class="portal-empty-state">
-                    <i class="bi bi-inbox"></i>
-                    <strong>Belum ada pesanan</strong>
-                    <p>Pesanan pertama akan tampil di sini setelah dikirim.</p>
-                </div>
-            {% endfor %}
-        </div>
-
-        <div class="po-tab-panel" data-tab-panel="orders" hidden>
-            {% for order in context.daily_order_conflicts %}
-                <article class="po-row">
-                    <span class="po-row-date"><strong>{{ order.order_date.strftime('%d') if order.order_date else "-" }}</strong><small>{{ "Jan Feb Mar Apr Mei Jun Jul Agu Sep Okt Nov Des".split()[order.order_date.month - 1] if order.order_date else "" }}</small></span>
-                    <div class="po-row-main">
-                        <strong>{{ order.order_number }}</strong>
-                        <span>{{ order.location_name }} · {{ order.portion_label }}</span>
-                    </div>
-                    <div class="po-row-side">
-                        <span class="po-pill {{ 'is-locked' if order.is_locked else '' }}">{{ order.status|status_label }}</span>
-                    </div>
-                </article>
-            {% else %}
-                <div class="portal-empty-state">
-                    <i class="bi bi-clipboard-check"></i>
-                    <strong>Belum ada order</strong>
-                    <p>Setelah admin mengonfirmasi, pesanan tampil di sini.</p>
-                </div>
-            {% endfor %}
-        </div>
-    </section>
-</section>
-{% endif %}
+</div>
 {% endblock %}

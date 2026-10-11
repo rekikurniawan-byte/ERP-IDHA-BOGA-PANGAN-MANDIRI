@@ -6,6 +6,8 @@ from datetime import date, datetime
 from io import StringIO
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
+from app.utils.clock import today_wib
+
 from flask import Response
 
 from app.models.accounting import FixedAssetPurchase, Journal
@@ -66,7 +68,7 @@ def make_csv_response(filename: str, headers: Iterable[str], rows: Iterable[Iter
 
 
 def _today_suffix() -> str:
-    return date.today().strftime("%Y%m%d")
+    return today_wib().strftime("%Y%m%d")
 
 
 def _safe_name(obj: Any) -> str:
@@ -466,7 +468,7 @@ def _receivable_stage(invoice: Invoice) -> Dict[str, Any]:
         return build_invoice_ar_warning(invoice) or {}
     except Exception:
         logger.exception("Suppressed unexpected exception in app/services/finance_export_service.py:462")
-        today = date.today()
+        today = today_wib()
         remaining = _money_float(getattr(invoice, "remaining_amount", 0))
         due_date = getattr(invoice, "due_date", None)
         if remaining <= 0:
@@ -778,7 +780,7 @@ def build_supplier_bills_export_response(branch_id: int, args: Mapping[str, Any]
         query = query.filter(SupplierBill.due_date <= end_date)
 
     rows: List[List[Any]] = []
-    today = date.today()
+    today = today_wib()
     for bill in query.order_by(SupplierBill.due_date.asc(), SupplierBill.id.desc()).all():
         aging = supplier_bill_aging_stage(bill, today)
         stage = aging.get("stage") or "-"
@@ -830,7 +832,7 @@ def build_supplier_bills_export_response(branch_id: int, args: Mapping[str, Any]
 def build_ap_aging_export_response(branch_id: int, args: Mapping[str, Any]) -> Response:
     from app.services.accounts_payable_report_service import build_ap_aging_report
 
-    as_of_date = _parse_date(args.get("as_of_date")) or date.today()
+    as_of_date = _parse_date(args.get("as_of_date")) or today_wib()
     supplier_id = None
     supplier_id_raw = str(args.get("supplier_id") or "").strip()
     if supplier_id_raw:

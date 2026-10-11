@@ -2,6 +2,8 @@ import logging
 from datetime import date
 from collections import Counter
 
+from app.utils.clock import today_wib
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 # LOGIN_REQUIRED_IMPORT
 from flask_login import current_user
@@ -205,7 +207,7 @@ hr_bp = Blueprint("hr", __name__, url_prefix="/hr")
 @hr_bp.route("/")
 @role_required("ADMIN", "HR")
 def index():
-    today = date.today()
+    today = today_wib()
     employees = Employee.query.order_by(Employee.full_name.asc()).all()
     employee_summary = _employee_summary(employees)
 
@@ -477,7 +479,7 @@ def generate_payroll_route():
             flash(f"Gagal membuat penggajian: {error}", "danger")
             return redirect(url_for("hr.payrolls"))
 
-    today = date.today()
+    today = today_wib()
     active_employees = Employee.query.filter_by(status="ACTIVE").order_by(Employee.full_name.asc()).all()
     salary_employee_ids = _employee_salary_employee_ids()
     generate_summary = {

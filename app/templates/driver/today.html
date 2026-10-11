@@ -1,0 +1,145 @@
+{% extends "layouts/driver_mobile.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-3.5 pb-4">
+    {# Filter Tanggal #}
+    <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs">
+        <form method="GET" action="{{ url_for('delivery.today') }}" class="app-filter flex items-center gap-2" data-ui-form="true">
+            <div class="relative flex-1">
+                <input type="date" name="date" class="w-full h-11 px-3 rounded-lg border border-card-border bg-background-surface font-body-default text-sm text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" value="{{ selected_date_text }}">
+            </div>
+            <button type="submit" class="h-11 px-3.5 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95">
+                Tampilkan
+            </button>
+            <a href="{{ url_for('delivery.today') }}" class="h-11 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-body font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95 whitespace-nowrap">
+                Hari Ini
+            </a>
+        </form>
+    </div>
+
+    {# Prioritas Pengiriman Belum Dibuat (Jika ada) #}
+    {% if delivery_next_actions %}
+        <div class="rounded-xl p-3.5 bg-status-warning-bg/40 border border-status-warning-text/30 flex flex-col gap-2.5">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-status-warning-text text-[20px]">warning</span>
+                <span class="font-body-bold text-xs text-status-warning-text">Produksi Siap Dikirim ({{ delivery_next_actions|length }})</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                {% for action in delivery_next_actions %}
+                    <div class="rounded-lg p-2.5 bg-card-surface border border-card-border/80 flex flex-col gap-1.5">
+                        <div class="flex items-start justify-between gap-1">
+                            <div>
+                                <span class="font-body-bold text-xs text-text-heading block">{{ action.title }}</span>
+                                <span class="font-micro-meta text-[11px] text-text-muted">{{ action.order_number }} · {{ action.label }} · sisa {{ action.remaining_qty }} porsi</span>
+                            </div>
+                        </div>
+                        {% if action.can_create_delivery %}
+                            <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=action.daily_order_id, delivery_type=action.delivery_type) }}" class="mt-1" data-ui-form="true">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="w-full h-9 rounded-lg bg-primary text-on-primary font-body-bold text-xs flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+                                    <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                                    {{ action.action_label }}
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="font-micro-meta text-[11px] text-status-danger-text">{{ action.blocking_reason }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {# Daftar Pengiriman #}
+    <div class="flex items-center justify-between mt-1">
+        <h2 class="font-headline-sm text-sm font-bold text-text-heading">Daftar Pengiriman</h2>
+        <span class="font-micro-meta text-[11px] text-text-muted">{{ selected_date.strftime('%d-%m-%Y') }}</span>
+    </div>
+
+    {% if deliveries %}
+        <div class="flex flex-col gap-3">
+            {% for delivery in deliveries %}
+                {% set total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% for detail in delivery.details %}
+                    {% set total.planned = total.planned + detail.planned_qty %}
+                    {% set total.delivered = total.delivered + detail.delivered_qty %}
+                    {% set total.shortage = total.shortage + detail.shortage_qty %}
+                {% endfor %}
+                {% set sla = calculate_delivery_sla_summary(delivery) %}
+
+                <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+                    {# Header Kartu #}
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <span class="font-headline-sm text-sm font-bold text-text-heading block truncate">{{ delivery.delivery_number }}</span>
+                            <div class="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
+                                <span class="font-medium text-primary">{{ get_delivery_type_from_notes(delivery.notes) }}</span>
+                                {% if delivery.driver %}
+                                    <span>· {{ delivery.driver.name }}</span>
+                                {% endif %}
+                            </div>
+                            {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+                                <span class="inline-block mt-1 font-micro-meta text-[10px] text-status-warning-text bg-status-warning-bg px-2 py-0.5 rounded-md font-semibold">Pengganti kekurangan</span>
+                            {% endif %}
+                        </div>
+
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 {% if delivery.status == 'DELIVERED' %}bg-status-success-bg text-status-success-text{% elif delivery.status == 'ON_THE_WAY' %}bg-status-info-bg text-status-info-text{% elif delivery.status == 'CANCELLED' %}bg-status-danger-bg text-status-danger-text{% else %}bg-status-warning-bg text-status-warning-text{% endif %}">
+                            {% if delivery.status == 'DELIVERED' %}Terkirim
+                            {% elif delivery.status == 'ON_THE_WAY' %}Dalam Perjalanan
+                            {% elif delivery.status == 'CANCELLED' %}Dibatalkan
+                            {% else %}{{ delivery.status|status_label }}{% endif %}
+                        </span>
+                    </div>
+
+                    {# SLA Status #}
+                    <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="material-symbols-outlined text-text-muted text-[18px]">schedule</span>
+                            <span class="font-body-medium text-text-muted truncate">Tiba {{ sla.target_arrival_label }} · Batas {{ sla.late_limit_label }}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md text-[11px] font-bold flex-shrink-0 {{ sla.badge_class }}">{{ sla.label }}</span>
+                    </div>
+
+                    {# Angka Porsi Besar: Rencana · Terkirim · Kurang Kirim #}
+                    <div class="grid grid-cols-3 gap-2 py-2 border-y border-card-border/60 text-center">
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Rencana</span>
+                            <span class="font-display-hero text-lg font-bold text-text-heading leading-tight">{{ total.planned }}</span>
+                            <span class="font-micro-meta text-[10px] text-text-muted">porsi</span>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Terkirim</span>
+                            <span class="font-display-hero text-lg font-bold text-status-success-text leading-tight">{{ total.delivered }}</span>
+                            <span class="font-micro-meta text-[10px] text-text-muted">porsi</span>
+                        </div>
+                        <div>
+                            <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Kurang</span>
+                            <span class="font-display-hero text-lg font-bold {{ 'text-status-danger-text' if total.shortage > 0 else 'text-text-muted' }} leading-tight">{{ total.shortage }}</span>
+                            <span class="font-micro-meta text-[10px] text-text-muted">porsi</span>
+                        </div>
+                    </div>
+
+                    {# Tombol Detail Pengiriman #}
+                    <div class="flex items-center justify-between pt-0.5">
+                        <span class="font-caption-regular text-xs text-text-muted">
+                            <strong>{{ delivery.details|length }}</strong> titik pengantaran
+                        </span>
+                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary font-body-bold text-xs flex items-center justify-center gap-1 transition-colors active:scale-95">
+                            Detail Pengiriman
+                            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl p-8 bg-card-surface border border-dashed border-card-border text-center flex flex-col items-center justify-center">
+            <span class="material-symbols-outlined text-4xl text-text-muted mb-2">local_shipping</span>
+            <span class="font-body-bold text-sm text-text-heading mb-1">Tidak Ada Pengiriman</span>
+            <p class="font-caption-regular text-xs text-text-muted max-w-[260px]">
+                Belum ada jadwal pengiriman katering untuk tanggal {{ selected_date.strftime('%d-%m-%Y') }}.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -3,6 +3,8 @@
 Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.logistics_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
+
 
 
 @logistics_bp.route("/damaged")
@@ -19,7 +21,7 @@ def damaged():
         StockMovement.id.desc()
     ).all()
 
-    today_count = sum(1 for movement in movements if movement.movement_date == date.today())
+    today_count = sum(1 for movement in movements if movement.movement_date == today_wib())
     unique_items = len(set(movement.item_id for movement in movements))
 
     return render_template(
@@ -95,7 +97,7 @@ def create_damaged():
     return render_template(
         "logistics/damaged_form.html",
         items=items,
-        today=date.today()
+        today=today_wib()
     )
 
 
@@ -264,5 +266,5 @@ def create_audit():
     return render_template(
         "logistics/audit_form.html",
         item_rows=item_rows,
-        today=date.today()
+        today=today_wib()
     )

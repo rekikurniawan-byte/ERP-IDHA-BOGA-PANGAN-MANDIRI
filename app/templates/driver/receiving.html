@@ -1,0 +1,183 @@
+{% extends "layouts/driver_mobile.html" %}
+{% from "components/location_picker.html" import directions_link %}
+
+{% block content %}
+<div class="flex flex-col gap-3.5 pb-4">
+    {# Filter Tanggal #}
+    <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs">
+        <form method="GET" action="{{ url_for('delivery.receiving') }}" class="app-filter flex items-center gap-2" data-ui-form="true">
+            <div class="relative flex-1">
+                <input type="date" name="date" class="w-full h-11 px-3 rounded-lg border border-card-border bg-background-surface font-body-default text-sm text-text-heading focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" value="{{ selected_date_text }}">
+            </div>
+            <button type="submit" class="h-11 px-3.5 rounded-lg bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95">
+                Tampilkan
+            </button>
+            <a href="{{ url_for('delivery.receiving') }}" class="h-11 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-text-body font-body-bold text-xs flex items-center justify-center transition-colors active:scale-95 whitespace-nowrap">
+                Hari Ini
+            </a>
+        </form>
+    </div>
+
+    {# KPI Mini #}
+    <div class="grid grid-cols-2 gap-2.5">
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-status-warning-bg text-status-warning-text flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[22px]">pending_actions</span>
+            </div>
+            <div>
+                <span class="font-micro-meta text-[11px] text-text-muted block">Belum Dicatat</span>
+                <span class="font-display-hero text-xl font-bold text-status-warning-text leading-tight">{{ pending_details|length }}</span>
+            </div>
+        </div>
+
+        <div class="rounded-xl p-3 bg-card-surface border border-card-border shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-status-success-bg text-status-success-text flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[22px]">task_alt</span>
+            </div>
+            <div>
+                <span class="font-micro-meta text-[11px] text-text-muted block">Sudah Dicatat</span>
+                <span class="font-display-hero text-xl font-bold text-status-success-text leading-tight">{{ received_details|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    {# Seksi 1: Belum Dicatat Terima (Fokus Utama Pengantar di Lapangan) #}
+    <div class="flex flex-col gap-2.5 mt-1">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-status-warning-text"></span>
+                <h2 class="font-headline-sm text-sm font-bold text-text-heading">Belum Dicatat Terima</h2>
+            </div>
+            <span class="font-micro-meta text-[11px] text-text-muted">{{ pending_details|length }} titik</span>
+        </div>
+
+        {% if pending_details %}
+            <div class="flex flex-col gap-3">
+                {% for detail in pending_details %}
+                    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+                        {# Header Baris #}
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="font-headline-sm text-sm font-bold text-text-heading block truncate">{{ detail.mandor.name if detail.mandor else '-' }}</span>
+                                <span class="font-caption-regular text-xs text-text-muted">{{ detail.delivery.delivery_number }} · {{ get_delivery_type_from_notes(detail.delivery.notes) }}</span>
+                                {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
+                                    <span class="inline-block font-micro-meta text-[10px] text-status-warning-text bg-status-warning-bg px-2 py-0.5 rounded-md font-semibold mt-1">Pengganti kekurangan</span>
+                                {% endif %}
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-container text-text-body flex-shrink-0">
+                                {{ detail.delivery.status|status_label }}
+                            </span>
+                        </div>
+
+                        {# Lokasi & Navigasi Titik Antar #}
+                        <div class="rounded-xl p-3 bg-surface-container-low border border-card-border/70 flex flex-col gap-2">
+                            <div class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">location_on</span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="font-body-bold text-xs text-text-heading block">
+                                        {{ detail.delivery_location.location_name if detail.delivery_location else 'Lokasi belum disetel' }}
+                                    </span>
+                                    {% if detail.delivery_location and detail.delivery_location.description %}
+                                        <p class="font-caption-regular text-xs text-text-muted mt-0.5 line-clamp-2">{{ detail.delivery_location.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# Foto Lokasi Mini & Tombol GPS/Petunjuk Arah #}
+                            {% if detail.delivery_location %}
+                                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-card-border/50">
+                                    {% set lp = location_photos_for(detail.delivery_location.id) %}
+                                    {% if lp %}
+                                        <a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs text-primary font-body-medium">
+                                            <img src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" class="w-7 h-7 rounded-md object-cover border border-card-border">
+                                            <span>Foto Titik</span>
+                                        </a>
+                                    {% endif %}
+                                    <div class="[&_a]:inline-flex [&_a]:items-center [&_a]:gap-1 [&_a]:h-7 [&_a]:px-2.5 [&_a]:rounded-md [&_a]:bg-card-surface [&_a]:border [&_a]:border-card-border [&_a]:text-xs [&_a]:font-semibold [&_a]:text-text-heading">
+                                        {{ directions_link(detail.delivery_location) }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Rencana Porsi & Tombol Aksi Utama #}
+                        <div class="flex items-center justify-between gap-3 pt-1">
+                            <div>
+                                <span class="font-micro-meta text-[10px] uppercase text-text-muted block">Jumlah Diantar</span>
+                                <div class="font-display-hero text-xl font-bold text-primary leading-tight">{{ detail.planned_qty }} <span class="text-xs font-normal text-text-muted">porsi</span></div>
+                            </div>
+                            <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="h-11 px-5 rounded-xl bg-primary hover:bg-brand-primary-hover text-on-primary font-body-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors active:scale-95 flex-shrink-0">
+                                <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                                Catat Terima
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-xl p-5 bg-card-surface border border-card-border text-center flex flex-col items-center justify-center">
+                <span class="material-symbols-outlined text-3xl text-status-success-text mb-1.5">check_circle</span>
+                <span class="font-body-bold text-xs text-text-heading">Semua Pengantaran Selesai</span>
+                <p class="font-caption-regular text-xs text-text-muted mt-0.5">Tidak ada penerimaan tertunda pada tanggal ini.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {# Seksi 2: Sudah Dicatat Terima #}
+    <div class="flex flex-col gap-2.5 mt-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-status-success-text"></span>
+                <h2 class="font-headline-sm text-sm font-bold text-text-heading">Sudah Dicatat Terima</h2>
+            </div>
+            <span class="font-micro-meta text-[11px] text-text-muted">{{ received_details|length }} data</span>
+        </div>
+
+        {% if received_details %}
+            <div class="flex flex-col gap-2.5">
+                {% for detail in received_details %}
+                    <div class="rounded-xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="font-body-bold text-xs text-text-heading block truncate">{{ detail.mandor.name if detail.mandor else '-' }}</span>
+                                <span class="font-caption-regular text-[11px] text-text-muted">{{ detail.delivery.delivery_number }} · {{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-status-success-bg text-status-success-text flex-shrink-0">
+                                Diterima
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 py-1.5 bg-surface-container-low rounded-lg text-center text-xs">
+                            <div>
+                                <span class="font-micro-meta text-[10px] text-text-muted block">Rencana</span>
+                                <strong class="text-text-heading">{{ detail.planned_qty }}</strong>
+                            </div>
+                            <div>
+                                <span class="font-micro-meta text-[10px] text-text-muted block">Terkirim</span>
+                                <strong class="text-status-success-text">{{ detail.delivered_qty }}</strong>
+                            </div>
+                            <div>
+                                <span class="font-micro-meta text-[10px] text-text-muted block">Kurang</span>
+                                <strong class="{{ 'text-status-danger-text' if detail.shortage_qty > 0 else 'text-text-muted' }}">{{ detail.shortage_qty }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1 text-xs">
+                            <span class="font-caption-regular text-text-muted">
+                                Penerima: <strong class="text-text-heading">{{ detail.receipt.receiver_name if detail.receipt else '-' }}</strong>
+                            </span>
+                            <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="h-8 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-body-bold text-xs inline-flex items-center justify-center transition-colors active:scale-95">
+                                Ubah Penerimaan
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-xl p-4 bg-card-surface border border-dashed border-card-border text-center text-xs text-text-muted">
+                Belum ada penerimaan yang tercatat pada tanggal ini.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

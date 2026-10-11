@@ -1,121 +1,105 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.complaints %}
 <!-- customer_complaints ERP existing -->
-<section class="portal-feature-page portal-service-page portal-care-page">
-    <div class="portal-feature-hero portal-service-hero portal-care-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
+{% set model = data.complaints %}
+{% set field = "w-full h-12 px-3.5 rounded-xl bg-background-surface border border-card-border text-text-heading font-body-default text-body-default outline-none focus:ring-2 focus:ring-primary/20" %}
+{% set status_tone = {"OPEN": "bg-status-warning-bg text-status-warning-text", "IN_PROGRESS": "bg-status-info-bg text-status-info-text", "RESOLVED": "bg-status-success-bg text-status-success-text", "CLOSED": "bg-surface-container text-text-body"} %}
+
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted line-clamp-2">{{ data.page_description }}</p>
+    </div>
+  </section>
+
+  <section class="px-margin mb-4 grid grid-cols-4 gap-1.5">
+    {% for label, value, tone in [("Aktif", model.totals.open_count, "text-status-warning-text"), ("Total", model.totals.complaint_count, "text-text-heading"), ("Bukti", model.totals.evidence_count, "text-text-heading"), ("Selesai", model.totals.done_count, "text-status-success-text")] %}
+      <div class="bg-card-surface rounded-xl p-2.5 text-center shadow-sm">
+        <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">{{ label }}</span>
+        <strong class="font-headline-sm text-headline-sm {{ tone }}">{{ value or 0 }}</strong>
+      </div>
+    {% endfor %}
+  </section>
+
+  {% if model.allowed %}
+    <section class="px-margin mb-5">
+      <form method="post" action="{{ url_for('portal.customer_complaints') }}" data-app-confirm="Kirim komplain ini ke layanan pelanggan?" class="bg-card-surface rounded-2xl shadow-sm p-4 flex flex-col gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h2 class="font-title-menu text-title-menu text-text-heading flex items-center gap-1.5"><span class="material-symbols-outlined text-primary">support_agent</span>Kirim Komplain</h2>
+        <label class="flex flex-col gap-1">
+          <span class="font-caption-regular text-caption-regular text-text-muted font-medium">Kategori</span>
+          <select name="category" required class="{{ field }}">
+            {% for category in model.categories %}
+              <option value="{{ category }}">{{ category|status_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="font-caption-regular text-caption-regular text-text-muted font-medium">Judul</span>
+          <input type="text" name="title" maxlength="180" required placeholder="Contoh: Porsi kurang" class="{{ field }}">
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="font-caption-regular text-caption-regular text-text-muted font-medium">Deskripsi</span>
+          <textarea name="description" rows="4" maxlength="2000" required placeholder="Tulis detail kejadian, tanggal, lokasi, jumlah porsi, dan dampaknya." class="w-full min-h-[96px] p-3 rounded-xl bg-background-surface border border-card-border text-text-heading font-body-default text-body-default outline-none resize-none focus:ring-2 focus:ring-primary/20"></textarea>
+        </label>
+        <button type="submit" data-app-temp-label="Mengirim..." class="h-12 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 shadow-md">
+          <span class="material-symbols-outlined text-[18px]">send</span> Kirim Komplain
+        </button>
+        <p class="font-micro-meta text-micro-meta text-text-muted">Komplain masuk ke tim admin. Foto bukti bisa diunggah setelah komplain terkirim.</p>
+      </form>
+    </section>
+  {% else %}
+    <div class="px-margin mb-4">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Komplain belum dibuka</p><p class="font-caption-regular text-caption-regular">{{ model.reason }}</p></div>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="px-margin flex flex-col gap-2.5">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title-menu text-title-menu text-text-heading">Riwayat Komplain</h2>
+      <span class="font-caption-regular text-caption-regular text-text-muted">{{ model.rows|length }} laporan</span>
+    </div>
+    {% for complaint in model.rows %}
+      <article class="bg-card-surface rounded-xl shadow-sm p-4 flex flex-col gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ complaint.title }}</strong>
+            <span class="font-micro-meta text-micro-meta text-text-muted block">{{ complaint.complaint_number }} · {{ complaint.category|status_label }} · {{ complaint.submitted_at|wib('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold flex-shrink-0 {{ status_tone.get(complaint.status, 'bg-surface-container text-text-body') }}">{{ complaint.status|status_label }}</span>
         </div>
-        <strong class="portal-hero-status">{{ model.totals.open_count }} aktif</strong>
-    </div>
-
-    <div class="portal-service-summary portal-care-summary">
-        <article class="primary"><span>Aktif</span><strong>{{ model.totals.open_count }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Total</span><strong>{{ model.totals.complaint_count }}</strong><small>Laporan pelanggan</small></article>
-        <article><span>Bukti</span><strong>{{ model.totals.evidence_count }}</strong><small>Arsip digital</small></article>
-        <article><span>Retur Terkait</span><strong>{{ model.totals.return_related_count }}</strong><small>Kekurangan/salah/rusak</small></article>
-        <article><span>Selesai</span><strong>{{ model.totals.done_count }}</strong><small>Resolved/closed</small></article>
-    </div>
-
-    {% if model.allowed %}
-        <form method="post" action="{{ url_for('portal.customer_complaints') }}" class="portal-care-form" data-app-confirm="Kirim komplain ini ke layanan pelanggan?">
+        <p class="font-caption-regular text-caption-regular text-text-body">{{ complaint.description }}</p>
+        {% if complaint.resolution_note %}
+          <div class="p-2.5 rounded-lg bg-status-success-bg/60 text-status-success-text font-caption-regular text-caption-regular">
+            <strong class="block">Tanggapan</strong>{{ complaint.resolution_note }}
+          </div>
+        {% endif %}
+        <details class="group">
+          <summary class="cursor-pointer list-none flex items-center gap-1 font-caption-regular text-caption-regular font-bold text-primary">
+            <span class="material-symbols-outlined text-[16px]">add_a_photo</span> Unggah bukti ({{ model.evidence_counts.get(complaint.id, 0) }} terunggah)
+          </summary>
+          <form method="post" action="{{ url_for('portal.upload_customer_complaint_evidence', complaint_id=complaint.id) }}" enctype="multipart/form-data" data-app-confirm="Unggah bukti untuk komplain ini?" class="mt-2 flex flex-col gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="portal-section-heading">
-                <h2>Kirim Komplain</h2>
-                <span>Dikirim ke admin</span>
-            </div>
-            <div class="portal-form-grid">
-                <label>
-                    <span>Kategori</span>
-                    <select name="category" required>
-                        {% for category in model.categories %}
-                            <option value="{{ category }}">{{ category|status_label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label>
-                    <span>Judul</span>
-                    <input type="text" name="title" maxlength="180" placeholder="Contoh: Porsi kurang" required>
-                </label>
-            </div>
-            <label class="portal-form-wide">
-                <span>Deskripsi</span>
-                <textarea name="description" rows="4" maxlength="2000" placeholder="Tulis detail kejadian, tanggal, lokasi, jumlah porsi, dan dampaknya." required></textarea>
-            </label>
-            <button class="portal-primary-action" type="submit" data-app-temp-label="Mengirim...">
-                <i class="bi bi-send"></i>
-                <span>Kirim Komplain</span>
+            <input type="file" name="evidence_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required aria-label="Bukti digital" class="h-10 p-1.5 rounded-lg border border-card-border font-caption-regular text-caption-regular">
+            <input type="text" name="notes" maxlength="300" placeholder="Catatan, mis. foto porsi/menu" class="h-10 px-3 rounded-lg border border-card-border font-caption-regular text-caption-regular outline-none">
+            <button type="submit" data-app-temp-label="Mengunggah..." class="h-10 rounded-lg bg-primary-fixed text-primary font-caption-regular text-caption-regular font-bold flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">cloud_upload</span> Unggah Bukti
             </button>
-            <p>Komplain masuk ke tim admin. Koreksi tagihan atau pengiriman tetap diputuskan melalui alur internal.</p>
-        </form>
+          </form>
+        </details>
+      </article>
     {% else %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Komplain belum dibuka</h2>
-                <p>{{ model.reason }}</p>
-            </div>
-        </div>
-    {% endif %}
-
-    <div class="portal-section-heading">
-        <h2>Riwayat Komplain</h2>
-        <span>{{ model.rows|length }} laporan</span>
-    </div>
-
-    <div class="portal-care-list">
-        {% for complaint in model.rows %}
-            <article class="portal-care-card status-{{ complaint.status|lower }}">
-                <div class="portal-care-card-main">
-                    <span class="portal-record-icon"><i class="bi bi-chat-square-text"></i></span>
-                    <div>
-                        <h3>{{ complaint.complaint_number }}</h3>
-                        <p>{{ complaint.title }} - {{ complaint.category|status_label }}</p>
-                        <div class="portal-chip-row">
-                            <span>{{ complaint.status|status_label }}</span>
-                            <span>{{ complaint.submitted_at|wib('%d-%m-%Y %H:%M') if complaint.submitted_at else "-" }}</span>
-                            {% if complaint.client %}<span>{{ complaint.client.name }}</span>{% endif %}
-                            {% if complaint.mandor %}<span>{{ complaint.mandor.name }}</span>{% endif %}
-                            <span>{{ model.evidence_counts.get(complaint.id, 0) }} bukti</span>
-                        </div>
-                        <p>{{ complaint.description }}</p>
-                        {% if complaint.resolution_note %}
-                            <div class="portal-care-resolution">
-                                <strong>Resolusi</strong>
-                                <span>{{ complaint.resolution_note }}</span>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <form method="post" action="{{ url_for('portal.upload_customer_complaint_evidence', complaint_id=complaint.id) }}" enctype="multipart/form-data" class="portal-evidence-upload" data-app-confirm="Unggah bukti untuk komplain ini?">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <label>
-                        <span>Bukti digital</span>
-                        <input type="file" name="evidence_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
-                    </label>
-                    <label>
-                        <span>Catatan</span>
-                        <input type="text" name="notes" maxlength="300" placeholder="Contoh: foto porsi/menu">
-                    </label>
-                    <button class="portal-action-link" type="submit" data-app-temp-label="Mengunggah...">
-                        <i class="bi bi-cloud-upload"></i>
-                        <span>Unggah Bukti</span>
-                    </button>
-                </form>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-chat-square-text"></i>
-                <strong>Belum ada komplain</strong>
-                <p>Laporan yang dikirim dari portal akan tampil di sini.</p>
-            </div>
-        {% endfor %}
-    </div>
-</section>
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">sentiment_satisfied</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum ada komplain</strong>
+        <span class="font-caption-regular text-caption-regular">Laporan yang Anda kirim akan tampil di sini.</span>
+      </div>
+    {% endfor %}
+  </section>
+</div>
 {% endblock %}

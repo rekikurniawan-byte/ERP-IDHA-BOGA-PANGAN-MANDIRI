@@ -152,11 +152,16 @@ def test_static_assets_are_vendored_locally_with_automatic_cache_busting():
     for layout_name in ("base.html", "portal_mobile.html"):
         layout_html = _read(f"app/templates/layouts/{layout_name}")
         assert "cdn.jsdelivr.net" not in layout_html
-        assert "vendor/bootstrap/css/bootstrap.min.css" in layout_html
+        assert "cdn.tailwindcss.com" not in layout_html
         assert "vendor/bootstrap-icons/font/bootstrap-icons.min.css" in layout_html
         assert "vendor/bootstrap/js/bootstrap.bundle.min.js" in layout_html
         assert "v=css_asset_version" in layout_html
         assert "v=js_asset_version" in layout_html
+    # Portal memakai desain Tailwind yang dikompilasi lokal (tools/portal_tailwind),
+    # bukan Bootstrap CSS; layout internal tetap Bootstrap (keputusan 2026-10-10).
+    assert "vendor/bootstrap/css/bootstrap.min.css" in _read("app/templates/layouts/base.html")
+    assert "css/portal_tailwind.css" in _read("app/templates/layouts/portal_mobile.html")
+    assert (ROOT / "app/static/css/portal_tailwind.css").exists()
 
     for vendored_file in (
         "app/static/vendor/bootstrap/css/bootstrap.min.css",

@@ -2,6 +2,8 @@ import logging
 from datetime import datetime, date
 import json
 
+from app.utils.clock import today_wib
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from app.utils.decorators import module_required, role_required
@@ -54,7 +56,7 @@ def _active_bank_accounts():
 
 
 def _parse_date(value, fallback=None):
-    fallback = fallback or date.today()
+    fallback = fallback or today_wib()
     try:
         return datetime.strptime(str(value or ""), "%Y-%m-%d").date()
     except Exception:
@@ -238,7 +240,7 @@ def quick_sale():
 
         success, message, sale = create_canteen_sale(
             branch_id=current_user.branch_id,
-            sale_date=date.today(),
+            sale_date=today_wib(),
             payment_method=payment_method,
             buyer_type=buyer_type,
             worker_id=worker_id,
@@ -264,7 +266,7 @@ def quick_sale():
         items=items,
         workers=workers,
         bank_accounts=bank_accounts,
-        today=date.today(),
+        today=today_wib(),
         buyer_types=BUYER_TYPES,
         payment_methods=PAYMENT_METHODS,
     )
@@ -279,7 +281,7 @@ def create_sale():
     bank_accounts = _active_bank_accounts()
 
     if request.method == "POST":
-        sale_date = _parse_date(request.form.get("sale_date"), date.today())
+        sale_date = _parse_date(request.form.get("sale_date"), today_wib())
         payment_method = request.form.get("payment_method") or request.form.get("sale_type") or "CASH"
         buyer_type = request.form.get("buyer_type") or "GENERAL_BUYER"
         worker_id = request.form.get("worker_id") or None
@@ -331,7 +333,7 @@ def create_sale():
         items=items,
         workers=workers,
         bank_accounts=bank_accounts,
-        today=date.today(),
+        today=today_wib(),
         buyer_types=BUYER_TYPES,
         payment_methods=PAYMENT_METHODS,
     )
@@ -395,7 +397,7 @@ def debt_payment(debt_id):
     bank_accounts = _active_bank_accounts()
 
     if request.method == "POST":
-        payment_date = _parse_date(request.form.get("payment_date"), date.today())
+        payment_date = _parse_date(request.form.get("payment_date"), today_wib())
         amount = request.form.get("amount")
         payment_method = request.form.get("payment_method") or "CASH"
         cash_bank_account_id = request.form.get("cash_bank_account_id") or None
@@ -419,7 +421,7 @@ def debt_payment(debt_id):
     return render_template(
         "canteen/debt_payment.html",
         debt=worker_debt,
-        today=date.today(),
+        today=today_wib(),
         bank_accounts=bank_accounts,
         paid_amount=get_debt_paid_amount(worker_debt),
         remaining_amount=get_debt_remaining_amount(worker_debt),
@@ -441,7 +443,7 @@ def external_receivable_payment(receivable_id):
     bank_accounts = _active_bank_accounts()
 
     if request.method == "POST":
-        payment_date = _parse_date(request.form.get("payment_date"), date.today())
+        payment_date = _parse_date(request.form.get("payment_date"), today_wib())
         amount = request.form.get("amount")
         payment_method = request.form.get("payment_method") or "CASH"
         cash_bank_account_id = request.form.get("cash_bank_account_id") or None
@@ -465,7 +467,7 @@ def external_receivable_payment(receivable_id):
     return render_template(
         "canteen/debt_payment.html",
         debt=receivable,
-        today=date.today(),
+        today=today_wib(),
         bank_accounts=bank_accounts,
         paid_amount=get_external_receivable_paid_amount(receivable),
         remaining_amount=get_external_receivable_remaining_amount(receivable),

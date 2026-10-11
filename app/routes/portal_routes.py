@@ -19,6 +19,7 @@ from app.services.portal_order_draft_service import (
     build_portal_order_draft_review_queue,
     build_portal_order_status_context,
     build_portal_draft_order_context,
+    build_portal_pending_draft_payments,
     confirm_portal_order_draft,
     create_portal_order_draft,
     reject_portal_order_draft,
@@ -397,12 +398,17 @@ def customer_invoices():
 @portal_bp.route("/customer/payments")
 @role_required(ROLE_PORTAL_CUSTOMER)
 def customer_payments():
+    from app.services.portal_order_draft_service import build_portal_customer_order_billing
+
+    order_billing = build_portal_customer_order_billing(current_user)
     return render_template(
         "portal/mobile_payments.html",
         data={
             **_role_dashboard_data(_customer_persona()),
-            "page_title": "Bayar / Bukti Pembayaran",
-            "page_description": "Pelanggan umum bayar di awal. Bukti pembayaran diperiksa sebelum pesanan diproses admin.",
+            "page_title": "Tagihan & Pembayaran",
+            "page_description": "Bayar pesanan di muka, lalu unggah buktinya. Riwayat pembayaran ada di bawah.",
+            "order_billing": order_billing,
+            "pending_payments": [row for row in order_billing["rows"] if row["needs_payment"]],
         },
     )
 
@@ -568,6 +574,7 @@ def mandor_invoices():
             "page_title": "Tagihan",
             "page_description": f"Tagihan {T.sub_client_lower} sesuai akses kepemilikan.",
             "invoice_model": build_portal_mobile_invoice_cards(current_user),
+            "pending_payments": build_portal_pending_draft_payments(current_user),
         },
     )
 
@@ -791,7 +798,7 @@ def portal_contract_document_scan(contract_id, document_id):
         abort(404)
     try:
         file_path = get_attachment_file_path(attachment)
-    except Exception as exc:
+    except FileNotFoundError as exc:
         flash(f"File lampiran tidak ditemukan: {exc}", "danger")
         return redirect(url_for("portal.portal_contract_documents", contract_id=contract_id))
     return send_file(
@@ -875,6 +882,9 @@ def invoices():
         data={
             **_role_dashboard_data(_current_portal_persona()),
             "status_label": "Read-only",
+            "page_title": "Invoice Portal",
+            "page_description": "Invoice yang terhubung dengan akun ini.",
+            "empty_message": "Belum ada invoice dalam scope portal",
             "model": build_portal_invoice_read_model(current_user, limit=50),
         },
     )
@@ -890,6 +900,9 @@ def payments():
         data={
             **_role_dashboard_data(_current_portal_persona()),
             "status_label": "Read-only",
+            "page_title": "Riwayat Pembayaran",
+            "page_description": "Pembayaran yang tercatat untuk akun ini.",
+            "empty_message": "Belum ada pembayaran dalam scope portal",
             "model": build_portal_payment_history_read_model(current_user, limit=50),
         },
     )
@@ -906,6 +919,9 @@ def debts():
         data={
             **_role_dashboard_data(_current_portal_persona()),
             "status_label": "Read-only",
+            "page_title": f"Hutang {T.worker}",
+            "page_description": f"Hutang warung {T.worker_lower} sesuai akses {T.sub_client_lower}.",
+            "empty_message": f"Belum ada hutang {T.worker_lower} dalam scope portal",
             "model": build_portal_worker_debt_read_model(current_user, limit=50),
         },
     )
@@ -1258,7 +1274,12 @@ def upload_draft_payment_proof(draft_id):
         flash(str(exc), "danger")
     else:
         flash(f"Bukti pembayaran awal draft #{result['draft_id']} berhasil diunggah dan menunggu pemeriksaan keuangan.", "success")
-    return redirect(url_for("portal.order_status"))
+    # Kembali ke tab Tagihan, tempat form bayar pesanan berada.
+    billing_endpoint = {
+        ROLE_PORTAL_CUSTOMER: "portal.customer_payments",
+        ROLE_PORTAL_SUBCLIENT: "portal.mandor_invoices",
+    }.get(current_user.role, "portal.order_status")
+    return redirect(url_for(billing_endpoint))
 
 
 @portal_bp.route("/orders/status")

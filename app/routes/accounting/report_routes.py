@@ -3,6 +3,7 @@
 Route functions moved out of app.routes.accounting_routes without changing URL rules or endpoint names.
 """
 from app.routes.accounting_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 
@@ -49,7 +50,7 @@ def _build_accounting1b_reports_data(start_date=None, end_date=None):
     from datetime import date
     from app.models.accounting import Account, Journal, JournalDetail
 
-    today = date.today()
+    today = today_wib()
 
     if not start_date:
         start_date = date(today.year, today.month, 1)
@@ -190,7 +191,7 @@ def reports():
     from datetime import date
     from flask import request
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     date_filter = resolve_date_filter(request.args, default_preset="this_month")
     start_date = date_filter.start_date or default_start
@@ -219,7 +220,7 @@ def export_trial_balance_csv():
     from datetime import date
     from app.services.accounting_export_service import build_trial_balance_export_response
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)
@@ -238,7 +239,7 @@ def export_general_ledger_csv():
     from datetime import date
     from app.services.accounting_export_service import build_general_ledger_export_response
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)
@@ -257,7 +258,7 @@ def export_income_summary_csv():
     from datetime import date
     from app.services.accounting_export_service import build_income_summary_export_response
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)
@@ -276,7 +277,7 @@ def print_trial_balance():
     from datetime import date
     from app.services.accounting_print_service import build_trial_balance_print_context
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)
@@ -296,7 +297,7 @@ def print_general_ledger():
     from datetime import date
     from app.services.accounting_print_service import build_general_ledger_print_context
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)
@@ -316,7 +317,7 @@ def print_income_summary():
     from datetime import date
     from app.services.accounting_print_service import build_income_summary_print_context
 
-    today = date.today()
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = _accounting1b_parse_date(request.args.get("start_date"), default_start)
     end_date = _accounting1b_parse_date(request.args.get("end_date"), today)

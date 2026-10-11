@@ -1,204 +1,102 @@
 <!DOCTYPE html>
-<html lang="id">
+<html class="h-full" lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }} - Portal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+    <meta content="mobile_tab" name="shell-type"/>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <title>{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }} - Portal</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    {# Desain portal dikompilasi lokal (tools/portal_tailwind/build.ps1), bukan CDN. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/portal_tailwind.css', v=css_asset_version) }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tom-select/tom-select.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
-</head>
-<body class="portal-mobile-body portal-web-body is-authenticated portal-role-{{ (current_user.role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
-    {% set portal_role_label = "Pelanggan" if current_user.role == "PORTAL_CUSTOMER" else term('sub_client') if current_user.role == "PORTAL_SUBCLIENT" else term('client') if current_user.role == "PORTAL_CLIENT" else "Portal" %}
-    <header class="portal-mobile-topbar portal-web-topbar">
-        <div class="portal-web-topbar-inner">
-            <a href="{{ url_for('portal.my_dashboard') }}" class="portal-web-brand" aria-label="Portal Idha Boga">
-                {% with class_name="portal-web-brand-mark company-logo-mark" %}
-                    {% include "components/company_logo.html" %}
-                {% endwith %}
-                <span>
-                    <span class="portal-mobile-kicker">IDHA BOGA PORTAL</span>
-                    <strong>Portal Katering Terintegrasi</strong>
-                </span>
-            </a>
-            <nav class="portal-web-nav" aria-label="Navigasi portal">
-            <a href="{{ url_for('portal.my_dashboard') }}" class="{{ 'active' if request.endpoint in ['portal.my_dashboard', 'portal.customer_dashboard', 'portal.mandor_dashboard', 'portal.pt_dashboard', 'portal.client_dashboard'] else '' }}">
-                <i class="bi bi-house-door"></i>
-                <span>Beranda</span>
-            </a>
-            {% if current_user.role == "PORTAL_CUSTOMER" %}
-                <a href="{{ url_for('portal.customer_order') }}" class="{{ 'active' if request.endpoint == 'portal.customer_order' else '' }}">
-                    <i class="bi bi-bag-plus"></i>
-                    <span>Pesan</span>
-                </a>
-                <a href="{{ url_for('portal.customer_tracking') }}" class="{{ 'active' if request.endpoint == 'portal.customer_tracking' else '' }}">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>Lacak</span>
-                </a>
-                <a href="{{ url_for('portal.customer_order_history') }}" class="{{ 'active' if request.endpoint == 'portal.customer_order_history' else '' }}">
-                    <i class="bi bi-clock-history"></i>
-                    <span>Riwayat</span>
-                </a>
-                <a href="{{ url_for('portal.customer_payments') }}" class="{{ 'active' if request.endpoint in ['portal.customer_payments', 'portal.customer_invoices'] else '' }}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Bayar / Bukti</span>
-                </a>
-                <a href="{{ url_for('portal.customer_complaints') }}" class="{{ 'active' if request.endpoint == 'portal.customer_complaints' else '' }}">
-                    <i class="bi bi-chat-square-text"></i>
-                    <span>Komplain</span>
-                </a>
-                <a href="{{ url_for('portal.addresses') }}" class="{{ 'active' if request.endpoint == 'portal.addresses' else '' }}">
-                    <i class="bi bi-pin-map"></i>
-                    <span>Alamat</span>
-                </a>
-            {% elif current_user.role == "PORTAL_SUBCLIENT" %}
-                <a href="{{ url_for('portal.mandor_order') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_order' else '' }}">
-                    <i class="bi bi-bag-plus"></i>
-                    <span>Pesan</span>
-                </a>
-                <a href="{{ url_for('portal.order_status') }}" class="{{ 'active' if request.endpoint == 'portal.order_status' else '' }}">
-                    <i class="bi bi-list-check"></i>
-                    <span>Status</span>
-                </a>
-                {% if module_enabled('worker_debt') %}
-                <a href="{{ url_for('portal.mandor_workers') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_workers' else '' }}">
-                    <i class="bi bi-people"></i>
-                    <span>{{ term('worker') }}</span>
-                </a>
-                <a href="{{ url_for('portal.mandor_canteen_debts') }}" class="{{ 'active' if request.endpoint in ['portal.mandor_canteen_debts', 'portal.mandor_catering_debts', 'portal.mandor_installments'] else '' }}">
-                    <i class="bi bi-wallet2"></i>
-                    <span>Hutang Warung</span>
-                </a>
-                {% endif %}
-                <a href="{{ url_for('portal.mandor_catering_debts') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_catering_debts' else '' }}">
-                    <i class="bi bi-receipt-cutoff"></i>
-                    <span>Hutang Catering</span>
-                </a>
-                {% if module_enabled('worker_debt') %}
-                <a href="{{ url_for('portal.mandor_installments') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_installments' else '' }}">
-                    <i class="bi bi-cash-coin"></i>
-                    <span>Cicilan</span>
-                </a>
-                {% endif %}
-                <a href="{{ url_for('portal.mandor_invoices') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_invoices' else '' }}">
-                    <i class="bi bi-receipt"></i>
-                    <span>Invoice</span>
-                </a>
-                <a href="{{ url_for('portal.mandor_payments') }}" class="{{ 'active' if request.endpoint == 'portal.mandor_payments' else '' }}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Pembayaran</span>
-                </a>
-                <a href="{{ url_for('portal.addresses') }}" class="{{ 'active' if request.endpoint == 'portal.addresses' else '' }}">
-                    <i class="bi bi-pin-map"></i>
-                    <span>Lokasi</span>
-                </a>
-            {% elif current_user.role == "PORTAL_CLIENT" %}
-                <a href="{{ url_for('portal.pt_mandors') }}" class="{{ 'active' if request.endpoint == 'portal.pt_mandors' else '' }}">
-                    <i class="bi bi-diagram-3"></i>
-                    <span>Seluruh {{ term('sub_client') }}</span>
-                </a>
-                <a href="{{ url_for('portal.pt_invoices') }}" class="{{ 'active' if request.endpoint == 'portal.pt_invoices' else '' }}">
-                    <i class="bi bi-receipt"></i>
-                    <span>Seluruh Invoice</span>
-                </a>
-                <a href="{{ url_for('portal.pt_receivables') }}" class="{{ 'active' if request.endpoint == 'portal.pt_receivables' else '' }}">
-                    <i class="bi bi-cash-stack"></i>
-                    <span>Piutang</span>
-                </a>
-                <a href="{{ url_for('portal.pt_contracts') }}" class="{{ 'active' if request.endpoint == 'portal.pt_contracts' else '' }}">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Kontrak</span>
-                </a>
-                <a href="{{ url_for('portal.pt_payments') }}" class="{{ 'active' if request.endpoint in ['portal.pt_payments', 'portal.payments'] else '' }}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Pembayaran</span>
-                </a>
-            {% else %}
-                <a href="{{ url_for('portal.invoices') }}">
-                    <i class="bi bi-receipt"></i>
-                    <span>Tagihan</span>
-                </a>
-                <a href="{{ url_for('portal.payments') }}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Pembayaran</span>
-                </a>
-                <a href="{{ url_for('portal.profile') }}">
-                    <i class="bi bi-person"></i>
-                    <span>Profil</span>
-                </a>
-            {% endif %}
-            {% if current_user.role in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT", "PORTAL_CLIENT"] %}
-                <a href="{{ url_for('portal.profile') }}" class="{{ 'active' if request.endpoint == 'portal.profile' else '' }}">
-                    <i class="bi bi-person-circle"></i>
-                    <span>Akun Saya</span>
-                </a>
-            {% endif %}
-            {% if current_user.role not in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT", "PORTAL_CLIENT"] %}
-                <a href="{{ url_for('portal.notifications') }}" class="{{ 'active' if request.endpoint == 'portal.notifications' else '' }}">
-                    <i class="bi bi-bell"></i>
-                    <span>Notif</span>
-                </a>
-                <a href="{{ url_for('portal.documents') }}" class="{{ 'active' if request.endpoint == 'portal.documents' else '' }}">
-                    <i class="bi bi-folder2-open"></i>
-                    <span>Dokumen</span>
-                </a>
-                <a href="{{ url_for('portal.calendar') }}" class="{{ 'active' if request.endpoint == 'portal.calendar' else '' }}">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>Kalender</span>
-                </a>
-                <a href="{{ url_for('portal.approvals') }}" class="{{ 'active' if request.endpoint == 'portal.approvals' else '' }}">
-                    <i class="bi bi-shield-check"></i>
-                    <span>Persetujuan</span>
-                </a>
-            {% endif %}
-            </nav>
 
-            <div class="portal-web-user">
-                <a href="{{ url_for('portal.profile') }}" class="portal-web-user-link" title="Akun Saya">
-                    <span class="portal-web-user-name">{{ current_user.full_name or current_user.username }}</span>
-                    <span class="portal-web-role-chip">{{ portal_role_label }}</span>
-                    {% if current_user.avatar_attachment_id %}
-                        <img class="portal-mobile-avatar portal-web-avatar-photo" src="{{ url_for('account.avatar', user_id=current_user.id) }}" alt="Foto profil">
-                    {% else %}
-                        <div class="portal-mobile-avatar">{{ (current_user.full_name or current_user.username or "P")[:1] }}</div>
-                    {% endif %}
-                </a>
-                <form method="POST" action="{{ url_for('auth.logout') }}" class="portal-web-logout-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="portal-web-logout-button" title="Keluar">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Keluar</span>
-                    </button>
-                </form>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
+</head>
+{% set portal_role = current_user.role %}
+{% set portal_role_label = "Pelanggan" if portal_role == "PORTAL_CUSTOMER" else term('sub_client') if portal_role == "PORTAL_SUBCLIENT" else term('client') if portal_role == "PORTAL_CLIENT" else "Admin" %}
+{% set nav = portal_nav or {"tabs": [], "segments": [], "account_child": false} %}
+<body class="bg-background-surface text-text-body font-body-default text-body-default min-h-screen flex flex-col items-center antialiased portal-mobile-body portal-role-{{ (portal_role or 'portal')|lower|replace('_', '-') }}" data-endpoint="{{ request.endpoint or 'portal' }}">
+<div class="portal-mobile-shell w-full max-w-[480px] min-h-screen flex flex-col relative bg-background-surface">
+    {# Header: identitas saja. Satu-satunya tombol = lonceng (pintu Notifikasi). Akun ada di tab bawah. #}
+    <header class="fixed top-0 inset-x-0 mx-auto w-full max-w-[480px] z-50 pt-safe bg-card-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <div class="h-16 px-margin flex items-center justify-between gap-space-sm">
+            <div class="flex items-center gap-space-sm min-w-0 flex-1">
+                <span class="relative flex-shrink-0 flex items-center h-9 w-9 rounded-xl bg-primary-fixed text-primary justify-center overflow-hidden [&_img]:h-9 [&_img]:w-9 [&_img]:object-contain">
+                    {% with class_name="flex items-center justify-center w-full h-full" %}
+                        {% include "components/company_logo.html" %}
+                    {% endwith %}
+                </span>
+                <div class="min-w-0 flex flex-col">
+                    <span class="font-body-bold text-body-bold text-text-heading truncate leading-tight">{{ global_company_settings.company_name or "PT Idha Boga Pangan Mandiri" }}</span>
+                    <span class="font-micro-meta text-micro-meta text-text-muted leading-none uppercase truncate">{{ portal_role_label }} · {{ current_user.full_name or current_user.username }}</span>
+                </div>
             </div>
+            <a href="{{ url_for('portal.notifications') }}" aria-label="Notifikasi{% if portal_unread_count %} ({{ portal_unread_count }} belum dibaca){% endif %}" class="relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full {{ 'bg-primary-fixed text-primary' if request.endpoint == 'portal.notifications' else 'text-text-heading' }} active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-[24px]">notifications</span>
+                {% if portal_unread_count %}
+                    <span class="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-status-danger-text text-on-primary font-caption-regular text-[10px] leading-none font-bold rounded-full flex items-center justify-center ring-2 ring-card-surface">{{ portal_unread_count if portal_unread_count < 100 else '99+' }}</span>
+                {% endif %}
+            </a>
         </div>
+        {% if nav.segments %}
+            {# Sub-tab: halaman-halaman di dalam tab yang sedang dibuka. #}
+            <nav class="px-margin pb-2 overflow-x-auto no-scrollbar" aria-label="Sub menu">
+                <div class="flex gap-1 p-1 rounded-xl bg-surface-container min-w-max">
+                    {% for segment in nav.segments %}
+                        <a href="{{ segment.url }}" {% if segment.active %}aria-current="page"{% endif %} class="flex-1 px-3 h-9 rounded-lg flex items-center justify-center whitespace-nowrap font-caption-regular text-caption-regular font-bold transition-colors {{ 'bg-card-surface text-primary shadow-sm' if segment.active else 'text-text-muted' }}">{{ segment.label }}</a>
+                    {% endfor %}
+                </div>
+            </nav>
+        {% endif %}
     </header>
 
-    <main class="portal-mobile-shell portal-web-shell" id="mainContent">
+    <main class="flex-1 flex flex-col w-full {{ 'pt-[7.75rem]' if nav.segments else 'pt-16' }} pb-[calc(4rem+env(safe-area-inset-bottom,0px))] bg-background-surface" id="mainContent">
+        {% if nav.account_child %}
+            {# Halaman pendukung Akun: tombol kembali, bukan pintu baru. #}
+            <div class="px-margin pt-3">
+                <a href="{{ url_for('portal.profile') }}" class="inline-flex items-center gap-1 h-9 pr-2 font-caption-regular text-caption-regular font-bold text-text-muted"><span class="material-symbols-outlined text-[20px]">arrow_back</span>Akun</a>
+            </div>
+        {% endif %}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="portal-mobile-flashes" role="status" aria-live="polite">
+                <div class="px-margin pt-2" role="status" aria-live="polite">
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} app-alert" role="alert">{{ message }}</div>
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} p-3 mb-2 rounded-xl text-sm font-medium {% if category == 'success' %}bg-status-success-bg text-status-success-text{% elif category in ['danger', 'error'] %}bg-status-danger-bg text-status-danger-text{% elif category == 'warning' %}bg-status-warning-bg text-status-warning-text{% else %}bg-status-info-bg text-status-info-text{% endif %}" role="alert">
+                            {{ message }}
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
         {% endwith %}
 
-        <div class="portal-mobile-content portal-web-content">
+        <div class="w-full flex-1 flex flex-col">
             {% block portal_content %}{% endblock %}
             {% block content %}{% endblock %}
         </div>
     </main>
 
-    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}" data-leaflet-src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" data-leaflet-css="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
+    {# Tab bawah: satu pintu per bagian. #}
+    <nav class="portal-web-nav fixed bottom-0 inset-x-0 mx-auto w-full max-w-[480px] z-50 pb-safe bg-card-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.04)]" aria-label="Navigasi Utama">
+        <div class="h-16 px-gutter grid grid-cols-4">
+            {% for tab in nav.tabs %}
+                <a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %} class="flex flex-col items-center justify-center h-16 transition-colors {{ 'text-primary font-body-bold' if tab.active else 'text-text-muted' }}">
+                    <span class="material-symbols-outlined text-[24px] {{ '[font-variation-settings:\'FILL\'_1]' if tab.active else '' }}">{{ tab.icon }}</span>
+                    <span class="font-caption-regular text-caption-regular leading-none mt-1">{{ tab.label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+</div>
+<script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/tom-select/tom-select.complete.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/flatpickr/id.js') }}"></script>
+<script src="{{ url_for('static', filename='js/controls.js', v=controls_js_asset_version) }}" data-apex-src="{{ url_for('static', filename='vendor/apexcharts/apexcharts.min.js') }}" data-leaflet-src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" data-leaflet-css="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v=js_asset_version) }}"></script>
 </body>
 </html>

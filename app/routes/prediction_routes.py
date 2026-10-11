@@ -8,6 +8,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
+from app.utils.clock import today_wib
 
 from app.services.ml_prediction_service import (
     get_data_summary,
@@ -95,7 +96,7 @@ def predict():
         try:
             prediction_date = date.fromisoformat(date_str)
         except (ValueError, TypeError):
-            prediction_date = date.today() + timedelta(days=1)
+            prediction_date = today_wib() + timedelta(days=1)
 
         # Parse mandor IDs
         if mandor_ids_raw and "all" not in mandor_ids_raw:
@@ -161,7 +162,7 @@ def api_predict():
     try:
         prediction_date = date.fromisoformat(date_str)
     except (ValueError, TypeError):
-        prediction_date = date.today() + timedelta(days=1)
+        prediction_date = today_wib() + timedelta(days=1)
 
     mandor_ids = data.get("mandor_ids")
     if mandor_ids and not isinstance(mandor_ids, list):

@@ -5,6 +5,7 @@ from app.models.finance import InvoiceItem, Invoice, SupplierBill
 from datetime import date
 from app.services.audit_log_service import record_audit_log
 from app.utils.money import money
+from app.utils.clock import today_wib
 
 logger = logging.getLogger(__name__)
 
@@ -697,7 +698,7 @@ def create_warung_debt_accrual_journal(worker_debt, created_by, commit=False):
 
     if not journal_date:
         from datetime import date
-        journal_date = date.today()
+        journal_date = today_wib()
 
     journal = Journal(
         journal_number=generate_journal_number(journal_date),
@@ -978,8 +979,8 @@ def create_payroll_payment_journal_for_payroll(payroll, payment_method, created_
         )
 
     journal = Journal(
-        journal_number=generate_journal_number(date.today()),
-        journal_date=date.today(),
+        journal_number=generate_journal_number(today_wib()),
+        journal_date=today_wib(),
         reference_type="PAYROLL_PAYMENT",
         reference_id=payroll.id,
         description=f"Pembayaran payroll periode {payroll.period_month:02d}-{payroll.period_year} via {payment_label}",
@@ -1225,7 +1226,7 @@ def create_warung_external_debt_accrual_journal(external_receivable, created_by,
         raise Exception("Akun wajib belum lengkap: " + ", ".join(missing))
 
     sale = getattr(external_receivable, "sale", None)
-    journal_date = getattr(sale, "sale_date", None) or date.today()
+    journal_date = getattr(sale, "sale_date", None) or today_wib()
 
     journal = Journal(
         journal_number=generate_journal_number(journal_date),

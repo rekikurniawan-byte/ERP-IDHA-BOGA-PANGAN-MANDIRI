@@ -10,6 +10,8 @@ import re
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.master import Branch, User
 from app.models.partnership import PartnershipRequest
@@ -100,7 +102,7 @@ def _main_branch_id():
 
 
 def validate_partnership_form(form, today=None):
-    today = today or date.today()
+    today = today or today_wib()
     company = _clean(form.get("company_name"), 150)
     contact = _clean(form.get("contact_name"), 150)
     phone = _clean(form.get("phone"), 40)
@@ -156,7 +158,7 @@ def submit_partnership_request(form, *, source_ip=None, today=None):
     from app.services.audit_log_service import record_audit_log
     from app.services.notification_service import create_or_update_notification
 
-    today = today or date.today()
+    today = today or today_wib()
     payload = validate_partnership_form(form, today)
     branch_id = _main_branch_id()
     request_row = PartnershipRequest(

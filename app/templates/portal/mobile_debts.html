@@ -1,74 +1,89 @@
-﻿{% extends "layouts/portal_mobile.html" %}
+{% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.debt_model %}
+{% set model = data.debt_model if data.debt_model is defined else data.model %}
 {% set totals = model.totals %}
-<section class="portal-feature-page portal-ledger-page">
-    <div class="portal-feature-hero portal-ledger-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
-        </div>
-    </div>
+{% set rows = model.debts %}
+{% set active_debts = rows|selectattr("remaining_amount", "gt", 0)|list %}
 
-    <div class="portal-ledger-summary">
-        <article class="portal-ledger-total">
-            <span>Sisa Hutang Aktif</span>
-            <strong>{{ totals.active_remaining_amount|rupiah }}</strong>
-            <p>{{ data.page_description }}</p>
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title or ("Hutang " ~ term('worker')) }}</h1>
+      {% if data.page_description %}<p class="font-caption-regular text-caption-regular text-text-muted line-clamp-2">{{ data.page_description }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% if not model.allowed %}
+    <div class="px-margin mb-4">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Hutang belum dibuka</p><p class="font-caption-regular text-caption-regular">{{ model.reason }}</p></div>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="px-margin mb-4">
+    <div class="bg-gradient-to-br from-inverse-surface to-text-heading rounded-2xl p-5 shadow-xl text-on-primary relative overflow-hidden">
+      <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+      <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high font-semibold relative z-10">Sisa Hutang Aktif</span>
+      <div class="mt-1 font-display-hero text-display-hero font-bold tracking-tight relative z-10 break-words">{{ (totals.active_remaining_amount or 0)|rupiah }}</div>
+      <p class="font-caption-regular text-caption-regular text-surface-container-high mt-1 relative z-10">{{ totals.active_debt_count or 0 }} hutang belum lunas dari {{ totals.debt_count or 0 }} catatan</p>
+    </div>
+  </section>
+
+  <section class="px-margin mb-4">
+    <div class="grid grid-cols-2 gap-2.5">
+      <div class="bg-card-surface rounded-xl p-3 shadow-sm min-w-0">
+        <span class="font-micro-meta text-micro-meta uppercase font-medium text-text-muted">Nilai Awal</span>
+        <strong class="font-headline-sm text-headline-sm text-text-heading block truncate">{{ (totals.debt_amount or 0)|rupiah }}</strong>
+      </div>
+      <div class="bg-status-success-bg/60 rounded-xl p-3 shadow-sm min-w-0">
+        <span class="font-micro-meta text-micro-meta uppercase font-medium text-status-success-text">Sudah Dibayar</span>
+        <strong class="font-headline-sm text-headline-sm text-status-success-text block truncate">{{ (totals.paid_amount or 0)|rupiah }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="px-margin flex flex-col gap-2.5">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="font-title-menu text-title-menu text-text-heading">Daftar Hutang {{ term('worker') }}</h2>
+      {% if rows %}
+        <div class="flex gap-1 p-1 rounded-full bg-surface-container" data-filter-group data-filter-target="#debtList">
+          <button type="button" data-filter="all" class="is-active px-3 h-7 rounded-full font-micro-meta text-micro-meta font-bold text-text-muted [&.is-active]:bg-card-surface [&.is-active]:text-text-heading">Semua</button>
+          <button type="button" data-filter="open" class="px-3 h-7 rounded-full font-micro-meta text-micro-meta font-bold text-text-muted [&.is-active]:bg-card-surface [&.is-active]:text-text-heading">Belum lunas ({{ active_debts|length }})</button>
+        </div>
+      {% endif %}
+    </div>
+    <div class="flex flex-col gap-2.5" id="debtList" data-filter-list>
+      {% for debt in rows %}
+        {% set is_open = (debt.remaining_amount or 0) > 0 %}
+        <article class="bg-card-surface rounded-2xl shadow-sm p-4 flex flex-col gap-2.5" data-filter-item="{{ 'open' if is_open else 'paid' }}">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-body-bold text-body-bold flex-shrink-0">{{ (debt.worker_name or "?")[:1]|upper }}</span>
+              <div class="min-w-0">
+                <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ debt.worker_name }}</strong>
+                <span class="font-micro-meta text-micro-meta text-text-muted block truncate">{{ debt.mandor_name }} · {{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else "-" }}</span>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold flex-shrink-0 {{ 'bg-status-warning-bg text-status-warning-text' if is_open else 'bg-status-success-bg text-status-success-text' }}">{{ debt.status|status_label }}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 bg-surface-container-low rounded-lg p-2.5 text-center">
+            <div class="min-w-0"><span class="font-micro-meta text-micro-meta text-text-muted block">Awal</span><strong class="font-caption-regular text-caption-regular text-text-heading block truncate">{{ debt.debt_amount|rupiah }}</strong></div>
+            <div class="min-w-0"><span class="font-micro-meta text-micro-meta text-text-muted block">Terbayar</span><strong class="font-caption-regular text-caption-regular text-status-success-text block truncate">{{ debt.paid_amount|rupiah }}</strong></div>
+            <div class="min-w-0"><span class="font-micro-meta text-micro-meta text-text-muted block">Sisa</span><strong class="font-caption-regular text-caption-regular text-primary block truncate">{{ debt.remaining_amount|rupiah }}</strong></div>
+          </div>
+          <p class="font-micro-meta text-micro-meta text-text-muted">{{ debt.payment_count }}x bayar{% if debt.sale_id %} · Penjualan #{{ debt.sale_id }}{% endif %}</p>
         </article>
-        <article><span>Hutang</span><strong>{{ totals.debt_count }}</strong><small>Total record</small></article>
-        <article><span>Aktif</span><strong>{{ totals.active_debt_count }}</strong><small>Belum lunas</small></article>
-        <article><span>Dibayar</span><strong>{{ totals.paid_amount|rupiah }}</strong><small>Total pembayaran hutang</small></article>
-        <article><span>Total</span><strong>{{ totals.debt_amount|rupiah }}</strong><small>Nilai awal</small></article>
-    </div>
-
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Hutang belum dibuka</h2>
-                <p>{{ model.reason }}</p>
-            </div>
+      {% else %}
+        <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+          <span class="material-symbols-outlined text-5xl">account_balance_wallet</span>
+          <strong class="font-body-bold text-body-bold text-text-heading">{{ data.empty_message or "Belum ada hutang" }}</strong>
+          <span class="font-caption-regular text-caption-regular">Hutang {{ term('worker', lower=True) }} dari warung akan tampil sesuai akses {{ term('sub_client', lower=True) }} atau {{ term('client') }}.</span>
         </div>
-    {% endif %}
-
-    <div class="portal-section-heading">
-        <h2>Daftar Hutang {{ term('worker') }}</h2>
-        <span>WorkerDebt </span>
+      {% endfor %}
     </div>
-
-    <div class="portal-ledger-list">
-        {% for debt in model.debts %}
-            <article class="portal-ledger-card compact">
-                <div class="portal-ledger-card-main">
-                    <span class="portal-record-icon"><i class="bi bi-wallet2"></i></span>
-                    <div>
-                        <h3>{{ debt.worker_name }}</h3>
-                        <p>{{ debt.mandor_name }} | {{ debt.sale_date.strftime('%d-%m-%Y') if debt.sale_date else "-" }}</p>
-                        <div class="portal-chip-row">
-                            <span>{{ debt.status|status_label }}</span>
-                            <span>{{ debt.payment_count }}x bayar</span>
-                            <span>Sale #{{ debt.sale_id or "-" }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="portal-ledger-amounts">
-                    <div><span>Awal</span><strong>{{ debt.debt_amount|rupiah }}</strong></div>
-                    <div><span>Terbayar</span><strong>{{ debt.paid_amount|rupiah }}</strong></div>
-                    <div><span>Sisa</span><strong>{{ debt.remaining_amount|rupiah }}</strong></div>
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-wallet2"></i>
-                <strong>Belum ada hutang</strong>
-                <p>Hutang {{ term('worker', lower=True) }} dari warung/canteen akan tampil sesuai akses {{ term('sub_client', lower=True) }} atau {{ term('client') }}.</p>
-            </div>
-        {% endfor %}
-    </div>
-</section>
+  </section>
+</div>
 {% endblock %}
-

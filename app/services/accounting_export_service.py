@@ -7,11 +7,12 @@ from flask import Response
 
 from app.models.accounting import Account, Journal, JournalDetail
 from app.services.finance_export_service import make_csv_response
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 
 def _today_suffix() -> str:
-    return date.today().strftime("%Y%m%d")
+    return today_wib().strftime("%Y%m%d")
 
 
 def _money_float(value: Any) -> float:

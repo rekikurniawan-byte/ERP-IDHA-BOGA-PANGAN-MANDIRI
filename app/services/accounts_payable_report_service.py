@@ -1,6 +1,7 @@
 from datetime import date
 
 from app.models.finance import SupplierBill, SupplierPayment
+from app.utils.clock import today_wib
 
 
 AGING_BUCKETS = [
@@ -84,7 +85,7 @@ def _bucket_for_bill(bill, as_of_date):
 
 
 def build_ap_aging_report(branch_id, as_of_date=None, supplier_id=None):
-    as_of_date = as_of_date or date.today()
+    as_of_date = as_of_date or today_wib()
 
     query = SupplierBill.query.filter(SupplierBill.branch_id == branch_id)
 

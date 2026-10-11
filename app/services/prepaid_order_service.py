@@ -19,6 +19,8 @@ app/services/accounting_service.py -- tidak ada jurnal yang ditulis di sini.
 from datetime import date
 from decimal import Decimal
 
+from app.utils.clock import today_wib
+
 from app.models.finance import AdvanceTransaction
 from app.services.advance_service import CLIENT_DP_RECEIVED, create_advance_settlement, create_advance_transaction
 from app.services.audit_log_service import record_audit_log
@@ -150,7 +152,7 @@ def record_draft_prepayment(
     try:
         _, _, advance = create_advance_transaction(
             branch_id=draft.branch_id,
-            advance_date=payment_date or date.today(),
+            advance_date=payment_date or today_wib(),
             advance_type=CLIENT_DP_RECEIVED,
             payment_method=advance_method(payment_method),
             amount=amount,
@@ -217,7 +219,7 @@ def record_detail_prepayment(
     try:
         _, _, advance = create_advance_transaction(
             branch_id=detail.daily_order.branch_id,
-            advance_date=payment_date or date.today(),
+            advance_date=payment_date or today_wib(),
             advance_type=CLIENT_DP_RECEIVED,
             payment_method=advance_method(payment_method),
             amount=amount,
@@ -280,7 +282,7 @@ def invoice_prepaid_order(order, mandor, created_by):
         return None
 
     invoice = create_order_invoice(order, mandor, created_by=created_by, prepaid=True)
-    today = date.today()
+    today = today_wib()
     for detail in details:
         for advance in detail_prepayments(detail):
             remaining_invoice = _money(invoice.remaining_amount)

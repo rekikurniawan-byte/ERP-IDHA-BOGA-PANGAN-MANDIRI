@@ -7,80 +7,146 @@
 {% set role = current_user.role %}
 {% set can_order = role in ["PORTAL_CUSTOMER", "PORTAL_SUBCLIENT"] %}
 {% set order_endpoint = "portal.mandor_order" if role == "PORTAL_SUBCLIENT" else "portal.customer_order" %}
+{% set active_delivery = orders.rows|selectattr("stage", "equalto", "DELIVERY")|list|first %}
 {% set groups = {"WAITING_ADMIN": "wait", "CONFIRMED": "process", "ADMIN_CONFIRMED": "process", "LOCKED": "process",
                  "PRODUCTION": "process", "PRODUCTION_DONE": "process", "DELIVERY": "delivery", "DELIVERED": "done",
                  "REJECTED": "rejected"} %}
-<section class="portal-feature-page portal-tracking-page po">
-    <header class="po-head">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}" aria-label="Kembali"><i class="bi bi-arrow-left"></i></a>
-        <div class="po-head-text">
-            <p>{{ persona.eyebrow or "Portal" }}</p>
-            <h1>{{ data.page_title or "Lacak Pesanan" }}</h1>
+
+<div class="flex flex-col w-full pb-10">
+    <div class="px-margin pt-space-md pb-space-sm flex flex-col gap-space-sm bg-card-surface shadow-sm border-b border-card-border">
+        <div>
+            <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight">{{ data.page_title or "Status Pesanan" }}</h1>
+            <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5">Dari pesanan dikirim sampai diterima di lokasi.</p>
         </div>
-        {% if can_order %}
-            <a class="btn app-btn-primary" href="{{ url_for(order_endpoint) }}"><i class="bi bi-bag-plus"></i> Pesan lagi</a>
-        {% endif %}
-    </header>
-
-    <div class="pt-filter" role="tablist" aria-label="Saring status pesanan" data-filter-group>
-        {% set rows = orders.rows %}
-        <button type="button" class="is-active" data-filter="all">Semua <span>{{ rows|length }}</span></button>
-        {% for key, label, stages in (("wait", "Menunggu admin", ["WAITING_ADMIN"]),
-                                      ("process", "Diproses", ["CONFIRMED", "ADMIN_CONFIRMED", "LOCKED", "PRODUCTION", "PRODUCTION_DONE"]),
-                                      ("delivery", "Diantar", ["DELIVERY"]),
-                                      ("done", "Diterima", ["DELIVERED"]),
-                                      ("rejected", "Ditolak", ["REJECTED"])) %}
-            {% set count = rows|selectattr("stage", "in", stages)|list|length %}
-            {% if count or key != "rejected" %}<button type="button" data-filter="{{ key }}">{{ label }} <span>{{ count }}</span></button>{% endif %}
-        {% endfor %}
     </div>
 
-    <div class="pt-list" data-filter-list>
-        {% for row in orders.rows %}
-            {% set has_shortage = row.shortage_qty and row.shortage_qty|float > 0 %}
-            {% set group = groups.get(row.stage, "process") %}
-            <!-- {{ row.draft_status }} {{ row.stage }} Production: {{ row.production_status }} Delivery: {{ row.delivery_status }} Delivered {{ row.delivered_qty }} -->
-            <article class="pt-card stage-{{ row.stage|lower }}" data-filter-item="{{ group }}">
-                <div class="pt-card-head">
-                    <span class="po-row-date"><strong>{{ row.order_date.strftime('%d') if row.order_date else "-" }}</strong><small>{{ "Jan Feb Mar Apr Mei Jun Jul Agu Sep Okt Nov Des".split()[row.order_date.month - 1] if row.order_date else "" }}</small></span>
-                    <div class="pt-card-title">
-                        <strong>{{ row.meal_type_label }} · {{ row.portion_qty }} porsi</strong>
-                        <span>{{ row.location_name }}</span>
-                    </div>
-                    <span class="ph-pill tone-{{ 'success' if row.stage == 'DELIVERED' else ('danger' if row.stage == 'REJECTED' else ('warning' if row.stage == 'WAITING_ADMIN' else 'info')) }}">{{ row.stage_label }}</span>
+    <div class="p-margin flex flex-col gap-space-lg">
+        {% if active_delivery %}
+        <div class="bg-card-surface rounded-xl p-space-md shadow-md flex flex-col gap-space-md border border-card-border">
+            <div class="bg-primary-fixed/40 rounded-xl p-space-md flex items-center justify-between gap-3">
+                <div class="flex flex-col min-w-0">
+                    <span class="font-caption-regular text-caption-regular text-primary font-semibold uppercase tracking-wider">Sedang diantar</span>
+                    <span class="font-headline-sm text-headline-sm text-primary mt-0.5 truncate">{{ active_delivery.delivery_number }}</span>
+                    <span class="font-micro-meta text-micro-meta text-text-muted mt-0.5">{{ active_delivery.meal_type_label }} · {{ active_delivery.portion_qty }} porsi · {{ active_delivery.order_date.strftime('%d-%m-%Y') if active_delivery.order_date else '' }}</span>
                 </div>
-                {{ ph_track(row.stage) }}
-                {% if row.review_note or has_shortage %}
-                    <div class="pt-note {{ 'is-warning' if has_shortage or row.draft_status == 'REJECTED' else '' }}">
-                        <i class="bi {{ 'bi-exclamation-triangle' if has_shortage or row.draft_status == 'REJECTED' else 'bi-info-circle' }}"></i>
-                        <span>
-                            {% if has_shortage %}Kurang {{ row.shortage_qty }} porsi saat serah terima (tidak ditagih).{% endif %}
-                            {% if row.review_note %}{{ row.review_note }}{% endif %}
-                        </span>
-                        {% if role == "PORTAL_CUSTOMER" and (has_shortage or row.draft_status == "REJECTED") %}
-                            <a href="{{ url_for('portal.customer_complaints') }}">Ajukan komplain</a>
-                        {% endif %}
-                    </div>
-                {% endif %}
-                <details class="pt-more">
-                    <summary>Rincian proses <i class="bi bi-chevron-down"></i></summary>
-                    <dl class="pt-detail">
-                        <div><dt>Order</dt><dd>{{ row.internal_order_number }}<small>{{ row.internal_order_status_label }}</small></dd></div>
-                        <div><dt>Produksi</dt><dd>{{ row.production_number }}<small>{{ row.production_status_label }}</small></dd></div>
-                        <div><dt>Pengiriman</dt><dd>{{ row.delivery_number }}<small>{{ row.delivery_status_label }}</small></dd></div>
-                        <div><dt>Diterima</dt><dd>{{ row.delivered_qty }} porsi<small>kurang {{ row.shortage_qty }}</small></dd></div>
-                    </dl>
-                </details>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-inbox"></i>
-                <strong>Belum ada pesanan</strong>
-                <p>Pesanan yang sudah dikirim akan tampil di sini.</p>
-                {% if can_order %}<a href="{{ url_for(order_endpoint) }}">Buat pesanan</a>{% endif %}
+                <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+                    <span class="material-symbols-outlined text-[26px]">local_shipping</span>
+                </div>
             </div>
-        {% endfor %}
-        <div class="ph-empty pt-filter-empty" data-filter-empty hidden><i class="bi bi-funnel"></i><span>Tidak ada pesanan dengan status ini.</span></div>
+            <div class="flex items-center gap-space-sm px-space-xs py-1">
+                <span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0">trip_origin</span>
+                <p class="font-caption-regular text-caption-regular text-text-muted flex-1 truncate">Dapur {{ global_company_settings.company_name or "katering" }}</p>
+                <span class="material-symbols-outlined text-text-muted text-[16px] flex-shrink-0">arrow_forward</span>
+                <p class="font-body-bold text-body-bold text-text-heading flex-1 truncate text-right">{{ active_delivery.location_name }}</p>
+            </div>
+            {{ ph_track(active_delivery.stage) }}
+        </div>
+        {% endif %}
+
+        <!-- FILTER TABS & ALL ORDERS LIST -->
+        <div class="flex flex-col gap-2 pt-2">
+            <div class="flex items-center justify-between">
+                <h2 class="font-title-menu text-title-menu text-text-heading font-bold">Daftar Semua Pesanan</h2>
+            </div>
+
+            <!-- Chips -->
+            <div class="w-full overflow-x-auto no-scrollbar py-1">
+                <div class="flex items-center gap-2 min-w-max" id="trackingFilterChips">
+                    {% set rows = orders.rows %}
+                    <button type="button" class="tracking-chip active flex items-center gap-1 px-3.5 h-8 rounded-full bg-primary text-on-primary font-label-badge text-label-badge shadow-sm transition-all" data-filter="all">
+                        Semua ({{ rows|length }})
+                    </button>
+                    {% for key, label, stages in (("wait", "Menunggu admin", ["WAITING_ADMIN"]),
+                                                  ("process", "Diproses", ["CONFIRMED", "ADMIN_CONFIRMED", "LOCKED", "PRODUCTION", "PRODUCTION_DONE"]),
+                                                  ("delivery", "Diantar", ["DELIVERY"]),
+                                                  ("done", "Diterima", ["DELIVERED"])) %}
+                        {% set count = rows|selectattr("stage", "in", stages)|list|length %}
+                        <button type="button" class="tracking-chip flex items-center gap-1 px-3.5 h-8 rounded-full bg-card-surface text-text-body font-label-badge text-label-badge shadow-sm hover:bg-surface-container transition-all" data-filter="{{ key }}">
+                            {{ label }} ({{ count }})
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Order Cards -->
+            <div class="flex flex-col gap-2.5 mt-1" id="trackingOrdersList">
+                {% for row in orders.rows %}
+                    {% set has_shortage = row.shortage_qty and row.shortage_qty|float > 0 %}
+                    {% set group = groups.get(row.stage, "process") %}
+                    <!-- {{ row.draft_status }} {{ row.stage }} Production: {{ row.production_status }} Delivery: {{ row.delivery_status }} Delivered {{ row.delivered_qty }} -->
+                    <div class="tracking-order-card p-3.5 rounded-xl bg-card-surface border border-card-border shadow-sm flex flex-col gap-2" data-filter-item="{{ group }}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <strong class="font-body-bold text-body-bold text-text-heading block">
+                                    {{ row.meal_type_label }} · {{ row.portion_qty }} Porsi
+                                </strong>
+                                <span class="font-caption-regular text-caption-regular text-text-muted block mt-0.5">
+                                    {{ row.order_date.strftime('%d-%m-%Y') if row.order_date else "-" }} · {{ row.location_name }}
+                                </span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full font-label-badge text-label-badge font-bold {{ 'bg-status-success-bg text-status-success-text' if row.stage == 'DELIVERED' else ('bg-status-danger-bg text-status-danger-text' if row.stage == 'REJECTED' else ('bg-status-warning-bg text-status-warning-text' if row.stage == 'WAITING_ADMIN' else 'bg-status-info-bg text-status-info-text')) }}">
+                                {{ row.stage_label }}
+                            </span>
+                        </div>
+                        {{ ph_track(row.stage) }}
+                        {% if row.review_note or has_shortage %}
+                            <div class="flex items-start gap-2 p-2.5 rounded-lg font-caption-regular text-caption-regular {{ 'bg-status-warning-bg text-status-warning-text' if has_shortage or row.draft_status == 'REJECTED' else 'bg-status-info-bg text-status-info-text' }}">
+                                <span class="material-symbols-outlined text-[16px] flex-shrink-0">{{ 'warning' if has_shortage or row.draft_status == 'REJECTED' else 'info' }}</span>
+                                <div class="min-w-0">
+                                    {% if has_shortage %}<p>Kurang {{ row.shortage_qty }} porsi saat serah terima (tidak ditagih).</p>{% endif %}
+                                    {% if row.review_note %}<p>{{ row.review_note }}</p>{% endif %}
+                                    {% if role == "PORTAL_CUSTOMER" and (has_shortage or row.draft_status == "REJECTED") %}
+                                        <a class="font-bold underline" href="{{ url_for('portal.customer_complaints') }}">Ajukan komplain</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        <details class="group">
+                            <summary class="cursor-pointer list-none flex items-center gap-1 font-caption-regular text-caption-regular font-bold text-primary">
+                                <span class="material-symbols-outlined text-[16px] transition-transform group-open:rotate-90">chevron_right</span> Rincian proses
+                            </summary>
+                            <dl class="mt-2 grid grid-cols-2 gap-2">
+                                {% for label, value, sub in (("Order", row.internal_order_number, row.internal_order_status_label),
+                                                            ("Produksi", row.production_number, row.production_status_label),
+                                                            ("Pengiriman", row.delivery_number, row.delivery_status_label),
+                                                            ("Diterima", (row.delivered_qty ~ " porsi"), ("kurang " ~ row.shortage_qty))) %}
+                                    <div class="bg-surface-container-low rounded-lg p-2 min-w-0">
+                                        <dt class="font-micro-meta text-micro-meta text-text-muted">{{ label }}</dt>
+                                        <dd class="font-caption-regular text-caption-regular font-bold text-text-heading truncate">{{ value }}</dd>
+                                        <dd class="font-micro-meta text-micro-meta text-text-muted truncate">{{ sub }}</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </details>
+                    </div>
+                {% else %}
+                    <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-1 block">inbox</span>
+                        <span class="font-body-medium text-caption-regular">Belum ada pesanan.</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-</section>
+</div>
+
+<script>
+document.querySelectorAll('#trackingFilterChips .tracking-chip').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('#trackingFilterChips .tracking-chip').forEach(b => {
+            b.className = 'tracking-chip flex items-center gap-1 px-3.5 h-8 rounded-full bg-card-surface text-text-body font-label-badge text-label-badge shadow-sm hover:bg-surface-container transition-all';
+        });
+        this.className = 'tracking-chip active flex items-center gap-1 px-3.5 h-8 rounded-full bg-primary text-on-primary font-label-badge text-label-badge shadow-sm transition-all';
+
+        const filter = this.getAttribute('data-filter');
+        document.querySelectorAll('#trackingOrdersList .tracking-order-card').forEach(card => {
+            if (filter === 'all' || card.getAttribute('data-filter-item') === filter) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

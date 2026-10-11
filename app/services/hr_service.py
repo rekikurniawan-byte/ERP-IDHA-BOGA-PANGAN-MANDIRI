@@ -1,6 +1,8 @@
 from datetime import date
 from calendar import monthrange
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.master import Employee, EmployeeSkill
 from app.models.hr import Payroll, PayrollDetail, EmployeeSalaryHistory
@@ -10,7 +12,7 @@ from app.models.hr import Payroll, PayrollDetail, EmployeeSalaryHistory
 
 
 def get_latest_salary(employee_id, target_date=None):
-    target_date = target_date or date.today()
+    target_date = target_date or today_wib()
 
     salary = (
         EmployeeSalaryHistory.query
@@ -108,7 +110,7 @@ def create_employee_record(*, branch_id, full_name, phone, join_date, salary_amo
         create_or_update_salary(
             employee=employee,
             salary_amount=salary_amount,
-            effective_date=join_date or date.today(),
+            effective_date=join_date or today_wib(),
             notes="Gaji awal karyawan",
         )
 
@@ -141,7 +143,7 @@ def update_employee_record(
             create_or_update_salary(
                 employee=employee,
                 salary_amount=salary_amount,
-                effective_date=salary_effective_date or date.today(),
+                effective_date=salary_effective_date or today_wib(),
                 notes="Update gaji karyawan",
             )
 

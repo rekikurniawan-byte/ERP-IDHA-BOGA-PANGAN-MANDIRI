@@ -1,57 +1,72 @@
-{# Komponen beranda portal (PT, mandor, pelanggan): kartu angka, pelacak tahap pesanan, baris invoice. #}
+{# Komponen beranda portal (PT, mandor, pelanggan): kartu angka, pelacak tahap pesanan, kartu invoice, peringatan. #}
 
 {% macro ph_kpi(icon, tone, label, value, note="", href=none) -%}
-<{{ 'a' if href else 'article' }} class="ph-kpi tone-{{ tone }}"{% if href %} href="{{ href }}"{% endif %}>
-    <span class="ph-kpi-icon"><i class="bi {{ icon }}" aria-hidden="true"></i></span>
-    <span class="ph-kpi-body">
-        <span>{{ label }}</span>
-        <strong>{{ value }}</strong>
-        {% if note %}<small>{{ note }}</small>{% endif %}
-    </span>
-</{{ 'a' if href else 'article' }}>
+{% set tones = {"brand": "bg-primary-fixed text-primary", "success": "bg-status-success-bg text-status-success-text", "warning": "bg-status-warning-bg text-status-warning-text", "danger": "bg-status-danger-bg text-status-danger-text", "info": "bg-status-info-bg text-status-info-text"} %}
+<{{ 'a' if href else 'div' }} class="bg-card-surface rounded-xl p-3 shadow-sm flex flex-col gap-1.5 min-w-0{{ ' active:scale-[0.98] transition-transform' if href else '' }}"{% if href %} href="{{ href }}"{% endif %}>
+    <span class="w-8 h-8 rounded-lg flex items-center justify-center {{ tones.get(tone, 'bg-surface-container text-text-body') }}"><span class="material-symbols-outlined text-[18px]">{{ icon }}</span></span>
+    <span class="font-micro-meta text-micro-meta uppercase text-text-muted truncate">{{ label }}</span>
+    <strong class="font-headline-sm text-headline-sm text-text-heading leading-none truncate">{{ value }}</strong>
+    {% if note %}<span class="font-micro-meta text-micro-meta text-text-muted truncate">{{ note }}</span>{% endif %}
+</{{ 'a' if href else 'div' }}>
 {%- endmacro %}
 
 {# Tahap pesanan: Dikirim → Dikonfirmasi → Dimasak → Diantar → Diterima. #}
 {% macro ph_track(stage) -%}
 {% set index = {"WAITING_ADMIN": 0, "CONFIRMED": 1, "ADMIN_CONFIRMED": 1, "LOCKED": 1, "PRODUCTION": 2,
                 "PRODUCTION_DONE": 2, "DELIVERY": 3, "DELIVERED": 5}.get(stage, -1) %}
-<ol class="ph-track{{ ' is-rejected' if stage == 'REJECTED' else '' }}" aria-label="Tahap pesanan">
-    {% for label in ("Dikirim", "Dikonfirmasi", "Dimasak", "Diantar", "Diterima") %}
-        <li class="{{ 'is-done' if loop.index0 < index else ('is-now' if loop.index0 == index else '') }}"><span>{{ label }}</span></li>
+{% if stage == 'REJECTED' %}
+<div class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-status-danger-bg text-status-danger-text font-caption-regular text-caption-regular font-bold">
+    <span class="material-symbols-outlined text-[16px]">block</span> Pesanan ditolak admin
+</div>
+{% else %}
+<ol class="grid grid-cols-5 gap-1 py-2 px-1 bg-surface-container-low rounded-lg text-center" aria-label="Tahap pesanan">
+    {% for label, icon in (("Dikirim", "send"), ("Dikonfirmasi", "task_alt"), ("Dimasak", "skillet"), ("Diantar", "local_shipping"), ("Diterima", "check_circle")) %}
+        {% set done = loop.index0 < index %}
+        {% set now = loop.index0 == index %}
+        <li class="flex flex-col items-center gap-1" {% if now %}aria-current="step"{% endif %}>
+            <span class="w-7 h-7 rounded-full flex items-center justify-center {{ 'bg-status-success-bg text-status-success-text' if done else ('bg-primary text-on-primary' if now else 'bg-surface-container-high text-text-muted') }}">
+                <span class="material-symbols-outlined text-[15px]">{{ 'check' if done else icon }}</span>
+            </span>
+            <span class="font-micro-meta text-[10px] leading-tight {{ 'text-status-success-text font-bold' if done else ('text-primary font-bold' if now else 'text-text-muted') }}">{{ label }}</span>
+        </li>
     {% endfor %}
 </ol>
+{% endif %}
 {%- endmacro %}
 
-{% macro ph_invoice(invoice) -%}
+{% macro ph_invoice(invoice, href=none) -%}
 {% set total = invoice.total_amount or 0 %}
 {% set paid = invoice.paid_amount or 0 %}
 {% set ratio = ((paid / total * 100) if total else 0)|round|int %}
 {% set overdue = (invoice.days_overdue or 0) > 0 %}
-<article class="ph-inv{{ ' is-overdue' if overdue else '' }}">
-    <div class="ph-inv-top">
-        <div>
-            <strong>{{ invoice.invoice_number }}</strong>
-            <small>{{ invoice.party.mandor_name or invoice.party.label }}{% if invoice.due_date %} · jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') }}{% endif %}</small>
+<{{ 'a' if href else 'article' }} class="block bg-card-surface rounded-xl p-3 shadow-sm{{ ' ring-1 ring-status-danger-text/30' if overdue else '' }}"{% if href %} href="{{ href }}"{% endif %}>
+    <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+            <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ invoice.invoice_number }}</strong>
+            <span class="font-micro-meta text-micro-meta text-text-muted block truncate">{{ invoice.party.mandor_name or invoice.party.label }}{% if invoice.due_date %} · jatuh tempo {{ invoice.due_date.strftime('%d-%m-%Y') }}{% endif %}</span>
         </div>
-        <span class="ph-pill tone-{{ 'success' if invoice.status == 'PAID' else ('danger' if overdue else ('info' if paid else 'warning')) }}">{{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}</span>
+        <span class="flex-shrink-0 px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ 'bg-status-success-bg text-status-success-text' if invoice.status == 'PAID' else ('bg-status-danger-bg text-status-danger-text' if overdue else ('bg-status-info-bg text-status-info-text' if paid else 'bg-status-warning-bg text-status-warning-text')) }}">{{ "Lewat " ~ invoice.days_overdue ~ " hari" if overdue else invoice.status_label }}</span>
     </div>
-    <div class="ph-inv-bar" role="img" aria-label="Terbayar {{ ratio }} persen"><span style="width: {{ ratio }}%"></span></div>
-    <div class="ph-inv-foot">
-        <span>Dibayar {{ paid|rupiah }} dari {{ total|rupiah }}</span>
-        <strong>{{ "Lunas" if invoice.status == 'PAID' else "Sisa " ~ (invoice.remaining_amount or 0)|rupiah }}</strong>
+    <div class="mt-2 h-1.5 rounded-full bg-surface-container overflow-hidden" role="img" aria-label="Terbayar {{ ratio }} persen"><span class="block h-full bg-status-success-text rounded-full" style="width: {{ ratio }}%"></span></div>
+    <div class="mt-1.5 flex items-center justify-between gap-2 font-micro-meta text-micro-meta">
+        <span class="text-text-muted truncate">Dibayar {{ paid|rupiah }} dari {{ total|rupiah }}</span>
+        <strong class="text-text-heading flex-shrink-0">{{ "Lunas" if invoice.status == 'PAID' else "Sisa " ~ (invoice.remaining_amount or 0)|rupiah }}</strong>
     </div>
-</article>
+</{{ 'a' if href else 'article' }}>
 {%- endmacro %}
 
 
 {# Peringatan akun dari command center (mis. akun belum terhubung, tagihan lewat tempo). #}
 {% macro ph_alerts(alerts) -%}
 {% if alerts %}
-<div class="ph-alerts" role="status">
+<div class="flex flex-col gap-2" role="status">
     {% for alert in alerts[:3] %}
-        <div class="ph-alert level-{{ alert.level }}">
-            <i class="bi {{ alert.icon or 'bi-info-circle' }}" aria-hidden="true"></i>
-            <div><strong>{{ alert.title }}</strong><span>{{ alert.message }}</span></div>
+        <div class="flex items-start gap-2.5 p-3 rounded-xl {{ 'bg-status-danger-bg text-status-danger-text' if alert.level in ['danger', 'critical'] else ('bg-status-warning-bg text-status-warning-text' if alert.level == 'warning' else ('bg-status-success-bg text-status-success-text' if alert.level == 'success' else 'bg-status-info-bg text-status-info-text')) }}">
+            <i class="bi {{ alert.icon or 'bi-info-circle' }} mt-0.5" aria-hidden="true"></i>
+            <div class="min-w-0">
+                <strong class="font-caption-regular text-caption-regular font-bold block">{{ alert.title }}</strong>
+                <span class="font-caption-regular text-caption-regular block">{{ alert.message }}</span>
+            </div>
         </div>
     {% endfor %}
 </div>

@@ -1,6 +1,8 @@
 import logging
 from datetime import date
 
+from app.utils.clock import today_wib
+
 from app.models.operational import DailyOrder
 from app.models.production import Production
 from app.models.delivery import Delivery, DeliveryDetail
@@ -75,7 +77,7 @@ def get_owner_dashboard_data(
     from app.models.accounting import Journal
     from app.models.operational import OrderHppSnapshot
 
-    today = date.today()
+    today = today_wib()
     next_7_days = today + timedelta(days=7)
 
     def _safe_sum(values):
@@ -576,7 +578,7 @@ def get_admin_dashboard_data(
     revenue_mandor_id=None,
     revenue_branch_id=None,
 ):
-    today = date.today()
+    today = today_wib()
 
     today_orders = DailyOrder.query.filter_by(
         branch_id=branch_id,
@@ -715,7 +717,7 @@ def get_admin_dashboard_data(
 
 
 def get_dapur_dashboard_data(branch_id):
-    today = date.today()
+    today = today_wib()
 
     today_productions = Production.query.filter_by(
         branch_id=branch_id,
@@ -754,7 +756,7 @@ def get_dapur_dashboard_data(branch_id):
 
 
 def get_pengantar_dashboard_data(branch_id):
-    today = date.today()
+    today = today_wib()
 
     today_deliveries = Delivery.query.filter_by(
         branch_id=branch_id,

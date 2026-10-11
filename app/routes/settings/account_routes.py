@@ -358,8 +358,9 @@ def account():
     )
     last_login_at = last_login.created_at if last_login else None
 
+    template_name = "driver/account.html" if current_user.role == "PENGANTAR" else "settings/account.html"
     return render_template(
-        "settings/account.html",
+        template_name,
         user=current_user,
         last_login_at=last_login_at,
         page_title="Akun Saya",
@@ -369,6 +370,8 @@ def account():
 @settings_bp.route("/change-password", methods=["GET", "POST"])
 @role_required("OWNER", "ADMIN", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR", "DAPUR", "PENGANTAR")
 def change_password():
+    if current_user.role == "PENGANTAR":
+        return redirect(url_for("settings.account", _anchor="ganti-password"))
     from app.services.user_profile_service import (
         UserProfileError,
         change_user_password as profile_change_password,

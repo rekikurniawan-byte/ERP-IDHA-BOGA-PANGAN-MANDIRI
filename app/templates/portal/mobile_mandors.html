@@ -2,65 +2,76 @@
 
 {% block portal_content %}
 {% set model = data.mandor_model %}
-<section class="portal-feature-page portal-directory-page">
-    <div class="portal-feature-hero portal-directory-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>Portal {{ term('client') }}</p>
-            <h1>Seluruh {{ term('sub_client') }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
-        </div>
-    </div>
+{% set mandors = model.mandors %}
 
-    <div class="portal-directory-summary">
-        <article><span>{{ term('sub_client') }}</span><strong>{{ model.totals.mandor_count }}</strong><small>Master {{ term('sub_client') }}</small></article>
-        <article><span>Lokasi</span><strong>{{ model.totals.location_count }}</strong><small>Lokasi Pengiriman</small></article>
-        <article><span>Tagihan</span><strong>{{ data.invoices.totals.invoice_count }}</strong><small>Akses finance</small></article>
-        <article><span>Pembayaran</span><strong>{{ data.payments.totals.payment_count }}</strong><small>Riwayat bayar</small></article>
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title or ("Seluruh " ~ term('sub_client')) }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ data.page_description or ("Daftar " ~ term('sub_client', lower=True) ~ " dan lokasi antarnya.") }}</p>
     </div>
+  </section>
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>{{ term('sub_client') }} belum dibuka</h2>
-                <p>{{ model.reason }}</p>
+  {% if not model.allowed %}
+    <div class="px-margin mb-4">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Data {{ term('sub_client', lower=True) }} belum dibuka</p><p class="font-caption-regular text-caption-regular">{{ model.reason }}</p></div>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="px-margin mb-4 grid grid-cols-2 gap-2">
+    {% for label, value, icon, href in [
+        (term('sub_client'), model.totals.mandor_count or 0, "groups", none),
+        ("Lokasi", model.totals.location_count or 0, "location_on", none),
+        ("Tagihan", data.invoices.totals.invoice_count or 0, "receipt_long", none),
+        ("Pembayaran", data.payments.totals.payment_count or 0, "payments", none),
+    ] %}
+      <{{ 'a' if href else 'div' }} {% if href %}href="{{ href }}"{% endif %} class="bg-card-surface rounded-xl p-3 shadow-sm flex items-center gap-2.5 min-w-0">
+        <span class="w-9 h-9 rounded-lg bg-primary-fixed text-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-[20px]">{{ icon }}</span></span>
+        <span class="min-w-0">
+          <span class="font-micro-meta text-micro-meta uppercase text-text-muted block truncate">{{ label }}</span>
+          <strong class="font-headline-sm text-headline-sm text-text-heading leading-none">{{ value }}</strong>
+        </span>
+      </{{ 'a' if href else 'div' }}>
+    {% endfor %}
+  </section>
+
+  <section class="px-margin flex flex-col gap-2.5">
+    {% for mandor in mandors %}
+      <article class="bg-card-surface rounded-xl shadow-sm p-4 flex flex-col gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-10 h-10 rounded-full bg-surface-container-high text-text-heading flex items-center justify-center font-body-bold text-body-bold flex-shrink-0">{{ (mandor.name or "M")[:1]|upper }}</span>
+            <div class="min-w-0">
+              <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ mandor.name }}</strong>
+              <span class="font-micro-meta text-micro-meta text-text-muted block truncate">{{ mandor.client_name }}</span>
             </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold flex-shrink-0 {{ 'bg-status-success-bg text-status-success-text' if mandor.is_active else 'bg-surface-container text-text-muted' }}">{{ "Aktif" if mandor.is_active else "Nonaktif" }}</span>
         </div>
-    {% endif %}
-
-    <div class="portal-section-heading">
-        <h2>{{ term('sub_client') }} & Lokasi</h2>
-        <span>Master </span>
-    </div>
-
-    <div class="portal-directory-grid">
-        {% for mandor in model.mandors %}
-            <article class="portal-directory-card wide">
-                <div class="portal-directory-avatar">{{ (mandor.name or "M")[:1] }}</div>
-                <div class="portal-directory-content">
-                    <h3>{{ mandor.name }}</h3>
-                    <p>{{ mandor.client_name }} | {{ mandor.location_count }} lokasi | {{ mandor.phone or "Tanpa telepon" }}</p>
-                    <div class="portal-chip-row">
-                        <span>{{ "Aktif" if mandor.is_active else "Nonaktif" }}</span>
-                        <span>{{ mandor.active_location_count }} lokasi aktif</span>
-                    </div>
-                    {% if mandor.locations %}
-                        <div class="portal-location-stack">
-                            {% for location in mandor.locations %}
-                                <span><i class="bi bi-geo-alt"></i>{{ location.name }}{% if not location.is_active %} (nonaktif){% endif %}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-diagram-3"></i>
-                <strong>Belum ada {{ term('sub_client', lower=True) }}</strong>
-                <p>{{ term('sub_client') }} akan tampil jika {{ term('client', lower=True) }} akses memiliki {{ term('sub_client', lower=True) }} .</p>
-            </div>
-        {% endfor %}
-    </div>
-</section>
+        <div class="flex items-center justify-between gap-2 font-caption-regular text-caption-regular text-text-muted">
+          <span>{{ mandor.active_location_count }} dari {{ mandor.location_count }} lokasi aktif</span>
+          {% if mandor.phone %}<a href="tel:{{ mandor.phone }}" class="text-primary font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">call</span>{{ mandor.phone }}</a>{% endif %}
+        </div>
+        {% if mandor.locations %}
+          <div class="flex flex-wrap gap-1.5">
+            {% for location in mandor.locations %}
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg font-micro-meta text-micro-meta {{ 'bg-surface-container-low text-text-body' if location.is_active else 'bg-surface-container text-text-muted line-through' }}">
+                <span class="material-symbols-outlined text-[13px]">pin_drop</span>{{ location.name }}
+              </span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">groups</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum ada {{ term('sub_client', lower=True) }}</strong>
+        <span class="font-caption-regular text-caption-regular">{{ term('sub_client') }} tampil setelah admin menghubungkannya ke {{ term('client', lower=True) }} Anda.</span>
+      </div>
+    {% endfor %}
+  </section>
+</div>
 {% endblock %}

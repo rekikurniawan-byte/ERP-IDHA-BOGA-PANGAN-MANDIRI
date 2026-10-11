@@ -1034,6 +1034,58 @@ def list_portal_order_drafts(user, limit=25):
     )
 
 
+def build_portal_pending_draft_payments(user, limit=25):
+    """Pesanan portal yang masih menunggu pembayaran di muka (untuk tab Tagihan)."""
+    rows = _draft_history_rows(list_portal_order_drafts(user, limit=limit))
+    return [row for row in rows if row["needs_payment"]]
+
+
+def build_portal_customer_order_billing(user, limit=50):
+    """Tagihan pelanggan umum = pesanan bayar di muka: total, sudah dibayar, sisa per pesanan."""
+    from app.services.prepaid_order_service import draft_prepayments
+
+    rows = [row for row in _draft_history_rows(list_portal_order_drafts(user, limit=limit)) if row["total_amount"] is not None]
+    zero = Decimal("0")
+    for row in rows:
+        draft = row["draft"]
+        # Uang yang pernah diterima untuk pesanan ini (termasuk yang sudah dipotong ke invoice).
+        advances = [
+            advance for advance in draft_prepayments(draft)
+            if str(advance.status or "").upper() not in {"VOID", "VOIDED", "CANCELLED", "CANCELED"}
+        ]
+        received = sum((Decimal(str(advance.amount or 0)) for advance in advances), zero)
+        row["received_amount"] = received
+        total = row["total_amount"] or zero
+        if draft.status == DRAFT_STATUS_REJECTED:
+            # Pesanan ditolak: uang muka dikembalikan (sisa uang muka = 0 berarti sudah kembali).
+            still_held = sum((Decimal(str(advance.remaining_amount or 0)) for advance in advances), zero)
+            if received <= zero:
+                label = "Ditolak"
+            elif still_held > zero:
+                label = "Ditolak · pengembalian diproses"
+            else:
+                label = "Ditolak · dana dikembalikan"
+            row["billing_status"], row["billing_tone"] = label, "danger"
+        elif received >= total:
+            row["billing_status"], row["billing_tone"] = "Lunas", "success"
+        elif row["needs_payment"] and row["is_closed"]:
+            row["billing_status"], row["billing_tone"] = "Lewat batas", "danger"
+        elif row["needs_payment"]:
+            row["billing_status"], row["billing_tone"] = "Menunggu bayar", "warning"
+        elif received > zero:
+            row["billing_status"], row["billing_tone"] = "Dibayar sebagian", "info"
+        else:
+            row["billing_status"], row["billing_tone"] = "Belum lunas", "info"
+    return {
+        "rows": rows,
+        "total_amount": sum((row["total_amount"] or zero for row in rows), zero),
+        "paid_amount": sum((row["received_amount"] for row in rows if row["draft"].status != DRAFT_STATUS_REJECTED), zero),
+        "amount_due": sum((row["amount_due"] or zero for row in rows if row["needs_payment"]), zero),
+        "needs_payment_count": sum(1 for row in rows if row["needs_payment"]),
+        "paid_count": sum(1 for row in rows if row["billing_status"] == "Lunas"),
+    }
+
+
 def build_portal_order_status_context(user, limit=50):
     drafts = list_portal_order_drafts(user, limit=limit)
     rows = []

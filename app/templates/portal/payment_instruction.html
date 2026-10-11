@@ -1,128 +1,197 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
+<!-- Attachment only, finance verify -->
 {% set instruction = data.instruction %}
-<section class="portal-feature-page portal-finance-page portal-payment-instruction-page">
-    <div class="portal-feature-hero portal-ledger-hero portal-finance-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>Instruksi pembayaran</span>
-        </div>
-        <strong class="portal-hero-status">{{ "Bisa dibayar" if instruction.payable else "Hanya dilihat" }}</strong>
+{% set detail = instruction.detail or {} %}
+{% set role = current_user.role %}
+{% set back_url = url_for('portal.customer_payments') if role == 'PORTAL_CUSTOMER' else url_for('portal.pt_invoices') if role == 'PORTAL_CLIENT' else url_for('portal.mandor_invoices') if role == 'PORTAL_SUBCLIENT' else url_for('portal.invoices') %}
+
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-3 pb-3 flex items-center gap-3">
+    <a href="{{ back_url }}" aria-label="Kembali ke daftar tagihan" class="w-10 h-10 rounded-full bg-card-surface shadow-md flex items-center justify-center text-text-heading active:scale-95 transition-transform flex-shrink-0">
+      <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    </a>
+    <div class="flex flex-col min-w-0 flex-1">
+      <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight truncate">Rincian Tagihan</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ instruction.invoice.invoice_number if instruction.invoice else data.page_title }}</p>
     </div>
+  </section>
 
-    {% if not instruction.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Tagihan tidak tersedia</h2>
-                <p>{{ instruction.reason }}</p>
-            </div>
+  {% if not instruction.allowed %}
+    <div class="px-margin">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Tagihan tidak tersedia</p><p class="font-caption-regular text-caption-regular">{{ instruction.reason }}</p></div>
+      </div>
+    </div>
+  {% else %}
+    {% set is_paid = detail.status == 'PAID' or (detail.remaining_amount is defined and detail.remaining_amount <= 0) %}
+    {% set overdue = instruction.payable and instruction.invoice.due_date and instruction.invoice.due_date < today_wib() %}
+
+    {# 1. Ringkasan: berapa yang harus dibayar dan kapan. #}
+    <section class="px-margin mb-4">
+      <div class="bg-gradient-to-br from-inverse-surface to-text-heading rounded-2xl p-5 shadow-xl text-on-primary">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high font-semibold">{{ "Lunas" if is_paid else "Sisa yang harus dibayar" }}</span>
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ 'bg-status-success-bg text-status-success-text' if is_paid else ('bg-status-danger-bg text-status-danger-text' if overdue else 'bg-status-warning-bg text-status-warning-text') }}">{{ "Lewat tempo" if overdue else instruction.invoice.status|status_label('invoice') }}</span>
         </div>
-    {% else %}
-        <div class="portal-ledger-summary portal-finance-summary">
-            <article class="portal-ledger-total">
-                <span>Nominal Perlu Dibayar</span>
-                <strong>{{ instruction.amount_due|rupiah }}</strong>
-                <p>{{ data.page_description }}</p>
-            </article>
-            <article><span>Tagihan</span><strong>{{ instruction.invoice.invoice_number }}</strong><small>{{ instruction.invoice.status|status_label('invoice') }}</small></article>
-            <article><span>Sisa</span><strong>{{ instruction.invoice.remaining_amount|rupiah }}</strong><small>Sisa tagihan</small></article>
-            <article><span>Bukti</span><strong>{{ instruction.proof_summary.count }}</strong><small>{{ instruction.proof_summary.latest_status|status_label }}</small></article>
+        <div class="mt-1 font-display-hero text-display-hero font-bold tracking-tight break-words">{{ (detail.total_amount if is_paid else instruction.invoice.remaining_amount)|rupiah }}</div>
+        <div class="mt-3 grid grid-cols-2 gap-2 font-caption-regular text-caption-regular">
+          <div class="bg-white/10 rounded-lg p-2.5">
+            <span class="font-micro-meta text-[10px] text-surface-container-high block uppercase">Tanggal tagihan</span>
+            <strong>{{ instruction.invoice.invoice_date.strftime('%d-%m-%Y') if instruction.invoice.invoice_date else "-" }}</strong>
+          </div>
+          <div class="bg-white/10 rounded-lg p-2.5">
+            <span class="font-micro-meta text-[10px] text-surface-container-high block uppercase">Jatuh tempo</span>
+            <strong>{{ instruction.invoice.due_date.strftime('%d-%m-%Y') if instruction.invoice.due_date else "-" }}</strong>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div class="portal-payment-method-grid">
-            <article class="portal-payment-method-card">
-                <span class="portal-source-pill"><i class="bi bi-bank"></i> Transfer Bank</span>
-                {% if instruction.bank_transfer.available %}
-                    <h2>{{ instruction.bank_transfer.bank_name }}</h2>
-                    <p>{{ instruction.bank_transfer.account_number }}</p>
-                    <strong>{{ instruction.bank_transfer.account_name }}</strong>
-                {% else %}
-                    <h2>Rekening belum lengkap</h2>
-                    <p>Konfigurasi yang kurang: {{ instruction.bank_transfer.missing|join(", ") }}.</p>
-                    <strong>Hubungi finance</strong>
-                {% endif %}
-            </article>
-
-            <article class="portal-payment-method-card accent">
-                <span class="portal-source-pill"><i class="bi bi-qr-code"></i> QRIS</span>
-                {% if instruction.qris.available %}
-                    <h2>{{ instruction.qris.label or "QRIS pembayaran" }}</h2>
-                    <p>{{ instruction.qris.note or "Gunakan nominal sesuai sisa invoice." }}</p>
-                    {% if instruction.qris.image_url %}
-                        <a class="portal-secondary-action" href="{{ instruction.qris.image_url }}" target="_blank" rel="noopener">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                            <span>Buka QRIS</span>
-                        </a>
-                    {% endif %}
-                {% else %}
-                    <h2>QRIS belum dikonfigurasi</h2>
-                    <p>Gunakan transfer bank bila rekening tersedia.</p>
-                    <strong>Instruksi tetap</strong>
-                {% endif %}
-            </article>
+    {# 2. Untuk siapa & periode apa. #}
+    <section class="px-margin mb-4">
+      <div class="bg-card-surface rounded-xl shadow-sm p-4 grid grid-cols-2 gap-3 font-caption-regular text-caption-regular">
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted block uppercase">Ditagihkan ke</span>
+          <strong class="text-text-heading block truncate">{{ detail.party_name }}</strong>
+          {% if detail.pic_name %}<span class="text-text-muted block truncate">u.p. {{ detail.pic_name }}</span>{% endif %}
         </div>
-
-        <div class="portal-section-heading">
-            <h2>Unggah Bukti</h2>
-            <span>Attachment only, finance verify</span>
+        <div class="min-w-0">
+          <span class="font-micro-meta text-micro-meta text-text-muted block uppercase">Periode</span>
+          <strong class="text-text-heading block">{% if detail.period_start %}{{ detail.period_start.strftime('%d-%m-%Y') }}{% if detail.period_end and detail.period_end != detail.period_start %} s.d. {{ detail.period_end.strftime('%d-%m-%Y') }}{% endif %}{% else %}-{% endif %}</strong>
         </div>
+      </div>
+    </section>
 
-        {% if instruction.payable %}
-            <form class="portal-payment-upload-card" method="POST" enctype="multipart/form-data" data-app-confirm="Unggah bukti pembayaran ini ke finance?">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label>
-                    <span>Bukti pembayaran</span>
-                    <input id="proof_file" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
-                </label>
-                <label>
-                    <span>Catatan</span>
-                    <textarea id="notes" name="notes" rows="3" maxlength="1000" placeholder="Contoh: transfer BCA atas nama {{ term('client') }} ..."></textarea>
-                </label>
-                <button class="portal-primary-action" type="submit" data-app-temp-label="Mengupload...">
-                    <i class="bi bi-cloud-upload"></i>
-                    <span>Unggah Bukti</span>
-                </button>
-                <p>Unggahan ini akan diperiksa terlebih dahulu. Setelah sesuai, pembayaran akan tercatat.</p>
-            </form>
-        {% else %}
-            <div class="portal-blocked-state">
-                <i class="bi bi-check2-circle"></i>
-                <div>
-                    <h2>Tagihan belum bisa dibayar</h2>
-                    <p>Status tagihan atau sisa tagihan tidak memungkinkan upload bukti baru.</p>
+    {# 3. Rincian item: apa saja yang ditagih. #}
+    <section class="px-margin mb-4">
+      <div class="bg-card-surface rounded-xl shadow-sm overflow-hidden">
+        <h2 class="px-4 pt-4 pb-2 font-title-menu text-title-menu text-text-heading">Rincian</h2>
+        <ul class="divide-y divide-card-border">
+          {% for item in detail.lines or [] %}
+            <li class="px-4 py-3 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-caption-regular text-caption-regular text-text-heading font-medium">{{ item.description }}</p>
+                <p class="font-micro-meta text-micro-meta text-text-muted">{{ item.qty|qty }} × {{ item.unit_price|rupiah }}</p>
+              </div>
+              <strong class="font-caption-regular text-caption-regular text-text-heading flex-shrink-0">{{ item.subtotal|rupiah }}</strong>
+            </li>
+          {% else %}
+            <li class="px-4 py-3 font-caption-regular text-caption-regular text-text-muted">Belum ada rincian item.</li>
+          {% endfor %}
+        </ul>
+        <dl class="px-4 py-3 bg-surface-container-low flex flex-col gap-1.5 font-caption-regular text-caption-regular">
+          <div class="flex justify-between"><dt class="text-text-muted">Subtotal</dt><dd class="text-text-heading">{{ detail.subtotal|rupiah }}</dd></div>
+          {% for tax in detail.tax_rows or [] %}
+            <div class="flex justify-between gap-3"><dt class="text-text-muted">{{ tax.description }}</dt><dd class="text-text-heading flex-shrink-0">{{ tax.subtotal|rupiah }}</dd></div>
+          {% endfor %}
+          <div class="flex justify-between pt-1.5 border-t border-card-border"><dt class="font-bold text-text-heading">Total tagihan</dt><dd class="font-bold text-text-heading">{{ detail.total_amount|rupiah }}</dd></div>
+          {% if detail.paid_amount %}
+            <div class="flex justify-between"><dt class="text-status-success-text">Sudah dibayar</dt><dd class="text-status-success-text">- {{ detail.paid_amount|rupiah }}</dd></div>
+          {% endif %}
+          <div class="flex justify-between"><dt class="font-bold text-primary">Sisa</dt><dd class="font-bold text-primary">{{ detail.remaining_amount|rupiah }}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    {# 4. Riwayat pelunasan invoice ini. #}
+    {% if detail.events %}
+      <section class="px-margin mb-4">
+        <div class="bg-card-surface rounded-xl shadow-sm overflow-hidden">
+          <h2 class="px-4 pt-4 pb-2 font-title-menu text-title-menu text-text-heading">Riwayat Pelunasan</h2>
+          <ul class="divide-y divide-card-border">
+            {% for event in detail.events %}
+              <li class="px-4 py-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-caption-regular text-caption-regular text-text-heading font-medium">{{ event.label }} · {{ event.payment_method|status_label }}</p>
+                  <p class="font-micro-meta text-micro-meta text-text-muted">{{ event.payment_date.strftime('%d-%m-%Y') if event.payment_date else "-" }} · {{ event.payment_number or "-" }}</p>
                 </div>
+                <strong class="font-caption-regular text-caption-regular text-status-success-text flex-shrink-0">{{ event.amount|rupiah }}</strong>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </section>
+    {% endif %}
+
+    {# 5. Cara bayar + unggah bukti (hanya bila masih bisa dibayar). #}
+    {% if instruction.payable %}
+      <section class="px-margin mb-4 flex flex-col gap-2.5">
+        <h2 class="font-title-menu text-title-menu text-text-heading">Instruksi Pembayaran</h2>
+        <article class="bg-card-surface rounded-xl shadow-sm p-4 flex items-start gap-3">
+          <span class="w-10 h-10 rounded-lg bg-status-info-bg text-status-info-text flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined">account_balance</span></span>
+          <div class="min-w-0 flex-1">
+            <span class="font-micro-meta text-micro-meta uppercase text-text-muted font-bold">Transfer Bank</span>
+            {% if instruction.bank_transfer.available %}
+              <p class="font-body-bold text-body-bold text-text-heading">{{ instruction.bank_transfer.bank_name }}</p>
+              <div class="flex items-center gap-2">
+                <strong class="font-headline-sm text-headline-sm text-text-heading tracking-wide">{{ instruction.bank_transfer.account_number }}</strong>
+                <button type="button" class="h-8 px-2.5 rounded-lg bg-surface-container text-primary font-micro-meta text-micro-meta font-bold flex items-center gap-1" data-copy-account="{{ instruction.bank_transfer.account_number }}"><span class="material-symbols-outlined text-[14px]">content_copy</span>Salin</button>
+              </div>
+              <p class="font-caption-regular text-caption-regular text-text-muted">a.n. {{ instruction.bank_transfer.account_name }} · transfer tepat {{ instruction.amount_due|rupiah }}</p>
+            {% else %}
+              <p class="font-body-bold text-body-bold text-text-heading">Rekening belum lengkap</p>
+              <p class="font-caption-regular text-caption-regular text-text-muted">Konfigurasi yang kurang: {{ instruction.bank_transfer.missing|join(", ") }}. Hubungi finance.</p>
+            {% endif %}
+          </div>
+        </article>
+        {% if instruction.qris.available %}
+          <article class="bg-card-surface rounded-xl shadow-sm p-4 flex items-start gap-3">
+            <span class="w-10 h-10 rounded-lg bg-primary-fixed text-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined">qr_code_2</span></span>
+            <div class="min-w-0 flex-1">
+              <span class="font-micro-meta text-micro-meta uppercase text-text-muted font-bold">QRIS</span>
+              <p class="font-body-bold text-body-bold text-text-heading">{{ instruction.qris.label or "QRIS pembayaran" }}</p>
+              <p class="font-caption-regular text-caption-regular text-text-muted">{{ instruction.qris.note or "Gunakan nominal sesuai sisa invoice." }}</p>
+              {% if instruction.qris.image_url %}
+                <a class="inline-flex items-center gap-1 mt-1.5 font-caption-regular text-caption-regular font-bold text-primary" href="{{ instruction.qris.image_url }}" target="_blank" rel="noopener"><span class="material-symbols-outlined text-[16px]">open_in_new</span>Buka QRIS</a>
+              {% endif %}
             </div>
+          </article>
         {% endif %}
 
-        <div class="portal-section-heading">
-            <h2>Riwayat Bukti</h2>
-            <span>{{ instruction.proofs|length }} file</span>
-        </div>
-        <div class="portal-proof-history-list">
-            {% for proof in instruction.proofs %}
-                <article class="portal-proof-history-card">
-                    <span class="portal-record-icon"><i class="bi bi-paperclip"></i></span>
-                    <div>
-                        <h3>{{ proof.filename }}</h3>
-                        <p>{{ proof.uploaded_at|wib('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} | {{ proof.file_size }} byte</p>
-                        <div class="portal-chip-row">
-                            <span>{{ proof.attachment_type|status_label }}</span>
-                            {% if proof.notes %}<span>{{ proof.notes }}</span>{% endif %}
-                        </div>
-                    </div>
-                </article>
-            {% else %}
-                <div class="portal-empty-state">
-                    <i class="bi bi-paperclip"></i>
-                    <strong>Belum ada bukti pembayaran</strong>
-                    <p>Bukti yang diupload portal akan tampil di sini beserta status verifikasi finance.</p>
-                </div>
-            {% endfor %}
-        </div>
+        <form method="POST" enctype="multipart/form-data" data-app-confirm="Unggah bukti pembayaran ini ke finance?" class="bg-card-surface rounded-2xl shadow-sm p-4 flex flex-col gap-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <h3 class="font-body-bold text-body-bold text-text-heading flex items-center gap-1.5"><span class="material-symbols-outlined text-primary">upload_file</span>Sudah transfer? Unggah bukti</h3>
+          <input id="proof_file" type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required aria-label="Bukti pembayaran" class="h-11 p-2 rounded-xl border border-card-border font-caption-regular text-caption-regular">
+          <textarea id="notes" name="notes" rows="2" maxlength="1000" placeholder="Catatan (opsional), mis. transfer BCA atas nama {{ term('client') }}" class="w-full p-3 rounded-xl border border-card-border font-body-default text-body-default outline-none resize-none focus:ring-2 focus:ring-primary/20"></textarea>
+          <button type="submit" data-app-temp-label="Mengunggah..." class="h-12 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 shadow-md">
+            <span class="material-symbols-outlined text-[18px]">cloud_upload</span> Unggah Bukti
+          </button>
+          <p class="font-micro-meta text-micro-meta text-text-muted">Bukti diperiksa finance dulu. Setelah sesuai, pembayaran tercatat dan sisa tagihan berkurang.</p>
+        </form>
+      </section>
     {% endif %}
-</section>
+
+    {% if instruction.proofs %}
+      <section class="px-margin flex flex-col gap-2">
+        <h2 class="font-title-menu text-title-menu text-text-heading">Bukti yang Sudah Diunggah</h2>
+        {% for proof in instruction.proofs %}
+          <article class="bg-card-surface rounded-xl shadow-sm p-3 flex items-start gap-3">
+            <span class="w-10 h-10 rounded-lg bg-surface-container text-text-body flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined">attach_file</span></span>
+            <div class="min-w-0 flex-1">
+              <strong class="font-body-bold text-caption-regular text-text-heading block truncate">{{ proof.filename }}</strong>
+              <span class="font-micro-meta text-micro-meta text-text-muted block">{{ proof.uploaded_at|wib('%d-%m-%Y %H:%M') if proof.uploaded_at else "-" }} · {{ proof.attachment_type|status_label }}</span>
+              {% if proof.notes %}<p class="font-micro-meta text-micro-meta text-text-body">{{ proof.notes }}</p>{% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    {% endif %}
+  {% endif %}
+</div>
+
+<script>
+document.querySelectorAll("[data-copy-account]").forEach(function (button) {
+  button.addEventListener("click", function () {
+    var value = button.getAttribute("data-copy-account");
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(value).then(function () {
+        if (window.appToast) { window.appToast("Nomor rekening disalin.", "success"); }
+      });
+    }
+  });
+});
+</script>
 {% endblock %}

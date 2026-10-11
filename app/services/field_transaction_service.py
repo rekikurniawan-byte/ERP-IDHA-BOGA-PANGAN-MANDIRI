@@ -2,6 +2,8 @@ import json
 import re
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.field_transaction import (
     FIELD_TRANSACTION_CHANNELS,
@@ -391,7 +393,7 @@ def create_field_transaction(
     if not isinstance(transaction_date, date):
         raise FieldTransactionValidationError("Tanggal transaksi lapangan tidak valid.")
 
-    entry_date = entry_date or date.today()
+    entry_date = entry_date or today_wib()
     if not isinstance(entry_date, date):
         raise FieldTransactionValidationError("Tanggal input transaksi lapangan tidak valid.")
 
@@ -693,7 +695,7 @@ def update_field_transaction_draft(
     if not isinstance(transaction_date, date):
         raise FieldTransactionValidationError("Tanggal transaksi lapangan tidak valid.")
 
-    entry_date = entry_date or field_transaction.entry_date or date.today()
+    entry_date = entry_date or field_transaction.entry_date or today_wib()
     if not isinstance(entry_date, date):
         raise FieldTransactionValidationError("Tanggal input transaksi lapangan tidak valid.")
 

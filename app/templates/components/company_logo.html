@@ -8,7 +8,8 @@
 {% endif %}
 <span class="{{ class_name|default('company-logo-mark') }}" aria-hidden="true">
     {% if _logo_url %}
-        <img src="{{ _logo_url }}" alt="Logo {{ _company_name }}">
+        <img src="{{ _logo_url }}" alt="Logo {{ _company_name }}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+        <i class="bi bi-basket2-fill" style="display: none;"></i>
     {% else %}
         <i class="bi bi-basket2-fill"></i>
     {% endif %}

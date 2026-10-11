@@ -2,6 +2,8 @@
 
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.services.branch_module_service import WARUNG
 from app.utils.decorators import module_required
@@ -18,7 +20,7 @@ from app.services.daily_cash_service import (
 @role_required("OWNER", "ADMIN", "FINANCE")
 @module_required(WARUNG)
 def daily_cash():
-    today = date.today()
+    today = today_wib()
     selected_date = today
 
     if request.method == "POST":

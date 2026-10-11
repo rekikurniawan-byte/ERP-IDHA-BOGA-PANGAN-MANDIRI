@@ -60,7 +60,8 @@ def expense_drilldown():
     from app.services.accounting_expense_drilldown_service import build_expense_drilldown_report
 
     date_filter = resolve_date_filter(request.args, default_preset="this_month")
-    today = date.today()
+    from app.utils.clock import today_wib
+    today = today_wib()
     default_start = date(today.year, today.month, 1)
     start_date = date_filter.start_date or default_start
     end_date = date_filter.end_date or today

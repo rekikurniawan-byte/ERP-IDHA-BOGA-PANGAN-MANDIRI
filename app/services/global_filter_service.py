@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from app.utils.clock import today_wib
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,7 +62,7 @@ def _week_start(today: date) -> date:
 
 
 def _range_for_preset(preset: str, today: date | None = None) -> tuple[date | None, date | None, str]:
-    today = today or date.today()
+    today = today or today_wib()
     if preset == PRESET_TODAY:
         return today, today, "Hari ini"
     if preset == PRESET_WEEK:
@@ -85,7 +87,7 @@ def resolve_date_filter(
     default_preset: str = PRESET_MONTH,
     today: date | None = None,
 ) -> DateFilterState:
-    today = today or date.today()
+    today = today or today_wib()
     allowed = {item["value"] for item in PRESET_OPTIONS}
     raw_preset = str(args.get(preset_key) or "").strip()
     raw_start = str(args.get(start_key) or "").strip()

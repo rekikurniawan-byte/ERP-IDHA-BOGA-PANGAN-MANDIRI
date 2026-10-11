@@ -76,7 +76,70 @@ def build_portal_payment_instruction(user, *, invoice_id: int) -> dict:
         "qris": _qris_instruction(settings),
         "proofs": _payment_proof_rows(invoice.id),
         "proof_summary": _payment_proof_summary(invoice.id),
+        "detail": _invoice_detail(invoice),
         "mutation_allowed": False,
+    }
+
+
+EVENT_LABELS = {
+    "PAYMENT": "Pembayaran",
+    "SETTLEMENT": "Potong uang muka/deposit",
+    "WITHHOLDING": "Dipotong pajak oleh Anda",
+}
+
+
+def _invoice_detail(invoice) -> dict:
+    """Rincian yang dibaca pelanggan sebelum membayar: item, pajak, dan riwayat pelunasan.
+
+    Hanya membaca; nominal diambil apa adanya dari invoice & item (sumber yang sama
+    dengan cetak invoice di sisi admin).
+    """
+    from app.models.finance import InvoiceItem
+    from app.services.invoice_payment_history_service import payment_events
+    from app.services.tax_service import PBJT_ITEM_TYPE
+
+    items = (
+        InvoiceItem.query.filter_by(invoice_id=invoice.id)
+        .order_by(InvoiceItem.id.asc())
+        .all()
+    )
+    rows = []
+    tax_rows = []
+    for item in items:
+        row = {
+            "description": item.description,
+            "item_type": _status(item.item_type),
+            "qty": _money(item.qty),
+            "unit_price": _money(item.unit_price),
+            "subtotal": _money(item.subtotal),
+        }
+        (tax_rows if row["item_type"] == PBJT_ITEM_TYPE else rows).append(row)
+    subtotal = sum((row["subtotal"] for row in rows), Decimal("0"))
+    events = [
+        {**event, "label": EVENT_LABELS.get(event["kind"], event["kind"])}
+        for event in payment_events([invoice.id])
+    ]
+    party = (
+        invoice.client_name_snapshot
+        or (invoice.mandor.name if invoice.mandor else None)
+        or (invoice.client.name if invoice.client else None)
+        or "-"
+    )
+    return {
+        "party_name": party,
+        "pic_name": invoice.client_pic_name_snapshot,
+        "period_start": invoice.period_start,
+        "period_end": invoice.period_end,
+        "lines": rows,
+        "tax_rows": tax_rows,
+        "subtotal": subtotal,
+        "tax_total": sum((row["subtotal"] for row in tax_rows), Decimal("0")),
+        "total_amount": _money(invoice.total_amount),
+        "paid_amount": _money(invoice.paid_amount),
+        "remaining_amount": _money(invoice.remaining_amount),
+        "events": events,
+        "notes": invoice.notes,
+        "status": _status(invoice.status),
     }
 
 

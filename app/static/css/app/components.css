@@ -1374,6 +1374,10 @@ td form {
     font-weight: var(--weight-semibold);
     border-radius: var(--radius-pill);
     padding: 3px 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* --- Pesan ------------------------------------------------------------------------- */
@@ -2362,15 +2366,76 @@ dl.row dt {
 .lp-preview {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
-    margin-top: var(--space-2);
+    gap: var(--space-3);
+    margin-top: var(--space-3);
 }
 
 .lp-preview:empty {
     display: none;
 }
 
+.lp-preview-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
 .lp-preview img,
+.lp-preview-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid var(--border-strong);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.lp-preview-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.app-file-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.app-file-preview:empty {
+    display: none;
+}
+
+.app-img-preview-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 6px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.app-img-preview-thumb img {
+    max-height: 140px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
 .lp-thumb img {
     width: 96px;
     height: 72px;

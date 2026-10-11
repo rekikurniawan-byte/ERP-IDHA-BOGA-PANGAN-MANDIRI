@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from datetime import date, timedelta
 
+from app.utils.clock import today_wib
+
 from app.models.operational import DailyOrder
 from app.models.master import ItemCostProfile
 from app.services.hpp_service import find_unit_multiplier, normalize_unit
@@ -240,7 +242,7 @@ def build_material_requirement_forecast(branch_id, date_from=None, date_to=None,
     - tidak commit database,
     - tidak mengubah order/snapshot/jurnal/invoice.
     """
-    today = date.today()
+    today = today_wib()
     date_from = date_from or today
     date_to = date_to or (date_from + timedelta(days=6))
     if date_to < date_from:

@@ -11,6 +11,7 @@ from app.services.canteen_service import get_debt_paid_amount, get_debt_remainin
 from app.services.invoice_identity_service import build_company_bank_snapshot, get_required_client_pic
 from app.services.billing_input_source_service import INPUT_SOURCE_REALTIME
 from app.utils.terms import T
+from app.utils.clock import today_wib
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +235,7 @@ def create_manual_billing_invoice(branch_id, mandor_id, period_start, period_end
     if not rows or total_amount <= 0:
         raise ManualBillingError(f"Tidak ada sumber manual yang valid untuk dibuat rekap tagihan {T.sub_client_lower}.")
 
-    invoice_date = date.today()
+    invoice_date = today_wib()
     due_date = invoice_date + timedelta(days=7)
 
     batch = ManualBillingBatch(

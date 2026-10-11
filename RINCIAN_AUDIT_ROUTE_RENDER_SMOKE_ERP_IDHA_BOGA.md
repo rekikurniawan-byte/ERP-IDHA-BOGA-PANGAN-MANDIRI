@@ -6,7 +6,7 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 
 | Metrik | Nilai |
 | --- | ---: |
-| Total route dicek | 174 |
+| Total route dicek | 232 |
 | Gagal | 0 |
 
 ## Detail
@@ -40,6 +40,7 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `accounting.print_income_summary` | `/accounting/reports/income-summary/print` | HTTP 200 |
 | PASS | `accounting.export_trial_balance_csv` | `/accounting/reports/trial-balance/export.csv` | HTTP 200 |
 | PASS | `accounting.print_trial_balance` | `/accounting/reports/trial-balance/print` | HTTP 200 |
+| PASS | `auth.forgot_password` | `/auth/forgot-password` | HTTP 302 |
 | PASS | `auth.login` | `/auth/login` | HTTP 302 |
 | PASS | `canteen.index` | `/canteen/` | HTTP 200 |
 | PASS | `canteen.debts` | `/canteen/debts` | HTTP 200 |
@@ -53,18 +54,21 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `costing.create_overhead_profile` | `/costing/overhead-profiles/create` | HTTP 200 |
 | PASS | `costing.packaging_profiles` | `/costing/packaging-profiles` | HTTP 200 |
 | PASS | `costing.create_packaging_profile` | `/costing/packaging-profiles/create` | HTTP 200 |
-| PASS | `dashboard.accounting` | `/dashboard/accounting` | HTTP 200 |
+| PASS | `credit.overview` | `/credit/` | HTTP 200 |
+| PASS | `credit.social_fund` | `/credit/social-fund` | HTTP 200 |
+| PASS | `customer_success.index` | `/customer-success/` | HTTP 302 |
+| PASS | `customer_success.complaints` | `/customer-success/complaints` | HTTP 200 |
+| PASS | `customer_success.contracts` | `/customer-success/contracts` | HTTP 200 |
+| PASS | `customer_success.partnerships` | `/customer-success/partnerships` | HTTP 200 |
 | PASS | `dashboard.admin` | `/dashboard/admin` | HTTP 200 |
 | PASS | `dashboard.dapur` | `/dashboard/dapur` | HTTP 200 |
-| PASS | `dashboard.finance` | `/dashboard/finance` | HTTP 200 |
-| PASS | `dashboard.hr` | `/dashboard/hr` | HTTP 200 |
-| PASS | `dashboard.logistics` | `/dashboard/logistics` | HTTP 200 |
 | PASS | `dashboard.owner` | `/dashboard/owner` | HTTP 200 |
 | PASS | `dashboard.pengantar` | `/dashboard/pengantar` | HTTP 200 |
 | PASS | `dashboard.revenue_explorer` | `/dashboard/revenue-explorer` | HTTP 200 |
 | PASS | `delivery.index` | `/delivery/` | HTTP 200 |
 | PASS | `delivery.history` | `/delivery/history` | HTTP 200 |
 | PASS | `delivery.receiving` | `/delivery/receiving` | HTTP 200 |
+| PASS | `delivery.scan` | `/delivery/scan` | HTTP 200 |
 | PASS | `delivery.today` | `/delivery/today` | HTTP 200 |
 | PASS | `field_transactions.index` | `/field-transactions/` | HTTP 200 |
 | PASS | `field_transactions.create` | `/field-transactions/create` | HTTP 200 |
@@ -75,11 +79,12 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `finance.print_accounts_payable_aging` | `/finance/accounts-payable-aging/print` | HTTP 200 |
 | PASS | `finance.advances` | `/finance/advances` | HTTP 200 |
 | PASS | `finance.advance_create` | `/finance/advances/create` | HTTP 200 |
+| PASS | `finance.auto_invoices` | `/finance/auto-invoices` | HTTP 200 |
 | PASS | `finance.cash_bank_adjustments` | `/finance/cash-bank-adjustments` | HTTP 200 |
 | PASS | `finance.cash_bank_ledger` | `/finance/cash-bank-ledger` | HTTP 200 |
 | PASS | `finance.export_cash_bank_ledger_csv` | `/finance/cash-bank-ledger/export.csv` | HTTP 200 |
 | PASS | `finance.print_cash_bank_ledger` | `/finance/cash-bank-ledger/print` | HTTP 200 |
-| PASS | `finance.cash_bank_opening_balances` | `/finance/cash-bank-opening-balances` | HTTP 200 |
+| PASS | `finance.cash_bank_opening_balances` | `/finance/cash-bank-opening-balances` | HTTP 302 |
 | PASS | `finance.cash_bank_transfers` | `/finance/cash-bank-transfers` | HTTP 200 |
 | PASS | `finance.daily_cash` | `/finance/daily-cash` | HTTP 200 |
 | PASS | `finance.fixed_asset_depreciation` | `/finance/fixed-asset-depreciation` | HTTP 200 |
@@ -99,8 +104,11 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `finance.manual_billing_backfill_form` | `/finance/manual-billing/input-buku` | HTTP 200 |
 | PASS | `finance.operational_expenses` | `/finance/operational-expenses` | HTTP 200 |
 | PASS | `finance.operational_expense_create` | `/finance/operational-expenses/create` | HTTP 200 |
+| PASS | `finance.owner_capital` | `/finance/owner-capital` | HTTP 200 |
 | PASS | `finance.payment_history` | `/finance/payment-history` | HTTP 200 |
 | PASS | `finance.export_payment_history_csv` | `/finance/payment-history/export.csv` | HTTP 200 |
+| PASS | `finance.payment_inbox` | `/finance/payment-inbox` | HTTP 200 |
+| PASS | `finance.portal_payment_proofs` | `/finance/portal-payment-proofs` | HTTP 200 |
 | PASS | `finance.receivables` | `/finance/receivables` | HTTP 200 |
 | PASS | `finance.export_receivables_csv` | `/finance/receivables/export.csv` | HTTP 200 |
 | PASS | `finance.receivables_print` | `/finance/receivables/print` | HTTP 200 |
@@ -112,6 +120,8 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `finance.supplier_payable_card` | `/finance/supplier-payable-card` | HTTP 200 |
 | PASS | `finance.export_supplier_payable_card_csv` | `/finance/supplier-payable-card/export.csv` | HTTP 200 |
 | PASS | `finance.print_supplier_payable_card` | `/finance/supplier-payable-card/print` | HTTP 200 |
+| PASS | `finance.tax_report` | `/finance/tax` | HTTP 200 |
+| PASS | `finance.tax_settings` | `/finance/tax/settings` | HTTP 200 |
 | PASS | `finance.finance_transactions` | `/finance/transactions` | HTTP 200 |
 | PASS | `finance.transport_expenses` | `/finance/transport-expenses` | HTTP 200 |
 | PASS | `finance.transport_expense_create` | `/finance/transport-expenses/create` | HTTP 200 |
@@ -122,6 +132,9 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `hr.payroll_payment_history` | `/hr/payroll-payment-history` | HTTP 200 |
 | PASS | `hr.payrolls` | `/hr/payrolls` | HTTP 200 |
 | PASS | `hr.generate_payroll_route` | `/hr/payrolls/generate` | HTTP 200 |
+| PASS | `public.partnership` | `/kerja-sama` | HTTP 200 |
+| PASS | `public.partnership_apply` | `/kerja-sama/ajukan` | HTTP 200 |
+| PASS | `public.partnership_sent` | `/kerja-sama/terkirim` | HTTP 200 |
 | PASS | `logistics.index` | `/logistics/` | HTTP 200 |
 | PASS | `logistics.adjustment` | `/logistics/adjustment` | HTTP 200 |
 | PASS | `logistics.audit` | `/logistics/audit` | HTTP 200 |
@@ -132,10 +145,10 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `logistics.create_item_request` | `/logistics/item-requests/create` | HTTP 200 |
 | PASS | `logistics.kitchen_usage` | `/logistics/kitchen-usage` | HTTP 200 |
 | PASS | `logistics.material_forecast` | `/logistics/material-forecast` | HTTP 200 |
-| PASS | `logistics.stock_opening_balances` | `/logistics/opening-balances` | HTTP 200 |
+| PASS | `logistics.stock_opening_balances` | `/logistics/opening-balances` | HTTP 302 |
 | PASS | `logistics.purchases` | `/logistics/purchases` | HTTP 200 |
 | PASS | `logistics.create_purchase` | `/logistics/purchases/create` | HTTP 200 |
-| PASS | `logistics.stock_in` | `/logistics/stock-in` | HTTP 200 |
+| PASS | `logistics.stock_in` | `/logistics/stock-in` | HTTP 302 |
 | PASS | `logistics.stock_out` | `/logistics/stock-out` | HTTP 200 |
 | PASS | `master.index` | `/master/` | HTTP 200 |
 | PASS | `master.bank_accounts` | `/master/bank-accounts` | HTTP 200 |
@@ -145,7 +158,7 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `master.drivers` | `/master/drivers` | HTTP 200 |
 | PASS | `master.create_driver` | `/master/drivers/create` | HTTP 200 |
 | PASS | `master.fixed_assets` | `/master/fixed-assets` | HTTP 200 |
-| PASS | `master.create_fixed_asset` | `/master/fixed-assets/create` | HTTP 200 |
+| PASS | `master.create_fixed_asset` | `/master/fixed-assets/create` | HTTP 302 |
 | PASS | `master.item_cost_profiles` | `/master/item-cost-profiles` | HTTP 200 |
 | PASS | `master.items` | `/master/items` | HTTP 200 |
 | PASS | `master.create_item` | `/master/items/create` | HTTP 200 |
@@ -159,14 +172,59 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `master.workers` | `/master/workers` | HTTP 200 |
 | PASS | `master.create_worker` | `/master/workers/create` | HTTP 200 |
 | PASS | `operational.daily_catering_log` | `/operational/daily-log` | HTTP 200 |
+| PASS | `operational.menu_schedule` | `/operational/menu-schedule` | HTTP 200 |
 | PASS | `operational.monthly_catering_recap` | `/operational/monthly-recap` | HTTP 200 |
+| PASS | `operational.order_qty_changes` | `/operational/order-qty-changes` | HTTP 200 |
 | PASS | `operational.orders` | `/operational/orders` | HTTP 200 |
 | PASS | `operational.create_order` | `/operational/orders/create` | HTTP 200 |
+| PASS | `portal.index` | `/portal` | HTTP 302 |
+| PASS | `portal.index` | `/portal/` | HTTP 302 |
+| PASS | `portal.addresses` | `/portal/addresses` | HTTP 200 |
+| PASS | `portal.admin_order_drafts` | `/portal/admin/order-drafts` | HTTP 200 |
+| PASS | `portal.approvals` | `/portal/approvals` | HTTP 200 |
+| PASS | `portal.calendar` | `/portal/calendar` | HTTP 200 |
+| PASS | `portal.client_dashboard` | `/portal/client` | HTTP 200 |
+| PASS | `portal.portal_contracts` | `/portal/contracts` | HTTP 200 |
+| PASS | `portal.customer_dashboard` | `/portal/customer` | HTTP 200 |
+| PASS | `portal.customer_complaints` | `/portal/customer/complaints` | HTTP 200 |
+| PASS | `portal.customer_invoices` | `/portal/customer/invoices` | HTTP 302 |
+| PASS | `portal.customer_order` | `/portal/customer/order` | HTTP 200 |
+| PASS | `portal.customer_order_history` | `/portal/customer/orders` | HTTP 200 |
+| PASS | `portal.customer_payments` | `/portal/customer/payments` | HTTP 200 |
+| PASS | `portal.customer_tracking` | `/portal/customer/tracking` | HTTP 200 |
+| PASS | `portal.dashboard` | `/portal/dashboard` | HTTP 200 |
+| PASS | `portal.debts` | `/portal/debts` | HTTP 200 |
+| PASS | `portal.documents` | `/portal/documents` | HTTP 200 |
+| PASS | `portal.invoices` | `/portal/invoices` | HTTP 200 |
+| PASS | `portal.login_entry` | `/portal/login` | HTTP 302 |
+| PASS | `portal.mandor_dashboard` | `/portal/mandor` | HTTP 200 |
+| PASS | `portal.mandor_canteen_debts` | `/portal/mandor/canteen-debts` | HTTP 200 |
+| PASS | `portal.mandor_catering_debts` | `/portal/mandor/catering-debts` | HTTP 200 |
+| PASS | `portal.mandor_installments` | `/portal/mandor/installments` | HTTP 200 |
+| PASS | `portal.mandor_invoices` | `/portal/mandor/invoices` | HTTP 200 |
+| PASS | `portal.mandor_order` | `/portal/mandor/order` | HTTP 200 |
+| PASS | `portal.mandor_payments` | `/portal/mandor/payments` | HTTP 200 |
+| PASS | `portal.mandor_workers` | `/portal/mandor/workers` | HTTP 200 |
+| PASS | `portal.my_dashboard` | `/portal/my-dashboard` | HTTP 302 |
+| PASS | `portal.notifications` | `/portal/notifications` | HTTP 200 |
+| PASS | `portal.draft_order` | `/portal/orders/draft` | HTTP 200 |
+| PASS | `portal.order_status` | `/portal/orders/status` | HTTP 200 |
+| PASS | `portal.payments` | `/portal/payments` | HTTP 200 |
+| PASS | `portal.profile` | `/portal/profile` | HTTP 200 |
+| PASS | `portal.pt_dashboard` | `/portal/pt` | HTTP 200 |
+| PASS | `portal.pt_contracts` | `/portal/pt/contracts` | HTTP 200 |
+| PASS | `portal.pt_invoices` | `/portal/pt/invoices` | HTTP 200 |
+| PASS | `portal.pt_mandors` | `/portal/pt/mandors` | HTTP 200 |
+| PASS | `portal.pt_order` | `/portal/pt/order` | HTTP 302 |
+| PASS | `portal.pt_payments` | `/portal/pt/payments` | HTTP 200 |
+| PASS | `portal.pt_receivables` | `/portal/pt/receivables` | HTTP 200 |
+| PASS | `portal.register` | `/portal/register` | HTTP 200 |
 | PASS | `prediction.index` | `/prediction/` | HTTP 200 |
 | PASS | `prediction.evaluate` | `/prediction/evaluate` | HTTP 200 |
 | PASS | `prediction.predict` | `/prediction/predict` | HTTP 200 |
 | PASS | `production.index` | `/production/` | HTTP 200 |
 | PASS | `health.readiness` | `/readiness` | HTTP 200 |
+| PASS | `settings.account` | `/settings/account` | HTTP 200 |
 | PASS | `settings.approvals` | `/settings/approvals` | HTTP 200 |
 | PASS | `settings.atomic_smoke_simulation` | `/settings/atomic-smoke-simulation` | HTTP 200 |
 | PASS | `settings.atomic_transaction_map` | `/settings/atomic-transaction-map` | HTTP 200 |
@@ -176,14 +234,14 @@ Audit ini melakukan GET render pada route tanpa parameter dinamis memakai user a
 | PASS | `settings.change_password` | `/settings/change-password` | HTTP 200 |
 | PASS | `settings.company_settings` | `/settings/company` | HTTP 200 |
 | PASS | `settings.digital_attachments` | `/settings/digital-attachments` | HTTP 200 |
-| PASS | `settings.final_visual_browser_qa` | `/settings/final-visual-qa` | HTTP 200 |
+| PASS | `settings.scheduled_jobs` | `/settings/jobs` | HTTP 200 |
 | PASS | `settings.notifications` | `/settings/notifications` | HTTP 200 |
+| PASS | `settings.pricing` | `/settings/pricing` | HTTP 200 |
 | PASS | `settings.recovery_center` | `/settings/recovery-center` | HTTP 200 |
 | PASS | `settings.live_reminders` | `/settings/reminders` | HTTP 200 |
 | PASS | `settings.system_health` | `/settings/system-health` | HTTP 200 |
 | PASS | `settings.users` | `/settings/users` | HTTP 200 |
 | PASS | `settings.create_user_page` | `/settings/users/create` | HTTP 200 |
-| PASS | `settings.visual_sweep` | `/settings/visual-sweep` | HTTP 200 |
 | PASS | `sop.index` | `/sop/` | HTTP 200 |
 | PASS | `sop.backup_restore` | `/sop/backup-restore` | HTTP 200 |
 | PASS | `sop.disaster_recovery` | `/sop/disaster-recovery` | HTTP 200 |

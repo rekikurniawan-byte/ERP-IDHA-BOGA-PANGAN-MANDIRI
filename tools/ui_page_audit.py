@@ -44,6 +44,7 @@ ACCOUNT_SETS = {
         "pt": ("portal.maju", "PilotUser#2026"),
         "mandor": ("mandor.budi", "PilotUser#2026"),
         "customer": ("rina.cust", "PilotUser#2026"),
+        "driver": ("antar.pilot", "PilotUser#2026"),
     },
     "demo": {
         "owner": ("owner", os.environ.get("DEMO_OWNER_PASSWORD", "DemoOwner#2026")),
@@ -221,6 +222,7 @@ def main():
     parser.add_argument("--only", nargs="*", help="Hanya endpoint ini.")
     parser.add_argument("--viewports", nargs="*", default=list(VIEWPORTS))
     parser.add_argument("--full", action="store_true", help="Potret satu halaman penuh, bukan hanya layar pertama.")
+    parser.add_argument("--account", help="Paksa semua halaman dibuka akun ini (mis. driver), bukan pilihan otomatis.")
     args = parser.parse_args()
     if not re.search(r"pilot|gladi|demo", args.db):
         raise SystemExit("Hanya untuk database gladi/demo.")
@@ -244,7 +246,7 @@ def main():
     routes = [row for row in _routes(app) if not args.only or row[0] in args.only]
     by_account = {}
     for endpoint, url in routes:
-        by_account.setdefault(_account_for(endpoint), []).append((endpoint, url))
+        by_account.setdefault(args.account or _account_for(endpoint), []).append((endpoint, url))
 
     report = {}
     with sync_playwright() as playwright:

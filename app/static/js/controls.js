@@ -783,20 +783,40 @@
     // Saring daftar di tempat: [data-filter-group] > button[data-filter],
     // item [data-filter-item] dalam [data-filter-list] berikutnya.
     function setupFilterGroup(group) {
-        const list = group.parentElement.querySelector("[data-filter-list]");
+        const targetSelector = group.dataset.filterTarget;
+        const list = (targetSelector ? document.querySelector(targetSelector) : null)
+            || group.parentElement.querySelector("[data-filter-list]")
+            || group.closest("main, .stitch-section, .stitch-viewport, .stitch-tracking-page, .stitch-debts-page, .stitch-invoices-page, .page-section, body")?.querySelector("[data-filter-list]")
+            || document.querySelector("[data-filter-list]");
         if (!list) return;
         const empty = list.querySelector("[data-filter-empty]");
         group.querySelectorAll("[data-filter]").forEach(function (button) {
             button.addEventListener("click", function () {
                 const key = button.dataset.filter;
-                group.querySelectorAll("[data-filter]").forEach(function (other) { other.classList.toggle("is-active", other === button); });
+                group.querySelectorAll("[data-filter]").forEach(function (other) {
+                    const isTarget = (other === button);
+                    other.classList.toggle("is-active", isTarget);
+                    if (other.classList.contains("btn")) {
+                        if (isTarget) {
+                            other.classList.remove("btn-light", "border");
+                            other.classList.add("btn-dark");
+                        } else {
+                            other.classList.remove("btn-dark");
+                            other.classList.add("btn-light", "border");
+                        }
+                    }
+                });
                 let shown = 0;
                 list.querySelectorAll("[data-filter-item]").forEach(function (item) {
                     const visible = key === "all" || item.dataset.filterItem === key;
                     item.hidden = !visible;
+                    item.style.display = visible ? "" : "none";
                     if (visible) shown += 1;
                 });
-                if (empty) empty.hidden = shown > 0;
+                if (empty) {
+                    empty.hidden = (shown > 0);
+                    empty.style.display = (shown > 0) ? "none" : "";
+                }
             });
         });
     }
@@ -813,11 +833,87 @@
             if (!preview) return;
             preview.replaceChildren();
             Array.prototype.slice.call(input.files, 0, 3).forEach(function (file) {
+                if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp)$/i.test(file.name)) return;
+                const wrap = document.createElement("div");
+                wrap.className = "lp-preview-item";
                 const img = document.createElement("img");
                 img.alt = file.name;
-                img.src = URL.createObjectURL(file);
-                img.onload = function () { URL.revokeObjectURL(img.src); };
-                preview.appendChild(img);
+                img.className = "lp-preview-img";
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                const caption = document.createElement("span");
+                caption.className = "lp-preview-name";
+                caption.textContent = file.name;
+                caption.title = file.name;
+                wrap.appendChild(img);
+                wrap.appendChild(caption);
+                preview.appendChild(wrap);
+            });
+        });
+    }
+
+    // Universal preview untuk seluruh fitur unggah gambar di aplikasi
+    function setupUniversalImagePreviews() {
+        document.addEventListener("change", function (event) {
+            const input = event.target;
+            if (!input || input.type !== "file") return;
+            if (input.hasAttribute("data-photo-files") || input.id === "proof_file" || input.hasAttribute("data-photo-autosubmit")) {
+                return;
+            }
+            const accept = (input.accept || "").toLowerCase();
+            const isImageInput = accept.includes("image") || accept.includes(".jpg") || accept.includes(".png") || accept.includes(".webp");
+            if (!isImageInput) return;
+
+            const parent = input.closest(".po-pay-file, .mb-3, .form-group, label, div") || input.parentElement;
+            let preview = parent.querySelector(".app-file-preview");
+            if (!preview) {
+                preview = document.createElement("div");
+                preview.className = "app-file-preview";
+                input.insertAdjacentElement("afterend", preview);
+            }
+            preview.replaceChildren();
+
+            if (!input.files || !input.files.length) return;
+
+            Array.prototype.slice.call(input.files, 0, 5).forEach(function (file) {
+                const item = document.createElement("div");
+                item.className = "app-img-preview-thumb";
+                if (file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.alt = file.name;
+                        item.appendChild(img);
+                        const label = document.createElement("small");
+                        label.textContent = file.name;
+                        label.style.display = "block";
+                        label.style.marginTop = "4px";
+                        label.style.fontSize = "11px";
+                        label.style.color = "var(--text-muted)";
+                        label.style.wordBreak = "break-all";
+                        item.appendChild(label);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
+                    // Nama file dari pengguna: jangan lewat innerHTML.
+                    const row = document.createElement("div");
+                    row.style.cssText = "display: flex; align-items: center; gap: 6px; padding: 6px 10px;";
+                    const icon = document.createElement("span");
+                    icon.className = "material-symbols-outlined text-danger";
+                    icon.style.fontSize = "24px";
+                    icon.textContent = "picture_as_pdf";
+                    const name = document.createElement("span");
+                    name.style.cssText = "font-size: 12px; font-weight: 600; word-break: break-all;";
+                    name.textContent = file.name || "";
+                    row.appendChild(icon);
+                    row.appendChild(name);
+                    item.appendChild(row);
+                }
+                preview.appendChild(item);
             });
         });
     }
@@ -834,6 +930,7 @@
         document.querySelectorAll("[data-order-builder]").forEach(setupOrderBuilder);
         document.querySelectorAll("[data-tabs]").forEach(setupTabs);
         document.querySelectorAll("[data-filter-group]").forEach(setupFilterGroup);
+        setupUniversalImagePreviews();
     });
 
     // --- Halaman publik ----------------------------------------------------------

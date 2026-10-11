@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 def _normalize_whatsapp_number(phone):
@@ -186,11 +187,11 @@ def create_invoice_collection_log(invoice_id):
         "OTHER"
     ]
 
-    follow_up_date = parse_date(request.form.get("follow_up_date"), date.today())
+    follow_up_date = parse_date(request.form.get("follow_up_date"), today_wib())
     promise_date = parse_date(request.form.get("promise_date"), None)
 
     # RISK_VALIDATION_FOLLOW_UP_DATE_STEP_RISK1B
-    if follow_up_date > date.today():
+    if follow_up_date > today_wib():
         flash("Tanggal follow up tidak boleh lebih dari hari ini.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
@@ -263,7 +264,7 @@ def invoice_whatsapp_send(invoice_id):
         flash("Nomor WhatsApp tujuan belum tersedia.", "warning")
         return redirect(url_for("finance.invoice_detail", invoice_id=invoice.id))
 
-    today = date.today()
+    today = today_wib()
     target_name = wa.get("target_name") or "-"
     target_source = wa.get("target_source") or "-"
     target_phone = wa.get("target_phone") or "-"

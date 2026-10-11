@@ -9,6 +9,8 @@ import logging
 from datetime import date, timedelta
 from decimal import Decimal
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import func
 
 from app.extensions import db
@@ -45,7 +47,7 @@ def _common(branch):
         # Alamat contoh (.local/example) diganti email resmi perusahaan.
         "email": email if "@" in email and not email.endswith((".local", "example.com")) else COMPANY_EMAIL,
         "portal_enabled": bool(current_app.config.get("PORTAL_ENABLED", False)),
-        "year": date.today().year,
+        "year": today_wib().year,
     }
 
 
@@ -180,7 +182,7 @@ def whatsapp_link(phone):
 
 
 def landing_context(today=None):
-    today = today or date.today()
+    today = today or today_wib()
     branch = _safe("cabang", _main_branch)
     if not branch:
         return {"performance": None, "arrivals": {}, "locations": None, "pricing": None, "menus": [], "weekly_menus": [],
@@ -202,7 +204,7 @@ def landing_context(today=None):
 
 def auth_context(today=None):
     """Ringkasan aturan untuk panel samping halaman masuk & daftar."""
-    today = today or date.today()
+    today = today or today_wib()
     branch = _safe("cabang", _main_branch)
     pricing = _safe("harga", lambda: _pricing(branch.id, today)) if branch else None
     arrivals = _safe("jam tiba", lambda: _arrivals(branch.id, today)) if branch else None
@@ -220,7 +222,7 @@ def geo_context(branch=None):
 
 def partnership_context(today=None):
     """Halaman /kerja-sama: aturan pesan, jam tiba, dan titik dapur untuk peta."""
-    today = today or date.today()
+    today = today or today_wib()
     branch = _safe("cabang", _main_branch)
     if not branch:
         return {"pricing": None, "cutoffs": _safe("batas pesan", _cutoffs) or {}, "arrivals": {}, "geo": None,

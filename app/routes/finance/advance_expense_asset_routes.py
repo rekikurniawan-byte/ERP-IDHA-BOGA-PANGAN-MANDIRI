@@ -4,6 +4,7 @@ Route functions moved out of app.routes.finance_routes without changing URL rule
 """
 from app.routes.finance_routes import *  # noqa: F401,F403
 from app.routes.finance.payment_routes import _parse_payment_amount
+from app.utils.clock import today_wib
 
 
 @finance_bp.route("/advances")
@@ -122,7 +123,7 @@ def advance_create():
 
     return render_template(
         "finance/advance_form.html",
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         advance_type_choices=get_advance_type_choices(),
         clients=clients,
         suppliers=suppliers,
@@ -186,7 +187,7 @@ def advance_detail(advance_id):
         settlement_types=SETTLEMENT_TYPES,
         get_party_label=get_party_label,
         mandor_expense_proof_choices=get_mandor_expense_proof_choices(),
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         reference_options=reference_options,
         field_transaction_link=field_transaction_link,
         settlement_field_transaction_links=settlement_field_transaction_links,
@@ -341,7 +342,7 @@ def transport_expense_create():
     deliveries = Delivery.query.filter_by(branch_id=current_user.branch_id).order_by(Delivery.delivery_date.desc(), Delivery.id.desc()).limit(100).all()
     return render_template(
         "finance/transport_expense_form.html",
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         expense_type_choices=get_transport_expense_type_choices(),
         bank_accounts=bank_accounts,
         drivers=drivers,
@@ -454,7 +455,7 @@ def operational_expense_create():
     suppliers = Supplier.query.filter_by(branch_id=current_user.branch_id, is_active=True).order_by(Supplier.supplier_name.asc()).all()
     return render_template(
         "finance/operational_expense_form.html",
-        today_date=date.today().isoformat(),
+        today_date=today_wib().isoformat(),
         expense_category_choices=get_operational_expense_category_choices(),
         bank_accounts=bank_accounts,
         suppliers=suppliers,

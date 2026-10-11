@@ -91,7 +91,8 @@ def contracts():
                 credit_limit=request.form.get("credit_limit") or 0,
                 notes=request.form.get("notes"),
                 created_by=current_user.id,
-                status=request.form.get("status") or CONTRACT_STATUS_DRAFT,
+                # Fase 9: kontrak baru selalu Draft; aktif setelah surat kontraknya ditandatangani.
+                status=CONTRACT_STATUS_DRAFT,
                 lunch_lock_time=request.form.get("lunch_lock_time") or "10:00",
                 dinner_lock_time=request.form.get("dinner_lock_time") or "15:00",
                 weekly_holidays=request.form.getlist("weekly_holidays"),
@@ -102,7 +103,7 @@ def contracts():
                 dispute_court=request.form.get("dispute_court") or COURT_PANGKALAN_BALAI,
                 tazir_amount=request.form.get("tazir_amount") or 0,
             )
-            flash("Kontrak customer berhasil dibuat.", "success")
+            flash("Kontrak dibuat sebagai Draft. Buat surat kontrak, tanda tangani, lalu aktifkan.", "success")
             return redirect(url_for("customer_success.contracts"))
         except CustomerContractError as error:
             flash(str(error), "danger")
@@ -322,7 +323,7 @@ def view_contract_document_scan(contract_id, document_id):
         abort(404)
     try:
         file_path = get_attachment_file_path(attachment)
-    except Exception as exc:
+    except FileNotFoundError as exc:
         flash(f"File lampiran tidak ditemukan: {exc}", "danger")
         return redirect(url_for("customer_success.contract_detail", contract_id=contract_id))
     return send_file(

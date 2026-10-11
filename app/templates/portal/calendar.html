@@ -1,112 +1,161 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
-{% set model = data.calendar %}
-{% set sections = model.sections if model.sections is defined else {} %}
 <!-- Draft, invoice, kontrak, delivery ERP existing -->
-<section class="portal-feature-page portal-calendar-page portal-calendar-board">
-    <div class="portal-feature-hero portal-calendar-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>{{ "Aktif" if model.allowed else "Belum aktif" }}</span>
-        </div>
-        <div class="portal-hero-proof">
-            <i class="bi bi-calendar-check"></i>
-            <span>Draft, tagihan, pengiriman, kontrak</span>
-        </div>
+{% set model = data.calendar if data and data.calendar else {} %}
+{% set totals = model.totals or {} %}
+{% set week = model.week or [] %}
+{% set day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] %}
+{% set month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] %}
+{% set role = current_user.role %}
+{% set type_meta = {
+    'DRAFT_ORDER': ('Pesanan', 'restaurant', 'bg-primary-fixed text-primary'),
+    'INVOICE_DUE': ('Jatuh Tempo', 'receipt_long', 'bg-status-danger-bg text-status-danger-text'),
+    'DELIVERY': ('Pengiriman', 'local_shipping', 'bg-status-success-bg text-status-success-text'),
+    'CONTRACT_END': ('Kontrak Berakhir', 'contract', 'bg-status-warning-bg text-status-warning-text'),
+} %}
+{% set dot_class = {'DRAFT_ORDER': 'bg-primary', 'INVOICE_DUE': 'bg-status-danger-text', 'DELIVERY': 'bg-status-success-text', 'CONTRACT_END': 'bg-status-warning-text'} %}
+
+<div class="px-margin flex flex-col gap-space-lg pt-space-md pb-8">
+  <section class="flex flex-col gap-space-md">
+    <div class="flex items-center gap-space-sm">
+      <div>
+        <h1 class="font-headline-sm text-headline-sm text-text-heading leading-tight">{{ data.page_title or "Kalender" }}</h1>
+        <p class="font-caption-regular text-caption-regular text-text-muted">{{ data.page_description }}</p>
+      </div>
     </div>
 
-    <div class="portal-calendar-summary">
-        <article class="primary"><span>Agenda</span><strong>{{ model.totals.total }}</strong><small>{{ data.page_description }}</small></article>
-        <article><span>Hari Ini</span><strong>{{ model.totals.today }}</strong><small>Perlu dipantau</small></article>
-        <article><span>7 Hari</span><strong>{{ model.totals.next_7_days }}</strong><small>Agenda dekat</small></article>
-        <article><span>Draft</span><strong>{{ model.totals.draft }}</strong><small>Portal order</small></article>
-        <article><span>Tagihan</span><strong>{{ model.totals.invoice }}</strong><small>Jatuh tempo</small></article>
-        <article><span>Pengiriman</span><strong>{{ model.totals.delivery }}</strong><small>Pengiriman</small></article>
-        <article><span>Kontrak</span><strong>{{ model.totals.contract }}</strong><small>Akhir masa kontrak</small></article>
+    <div class="grid grid-cols-4 gap-1.5 w-full">
+      <div class="bg-card-surface rounded-xl p-2.5 text-center shadow-sm">
+        <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Hari Ini</span>
+        <strong class="font-headline-sm text-headline-sm text-primary block mt-0.5">{{ totals.today or 0 }}</strong>
+      </div>
+      <div class="bg-card-surface rounded-xl p-2.5 text-center shadow-sm">
+        <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">7 Hari</span>
+        <strong class="font-headline-sm text-headline-sm text-text-heading block mt-0.5">{{ totals.next_7_days or 0 }}</strong>
+      </div>
+      <div class="bg-card-surface rounded-xl p-2.5 text-center shadow-sm">
+        <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Tagihan</span>
+        <strong class="font-headline-sm text-headline-sm text-status-danger-text block mt-0.5">{{ totals.invoice or 0 }}</strong>
+      </div>
+      <div class="bg-card-surface rounded-xl p-2.5 text-center shadow-sm">
+        <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Kirim</span>
+        <strong class="font-headline-sm text-headline-sm text-status-success-text block mt-0.5">{{ totals.delivery or 0 }}</strong>
+      </div>
     </div>
+  </section>
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Kalender belum dibuka</h2>
-                <p>{{ model.reason }}</p>
-            </div>
-        </div>
-    {% endif %}
+  {% if not model.allowed %}
+    <div class="bg-status-warning-bg text-status-warning-text rounded-2xl p-space-md flex items-start gap-3">
+      <span class="material-symbols-outlined">lock</span>
+      <div>
+        <p class="font-body-bold text-body-bold">Kalender belum dibuka</p>
+        <p class="font-caption-regular text-caption-regular mt-0.5">{{ model.reason }}</p>
+      </div>
+    </div>
+  {% endif %}
 
-    {% set board = [
-        ("Hari Ini", "today", "bi-sun", "Agenda yang jatuh pada tanggal hari ini."),
-        ("7 Hari Ke Depan", "next_7_days", "bi-calendar2-week", "Agenda dekat untuk dipantau."),
-        ("Tagihan Jatuh Tempo", "invoice", "bi-receipt", "Jatuh tempo tagihan dari Finance ."),
-        ("Pengiriman", "delivery", "bi-truck", "Pengiriman dari modul delivery ."),
-        ("Kontrak", "contract", "bi-file-earmark-text", ("Kontrak " ~ term('client') ~ " yang mendekati end date.")),
-        ("Draft Pesanan", "draft", "bi-bag-check", "Draft pesanan portal yang sudah dijadwalkan.")
-    ] %}
-
-    <div class="portal-calendar-section-grid">
-        {% for title, key, icon, caption in board %}
-            <section class="portal-calendar-section">
-                <div class="portal-section-heading compact">
-                    <h2><i class="bi {{ icon }}"></i> {{ title }}</h2>
-                    <span>{{ sections.get(key, [])|length }}</span>
-                </div>
-                <p class="portal-muted-note">{{ caption }}</p>
-                <div class="portal-calendar-mini-list">
-                    {% for item in sections.get(key, [])[:8] %}
-                        <article class="portal-calendar-card type-{{ item.type|lower }}">
-                            <time>
-                                <strong>{{ item.date.strftime('%d') if item.date else "--" }}</strong>
-                                <span>{{ item.date.strftime('%b %Y') if item.date else "-" }}</span>
-                            </time>
-                            <div>
-                                <h3>{{ item.title }}</h3>
-                                <p>{{ item.source|status_label }} | {{ item.type.replace("_", " ") }}</p>
-                                <div class="portal-chip-row">
-                                    <span>{{ item.status|status_label }}</span>
-                                    {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}
-                                </div>
-                            </div>
-                        </article>
-                    {% else %}
-                        <div class="portal-soft-empty">Belum ada agenda di section ini.</div>
-                    {% endfor %}
-                </div>
-            </section>
+  {% if week %}
+    <section class="flex flex-col gap-space-sm">
+      <div class="grid grid-cols-7 gap-1.5 w-full" role="tablist" aria-label="Pilih tanggal">
+        {% for day in week %}
+          <button type="button" data-calendar-day="{{ day.date.isoformat() }}" aria-pressed="false" class="calendar-day-pill flex flex-col items-center justify-center py-2.5 rounded-xl bg-card-surface text-text-body shadow-sm active:scale-95 transition-all {{ 'ring-2 ring-primary' if day.is_today else '' }}">
+            <span class="font-micro-meta text-micro-meta uppercase leading-tight opacity-80">{{ day_names[day.date.weekday()] }}</span>
+            <span class="font-headline-sm text-headline-sm font-bold mt-0.5 leading-none">{{ day.date.day }}</span>
+            <span class="flex items-center gap-0.5 mt-1.5 h-1.5">
+              {% for agenda_type in day.types %}<span class="w-1.5 h-1.5 rounded-full {{ dot_class.get(agenda_type, 'bg-text-muted') }}"></span>{% endfor %}
+            </span>
+          </button>
         {% endfor %}
-    </div>
-
-    <div class="portal-section-heading">
-        <h2>Semua Agenda</h2>
-        <span>{{ model.totals.total }} record</span>
-    </div>
-
-    <div class="portal-calendar-list">
-        {% for item in model.rows %}
-            <article class="portal-calendar-card type-{{ item.type|lower }}">
-                <time>
-                    <strong>{{ item.date.strftime('%d') if item.date else "--" }}</strong>
-                    <span>{{ item.date.strftime('%b %Y') if item.date else "-" }}</span>
-                </time>
-                <div>
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.source|status_label }} | {{ item.type.replace("_", " ") }}</p>
-                    <div class="portal-chip-row">
-                        <span>{{ item.status|status_label }}</span>
-                        {% if item.amount is defined %}<span>{{ item.amount|rupiah }}</span>{% endif %}
-                    </div>
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-calendar-event"></i>
-                <strong>Tidak ada agenda dekat</strong>
-                <p>Draft pesanan, tagihan jatuh tempo, pengiriman, dan kontrak akan muncul di kalender ini.</p>
-            </div>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-x-space-md gap-y-1 px-2 pt-1 text-text-muted">
+        {% for agenda_type, meta in type_meta.items() %}
+          <span class="flex items-center gap-1.5 font-caption-regular text-caption-regular"><span class="w-2 h-2 rounded-full {{ dot_class[agenda_type] }}"></span>{{ meta[0] }}</span>
         {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="flex flex-col gap-space-sm mb-4">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title-menu text-title-menu text-text-heading" data-calendar-heading>Semua Agenda (45 hari)</h2>
+      <button type="button" data-calendar-day-reset class="hidden font-caption-regular text-caption-regular font-bold text-primary">Tampilkan semua</button>
     </div>
-</section>
+
+    <div class="flex flex-col gap-2">
+      {% for item in model.rows or [] %}
+        {% set meta = type_meta.get(item.type, (item.type|replace('_', ' '), 'event', 'bg-surface-container text-text-body')) %}
+        {# Hanya agenda yang punya rincian sendiri yang bisa diklik. #}
+        {% set detail_url = url_for('portal.invoice_payment_instruction', invoice_id=item.invoice_id) if item.invoice_id is defined and item.invoice_id
+                            else (url_for('portal.portal_contract_documents', contract_id=item.contract_id) if item.contract_id is defined and item.contract_id and role in ['PORTAL_CLIENT', 'PORTAL_SUBCLIENT'] else '') %}
+        <article data-calendar-item="{{ item.date.isoformat() if item.date else '' }}" class="bg-card-surface rounded-2xl p-space-md shadow-sm flex items-start gap-3">
+          <div class="w-12 h-12 rounded-xl {{ meta[2] }} flex flex-col items-center justify-center flex-shrink-0 font-bold leading-none">
+            <span class="font-micro-meta text-[10px] uppercase">{{ month_names[item.date.month - 1] if item.date else '-' }}</span>
+            <span class="font-headline-sm text-headline-sm mt-0.5">{{ item.date.day if item.date else '-' }}</span>
+          </div>
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="{{ meta[2] }} px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold uppercase flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">{{ meta[1] }}</span>{{ meta[0] }}</span>
+              <span class="font-micro-meta text-micro-meta text-text-muted">{{ item.status|status_label }}</span>
+            </div>
+            <h3 class="font-body-bold text-body-bold text-text-heading mt-1 leading-snug truncate">{{ item.title }}</h3>
+            {% if item.amount %}
+              <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5">Sisa tagihan <strong class="text-text-heading">{{ item.amount|rupiah }}</strong></p>
+            {% endif %}
+          </div>
+          {% if detail_url %}
+            <a href="{{ detail_url }}" aria-label="Buka {{ meta[0] }} {{ item.title }}" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary flex-shrink-0 self-center">
+              <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+            </a>
+          {% endif %}
+        </article>
+      {% else %}
+        <div class="bg-card-surface rounded-2xl p-space-lg shadow-sm flex flex-col items-center text-center gap-2">
+          <span class="material-symbols-outlined text-[36px] text-text-muted">event_available</span>
+          <p class="font-body-bold text-body-bold text-text-heading">Tidak ada agenda dekat</p>
+          <p class="font-caption-regular text-caption-regular text-text-muted">Pesanan, jatuh tempo tagihan, pengiriman, dan akhir kontrak 45 hari ke depan akan muncul di sini.</p>
+        </div>
+      {% endfor %}
+      <div data-calendar-empty class="hidden bg-card-surface rounded-2xl p-space-md shadow-sm text-center font-caption-regular text-caption-regular text-text-muted">Tidak ada agenda di tanggal ini.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var pills = document.querySelectorAll("[data-calendar-day]");
+  var items = document.querySelectorAll("[data-calendar-item]");
+  var heading = document.querySelector("[data-calendar-heading]");
+  var reset = document.querySelector("[data-calendar-day-reset]");
+  var empty = document.querySelector("[data-calendar-empty]");
+  var defaultHeading = heading ? heading.textContent : "";
+  function select(day, label) {
+    var shown = 0;
+    pills.forEach(function (pill) {
+      var active = day && pill.getAttribute("data-calendar-day") === day;
+      pill.setAttribute("aria-pressed", active ? "true" : "false");
+      pill.classList.toggle("bg-primary", active);
+      pill.classList.toggle("text-on-primary", active);
+      pill.classList.toggle("bg-card-surface", !active);
+      pill.classList.toggle("text-text-body", !active);
+    });
+    items.forEach(function (item) {
+      var visible = !day || item.getAttribute("data-calendar-item") === day;
+      item.classList.toggle("hidden", !visible);
+      if (visible) { shown += 1; }
+    });
+    if (heading) { heading.textContent = day ? "Agenda " + label : defaultHeading; }
+    if (reset) { reset.classList.toggle("hidden", !day); }
+    if (empty) { empty.classList.toggle("hidden", !day || shown > 0); }
+  }
+  pills.forEach(function (pill) {
+    pill.addEventListener("click", function () {
+      var day = pill.getAttribute("data-calendar-day");
+      var spans = pill.querySelectorAll("span");
+      select(day, spans.length > 1 ? spans[0].textContent + " " + spans[1].textContent : "");
+    });
+  });
+  if (reset) { reset.addEventListener("click", function () { select("", ""); }); }
+})();
+</script>
 {% endblock %}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.complaint import CustomerComplaint
 from app.models.delivery import Delivery
@@ -54,7 +56,7 @@ class CustomerComplaintError(ValueError):
 
 
 def generate_customer_complaint_number(complaint_date: date | None = None) -> str:
-    complaint_date = complaint_date or date.today()
+    complaint_date = complaint_date or today_wib()
     prefix = f"CMP-{complaint_date.strftime('%Y%m%d')}"
     counter = CustomerComplaint.query.filter(CustomerComplaint.complaint_number.like(f"{prefix}-%")).count() + 1
     while True:
@@ -225,7 +227,7 @@ def list_customer_complaints(
         query = query.filter(CustomerComplaint.mandor_id == mandor_id)
     try:
         limit = max(1, min(int(limit), 500))
-    except Exception:
+    except (TypeError, ValueError):
         limit = 200
     return query.order_by(CustomerComplaint.created_at.desc(), CustomerComplaint.id.desc()).limit(limit).all()
 

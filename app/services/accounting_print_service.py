@@ -5,10 +5,11 @@ from typing import Any, Dict, Mapping
 
 from app.models.accounting import Journal
 from app.services.company_settings_service import get_company_settings
+from app.utils.clock import today_wib
 
 
 def _today() -> date:
-    return date.today()
+    return today_wib()
 
 
 def _money_float(value: Any) -> float:

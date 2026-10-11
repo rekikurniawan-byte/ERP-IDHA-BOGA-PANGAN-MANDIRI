@@ -1,6 +1,8 @@
 import logging
 from datetime import date
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import inspect
 
 from app.extensions import db
@@ -398,7 +400,7 @@ def create_advance_transaction(
     if amount <= 0:
         raise Exception("Nominal DP/uang muka harus lebih dari 0.")
 
-    if advance_date > date.today():
+    if advance_date > today_wib():
         raise Exception("Tanggal DP/uang muka tidak boleh lebih dari hari ini.")
 
     party_type, client_id, supplier_id, mandor_id = validate_party(
@@ -663,7 +665,7 @@ def create_advance_settlement(
         raise Exception("Nominal settlement tidak boleh lebih dari sisa hutang supplier bill.")
     if settlement_date < advance.advance_date:
         raise Exception("Tanggal settlement tidak boleh lebih awal dari tanggal advance.")
-    if settlement_date > date.today():
+    if settlement_date > today_wib():
         raise Exception("Tanggal settlement tidak boleh lebih dari hari ini.")
 
     acc_advance = _advance_account(advance.advance_type)

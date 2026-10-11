@@ -8,6 +8,7 @@ from app.routes.finance_routes import (
     _payment_attachment_or_404,
     _payment_or_404,
 )
+from app.utils.clock import today_wib
 from app.utils.terms import T
 
 
@@ -87,7 +88,7 @@ def receivables_statement():
         lines.append("Berikut kami sampaikan Statement of Account / rekap piutang aktif PT Idha Boga Pangan Mandiri.")
         lines.append("")
         lines.append(f"{T.client}: " + client_name)
-        lines.append("Tanggal Rekap: " + _soa_date(date.today()))
+        lines.append("Tanggal Rekap: " + _soa_date(today_wib()))
         lines.append("")
         lines.append("Ringkasan Piutang:")
         lines.append("- Total Tagihan: " + _soa_money(group.get("total_amount")))
@@ -320,7 +321,7 @@ def receivables_statement():
             group["soa_whatsapp_url"] = ""
 
     summary = {
-        "generated_date": date.today(),
+        "generated_date": today_wib(),
         "client_count": len(client_groups),
         "invoice_count": len(invoices),
         "total_amount": sum(float(invoice.total_amount or 0) for invoice in invoices),
@@ -501,7 +502,7 @@ def receivables_statement_send():
     lines.append("Berikut kami sampaikan Statement of Account / rekap piutang aktif PT Idha Boga Pangan Mandiri.")
     lines.append("")
     lines.append(f"{T.client}: " + client_name)
-    lines.append("Tanggal Rekap: " + _soa_date(date.today()))
+    lines.append("Tanggal Rekap: " + _soa_date(today_wib()))
     lines.append("")
     lines.append("Ringkasan Piutang:")
     lines.append("- Total Tagihan: " + _soa_money(total_amount))
@@ -538,7 +539,7 @@ def receivables_statement_send():
 
     created_count = 0
     skipped_count = 0
-    today = date.today()
+    today = today_wib()
 
     try:
         created_count, skipped_count = create_receivables_statement_logs(

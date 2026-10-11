@@ -15,6 +15,8 @@ import pickle
 from datetime import date, timedelta
 from collections import OrderedDict
 
+from app.utils.clock import today_wib
+
 from sqlalchemy import text
 
 from app.extensions import db
@@ -402,7 +404,7 @@ def train_model(branch_id):
 
     metadata = {
         "branch_id": branch_id,
-        "trained_at": date.today().isoformat(),
+        "trained_at": today_wib().isoformat(),
         "data_points": len(features),
         "train_size": len(X_train),
         "test_size": len(X_test),

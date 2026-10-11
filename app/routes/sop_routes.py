@@ -707,8 +707,9 @@ def role_sop(slug):
     if slug not in allowed_slugs:
         abort(403)
 
+    template_name = "driver/sop.html" if current_user.role == "PENGANTAR" else "sop/role_sop.html"
     return render_template(
-        "sop/role_sop.html",
+        template_name,
         sop=_hydrate_sop(slug),
         role_nav=_role_nav(allowed_slugs, active_slug=slug),
     )

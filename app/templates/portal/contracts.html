@@ -1,119 +1,99 @@
 {% extends "layouts/portal_mobile.html" %}
 
 {% block portal_content %}
+<!-- customer_contracts ERP existing -->
 {% set model = data.contracts %}
 {% set totals = model.totals %}
-<!-- customer_contracts ERP existing -->
-<section class="portal-feature-page portal-contract-page">
-    <div class="portal-feature-hero portal-contract-hero">
-        <a class="portal-back-link" href="{{ url_for('portal.my_dashboard') }}"><i class="bi bi-arrow-left"></i></a>
-        <div>
-            <p>{{ data.persona.eyebrow }}</p>
-            <h1>{{ data.page_title }}</h1>
-            <span>Kontrak perusahaan</span>
-        </div>
-        <div class="portal-hero-proof">
-            <i class="bi bi-file-earmark-text"></i>
-            <span>Kontrak</span>
-        </div>
+{% set tone_class = {
+    "green": "bg-status-success-bg text-status-success-text",
+    "orange": "bg-status-warning-bg text-status-warning-text",
+    "red": "bg-status-danger-bg text-status-danger-text",
+} %}
+{% set lifecycle_label = {"ACTIVE": "Aktif", "EXPIRING_SOON": "Hampir habis", "EXPIRED": "Kedaluwarsa", "DRAFT": "Draft"} %}
+
+<div class="flex flex-col w-full pb-8">
+  <section class="px-margin pt-2 pb-3 flex items-center gap-3">
+    <div class="flex flex-col min-w-0">
+      <h1 class="font-headline-md text-headline-md text-text-heading leading-tight truncate">{{ data.page_title }}</h1>
+      <p class="font-caption-regular text-caption-regular text-text-muted truncate">{{ data.page_description }}</p>
     </div>
+  </section>
 
-    <div class="portal-contract-summary">
-        <article class="primary">
-            <span>Limit Kredit Aktif</span>
-            <strong>{{ totals.credit_limit|rupiah }}</strong>
-            <p>{{ data.page_description }}</p>
-        </article>
-        <article><span>Total</span><strong>{{ totals.contract_count }}</strong><small>Kontrak dalam akses</small></article>
-        <article><span>Aktif</span><strong>{{ totals.active_count }}</strong><small>Status aktif</small></article>
-        <article><span>Hampir Habis</span><strong>{{ totals.expiring_soon_count }}</strong><small>30 hari ke depan</small></article>
-        <article><span>Kedaluwarsa</span><strong>{{ totals.expired_count }}</strong><small>Lewat tanggal akhir</small></article>
-        <article><span>Dokumen</span><strong>{{ totals.document_count }}</strong><small>Arsip digital</small></article>
+  {% if not model.allowed %}
+    <div class="px-margin mb-4">
+      <div class="p-4 rounded-xl bg-status-warning-bg text-status-warning-text flex items-start gap-3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><p class="font-body-bold text-body-bold">Kontrak belum dibuka</p><p class="font-caption-regular text-caption-regular">{{ model.reason }}</p></div>
+      </div>
     </div>
+  {% endif %}
 
-    {% if not model.allowed %}
-        <div class="portal-blocked-state">
-            <i class="bi bi-lock"></i>
-            <div>
-                <h2>Kontrak belum dibuka</h2>
-                <p>{{ model.reason }}</p>
-            </div>
-        </div>
-    {% endif %}
-
-    <div class="portal-contract-finance-strip">
-        <article>
-            <span>Tagihan</span>
-            <strong>{{ data.invoices.totals.invoice_count }}</strong>
-            <small>Dalam akun</small>
-        </article>
-        <article>
-            <span>Sisa Tagihan</span>
-            <strong>{{ data.invoices.totals.active_outstanding_amount|rupiah }}</strong>
-            <small>Piutang aktif</small>
-        </article>
-        <article>
-            <span>Jatuh Tempo</span>
-            <strong>{{ data.invoices.totals.overdue_count or 0 }}</strong>
-            <small>Perlu dipantau</small>
-        </article>
-    </div>
-
-    <div class="portal-section-heading">
-        <h2>Kesehatan Kontrak</h2>
-        <span>Status</span>
-    </div>
-
-    <div class="portal-contract-health-list">
-        {% for row in model.health_rows %}
-            <article class="portal-contract-health-card tone-{{ row.tone }}">
-                <div class="portal-contract-health-main">
-                    <span class="portal-record-icon"><i class="bi bi-file-earmark-text"></i></span>
-                    <div>
-                        <h3>{{ row.contract_number }}</h3>
-                        <p>{{ row.title }} | {{ row.client_name }}</p>
-                        <div class="portal-chip-row">
-                            <span>{{ row.lifecycle }}</span>
-                            <span>{{ row.payment_terms }}</span>
-                            <span>v{{ row.version_no }}</span>
-                            <span>{{ row.document_count }} dokumen</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="portal-contract-health-meta">
-                    <div>
-                        <span>Periode</span>
-                        <strong>
-                            {{ row.start_date.strftime('%d-%m-%Y') if row.start_date else "-" }}
-                            -
-                            {{ row.end_date.strftime('%d-%m-%Y') if row.end_date else "-" }}
-                        </strong>
-                    </div>
-                    <div>
-                        <span>Sisa Hari</span>
-                        <strong>{{ row.days_remaining if row.days_remaining is not none else "-" }}</strong>
-                    </div>
-                    <div>
-                        <span>Limit Kredit</span>
-                        <strong>{{ row.credit_limit|rupiah }}</strong>
-                    </div>
-                </div>
-                {% if row.notes %}
-                    <p class="portal-muted-note">{{ row.notes }}</p>
-                {% endif %}
-                <div class="mt-2 pt-2 border-top d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('portal.portal_contract_documents', contract_id=row.contract_id) }}">
-                        <i class="bi bi-file-earmark-text"></i> Surat &amp; Dokumen Kontrak
-                    </a>
-                </div>
-            </article>
-        {% else %}
-            <div class="portal-empty-state">
-                <i class="bi bi-file-earmark-text"></i>
-                <strong>Belum ada kontrak</strong>
-                <p>Kontrak {{ term('client') }} akan tampil setelah admin menghubungkannya ke perusahaan yang benar.</p>
-            </div>
+  <section class="px-margin mb-4">
+    <div class="bg-gradient-to-br from-inverse-surface to-text-heading rounded-2xl p-5 shadow-xl text-on-primary">
+      <span class="font-micro-meta text-micro-meta tracking-wider uppercase text-surface-container-high font-semibold">Limit kredit kontrak aktif</span>
+      <div class="mt-1 font-display-hero text-display-hero font-bold tracking-tight break-words">{{ (totals.credit_limit or 0)|rupiah }}</div>
+      <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+        {% for label, value in [("Total", totals.contract_count), ("Aktif", totals.active_count), ("Hampir habis", totals.expiring_soon_count), ("Dokumen", totals.document_count)] %}
+          <div class="bg-white/10 rounded-lg py-2 min-w-0">
+            <strong class="font-body-bold text-body-bold block">{{ value or 0 }}</strong>
+            <span class="font-micro-meta text-[10px] text-surface-container-high block truncate px-1">{{ label }}</span>
+          </div>
         {% endfor %}
+      </div>
     </div>
-</section>
+  </section>
+
+  <section class="px-margin mb-4 grid grid-cols-3 gap-2">
+    <div class="bg-card-surface rounded-xl p-3 shadow-sm min-w-0">
+      <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Tagihan</span>
+      <strong class="font-body-bold text-body-bold text-text-heading">{{ data.invoices.totals.invoice_count or 0 }}</strong>
+    </div>
+    <div class="bg-card-surface rounded-xl p-3 shadow-sm min-w-0">
+      <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Sisa</span>
+      <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ (data.invoices.totals.active_outstanding_amount or 0)|rupiah_short }}</strong>
+    </div>
+    <div class="bg-card-surface rounded-xl p-3 shadow-sm min-w-0">
+      <span class="font-micro-meta text-micro-meta uppercase text-text-muted block">Lewat tempo</span>
+      <strong class="font-body-bold text-body-bold {{ 'text-status-danger-text' if data.invoices.totals.overdue_invoice_count else 'text-text-heading' }}">{{ data.invoices.totals.overdue_invoice_count or 0 }}</strong>
+    </div>
+  </section>
+
+  <section class="px-margin flex flex-col gap-2.5">
+    <h2 class="font-title-menu text-title-menu text-text-heading">Kesehatan Kontrak</h2>
+    {% for row in model.health_rows %}
+      <article class="bg-card-surface rounded-xl shadow-sm p-4 flex flex-col gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <strong class="font-body-bold text-body-bold text-text-heading block truncate">{{ row.contract_number }}</strong>
+            <span class="font-caption-regular text-caption-regular text-text-muted block truncate">{{ row.title }} · {{ row.client_name }}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold flex-shrink-0 {{ tone_class.get(row.tone, 'bg-surface-container text-text-body') }}">{{ lifecycle_label.get(row.lifecycle, row.lifecycle|status_label) }}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 bg-surface-container-low rounded-lg p-2.5">
+          <div class="min-w-0 col-span-2">
+            <span class="font-micro-meta text-micro-meta text-text-muted block">Periode</span>
+            <strong class="font-caption-regular text-caption-regular text-text-heading">{{ row.start_date.strftime('%d-%m-%Y') if row.start_date else "-" }} s.d. {{ row.end_date.strftime('%d-%m-%Y') if row.end_date else "-" }}</strong>
+          </div>
+          <div class="min-w-0 text-right">
+            <span class="font-micro-meta text-micro-meta text-text-muted block">Sisa hari</span>
+            <strong class="font-caption-regular text-caption-regular text-text-heading">{{ row.days_remaining if row.days_remaining is not none else "-" }}</strong>
+          </div>
+        </div>
+        <p class="font-micro-meta text-micro-meta text-text-muted">
+          {% if row.payment_terms %}{{ row.payment_terms }} · {% endif %}versi {{ row.version_no }} · limit {{ (row.credit_limit or 0)|rupiah }} · {{ row.document_count }} dokumen
+        </p>
+        {% if row.notes %}<p class="font-caption-regular text-caption-regular text-text-body">{{ row.notes }}</p>{% endif %}
+        <a href="{{ url_for('portal.portal_contract_documents', contract_id=row.contract_id) }}" class="h-11 rounded-xl bg-primary-fixed text-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5">
+          <span class="material-symbols-outlined text-[18px]">draw</span> Surat &amp; Dokumen Kontrak
+        </a>
+      </article>
+    {% else %}
+      <div class="p-8 rounded-xl bg-card-surface border border-card-border text-center text-text-muted flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined text-5xl">contract</span>
+        <strong class="font-body-bold text-body-bold text-text-heading">Belum ada kontrak</strong>
+        <span class="font-caption-regular text-caption-regular">Kontrak {{ term('client') }} tampil setelah admin menghubungkannya ke perusahaan yang benar.</span>
+      </div>
+    {% endfor %}
+  </section>
+</div>
 {% endblock %}

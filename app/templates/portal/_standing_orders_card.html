@@ -1,196 +1,472 @@
 {% if data.standing_orders and data.standing_orders.has_contract %}
 <div class="standing-orders-container mb-4" data-standing-orders="true">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="flex items-center justify-between mb-3">
         <div>
-            <h2 class="h5 mb-1 text-dark fw-bold">
-                <i class="bi bi-calendar2-week text-primary me-2"></i>Pesanan Hari Ini & Besok
+            <h2 class="font-headline-sm text-headline-sm text-text-heading flex items-center gap-1.5 font-bold">
+                <span class="material-symbols-outlined text-primary text-[22px]">tune</span>
+                Pesanan Hari Ini &amp; Besok
             </h2>
-            <p class="text-muted small mb-0">Ubah porsi harian langsung sebelum jam lock. Perubahan porsi 0 wajib memilih alasan.</p>
+            <p class="font-caption-regular text-caption-regular text-text-muted mt-0.5">Atur perubahan porsi sebelum jam lock sistem katering.</p>
         </div>
     </div>
 
-    <div class="row g-3">
+    <div class="flex flex-col gap-3">
         {% for day in data.standing_orders.days %}
-        <div class="col-12 col-lg-6">
-            <div class="app-card border shadow-sm h-100" style="border-radius: var(--radius-lg); background: var(--surface);">
-                <div class="card-header bg-light border-bottom py-3 px-3 d-flex justify-content-between align-items-center" style="border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
-                    <div>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">{{ day.date_label }}</span>
-                        <strong class="text-dark">{{ day.formatted_date }}</strong>
-                    </div>
+        <div class="bg-card-surface rounded-2xl shadow-sm p-4 flex flex-col gap-3 border border-outline-variant/15">
+            <div class="flex justify-between items-center pb-2.5 border-b border-surface-container">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-primary text-on-primary font-micro-meta text-micro-meta font-bold uppercase tracking-wider">{{ day.date_label }}</span>
+                    <strong class="font-body-bold text-body-bold text-text-heading">{{ day.formatted_date }}</strong>
+                </div>
+            </div>
+
+            {% for loc in day.locations %}
+            <div class="location-standing-block flex flex-col gap-2.5 {% if not loop.last %}pb-3 border-b border-surface-container{% endif %}">
+                <div class="flex items-center justify-between">
+                    <strong class="text-text-heading flex items-center gap-1 font-body-bold text-caption-regular">
+                        <span class="material-symbols-outlined text-status-danger-text text-[18px]">pin_drop</span>
+                        {{ loc.location_name }}
+                    </strong>
+                    {% if current_user.role == "PORTAL_CLIENT" %}
+                        <span class="font-micro-meta text-micro-meta text-text-muted">{{ term('sub_client') }}: {{ loc.mandor_name }}</span>
+                    {% endif %}
                 </div>
 
-                <div class="card-body p-3">
-                    {% for loc in day.locations %}
-                    <div class="location-standing-block mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="flex flex-col gap-3">
+                    {% for session in loc.sessions %}
+                    <div class="p-3.5 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-2.5">
+                        <!-- Session Badge + Lock Warning -->
+                        <div class="flex justify-between items-center">
+                            <span class="flex items-center gap-1.5 flex-wrap">
+                                <span class="px-2.5 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold flex items-center gap-1 {{ 'bg-status-warning-bg text-status-warning-text' if session.meal_type == 'LUNCH' else 'bg-surface-container text-text-body' }}">
+                                    <span class="material-symbols-outlined text-[13px]">{{ 'wb_sunny' if session.meal_type == 'LUNCH' else ('dark_mode' if session.meal_type == 'DINNER' else 'restaurant') }}</span>{{ session.meal_label }}
+                                </span>
+                                <span class="px-2 py-0.5 rounded-full font-micro-meta text-micro-meta font-bold {{ {'success': 'bg-status-success-bg text-status-success-text', 'danger': 'bg-status-danger-bg text-status-danger-text', 'warning': 'bg-status-warning-bg text-status-warning-text'}.get(session.badge_class, 'bg-surface-container text-text-body') }}">{{ session.badge_label }}</span>
+                            </span>
+                            <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-card-surface border border-surface-container text-text-muted font-micro-meta text-micro-meta">
+                                <span class="material-symbols-outlined text-[13px]">lock_clock</span>
+                                <span>Lock: {{ session.lock_time_str }} WIB</span>
+                            </div>
+                        </div>
+
+                        {% if session.can_resume and session.qty == 0 %}
+                        <div class="p-2.5 rounded-xl bg-status-warning-bg border border-status-warning-text/20 flex items-center gap-2 font-caption-regular text-caption-regular text-status-warning-text">
+                            <span class="material-symbols-outlined text-[18px]">pause_circle</span>
                             <div>
-                                <strong class="text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ loc.location_name }}</strong>
-                                {% if current_user.role == "PORTAL_CLIENT" %}
-                                    <small class="text-muted d-block ms-3">{{ term('sub_client') }}: {{ loc.mandor_name }}</small>
+                                {% if session.state_status == 'PAUSED_UNTIL' %}
+                                    Libur sampai {{ session.resume_date.strftime('%d-%m-%Y') if session.resume_date else '-' }}
+                                {% else %}
+                                    Pesanan dihentikan sementara
                                 {% endif %}
                             </div>
                         </div>
+                        {% endif %}
 
-                        <div class="row g-2">
-                            {% for session in loc.sessions %}
-                            <div class="col-12 col-md-6">
-                                <div class="session-box p-3 border rounded bg-light-subtle h-100 d-flex flex-column justify-content-between" style="border-radius: var(--radius);">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div>
-                                            <span class="fw-bold text-dark">
-                                                {% if session.meal_type == 'LUNCH' %}
-                                                    <i class="bi bi-sun-fill text-warning me-1"></i>
-                                                {% else %}
-                                                    <i class="bi bi-moon-stars-fill text-indigo me-1"></i>
-                                                {% endif %}
-                                                {{ session.meal_label }}
-                                            </span>
-                                            <small class="text-muted d-block mt-0" style="font-size: 0.75rem;">Lock: {{ session.lock_time_str }} WIB</small>
+                        {% if session.can_edit %}
+                        <form method="POST" action="{{ url_for('portal.update_order_qty') }}" class="standing-order-form" data-session-form="{{ loc.location_id }}-{{ session.meal_type }}-{{ day.date_iso }}">
+                            {% include "components/csrf_token.html" %}
+                            <input type="hidden" name="mandor_id" value="{{ loc.mandor_id }}">
+                            <input type="hidden" name="delivery_location_id" value="{{ loc.location_id }}">
+                            <input type="hidden" name="meal_type" value="{{ session.meal_type }}">
+                            <input type="hidden" name="order_date" value="{{ day.date_iso }}">
+                            <input type="hidden" name="reason_code" class="form-reason-code" value="">
+                            <input type="hidden" name="resume_date" class="form-resume-date" value="">
+                            <input type="hidden" name="note" class="form-note" value="">
+
+                            {% if session.can_resume and session.qty == 0 %}
+                            <button type="button" class="btn-resume-order w-full mb-2 py-2 rounded-xl border border-primary text-primary font-body-bold text-caption-regular flex items-center justify-center gap-1.5 hover:bg-primary/5 active:scale-95 transition-all" onclick="enableResumeOrder(this, {{ session.last_nonzero_qty or 10 }})">
+                                <span class="material-symbols-outlined text-[18px]">play_circle</span>
+                                <span>Mulai pesan lagi</span>
+                            </button>
+                            {% endif %}
+
+                            <div class="stepper-controls flex flex-col gap-2 {% if session.can_resume and session.qty == 0 %}hidden{% endif %}">
+                                <!-- Ergonomic Stepper Row with Stitch Styling -->
+                                <div class="stitch-stepper-control flex items-center justify-between p-2 rounded-xl bg-card-surface border border-surface-container">
+                                    <button type="button" class="stitch-btn-counter stitch-btn-dec w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-text-heading active:scale-90 transition-transform hover:bg-surface-container-high" onclick="adjustStitchStepper(this, -1)">
+                                        <span class="material-symbols-outlined text-[20px]">remove</span>
+                                    </button>
+                                    <div class="stitch-qty-display flex flex-col items-center">
+                                        <div class="flex items-baseline gap-1">
+                                            <span class="stitch-qty-val qty-val-text font-headline-sm text-headline-sm font-bold text-text-heading">{{ session.qty }}</span>
+                                            <span class="font-body-medium text-body-medium font-semibold text-text-muted">Porsi</span>
                                         </div>
-                                        <div>
-                                            {% if session.badge_class == 'success' %}
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
-                                            {% elif session.badge_class == 'danger' %}
-                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
-                                            {% elif session.badge_class == 'warning' %}
-                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.72rem;">{{ session.badge_label }}</span>
-                                            {% endif %}
-                                        </div>
+                                        <input type="hidden" name="new_qty" class="qty-input" value="{{ session.qty }}" data-initial="{{ session.qty }}">
                                     </div>
-
-                                    {% if session.can_resume and session.qty == 0 %}
-                                    <div class="resume-alert mb-2 p-2 border border-warning-subtle bg-warning-subtle rounded small text-dark" style="border-radius: var(--radius-sm);">
-                                        <i class="bi bi-pause-circle me-1"></i>
-                                        {% if session.state_status == 'PAUSED_UNTIL' %}
-                                            Libur sampai {{ session.resume_date.strftime('%d-%m-%Y') if session.resume_date else '-' }}
-                                        {% else %}
-                                            Pesanan dihentikan sementara
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-
-                                    {% if session.can_edit %}
-                                    <form method="POST" action="{{ url_for('portal.update_order_qty') }}" class="standing-order-form mt-2" data-session-form="{{ loc.location_id }}-{{ session.meal_type }}-{{ day.date_iso }}">
-                                        {% include "components/csrf_token.html" %}
-                                        <input type="hidden" name="mandor_id" value="{{ loc.mandor_id }}">
-                                        <input type="hidden" name="delivery_location_id" value="{{ loc.location_id }}">
-                                        <input type="hidden" name="meal_type" value="{{ session.meal_type }}">
-                                        <input type="hidden" name="order_date" value="{{ day.date_iso }}">
-
-                                        {% if session.can_resume and session.qty == 0 %}
-                                        <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2 py-2 fw-semibold btn-resume-order" style="border-radius: var(--radius);" onclick="enableResumeOrder(this, {{ session.last_nonzero_qty or 10 }})">
-                                            <i class="bi bi-play-circle-fill me-1"></i>Mulai pesan lagi
-                                        </button>
-                                        {% endif %}
-
-                                        <div class="stepper-controls {% if session.can_resume and session.qty == 0 %}d-none{% endif %}">
-                                            <div class="d-flex align-items-stretch gap-1 mb-2">
-                                                <button type="button" class="btn btn-outline-secondary px-3 py-2 fs-5 fw-bold btn-stepper-minus" style="min-width: 44px; min-height: 44px; border-radius: var(--radius);" onclick="adjustStepper(this, -1)">−</button>
-                                                <input type="number" name="new_qty" class="form-control text-center fw-bold fs-5 qty-input" value="{{ session.qty }}" min="0" max="5000" style="height: 44px; border-radius: var(--radius);" onchange="handleQtyChange(this)" oninput="handleQtyChange(this)">
-                                                <button type="button" class="btn btn-outline-secondary px-3 py-2 fs-5 fw-bold btn-stepper-plus" style="min-width: 44px; min-height: 44px; border-radius: var(--radius);" onclick="adjustStepper(this, 1)">+</button>
-                                                <button type="submit" class="btn app-btn-primary px-3 fw-bold btn-save-qty" style="height: 44px; border-radius: var(--radius);">Simpan</button>
-                                            </div>
-
-                                            <div class="reason-zero-container {% if session.qty != 0 %}d-none{% endif %} mt-2 p-2 border rounded bg-white" style="border-radius: var(--radius-sm);">
-                                                <label class="form-label small text-danger fw-semibold mb-1">
-                                                    <i class="bi bi-exclamation-circle me-1"></i>Porsi 0: Pilih Alasan Wajib
-                                                </label>
-                                                <select name="reason_code" class="form-select form-select-sm mb-2" onchange="handleReasonSelect(this)">
-                                                    <option value="">-- Pilih Alasan --</option>
-                                                    <option value="OFF_TODAY" {% if session.qty == 0 %}selected{% endif %}>Libur hari ini saja (Besok aktif lagi)</option>
-                                                    <option value="OFF_UNTIL">Libur sampai tanggal tertentu...</option>
-                                                    <option value="PAUSE">Berhenti sementara, saya pesan lagi nanti</option>
-                                                    <option value="PROJECT_DONE">Proyek / pekerjaan selesai</option>
-                                                    <option value="NO_WORKERS">Pekerja sedang tidak di lokasi</option>
-                                                    <option value="OTHER">Lainnya (wajib catatan)</option>
-                                                </select>
-
-                                                <div class="resume-date-group d-none mb-2">
-                                                    <label class="form-label small text-muted mb-0">Mulai pesan lagi tanggal:</label>
-                                                    <input type="date" name="resume_date" class="form-control form-control-sm" min="{{ day.date_iso }}">
-                                                </div>
-
-                                                <div class="note-group mb-1">
-                                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="Catatan tambahan (wajib untuk 'Lainnya')...">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                    {% else %}
-                                    <div class="mt-2 text-center p-2 rounded bg-light border text-muted small" style="border-radius: var(--radius-sm);">
-                                        <div class="fw-bold fs-5 text-dark mb-1">{{ session.qty }} porsi</div>
-                                        <span>{{ session.block_msg }}</span>
-                                    </div>
-                                    {% endif %}
+                                    <button type="button" class="stitch-btn-counter stitch-btn-inc w-10 h-10 rounded-lg bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-transform shadow-xs hover:bg-primary-hover" onclick="adjustStitchStepper(this, 1)">
+                                        <span class="material-symbols-outlined text-[20px]">add</span>
+                                    </button>
                                 </div>
+
+                                <button type="submit" class="btn-save-qty w-full py-2.5 rounded-xl bg-primary text-on-primary font-body-bold text-caption-regular flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.99] transition-all hover:bg-primary-hover">
+                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                    <span>Simpan Perubahan</span>
+                                </button>
                             </div>
-                            {% endfor %}
+                        </form>
+                        {% else %}
+                        <div class="mt-1 text-center p-2.5 rounded-xl bg-surface-container-low border border-surface-container text-text-muted font-caption-regular text-caption-regular">
+                            <div class="font-bold text-body-bold text-text-heading mb-0.5">{{ session.qty }} porsi</div>
+                            <span>{{ session.block_msg }}</span>
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
             </div>
+            {% endfor %}
         </div>
         {% endfor %}
     </div>
 </div>
 
+<!-- BOTTOM SHEET MODAL: ALASAN 0 PORSI (Exact Stitch Parity dialog_alasan_porsi_0) -->
+<div class="fixed inset-0 z-50 hidden" id="reason-modal-backdrop">
+    <!-- Persistent Backdrop Dim Overlay -->
+    <div class="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-[2px] transition-opacity" onclick="cancelZeroPortion()"></div>
+
+    <!-- Bottom Sheet Modal Container -->
+    <div class="fixed inset-x-0 bottom-0 z-50 flex flex-col justify-end w-full max-w-[480px] mx-auto pointer-events-auto">
+        <div class="bg-card-surface rounded-t-[28px] shadow-[0_-12px_40px_rgba(15,23,42,0.28)] flex flex-col max-h-[85vh] overflow-hidden" id="reason-sheet">
+            <!-- Drag Indicator Handle -->
+            <div class="w-full flex items-center justify-center pt-3 pb-1 cursor-grab">
+                <div class="w-12 h-1.5 bg-surface-dim rounded-full"></div>
+            </div>
+
+            <!-- Sheet Header -->
+            <div class="px-margin pt-2 pb-space-sm">
+                <div class="flex items-start gap-space-sm">
+                    <div class="w-10 h-10 rounded-xl bg-status-danger-bg text-status-danger-text flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">no_meals</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="font-headline-sm text-headline-sm text-text-heading leading-tight">Mengapa Porsi Diisi 0?</h2>
+                        <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                            Kontrak mewajibkan alasan agar dapur bisa menyesuaikan belanja bahan.
+                        </p>
+                    </div>
+                    <button type="button" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-text-muted hover:text-text-heading" onclick="cancelZeroPortion()">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+
+                <!-- Shift Session Meta Card -->
+                <div class="mt-space-sm bg-surface-container-low p-2.5 rounded-xl flex items-center justify-between gap-space-xs border border-card-border/60">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="material-symbols-outlined text-primary text-[18px]">wb_sunny</span>
+                        <span class="font-caption-regular text-caption-regular text-text-heading font-semibold truncate" id="modal-session-title">
+                            Sesi makan
+                        </span>
+                    </div>
+                    <span class="font-micro-meta text-micro-meta bg-card-surface text-text-muted px-2 py-0.5 rounded-md font-medium shrink-0 border border-card-border/60">
+                        Semula: <strong class="text-text-heading" id="modal-prev-qty">-</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Scrollable Reason Options List -->
+            <div class="px-margin py-space-xs overflow-y-auto space-y-space-sm overscroll-contain flex-1">
+                <!-- Option 1: Libur Hari Ini -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-primary-fixed/40 shadow-sm border border-card-border/50" id="label-opt-1" onclick="selectReason('opt-1')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input checked class="sr-only" id="opt-1" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="OFF_TODAY"/>
+                            <div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center transition-colors" id="dot-opt-1">
+                                <span class="w-2 h-2 rounded-full bg-on-primary"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Libur hari ini saja</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Besok otomatis kembali ke porsi normal terakhir.
+                            </p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Option 2: Libur Sampai Tanggal Tertentu -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-background-surface border border-card-border/50" id="label-opt-2" onclick="selectReason('opt-2')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input class="sr-only" id="opt-2" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="OFF_UNTIL"/>
+                            <div class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center transition-colors" id="dot-opt-2">
+                                <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Libur sampai tanggal tertentu</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Pilih tanggal mulai pesan kembali:
+                            </p>
+                            <div class="mt-2.5 hidden" id="date-picker-container" onclick="event.stopPropagation()">
+                                <input type="date" id="modal-resume-date-input" class="w-full h-10 px-3 bg-card-surface rounded-lg font-caption-regular text-caption-regular text-text-heading border border-card-border shadow-sm outline-none focus:ring-2 focus:ring-primary/20">
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Option 3: Berhenti Sementara -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-background-surface border border-card-border/50" id="label-opt-3" onclick="selectReason('opt-3')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input class="sr-only" id="opt-3" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="PAUSE"/>
+                            <div class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center transition-colors" id="dot-opt-3">
+                                <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Berhenti sementara, saya pesan lagi nanti</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Pesanan otomatis berhenti sampai Anda aktifkan lagi dengan tombol "Mulai pesan lagi".
+                            </p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Option 4: Proyek Selesai -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-background-surface border border-card-border/50" id="label-opt-4" onclick="selectReason('opt-4')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input class="sr-only" id="opt-4" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="PROJECT_DONE"/>
+                            <div class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center transition-colors" id="dot-opt-4">
+                                <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Proyek / pekerjaan selesai</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Pesanan otomatis berhenti dan admin katering diberi tahu untuk meninjau kontrak.
+                            </p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Option 5: Pekerja di Luar Mess -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-background-surface border border-card-border/50" id="label-opt-5" onclick="selectReason('opt-5')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input class="sr-only" id="opt-5" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="NO_WORKERS"/>
+                            <div class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center transition-colors" id="dot-opt-5">
+                                <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Pekerja sedang tidak di lokasi</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Hanya untuk hari ini; besok kembali ke porsi terakhir.
+                            </p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Option 6: Lainnya (With text note) -->
+                <label class="group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-background-surface border border-card-border/50" id="label-opt-6" onclick="selectReason('opt-6')">
+                    <div class="flex items-start gap-space-sm">
+                        <div class="pt-0.5">
+                            <input class="sr-only" id="opt-6" name="zero_portion_reason" onchange="syncReasonState()" type="radio" value="OTHER"/>
+                            <div class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center transition-colors" id="dot-opt-6">
+                                <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-body-bold text-body-bold text-text-heading block leading-tight">Lainnya (wajib catatan)</span>
+                            <p class="font-caption-regular text-caption-regular text-text-muted mt-1 leading-normal">
+                                Hanya untuk hari ini. Tulis alasannya di bawah.
+                            </p>
+                            <div class="mt-2.5 hidden" id="notes-input-container" onclick="event.stopPropagation()">
+                                <textarea class="w-full bg-card-surface p-2.5 rounded-lg font-caption-regular text-caption-regular text-text-heading placeholder:text-text-muted outline-none border border-card-border shadow-sm resize-none focus:ring-2 focus:ring-primary/20" id="modal-note-input" placeholder="Tulis alasan..." rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Operational Policy Advisory Note -->
+            <div class="px-margin pt-2">
+                <div class="bg-status-warning-bg/40 p-2.5 rounded-xl flex items-center gap-2 border border-status-warning-text/20">
+                    <span class="material-symbols-outlined text-[18px] text-status-warning-text shrink-0">info</span>
+                    <p class="font-micro-meta text-micro-meta text-status-warning-text leading-tight">
+                        Porsi 0 berarti tidak ada kiriman dan tidak ditagih untuk sesi ini.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Button Dock -->
+            <div class="p-margin bg-card-surface shadow-[0_-8px_20px_rgba(0,0,0,0.04)] mt-space-sm border-t border-card-border">
+                <div class="grid grid-cols-2 gap-space-sm">
+                    <button class="h-12 rounded-xl bg-surface-container hover:bg-surface-dim text-text-body font-body-bold text-body-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5" onclick="cancelZeroPortion()" type="button">
+                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                        Batal
+                    </button>
+                    <button class="h-12 rounded-xl bg-status-danger-text hover:bg-red-800 text-on-primary font-body-bold text-body-bold shadow-md shadow-status-danger-text/25 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5" onclick="confirmZeroPortion()" type="button">
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                        Konfirmasi 0
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-function adjustStepper(btn, delta) {
-    const wrapper = btn.closest('.stepper-controls');
-    const input = wrapper.querySelector('.qty-input');
-    let val = parseInt(input.value || '0', 10);
-    val = isNaN(val) ? 0 : val;
-    val = Math.max(0, val + delta);
-    input.value = val;
-    handleQtyChange(input);
+let currentActiveForm = null;
+let currentLastQty = 10;
+
+function adjustStitchStepper(btn, delta) {
+    const form = btn.closest('form');
+    const input = form.querySelector('.qty-input');
+    const valText = form.querySelector('.qty-val-text');
+
+    let currentVal = parseInt(input.value || '0', 10);
+    currentVal = isNaN(currentVal) ? 0 : currentVal;
+
+    if (delta < 0 && currentVal === 1) {
+        currentActiveForm = form;
+        currentLastQty = 1;
+        input.value = 0;
+        valText.textContent = 0;
+        openReasonModal();
+        return;
+    }
+
+    let newVal = Math.max(0, currentVal + delta);
+    if (newVal === 0) {
+        currentActiveForm = form;
+        currentLastQty = currentVal > 0 ? currentVal : 10;
+        input.value = 0;
+        valText.textContent = 0;
+        openReasonModal();
+        return;
+    }
+
+    input.value = newVal;
+    valText.textContent = newVal;
 }
 
-function handleQtyChange(input) {
-    const wrapper = input.closest('.stepper-controls');
-    const reasonContainer = wrapper.querySelector('.reason-zero-container');
-    const val = parseInt(input.value || '0', 10);
-    if (val === 0) {
-        reasonContainer.classList.remove('d-none');
-        const reasonSelect = reasonContainer.querySelector('select[name="reason_code"]');
-        if (!reasonSelect.value) {
-            reasonSelect.value = 'OFF_TODAY';
+function selectReason(id) {
+    const radio = document.getElementById(id);
+    if (radio) {
+        radio.checked = true;
+        syncReasonState();
+    }
+}
+
+function syncReasonState() {
+    const options = ['opt-1', 'opt-2', 'opt-3', 'opt-4', 'opt-5', 'opt-6'];
+    options.forEach(optId => {
+        const radio = document.getElementById(optId);
+        const label = document.getElementById('label-' + optId);
+        const dot = document.getElementById('dot-' + optId);
+        const innerDot = dot ? dot.querySelector('span') : null;
+        if (!radio || !label || !dot || !innerDot) return;
+
+        if (radio.checked) {
+            label.classList.remove('bg-background-surface');
+            label.classList.add('bg-primary-fixed/40', 'shadow-sm');
+            dot.classList.remove('bg-surface-container');
+            dot.classList.add('bg-primary');
+            innerDot.classList.remove('bg-transparent');
+            innerDot.classList.add('bg-on-primary');
+        } else {
+            label.classList.remove('bg-primary-fixed/40', 'shadow-sm');
+            label.classList.add('bg-background-surface');
+            dot.classList.remove('bg-primary');
+            dot.classList.add('bg-surface-container');
+            innerDot.classList.remove('bg-on-primary');
+            innerDot.classList.add('bg-transparent');
         }
-        handleReasonSelect(reasonSelect);
-    } else {
-        reasonContainer.classList.add('d-none');
+    });
+
+    const isDateOpt = document.getElementById('opt-2')?.checked;
+    const dateBox = document.getElementById('date-picker-container');
+    if (dateBox) {
+        dateBox.classList.toggle('hidden', !isDateOpt);
+    }
+
+    const isOtherOpt = document.getElementById('opt-6')?.checked;
+    const notesBox = document.getElementById('notes-input-container');
+    if (notesBox) {
+        notesBox.classList.toggle('hidden', !isOtherOpt);
     }
 }
 
-function handleReasonSelect(select) {
-    const container = select.closest('.reason-zero-container');
-    const dateGroup = container.querySelector('.resume-date-group');
-    const noteGroup = container.querySelector('.note-group input');
-    if (select.value === 'OFF_UNTIL') {
-        dateGroup.classList.remove('d-none');
-    } else {
-        dateGroup.classList.add('d-none');
+function openReasonModal() {
+    const backdrop = document.getElementById('reason-modal-backdrop');
+    if (backdrop) {
+        backdrop.classList.remove('hidden');
+        if (currentActiveForm) {
+            const input = currentActiveForm.querySelector('.qty-input');
+            const prevQtyEl = document.getElementById('modal-prev-qty');
+            if (prevQtyEl) prevQtyEl.textContent = (currentLastQty || input.dataset.initial || 0) + ' Porsi';
+        }
+        syncReasonState();
     }
-    if (select.value === 'OTHER') {
-        noteGroup.setAttribute('required', 'required');
-        noteGroup.setAttribute('placeholder', 'Wajib isi alasan lainnya...');
-    } else {
-        noteGroup.removeAttribute('required');
-        noteGroup.setAttribute('placeholder', 'Catatan tambahan...');
+}
+
+function closeReasonModal() {
+    const backdrop = document.getElementById('reason-modal-backdrop');
+    if (backdrop) backdrop.classList.add('hidden');
+}
+
+function cancelZeroPortion() {
+    if (currentActiveForm) {
+        const input = currentActiveForm.querySelector('.qty-input');
+        const valText = currentActiveForm.querySelector('.qty-val-text');
+        input.value = currentLastQty;
+        valText.textContent = currentLastQty;
     }
+    closeReasonModal();
+}
+
+function confirmZeroPortion() {
+    if (!currentActiveForm) {
+        closeReasonModal();
+        return;
+    }
+    const selectedReason = document.querySelector('input[name="zero_portion_reason"]:checked')?.value || 'OFF_TODAY';
+    const resumeDate = document.getElementById('modal-resume-date-input')?.value || '';
+    const note = document.getElementById('modal-note-input')?.value || '';
+    if (selectedReason === 'OTHER' && !note.trim()) {
+        document.getElementById('modal-note-input')?.focus();
+        return;
+    }
+    if (selectedReason === 'OFF_UNTIL' && !resumeDate) {
+        document.getElementById('modal-resume-date-input')?.focus();
+        return;
+    }
+
+    currentActiveForm.querySelector('.form-reason-code').value = selectedReason;
+    currentActiveForm.querySelector('.form-resume-date').value = resumeDate;
+    currentActiveForm.querySelector('.form-note').value = note;
+
+    closeReasonModal();
+    currentActiveForm.submit();
 }
 
 function enableResumeOrder(btn, defaultQty) {
-    btn.classList.add('d-none');
+    btn.classList.add('hidden');
     const form = btn.closest('form');
     const controls = form.querySelector('.stepper-controls');
-    controls.classList.remove('d-none');
+    controls.classList.remove('hidden');
     const input = controls.querySelector('.qty-input');
-    input.value = defaultQty > 0 ? defaultQty : 10;
-    handleQtyChange(input);
+    const valText = controls.querySelector('.qty-val-text');
+    const qty = defaultQty > 0 ? defaultQty : 10;
+    input.value = qty;
+    valText.textContent = qty;
 }
+
+document.querySelectorAll('form.standing-order-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const input = form.querySelector('.qty-input');
+        const reasonInput = form.querySelector('.form-reason-code');
+        const val = parseInt(input.value || '0', 10);
+        if (val === 0 && !reasonInput.value) {
+            e.preventDefault();
+            currentActiveForm = form;
+            currentLastQty = parseInt(input.dataset.initial || '10', 10);
+            openReasonModal();
+        }
+    });
+});
 </script>
 {% endif %}

@@ -1,6 +1,8 @@
 import logging
 from datetime import date
 
+from app.utils.clock import today_wib
+
 from app.extensions import db
 from app.models.accounting import Journal, JournalDetail
 from app.models.finance import CashBankTransaction, BankAccount
@@ -617,7 +619,7 @@ def record_manual_receivable_payment(
             label="Tanggal pembayaran piutang manual",
             reference_label="tanggal piutang manual",
         )
-        assert_not_future_date(payment_date, date.today(), label="Tanggal pembayaran piutang manual")
+        assert_not_future_date(payment_date, today_wib(), label="Tanggal pembayaran piutang manual")
         method = validate_choice(payment_method, CUSTOMER_PAYMENT_METHODS, "Metode pembayaran piutang manual")
     except BusinessRuleError as error:
         raise FieldTransactionSettlementError(str(error))
@@ -797,7 +799,7 @@ def record_manual_payable_payment(
             label="Tanggal pembayaran hutang manual",
             reference_label="tanggal hutang manual",
         )
-        assert_not_future_date(payment_date, date.today(), label="Tanggal pembayaran hutang manual")
+        assert_not_future_date(payment_date, today_wib(), label="Tanggal pembayaran hutang manual")
         method = validate_choice(payment_method, SUPPLIER_PAYMENT_METHODS, "Metode pembayaran hutang manual")
     except BusinessRuleError as error:
         raise FieldTransactionSettlementError(str(error))

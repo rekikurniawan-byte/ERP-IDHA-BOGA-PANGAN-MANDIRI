@@ -16,6 +16,7 @@ from app.services.audit_log_service import record_audit_log
 from app.services.billing_input_source_service import INPUT_SOURCE_MANUAL_BACKFILL, INPUT_SOURCE_REALTIME
 from app.services.invoice_identity_service import build_company_bank_snapshot
 from app.services.tax_service import apply_pbjt_to_invoice
+from app.utils.clock import today_wib
 from app.services.manual_billing_service import (
     MANUAL_BILLING_INVOICE_SOURCE,
     create_invoice_journal_for_invoice,
@@ -667,7 +668,7 @@ def validate_manual_backfill_batch_before_invoice(batch, *, invoice_date=None):
     if status != MANUAL_BACKFILL_STATUS_LOCKED:
         raise ManualBackfillBillingError("Hanya rekap manual berstatus Terkunci yang bisa dibuat menjadi invoice.")
 
-    invoice_date = invoice_date or date.today()
+    invoice_date = invoice_date or today_wib()
     period_end = getattr(batch, "period_end", None)
     if period_end and period_end > invoice_date:
         raise ManualBackfillBillingError("Periode rekap manual belum selesai, belum boleh dibuat invoice.")
@@ -855,7 +856,7 @@ def create_invoice_from_manual_backfill_batch(*, batch_id, branch_id, created_by
     It does not alter the realtime order/invoice flow.
     """
     batch = _get_manual_backfill_batch(batch_id, branch_id)
-    invoice_date = date.today()
+    invoice_date = today_wib()
     summary = validate_manual_backfill_batch_before_invoice(batch, invoice_date=invoice_date)
     identity = _resolve_backfill_bill_to_snapshot(batch)
 

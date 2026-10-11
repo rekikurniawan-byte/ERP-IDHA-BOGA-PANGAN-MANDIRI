@@ -1,5 +1,6 @@
 # Split from app.routes.finance_routes. Keep root imports/helpers as shared context.
 from app.routes.finance_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
 
 def _generate_payment_number(payment_date):
     from app.models.finance import Payment
@@ -327,7 +328,7 @@ def portal_payment_proofs():
         portal_payment_status=build_finance_portal_payment_status(current_user),
         erp_integration=build_portal_erp_integration_status(current_user),
         bank_accounts=bank_accounts,
-        today=date.today(),
+        today=today_wib(),
         payment_methods=CUSTOMER_PAYMENT_METHODS,
     )
 

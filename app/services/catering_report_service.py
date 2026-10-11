@@ -2,6 +2,8 @@ import logging
 from calendar import monthrange
 from datetime import date, datetime
 
+from app.utils.clock import today_wib
+
 from app.models.delivery import Delivery, DeliveryDetail
 from app.models.finance import Invoice, InvoiceItem
 from app.models.master import Mandor
@@ -25,7 +27,7 @@ def parse_month(value, fallback=None):
         return parsed.year, parsed.month
     except Exception:
         logger.exception("Suppressed unexpected exception in app/services/catering_report_service.py:22")
-        fallback = fallback or date.today()
+        fallback = fallback or today_wib()
         return fallback.year, fallback.month
 
 

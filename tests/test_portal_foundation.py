@@ -1332,8 +1332,11 @@ def test_portal_roles_redirect_to_their_dedicated_dashboard_pages(app):
         assert expected_endpoint in html
         assert "portal-mobile-shell" in html
         assert "portal-web-nav" in html
-        assert 'action="/auth/logout"' in html
-        assert "portal-web-logout-button" in html
+        # Satu pintu per halaman (owner 2026-10-11): tombol Keluar hanya di Akun.
+        account_html = client.get("/portal/profile").get_data(as_text=True)
+        assert 'action="/auth/logout"' in account_html
+        assert "portal-web-logout-button" in account_html
+        assert 'action="/auth/logout"' not in html
         assert "portal-mobile-bottom-nav" not in html
         assert "app-sidebar" not in html
 
@@ -1366,8 +1369,9 @@ def test_portal_login_routes_each_external_role_to_its_own_page(app):
         page_html = page_response.get_data(as_text=True)
         assert page_response.status_code == 200
         assert expected_endpoint in page_html
-        assert 'action="/auth/logout"' in page_html
-        assert "Keluar" in page_html
+        account_html = client.get("/portal/profile").get_data(as_text=True)
+        assert 'action="/auth/logout"' in account_html
+        assert "Keluar" in account_html
         assert "app-sidebar" not in page_html
 
 
@@ -1548,7 +1552,7 @@ def test_portal_pt_feature_foundation_pages_render(app):
 
     pages = {
         "/portal/pt/mandors": "Seluruh Sub Client",
-        "/portal/pt/invoices": "Seluruh Invoice",
+        "/portal/pt/invoices": "Seluruh Tagihan",
         "/portal/pt/receivables": "Seluruh Piutang",
         "/portal/pt/contracts": "Seluruh Kontrak",
         "/portal/notifications": "Notifikasi",

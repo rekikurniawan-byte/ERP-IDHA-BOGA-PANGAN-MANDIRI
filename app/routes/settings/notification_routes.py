@@ -85,8 +85,9 @@ def notifications():
     unread_summary = count_unread_notifications(branch_id=current_user.branch_id, user=current_user)
     type_options = sorted({row.notification_type for row in rows if row.notification_type})
 
+    template_name = "driver/notifications.html" if current_user.role == "PENGANTAR" else "settings/notifications.html"
     return render_template(
-        "settings/notifications.html",
+        template_name,
         notifications=rows,
         summary=summary,
         unread_summary=unread_summary,

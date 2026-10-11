@@ -3,6 +3,8 @@
 Route functions moved out without changing URL rules or endpoint names.
 """
 from app.routes.logistics_routes import *  # noqa: F401,F403
+from app.utils.clock import today_wib
+
 
 
 @logistics_bp.route("/")
@@ -26,7 +28,7 @@ def material_forecast():
     status_filter = (request.args.get("status") or "ALL").strip().upper()
 
     try:
-        date_from = datetime.strptime(date_from_raw, "%Y-%m-%d").date() if date_from_raw else date.today()
+        date_from = datetime.strptime(date_from_raw, "%Y-%m-%d").date() if date_from_raw else today_wib()
     except ValueError:
         flash("Tanggal awal prediksi tidak valid.", "warning")
         return redirect(url_for("logistics.material_forecast"))
@@ -124,7 +126,7 @@ def stock_out():
         form_action=url_for("logistics.stock_out"),
         movement_type="OUT",
         items=items,
-        today=date.today()
+        today=today_wib()
     )
 
 
@@ -174,7 +176,7 @@ def adjustment():
     return render_template(
         "logistics/adjustment.html",
         items=items,
-        today=date.today()
+        today=today_wib()
     )
 
 
