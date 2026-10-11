@@ -62,17 +62,7 @@
                 <a href="{{ url_for('portal.profile') }}" class="inline-flex items-center gap-1 h-9 pr-2 font-caption-regular text-caption-regular font-bold text-text-muted"><span class="material-symbols-outlined text-[20px]">arrow_back</span>Akun</a>
             </div>
         {% endif %}
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="px-margin pt-2" role="status" aria-live="polite">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} p-3 mb-2 rounded-xl text-sm font-medium {% if category == 'success' %}bg-status-success-bg text-status-success-text{% elif category in ['danger', 'error'] %}bg-status-danger-bg text-status-danger-text{% elif category == 'warning' %}bg-status-warning-bg text-status-warning-text{% else %}bg-status-info-bg text-status-info-text{% endif %}" role="alert">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+        {% include "components/flash_dialog.html" %}
 
         <div class="w-full flex-1 flex flex-col">
             {% block portal_content %}{% endblock %}

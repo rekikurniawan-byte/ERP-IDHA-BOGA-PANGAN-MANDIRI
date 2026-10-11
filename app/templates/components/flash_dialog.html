@@ -1,0 +1,92 @@
+{# CSS selalu dimuat: notifikasi dari JavaScript (appNotify) memakai kotak yang sama walau tidak ada flash dari server. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/flash_dialog.css', v=css_asset_version) }}">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+
+{% set ns = namespace(tone='success', title='Berhasil') %}
+{% for cat, msg in messages %}
+    {% set c = 'danger' if cat == 'error' else cat %}
+    {% if c == 'danger' %}
+        {% set ns.tone = 'danger' %}
+        {% set ns.title = 'Gagal' %}
+    {% elif c == 'warning' and ns.tone != 'danger' %}
+        {% set ns.tone = 'warning' %}
+        {% set ns.title = 'Perhatian' %}
+    {% elif c == 'info' and ns.tone not in ['danger', 'warning'] %}
+        {% set ns.tone = 'info' %}
+        {% set ns.title = 'Informasi' %}
+    {% endif %}
+{% endfor %}
+
+<dialog id="appFlashDialog" class="app-flash-dialog" role="alertdialog" aria-modal="true" aria-labelledby="appFlashDialogTitle">
+    <div class="app-flash-dialog-header">
+        <div class="app-flash-dialog-icon is-{{ ns.tone }}">
+            {% if ns.tone == 'success' %}
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            {% elif ns.tone == 'danger' %}
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            {% elif ns.tone == 'warning' %}
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            {% else %}
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            {% endif %}
+        </div>
+        <h2 id="appFlashDialogTitle" class="app-flash-dialog-title">{{ ns.title }}</h2>
+    </div>
+
+    <div class="app-flash-dialog-body" role="status" aria-live="polite">
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} app-flash-item" role="alert">{{ message }}</div>
+        {% endfor %}
+    </div>
+
+    <form method="dialog" class="app-flash-dialog-form">
+        <button type="submit" id="appFlashDialogBtn" class="app-flash-dialog-btn" autofocus>Mengerti</button>
+    </form>
+</dialog>
+
+<script>
+(function () {
+    function initFlashDialog() {
+        var dialog = document.getElementById("appFlashDialog");
+        if (!dialog) return;
+        if (typeof dialog.showModal !== "function") {
+            // Browser lama tanpa <dialog> modal: tetap tampilkan pesannya.
+            dialog.setAttribute("open", "");
+            return;
+        }
+
+        dialog.addEventListener("cancel", function (e) {
+            e.preventDefault();
+        });
+
+        try {
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+            document.body.classList.add("flash-dialog-open");
+        } catch (err) {
+            console.error("Gagal membuka flash dialog:", err);
+        }
+
+        dialog.addEventListener("close", function () {
+            document.body.classList.remove("flash-dialog-open");
+        });
+
+        var btn = document.getElementById("appFlashDialogBtn");
+        if (btn) {
+            setTimeout(function () {
+                btn.focus();
+            }, 10);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initFlashDialog);
+    } else {
+        initFlashDialog();
+    }
+})();
+</script>
+{% endif %}
+{% endwith %}
