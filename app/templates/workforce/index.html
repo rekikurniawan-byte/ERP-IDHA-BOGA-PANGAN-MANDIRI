@@ -10,7 +10,7 @@
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         <div>
             <strong>Peraturan Perusahaan wajib disahkan Disnaker.</strong>
-            Karyawan aktif sudah {{ alerts.active_count }} orang (wajib bila 10 orang atau lebih). Setelah disahkan, isi nomornya di Pengaturan Perusahaan.
+            Karyawan aktif sudah {{ alerts.active_count }} orang (wajib bila 10 orang atau lebih). Draf otomatis tersedia di Penggajian → Aturan Gaji &amp; Potongan; setelah disahkan, isi nomor pengesahannya di halaman itu.
         </div>
     </div>
 {% endif %}
@@ -25,7 +25,7 @@
 </div>
 
 {% set actions = [] %}
-{% for charge in proposed %}{% do actions.append({"tone": "danger", "chip": "Keputusan owner", "title": charge.employee.full_name ~ " · " ~ wf_labels.charge_type[charge.charge_type] ~ " " ~ (charge.amount|rupiah), "sub": charge.description, "url": url_for('workforce.charges', status='DIUSULKAN'), "button": "Putuskan" if current_user.role == 'OWNER' else "Lihat"}) %}{% endfor %}
+{% for charge in proposed %}{% do actions.append({"tone": "danger", "chip": "Keputusan owner", "title": charge.employee.full_name ~ " · " ~ wf_labels.charge_type[charge.charge_type] ~ " " ~ (charge.amount|rupiah), "sub": charge.description, "url": url_for('workforce.advances', status='DIUSULKAN') if charge.charge_type == 'KASBON' else url_for('workforce.charges', status='DIUSULKAN'), "button": "Putuskan" if current_user.role == 'OWNER' else "Lihat"}) %}{% endfor %}
 {% for contract in alerts.pending_employer %}{% do actions.append({"tone": "danger", "chip": "Keputusan owner", "title": contract.employee.full_name ~ " · " ~ contract.contract_number, "sub": "Sudah ditandatangani karyawan, menunggu tanda tangan owner", "url": url_for('workforce.contract_detail', contract_id=contract.id), "button": "Tandatangani" if current_user.role == 'OWNER' else "Lihat"}) %}{% endfor %}
 {% for row in pending_exits %}{% do actions.append({"tone": "danger", "chip": "Keluar", "title": row.employee.full_name ~ " · " ~ wf_labels.exit_type[row.exit_type], "sub": "Keluar " ~ row.effective_date.strftime('%d-%m-%Y') ~ ((" · kurang " ~ row.short_notice_days ~ " hari pemberitahuan") if row.short_notice_days else ""), "url": url_for('workforce.exit_detail', exit_id=row.id), "button": "Periksa"}) %}{% endfor %}
 {% for item in open_cases %}{% do actions.append({"tone": "danger", "chip": "Mangkir", "title": item.case.employee.full_name ~ " · " ~ item.days ~ " hari", "sub": "Sejak " ~ item.case.start_date.strftime('%d-%m-%Y') ~ " · " ~ wf_labels.case_status[item.case.status], "url": url_for('workforce.case_detail', case_id=item.case.id), "button": "Tindak lanjut"}) %}{% endfor %}

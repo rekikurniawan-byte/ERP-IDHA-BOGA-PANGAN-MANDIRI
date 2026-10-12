@@ -846,7 +846,8 @@ def charges():
         return redirect(url_for("workforce.charges"))
 
     status = (request.args.get("status") or "").upper()
-    query = EmployeeCharge.query.filter_by(branch_id=branch_id)
+    # Kasbon punya halaman sendiri (Penggajian → Kasbon).
+    query = EmployeeCharge.query.filter(EmployeeCharge.branch_id == branch_id, EmployeeCharge.charge_type != "KASBON")
     if status:
         query = query.filter(EmployeeCharge.status == status)
     rows = query.order_by(EmployeeCharge.id.desc()).limit(300).all()
@@ -876,7 +877,10 @@ def charge_approve(charge_id):
         reference_id=charge.id,
     )
     if ok:
-        flash("Disetujui dan dijurnal (Piutang Karyawan / Pendapatan Lain-lain). Dipotong otomatis di penggajian.", "success")
+        if charge.charge_type == "KASBON":
+            flash("Kasbon disetujui dan dicairkan: buku kas + jurnal Piutang Karyawan / Kas-Bank. Dicicil otomatis dari gaji.", "success")
+        else:
+            flash("Disetujui dan dijurnal (Piutang Karyawan / Pendapatan Lain-lain). Dipotong otomatis di penggajian.", "success")
     return redirect(_next_url(url_for("workforce.charges")))
 
 
@@ -894,6 +898,123 @@ def charge_cancel(charge_id):
     if ok:
         flash("Dibatalkan.", "success")
     return redirect(_next_url(url_for("workforce.charges")))
+
+
+# ---------------------------------------------------------------- Kasbon
+
+
+@workforce_bp.route("/kasbon")
+@role_required(*HR_ROLES)
+def advances():
+    from app.models.finance import BankAccount
+    from app.services.employee_advance_service import advance_number
+
+    branch_id = _branch_id()
+    status = (request.args.get("status") or "").upper()
+    query = EmployeeCharge.query.filter_by(branch_id=branch_id, charge_type="KASBON")
+    if status:
+        query = query.filter(EmployeeCharge.status == status)
+    rows = query.order_by(EmployeeCharge.id.desc()).limit(300).all()
+    active = EmployeeCharge.query.filter_by(branch_id=branch_id, charge_type="KASBON", status=CHARGE_ACTIVE).all()
+    return render_template(
+        "workforce/advances.html",
+        advances=rows,
+        status_filter=status,
+        charge_remaining=charge_remaining,
+        advance_number=advance_number,
+        outstanding_total=sum((charge_remaining(c) for c in active), Decimal("0")),
+        bank_accounts=BankAccount.query.filter_by(branch_id=branch_id, is_active=True).order_by(BankAccount.bank_name.asc()).all(),
+        is_owner=str(current_user.role).upper() == "OWNER",
+    )
+
+
+@workforce_bp.route("/kasbon/baru", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
+@role_required(*HR_ROLES)
+def advance_create():
+    from app.models.finance import BankAccount
+    from app.services.employee_advance_service import monthly_salary, open_advance_total, request_advance
+
+    branch_id = _branch_id()
+    employees = (
+        Employee.query.filter_by(branch_id=branch_id, status="ACTIVE", employee_type="KARYAWAN")
+        .order_by(Employee.full_name.asc()).all()
+    )
+    limits = {e.id: max(Decimal("0"), monthly_salary(e) - open_advance_total(e.id)) for e in employees}
+    banks = BankAccount.query.filter_by(branch_id=branch_id, is_active=True).order_by(BankAccount.bank_name.asc()).all()
+    if request.method == "POST":
+        try:
+            employee = get_employee(_int(request.form.get("employee_id")), branch_id)
+        except WorkforceError as error:
+            flash(str(error), "warning")
+            return render_template("workforce/advance_form.html", employees=employees, limits=limits, banks=banks, form=request.form)
+
+        def _create(tx):
+            charge, attachments = request_advance(
+                employee,
+                amount=_decimal(request.form.get("amount"), Decimal("0")),
+                installment=_decimal(request.form.get("installment"), Decimal("0")),
+                reason=request.form.get("reason"),
+                account_type=request.form.get("account_type"),
+                bank_account_id=request.form.get("bank_account_id"),
+                typed_name=request.form.get("typed_name"),
+                signature_data=request.form.get("signature_data"),
+                user=current_user,
+            )
+            for attachment in attachments:
+                tx.track_attachment(attachment)
+            return charge
+
+        ok, charge = _run("EMPLOYEE_ADVANCE_REQUEST", f"Ajukan kasbon {employee.full_name}", _create, reference_type="employee_charges")
+        if ok:
+            flash("Kasbon diajukan dan sudah disetujui karyawan secara tertulis. Menunggu persetujuan owner untuk dicairkan.", "success")
+            return redirect(url_for("workforce.advances"))
+        return render_template("workforce/advance_form.html", employees=employees, limits=limits, banks=banks, form=request.form)
+    preset = {"employee_id": request.args.get("employee_id", ""), "account_type": "CASH"}
+    return render_template("workforce/advance_form.html", employees=employees, limits=limits, banks=banks, form=preset)
+
+
+@workforce_bp.route("/kasbon/<int:charge_id>/lunasi", methods=["POST"])
+@role_required(*HR_ROLES)
+def advance_repay(charge_id):
+    from app.services.employee_advance_service import repay_advance_cash
+
+    charge = _charge_or_404(charge_id)
+    ok, _ = _run(
+        "EMPLOYEE_ADVANCE_REPAY",
+        f"Pelunasan kasbon {charge.employee.full_name}",
+        lambda tx: repay_advance_cash(
+            charge,
+            amount=_decimal(request.form.get("amount"), Decimal("0")),
+            account_type=request.form.get("account_type"),
+            bank_account_id=request.form.get("bank_account_id"),
+            user=current_user,
+        ),
+        reference_type="employee_charges",
+        reference_id=charge.id,
+    )
+    if ok:
+        flash("Pelunasan kasbon dicatat di buku kas dan jurnal.", "success")
+    return redirect(url_for("workforce.advances"))
+
+
+@workforce_bp.route("/kasbon/<int:charge_id>/cetak")
+@role_required(*HR_ROLES)
+def advance_print(charge_id):
+    from app.services.employee_advance_service import advance_number
+
+    charge = _charge_or_404(charge_id)
+    if charge.charge_type != "KASBON":
+        abort(404)
+    return render_template(
+        "workforce/advance_print.html",
+        charge=charge,
+        number=advance_number(charge),
+        company=hr_settings(charge.branch_id)["company"],
+        settings=hr_settings(charge.branch_id),
+        signature=attachment_data_url(charge.signature_attachment_id),
+        printed_at=today_wib(),
+    )
 
 
 # ---------------------------------------------------------------- Keluar
@@ -1033,6 +1154,25 @@ def rules():
         divisors=DIVISOR_CHOICES,
         is_owner=is_owner,
         old_rule_contracts=differs,
+    )
+
+
+@workforce_bp.route("/aturan/peraturan-perusahaan")
+@role_required(*HR_ROLES)
+def company_regulation():
+    """Draf Peraturan Perusahaan dari aturan yang berlaku di sistem (untuk diajukan ke Disnaker)."""
+    from app.services.workforce_service import DIVISOR_CHOICES
+
+    settings = hr_settings(_branch_id())
+    names = {"IZIN": "izin pribadi", "SAKIT": "sakit tanpa surat keterangan dokter", "CUTI": "cuti di luar jatah cuti tahunan", "ALPA": "tidak masuk tanpa keterangan"}
+    return render_template(
+        "workforce/company_regulation_print.html",
+        settings=settings,
+        company=settings["company"],
+        unpaid=[names[c] for c in settings["unpaid_statuses"] if c in names],
+        divisor_label=DIVISOR_CHOICES.get(settings["daily_wage_divisor"], ""),
+        active_count=Employee.query.filter_by(branch_id=_branch_id(), status="ACTIVE", employee_type="KARYAWAN").count(),
+        printed_at=today_wib(),
     )
 
 

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draf Peraturan Perusahaan</title>
+    {% include "hr/_doc_styles.html" %}
+    <style>
+        .doc-sheet { min-height: 0; font-size: 10.5pt; line-height: 1.6; }
+        .doc-sheet h2 { text-align: center; margin: 14px 0 2px; font-size: 14pt; letter-spacing: 0.04em; }
+        .doc-sheet h3 { margin: 16px 0 4px; font-size: 10.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: var(--doc-accent); }
+        .doc-sheet h4 { margin: 10px 0 2px; font-size: 10.5pt; }
+        .doc-sheet ol { margin: 0 0 6px; padding-left: 20px; }
+        .fill { background: #fff4e5; padding: 0 4px; border-radius: 3px; }
+        .draft-note { margin: 10px 0; padding: 8px 12px; border: 1px dashed var(--doc-accent); border-radius: 8px; font-size: 9pt; color: var(--doc-muted); }
+        @media print { .draft-note { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="doc-toolbar">
+        <span class="doc-toolbar-title">Draf Peraturan Perusahaan · {{ company.get("company_name") }}</span>
+        <span class="doc-toolbar-actions">
+            <a class="doc-btn" href="{{ url_for('workforce.rules') }}">Kembali</a>
+            <button class="doc-btn is-primary" type="button" onclick="window.print()">Cetak / Simpan PDF</button>
+        </span>
+    </div>
+    <article class="doc-sheet">
+        <div class="doc-watermark">DRAF</div>
+        <h2>PERATURAN PERUSAHAAN</h2>
+        <div style="text-align:center"><strong>{{ company.get("company_name") }}</strong><br>{{ company.get("company_address") or "" }}</div>
+        <div class="draft-note">
+            Draf otomatis dari Aturan Gaji &amp; Potongan di sistem ({{ printed_at.strftime('%d-%m-%Y') }}). Bagian <span class="fill">berwarna</span> wajib dilengkapi.
+            Sebelum diajukan ke Disnaker: minta saran &amp; pertimbangan wakil pekerja (UU 13/2003 Ps. 110), cek oleh konsultan/Disnaker,
+            lalu ajukan pengesahan. Berlaku paling lama 2 tahun (Ps. 111 ayat 3). Karyawan aktif saat ini: {{ active_count }} orang.
+        </div>
+
+        <h3>Bab I · Ketentuan Umum</h3>
+        <ol>
+            <li>Peraturan ini berlaku bagi seluruh karyawan {{ company.get("company_name") }} di {{ settings.work_location or company.get("company_address") or "lokasi kerja perusahaan" }}.</li>
+            <li>Hal yang tidak diatur di sini mengikuti perjanjian kerja masing-masing dan peraturan perundang-undangan ketenagakerjaan.</li>
+            <li>Perjanjian kerja tidak boleh bertentangan dengan Peraturan Perusahaan ini; bila bertentangan, yang berlaku ketentuan yang lebih menguntungkan karyawan sepanjang sesuai undang-undang.</li>
+        </ol>
+
+        <h3>Bab II · Hubungan Kerja</h3>
+        <ol>
+            <li>Hubungan kerja dibuat tertulis dalam bentuk Perjanjian Kerja Waktu Tertentu (PKWT) atau Waktu Tidak Tertentu (PKWTT), ditandatangani kedua pihak.</li>
+            <li>PKWT paling lama 5 (lima) tahun termasuk perpanjangan, tanpa masa percobaan, dan dicatatkan ke dinas ketenagakerjaan.</li>
+            <li>PKWTT dapat memakai masa percobaan paling lama 3 (tiga) bulan dengan upah tidak di bawah upah minimum.</li>
+            <li>Perusahaan tidak menahan ijazah, KTP, atau dokumen pribadi asli karyawan.</li>
+        </ol>
+
+        <h3>Bab III · Waktu Kerja, Apel, dan Tempat Tinggal</h3>
+        <ol>
+            <li>Waktu kerja <span class="fill">[isi: mis. 7 jam/hari 6 hari atau 8 jam/hari 5 hari seminggu, dan pengaturan sesi produksi siang/sore]</span>; kerja melebihi waktu tersebut dihitung lembur sesuai ketentuan.</li>
+            <li>Setiap hari dilakukan apel kehadiran oleh perusahaan; status: hadir, izin, sakit, cuti, atau tanpa keterangan.</li>
+            <li>Karyawan tinggal di mess/lokasi kerja yang disediakan dan wajib menjaga ketertiban mess.</li>
+        </ol>
+
+        <h3>Bab IV · Izin Keluar Lokasi dan Pulang Kampung</h3>
+        <ol>
+            <li>Meninggalkan lokasi kerja/mess wajib dengan izin perusahaan yang mencantumkan tanggal berangkat dan tanggal wajib kembali.</li>
+            <li>Karyawan wajib kembali paling lambat pada tanggal yang disetujui. Keterlambatan dihitung per hari.</li>
+        </ol>
+
+        <h3>Bab V · Cuti dan Sakit</h3>
+        <ol>
+            <li>Karyawan yang telah bekerja 12 (dua belas) bulan terus-menerus berhak atas cuti tahunan 12 (dua belas) hari kerja dengan upah penuh.</li>
+            <li>Karyawan yang sakit dengan surat keterangan dokter tetap memperoleh upah sesuai ketentuan perundang-undangan.</li>
+            <li>Cuti melahirkan, haid, dan izin karena alasan penting yang diatur undang-undang mengikuti ketentuan yang berlaku.</li>
+        </ol>
+
+        <h3>Bab VI · Upah dan Potongan Upah</h3>
+        <ol>
+            <li>Upah dibayar bulanan sesuai perjanjian kerja, dengan slip gaji yang memuat rincian pendapatan dan potongan.</li>
+            {% if unpaid %}<li>Hari tidak bekerja karena <strong>{{ unpaid|join(", ") }}</strong> tidak dibayar. Upah per hari = upah sebulan ÷ {{ divisor_label|lower }}.</li>{% endif %}
+            <li>Potongan upah untuk denda, ganti rugi, dan kasbon hanya dilakukan dengan persetujuan tertulis karyawan, dan seluruhnya paling banyak <strong>{{ settings.max_deduction_percent }}%</strong> dari upah per periode (PP 36/2021). Sisanya menjadi utang karyawan dan dipotong pada periode berikutnya.</li>
+            <li>Kasbon paling banyak 1 (satu) kali upah bulanan, dicicil dari gaji sesuai surat pernyataan kasbon.</li>
+        </ol>
+
+        <h3>Bab VII · Tata Tertib dan Sanksi Denda</h3>
+        <ol>
+            <li>Atas pelanggaran berikut dikenakan denda tertulis yang dipotong sesuai Bab VI:
+                <ol type="a">
+                    <li>tidak masuk kerja tanpa keterangan (mangkir): {{ settings.fine_absent_per_day|rupiah }} per hari;</li>
+                    <li>meninggalkan lokasi kerja tanpa izin: {{ settings.fine_leave_site|rupiah }} per kejadian;</li>
+                    <li>terlambat kembali dari izin: {{ settings.fine_late_return_per_day|rupiah }} per hari;</li>
+                    <li>mengundurkan diri tanpa pemberitahuan {{ settings.notice_days }} hari: {{ settings.fine_short_notice|rupiah }}.</li>
+                </ol>
+            </li>
+            <li>Setiap denda ditetapkan secara tertulis oleh pimpinan dan diberitahukan kepada karyawan beserta rinciannya.</li>
+            <li>Penggunaan uang denda <span class="fill">[isi: mis. untuk kesejahteraan karyawan]</span>, sesuai PP 36/2021.</li>
+        </ol>
+
+        <h3>Bab VIII · Mangkir</h3>
+        <p>Karyawan yang mangkir {{ settings.deemed_resign_days }} hari kerja atau lebih berturut-turut tanpa keterangan tertulis yang sah dan telah dipanggil 2 (dua) kali secara patut dan tertulis dapat dikualifikasikan mengundurkan diri.</p>
+
+        <h3>Bab IX · Pengunduran Diri dan Berakhirnya Hubungan Kerja</h3>
+        <ol>
+            <li>Pengunduran diri diajukan tertulis paling lambat {{ settings.notice_days }} hari sebelum tanggal berhenti, dengan menyelesaikan serah terima pekerjaan dan barang perusahaan.</li>
+            <li>Pihak yang mengakhiri PKWT sebelum waktunya membayar ganti rugi sebesar upah sampai berakhirnya PKWT (UU 13/2003 Ps. 62).</li>
+            <li>Saat PKWT berakhir, perusahaan membayar uang kompensasi sesuai PP 35/2021.</li>
+            <li>Upah dan hak yang sudah menjadi hak karyawan tetap dibayarkan pada penyelesaian akhir.</li>
+        </ol>
+
+        <h3>Bab X · Penyelesaian Perselisihan</h3>
+        <p>Perselisihan diselesaikan secara musyawarah (bipartit); bila tidak tercapai, melalui mediasi dinas ketenagakerjaan setempat sesuai peraturan yang berlaku.</p>
+
+        <h3>Bab XI · Penutup</h3>
+        <ol>
+            <li>Peraturan ini berlaku sejak disahkan oleh instansi ketenagakerjaan untuk jangka waktu 2 (dua) tahun, dan diperbarui sebelum masa berlakunya habis.</li>
+            <li>Perusahaan wajib memberitahukan dan menjelaskan isi peraturan ini kepada seluruh karyawan.</li>
+        </ol>
+
+        <section class="doc-sign">
+            <div></div>
+            <div>
+                <div><span class="fill">[kota]</span>, <span class="fill">[tanggal]</span><br>{{ company.get("company_name") }}</div>
+                <div class="doc-sign-box"></div>
+                <span class="doc-sign-name">{{ settings.employer_signer_name or "........................" }}</span>
+                <div>{{ settings.employer_signer_position }}</div>
+            </div>
+        </section>
+    </article>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Pernyataan Kasbon {{ number }}</title>
+    {% include "hr/_doc_styles.html" %}
+    <style>
+        .doc-sheet { min-height: 0; }
+        .advance-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10.5pt; }
+        .advance-table td { padding: 7px 0; border-bottom: 1px dotted var(--doc-line); vertical-align: top; }
+        .advance-table td:first-child { width: 32%; color: var(--doc-muted); }
+    </style>
+</head>
+<body>
+    <div class="doc-toolbar">
+        <span class="doc-toolbar-title">Surat Pernyataan Kasbon {{ number }}</span>
+        <span class="doc-toolbar-actions">
+            <a class="doc-btn" href="{{ url_for('workforce.advances') }}">Kembali</a>
+            <button class="doc-btn is-primary" type="button" onclick="window.print()">Cetak / Simpan PDF</button>
+        </span>
+    </div>
+    <article class="doc-sheet">
+        {% if charge.status == 'DIUSULKAN' %}<div class="doc-watermark">BELUM DISETUJUI</div>{% endif %}
+        <header class="doc-head">
+            <div class="doc-brand">
+                <div class="doc-logo">{% set initials = (company.get("company_name") or "PT")[:2]|upper %}{% if company.get("company_logo_url") %}<img src="{{ company.get('company_logo_url') }}" alt="" onerror="this.parentNode.textContent='{{ initials }}'">{% else %}{{ initials }}{% endif %}</div>
+                <div>
+                    <div class="doc-company">{{ company.get("company_name") }}</div>
+                    <div class="doc-company-sub">{{ company.get("company_address") or "" }}</div>
+                </div>
+            </div>
+            <div class="doc-title">
+                <h1>KASBON</h1>
+                <div class="doc-meta">No. <strong>{{ number }}</strong></div>
+            </div>
+        </header>
+
+        <p style="margin-top:14px">Yang bertanda tangan di bawah ini:</p>
+        <table class="advance-table">
+            <tr><td>Nama</td><td><strong>{{ charge.employee.full_name }}</strong></td></tr>
+            <tr><td>NIK</td><td>{{ charge.employee.nik or "-" }}</td></tr>
+            <tr><td>Jabatan</td><td>{{ charge.employee.position or "-" }}</td></tr>
+            <tr><td>Nominal kasbon</td><td><strong>{{ charge.amount|rupiah }}</strong></td></tr>
+            <tr><td>Cicilan per gaji</td><td>{{ charge.installment_amount|rupiah }}</td></tr>
+            <tr><td>Keperluan</td><td>{{ charge.description }}</td></tr>
+            <tr><td>Dicairkan</td><td>{{ charge.disbursed_on.strftime('%d-%m-%Y') if charge.disbursed_on else "Belum (menunggu persetujuan)" }} · {{ "Kas" if charge.cash_account_type == "CASH" else "Transfer bank" }}</td></tr>
+        </table>
+        <p>menyatakan telah menerima kasbon tersebut dari {{ company.get("company_name") }} dan <strong>menyetujui kasbon dipotong dari gaji</strong>
+        sebesar cicilan di atas setiap periode pembayaran sampai lunas, dengan seluruh potongan paling banyak 50% dari gaji per periode
+        sesuai PP No. 36 Tahun 2021. Apabila hubungan kerja berakhir, sisa kasbon dipotong dari hak terakhir saya; kekurangannya tetap menjadi utang saya kepada perusahaan.</p>
+
+        <section class="doc-sign">
+            <div>
+                <div>Disetujui,</div>
+                <div class="doc-sign-box"></div>
+                <span class="doc-sign-name">{{ settings.employer_signer_name or "Pimpinan" }}</span>
+                <div>{{ settings.employer_signer_position }}</div>
+            </div>
+            <div>
+                <div>Yang menyatakan,</div>
+                <div class="doc-sign-box">{% if signature %}<img src="{{ signature }}" alt="Tanda tangan {{ charge.employee.full_name }}">{% endif %}</div>
+                <span class="doc-sign-name">{{ charge.employee.full_name }}</span>
+                <div>Karyawan</div>
+            </div>
+        </section>
+        <footer class="doc-foot">
+            <span>Ditandatangani elektronik {{ charge.created_at|wib }}</span>
+            <span>Dicetak {{ printed_at.strftime('%d-%m-%Y') }}</span>
+        </footer>
+    </article>
+</body>
+</html>

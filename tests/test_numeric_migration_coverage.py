@@ -57,6 +57,7 @@ contract_documents_i7 = importlib.import_module(
 workforce_j8 = importlib.import_module("migrations.versions.j8e9f0a1b2c3_workforce_contracts")
 payslip_k9 = importlib.import_module("migrations.versions.k9f0a1b2c3d4_payslip_receipts")
 pph21_n2 = importlib.import_module("migrations.versions.n2c3d4e5f6a7_pph21_payroll_snapshot")
+advances_o3 = importlib.import_module("migrations.versions.o3f4a5b6c7d8_employee_advances")
 
 
 def _migration_columns(module):
@@ -107,6 +108,7 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(workforce_j8),
         **_migration_columns(payslip_k9),
         **_migration_columns(pph21_n2),
+        **_migration_columns(advances_o3),
     }
 
     assert migration_columns

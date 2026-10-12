@@ -1,0 +1,105 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_advances">
+{{ page_header("Kasbon Karyawan", "Pinjaman karyawan dicairkan dari kas/bank setelah owner setuju, lalu dicicil otomatis dari gaji (ikut batas 50%). Maksimal 1x gaji.", eyebrow="SDM · Penggajian",
+    actions=[{"label": "Ajukan Kasbon", "url": url_for('workforce.advance_create'), "icon": "bi-cash-coin", "variant": "primary"}]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div><div><p>Menunggu Owner</p><h3>{{ advances|selectattr("status", "equalto", "DIUSULKAN")|list|length }}</h3><span class="app-stat-helper">Belum dicairkan</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div><div><p>Sisa Kasbon Berjalan</p><h3 class="wf-stat-money">{{ outstanding_total|rupiah }}</h3><span class="app-stat-helper">Piutang karyawan (akun 1005)</span></div></div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select" name="status" id="status">
+                    <option value="">Semua status</option>
+                    {% for code, label in [("DIUSULKAN", "Menunggu owner"), ("AKTIF", "Berjalan"), ("LUNAS", "Lunas"), ("BATAL", "Batal / dihapuskan")] %}
+                        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="app-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('workforce.advances') }}">Atur Ulang</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        {% if advances %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th><th>Keperluan</th><th class="text-end">Nominal</th><th class="text-end">Cicilan/gaji</th><th class="text-end">Sisa</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                    <tbody>
+                        {% for charge in advances %}
+                            <tr>
+                                <td><a class="fw-semibold" href="{{ url_for('workforce.employee_detail', employee_id=charge.employee_id) }}">{{ charge.employee.full_name }}</a><small class="d-block text-muted">{{ advance_number(charge) }}{% if charge.disbursed_on %} · cair {{ charge.disbursed_on.strftime('%d-%m-%Y') }}{% endif %}</small></td>
+                                <td>{{ charge.description }}{% if charge.cancel_reason %}<small class="d-block text-muted">Batal: {{ charge.cancel_reason }}</small>{% endif %}</td>
+                                <td class="text-end">{{ charge.amount|rupiah }}</td>
+                                <td class="text-end">{{ charge.installment_amount|rupiah if charge.installment_amount else "-" }}</td>
+                                <td class="text-end fw-semibold">{{ charge_remaining(charge)|rupiah if charge.status == 'AKTIF' else "-" }}</td>
+                                <td><span class="status-badge {{ 'warning' if charge.status == 'DIUSULKAN' else ('info' if charge.status == 'AKTIF' else ('success' if charge.status == 'LUNAS' else 'muted')) }}">{{ {"DIUSULKAN": "Menunggu owner", "AKTIF": "Berjalan", "LUNAS": "Lunas", "BATAL": "Batal"}[charge.status] }}</span></td>
+                                <td class="text-end">
+                                    <div class="table-actions" data-row-actions="true">
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.advance_print', charge_id=charge.id) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Surat</a>
+                                        {% if is_owner and charge.status == 'DIUSULKAN' %}
+                                            <form method="post" action="{{ url_for('workforce.charge_approve', charge_id=charge.id) }}" class="d-flex gap-1 align-items-center" data-ui-form="true">
+                                                {% include "components/csrf_token.html" %}
+                                                <input type="hidden" name="next" value="{{ url_for('workforce.advances') }}">
+                                                <input class="form-control form-control-sm" style="max-width: 120px" type="number" min="1" max="{{ charge.amount|int }}" name="amount" value="{{ charge.amount|int }}" aria-label="Nominal dicairkan">
+                                                <button class="btn btn-sm app-btn-primary" type="submit" data-app-confirm="Cairkan kasbon {{ charge.employee.full_name }} dari {{ 'kas' if charge.cash_account_type == 'CASH' else 'bank' }}?">Setujui & Cairkan</button>
+                                            </form>
+                                        {% endif %}
+                                        {% if charge.status == 'AKTIF' %}
+                                            <details class="wf-pop">
+                                                <summary class="btn btn-sm app-btn-secondary">Lunasi Tunai</summary>
+                                                <form method="post" action="{{ url_for('workforce.advance_repay', charge_id=charge.id) }}" class="wf-pop-body" data-ui-form="true">
+                                                    {% include "components/csrf_token.html" %}
+                                                    <label class="form-label" for="repay{{ charge.id }}">Nominal</label>
+                                                    <input class="form-control form-control-sm mb-2" type="number" min="1" max="{{ charge_remaining(charge)|int }}" name="amount" id="repay{{ charge.id }}" value="{{ charge_remaining(charge)|int }}">
+                                                    <label class="form-label" for="acc{{ charge.id }}">Diterima ke</label>
+                                                    <select class="form-select form-select-sm mb-2" name="account_type" id="acc{{ charge.id }}"><option value="CASH">Kas</option><option value="BANK">Bank</option></select>
+                                                    <select class="form-select form-select-sm mb-2" name="bank_account_id" aria-label="Rekening"><option value="">Rekening (bila bank)</option>{% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}</select>
+                                                    <button class="btn btn-sm app-btn-primary w-100" type="submit">Simpan Pelunasan</button>
+                                                </form>
+                                            </details>
+                                        {% endif %}
+                                        {% if is_owner and charge.status in ['DIUSULKAN', 'AKTIF'] %}
+                                            <details class="wf-pop">
+                                                <summary class="btn btn-sm app-btn-secondary">{{ "Tolak" if charge.status == 'DIUSULKAN' else "Hapuskan Sisa" }}</summary>
+                                                <form method="post" action="{{ url_for('workforce.charge_cancel', charge_id=charge.id) }}" class="wf-pop-body" data-ui-form="true">
+                                                    {% include "components/csrf_token.html" %}
+                                                    <input type="hidden" name="next" value="{{ url_for('workforce.advances') }}">
+                                                    <label class="form-label" for="reason{{ charge.id }}">Alasan</label>
+                                                    <input class="form-control form-control-sm mb-2" name="reason" id="reason{{ charge.id }}" required>
+                                                    {% if charge.status == 'AKTIF' %}<p class="wf-note mt-0">Sisa dicatat sebagai beban piutang tak tertagih (akun 5013).</p>{% endif %}
+                                                    <button class="btn btn-sm app-btn-primary w-100" type="submit" data-app-confirm="Yakin?">Simpan</button>
+                                                </form>
+                                            </details>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-cash-coin"></i></div>
+                <h3>Belum ada kasbon.</h3>
+                <p>Ajukan kasbon lewat tombol di kanan atas; karyawan menandatangani persetujuan potong gaji di HP.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

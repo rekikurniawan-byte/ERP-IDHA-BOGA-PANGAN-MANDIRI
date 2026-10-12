@@ -1,0 +1,99 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_advance_form">
+{{ page_header("Ajukan Kasbon", "Serahkan HP ke karyawan untuk membaca persetujuan, mengetik nama, dan menggores tanda tangan. Uang dicairkan setelah owner setuju.", eyebrow="SDM · Penggajian", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<form method="post" class="app-form" data-ui-form="true" id="advanceForm">
+    {% include "components/csrf_token.html" %}
+    <div class="wf-grid">
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Rincian Kasbon</h2></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="employee_id">Karyawan</label>
+                        <select class="form-select" name="employee_id" id="employee_id" required>
+                            <option value="">Pilih karyawan</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}" data-limit="{{ limits[employee.id]|int }}" data-name="{{ employee.full_name }}" {% if form.get('employee_id')|string == employee.id|string %}selected{% endif %}>{{ employee.full_name }} · sisa batas {{ limits[employee.id]|rupiah }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="amount">Nominal kasbon (Rp)</label>
+                        <input class="form-control" type="number" min="1" step="1" name="amount" id="amount" value="{{ form.get('amount', '') }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="installment">Cicilan per gaji (Rp)</label>
+                        <input class="form-control" type="number" min="1" step="1" name="installment" id="installment" value="{{ form.get('installment', '') }}" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="reason">Keperluan</label>
+                        <input class="form-control" name="reason" id="reason" value="{{ form.get('reason', '') }}" placeholder="Contoh: biaya sekolah anak" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="account_type">Dicairkan dari</label>
+                        <select class="form-select" name="account_type" id="account_type">
+                            <option value="CASH" {% if form.get('account_type') != 'BANK' %}selected{% endif %}>Kas</option>
+                            <option value="BANK" {% if form.get('account_type') == 'BANK' %}selected{% endif %}>Bank (transfer)</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="bank_account_id">Rekening (bila bank)</label>
+                        <select class="form-select" name="bank_account_id" id="bank_account_id">
+                            <option value="">-</option>
+                            {% for bank in banks %}<option value="{{ bank.id }}" {% if form.get('bank_account_id')|string == bank.id|string %}selected{% endif %}>{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <p class="wf-note" data-advance-plan>Isi nominal dan cicilan untuk melihat lama cicilan.</p>
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Persetujuan Karyawan</h2></div>
+                <div class="wf-alert is-info">
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                    <div>Saya menerima kasbon sebesar nominal di samping dan <strong>menyetujui kasbon ini dipotong dari gaji</strong> sebesar cicilan per gaji sampai lunas, paling banyak 50% gaji per bulan. Bila saya berhenti bekerja, sisa kasbon dipotong dari hak terakhir saya dan sisanya tetap menjadi utang saya.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="typed_name">Karyawan mengetik nama lengkap</label>
+                    <input class="form-control" name="typed_name" id="typed_name" autocomplete="off" required>
+                </div>
+                {% set pad_id = "advanceSignPad" %}{% set pad_label = "Tanda tangan karyawan" %}
+                {% include "workforce/_sign_pad.html" %}
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a class="btn app-btn-secondary" href="{{ url_for('workforce.advances') }}">Batal</a>
+        <button class="btn app-btn-primary" type="submit"><i class="bi bi-send"></i> Ajukan ke Owner</button>
+    </div>
+</form>
+</div>
+<script>
+(function () {
+    const form = document.getElementById("advanceForm");
+    const plan = form.querySelector("[data-advance-plan]");
+    function update() {
+        const option = form.employee_id.options[form.employee_id.selectedIndex];
+        const amount = parseInt(form.amount.value || "0", 10);
+        const installment = parseInt(form.installment.value || "0", 10);
+        const limit = option && option.dataset.limit ? parseInt(option.dataset.limit, 10) : null;
+        if (option && option.dataset.name) form.typed_name.placeholder = option.dataset.name;
+        if (!amount || !installment) { plan.textContent = "Isi nominal dan cicilan untuk melihat lama cicilan."; return; }
+        const months = Math.ceil(amount / installment);
+        let text = "Lunas dalam ±" + months + " kali gajian.";
+        if (limit !== null && amount > limit) text += " Melebihi sisa batas kasbon (Rp " + limit.toLocaleString("id-ID") + ").";
+        plan.textContent = text;
+    }
+    form.addEventListener("input", update);
+    form.addEventListener("change", update);
+    update();
+})();
+</script>
+{% endblock %}

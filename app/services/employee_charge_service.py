@@ -34,7 +34,8 @@ OTHER_INCOME_ACCOUNT = "4004"
 CHARGE_JOURNAL = "EMPLOYEE_CHARGE"
 CHARGE_CANCEL_JOURNAL = "EMPLOYEE_CHARGE_CANCEL"
 UNPOSTED_PAYROLL_STATUSES = ("DRAFT", "FINAL")
-CHARGE_TYPE_LABELS = {CHARGE_FINE: "Denda", CHARGE_DAMAGES: "Ganti rugi"}
+WRITE_OFF_ACCOUNT = "5013"  # kasbon yang dihapuskan = beban piutang tak tertagih, bukan pendapatan
+CHARGE_TYPE_LABELS = {CHARGE_FINE: "Denda", CHARGE_DAMAGES: "Ganti rugi", "KASBON": "Kasbon"}
 CHARGE_STATUS_LABELS = {
     CHARGE_PROPOSED: "Menunggu persetujuan owner",
     CHARGE_ACTIVE: "Berjalan (dipotong upah)",
@@ -72,7 +73,7 @@ def create_charge(
     contract=None,
 ) -> EmployeeCharge:
     charge_type = str(charge_type or "").upper()
-    if charge_type not in CHARGE_TYPE_LABELS:
+    if charge_type not in (CHARGE_FINE, CHARGE_DAMAGES):
         raise WorkforceError("Jenis tagihan harus Denda atau Ganti rugi.")
     amount = money(amount)
     if amount <= 0:
@@ -153,9 +154,15 @@ def approve_charge(charge: EmployeeCharge, user, amount=None) -> EmployeeCharge:
         if new_amount <= 0 or new_amount > money(charge.amount):
             raise WorkforceError("Nominal disetujui harus lebih dari 0 dan tidak melebihi usulan.")
         charge.amount = new_amount
+    if charge.charge_type == "KASBON":
+        from app.services.employee_advance_service import disburse_advance
+
+        disburse_advance(charge, user)
     charge.status = CHARGE_ACTIVE
     charge.approved_by = user.id
     charge.approved_at = datetime.utcnow()
+    if charge.charge_type == "KASBON":
+        return charge
     label = CHARGE_TYPE_LABELS[charge.charge_type]
     _post_journal(
         CHARGE_JOURNAL,
@@ -179,11 +186,14 @@ def cancel_charge(charge: EmployeeCharge, user, reason: str) -> EmployeeCharge:
             raise WorkforceError("Tagihan ini sedang dijadwalkan dipotong di penggajian yang belum dijurnal. Hitung ulang penggajian itu dulu.")
         remaining = charge_remaining(charge)
         if remaining > 0:
+            # Denda/ganti rugi dibalik dari pendapatan; kasbon yang dihapuskan jadi beban piutang tak tertagih.
+            debit_account = WRITE_OFF_ACCOUNT if charge.charge_type == "KASBON" else OTHER_INCOME_ACCOUNT
+            verb = "Hapus sisa" if charge.charge_type == "KASBON" else "Batal sisa"
             _post_journal(
                 CHARGE_CANCEL_JOURNAL,
                 charge.id,
-                f"Batal sisa {CHARGE_TYPE_LABELS[charge.charge_type].lower()} karyawan {charge.employee.full_name}: {reason[:120]}",
-                [(OTHER_INCOME_ACCOUNT, remaining, 0), (RECEIVABLE_ACCOUNT, 0, remaining)],
+                f"{verb} {CHARGE_TYPE_LABELS[charge.charge_type].lower()} karyawan {charge.employee.full_name}: {reason[:120]}",
+                [(debit_account, remaining, 0), (RECEIVABLE_ACCOUNT, 0, remaining)],
                 user.id,
             )
         charge.cancelled_amount = money(charge.cancelled_amount) + remaining
@@ -237,8 +247,14 @@ def allocate_detail_deductions(detail: PayrollDetail, max_percent: int) -> Decim
     # Dibulatkan ke bawah supaya potongan tidak pernah melewati batas persen.
     cap = (payroll_detail_wage_after_tax(detail) * Decimal(max_percent) / Decimal(100)).quantize(Decimal("1"), rounding=ROUND_DOWN)
     used = Decimal("0")
+    from app.models.workforce import EmployeeExit
+
+    exiting = EmployeeExit.query.filter_by(payroll_detail_id=detail.id).first() is not None
     for charge in open_charges_for(detail.employee_id):
         available = charge_remaining(charge) - charge_reserved(charge, exclude_payroll_id=detail.payroll_id)
+        if charge.charge_type == "KASBON" and charge.installment_amount and not exiting:
+            # Kasbon dicicil sesuai kesepakatan; saat karyawan keluar dipotong sebanyak batas 50% mengizinkan.
+            available = min(available, money(charge.installment_amount))
         take = min(available, cap - used)
         if take <= 0:
             continue

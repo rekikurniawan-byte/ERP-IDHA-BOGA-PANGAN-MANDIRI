@@ -58,6 +58,7 @@ HR_SECTIONS: list[dict[str, Any]] = [
         "tabs": [
             _tab("hr.payrolls", "Daftar Penggajian", ("hr.generate_payroll_route", "hr.payroll_detail", "payslip.receipt_sign")),
             _tab("hr.payroll_payment_history", "Riwayat Pembayaran"),
+            _tab("workforce.advances", "Kasbon", ("workforce.advance_create",), count="advances"),
             _tab("workforce.rules", "Aturan Gaji & Potongan"),
         ],
     },
@@ -99,7 +100,10 @@ def hr_tab_counts(branch_id: int) -> dict:
             EmployeeAbsenceCase.branch_id == branch_id,
             EmployeeAbsenceCase.status.in_(CASE_OPEN_STATUSES),
         ).count(),
-        "charges": EmployeeCharge.query.filter_by(branch_id=branch_id, status=CHARGE_PROPOSED).count(),
+        "charges": EmployeeCharge.query.filter(
+            EmployeeCharge.branch_id == branch_id, EmployeeCharge.status == CHARGE_PROPOSED, EmployeeCharge.charge_type != "KASBON",
+        ).count(),
+        "advances": EmployeeCharge.query.filter_by(branch_id=branch_id, status=CHARGE_PROPOSED, charge_type="KASBON").count(),
         "exits": EmployeeExit.query.filter_by(branch_id=branch_id, status=EXIT_SUBMITTED).count(),
         "contracts": EmploymentContract.query.filter(
             EmploymentContract.branch_id == branch_id,

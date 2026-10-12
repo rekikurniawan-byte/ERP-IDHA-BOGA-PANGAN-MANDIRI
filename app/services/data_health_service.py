@@ -264,7 +264,13 @@ def _payroll_rows(branch_id):
 
     for payroll in payrolls:
         for detail in payroll.details:
-            expected = _float(detail.base_salary) + _float(detail.bonus) - _float(detail.deduction)
+            # Rumus penggajian lengkap (Modul Tenaga Kerja + PPh 21): kompensasi keluar menambah,
+            # PPh 21 yang dipotong dari karyawan serta potongan denda/ganti rugi/kasbon mengurangi.
+            pph21 = _float(getattr(detail, "pph21_amount", 0)) if getattr(detail, "pph21_borne_by", None) == "KARYAWAN" else 0
+            expected = max(0, (
+                _float(detail.base_salary) + _float(detail.bonus) + _float(getattr(detail, "exit_compensation", 0))
+                - _float(detail.deduction) - pph21 - _float(getattr(detail, "charge_deduction", 0))
+            ))
             status = "RISIKO" if _is_mismatch(detail.final_salary, expected) else "AMAN"
             employee_name = getattr(getattr(detail, "employee", None), "full_name", f"Employee #{detail.employee_id}")
             rows.append(_row(
@@ -274,7 +280,7 @@ def _payroll_rows(branch_id):
                 expected=_money(expected),
                 actual=_money(detail.final_salary),
                 difference=_money(_diff(detail.final_salary, expected)),
-                note="Final salary harus base salary + bonus - deduction.",
+                note="Gaji bersih = gaji + bonus + kompensasi keluar - potongan hari - PPh 21 (dipotong) - denda/ganti rugi/kasbon.",
             ))
 
     if not rows:

@@ -1217,6 +1217,153 @@ def stage_phase6_double_billing_guard(run):
              expect=("warning", "danger"))
 
 
+
+# --- tahap O: SDM, kasbon, penggajian, slip/kwitansi, PPh 21 (2026-10-12) ----------
+
+def _signature_png():
+    """Goresan tanda tangan palsu yang cukup besar untuk lolos validasi."""
+    import base64
+
+    size = 48
+    raw = b"".join(b"\x00" + bytes(((x * 31 + y * 17) ^ (x * y)) % 256 for x in range(size * 3)) for y in range(size))
+
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+           + chunk(b"IDAT", zlib.compress(raw, 0)) + chunk(b"IEND", b""))
+    return png, "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def stage_hr_payroll(run):
+    """Satu bulan SDM lewat halaman asli: aturan, karyawan, kontrak bertanda tangan, apel, izin, mangkir,
+    denda, kasbon, penggajian dengan PPh 21, bayar, slip, kwitansi, setor PPh 21 -- lalu cek jurnalnya."""
+    from sqlalchemy import text
+    from app.extensions import db
+    from app.models.finance import BankAccount
+    from app.models.hr import Payroll, PayrollDetail
+    from app.models.master import Employee
+    from app.models.workforce import EmployeeCharge, EmploymentContract, PayrollReceipt
+    from app.services.tax_service import build_tax_month
+
+    run.stage = "O. SDM, kasbon, penggajian & PPh 21"
+    own, adm = run.client("owner.pilot"), run.client("admin.pilot")
+    png, signature = _signature_png()
+    period_day = TODAY - timedelta(days=62)
+    if period_day.month == 12:  # Desember = masa tahunan; gladi memakai masa TER biasa
+        period_day = TODAY - timedelta(days=93)
+    p_start = period_day.replace(day=1)
+    branch_id = run.q(lambda: Employee.query.session.execute(text("SELECT id FROM branches WHERE code = 'PILOT'")).scalar())
+    bca = run.q(lambda: BankAccount.query.filter_by(branch_id=branch_id, bank_name="BCA").first().id)
+
+    def balances():
+        return run.q(lambda: {code: Decimal(value) for code, value in db.session.execute(text(
+            "SELECT a.account_code, COALESCE(SUM(d.debit), 0) - COALESCE(SUM(d.credit), 0) FROM accounts a "
+            "JOIN journal_details d ON d.account_id = a.id GROUP BY a.account_code")).fetchall()})
+
+    before = balances()
+
+    run.step(own, "Owner atur aturan gaji & potongan (izin + tanpa ket. dipotong, ÷30, denda)", "/sdm/aturan", data={
+        "unpaid_status": ["IZIN", "ALPA"], "hr.daily_wage_divisor": "30", "hr.fine_absent_per_day": "50000",
+        "hr.fine_leave_site": "100000", "hr.fine_late_return_per_day": "50000", "hr.fine_short_notice": "200000",
+        "hr.max_deduction_percent": "50", "hr.notice_days": "30", "hr.deemed_resign_days": "5", "hr.portions_per_worker": "60",
+        "hr.employer_signer_name": "Owner Pilot", "hr.employer_signer_position": "Direktur", "hr.work_location": "Dapur Pilot",
+    })
+    for name, nik, kind, ptkp in (("Rina Juru Masak", "1602000000009001", "KARYAWAN", "K/1"),
+                                  ("Tono Pengemas", "1602000000009002", "KARYAWAN", "TK/0"),
+                                  ("Dodi Cadangan", "1602000000009003", "CADANGAN", "")):
+        run.step(adm, f"Tambah karyawan {name}", "/hr/employees/create", data={
+            "full_name": name, "nik": nik, "phone": "081200009" + nik[-3:], "employee_type": kind, "position": "Dapur",
+            "address": "Desa Pilot", "join_date": p_start.isoformat(), "ptkp_status": ptkp, "salary_amount": "",
+        })
+    ids = run.q(lambda: {e.full_name: e.id for e in Employee.query.filter(Employee.nik.like("160200000000900%")).all()})
+
+    for name, ctype, salary, end in (("Rina Juru Masak", "PKWT", "8000000", (p_start + timedelta(days=364)).isoformat()),
+                                     ("Tono Pengemas", "PKWTT", "3000000", "")):
+        run.step(adm, f"Buat kontrak {ctype} {name}", "/sdm/kontrak/baru", data={
+            "employee_id": ids[name], "contract_type": ctype, "position": "Dapur", "start_date": p_start.isoformat(),
+            "end_date": end, "probation_months": "0", "monthly_salary": salary,
+        })
+        contract_id = run.q(lambda n=name: EmploymentContract.query.filter_by(employee_id=ids[n]).order_by(EmploymentContract.id.desc()).first().id)
+        run.step(adm, f"{name} tanda tangan kontrak di HP + foto KTP", f"/sdm/kontrak/{contract_id}/ttd-karyawan", data={
+            "typed_name": name, "agree": "1", "signature_data": signature, "ktp_photo": (io.BytesIO(png), "ktp.png"),
+        }, content_type="multipart/form-data")
+        run.step(own, f"Owner tanda tangan kontrak {name}", f"/sdm/kontrak/{contract_id}/ttd-perusahaan", data={"signature_data": signature})
+        if ctype == "PKWT":
+            run.step(adm, "Catat pencatatan PKWT ke Disnaker", f"/sdm/kontrak/{contract_id}/disnaker",
+                     data={"registered_at": TODAY.isoformat(), "reference": "DISNAKER/GLADI/001"})
+
+    day1, day2 = TODAY - timedelta(days=2), TODAY - timedelta(days=1)
+    run.step(adm, "Apel: Tono tanpa keterangan (kasus mangkir terbuka)", "/sdm/apel", data={
+        "tanggal": day1.isoformat(), f"status_{ids['Rina Juru Masak']}": "HADIR", f"status_{ids['Tono Pengemas']}": "ALPA",
+    })
+    run.step(adm, "Apel: Tono kembali (denda diusulkan)", "/sdm/apel", data={
+        "tanggal": day2.isoformat(), f"status_{ids['Rina Juru Masak']}": "HADIR", f"status_{ids['Tono Pengemas']}": "HADIR",
+    })
+    run.step(adm, "Izin pulang kampung Rina (dicatat admin = langsung disetujui)", "/sdm/izin/baru", data={
+        "employee_id": ids["Rina Juru Masak"], "leave_type": "PULANG_KAMPUNG", "start_date": D1.isoformat(),
+        "expected_return_date": D3.isoformat(), "reason": "Keluarga hajatan",
+    })
+    fines = run.q(lambda: [(c.id, int(c.amount)) for c in EmployeeCharge.query.filter_by(employee_id=ids["Tono Pengemas"], status="DIUSULKAN").all()])
+    run.check("Mangkir 1 hari -> 2 usulan denda (50.000 + 100.000)", sorted(a for _, a in fines) == [50000, 100000], str(fines))
+    for charge_id, amount in fines:
+        run.step(own, f"Owner setujui denda {amount}", f"/sdm/denda/{charge_id}/setujui", data={"amount": str(amount)})
+
+    run.step(adm, "Ajukan kasbon Tono 600.000 cicil 300.000 (ttd karyawan)", "/sdm/kasbon/baru", data={
+        "employee_id": ids["Tono Pengemas"], "amount": "600000", "installment": "300000", "reason": "Biaya berobat",
+        "account_type": "BANK", "bank_account_id": bca, "typed_name": "Tono Pengemas", "signature_data": signature,
+    })
+    advance_id = run.q(lambda: EmployeeCharge.query.filter_by(employee_id=ids["Tono Pengemas"], charge_type="KASBON").one().id)
+    run.step(own, "Owner setujui & cairkan kasbon dari BCA", f"/sdm/denda/{advance_id}/setujui",
+             data={"amount": "600000", "next": "/sdm/kasbon"})
+
+    run.step(own, "Owner aktifkan PPh 21 (dipotong dari gaji, TER diverifikasi)", "/finance/tax/settings", data={
+        "tax.pph21_enabled": "1", "tax.pph21_effective_from": p_start.isoformat(), "tax.pph21_borne_by": "KARYAWAN",
+        "tax.pph21_ter_verified": "1", "tax.pbjt_rate": "10", "tax.pbjt_due_day": "15",
+    })
+    run.step(adm, f"Buat penggajian {p_start:%m-%Y}", "/hr/payrolls/generate",
+             data={"period_month": p_start.month, "period_year": p_start.year})
+    payroll_id = run.q(lambda: Payroll.query.filter_by(branch_id=branch_id, period_month=p_start.month, period_year=p_start.year).one().id)
+    run.step(adm, "Hitung ulang potongan", f"/hr/payrolls/{payroll_id}/sync-workforce")
+    lines = run.q(lambda: {d.employee.full_name: (int(d.final_salary), int(d.pph21_amount or 0), int(d.charge_deduction or 0), d.ter_category)
+                           for d in PayrollDetail.query.filter_by(payroll_id=payroll_id).all()})
+    run.check("Penggajian: Rina 8 jt TER B 1% = 80.000 -> 7.920.000; Tono 3 jt - denda 150.000 - cicilan kasbon 300.000 = 2.550.000; cadangan tidak ikut",
+              lines == {"Rina Juru Masak": (7920000, 80000, 0, "B"), "Tono Pengemas": (2550000, 0, 450000, "A")}, str(lines))
+    run.step(adm, "Kunci penggajian", f"/hr/payrolls/{payroll_id}/finalize")
+    run.step(adm, "Catat hutang gaji (jurnal)", f"/hr/payrolls/{payroll_id}/post-journal")
+    run.step(adm, "Bayar gaji transfer BCA", f"/hr/payrolls/{payroll_id}/pay", data={"payment_method": "TRANSFER", "bank_account_id": bca})
+
+    detail_ids = run.q(lambda: {d.employee.full_name: d.id for d in PayrollDetail.query.filter_by(payroll_id=payroll_id).all()})
+    run.step(adm, "Cetak semua slip", f"/hr/slip/penggajian/{payroll_id}", method="GET")
+    slip = run.text(adm, f"/hr/slip/{detail_ids['Rina Juru Masak']}")
+    run.check("Slip Rina memuat PPh 21 TER B dan gaji bersih", "PPh 21 (TER kategori B" in slip and "Rp 7.920.000" in slip, slip[:0] or "cek teks slip")
+    run.step(adm, "Kirim link slip Tono lewat WhatsApp", f"/hr/slip/{detail_ids['Tono Pengemas']}/whatsapp")
+    run.step(adm, "Tono tanda tangan kwitansi terima gaji di HP", f"/hr/slip/{detail_ids['Tono Pengemas']}/kwitansi/ttd",
+             data={"typed_name": "Tono Pengemas", "signature_data": signature})
+    run.step(adm, "Kwitansi Rina ditandai TTD kertas", f"/hr/slip/{detail_ids['Rina Juru Masak']}/kwitansi/manual", data={})
+    run.check("2 kwitansi tercatat", run.q(lambda: PayrollReceipt.query.filter_by(payroll_id=payroll_id).count()) == 2, "")
+
+    run.step(own, "Setor PPh 21 masa penggajian dari BCA", "/finance/tax/payments", data={
+        "tax_type": "PPH21", "amount": "80000", "reference_number": "NTPN-GLADI-PPH21", "paid_on": TODAY.isoformat(),
+        "period_year": p_start.year, "period_month": p_start.month, "account_type": "BANK", "bank_account_id": bca,
+    })
+    report = run.q(lambda: build_tax_month(branch_id, p_start.year, p_start.month))
+    run.check("Laporan pajak masa: PPh 21 terutang 80.000, disetor 80.000, sisa 0",
+              (report["pph21_due"], report["pph21_paid"], report["pph21_to_pay"]) == (Decimal("80000"), Decimal("80000"), 0),
+              f"{report['pph21_due']}/{report['pph21_paid']}/{report['pph21_to_pay']}")
+    statuses = run.q(lambda: sorted((c.charge_type, c.status, int(c.deducted_amount)) for c in EmployeeCharge.query.filter_by(employee_id=ids["Tono Pengemas"]).all()))
+    run.check("Denda lunas terpotong; kasbon tinggal 300.000", statuses == [("DENDA", "LUNAS", 50000), ("DENDA", "LUNAS", 100000), ("KASBON", "AKTIF", 300000)], str(statuses))
+
+    after = balances()
+    delta = {code: after.get(code, Decimal(0)) - before.get(code, Decimal(0)) for code in ("1001", "1002", "1005", "2003", "2011", "4004", "5004")}
+    expected = {"1001": Decimal(0), "1002": Decimal("-11150000"), "1005": Decimal("300000"), "2003": Decimal(0),
+                "2011": Decimal(0), "4004": Decimal("-150000"), "5004": Decimal("11000000")}
+    run.check("Jurnal SDM: BCA -11.150.000 (kasbon+gaji+PPh21), piutang karyawan +300.000, denda 150.000, beban gaji 11.000.000, hutang gaji & PPh 21 nol",
+              delta == expected, "; ".join(f"{k} {v:,.0f}" for k, v in delta.items()))
+    for url in ("/sdm/", "/sdm/kasbon", "/sdm/laporan", "/sdm/aturan/peraturan-perusahaan", "/finance/tax"):
+        run.step(own, f"Halaman {url} terbuka", url, method="GET")
+
+
 # --- tahap N: Pemeriksaan akhir integrasi (Stage 8) ---------------------------
 
 def stage_final_checks(run, backup):
@@ -1408,6 +1555,7 @@ def main():
     stage_phase6_payments_3ways(run, refs, auto_inv_id)
     stage_phase7_sharia_credit(run, refs)
     stage_phase6_double_billing_guard(run)
+    stage_hr_payroll(run)
     stage_final_checks(run, args.backup)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

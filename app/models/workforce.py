@@ -37,6 +37,7 @@ CASE_OPEN_STATUSES = (CASE_OPEN, CASE_SUMMONS_1, CASE_SUMMONS_2)
 
 CHARGE_FINE = "DENDA"
 CHARGE_DAMAGES = "GANTI_RUGI"
+CHARGE_ADVANCE = "KASBON"
 CHARGE_PROPOSED = "DIUSULKAN"
 CHARGE_ACTIVE = "AKTIF"
 CHARGE_PAID = "LUNAS"
@@ -192,13 +193,20 @@ class EmployeeCharge(BaseModel):
     cancelled_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
     cancel_reason = db.Column(db.Text, nullable=True)
+    # Kasbon: cicilan per gaji, kas/bank pencairan, tanda tangan persetujuan potong gaji.
+    installment_amount = db.Column(db.Numeric(18, 2), nullable=True)
+    cash_account_type = db.Column(db.String(10), nullable=True)
+    bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_accounts.id"), nullable=True)
+    cash_bank_transaction_id = db.Column(db.Integer, db.ForeignKey("cash_bank_transactions.id"), nullable=True)
+    signature_attachment_id = db.Column(db.Integer, db.ForeignKey("digital_attachments.id"), nullable=True)
+    disbursed_on = db.Column(db.Date, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     employee = db.relationship("Employee", lazy=True)
     contract = db.relationship("EmploymentContract", lazy=True)
 
     __table_args__ = (
-        db.CheckConstraint("charge_type IN ('DENDA', 'GANTI_RUGI')", name="ck_employee_charges_type"),
+        db.CheckConstraint("charge_type IN ('DENDA', 'GANTI_RUGI', 'KASBON')", name="ck_employee_charges_type"),
         db.CheckConstraint("status IN ('DIUSULKAN', 'AKTIF', 'LUNAS', 'BATAL')", name="ck_employee_charges_status"),
         db.CheckConstraint("amount > 0", name="ck_employee_charges_amount_positive"),
         db.CheckConstraint(

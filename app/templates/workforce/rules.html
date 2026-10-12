@@ -3,7 +3,8 @@
 
 {% block content %}
 <div data-ui-page="workforce_rules">
-{{ page_header("Aturan Gaji & Potongan", "Semua aturan potong upah, denda, dan kontrak ada di sini. Aturan ikut tertulis di kontrak baru dan terkunci per kontrak.", eyebrow="SDM · Penggajian", actions=[]) }}
+{{ page_header("Aturan Gaji & Potongan", "Semua aturan potong upah, denda, dan kontrak ada di sini. Aturan ikut tertulis di kontrak baru dan terkunci per kontrak.", eyebrow="SDM · Penggajian",
+    actions=[{"label": "Cetak Draf Peraturan Perusahaan", "url": url_for('workforce.company_regulation'), "icon": "bi-journal-text", "target": "_blank"}]) }}
 {% include "hr/_tabs.html" %}
 
 {% if not is_owner %}
