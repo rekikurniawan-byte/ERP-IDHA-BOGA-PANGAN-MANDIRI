@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perjanjian Kerja {{ contract.contract_number }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ css_asset_version }}">
+    <style>
+        @page { size: A4 portrait; margin: 18mm 16mm; }
+        body { background: var(--surface-page); margin: 0; }
+        .print-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .print-sheet { padding: 24px 12px; }
+        .wf-doc { font-size: 10.5pt; }
+        @media print {
+            body { background: #fff; }
+            .print-bar { display: none; }
+            .print-sheet { padding: 0; }
+            .wf-doc { border: 0; padding: 0; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-bar">
+        <a class="btn app-btn-secondary" href="{{ url_for('workforce.contract_detail', contract_id=contract.id) }}">Kembali</a>
+        <button class="btn app-btn-primary" type="button" onclick="window.print()">Cetak / Simpan PDF</button>
+    </div>
+    <div class="print-sheet">
+        <div class="wf-doc">
+            {{ body_html|safe }}
+            <div class="wf-doc-signatures">
+                <div>
+                    <div>PIHAK PERTAMA</div>
+                    <div class="wf-sign-box">{% if employer_signature %}<img class="wf-sign-image" src="{{ employer_signature }}" alt="Tanda tangan perusahaan">{% endif %}</div>
+                    <strong>{{ signer_name }}</strong><br>
+                    <small>{{ signer_position }}{% if contract.employer_signed_at %} · {{ contract.employer_signed_at|wib }}{% endif %}</small>
+                </div>
+                <div>
+                    <div>PIHAK KEDUA</div>
+                    <div class="wf-sign-box">{% if employee_signature %}<img class="wf-sign-image" src="{{ employee_signature }}" alt="Tanda tangan karyawan">{% endif %}</div>
+                    <strong>{{ employee.full_name }}</strong><br>
+                    <small>{% if contract.employee_signed_at %}{{ contract.employee_signed_at|wib }}{% endif %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

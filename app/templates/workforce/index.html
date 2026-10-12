@@ -1,0 +1,124 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_index">
+{{ page_header("Ringkasan SDM", "Yang perlu ditangani hari ini: kontrak, kehadiran, keputusan owner, dan penggajian.", eyebrow="SDM · " ~ today_roll.day.strftime('%d-%m-%Y'), actions=[]) }}
+
+{% if alerts.regulation_required and not settings.company_regulation_number %}
+    <div class="wf-alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div>
+            <strong>Peraturan Perusahaan wajib disahkan Disnaker.</strong>
+            Karyawan aktif sudah {{ alerts.active_count }} orang (wajib bila 10 orang atau lebih). Setelah disahkan, isi nomornya di Pengaturan Perusahaan.
+        </div>
+    </div>
+{% endif %}
+
+{% set roll = today_roll %}
+{% set away_today = roll.counts.IZIN + roll.counts.SAKIT + roll.counts.CUTI %}
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div><div><p>Karyawan Aktif</p><h3>{{ alerts.active_count }}</h3><span class="app-stat-helper">{{ staffing.reserves|length }} tenaga cadangan</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Hadir Hari Ini</p><h3>{% if roll.recorded %}{{ roll.counts.HADIR }}<small class="wf-stat-of">/{{ roll.staff|length }}</small>{% else %}–{% endif %}</h3><span class="app-stat-helper">{{ "Izin/sakit/cuti " ~ away_today ~ " · tanpa ket. " ~ roll.counts.ALPA if roll.recorded else "Apel belum diisi" }}</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-file-earmark-x"></i></div><div><p>Tanpa Kontrak</p><h3>{{ alerts.without_contract|length }}</h3><span class="app-stat-helper">Karyawan tanpa kontrak berlaku</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-cash-stack"></i></div><div><p>Piutang Karyawan</p><h3 class="wf-stat-money">{{ receivable_total|rupiah }}</h3><span class="app-stat-helper">Denda/ganti rugi belum terpotong</span></div></div>
+</div>
+
+{% set actions = [] %}
+{% for charge in proposed %}{% do actions.append({"tone": "danger", "chip": "Keputusan owner", "title": charge.employee.full_name ~ " · " ~ wf_labels.charge_type[charge.charge_type] ~ " " ~ (charge.amount|rupiah), "sub": charge.description, "url": url_for('workforce.charges', status='DIUSULKAN'), "button": "Putuskan" if current_user.role == 'OWNER' else "Lihat"}) %}{% endfor %}
+{% for contract in alerts.pending_employer %}{% do actions.append({"tone": "danger", "chip": "Keputusan owner", "title": contract.employee.full_name ~ " · " ~ contract.contract_number, "sub": "Sudah ditandatangani karyawan, menunggu tanda tangan owner", "url": url_for('workforce.contract_detail', contract_id=contract.id), "button": "Tandatangani" if current_user.role == 'OWNER' else "Lihat"}) %}{% endfor %}
+{% for row in pending_exits %}{% do actions.append({"tone": "danger", "chip": "Keluar", "title": row.employee.full_name ~ " · " ~ wf_labels.exit_type[row.exit_type], "sub": "Keluar " ~ row.effective_date.strftime('%d-%m-%Y') ~ ((" · kurang " ~ row.short_notice_days ~ " hari pemberitahuan") if row.short_notice_days else ""), "url": url_for('workforce.exit_detail', exit_id=row.id), "button": "Periksa"}) %}{% endfor %}
+{% for item in open_cases %}{% do actions.append({"tone": "danger", "chip": "Mangkir", "title": item.case.employee.full_name ~ " · " ~ item.days ~ " hari", "sub": "Sejak " ~ item.case.start_date.strftime('%d-%m-%Y') ~ " · " ~ wf_labels.case_status[item.case.status], "url": url_for('workforce.case_detail', case_id=item.case.id), "button": "Tindak lanjut"}) %}{% endfor %}
+{% for leave in overdue_leaves %}{% do actions.append({"tone": "warning", "chip": "Telat kembali", "title": leave.employee.full_name, "sub": wf_labels.leave_type[leave.leave_type] ~ " · seharusnya kembali " ~ leave.expected_return_date.strftime('%d-%m-%Y'), "url": url_for('workforce.attendance'), "button": "Isi apel"}) %}{% endfor %}
+{% for leave in pending_leaves %}{% do actions.append({"tone": "warning", "chip": "Izin", "title": leave.employee.full_name ~ " · " ~ wf_labels.leave_type[leave.leave_type], "sub": leave.start_date.strftime('%d-%m') ~ " s/d " ~ leave.expected_return_date.strftime('%d-%m-%Y') ~ " · " ~ leave.reason, "url": url_for('workforce.leaves', status='DIAJUKAN'), "button": "Putuskan"}) %}{% endfor %}
+{% for row in alerts.disnaker %}{% do actions.append({"tone": "danger" if row.overdue else "warning", "chip": "Disnaker", "title": row.contract.employee.full_name ~ " · " ~ row.contract.contract_number, "sub": ("Lewat tenggat " if row.overdue else "Catat paling lambat ") ~ (row.due.strftime('%d-%m-%Y') if row.due else "-"), "url": url_for('workforce.contract_detail', contract_id=row.contract.id), "button": "Catat"}) %}{% endfor %}
+{% set exiting_ids = pending_exits|map(attribute="employee_id")|list + approved_exit_ids %}
+{% for row in alerts.without_contract if not (row.pending and row.pending.status == 'MENUNGGU_TTD_PERUSAHAAN') %}{% do actions.append({"tone": "warning", "chip": "Kontrak", "title": row.employee.full_name, "sub": ("Kontrak " ~ row.pending.contract_number ~ " belum lengkap ditandatangani") if row.pending else "Belum punya kontrak berlaku", "url": url_for('workforce.contract_detail', contract_id=row.pending.id) if row.pending else url_for('workforce.contract_create', employee_id=row.employee.id), "button": "Buka" if row.pending else "Buat kontrak"}) %}{% endfor %}
+{% for contract in alerts.expired %}{% do actions.append({"tone": "danger", "chip": "Kontrak", "title": contract.employee.full_name ~ " · " ~ contract.contract_number, "sub": "Kontrak sudah habis, belum diperpanjang/diproses keluar", "url": url_for('workforce.employee_detail', employee_id=contract.employee_id), "button": "Proses"}) %}{% endfor %}
+{% for row in alerts.ending_soon if row.contract.employee_id not in exiting_ids %}{% do actions.append({"tone": "info", "chip": "Kontrak", "title": row.contract.employee.full_name ~ " · " ~ row.contract.contract_number, "sub": "Berakhir " ~ row.days_left ~ " hari lagi", "url": url_for('workforce.employee_detail', employee_id=row.contract.employee_id), "button": "Perpanjang/akhiri"}) %}{% endfor %}
+{% for emp in unconfigured_ptkp %}{% do actions.append({"tone": "warning", "chip": "Pajak PTKP", "title": emp.full_name, "sub": "Status PTKP belum diisi (PPh 21 diasumsikan TK/0)", "url": url_for('hr.edit_employee', employee_id=emp.id), "button": "Atur PTKP"}) %}{% endfor %}
+
+<div class="wf-layout">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title">
+                <h2>Perlu Tindakan</h2>
+                <span class="wf-section-count">{{ actions|length }}</span>
+            </div>
+            {% if actions %}
+                <ul class="wf-list">
+                    {% for item in actions %}
+                        <li class="wf-item">
+                            <div class="wf-item-main">
+                                <span class="wf-chip is-{{ item.tone }}">{{ item.chip }}</span>
+                                <strong>{{ item.title }}</strong>
+                                <small>{{ item.sub }}</small>
+                            </div>
+                            <div class="wf-item-actions"><a class="btn btn-sm app-btn-secondary" href="{{ item.url }}">{{ item.button }}</a></div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="wf-empty"><i class="bi bi-check2-circle"></i> Semua beres. Tidak ada yang menunggu tindakan.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="wf-side">
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title">
+                    <h2>Apel Hari Ini</h2>
+                    {% if roll.recorded %}<span class="status-badge success">Sudah diisi</span>{% else %}<span class="status-badge warning">Belum diisi</span>{% endif %}
+                </div>
+                <div class="wf-mini-grid">
+                    {% for code, label in wf_labels.attendance.items() %}
+                        <div class="wf-mini {{ 'is-danger' if code == 'ALPA' and roll.counts[code] else '' }}"><strong>{{ roll.counts[code] if roll.recorded else "–" }}</strong><span>{{ label }}</span></div>
+                    {% endfor %}
+                </div>
+                {% if not roll.recorded %}<p class="wf-note">Isi lewat menu Kehadiran &amp; Disiplin → Apel Harian (atau HP Admin Operasional).</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title">
+                    <h2>Orang Besok · {{ staffing.day.strftime('%d-%m') }}</h2>
+                    {% if staffing.shortage %}<span class="status-badge danger">Kurang {{ staffing.shortage }}</span>{% elif staffing.has_orders %}<span class="status-badge success">Cukup</span>{% endif %}
+                </div>
+                {% if staffing.has_orders %}
+                    <table class="wf-sum">
+                        {% for session in staffing.sessions %}<tr><td>{{ session.label }} · {{ session.portions }} porsi</td><td>{{ session.needed }} orang</td></tr>{% endfor %}
+                        <tr class="is-total"><td>Tersedia</td><td>{{ staffing.available }} orang</td></tr>
+                    </table>
+                    {% if staffing.away %}<p class="wf-note">Tidak tersedia: {% for row in staffing.away %}{{ row.employee.full_name }} ({{ row.reason|lower }}){{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
+                    {% if staffing.shortage %}
+                        <p class="wf-note">{% if staffing.reserves %}Hubungi cadangan: {% for r in staffing.reserves %}{{ r.full_name }}{% if r.phone %} ({{ r.phone }}){% endif %}{{ ", " if not loop.last }}{% endfor %}.{% else %}Belum ada tenaga cadangan terdaftar.{% endif %}</p>
+                    {% endif %}
+                    <p class="wf-note">Patokan {{ staffing.ratio }} porsi per pekerja per sesi.</p>
+                {% else %}
+                    <p class="wf-empty mb-0">Belum ada pesanan untuk besok.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title">
+                    <h2>Penggajian {{ payroll.period_label }}</h2>
+                    {% if payroll.current %}<span class="status-badge {{ 'success' if payroll.current.status == 'PAID' else 'warning' }}">{{ payroll.current.status|status_label }}</span>{% else %}<span class="status-badge muted">Belum dibuat</span>{% endif %}
+                </div>
+                <table class="wf-sum">
+                    <tr><td>Bulan ini</td><td>{{ payroll.current_total|rupiah if payroll.current else "–" }}</td></tr>
+                    {% if payroll.previous %}<tr><td>{{ "%02d"|format(payroll.previous.period_month) }}-{{ payroll.previous.period_year }} · {{ payroll.previous.status|status_label }}</td><td>{{ payroll.previous_total|rupiah }}</td></tr>{% endif %}
+                    <tr><td>Menunggu dijurnal</td><td>{{ payroll.waiting_journal }}</td></tr>
+                    <tr><td>Menunggu dibayar</td><td>{{ payroll.waiting_payment }}</td></tr>
+                </table>
+                {% set target = payroll.current or payroll.previous %}
+                {% if target %}<a class="btn app-btn-secondary w-100 mt-3" href="{{ url_for('hr.payroll_detail', payroll_id=target.id) }}">Buka Penggajian {{ "%02d"|format(target.period_month) }}-{{ target.period_year }}</a>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_exit_detail">
+{{ page_header(row.employee.full_name ~ " · " ~ wf_labels.exit_type[row.exit_type], "Keluar " ~ row.effective_date.strftime('%d-%m-%Y') ~ " · " ~ wf_labels.exit_status[row.status], eyebrow="SDM · Karyawan & Kontrak", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+{% if row.short_notice_days %}
+    <div class="wf-alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div><strong>Kurang {{ row.short_notice_days }} hari dari masa pemberitahuan.</strong> Denda pemberitahuan{% if preview.employee_damages %} dan ganti rugi sisa kontrak{% endif %} sesuai kontrak ikut dihitung.</div>
+    </div>
+{% endif %}
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Rincian</h2><span class="status-badge {{ 'warning' if row.status == 'DIAJUKAN' else ('info' if row.status == 'DISETUJUI' else ('success' if row.status == 'SELESAI' else 'muted')) }}">{{ wf_labels.exit_status[row.status] }}</span></div>
+            <dl class="wf-kv">
+                <dt>Karyawan</dt><dd><a href="{{ url_for('workforce.employee_detail', employee_id=row.employee_id) }}">{{ row.employee.full_name }}</a></dd>
+                <dt>Kontrak</dt><dd>{% if row.contract %}<a href="{{ url_for('workforce.contract_detail', contract_id=row.contract_id) }}">{{ row.contract.contract_number }}</a> · {{ row.contract.contract_type }}{% else %}Tidak ada kontrak tertulis{% endif %}</dd>
+                <dt>Alasan</dt><dd>{{ wf_labels.exit_reason.get(row.reason_code, row.reason_code) }}{% if row.reason_notes %} · {{ row.reason_notes }}{% endif %}</dd>
+                <dt>Pengajuan</dt><dd>{{ row.notice_date.strftime('%d-%m-%Y') }}</dd>
+                <dt>Hari kerja terakhir</dt><dd>{{ row.last_work_date.strftime('%d-%m-%Y') }}</dd>
+                <dt>Serah terima</dt><dd>{{ row.handover_notes or "-" }}{% if row.handover_done %} · <span class="text-success">selesai</span>{% endif %}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Penyelesaian Akhir (perkiraan)</h2></div>
+            <table class="wf-sum">
+                <tr><td>Upah bulan keluar s/d hari kerja terakhir</td><td>{{ preview.wage|rupiah }}</td></tr>
+                {% if preview.compensation %}<tr><td>Uang kompensasi PKWT (PP 35/2021)</td><td>{{ preview.compensation|rupiah }}</td></tr>{% endif %}
+                {% if preview.employer_damages %}<tr><td>Ganti rugi dari perusahaan (Pasal 62)</td><td>{{ preview.employer_damages|rupiah }}</td></tr>{% endif %}
+                <tr class="is-total"><td>Jumlah hak karyawan</td><td>{{ preview.gross|rupiah }}</td></tr>
+                {% if preview.outstanding %}<tr class="is-minus"><td>Sisa denda/ganti rugi berjalan</td><td>{{ preview.outstanding|rupiah }}</td></tr>{% endif %}
+                {% if row.status == 'DIAJUKAN' and preview.employee_damages %}<tr class="is-minus"><td>Ganti rugi sisa kontrak (Pasal 62)</td><td>{{ preview.employee_damages|rupiah }}</td></tr>{% endif %}
+                {% if row.status == 'DIAJUKAN' and preview.short_notice_fine %}<tr class="is-minus"><td>Denda pemberitahuan kurang</td><td>{{ preview.short_notice_fine|rupiah }}</td></tr>{% endif %}
+                <tr class="is-minus"><td>Dipotong sekarang (maks {{ preview.percent }}% = {{ preview.max_deduct|rupiah }})</td><td>{{ preview.deduct_now|rupiah }}</td></tr>
+                <tr class="is-total"><td>Dibayar ke karyawan</td><td>{{ preview.net|rupiah }}</td></tr>
+                {% if preview.receivable_after %}<tr><td>Sisa jadi piutang karyawan</td><td>{{ preview.receivable_after|rupiah }}</td></tr>{% endif %}
+            </table>
+            <p class="form-text mt-2 mb-0">Dibayar lewat penggajian periode tanggal keluar. Upah yang sudah menjadi hak karyawan tetap dibayar; ijazah/dokumen asli tidak boleh ditahan. Pesangon PHK (bila diberhentikan) dihitung terpisah bersama konsultan/Disnaker.</p>
+
+            {% if row.status == 'DIAJUKAN' %}
+                <hr>
+                <form method="post" id="exitApproveForm" action="{{ url_for('workforce.exit_approve', exit_id=row.id) }}" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="handover_done" value="1" id="handover_done" required>
+                        <label class="form-check-label" for="handover_done">Serah terima pekerjaan dan barang perusahaan sudah selesai/terjadwal.</label>
+                    </div>
+                </form>
+                <form method="post" id="exitCancelForm" action="{{ url_for('workforce.exit_cancel', exit_id=row.id) }}" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                </form>
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <button class="btn app-btn-secondary" type="submit" form="exitCancelForm" data-app-confirm="Batalkan pengajuan keluar ini?">Batalkan Pengajuan</button>
+                    <button class="btn app-btn-primary" type="submit" form="exitApproveForm" data-app-confirm="Setujui {{ row.employee.full_name }} keluar per {{ row.effective_date.strftime('%d-%m-%Y') }}?">Setujui Keluar</button>
+                </div>
+                {% if not is_owner and (preview.employee_damages or preview.short_notice_fine) %}<p class="form-text mt-2 mb-0">Denda/ganti rugi baru akan menunggu keputusan owner di halaman Denda & Ganti Rugi.</p>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if charges %}
+    <div class="card app-card mt-4">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Denda & Ganti Rugi Karyawan Ini</h2></div>
+            <ul class="wf-list">
+                {% for charge in charges %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>{{ wf_labels.charge_type[charge.charge_type] }} {{ charge.amount|rupiah }}</strong><small>{{ wf_labels.charge_status[charge.status] }}{% if charge.status == 'AKTIF' %} · sisa {{ charge_remaining(charge)|rupiah }}{% endif %} · {{ charge.description }}</small></div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endif %}
+</div>
+{% endblock %}

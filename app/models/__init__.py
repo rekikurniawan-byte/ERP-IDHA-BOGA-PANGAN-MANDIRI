@@ -181,3 +181,13 @@ from app.models.field_transaction import (
 )
 
 from app.models.partnership import PartnershipRequest
+
+from app.models.workforce import (
+    EmploymentContract,
+    EmployeeLeave,
+    EmployeeAbsenceCase,
+    EmployeeCharge,
+    PayrollDeductionItem,
+    EmployeeExit,
+    PayrollReceipt,
+)

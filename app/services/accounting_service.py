@@ -836,8 +836,9 @@ def create_warung_debt_payment_journal(debt_payment, created_by, commit=False):
 def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
     """
     Posting payroll:
-    Dr 5004 Gaji Karyawan
-    Cr 2003 Hutang Gaji
+    Dr 5004 Gaji Karyawan (bruto = neto + potongan denda/ganti rugi)
+    Cr 2003 Hutang Gaji (neto yang dibayar)
+    Cr 1005 Piutang Karyawan (potongan denda/ganti rugi, bila ada)
     """
     existing = Journal.query.filter_by(
         reference_type="PAYROLL",
@@ -851,12 +852,31 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
         return False, "Payroll harus FINAL/POSTED sebelum dijurnal.", None
 
     total_salary = sum(money(detail.final_salary or 0) for detail in payroll.details)
+    total_charge_deduction = sum(money(getattr(detail, "charge_deduction", 0) or 0) for detail in payroll.details)
+    # PPh 21 karyawan (Fase 8)
+    total_pph21_employee = sum(
+        money(getattr(detail, "pph21_amount", 0) or 0)
+        for detail in payroll.details
+        if getattr(detail, "pph21_borne_by", "KARYAWAN") == "KARYAWAN"
+    )
+    total_pph21_company = sum(
+        money(getattr(detail, "pph21_amount", 0) or 0)
+        for detail in payroll.details
+        if getattr(detail, "pph21_borne_by", None) == "PERUSAHAAN"
+    )
+    total_pph21_payable = total_pph21_employee + total_pph21_company
 
-    if total_salary <= 0:
+    # Beban gaji bruto karyawan tetap utuh (sebelum potongan PPh 21 dan denda)
+    gross_salary = total_salary + total_charge_deduction + total_pph21_employee
+
+    if gross_salary <= 0:
         return False, "Total payroll masih 0.", None
 
     acc_salary = get_active_account_by_code("5004")
     acc_payable = get_active_account_by_code("2003")
+    acc_employee_receivable = get_active_account_by_code("1005") if total_charge_deduction > 0 else None
+    acc_pph21_payable = get_active_account_by_code("2011") if total_pph21_payable != 0 else None
+    acc_pph21_expense = get_active_account_by_code("5015") if total_pph21_company != 0 else None
 
     missing = []
 
@@ -865,6 +885,15 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
 
     if not acc_payable:
         missing.append("2003 Hutang Gaji")
+
+    if total_charge_deduction > 0 and not acc_employee_receivable:
+        missing.append("1005 Piutang Karyawan")
+
+    if total_pph21_payable != 0 and not acc_pph21_payable:
+        missing.append("2011 Hutang PPh 21")
+
+    if total_pph21_company != 0 and not acc_pph21_expense:
+        missing.append("5015 Beban PPh 21 Ditanggung Perusahaan")
 
     if missing:
         return False, "Akun belum lengkap: " + ", ".join(missing), None
@@ -888,16 +917,54 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
     db.session.add(JournalDetail(
         journal_id=journal.id,
         account_id=acc_salary.id,
-        debit=total_salary,
+        debit=gross_salary,
         credit=0,
     ))
 
-    db.session.add(JournalDetail(
-        journal_id=journal.id,
-        account_id=acc_payable.id,
-        debit=0,
-        credit=total_salary,
-    ))
+    if total_pph21_company != 0:
+        # Ditanggung perusahaan: beban PPh 21; lebih bayar Desember mengurangi beban.
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_pph21_expense.id,
+            debit=total_pph21_company if total_pph21_company > 0 else 0,
+            credit=abs(total_pph21_company) if total_pph21_company < 0 else 0,
+        ))
+
+    if total_salary > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_payable.id,
+            debit=0,
+            credit=total_salary,
+        ))
+
+    if total_charge_deduction > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_employee_receivable.id,
+            debit=0,
+            credit=total_charge_deduction,
+        ))
+
+    if total_pph21_payable > 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_pph21_payable.id,
+            debit=0,
+            credit=total_pph21_payable,
+        ))
+    elif total_pph21_payable < 0:
+        db.session.add(JournalDetail(
+            journal_id=journal.id,
+            account_id=acc_pph21_payable.id,
+            debit=abs(total_pph21_payable),
+            credit=0,
+        ))
+
+    # Potongan resmi mengurangi saldo denda/ganti rugi; karyawan keluar selesai dibayar.
+    from app.services.workforce_payroll_service import finalize_payroll_workforce
+
+    finalize_payroll_workforce(payroll)
 
     if str(payroll.status or "").upper() == "FINAL":
         payroll.status = "POSTED"
@@ -905,7 +972,7 @@ def create_payroll_journal_for_payroll(payroll, created_by, commit=False):
     if commit:
         db.session.commit()
 
-    return True, "Jurnal payroll berhasil dibuat.", journal
+    return True, "Beban dan hutang gaji berhasil dicatat ke keuangan.", journal
 
 
 # SDM5D_PAYROLL_PAYMENT_CASH_BANK_BALANCE_GUARD

@@ -1482,3 +1482,569 @@
 }
 
 
+
+/* ==================================================
+   Modul Tenaga Kerja (/sdm) -- kontrak, apel, izin, mangkir, denda, keluar
+   ================================================== */
+.wf-tabs {
+    display: flex;
+    gap: 0.375rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-4);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.wf-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.wf-tab:hover {
+    color: var(--brand-700);
+    text-decoration: none;
+}
+
+.wf-tab.is-active {
+    color: var(--brand-700);
+    border-bottom-color: var(--brand-600);
+}
+
+.wf-tab-count {
+    min-width: 1.25rem;
+    padding: 0 0.375rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    text-align: center;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.wf-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.wf-grid > .card {
+    margin-bottom: 0;
+}
+
+.wf-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.wf-section-title h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.wf-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wf-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.wf-item:last-child {
+    border-bottom: 0;
+}
+
+.wf-item-main {
+    min-width: 0;
+}
+
+.wf-item-main strong {
+    display: block;
+    color: var(--text);
+}
+
+.wf-item-main small {
+    color: var(--text-muted);
+}
+
+.wf-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.wf-empty {
+    padding: var(--space-4) 0;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.wf-kv {
+    display: grid;
+    grid-template-columns: minmax(8rem, 40%) 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0;
+}
+
+.wf-kv dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.wf-kv dd {
+    margin: 0;
+    color: var(--text);
+}
+
+.wf-sum {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wf-sum td {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.wf-sum td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.wf-sum tr.is-total td {
+    font-weight: 700;
+    border-bottom: 0;
+    color: var(--text);
+}
+
+.wf-sum tr.is-minus td:last-child {
+    color: var(--danger-text);
+}
+
+.wf-alert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--warning-border);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    margin-bottom: var(--space-4);
+}
+
+.wf-alert.is-danger {
+    border-color: var(--danger-border);
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.wf-alert.is-info {
+    border-color: var(--info-border);
+    background: var(--info-bg);
+    color: var(--info-text);
+}
+
+.wf-alert .bi {
+    font-size: 1.125rem;
+    line-height: 1.4;
+}
+
+/* Apel: satu baris per karyawan, pilihan status berupa tombol bersegmen */
+.wf-roll-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.wf-seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.wf-seg input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.wf-seg label {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface);
+    cursor: pointer;
+}
+
+.wf-seg input:focus-visible + label {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
+.wf-seg input[value="HADIR"]:checked + label {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+.wf-seg input[value="IZIN"]:checked + label,
+.wf-seg input[value="CUTI"]:checked + label,
+.wf-seg input[value="SAKIT"]:checked + label {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+    color: var(--info-text);
+}
+
+.wf-seg input[value="ALPA"]:checked + label {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+.wf-seg input[value=""]:checked + label {
+    background: var(--neutral-bg);
+    border-color: var(--neutral-border);
+    color: var(--neutral-text);
+}
+
+/* Kotak tanda tangan gores */
+.wf-sign-pad {
+    display: block;
+    width: 100%;
+    height: 220px;
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.wf-sign-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
+.wf-sign-image {
+    max-width: 220px;
+    max-height: 110px;
+    display: block;
+}
+
+/* Isi surat kontrak & surat panggilan */
+.wf-doc {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: var(--space-5);
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    line-height: 1.65;
+    font-size: 0.9375rem;
+}
+
+.wf-doc h2 {
+    font-size: 1.125rem;
+    text-align: center;
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+}
+
+.wf-doc h3 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: var(--space-4) 0 0.375rem;
+}
+
+.wf-doc .wf-doc-number {
+    text-align: center;
+    color: var(--ink-muted);
+    margin-bottom: var(--space-4);
+}
+
+.wf-doc ol,
+.wf-doc ul {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.wf-doc-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+    margin-top: var(--space-5);
+    text-align: center;
+}
+
+.wf-doc-signatures .wf-sign-box {
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .wf-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wf-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .wf-item-actions {
+        justify-content: flex-start;
+    }
+
+    .wf-doc {
+        padding: var(--space-4);
+    }
+
+    .wf-kv {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ringkasan SDM: daftar tindakan lebar + kolom samping */
+.wf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.wf-layout > .card,
+.wf-side > .card {
+    margin-bottom: 0;
+}
+
+.wf-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.wf-section-count {
+    min-width: 1.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    text-align: center;
+}
+
+.wf-chip {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    background: var(--neutral-bg);
+    color: var(--neutral-text);
+}
+
+.wf-chip.is-danger { background: var(--danger-bg); color: var(--danger-text); }
+.wf-chip.is-warning { background: var(--warning-bg); color: var(--warning-text); }
+.wf-chip.is-info { background: var(--info-bg); color: var(--info-text); }
+.wf-chip.is-success { background: var(--success-bg); color: var(--success-text); }
+
+.wf-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.wf-mini {
+    padding: 0.625rem 0.25rem;
+    border-radius: var(--radius);
+    background: var(--surface-muted);
+    text-align: center;
+}
+
+.wf-mini strong {
+    display: block;
+    font-size: 1.125rem;
+    color: var(--text);
+}
+
+.wf-mini span {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+    display: block;
+}
+
+.wf-mini.is-danger {
+    background: var(--danger-bg);
+}
+
+.wf-mini.is-danger strong,
+.wf-mini.is-danger span {
+    color: var(--danger-text);
+}
+
+.wf-note {
+    margin: 0.625rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.wf-stat-of {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.app-stat-card h3.wf-stat-money {
+    font-size: 1.25rem;
+    white-space: normal;
+    overflow: visible;
+}
+
+.wf-empty .bi {
+    margin-right: 0.25rem;
+    color: var(--success-text);
+}
+
+@media (max-width: 1100px) {
+    .wf-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tahapan penggajian: yang belum dicapai netral, yang sedang berjalan oranye. */
+.hr-lifecycle-step.is-pending {
+    --tone-bg: var(--surface);
+    --tone-text: var(--text-secondary);
+    --tone-border: var(--border);
+}
+
+.hr-lifecycle-step.is-active {
+    --tone-bg: var(--brand-50);
+    --tone-text: var(--brand-700);
+    --tone-border: var(--brand-200);
+}
+
+.wf-roll-controls {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.wf-roll-note {
+    width: 200px;
+}
+
+.wf-sticky-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0.75rem 1rem;
+    margin-top: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .wf-roll-controls {
+        justify-content: flex-start;
+    }
+
+    .wf-roll-note {
+        width: 100%;
+    }
+}
+
+/* Aksi slip & kwitansi di rincian penggajian */
+.wf-pop {
+    position: relative;
+    display: inline-block;
+}
+
+.wf-pop > summary {
+    list-style: none;
+}
+
+.wf-pop > summary::-webkit-details-marker {
+    display: none;
+}
+
+.wf-pop-body {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    width: 260px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    text-align: left;
+}
+
+.btn.wf-done {
+    color: var(--success-text);
+    border-color: var(--success-border);
+    background: var(--success-bg);
+}
+
+.wf-doctor {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}

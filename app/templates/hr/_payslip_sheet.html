@@ -1,0 +1,128 @@
+{#- Satu lembar slip gaji. Variabel: s (hasil build_payslip). -#}
+{% set e = s.employee %}
+{% set c = s.company %}
+<article class="doc-sheet" aria-label="Slip gaji {{ e.full_name }} {{ s.period }}">
+    {% if s.is_draft %}<div class="doc-watermark">KONSEP</div>{% endif %}
+    <header class="doc-head">
+        <div class="doc-brand">
+            <div class="doc-logo">{% set initials = (c.get("company_name") or "PT")[:2]|upper %}{% if c.get("company_logo_url") %}<img src="{{ c.get('company_logo_url') }}" alt="" onerror="this.parentNode.textContent='{{ initials }}'">{% else %}{{ initials }}{% endif %}</div>
+            <div>
+                <div class="doc-company">{{ c.get("company_name") }}</div>
+                <div class="doc-company-sub">{{ c.get("company_address") or "" }}{% if c.get("company_phone") %} · Telp. {{ c.get("company_phone") }}{% endif %}</div>
+            </div>
+        </div>
+        <div class="doc-title">
+            <h1>SLIP GAJI</h1>
+            <div class="doc-meta">No. <strong>{{ s.number }}</strong></div>
+            <div class="doc-meta">Periode <strong>{{ s.period }}</strong></div>
+        </div>
+    </header>
+
+    <div class="doc-ribbon">
+        <span>Rahasia · hanya untuk karyawan yang bersangkutan</span>
+        <span>{% if s.payment %}Dibayar {{ s.payment.date.strftime('%d-%m-%Y') }} · {{ s.payment.method }}{% elif s.is_draft %}Konsep, belum final{% elif s.receipt %}Diterima karyawan · pembayaran kas belum dicatat{% else %}Belum dibayar{% endif %}</span>
+    </div>
+
+    <section class="doc-info">
+        <table>
+            <tr><td>Nama</td><td>{{ e.full_name }}</td></tr>
+            <tr><td>{{ "NIK / NPWP" if e.npwp else "NIK" }}</td><td>{{ e.nik or "-" }}{% if e.npwp %} · {{ e.npwp }}{% endif %}</td></tr>
+            <tr><td>Jabatan</td><td>{{ e.position or (s.contract.position if s.contract else "-") }}</td></tr>
+            {% if s.detail.tax_bruto is not none %}<tr><td>Status PTKP</td><td><strong>{{ s.detail.ptkp_status or e.ptkp_status or "TK/0" }}</strong>{% if not e.ptkp_status %} <small>(sementara, belum diisi)</small>{% endif %}</td></tr>{% endif %}
+            <tr><td>Kontrak</td><td>{% if s.contract %}{{ s.contract.contract_number }} · {{ s.contract_label }}{% else %}Belum ada kontrak tertulis{% endif %}</td></tr>
+        </table>
+        <table>
+            <tr><td>Masa periode</td><td>{{ s.period_start.strftime('%d-%m-%Y') }} – {{ s.period_end.strftime('%d-%m-%Y') }}</td></tr>
+            <tr><td>Hari dihitung</td><td>{{ s.counted_days }} dari {{ s.days_in_month }} hari{% if s.exit %} (keluar {{ s.exit.effective_date.strftime('%d-%m-%Y') }}){% endif %}</td></tr>
+            <tr><td>Mulai kerja</td><td>{{ e.join_date.strftime('%d-%m-%Y') if e.join_date else "-" }}</td></tr>
+            <tr><td>Status gaji</td><td>{% if s.receipt %}<span class="doc-badge is-good">Diterima {{ s.receipt.signed_at|wib }}</span>{% elif s.payment %}<span class="doc-badge is-good">Sudah dibayar</span>{% else %}<span class="doc-badge is-wait">{{ s.payroll.status|status_label }}</span>{% endif %}</td></tr>
+        </table>
+    </section>
+
+    <div class="doc-section-title">Rekap kehadiran (apel harian)</div>
+    <section class="doc-attendance">
+        <div class="doc-att"><strong>{{ s.attendance.HADIR }}</strong><span>Hadir</span></div>
+        <div class="doc-att"><strong>{{ s.attendance.IZIN }}</strong><span>Izin</span></div>
+        <div class="doc-att"><strong>{{ s.attendance.SAKIT }}</strong><span>Sakit</span></div>
+        <div class="doc-att"><strong>{{ s.attendance.CUTI }}</strong><span>Cuti</span></div>
+        <div class="doc-att {{ 'is-bad' if s.attendance.ALPA }}"><strong>{{ s.attendance.ALPA }}</strong><span>Tanpa ket.</span></div>
+        <div class="doc-att is-total"><strong>{{ s.recorded_days }}</strong><span>Hari tercatat</span></div>
+    </section>
+    {% if not s.recorded_days %}<p class="doc-notes" style="margin-top:-8px;list-style:none;padding-left:0">Apel harian belum dicatat di periode ini; upah dihitung dari hari kalender.</p>{% endif %}
+
+    <section class="doc-columns">
+        <table class="doc-table">
+            <caption>Pendapatan</caption>
+            <tbody>
+                {% for row in s.earnings %}
+                    <tr><td>{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td><td class="num">{{ row.amount|rupiah }}</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot><tr><td>Total pendapatan</td><td class="num">{{ s.gross|rupiah }}</td></tr></tfoot>
+        </table>
+        <table class="doc-table is-minus">
+            <caption>Potongan</caption>
+            <tbody>
+                {% for row in s.deductions %}
+                    <tr><td>{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td><td class="num">−{{ row.amount|rupiah }}</td></tr>
+                {% else %}
+                    <tr><td class="is-empty" colspan="2">Tidak ada potongan periode ini</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot><tr><td>Total potongan</td><td class="num">−{{ s.total_deduction|rupiah }}</td></tr></tfoot>
+        </table>
+    </section>
+
+    <section class="doc-net">
+        <div>
+            <span>Gaji bersih diterima</span>
+            <em>{{ s.net_words }}</em>
+        </div>
+        <strong>{{ s.net|rupiah }}</strong>
+    </section>
+
+    {% if s.charge_lines %}
+        <div class="doc-section-title">Rincian denda &amp; ganti rugi</div>
+        <table class="doc-table">
+            <thead><tr><th>Uraian</th><th>Dasar</th><th class="num">Nilai total</th><th class="num">Dipotong bulan ini</th></tr></thead>
+            <tbody>
+                {% for line in s.charge_lines %}
+                    <tr><td>{{ line.label }}</td><td>{{ line.note }}</td><td class="num">{{ line.total|rupiah }}</td><td class="num">{{ line.amount|rupiah }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <ul class="doc-notes">
+        {% if s.outstanding > 0 %}<li><strong>Sisa denda/ganti rugi {{ s.outstanding|rupiah }}</strong> dipotong pada periode berikutnya (maksimal 50% upah per periode, PP 36/2021).</li>{% endif %}
+        {% if s.pph21_info and s.pph21_info.borne_by == 'PERUSAHAAN' and s.pph21_info.amount > 0 %}
+            <li><strong>PPh 21 ditanggung perusahaan:</strong> {{ s.pph21_info.amount|rupiah }} disetorkan langsung oleh perusahaan ke kas negara dan tidak mengurangi gaji diterima.</li>
+        {% elif s.pph21_info and s.pph21_info.amount > 0 %}
+            <li><strong>PPh 21:</strong> {{ s.pph21_info.note or ('Dipotong PPh 21 ' ~ (s.pph21_info.amount|rupiah)) }} (disetorkan ke kas negara).</li>
+        {% endif %}
+        <li>Slip ini dibuat otomatis oleh sistem dari apel harian, kontrak kerja, dan penggajian. Ajukan keberatan ke admin paling lambat 7 hari setelah diterima.</li>
+        {% if s.exit %}<li>Penyelesaian akhir karena {{ s.exit.exit_type|replace('_', ' ')|lower }}; dokumen pribadi asli karyawan tidak ditahan perusahaan.</li>{% endif %}
+    </ul>
+
+    {% if not public %}
+        <section class="doc-sign">
+            <div>
+                <div>Disetujui,</div>
+                <div class="doc-sign-box"></div>
+                <span class="doc-sign-name">{{ c.get("hr.employer_signer_name") or c.get("invoice_authorized_name") or "Pimpinan" }}</span>
+                <div>{{ c.get("hr.employer_signer_position") or "Direktur" }}</div>
+            </div>
+            <div>
+                <div>Diterima oleh,</div>
+                <div class="doc-sign-box"></div>
+                <span class="doc-sign-name">{{ e.full_name }}</span>
+                <div>Karyawan</div>
+            </div>
+        </section>
+    {% endif %}
+
+    <footer class="doc-foot">
+        <span>Kode verifikasi <code>{{ s.verification }}</code></span>
+        <span>Dicetak {{ printed_at.strftime('%d-%m-%Y %H:%M') }} WIB</span>
+    </footer>
+</article>

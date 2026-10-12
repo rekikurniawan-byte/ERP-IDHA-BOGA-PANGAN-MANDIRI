@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ title }}</title>
+    {% include "hr/_doc_styles.html" %}
+</head>
+<body>
+    <div class="doc-toolbar">
+        <span class="doc-toolbar-title">{{ title }}{% if slips|length > 1 %} · {{ slips|length }} lembar{% endif %}</span>
+        <span class="doc-toolbar-actions">
+            {% if back_url %}<a class="doc-btn" href="{{ back_url }}">Kembali</a>{% endif %}
+            <button class="doc-btn is-primary" type="button" onclick="window.print()">Cetak / Simpan PDF</button>
+        </span>
+    </div>
+    {% for s in slips %}
+        {% include "hr/_payslip_sheet.html" %}
+    {% else %}
+        <article class="doc-sheet"><p>Belum ada rincian gaji di periode ini.</p></article>
+    {% endfor %}
+</body>
+</html>

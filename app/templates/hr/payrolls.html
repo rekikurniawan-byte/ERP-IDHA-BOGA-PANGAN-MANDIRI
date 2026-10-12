@@ -2,28 +2,20 @@
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payrolls">
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-page="hr_payrolls">
 {{ page_header(
-    "Payroll",
-    "Daftar payroll karyawan internal dengan status lifecycle, total gaji, dan status posting jurnal.",
-    eyebrow="SDM / Penggajian",
-    actions_class="hr-master-settings-header-actions",
-    actions=[
-        {"label": "Buat Payroll Bulanan", "url": url_for('hr.generate_payroll_route'), "icon": "bi-calendar-plus", "variant": "primary"},
-        {"label": "Aksi Payroll", "icon": "bi-three-dots", "dropdown": [
-            {"label": "Dashboard SDM", "url": url_for('hr.index'), "icon": "bi-speedometer2"},
-            {"label": "Karyawan Internal", "url": url_for('hr.employees'), "icon": "bi-people"},
-            {"label": "Riwayat Pembayaran Gaji", "url": "/hr/payroll-payment-history", "icon": "bi-clock-history"},
-        ]},
-    ]
+    "Daftar Penggajian",
+    "Alur tiap bulan: Konsep (cek potongan & karyawan keluar) → Kunci → Catat hutang gaji → Bayar.",
+    eyebrow="SDM · Penggajian",
+    actions=[{"label": "Buat Penggajian Bulanan", "url": url_for('hr.generate_payroll_route'), "icon": "bi-calendar-plus", "variant": "primary"}]
 ) }}
+{% include "hr/_tabs.html" %}
 
-<div class="app-stat-grid hr-kpi-grid">
-    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-list-check"></i></div><div><p>Total Payroll</p><h3>{{ payroll_summary.total_rows }}</h3><span class="app-stat-helper">Semua periode</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-pencil-square"></i></div><div><p>Konsep</p><h3>{{ payroll_summary.draft }}</h3><span class="app-stat-helper">Belum final</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-journal-x"></i></div><div><p>Belum Posting</p><h3>{{ payroll_summary.final }}</h3><span class="app-stat-helper">FINAL menunggu jurnal</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div><div><p>Belum Dibayar</p><h3>{{ payroll_summary.posted }}</h3><span class="app-stat-helper">POSTED menunggu pembayaran</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Gaji</p><h3>{{ payroll_summary.total_salary|rupiah }}</h3><span class="app-stat-helper">Akumulasi semua payroll</span></div></div>
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-pencil-square"></i></div><div><p>Konsep</p><h3>{{ payroll_summary.draft }}</h3><span class="app-stat-helper">Masih bisa dihitung ulang</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-journal-x"></i></div><div><p>Belum Dicatat</p><h3>{{ payroll_summary.final }}</h3><span class="app-stat-helper">Terkunci, hutang gaji belum dicatat</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-hourglass-split"></i></div><div><p>Belum Dibayar</p><h3>{{ payroll_summary.posted }}</h3><span class="app-stat-helper">Hutang gaji menunggu dibayar</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Gaji Bersih</p><h3 class="wf-stat-money">{{ payroll_summary.total_salary|rupiah }}</h3><span class="app-stat-helper">{{ payroll_summary.total_rows }} periode</span></div></div>
 </div>
 
 <div class="card app-card">
@@ -56,7 +48,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="hr-filter-actions app-filter-actions">
+            <div class="app-filter-actions">
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
                 <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Atur Ulang</a>
             </div>
@@ -66,12 +58,9 @@
 
 <div class="card app-card">
     <div class="card-body">
-        <div class="hr-section-title">
-            <div>
-                <span>Payroll Register</span>
-                <h2>Daftar Payroll</h2>
-            </div>
-            <span class="hr-table-count">{{ payroll_rows|length }} baris tampil · {{ payroll_summary.filtered_salary|rupiah }}</span>
+        <div class="wf-section-title">
+            <h2>Periode Penggajian</h2>
+            <span class="text-muted small">{{ payroll_rows|length }} baris tampil · {{ payroll_summary.filtered_salary|rupiah }}</span>
         </div>
         {% if payroll_rows %}
             <div class="table-responsive">
@@ -82,14 +71,14 @@
                             <th>Status</th>
                             <th>Status Jurnal</th>
                             <th>Status Bayar</th>
-                            <th class="text-end">Total</th>
+                            <th class="text-end">Total Bersih</th>
                             <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in payroll_rows %}
                             <tr>
-                                <td><span class="fw-semibold">{{ row.period }}</span></td>
+                                <td><a class="fw-semibold" href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}">{{ row.period }}</a></td>
                                 <td><span class="hr-status-badge is-{{ row.payroll.status|lower }}">{{ row.payroll.status|status_label }}</span></td>
                                 <td>
                                     <span class="hr-posting-badge is-{{ row.journal_state.class }}" title="{{ row.journal_state.helper }}">
@@ -103,7 +92,7 @@
                                 </td>
                                 <td class="text-end">{{ row.total|rupiah }}</td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                    <a href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}" class="btn btn-sm app-btn-secondary">Buka</a>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -113,12 +102,8 @@
         {% else %}
             <div class="empty-state app-empty-state hr-empty-state" data-ui-empty-state="UI">
                 <div class="empty-state-icon"><i class="bi bi-cash-coin"></i></div>
-                <h3>Belum ada payroll sesuai filter.</h3>
-                <p>Buat gaji bulanan atau atur ulang filter untuk melihat semua periode yang sudah dibuat.</p>
-                <div class="d-flex flex-wrap gap-2 justify-content-center">
-                    <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
-                    <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Atur Ulang Filter</a>
-                </div>
+                <h3>Belum ada penggajian sesuai filter.</h3>
+                <p>Buat penggajian bulanan lewat tombol di kanan atas, atau atur ulang filter.</p>
             </div>
         {% endif %}
     </div>

@@ -30,7 +30,7 @@
 {% set is_logistics = endpoint.startswith("logistics.") %}
 {% set is_portal = endpoint.startswith("portal.") %}
 {% set is_material_forecast = endpoint == "logistics.material_forecast" %}
-{% set is_hr = endpoint.startswith("hr.") %}
+{% set is_hr = endpoint.startswith("hr.") or endpoint.startswith("workforce.") %}
 {% set is_settings = endpoint.startswith("settings.") %}
 {% set is_customer_success = endpoint.startswith("customer_success.") %}
 {% set is_sop = endpoint.startswith("sop.") %}
@@ -297,9 +297,10 @@
 
             {% if can_view_hr %}
                 {% call nav_group("SDM", "bi-person-vcard", is_hr) %}
-                    {{ nav_link(url_for('hr.index'), "Karyawan", "bi-people", endpoint in ["hr.index", "hr.create_employee", "hr.edit_employee"]) }}
-                    {{ nav_link(url_for('hr.payrolls'), "Payroll", "bi-cash", endpoint.startswith("hr.payroll") and endpoint != "hr.payroll_payment_history") }}
-                    {{ nav_link(url_for('hr.payroll_payment_history'), "Riwayat Gaji", "bi-clock-history", endpoint == "hr.payroll_payment_history") }}
+                    {# 4 menu SDM dari app/services/hr_navigation_service.py; isi tiap menu lewat tab. #}
+                    {% for section in hr_sections() %}
+                        {{ nav_link(url_for(section.endpoint), section.label, section.icon, section.active) }}
+                    {% endfor %}
                 {% endcall %}
             {% endif %}
 

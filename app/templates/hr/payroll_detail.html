@@ -1,150 +1,111 @@
 {% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payroll-detail">
+{% set period = "%02d"|format(payroll.period_month) ~ "-" ~ payroll.period_year %}
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-page="hr_payroll_detail">
 <div class="page-header">
     <div>
-        <span class="eyebrow">SDM / Detail Penggajian</span>
-        <h1>Detail Penggajian</h1>
-        <p>Periode {{ "%02d"|format(payroll.period_month) }}-{{ payroll.period_year }} · Status <strong>{{ payroll.status|status_label }}</strong></p>
+        <span class="eyebrow">SDM · Penggajian</span>
+        <h1>Penggajian {{ period }}</h1>
+        <p>{{ detail_count }} karyawan · status <strong>{{ payroll.status|status_label }}</strong></p>
     </div>
-    <div class="page-actions hr-master-settings-header-actions" data-hr-master-settings-actions="UI">
+    <div class="page-actions">
+        <a class="btn app-btn-secondary" href="{{ url_for('payslip.print_all', payroll_id=payroll.id) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> {{ "Pratinjau Slip" if payroll.status == "DRAFT" else "Cetak Semua Slip" }}</a>
+        {% if payroll.status in ["POSTED", "PAID"] %}
+            <a class="btn app-btn-secondary" href="{{ url_for('payslip.print_receipts_all', payroll_id=payroll.id) }}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Cetak Semua Kwitansi</a>
+        {% endif %}
         {% if payroll.status == "DRAFT" %}
-            <form action="{{ url_for('hr.finalize_payroll', payroll_id=payroll.id) }}" method="post" data-app-confirm="Kunci payroll periode ini? Setelah dikunci, nominal gaji tidak boleh diubah sembarangan." data-ui-form="true" class="app-form">
+            <form action="{{ url_for('hr.sync_payroll_workforce_route', payroll_id=payroll.id) }}" method="post" data-ui-form="true" class="app-form">
                 {% include "components/csrf_token.html" %}
-                <button class="btn app-btn-primary" type="submit"><i class="bi bi-lock-fill"></i> Kunci Payroll</button>
+                <button class="btn app-btn-secondary" type="submit" title="Masukkan karyawan keluar dan potongan denda/ganti rugi terbaru"><i class="bi bi-arrow-repeat"></i> Hitung Ulang Potongan</button>
+            </form>
+            <form action="{{ url_for('hr.finalize_payroll', payroll_id=payroll.id) }}" method="post" data-app-confirm="Kunci penggajian {{ period }}? Setelah dikunci, nominal tidak bisa diubah." data-ui-form="true" class="app-form">
+                {% include "components/csrf_token.html" %}
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-lock-fill"></i> Kunci Penggajian</button>
             </form>
         {% elif payroll.status == "FINAL" %}
-            <form action="{{ url_for('hr.post_payroll_journal', payroll_id=payroll.id) }}" method="post" data-app-confirm="Catat hutang gaji periode ini ke keuangan? Sistem akan otomatis mencatat biaya gaji dan hutang gaji. Aksi ini tidak boleh dobel." data-ui-form="true" class="app-form">
+            <form action="{{ url_for('hr.post_payroll_journal', payroll_id=payroll.id) }}" method="post" data-app-confirm="Catat beban dan hutang gaji {{ period }} ke keuangan? Potongan denda/ganti rugi ikut mengurangi piutang karyawan." data-ui-form="true" class="app-form">
                 {% include "components/csrf_token.html" %}
                 <button class="btn app-btn-primary" type="submit"><i class="bi bi-journal-check"></i> Catat Hutang Gaji</button>
             </form>
-        {% elif payroll.status == "POSTED" %}
-            <a href="#payroll-payment-card" class="btn app-btn-primary"><i class="bi bi-cash-coin"></i> Bayar Gaji</a>
         {% endif %}
-        <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" id="payrollDetailActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi Payroll
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end app-action-menu" aria-labelledby="payrollDetailActionDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('hr.payrolls') }}"><i class="bi bi-arrow-left"></i> Kembali ke Payroll</a></li>
-                <li><a class="dropdown-item" href="/hr/payroll-payment-history"><i class="bi bi-clock-history"></i> Riwayat Pembayaran Gaji</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('hr.employees') }}"><i class="bi bi-people"></i> Karyawan Internal</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('hr.index') }}"><i class="bi bi-speedometer2"></i> Dashboard SDM</a></li>
-            </ul>
-        </div>
     </div>
 </div>
+{% include "hr/_tabs.html" %}
 
-<div class="app-stat-grid hr-kpi-grid">
-    <div class="app-stat-card hr-total-payroll-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-cash-stack"></i></div>
-        <div>
-            <p>Total Payroll</p>
-            <h3>{{ payroll_total|rupiah }}</h3>
-            <span class="app-stat-helper">Total final salary periode ini</span>
+<div class="hr-lifecycle-list detail mb-4">
+    {% for step in lifecycle_steps %}
+        <div class="hr-lifecycle-step {{ step.class }}">
+            <strong>{{ step.label }}</strong>
+            <small>{{ step.description }}</small>
         </div>
-    </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-people"></i></div>
-        <div><p>Jumlah Karyawan</p><h3>{{ detail_count }}</h3><span class="app-stat-helper">Baris detail payroll</span></div>
-    </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-warning"><i class="bi {{ journal_state.icon }}"></i></div>
-        <div><p>Status Jurnal</p><h3>{{ journal_state.label }}</h3><span class="app-stat-helper">{{ journal_state.helper }}</span></div>
-    </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-success"><i class="bi {{ payment_state.icon }}"></i></div>
-        <div><p>Status Bayar</p><h3>{{ payment_state.label }}</h3><span class="app-stat-helper">{{ payment_state.helper }}</span></div>
-    </div>
+    {% endfor %}
 </div>
 
-<div class="card app-card hr-lifecycle-card">
-    <div class="card-body">
-        <div class="hr-section-title">
-            <div>
-                <span>Payroll Lifecycle</span>
-                <h2>Konsep → Final → Dijurnal → Lunas</h2>
-            </div>
-            <span class="hr-status-badge is-{{ payroll.status|lower }}">{{ payroll.status|status_label }}</span>
-        </div>
-        <div class="hr-lifecycle-list detail">
-            {% for step in lifecycle_steps %}
-                <div class="hr-lifecycle-step {{ step.class }}">
-                    <strong>{{ step.label }}</strong>
-                    <span>{{ step.key }}</span>
-                    <small>{{ step.description }}</small>
-                </div>
-            {% endfor %}
-        </div>
+{# PPh 21 hanya tampil bila penggajian ini dihitung pajaknya (snapshot terisi). #}
+{% set pph21_on = payroll.details|selectattr("tax_bruto", "ne", none)|list|length > 0 %}
+{% set unconfigured_ptkp = [] %}
+{% for detail in payroll.details if pph21_on %}
+    {% if detail.employee and not detail.employee.ptkp_status %}
+        {% set _ = unconfigured_ptkp.append(detail.employee) %}
+    {% endif %}
+{% endfor %}
+
+{% if unconfigured_ptkp %}
+    <div class="wf-alert is-warning mb-3">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div><strong>Status PTKP belum diatur:</strong> {% for employee in unconfigured_ptkp %}<a href="{{ url_for('workforce.employee_detail', employee_id=employee.id) }}">{{ employee.full_name }}</a>{{ ", " if not loop.last }}{% endfor %}. Sistem mengasumsikan <strong>TK/0</strong> (lajang tanpa tanggungan) untuk perhitungan PPh 21. Buka data karyawan untuk mengatur status PTKP & NPWP yang tepat.</div>
     </div>
+{% endif %}
+
+{% if missing_contract %}
+    <div class="wf-alert">
+        <i class="bi bi-file-earmark-x" aria-hidden="true"></i>
+        <div><strong>Tanpa kontrak berlaku:</strong> {% for employee in missing_contract %}<a href="{{ url_for('workforce.employee_detail', employee_id=employee.id) }}">{{ employee.full_name }}</a>{{ ", " if not loop.last }}{% endfor %}. Gaji tetap dibayar, tetapi denda/ganti rugi tidak bisa dipotong tanpa kontrak tertulis.</div>
+    </div>
+{% endif %}
+
+{% set pph21_total = (payroll.details|map(attribute='pph21_amount')|select('defined')|sum) %}
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Total Dibayar</p><h3 class="wf-stat-money">{{ payroll_total|rupiah }}</h3><span class="app-stat-helper">Gaji bersih seluruh karyawan</span></div></div>
+    {% if pph21_on %}<div class="app-stat-card"><div class="app-stat-icon stat-danger"><i class="bi bi-receipt"></i></div><div><p>Total PPh 21</p><h3 class="wf-stat-money">{{ pph21_total|rupiah }}</h3><span class="app-stat-helper">Hutang PPh 21 (akun 2011)</span></div></div>{% endif %}
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-scissors"></i></div><div><p>Potongan Denda/Ganti Rugi</p><h3 class="wf-stat-money">{{ charge_total|rupiah }}</h3><span class="app-stat-helper">Mengurangi piutang karyawan</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi {{ journal_state.icon }}"></i></div><div><p>Jurnal</p><h3 class="wf-stat-money">{{ journal_state.label }}</h3><span class="app-stat-helper">{{ journal_state.helper }}</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi {{ payment_state.icon }}"></i></div><div><p>Pembayaran</p><h3 class="wf-stat-money">{{ payment_state.label }}</h3><span class="app-stat-helper">{{ payment_state.helper }}</span></div></div>
 </div>
 
-<div class="hr-enterprise-grid two-col">
-    <div class="card app-card">
-        <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Catatan Perhitungan</span>
-                    <h2>Prorata & Editing Payroll</h2>
-                </div>
-            </div>
-            <p class="text-muted mb-0">Gaji bulanan bisa otomatis diprorata jika karyawan masuk di tengah bulan. Bonus, potongan, dan prorata hanya bisa diubah saat payroll masih <strong>DRAFT</strong>. Setelah FINAL, perubahan harus lewat alur koreksi yang aman.</p>
-        </div>
-    </div>
-
+{% if payroll.status == "POSTED" %}
     <div class="card app-card" id="payroll-payment-card">
         <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Pembayaran Gaji</span>
-                    <h2>Metode Pembayaran Payroll</h2>
+            <div class="wf-section-title"><h2>Bayar Gaji {{ period }}</h2></div>
+            <form action="{{ url_for('hr.pay_payroll', payroll_id=payroll.id) }}" method="post" class="app-form row g-3 align-items-end" data-app-confirm="Bayar gaji {{ period }} sebesar {{ payroll_total|rupiah }}? Saldo kas/bank dicek dulu." data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="col-md-4">
+                    <label class="form-label" for="payment_method">Cara bayar</label>
+                    <select name="payment_method" id="payment_method" class="form-select">
+                        <option value="CASH">Tunai (kas)</option>
+                        <option value="TRANSFER">Transfer (bank)</option>
+                    </select>
                 </div>
-            </div>
-            {% if payroll.status == "POSTED" %}
-                <form action="{{ url_for('hr.pay_payroll', payroll_id=payroll.id) }}" method="post" class="app-form hr-payroll-payment-form" data-app-confirm="Bayar gaji periode ini? Sistem akan mengecek saldo kas/bank terlebih dahulu, lalu otomatis mencatat jurnal pembayaran gaji jika saldo cukup." data-ui-form="true">
-                    {% include "components/csrf_token.html" %}
-                    <div>
-                        <label class="form-label">Metode Pembayaran</label>
-                        <select name="payment_method" class="form-select" aria-label="Metode pembayaran gaji">
-                            <option value="CASH">Tunai</option>
-                            <option value="TRANSFER">Transfer</option>
-                        </select>
-                        <small class="text-muted">Tunai keluar dari kas, transfer keluar dari rekening yang dipilih.</small>
-                    </div>
-                    <div>
-                        <label class="form-label">Rekening Bank</label>
-                        <select name="bank_account_id" class="form-select" aria-label="Rekening bank pembayaran gaji">
-                            <option value="">Pilih rekening</option>
-                            {% for bank in bank_accounts %}
-                                <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="text-muted">Wajib untuk transfer.</small>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn app-btn-primary" type="submit"><i class="bi bi-cash-coin"></i> Bayar Gaji</button>
-                    </div>
-                </form>
-            {% else %}
-                <div class="hr-inline-status is-muted">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Pembayaran aktif setelah gaji berstatus <strong>Sudah Dijurnal</strong>. Status sekarang: {{ payroll.status|status_label }}.</span>
+                <div class="col-md-5">
+                    <label class="form-label" for="bank_account_id">Rekening (wajib untuk transfer)</label>
+                    <select name="bank_account_id" id="bank_account_id" class="form-select">
+                        <option value="">Pilih rekening</option>
+                        {% for bank in bank_accounts %}<option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_name }}</option>{% endfor %}
+                    </select>
                 </div>
-            {% endif %}
+                <div class="col-md-3"><button class="btn app-btn-primary w-100" type="submit"><i class="bi bi-cash-coin"></i> Bayar Gaji</button></div>
+            </form>
         </div>
     </div>
-</div>
+{% endif %}
 
 <div class="card app-card">
     <div class="card-body">
-        <div class="hr-section-title">
-            <div>
-                <span>Payroll Lines</span>
-                <h2>Detail Karyawan</h2>
-            </div>
-            <span class="hr-table-count">{{ detail_count }} baris</span>
+        <div class="wf-section-title">
+            <h2>Rincian per Karyawan</h2>
+            {% if payroll.status == "DRAFT" %}<span class="text-muted small">Ubah angka lalu tekan Simpan di baris itu</span>{% endif %}
         </div>
         {% if payroll.details %}
             <div class="table-responsive">
@@ -154,45 +115,107 @@
                             <th>Karyawan</th>
                             <th class="text-end">Gaji Bulanan</th>
                             <th class="text-end">Bonus</th>
-                            <th class="text-end">Potongan/Prorata</th>
-                            <th class="text-end">Final</th>
-                            <th class="text-end">Aksi</th>
+                            <th class="text-end">Potongan Hari/Prorata</th>
+                            {% if pph21_on %}<th class="text-end">PPh 21</th>{% endif %}
+                            <th class="text-end">Denda/Ganti Rugi</th>
+                            <th class="text-end">Dibayar</th>
+                            <th class="text-end">{{ "" if payroll.status == "DRAFT" else "Slip & Kwitansi" }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for detail in payroll.details %}
+                        {% for detail in payroll.details|sort(attribute="employee.full_name") %}
+                            {% set form_id = "payrollLine" ~ detail.id %}
+                            {% set locked = payroll.status != "DRAFT" %}
                             <tr>
                                 <td>
-                                    <div class="fw-semibold">{{ detail.employee.full_name if detail.employee else "-" }}</div>
-                                    <small class="text-muted">Employee #{{ detail.employee_id }}</small>
+                                    {% if detail.employee %}<a class="fw-semibold" href="{{ url_for('workforce.employee_detail', employee_id=detail.employee_id) }}">{{ detail.employee.full_name }}</a>{% else %}-{% endif %}
+                                    {% if detail.employee_id in exit_employee_ids %}<span class="wf-chip is-info ms-1">Keluar</span>{% endif %}
+                                    {% if detail.unpaid_absence_days %}<small class="text-danger d-block">{{ detail.unpaid_absence_days }} hari tanpa keterangan tidak dibayar</small>{% endif %}
+                                    {% if detail.exit_compensation and detail.exit_compensation > 0 %}<small class="text-muted d-block">+ kompensasi keluar {{ detail.exit_compensation|rupiah }}</small>{% endif %}
                                 </td>
-                                <form action="{{ url_for('hr.update_payroll_detail', payroll_id=payroll.id, detail_id=detail.id) }}" method="post" data-ui-form="true" class="app-form">
-                                    {% include "components/csrf_token.html" %}
-                                    <td class="text-end"><input type="number" name="base_salary" class="form-control form-control-sm text-end" value="{{ detail.base_salary }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
-                                    <td class="text-end"><input type="number" name="bonus" class="form-control form-control-sm text-end" value="{{ detail.bonus }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
-                                    <td class="text-end"><input type="number" name="deduction" class="form-control form-control-sm text-end" value="{{ detail.deduction }}" {% if payroll.status != "DRAFT" %}readonly{% endif %}></td>
-                                    <td class="text-end fw-semibold">{{ detail.final_salary|rupiah }}</td>
-                                    <td class="text-end">
-                                        {% if payroll.status == "DRAFT" %}
-                                            <button class="btn btn-sm app-btn-secondary" type="submit">Perbarui</button>
+                                {% if locked %}
+                                    <td class="text-end">{{ detail.base_salary|rupiah }}</td>
+                                    <td class="text-end">{{ detail.bonus|rupiah }}</td>
+                                    <td class="text-end">{{ detail.deduction|rupiah }}</td>
+                                {% else %}
+                                    <td class="text-end"><input form="{{ form_id }}" type="number" name="base_salary" class="form-control form-control-sm text-end" value="{{ detail.base_salary|int }}" aria-label="Gaji bulanan {{ detail.employee.full_name if detail.employee }}"></td>
+                                    <td class="text-end"><input form="{{ form_id }}" type="number" name="bonus" class="form-control form-control-sm text-end" value="{{ detail.bonus|int }}" aria-label="Bonus"></td>
+                                    <td class="text-end"><input form="{{ form_id }}" type="number" name="deduction" class="form-control form-control-sm text-end" value="{{ detail.deduction|int }}" aria-label="Potongan"></td>
+                                {% endif %}
+                                {% if pph21_on %}<td class="text-end">
+                                    {% if detail.pph21_amount and detail.pph21_amount > 0 %}
+                                        <span class="{{ 'text-muted' if detail.pph21_borne_by == 'PERUSAHAAN' else 'text-danger' }}">
+                                            {{ '−' if detail.pph21_borne_by != 'PERUSAHAAN' else '' }}{{ detail.pph21_amount|rupiah }}
+                                        </span>
+                                        <small class="text-muted d-block">{{ 'Ditanggung' if detail.pph21_borne_by == 'PERUSAHAAN' else (detail.pph21_method or 'TER') }} ({{ detail.ptkp_status or 'TK/0' }})</small>
+                                    {% elif detail.pph21_amount and detail.pph21_amount < 0 %}
+                                        <span class="text-success">+{{ (detail.pph21_amount|abs)|rupiah }}</span>
+                                        <small class="text-muted d-block">Lebih bayar</small>
+                                    {% else %}
+                                        <span class="text-muted">Rp 0</span>
+                                        {% if detail.ptkp_status %}<small class="text-muted d-block">{{ detail.ptkp_status }}</small>{% endif %}
+                                    {% endif %}
+                                </td>{% endif %}
+                                <td class="text-end">{% if detail.charge_deduction and detail.charge_deduction > 0 %}<span class="text-danger">−{{ detail.charge_deduction|rupiah }}</span>{% else %}<span class="text-muted">–</span>{% endif %}</td>
+                                <td class="text-end fw-semibold">{{ detail.final_salary|rupiah }}</td>
+                                <td class="text-end">
+                                    <div class="table-actions" data-row-actions="true">
+                                        {% if not locked %}
+                                            <form id="{{ form_id }}" action="{{ url_for('hr.update_payroll_detail', payroll_id=payroll.id, detail_id=detail.id) }}" method="post" data-ui-form="true" class="app-form">
+                                                {% include "components/csrf_token.html" %}
+                                                <button class="btn btn-sm app-btn-secondary" type="submit">Simpan</button>
+                                            </form>
                                         {% else %}
-                                            <span class="text-muted">Terkunci</span>
+                                            <a class="btn btn-sm app-btn-secondary" href="{{ url_for('payslip.print_slip', detail_id=detail.id) }}" target="_blank" rel="noopener" title="Cetak slip gaji"><i class="bi bi-file-earmark-text"></i> Slip</a>
+                                            {% if detail.employee and detail.employee.phone %}
+                                                <form action="{{ url_for('payslip.send_whatsapp', detail_id=detail.id) }}" method="post" target="_blank" class="app-form">
+                                                    {% include "components/csrf_token.html" %}
+                                                    <button class="btn btn-sm app-btn-secondary" type="submit" title="Kirim link slip lewat WhatsApp (dibuka dengan PIN)"><i class="bi bi-whatsapp"></i> WA</button>
+                                                </form>
+                                            {% endif %}
+                                            {% set receipt = receipts.get(detail.id) %}
+                                            {% if receipt %}
+                                                <a class="btn btn-sm app-btn-secondary wf-done" href="{{ url_for('payslip.print_receipt', detail_id=detail.id) }}" target="_blank" rel="noopener" title="{{ receipt.receipt_number }}"><i class="bi bi-check2-circle"></i> Diterima</a>
+                                            {% elif payroll.status in ["POSTED", "PAID"] and detail.final_salary > 0 %}
+                                                <a class="btn btn-sm app-btn-primary" href="{{ url_for('payslip.receipt_sign', detail_id=detail.id) }}" title="Karyawan tanda tangan di HP"><i class="bi bi-pen"></i> TTD Terima</a>
+                                                <details class="wf-pop">
+                                                    <summary class="btn btn-sm app-btn-secondary" title="Kwitansi kertas sudah ditandatangani basah">TTD Kertas</summary>
+                                                    <form action="{{ url_for('payslip.receipt_manual', detail_id=detail.id) }}" method="post" enctype="multipart/form-data" class="wf-pop-body" data-ui-form="true">
+                                                        {% include "components/csrf_token.html" %}
+                                                        <label class="form-label" for="scan{{ detail.id }}">Foto kwitansi bertanda tangan (opsional)</label>
+                                                        <input class="form-control form-control-sm" type="file" name="scan" id="scan{{ detail.id }}" accept="image/*,application/pdf">
+                                                        <button class="btn btn-sm app-btn-primary mt-2 w-100" type="submit" data-app-confirm="Tandai kwitansi {{ detail.employee.full_name }} sudah ditandatangani di kertas?">Simpan</button>
+                                                    </form>
+                                                </details>
+                                            {% endif %}
                                         {% endif %}
-                                    </td>
-                                </form>
+                                    </div>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td>Total ({{ detail_count }} karyawan)</td>
+                            <td class="text-end">{{ (payroll.details|map(attribute='base_salary')|sum)|rupiah }}</td>
+                            <td class="text-end">{{ (payroll.details|map(attribute='bonus')|sum)|rupiah }}</td>
+                            <td class="text-end">{{ (payroll.details|map(attribute='deduction')|sum)|rupiah }}</td>
+                            {% if pph21_on %}<td class="text-end">{{ pph21_total|rupiah }}</td>{% endif %}
+                            <td class="text-end">{% if charge_total > 0 %}−{{ charge_total|rupiah }}{% else %}Rp 0{% endif %}</td>
+                            <td class="text-end">{{ payroll_total|rupiah }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         {% else %}
             <div class="empty-state" data-ui-empty-state="UI">
                 <div class="empty-state-icon"><i class="bi bi-list-check"></i></div>
-                <h3>Belum ada detail payroll.</h3>
-                <p>Detail akan terisi otomatis saat payroll bulanan berhasil dibuat dari karyawan aktif.</p>
-                <a href="{{ url_for('hr.generate_payroll_route') }}" class="btn app-btn-primary">Buat Payroll Bulanan</a>
+                <h3>Belum ada rincian.</h3>
+                <p>Rincian terisi otomatis dari karyawan aktif saat penggajian dibuat.</p>
             </div>
         {% endif %}
+        <p class="wf-note mb-0">Slip bisa dicetak/dikirim setelah penggajian dikunci; kwitansi ditandatangani setelah hutang gaji dicatat. Potongan hari = prorata masuk/keluar di tengah bulan + hari tanpa keterangan di apel. Denda/ganti rugi dipotong maksimal 50% upah, sisanya ditagih di periode berikutnya.</p>
     </div>
 </div>
 </div>

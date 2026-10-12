@@ -104,6 +104,50 @@
             </div>
         </div>
 
+        <div class="app-card mb-4">
+            <div class="card-header-clean">
+                <div>
+                    <h5>PPh 21 Karyawan (PP 58/2023 &amp; UU HPP)</h5>
+                    <p>Perhitungan terpusat: TER Kategori A/B/C untuk masa Jan–Nov dan rekonsiliasi Pasal 17 di masa Desember/karyawan keluar.</p>
+                </div>
+            </div>
+            {% if raw.get('tax.pph21_enabled') == '1' and raw.get('tax.pph21_ter_verified') != '1' %}
+                <div class="alert alert-warning d-flex align-items-center mb-3 mx-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div><strong>Perhatian:</strong> PPh 21 aktif tetapi tabel TER belum diverifikasi dengan konsultan pajak / AR KPP. Pastikan tarif dan bracket telah sesuai sebelum finalisasi penggajian.</div>
+                </div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="tax.pph21_enabled" id="pph21Enabled" value="1" {% if raw.get('tax.pph21_enabled') == '1' %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="pph21Enabled">Hitung PPh 21 pada Penggajian</label>
+                    </div>
+                    <div class="form-text">Bila aktif, snapshot pajak dihitung otomatis saat pembuatan dan perubahan baris gaji (DRAFT).</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Mulai berlaku (periode gaji)</label>
+                    <input type="date" name="tax.pph21_effective_from" class="form-control" value="{{ raw.get('tax.pph21_effective_from', '') }}">
+                    <div class="form-text">Penggajian dengan periode sebelum tanggal ini tidak akan dikenakan PPh 21.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Pihak Penanggung PPh 21</label>
+                    <select name="tax.pph21_borne_by" class="form-select">
+                        <option value="KARYAWAN" {% if raw.get('tax.pph21_borne_by', 'KARYAWAN') == 'KARYAWAN' %}selected{% endif %}>Dipotong dari Gaji Karyawan (Cr 2011 Hutang PPh 21)</option>
+                        <option value="PERUSAHAAN" {% if raw.get('tax.pph21_borne_by') == 'PERUSAHAAN' %}selected{% endif %}>Ditanggung Perusahaan (Dr 5015 Beban Pajak / Cr 2011)</option>
+                    </select>
+                    <div class="form-text">Bila ditanggung perusahaan, nominal gaji bersih karyawan tidak berkurang dan dicatat sebagai beban operasional.</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="tax.pph21_ter_verified" id="pph21TerVerified" value="1" {% if raw.get('tax.pph21_ter_verified') == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="pph21TerVerified">Tabel TER PP 58/2023 sudah diverifikasi</label>
+                    </div>
+                    <div class="form-text">Centang bila braket TER A (44 baris), B (40 baris), dan C (41 baris) sudah dicocokkan dengan konsultan.</div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex gap-2 mb-4">
             <button type="submit" class="btn app-btn-primary"><i class="bi bi-check2"></i> Simpan Pengaturan Pajak</button>
         </div>

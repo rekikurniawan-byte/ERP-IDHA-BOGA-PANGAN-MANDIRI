@@ -123,7 +123,7 @@ def test_active_tab_and_segments_follow_endpoint(app):
 
         nav = build_ops_navigation("production.index")
         assert [tab["key"] for tab in nav["tabs"] if tab["active"]] == ["kitchen"]
-        assert [seg["label"] for seg in nav["segments"]] == ["Produksi", "Rekap Dapur"]
+        assert [seg["label"] for seg in nav["segments"]] == ["Produksi", "Rekap Dapur", "Apel Tim"]
         assert next(seg for seg in nav["segments"] if seg["label"] == "Produksi")["active"] is True
         assert not nav["is_child"]
 

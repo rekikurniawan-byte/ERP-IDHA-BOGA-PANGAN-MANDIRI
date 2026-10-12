@@ -5,7 +5,7 @@ Aturan owner (2026-10-10 & 2026-10-11):
 - Tab bawah 5:
   1. Beranda = ringkasan hari ini (jumlah pesanan & porsi per sesi, draf portal menunggu, produksi, pengiriman berjalan, kendala) TANPA tombol pintasan.
   2. Pesanan = sub-tab: Hari Ini (operational.orders) · Draf Portal (portal.admin_order_drafts) · Perubahan Porsi (operational.order_qty_changes) · Jadwal Menu (operational.menu_schedule).
-  3. Dapur = sub-tab: Produksi (production.index) · Rekap Dapur (operational.kitchen_recap_hub).
+  3. Dapur = sub-tab: Produksi (production.index) · Rekap Dapur (operational.kitchen_recap_hub) · Apel Tim (workforce.attendance).
   4. Antar = sub-tab: Pengiriman (delivery.today) · Serah Terima (delivery.receiving).
   5. Akun = Akun Saya + ganti password + SOP + tombol Keluar (Keluar HANYA di sini).
 - Notifikasi hanya lewat lonceng di header (settings.notifications).
@@ -38,6 +38,7 @@ def ops_navigation_map() -> Dict[str, Any]:
     dapur_segments = [
         _seg("Produksi", "production.index"),
         _seg("Rekap Dapur", "operational.kitchen_recap_hub"),
+        _seg("Apel Tim", "workforce.attendance"),
     ]
     antar_segments = [
         _seg("Pengiriman", "delivery.today"),
@@ -72,7 +73,7 @@ def ops_navigation_map() -> Dict[str, Any]:
                 "label": "Dapur",
                 "icon": "skillet",
                 "endpoint": "production.index",
-                "endpoints": ["production.index", "operational.kitchen_recap_hub"],
+                "endpoints": ["production.index", "operational.kitchen_recap_hub", "workforce.attendance"],
                 "segments": dapur_segments,
             },
             {
@@ -163,6 +164,11 @@ def build_ops_navigation(endpoint: str) -> Dict[str, Any]:
         is_child = True
         back_url = url_for("operational.kitchen_recap_hub")
         back_label = "Rekap Dapur"
+    elif endpoint == "workforce.leave_create":
+        active_key = "kitchen"
+        is_child = True
+        back_url = url_for("workforce.attendance")
+        back_label = "Apel Tim"
     elif endpoint == "delivery.detail":
         active_key = "delivery"
         is_child = True

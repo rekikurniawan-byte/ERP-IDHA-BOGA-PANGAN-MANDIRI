@@ -1,0 +1,80 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_case_detail">
+{{ page_header("Mangkir · " ~ case.employee.full_name, "Sejak " ~ case.start_date.strftime('%d-%m-%Y') ~ " · " ~ wf_labels.case_status[case.status], eyebrow="SDM · Kehadiran & Disiplin", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-calendar-x"></i></div><div><p>Hari Tanpa Keterangan</p><h3>{{ days }}</h3><span class="app-stat-helper">Batas kualifikasi {{ settings.deemed_resign_days }} hari kerja</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-envelope-paper"></i></div><div><p>Surat Panggilan</p><h3>{{ 2 if case.summons_2_date else (1 if case.summons_1_date else 0) }} / 2</h3><span class="app-stat-helper">Tertulis dan patut</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-cash"></i></div><div><p>Perkiraan Denda</p><h3>{{ fine_estimate|rupiah }}</h3><span class="app-stat-helper">Sesuai pasal kontrak</span></div></div>
+</div>
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Langkah Tindak Lanjut</h2></div>
+            <ol class="mb-3">
+                <li>Hubungi karyawan dan keluarga/kontak darurat: {{ case.employee.emergency_contact_name or "-" }} {{ case.employee.emergency_contact_phone or "" }}.</li>
+                <li>Terbitkan surat panggilan 1, kirim ke alamat & HP karyawan, simpan bukti kirim.</li>
+                <li>Bila tetap tidak datang, terbitkan surat panggilan 2.</li>
+                <li>Setelah {{ settings.deemed_resign_days }} hari kerja berturut-turut tanpa keterangan dan 2 kali dipanggil, owner dapat menetapkan "dikualifikasikan mengundurkan diri".</li>
+            </ol>
+            {% if is_open %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% if not case.summons_1_date %}
+                        <form method="post" action="{{ url_for('workforce.case_summons', case_id=case.id, number=1) }}" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button class="btn app-btn-primary" type="submit"><i class="bi bi-envelope"></i> Terbitkan Panggilan 1</button>
+                        </form>
+                    {% elif not case.summons_2_date %}
+                        <form method="post" action="{{ url_for('workforce.case_summons', case_id=case.id, number=2) }}" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button class="btn app-btn-primary" type="submit" {% if case.summons_1_date >= today %}disabled title="Paling cepat besok"{% endif %}><i class="bi bi-envelope"></i> Terbitkan Panggilan 2</button>
+                        </form>
+                    {% endif %}
+                    {% if current_user.role == 'OWNER' %}
+                        <form method="post" action="{{ url_for('workforce.case_deem_resigned', case_id=case.id) }}" data-ui-form="true">
+                            {% include "components/csrf_token.html" %}
+                            <button class="btn app-btn-secondary" type="submit" {% if not ready %}disabled{% endif %} data-app-confirm="Tetapkan {{ case.employee.full_name }} dikualifikasikan mengundurkan diri? Kontrak berakhir dan denda/ganti rugi dicatat.">Kualifikasikan Mengundurkan Diri</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <p class="form-text mt-2 mb-0">{{ ready_message }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Surat & Status</h2></div>
+            <ul class="wf-list">
+                {% for number, issued, code in [(1, case.summons_1_date, case.summons_1_number), (2, case.summons_2_date, case.summons_2_number)] %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>Panggilan {{ number }}</strong><small>{{ code ~ " · " ~ issued.strftime('%d-%m-%Y') if issued else "Belum diterbitkan" }}</small></div>
+                        {% if issued %}<div class="wf-item-actions"><a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.case_summons_print', case_id=case.id, number=number) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Cetak</a></div>{% endif %}
+                    </li>
+                {% endfor %}
+                {% if case.returned_date %}
+                    <li class="wf-item"><div class="wf-item-main"><strong>Kembali bekerja</strong><small>{{ case.returned_date.strftime('%d-%m-%Y') }}</small></div></li>
+                {% endif %}
+            </ul>
+            {% if is_open %}
+                <hr>
+                <form method="post" action="{{ url_for('workforce.case_return', case_id=case.id) }}" class="row g-2 align-items-end" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="col-sm-6">
+                        <label class="form-label" for="returned_date">Karyawan kembali tanggal</label>
+                        <input class="form-control" type="date" name="returned_date" id="returned_date" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" min="{{ case.start_date.isoformat() }}">
+                    </div>
+                    <div class="col-sm-6"><button class="btn app-btn-secondary w-100" type="submit">Tandai Sudah Kembali</button></div>
+                </form>
+                <p class="form-text mb-0 mt-2">Sama dengan menandai "Hadir" di apel. Denda diusulkan ke owner untuk diputuskan.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

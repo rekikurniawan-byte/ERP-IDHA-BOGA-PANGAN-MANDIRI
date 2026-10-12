@@ -1,0 +1,111 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_charges">
+{{ page_header("Denda & Ganti Rugi", "Diputuskan owner. Disetujui = dijurnal Piutang Karyawan / Pendapatan Lain-lain, lalu dipotong otomatis di penggajian maks 50% upah per periode.", eyebrow="SDM · Kehadiran & Disiplin", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select" name="status" id="status">
+                    <option value="">Semua status</option>
+                    {% for code, label in wf_labels.charge_status.items() %}
+                        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="app-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('workforce.charges') }}">Atur Ulang</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        {% if charges %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th><th>Jenis & dasar</th><th class="text-end">Nominal</th><th class="text-end">Sisa</th><th>Status</th><th class="text-end">Keputusan</th></tr></thead>
+                    <tbody>
+                        {% for charge in charges %}
+                            <tr>
+                                <td><a href="{{ url_for('workforce.employee_detail', employee_id=charge.employee_id) }}">{{ charge.employee.full_name }}</a></td>
+                                <td><strong>{{ wf_labels.charge_type[charge.charge_type] }}</strong> · {{ charge.description }}<br><small class="text-muted">{{ charge.clause }}</small>{% if charge.cancel_reason %}<br><small class="text-muted">Batal: {{ charge.cancel_reason }}</small>{% endif %}</td>
+                                <td class="text-end">{{ charge.amount|rupiah }}</td>
+                                <td class="text-end">{{ charge_remaining(charge)|rupiah if charge.status == 'AKTIF' else "-" }}</td>
+                                <td><span class="status-badge {{ 'warning' if charge.status == 'DIUSULKAN' else ('info' if charge.status == 'AKTIF' else ('success' if charge.status == 'LUNAS' else 'muted')) }}">{{ wf_labels.charge_status[charge.status] }}</span></td>
+                                <td class="text-end">
+                                    {% if is_owner and charge.status == 'DIUSULKAN' %}
+                                        <form method="post" action="{{ url_for('workforce.charge_approve', charge_id=charge.id) }}" class="d-flex gap-2 justify-content-end align-items-center mb-2" data-ui-form="true">
+                                            {% include "components/csrf_token.html" %}
+                                            <input class="form-control form-control-sm" style="max-width: 130px" type="number" min="1" max="{{ charge.amount|int }}" name="amount" value="{{ charge.amount|int }}" aria-label="Nominal disetujui">
+                                            <button class="btn btn-sm app-btn-primary" type="submit">Setujui</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if is_owner and charge.status in ['DIUSULKAN', 'AKTIF'] %}
+                                        <form method="post" action="{{ url_for('workforce.charge_cancel', charge_id=charge.id) }}" class="d-flex gap-2 justify-content-end align-items-center" data-ui-form="true">
+                                            {% include "components/csrf_token.html" %}
+                                            <input class="form-control form-control-sm" style="max-width: 170px" name="reason" placeholder="Alasan batal" required aria-label="Alasan batal">
+                                            <button class="btn btn-sm app-btn-secondary" type="submit" data-app-confirm="Batalkan {{ 'sisa ' if charge.status == 'AKTIF' }}tagihan ini?">Batalkan</button>
+                                        </form>
+                                    {% elif not is_owner and charge.status == 'DIUSULKAN' %}
+                                        <span class="text-muted small">Menunggu owner</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-receipt"></i></div>
+                <h3>Belum ada denda atau ganti rugi.</h3>
+                <p>Usulan muncul otomatis dari mangkir, terlambat kembali, dan karyawan keluar sebelum waktunya.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<details class="card app-card">
+    <summary class="card-body fw-semibold">Usulkan denda manual (pelanggaran lain yang tertulis di kontrak)</summary>
+    <form method="post" class="card-body pt-0" data-ui-form="true">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="employee_id">Karyawan</label>
+                <select class="form-select" name="employee_id" id="employee_id" required>
+                    <option value="">Pilih karyawan</option>
+                    {% for employee in employees %}<option value="{{ employee.id }}">{{ employee.full_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="charge_type">Jenis</label>
+                <select class="form-select" name="charge_type" id="charge_type">
+                    {% for code, label in wf_labels.charge_type.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="amount">Nominal (Rp)</label>
+                <input class="form-control" type="number" min="1" step="1" name="amount" id="amount" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="clause">Dasar pasal kontrak</label>
+                <input class="form-control" name="clause" id="clause" placeholder="Contoh: Kontrak PKWT-2026-0001 Pasal 5" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="description">Uraian kejadian</label>
+                <input class="form-control" name="description" id="description" required>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3"><button class="btn app-btn-primary" type="submit">Usulkan</button></div>
+    </form>
+</details>
+</div>
+{% endblock %}

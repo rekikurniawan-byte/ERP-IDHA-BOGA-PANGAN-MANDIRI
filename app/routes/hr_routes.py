@@ -1,4 +1,5 @@
 import logging
+from calendar import monthrange
 from datetime import date
 from collections import Counter
 
@@ -26,6 +27,7 @@ from app.services.accounting_service import (
     create_payroll_payment_journal_for_payroll,
 )
 from app.utils.decorators import role_required
+from app.services.workforce_service import active_contract_for
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, date_in_range
 from app.services.atomic_transaction_service import AtomicTransactionError, atomic_business_action
 
@@ -53,10 +55,10 @@ def _payroll_journal_state(payroll):
 
     if status == "DRAFT":
         return {
-            "label": "Tidak Perlu",
+            "label": "Belum Waktunya",
             "class": "muted",
             "icon": "bi-pencil-square",
-            "helper": "Payroll masih draft, belum wajib posting jurnal.",
+            "helper": "Masih konsep; dijurnal setelah dikunci.",
             "journal": journal,
         }
 
@@ -65,7 +67,7 @@ def _payroll_journal_state(payroll):
             "label": "Belum Dijurnal",
             "class": "warning",
             "icon": "bi-exclamation-triangle",
-            "helper": "Payroll sudah final, perlu dicatat sebagai hutang gaji.",
+            "helper": "Sudah dikunci, tekan Catat Hutang Gaji.",
             "journal": journal,
         }
 
@@ -83,7 +85,7 @@ def _payroll_journal_state(payroll):
             "label": "Belum Dijurnal",
             "class": "danger",
             "icon": "bi-x-octagon",
-            "helper": "Status payroll sudah lanjut, tetapi jurnal payroll belum ditemukan.",
+            "helper": "Status sudah lanjut, tetapi jurnal gajinya tidak ditemukan.",
             "journal": journal,
         }
 
@@ -91,7 +93,7 @@ def _payroll_journal_state(payroll):
         "label": "Cek Status",
         "class": "muted",
         "icon": "bi-question-circle",
-        "helper": "Status payroll tidak dikenali.",
+        "helper": "Status penggajian tidak dikenali.",
         "journal": journal,
     }
 
@@ -114,7 +116,7 @@ def _payroll_payment_state(payroll):
             "label": "Cek Pembayaran",
             "class": "danger",
             "icon": "bi-x-octagon",
-            "helper": "Payroll berstatus PAID, tetapi jurnal pembayaran belum ditemukan.",
+            "helper": "Tercatat dibayar, tetapi jurnal pembayarannya tidak ditemukan.",
             "journal": journal,
         }
 
@@ -131,7 +133,7 @@ def _payroll_payment_state(payroll):
         "label": "Menunggu",
         "class": "muted",
         "icon": "bi-clock",
-        "helper": "Pembayaran baru bisa dilakukan setelah payroll POSTED.",
+        "helper": "Bisa dibayar setelah hutang gaji dicatat.",
         "journal": journal,
     }
 
@@ -139,11 +141,12 @@ def _payroll_payment_state(payroll):
 def _payroll_lifecycle_steps(payroll):
     status_order = ["DRAFT", "FINAL", "POSTED", "PAID"]
     descriptions = {
-        "DRAFT": "Nominal masih bisa disesuaikan.",
-        "FINAL": "Payroll terkunci dan siap diposting.",
-        "POSTED": "Hutang gaji sudah masuk jurnal.",
-        "PAID": "Gaji sudah dibayar dan dijurnal.",
+        "DRAFT": "Cek potongan & karyawan keluar, sesuaikan bonus.",
+        "FINAL": "Nominal dikunci, siap dicatat ke keuangan.",
+        "POSTED": "Beban & hutang gaji sudah dijurnal.",
+        "PAID": "Gaji dibayar dari kas/bank.",
     }
+    labels = {"DRAFT": "1. Konsep", "FINAL": "2. Terkunci", "POSTED": "3. Hutang Dicatat", "PAID": "4. Dibayar"}
     status = str(payroll.status or "DRAFT").upper()
     current_index = status_order.index(status) if status in status_order else 0
 
@@ -157,27 +160,59 @@ def _payroll_lifecycle_steps(payroll):
             state_class = "is-pending"
         steps.append({
             "key": key,
-            "label": key.title(),
+            "label": labels[key],
             "description": descriptions[key],
             "class": state_class,
         })
     return steps
 
 
+def _payroll_receipts(payroll):
+    from app.models.workforce import PayrollReceipt
+
+    return {row.payroll_detail_id: row for row in PayrollReceipt.query.filter_by(payroll_id=payroll.id).all()}
+
+
+def _payroll_exit_employee_ids(payroll):
+    from app.models.workforce import EmployeeExit
+
+    detail_ids = [detail.id for detail in payroll.details]
+    if not detail_ids:
+        return set()
+    return {row.employee_id for row in EmployeeExit.query.filter(EmployeeExit.payroll_detail_id.in_(detail_ids)).all()}
+
+
+def _employee_or_404(employee_id):
+    """Karyawan cabang pengguna saja; cabang lain = 404."""
+    return Employee.query.filter_by(id=employee_id, branch_id=current_user.branch_id).first_or_404()
+
+
+def _payroll_or_404(payroll_id):
+    return Payroll.query.filter_by(id=payroll_id, branch_id=current_user.branch_id).first_or_404()
+
+
 def _employee_salary_employee_ids():
     return {
         row.employee_id
-        for row in EmployeeSalaryHistory.query.with_entities(EmployeeSalaryHistory.employee_id).distinct().all()
+        for row in EmployeeSalaryHistory.query
+        .join(Employee, Employee.id == EmployeeSalaryHistory.employee_id)
+        .filter(Employee.branch_id == current_user.branch_id)
+        .with_entities(EmployeeSalaryHistory.employee_id)
+        .distinct()
+        .all()
     }
 
 
 def _employee_summary(employees=None):
-    employees = list(employees if employees is not None else Employee.query.order_by(Employee.full_name.asc()).all())
+    employees = list(employees if employees is not None else Employee.query.filter_by(branch_id=current_user.branch_id).order_by(Employee.full_name.asc()).all())
     salary_employee_ids = _employee_salary_employee_ids()
     active = [employee for employee in employees if str(employee.status or "").upper() == "ACTIVE"]
     inactive = [employee for employee in employees if str(employee.status or "").upper() == "INACTIVE"]
     without_phone = [employee for employee in employees if not employee.phone]
-    without_salary = [employee for employee in active if employee.id not in salary_employee_ids]
+    without_salary = [
+        employee for employee in active
+        if employee.id not in salary_employee_ids and employee.employee_type != "CADANGAN"
+    ]
 
     return {
         "total": len(employees),
@@ -207,87 +242,56 @@ hr_bp = Blueprint("hr", __name__, url_prefix="/hr")
 @hr_bp.route("/")
 @role_required("ADMIN", "HR")
 def index():
-    today = today_wib()
-    employees = Employee.query.order_by(Employee.full_name.asc()).all()
-    employee_summary = _employee_summary(employees)
-
-    payrolls = (
-        Payroll.query
-        .order_by(Payroll.period_year.desc(), Payroll.period_month.desc(), Payroll.id.desc())
-        .all()
-    )
-    payroll_count = len(payrolls)
-    lifecycle_counter = Counter(str(payroll.status or "").upper() for payroll in payrolls)
-    current_period_payrolls = [
-        payroll for payroll in payrolls
-        if payroll.period_month == today.month and payroll.period_year == today.year
-    ]
-    current_period_total = sum(payroll_total(payroll) for payroll in current_period_payrolls)
-
-    latest_payrolls = payrolls[:5]
-
-    payroll_dashboard = {
-        "count": payroll_count,
-        "current_period_label": f"{today.month:02d}-{today.year}",
-        "current_period_total": current_period_total,
-        "current_period_count": len(current_period_payrolls),
-        "unposted_count": lifecycle_counter.get("FINAL", 0),
-        "unpaid_count": lifecycle_counter.get("POSTED", 0),
-        "lifecycle": {
-            "DRAFT": lifecycle_counter.get("DRAFT", 0),
-            "FINAL": lifecycle_counter.get("FINAL", 0),
-            "POSTED": lifecycle_counter.get("POSTED", 0),
-            "PAID": lifecycle_counter.get("PAID", 0),
-        },
-    }
-
-    return render_template(
-        "hr/index.html",
-        employee_count=employee_summary["total"],
-        active_employee_count=employee_summary["active"],
-        payroll_count=payroll_count,
-        employee_summary=employee_summary,
-        payroll_dashboard=payroll_dashboard,
-        latest_payrolls=latest_payrolls,
-        latest_payroll_rows=_payroll_rows(latest_payrolls),
-    )
+    """Dashboard SDM lama dilebur ke Ringkasan SDM (keputusan 2026-10-11): satu pintu."""
+    return redirect(url_for("workforce.index"))
 
 
 @hr_bp.route("/employees")
 @role_required("ADMIN", "HR")
 def employees():
-    status_filter = (request.args.get("status") or "").upper().strip()
-    skill_filter = (request.args.get("skill") or "").strip()
+    from app.services.workforce_service import active_contract_for, contract_last_day
 
-    all_rows = Employee.query.order_by(Employee.full_name.asc()).all()
+    status_filter = (request.args.get("status") or "ACTIVE").upper().strip()
+    type_filter = (request.args.get("jenis") or "").upper().strip()
+    search = (request.args.get("q") or "").strip()
+
+    all_rows = Employee.query.filter_by(branch_id=current_user.branch_id).order_by(Employee.full_name.asc()).all()
     rows = list(all_rows)
-
     if status_filter in ["ACTIVE", "INACTIVE"]:
         rows = [employee for employee in rows if str(employee.status or "").upper() == status_filter]
+    if type_filter in ["KARYAWAN", "CADANGAN"]:
+        rows = [employee for employee in rows if employee.employee_type == type_filter]
+    if search:
+        needle = search.lower()
+        rows = [employee for employee in rows if needle in (employee.full_name or "").lower() or needle in (employee.nik or "")]
 
-    if skill_filter:
-        rows = [
-            employee for employee in rows
-            if any(str(skill.skill_name or "").lower() == skill_filter.lower() for skill in employee.skills)
-        ]
-
-    skill_options = [
-        item[0]
-        for item in db.session.query(EmployeeSkill.skill_name)
-        .order_by(EmployeeSkill.skill_name.asc())
-        .distinct()
-        .all()
-        if item[0]
-    ]
+    today = today_wib()
+    contract_rows = []
+    for employee in rows:
+        contract = active_contract_for(employee.id, today)
+        last_day = contract_last_day(contract) if contract else None
+        contract_rows.append({
+            "employee": employee,
+            "contract": contract,
+            "last_day": last_day,
+            "days_left": (last_day - today).days if last_day else None,
+        })
 
     return render_template(
         "hr/employees.html",
-        employees=rows,
+        rows=contract_rows,
         employee_summary=_employee_summary(all_rows),
         status_filter=status_filter,
-        skill_filter=skill_filter,
-        skill_options=skill_options,
+        type_filter=type_filter,
+        search=search,
     )
+
+
+def _employee_profile_form():
+    return {
+        field: request.form.get(field)
+        for field in ("nik", "address", "position", "employee_type", "emergency_contact_name", "emergency_contact_phone", "ptkp_status", "npwp")
+    }
 
 
 @hr_bp.route("/employees/create", methods=["GET", "POST"])
@@ -308,16 +312,20 @@ def create_employee():
         if join_date_raw:
             join_date = date.fromisoformat(join_date_raw)
 
-        create_employee_record(
+        employee = create_employee_record(
             branch_id=current_user.branch_id,
             full_name=full_name,
             phone=phone or None,
             join_date=join_date,
             salary_amount=salary_raw,
             skills_raw=skills_raw,
+            profile=_employee_profile_form(),
         )
-        flash("Karyawan berhasil ditambahkan.", "success")
-        return redirect(url_for("hr.employees"))
+        if employee.employee_type == "KARYAWAN":
+            flash("Karyawan ditambahkan. Langkah berikut: buat kontrak kerjanya.", "success")
+        else:
+            flash("Tenaga cadangan ditambahkan.", "success")
+        return redirect(url_for("workforce.employee_detail", employee_id=employee.id))
 
     return render_template("hr/employee_form.html", employee=None)
 
@@ -325,7 +333,7 @@ def create_employee():
 @hr_bp.route("/employees/<int:employee_id>/edit", methods=["GET", "POST"])
 @role_required("ADMIN", "HR")
 def edit_employee(employee_id):
-    employee = Employee.query.get_or_404(employee_id)
+    employee = _employee_or_404(employee_id)
 
     if request.method == "POST":
         full_name = (request.form.get("full_name") or "").strip()
@@ -346,6 +354,13 @@ def edit_employee(employee_id):
             join_date = None
 
         salary_effective_date = date.fromisoformat(salary_effective_raw) if salary_effective_raw else None
+        contract = active_contract_for(employee.id)
+        if contract:
+            # Gaji karyawan berkontrak hanya berubah lewat kontrak/adendum baru.
+            salary_raw = None
+            if status == "INACTIVE" and employee.status == "ACTIVE":
+                flash("Karyawan masih terikat kontrak. Nonaktifkan lewat Karyawan Keluar supaya hak dan potongannya dihitung.", "warning")
+                return redirect(url_for("workforce.exit_create", employee_id=employee.id))
         update_employee_record(
             employee,
             full_name=full_name,
@@ -355,9 +370,10 @@ def edit_employee(employee_id):
             salary_amount=salary_raw,
             salary_effective_date=salary_effective_date,
             skills_raw=skills_raw,
+            profile=_employee_profile_form(),
         )
-        flash("Karyawan berhasil diperbarui.", "success")
-        return redirect(url_for("hr.employees"))
+        flash("Data karyawan diperbarui.", "success")
+        return redirect(url_for("workforce.employee_detail", employee_id=employee.id))
 
     latest_salary = (
         EmployeeSalaryHistory.query
@@ -373,17 +389,21 @@ def edit_employee(employee_id):
         employee=employee,
         latest_salary=latest_salary,
         skill_text=skill_text,
+        contract=active_contract_for(employee.id),
     )
 
 
 @hr_bp.route("/employees/<int:employee_id>/toggle", methods=["POST"])
 @role_required("ADMIN", "HR")
 def toggle_employee(employee_id):
-    employee = Employee.query.get_or_404(employee_id)
+    employee = _employee_or_404(employee_id)
+    if employee.status == "ACTIVE" and active_contract_for(employee.id):
+        flash("Karyawan masih terikat kontrak. Nonaktifkan lewat Karyawan Keluar supaya hak dan potongannya dihitung.", "warning")
+        return redirect(url_for("workforce.exit_create", employee_id=employee.id))
     toggle_employee_status(employee)
 
-    flash("Status karyawan berhasil diperbarui.", "success")
-    return redirect(url_for("hr.employees"))
+    flash("Karyawan diaktifkan kembali." if employee.status == "ACTIVE" else "Karyawan dinonaktifkan.", "success")
+    return redirect(url_for("workforce.employee_detail", employee_id=employee.id))
 
 
 @hr_bp.route("/payrolls")
@@ -395,6 +415,7 @@ def payrolls():
 
     all_rows = (
         Payroll.query
+        .filter_by(branch_id=current_user.branch_id)
         .order_by(Payroll.period_year.desc(), Payroll.period_month.desc(), Payroll.id.desc())
         .all()
     )
@@ -480,7 +501,7 @@ def generate_payroll_route():
             return redirect(url_for("hr.payrolls"))
 
     today = today_wib()
-    active_employees = Employee.query.filter_by(status="ACTIVE").order_by(Employee.full_name.asc()).all()
+    active_employees = Employee.query.filter_by(branch_id=current_user.branch_id, status="ACTIVE", employee_type="KARYAWAN").order_by(Employee.full_name.asc()).all()
     salary_employee_ids = _employee_salary_employee_ids()
     generate_summary = {
         "active_employee_count": len(active_employees),
@@ -493,7 +514,7 @@ def generate_payroll_route():
 @hr_bp.route("/payrolls/<int:payroll_id>")
 @role_required("ADMIN", "HR")
 def payroll_detail(payroll_id):
-    payroll = Payroll.query.get_or_404(payroll_id)
+    payroll = _payroll_or_404(payroll_id)
 
     return render_template(
         "hr/payroll_detail.html",
@@ -501,6 +522,15 @@ def payroll_detail(payroll_id):
         payroll_total=payroll_total(payroll),
         detail_count=len(payroll.details),
         lifecycle_steps=_payroll_lifecycle_steps(payroll),
+        charge_total=sum(float(detail.charge_deduction or 0) for detail in payroll.details),
+        receipts=_payroll_receipts(payroll),
+        exit_employee_ids=_payroll_exit_employee_ids(payroll),
+        missing_contract=[
+            detail.employee for detail in payroll.details
+            if detail.employee and detail.employee.employee_type == "KARYAWAN" and not active_contract_for(
+                detail.employee_id, date(payroll.period_year, payroll.period_month, monthrange(payroll.period_year, payroll.period_month)[1])
+            ) and detail.employee_id not in _payroll_exit_employee_ids(payroll)
+        ],
         journal_state=_payroll_journal_state(payroll),
         payment_state=_payroll_payment_state(payroll),
         bank_accounts=BankAccount.query.filter_by(branch_id=payroll.branch_id, is_active=True).order_by(BankAccount.bank_name.asc()).all(),
@@ -510,7 +540,7 @@ def payroll_detail(payroll_id):
 @hr_bp.route("/payrolls/<int:payroll_id>/details/<int:detail_id>/update", methods=["POST"])
 @role_required("ADMIN", "HR")
 def update_payroll_detail(payroll_id, detail_id):
-    payroll = Payroll.query.get_or_404(payroll_id)
+    payroll = _payroll_or_404(payroll_id)
     detail = PayrollDetail.query.get_or_404(detail_id)
 
     if detail.payroll_id != payroll.id:
@@ -531,10 +561,40 @@ def update_payroll_detail(payroll_id, detail_id):
     return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
 
 
+@hr_bp.route("/payrolls/<int:payroll_id>/sync-workforce", methods=["POST"])
+@role_required("ADMIN", "HR")
+def sync_payroll_workforce_route(payroll_id):
+    """Hitung ulang karyawan keluar + potongan denda/ganti rugi pada penggajian konsep."""
+    from app.services.workforce_payroll_service import sync_payroll_workforce
+    from app.services.workforce_service import WorkforceError
+
+    payroll = Payroll.query.filter_by(id=payroll_id, branch_id=current_user.branch_id).first_or_404()
+    try:
+        with atomic_business_action(
+            module="HR",
+            action="PAYROLL_SYNC_WORKFORCE",
+            description=f"Hitung ulang potongan & karyawan keluar payroll {_payroll_period_label(payroll)}.",
+            reference_type="payrolls",
+            reference_id=payroll.id,
+            user_id=current_user.id,
+            branch_id=current_user.branch_id,
+            metadata={"payroll_id": payroll.id},
+        ):
+            result = sync_payroll_workforce(payroll)
+        deducted = f"{result['deducted']:,.0f}".replace(",", ".")
+        flash(f"Dihitung ulang: {result['exits']} karyawan keluar, potongan denda/ganti rugi Rp {deducted}.", "success")
+    except WorkforceError as error:
+        flash(str(error), "warning")
+    except Exception as error:
+        logger.exception("Hitung ulang payroll %s gagal", payroll.id)
+        flash(f"Gagal menghitung ulang penggajian: {error}", "danger")
+    return redirect(url_for("hr.payroll_detail", payroll_id=payroll.id))
+
+
 @hr_bp.route("/payrolls/<int:payroll_id>/finalize", methods=["POST"])
 @role_required("ADMIN", "HR")
 def finalize_payroll(payroll_id):
-    payroll = Payroll.query.get_or_404(payroll_id)
+    payroll = _payroll_or_404(payroll_id)
 
     if payroll.status != "DRAFT":
         flash("Penggajian sudah bukan konsep.", "warning")
@@ -557,7 +617,7 @@ def finalize_payroll(payroll_id):
         ):
             payroll.status = "FINAL"
 
-        flash("Penggajian berhasil difinalkan.", "success")
+        flash("Penggajian dikunci. Langkah berikut: Catat Hutang Gaji.", "success")
     except Exception as error:
         logger.exception("Suppressed unexpected exception in app/routes/hr_routes.py:556")
         flash(f"Gagal memfinalkan penggajian: {error}", "danger")
@@ -568,7 +628,7 @@ def finalize_payroll(payroll_id):
 @limiter.limit("5 per minute", methods=["POST"])
 @role_required("ADMIN", "HR")
 def post_payroll_journal(payroll_id):
-    payroll = Payroll.query.get_or_404(payroll_id)
+    payroll = _payroll_or_404(payroll_id)
 
     try:
         with atomic_business_action(
@@ -603,7 +663,7 @@ def post_payroll_journal(payroll_id):
 @limiter.limit("5 per minute", methods=["POST"])
 @role_required("ADMIN", "HR")
 def pay_payroll(payroll_id):
-    payroll = Payroll.query.get_or_404(payroll_id)
+    payroll = _payroll_or_404(payroll_id)
     payment_method = request.form.get("payment_method") or "CASH"
 
     try:
@@ -642,7 +702,7 @@ def pay_payroll(payroll_id):
 def payroll_payment_history():
     payrolls = (
         Payroll.query
-        .filter(Payroll.status == "PAID")
+        .filter(Payroll.branch_id == current_user.branch_id, Payroll.status == "PAID")
         .order_by(Payroll.period_year.desc(), Payroll.period_month.desc(), Payroll.id.desc())
         .all()
     )

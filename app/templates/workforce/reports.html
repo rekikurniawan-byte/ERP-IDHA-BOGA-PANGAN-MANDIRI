@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_reports">
+{{ page_header("Laporan Tenaga Kerja", "Kehadiran, karyawan yang sering izin/mangkir, alasan keluar, serta denda dan ganti rugi.", eyebrow="SDM · Kehadiran & Disiplin", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label" for="dari">Dari</label>
+                <input class="form-control" type="date" name="dari" id="dari" value="{{ report.start.isoformat() }}">
+            </div>
+            <div>
+                <label class="form-label" for="sampai">Sampai</label>
+                <input class="form-control" type="date" name="sampai" id="sampai" value="{{ report.end.isoformat() }}">
+            </div>
+            <div class="app-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('workforce.reports') }}">Bulan Ini</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-door-open"></i></div><div><p>Izin Tercatat</p><h3>{{ report.leave_count }}</h3><span class="app-stat-helper">Dalam periode</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-person-x"></i></div><div><p>Kasus Mangkir</p><h3>{{ report.case_count }}</h3><span class="app-stat-helper">Dalam periode</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-box-arrow-right"></i></div><div><p>Karyawan Keluar</p><h3>{{ report.exits|length }}</h3><span class="app-stat-helper">Tanggal keluar dalam periode</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div><div><p>Denda/Ganti Rugi Terpotong</p><h3>{{ report.charges.deducted|rupiah }}</h3><span class="app-stat-helper">Sisa piutang {{ report.charges.outstanding|rupiah }}</span></div></div>
+</div>
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Perlu Diperhatikan</h2></div>
+            {% if report.watchlist %}
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th><th class="text-end">Izin</th><th class="text-end">Telat kembali</th><th class="text-end">Mangkir</th></tr></thead>
+                    <tbody>
+                        {% for row in report.watchlist %}
+                            <tr><td><a href="{{ url_for('workforce.employee_detail', employee_id=row.employee.id) }}">{{ row.employee.full_name }}</a></td><td class="text-end">{{ row.leaves }}</td><td class="text-end">{{ row.late_returns }}</td><td class="text-end">{{ row.cases }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="wf-empty">Tidak ada izin atau mangkir dalam periode ini.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Alasan Keluar</h2></div>
+            {% if report.exit_reasons %}
+                <table class="wf-sum">
+                    {% for label, count in report.exit_reasons %}<tr><td>{{ label }}</td><td>{{ count }} orang</td></tr>{% endfor %}
+                </table>
+                <p class="mt-3 mb-1 fw-semibold">Menurut jenis</p>
+                <table class="wf-sum">
+                    {% for label, count in report.exit_types %}<tr><td>{{ label }}</td><td>{{ count }} orang</td></tr>{% endfor %}
+                </table>
+            {% else %}
+                <p class="wf-empty">Tidak ada karyawan keluar dalam periode ini.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card app-card mt-4">
+    <div class="card-body">
+        <div class="wf-section-title"><h2>Rekap Apel per Karyawan</h2></div>
+        {% if report.recap %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th>{% for code, label in wf_labels.attendance.items() %}<th class="text-end">{{ label }}</th>{% endfor %}<th class="text-end">Kehadiran</th></tr></thead>
+                    <tbody>
+                        {% for row in report.recap %}
+                            <tr>
+                                <td>{{ row.employee.full_name }}</td>
+                                {% for code in wf_labels.attendance %}<td class="text-end {{ 'text-danger fw-semibold' if code == 'ALPA' and row.counts.get(code) }}">{{ row.counts.get(code, 0) }}</td>{% endfor %}
+                                <td class="text-end">{{ row.attendance_rate }}%</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="wf-empty">Belum ada apel dalam periode ini.</p>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

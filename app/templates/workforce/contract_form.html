@@ -1,0 +1,127 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_contract_form">
+{{ page_header("Buat Kontrak Kerja", "Angka denda dan masa pemberitahuan terisi dari Pengaturan Perusahaan; boleh disesuaikan per karyawan sebelum ditandatangani.", eyebrow="SDM · Karyawan & Kontrak", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+{% set selected_type = form.get('contract_type') or 'PKWT' %}
+<form method="post" class="app-form" data-ui-form="true" id="contractForm">
+    {% include "components/csrf_token.html" %}
+    <div class="wf-grid">
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Karyawan & Jenis Kontrak</h2></div>
+                <div class="mb-3">
+                    <label class="form-label" for="employee_id">Karyawan</label>
+                    <select class="form-select" name="employee_id" id="employee_id" required>
+                        <option value="">Pilih karyawan</option>
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}" data-position="{{ employee.position or '' }}" {% if form.get('employee_id')|string == employee.id|string %}selected{% endif %}>{{ employee.full_name }}{% if employee.nik %} · NIK {{ employee.nik }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Isi NIK dan alamat karyawan di Data Karyawan supaya tercetak di surat.</div>
+                </div>
+                <div class="mb-3">
+                    <span class="form-label d-block">Jenis kontrak</span>
+                    <div class="wf-seg" role="radiogroup">
+                        {% for value, label in [("PKWT", "PKWT · waktu tertentu"), ("PKWTT", "PKWTT · tetap")] %}
+                            <input type="radio" name="contract_type" id="type_{{ value }}" value="{{ value }}" {% if selected_type == value %}checked{% endif %}>
+                            <label for="type_{{ value }}">{{ label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="position">Jabatan / tugas</label>
+                    <input class="form-control" name="position" id="position" value="{{ form.get('position', '') }}" placeholder="Contoh: Juru masak, Pengemas, Pengantar" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="work_location">Lokasi kerja & mess</label>
+                    <input class="form-control" name="work_location" id="work_location" value="{{ form.get('work_location', '') or settings.work_location }}">
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="start_date">Mulai</label>
+                        <input class="form-control" type="date" name="start_date" id="start_date" value="{{ form.get('start_date', '') }}" required>
+                    </div>
+                    <div class="col-6" data-show-for="PKWT">
+                        <label class="form-label" for="end_date">Selesai (PKWT)</label>
+                        <input class="form-control" type="date" name="end_date" id="end_date" value="{{ form.get('end_date', '') }}">
+                    </div>
+                    <div class="col-6" data-show-for="PKWTT">
+                        <label class="form-label" for="probation_months">Masa percobaan</label>
+                        <select class="form-select" name="probation_months" id="probation_months">
+                            {% for months in range(0, 4) %}
+                                <option value="{{ months }}" {% if form.get('probation_months')|string == months|string %}selected{% endif %}>{{ "Tanpa percobaan" if months == 0 else months ~ " bulan" }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <p class="form-text mb-0 mt-2" data-show-for="PKWT">PKWT paling lama 5 tahun termasuk perpanjangan, tanpa masa percobaan, dan wajib dicatatkan ke Disnaker 3 hari kerja setelah ditandatangani.</p>
+                <p class="form-text mb-0 mt-2" data-show-for="PKWTT">PKWTT boleh memakai masa percobaan paling lama 3 bulan dengan upah tidak di bawah upah minimum.</p>
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Upah & Sanksi Tertulis</h2></div>
+                <div class="mb-3">
+                    <label class="form-label" for="monthly_salary">Upah per bulan (Rp)</label>
+                    <input class="form-control" type="number" min="1" step="1" name="monthly_salary" id="monthly_salary" value="{{ form.get('monthly_salary', '') }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="notice_days">Pemberitahuan resign (hari)</label>
+                    <input class="form-control" type="number" min="0" step="1" name="notice_days" id="notice_days" value="{{ form.get('notice_days', '') or settings.notice_days }}">
+                </div>
+                <div class="row g-3">
+                    {% for name, label in [
+                        ("fine_absent_per_day", "Denda mangkir per hari"),
+                        ("fine_leave_site", "Denda keluar lokasi tanpa izin"),
+                        ("fine_late_return_per_day", "Denda terlambat kembali per hari"),
+                        ("fine_short_notice", "Denda resign tanpa pemberitahuan cukup"),
+                    ] %}
+                        <div class="col-6">
+                            <label class="form-label" for="{{ name }}">{{ label }}</label>
+                            <input class="form-control" type="number" min="0" step="1" name="{{ name }}" id="{{ name }}" value="{{ form.get(name, '') or (settings[name]|int) }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="form-text mt-2">Semua potongan (denda + ganti rugi) maksimal {{ settings.max_deduction_percent }}% upah per periode; sisanya menjadi piutang karyawan.</p>
+                <div>
+                    <label class="form-label" for="notes">Catatan tambahan (opsional)</label>
+                    <textarea class="form-control" name="notes" id="notes" rows="2">{{ form.get('notes', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a class="btn app-btn-secondary" href="{{ url_for('workforce.contracts') }}">Batal</a>
+        <button class="btn app-btn-primary" type="submit"><i class="bi bi-file-earmark-text"></i> Buat Konsep Kontrak</button>
+    </div>
+</form>
+</div>
+
+<script>
+(function () {
+    const form = document.getElementById("contractForm");
+    if (!form) return;
+    function sync() {
+        const checked = form.querySelector('input[name="contract_type"]:checked');
+        const type = checked ? checked.value : "PKWT";
+        form.querySelectorAll("[data-show-for]").forEach(function (el) {
+            el.hidden = el.getAttribute("data-show-for") !== type;
+        });
+        document.getElementById("end_date").required = type === "PKWT";
+    }
+    form.addEventListener("change", sync);
+    const employee = document.getElementById("employee_id");
+    const position = document.getElementById("position");
+    employee.addEventListener("change", function () {
+        const option = employee.options[employee.selectedIndex];
+        if (option && option.dataset.position && !position.value) position.value = option.dataset.position;
+    });
+    sync();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_cases">
+{{ page_header("Mangkir / Meninggalkan Lokasi", "Dibuka otomatis saat apel menandai tanpa keterangan. Ditutup saat karyawan kembali atau dikualifikasikan mengundurkan diri.", eyebrow="SDM · Kehadiran & Disiplin", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        {% if cases %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th><th>Sejak</th><th class="text-end">Hari tanpa keterangan</th><th>Surat panggilan</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for item in cases %}
+                            {% set case = item.case %}
+                            <tr>
+                                <td><a class="fw-semibold" href="{{ url_for('workforce.case_detail', case_id=case.id) }}">{{ case.employee.full_name }}</a>{% if case.leave_id %}<br><small class="text-muted">Tidak kembali dari izin</small>{% endif %}</td>
+                                <td>{{ case.start_date.strftime('%d-%m-%Y') }}</td>
+                                <td class="text-end">{{ item.days }}</td>
+                                <td>{{ "2 kali" if case.summons_2_date else ("1 kali" if case.summons_1_date else "Belum") }}</td>
+                                <td><span class="status-badge {{ 'danger' if item.open else ('success' if case.status == 'KEMBALI' else 'muted') }}">{{ wf_labels.case_status[case.status] }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-person-check"></i></div>
+                <h3>Tidak ada karyawan mangkir.</h3>
+                <p>Kasus muncul di sini bila apel menandai karyawan "Tanpa keterangan".</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

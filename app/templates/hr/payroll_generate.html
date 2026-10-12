@@ -2,38 +2,26 @@
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="payroll-generate">
+<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-page="hr_payroll_generate">
 {{ page_header(
-    "Buat Payroll Bulanan",
-    "Buat payroll per periode untuk karyawan internal aktif. Sistem memakai salary history dan aturan prorata.",
-    eyebrow="SDM / Buat Penggajian",
-    actions_class="hr-master-settings-header-actions",
-    actions=[
-        {"label": "Kembali ke Payroll", "url": url_for('hr.payrolls'), "icon": "bi-arrow-left", "variant": "primary"},
-        {"label": "Aksi SDM", "icon": "bi-three-dots", "dropdown": [
-            {"label": "Dashboard SDM", "url": url_for('hr.index'), "icon": "bi-speedometer2"},
-            {"label": "Karyawan Internal", "url": url_for('hr.employees'), "icon": "bi-people"},
-            {"label": "Riwayat Pembayaran Gaji", "url": "/hr/payroll-payment-history", "icon": "bi-clock-history"},
-        ]},
-    ]
+    "Buat Penggajian Bulanan",
+    "Sistem mengambil karyawan aktif (bukan cadangan), gaji dari kontrak, prorata masuk/keluar, hari tanpa keterangan, dan potongan denda/ganti rugi.",
+    eyebrow="SDM · Penggajian",
+    actions=[]
 ) }}
+{% include "hr/_tabs.html" %}
 
 <div class="app-stat-grid hr-kpi-grid">
-    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Karyawan Aktif</p><h3>{{ generate_summary.active_employee_count }}</h3><span class="app-stat-helper">Masuk payroll periode baru</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-cash"></i></div><div><p>Tanpa Gaji Aktif</p><h3>{{ generate_summary.without_salary_count }}</h3><span class="app-stat-helper">Cek sebelum generate</span></div></div>
-    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-calendar2-check"></i></div><div><p>Default Periode</p><h3>{{ generate_summary.period_label }}</h3><span class="app-stat-helper">Bisa diganti manual</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Karyawan Aktif</p><h3>{{ generate_summary.active_employee_count }}</h3><span class="app-stat-helper">Masuk penggajian (tanpa cadangan)</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-cash"></i></div><div><p>Tanpa Gaji Aktif</p><h3>{{ generate_summary.without_salary_count }}</h3><span class="app-stat-helper">Buat kontrak dulu supaya gajinya terisi</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-calendar2-check"></i></div><div><p>Periode Disarankan</p><h3>{{ generate_summary.period_label }}</h3><span class="app-stat-helper">Bisa diganti di form</span></div></div>
 </div>
 
 <div class="hr-enterprise-grid two-col">
     <div class="card app-card">
         <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Payroll Setup</span>
-                    <h2>Periode Payroll</h2>
-                </div>
-            </div>
-            <form method="post" data-app-confirm="Buat payroll untuk periode ini? Sistem akan menghitung gaji karyawan aktif sesuai periode dan aturan prorata." data-ui-form="true" class="app-form hr-payroll-generate-form">
+            <div class="wf-section-title"><h2>Periode</h2></div>
+            <form method="post" data-app-confirm="Buat penggajian untuk periode ini? Gaji dihitung otomatis dan masih bisa dicek sebelum dikunci." data-ui-form="true" class="app-form hr-payroll-generate-form">
                 {% include "components/csrf_token.html" %}
                 <div class="hr-form-grid two-col">
                     <div>
@@ -51,10 +39,10 @@
                 </div>
                 <div class="hr-inline-status is-info">
                     <i class="bi bi-info-circle"></i>
-                    <span>Payroll hanya mengambil karyawan internal aktif. {{ term('sub_client') }} tidak ikut payroll.</span>
+                    <span>Hanya karyawan internal aktif. Tenaga cadangan (harian lepas) dan {{ term('sub_client', lower=True) }} tidak ikut penggajian bulanan.</span>
                 </div>
                 <div class="app-form-actions">
-                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-calendar-plus"></i> Buat Payroll</button>
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-calendar-plus"></i> Buat Penggajian</button>
                     <a href="{{ url_for('hr.payrolls') }}" class="btn app-btn-secondary">Batal</a>
                 </div>
             </form>
@@ -63,17 +51,12 @@
 
     <div class="card app-card hr-lifecycle-card">
         <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Alur Setelah Generate</span>
-                    <h2>Kontrol Payroll Aman</h2>
-                </div>
-            </div>
+            <div class="wf-section-title"><h2>Setelah Dibuat</h2></div>
             <div class="hr-lifecycle-list compact">
-                <div class="hr-lifecycle-step is-active"><strong>1. Draft</strong><span>Edit nominal</span><small>Bonus/potongan/prorata masih bisa dikoreksi.</small></div>
-                <div class="hr-lifecycle-step is-pending"><strong>2. Final</strong><span>Kunci payroll</span><small>Setelah final, nominal tidak diedit sembarangan.</small></div>
-                <div class="hr-lifecycle-step is-pending"><strong>3. Sudah Diposting</strong><span>Jurnal hutang gaji</span><small>Dr Beban Gaji / Cr Hutang Gaji.</small></div>
-                <div class="hr-lifecycle-step is-pending"><strong>4. Paid</strong><span>Bayar gaji</span><small>Dr Hutang Gaji / Cr Kas atau Bank.</small></div>
+                <div class="hr-lifecycle-step is-active"><strong>1. Konsep</strong><small>Cek rincian, bonus, potongan, karyawan keluar.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>2. Terkunci</strong><small>Nominal tidak bisa diubah lagi.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>3. Hutang Dicatat</strong><small>Beban gaji, hutang gaji, dan potongan piutang dijurnal.</small></div>
+                <div class="hr-lifecycle-step is-pending"><strong>4. Dibayar</strong><small>Hutang gaji dilunasi dari kas/bank.</small></div>
             </div>
         </div>
     </div>

@@ -1,0 +1,109 @@
+{% extends "layouts/ops_mobile.html" %}
+
+{# Versi HP dari workforce/attendance.html. Nama field form identik: status_<id>, note_<id>, tanggal. #}
+{% block ops_content %}
+{% set tone = {
+    "HADIR": "peer-checked:bg-status-success-bg peer-checked:text-status-success-text peer-checked:border-status-success-text",
+    "IZIN": "peer-checked:bg-status-info-bg peer-checked:text-status-info-text peer-checked:border-status-info-text",
+    "SAKIT": "peer-checked:bg-status-info-bg peer-checked:text-status-info-text peer-checked:border-status-info-text",
+    "CUTI": "peer-checked:bg-status-info-bg peer-checked:text-status-info-text peer-checked:border-status-info-text",
+    "ALPA": "peer-checked:bg-status-danger-bg peer-checked:text-status-danger-text peer-checked:border-status-danger-text",
+    "": "peer-checked:bg-surface-container peer-checked:text-text-heading peer-checked:border-text-muted",
+} %}
+{% set chip = "block px-2.5 py-2 rounded-full border border-card-border bg-background-surface text-xs font-bold text-text-muted cursor-pointer select-none" %}
+<div class="flex flex-col gap-3.5 pb-28" data-ui-page="ops_apel">
+    <div class="flex items-center justify-between gap-2">
+        <div>
+            <h1 class="font-headline-sm text-base font-bold text-text-heading">Apel Tim</h1>
+            <span class="font-caption-regular text-xs text-text-muted">{{ day.strftime('%d-%m-%Y') }} · tandai yang tidak hadir</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ 'bg-status-success-bg text-status-success-text' if roll.recorded else 'bg-status-warning-bg text-status-warning-text' }}">
+            {{ 'Sudah diisi' if roll.recorded else 'Belum disimpan' }}
+        </span>
+    </div>
+
+    <form method="get" class="app-filter flex items-end gap-2" data-ui-form="true" data-form-kind="filter">
+        <label class="flex-1">
+            <span class="font-caption-regular text-xs font-bold text-text-heading block mb-1">Tanggal</span>
+            <input type="date" name="tanggal" value="{{ day.isoformat() }}" min="{{ min_day.isoformat() }}" max="{{ today.isoformat() }}" class="w-full h-11 px-3 rounded-xl border border-card-border bg-background-surface text-sm text-text-heading">
+        </label>
+        <button type="submit" class="h-11 px-4 rounded-xl bg-surface-container text-text-heading text-sm font-bold">Tampilkan</button>
+    </form>
+
+    {% if staffing.shortage %}
+        <div class="p-3 rounded-xl bg-status-warning-bg text-status-warning-text text-xs flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px]">groups</span>
+            <div>
+                <strong class="block">Besok kurang {{ staffing.shortage }} orang</strong>
+                {% for s in staffing.sessions %}{{ s.label }} {{ s.portions }} porsi butuh {{ s.needed }}{{ " · " if not loop.last }}{% endfor %} · tersedia {{ staffing.available }}.
+                {% if staffing.reserves %}
+                    <span class="block mt-1.5 font-bold">Hubungi cadangan:</span>
+                    {% for r in staffing.reserves %}
+                        {% if r.phone %}<a href="tel:{{ r.phone }}" class="underline font-bold">{{ r.full_name }}</a>{% else %}{{ r.full_name }}{% endif %}{{ ", " if not loop.last }}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    {% if overdue_leaves %}
+        <div class="p-3 rounded-xl bg-status-danger-bg text-status-danger-text text-xs flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px]">alarm</span>
+            <span>Belum kembali dari izin: {% for leave in overdue_leaves %}<strong>{{ leave.employee.full_name }}</strong> ({{ leave.expected_return_date.strftime('%d-%m') }}){{ ", " if not loop.last }}{% endfor %}.</span>
+        </div>
+    {% endif %}
+
+    <form method="post" data-ui-form="true" class="flex flex-col gap-2.5">
+        {% include "components/csrf_token.html" %}
+        <input type="hidden" name="tanggal" value="{{ day.isoformat() }}">
+        {% for row in roll.staff %}
+            <div class="rounded-2xl p-3.5 bg-card-surface border border-card-border shadow-xs flex flex-col gap-2.5">
+                <div>
+                    <strong class="text-sm text-text-heading block">{{ row.employee.full_name }}</strong>
+                    <span class="text-[11px] text-text-muted">{{ row.employee.position or "" }}{% if row.hint %} · <span class="text-status-danger-text font-bold">{{ row.hint }}</span>{% endif %}</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Status {{ row.employee.full_name }}">
+                    {% for code, label in wf_labels.attendance.items() %}
+                        <span>
+                            <input type="radio" class="peer sr-only" name="status_{{ row.employee.id }}" id="st_{{ row.employee.id }}_{{ code }}" value="{{ code }}" {% if row.status == code %}checked{% endif %}>
+                            <label for="st_{{ row.employee.id }}_{{ code }}" class="{{ chip }} {{ tone[code] }}">{{ "Tanpa ket." if code == "ALPA" else label }}</label>
+                        </span>
+                    {% endfor %}
+                </div>
+                <label class="flex items-center gap-2 text-xs font-bold text-text-muted"><input type="checkbox" name="doctor_{{ row.employee.id }}" value="1" class="w-4 h-4 accent-primary" {% if row.medical_note %}checked{% endif %}> Sakit ada surat dokter (tetap dibayar)</label>
+                <input name="note_{{ row.employee.id }}" value="{{ row.notes or '' }}" placeholder="Catatan (opsional)" aria-label="Catatan {{ row.employee.full_name }}" class="w-full h-10 px-3 rounded-xl border border-card-border bg-background-surface text-sm text-text-heading">
+            </div>
+        {% else %}
+            <div class="p-6 rounded-2xl bg-card-surface border border-card-border text-center text-sm text-text-muted">Belum ada karyawan aktif.</div>
+        {% endfor %}
+
+        {% if roll.reserve %}
+            <h2 class="text-sm font-bold text-text-heading mt-2">Tenaga cadangan</h2>
+            {% for row in roll.reserve %}
+                <div class="rounded-2xl p-3.5 bg-card-surface border border-card-border shadow-xs flex items-center justify-between gap-2">
+                    <strong class="text-sm text-text-heading">{{ row.employee.full_name }}</strong>
+                    <div class="flex gap-1.5" role="radiogroup" aria-label="Status {{ row.employee.full_name }}">
+                        {% for code, label in [("", "Tidak dipanggil"), ("HADIR", "Hadir")] %}
+                            <span>
+                                <input type="radio" class="peer sr-only" name="status_{{ row.employee.id }}" id="st_{{ row.employee.id }}_{{ code or 'NONE' }}" value="{{ code }}" {% if row.status == code %}checked{% endif %}>
+                                <label for="st_{{ row.employee.id }}_{{ code or 'NONE' }}" class="{{ chip }} {{ tone[code] }}">{{ label }}</label>
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <a href="{{ url_for('workforce.leave_create') }}" class="h-11 rounded-xl border border-card-border bg-card-surface text-text-heading text-sm font-bold flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">door_open</span> Catat izin keluar / pulang kampung
+        </a>
+
+        {% if roll.rows %}
+            <div class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 max-w-[480px] mx-auto px-margin py-2.5 bg-card-surface/95 backdrop-blur-md border-t border-card-border z-40">
+                <button type="submit" class="w-full h-12 rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-1.5 shadow-md">
+                    <span class="material-symbols-outlined text-[20px]">done_all</span> Simpan Apel
+                </button>
+            </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

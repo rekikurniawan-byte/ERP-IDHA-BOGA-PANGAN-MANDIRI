@@ -1,0 +1,43 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+{% set s = slip %}
+<div data-ui-page="hr_receipt_sign">
+{{ page_header("Tanda Terima Gaji · " ~ data.employee.full_name, "Serahkan HP ke karyawan: cek jumlah, ketik nama, lalu gores tanda tangan.", eyebrow="SDM · Penggajian · " ~ data.period, actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Rincian Gaji {{ data.period }}</h2><span class="text-muted small">{{ data.slip_number }}</span></div>
+            <table class="wf-sum">
+                {% for row in s.earnings %}<tr><td>{{ row.label }}</td><td>{{ row.amount|rupiah }}</td></tr>{% endfor %}
+                {% for row in s.deductions %}<tr class="is-minus"><td>{{ row.label }}</td><td>−{{ row.amount|rupiah }}</td></tr>{% endfor %}
+                <tr class="is-total"><td>Diterima</td><td>{{ data.amount|rupiah }}</td></tr>
+            </table>
+            <p class="wf-note"><em>{{ data.amount_words }}</em></p>
+            <p class="wf-note">Hadir {{ s.attendance.HADIR }} · izin/sakit/cuti {{ s.attendance.IZIN + s.attendance.SAKIT + s.attendance.CUTI }} · tanpa keterangan {{ s.attendance.ALPA }} hari.{% if s.outstanding > 0 %} Sisa denda/ganti rugi {{ s.outstanding|rupiah }} dipotong bulan berikutnya.{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" class="card app-card" data-ui-form="true">
+        <div class="card-body">
+            {% include "components/csrf_token.html" %}
+            <div class="wf-section-title"><h2>Tanda Tangan Penerima</h2></div>
+            <div class="mb-3">
+                <label class="form-label" for="typed_name">Ketik nama lengkap</label>
+                <input class="form-control" name="typed_name" id="typed_name" autocomplete="off" placeholder="{{ data.employee.full_name }}" required>
+            </div>
+            {% set pad_id = "receiptSignPad" %}{% set pad_label = "Tanda tangan karyawan" %}
+            {% include "workforce/_sign_pad.html" %}
+            <p class="wf-note mb-3">Dengan menandatangani, karyawan menyatakan sudah menerima gaji sebesar {{ data.amount|rupiah }}. Disaksikan {{ current_user.full_name }}.</p>
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <a class="btn app-btn-secondary" href="{{ url_for('hr.payroll_detail', payroll_id=data.payroll.id) }}">Batal</a>
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-pen"></i> Saya Sudah Menerima</button>
+            </div>
+        </div>
+    </form>
+</div>
+</div>
+{% endblock %}

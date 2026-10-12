@@ -1,0 +1,96 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_attendance">
+{{ page_header("Apel Harian", "Semua karyawan tinggal di lokasi: cukup tandai yang tidak hadir. Tanpa keterangan otomatis dilaporkan ke owner. Izin dicatat di tab Izin.", eyebrow="SDM · Kehadiran & Disiplin", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label" for="tanggal">Tanggal apel</label>
+                <input class="form-control" type="date" name="tanggal" id="tanggal" value="{{ day.isoformat() }}" min="{{ min_day.isoformat() }}" max="{{ today.isoformat() }}">
+            </div>
+            <div class="app-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-calendar-check"></i> Tampilkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('workforce.attendance') }}">Hari Ini</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if overdue_leaves %}
+    <div class="wf-alert is-danger">
+        <i class="bi bi-alarm" aria-hidden="true"></i>
+        <div><strong>Belum kembali dari izin:</strong> {% for leave in overdue_leaves %}{{ leave.employee.full_name }} (seharusnya {{ leave.expected_return_date.strftime('%d-%m') }}){{ ", " if not loop.last }}{% endfor %}. Tandai "Tanpa keterangan" bila memang belum ada di lokasi.</div>
+    </div>
+{% endif %}
+{% if staffing.shortage %}
+    <div class="wf-alert">
+        <i class="bi bi-people" aria-hidden="true"></i>
+        <div><strong>Besok kurang {{ staffing.shortage }} orang</strong> untuk {% for s in staffing.sessions if s.short %}{{ s.label|lower }} {{ s.portions }} porsi{{ ", " if not loop.last }}{% endfor %}. Hubungi tenaga cadangan{% if staffing.reserves %}: {% for r in staffing.reserves %}{{ r.full_name }}{% if r.phone %} ({{ r.phone }}){% endif %}{{ ", " if not loop.last }}{% endfor %}{% endif %}.</div>
+    </div>
+{% endif %}
+
+<form method="post" data-ui-form="true">
+    {% include "components/csrf_token.html" %}
+    <input type="hidden" name="tanggal" value="{{ day.isoformat() }}">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title">
+                <h2>{{ day.strftime('%d-%m-%Y') }} · {{ roll.staff|length }} karyawan</h2>
+                {% if roll.recorded %}<span class="status-badge success">Sudah diisi</span>{% else %}<span class="status-badge warning">Belum disimpan</span>{% endif %}
+            </div>
+            {% for row in roll.staff %}
+                <div class="wf-roll-row">
+                    <div class="wf-item-main">
+                        <strong>{{ row.employee.full_name }}</strong>
+                        <small>{{ row.employee.position or "" }}{% if row.hint %} · <span class="text-danger">{{ row.hint }}</span>{% endif %}</small>
+                    </div>
+                    <div class="wf-roll-controls">
+                        <div class="wf-seg" role="radiogroup" aria-label="Status {{ row.employee.full_name }}">
+                            {% for code, label in wf_labels.attendance.items() %}
+                                <input type="radio" name="status_{{ row.employee.id }}" id="st_{{ row.employee.id }}_{{ code }}" value="{{ code }}" {% if row.status == code %}checked{% endif %}>
+                                <label for="st_{{ row.employee.id }}_{{ code }}">{{ label }}</label>
+                            {% endfor %}
+                        </div>
+                        <label class="wf-doctor" title="Sakit dengan surat dokter tetap dibayar (UU 13/2003 Ps. 93)"><input type="checkbox" name="doctor_{{ row.employee.id }}" value="1" {% if row.medical_note %}checked{% endif %}> Surat dokter</label>
+                        <input class="form-control form-control-sm wf-roll-note" name="note_{{ row.employee.id }}" value="{{ row.notes or '' }}" placeholder="Catatan" aria-label="Catatan {{ row.employee.full_name }}">
+                    </div>
+                </div>
+            {% else %}
+                <p class="wf-empty">Belum ada karyawan aktif.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if roll.reserve %}
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Tenaga Cadangan</h2><small class="text-muted">Tandai hanya yang dipanggil bekerja hari ini.</small></div>
+                {% for row in roll.reserve %}
+                    <div class="wf-roll-row">
+                        <div class="wf-item-main"><strong>{{ row.employee.full_name }}</strong><small>{{ row.employee.phone or "" }}</small></div>
+                        <div class="wf-seg" role="radiogroup" aria-label="Status {{ row.employee.full_name }}">
+                            {% for code, label in [("", "Tidak dipanggil"), ("HADIR", "Hadir")] %}
+                                <input type="radio" name="status_{{ row.employee.id }}" id="st_{{ row.employee.id }}_{{ code or 'NONE' }}" value="{{ code }}" {% if row.status == code %}checked{% endif %}>
+                                <label for="st_{{ row.employee.id }}_{{ code or 'NONE' }}">{{ label }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if roll.rows %}
+        <div class="wf-sticky-actions">
+            <span>{{ roll.staff|length }} karyawan · bawaan Hadir, ubah yang tidak hadir saja</span>
+            <button class="btn app-btn-primary" type="submit"><i class="bi bi-check2-all"></i> Simpan Apel</button>
+        </div>
+    {% endif %}
+</form>
+</div>
+{% endblock %}

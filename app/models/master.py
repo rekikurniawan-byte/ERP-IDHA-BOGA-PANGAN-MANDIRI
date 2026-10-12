@@ -143,6 +143,21 @@ class Employee(BaseModel):
     phone = db.Column(db.String(30), nullable=True)
     join_date = db.Column(db.Date, nullable=True)
     status = db.Column(db.String(30), nullable=False, default="ACTIVE")
+    # Modul Tenaga Kerja (2026-10-11): identitas untuk kontrak kerja dan
+    # status keluar. KARYAWAN = pekerja tetap di lokasi; CADANGAN = harian
+    # lepas yang dipanggil saat kekurangan orang.
+    nik = db.Column(db.String(20), nullable=True)
+    address = db.Column(db.Text, nullable=True)
+    position = db.Column(db.String(100), nullable=True)
+    employee_type = db.Column(db.String(20), nullable=False, default="KARYAWAN", server_default="KARYAWAN")
+    emergency_contact_name = db.Column(db.String(150), nullable=True)
+    emergency_contact_phone = db.Column(db.String(30), nullable=True)
+    exit_date = db.Column(db.Date, nullable=True)
+    exit_reason = db.Column(db.String(40), nullable=True)
+    # PPh 21 (2026-10-11): modul SDM hanya menyimpan identitas pajak; tarif,
+    # PTKP, dan TER ada di modul pajak (tax_pph21_service).
+    ptkp_status = db.Column(db.String(5), nullable=True)  # TK/0 ... K/3; kosong = dihitung TK/0 + peringatan
+    npwp = db.Column(db.String(25), nullable=True)  # kosong = NIK dipakai sebagai NPWP
 
     skills = db.relationship("EmployeeSkill", backref="employee", lazy=True)
 

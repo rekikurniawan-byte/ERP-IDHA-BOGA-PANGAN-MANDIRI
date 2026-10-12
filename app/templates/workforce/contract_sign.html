@@ -1,0 +1,41 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div data-ui-page="workforce_contract_sign">
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Tanda tangan karyawan · {{ contract.contract_number }}</span>
+        <h1>{{ contract.employee.full_name }}, baca kontrak ini sampai selesai</h1>
+        <p>Setelah ditandatangani, isi surat dikunci dan tidak bisa diubah. Tanyakan ke admin bila ada yang belum jelas.</p>
+    </div>
+</div>
+
+<div class="wf-doc mb-4">{{ body_html|safe }}</div>
+
+<form method="post" enctype="multipart/form-data" class="card app-card" data-ui-form="true">
+    <div class="card-body">
+        {% include "components/csrf_token.html" %}
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="agree" value="1" id="agree" required>
+            <label class="form-check-label" for="agree">Saya sudah membaca, memahami, dan menyetujui seluruh isi perjanjian kerja ini, termasuk denda, ganti rugi, dan potongan upah paling banyak {{ contract.max_deduction_percent }}% per periode.</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="typed_name">Ketik nama lengkap Anda</label>
+            <input class="form-control" name="typed_name" id="typed_name" autocomplete="off" placeholder="{{ contract.employee.full_name }}" required>
+            <div class="form-text">Harus sama dengan nama di kontrak.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="ktp_photo">Foto KTP</label>
+            <input class="form-control" type="file" name="ktp_photo" id="ktp_photo" accept="image/*" capture="environment" required>
+            <div class="form-text">Hanya foto/salinan. Perusahaan tidak menahan KTP asli.</div>
+        </div>
+        {% set pad_id = "employeeSignPad" %}{% set pad_label = "Tanda tangan karyawan" %}
+        {% include "workforce/_sign_pad.html" %}
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <a class="btn app-btn-secondary" href="{{ url_for('workforce.contract_detail', contract_id=contract.id) }}">Nanti Saja</a>
+            <button class="btn app-btn-primary" type="submit"><i class="bi bi-pen"></i> Saya Setuju & Tanda Tangani</button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}

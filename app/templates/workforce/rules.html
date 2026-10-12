@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_rules">
+{{ page_header("Aturan Gaji & Potongan", "Semua aturan potong upah, denda, dan kontrak ada di sini. Aturan ikut tertulis di kontrak baru dan terkunci per kontrak.", eyebrow="SDM · Penggajian", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+{% if not is_owner %}
+    <div class="wf-alert is-info"><i class="bi bi-lock" aria-hidden="true"></i><div>Hanya OWNER yang bisa mengubah aturan. Admin bisa melihat.</div></div>
+{% endif %}
+{% if old_rule_contracts %}
+    <div class="wf-alert is-info">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <div>{{ old_rule_contracts|length }} kontrak aktif memakai aturan potong hari yang berbeda (aturan saat ditandatangani): {% for c in old_rule_contracts %}{{ c.employee.full_name }}{{ ", " if not loop.last }}{% endfor %}. Aturan baru berlaku setelah kontrak baru/perpanjangan ditandatangani.</div>
+    </div>
+{% endif %}
+
+{% set unpaid = settings.unpaid_statuses %}
+{% set example = 3000000 %}
+<form method="post" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    <fieldset {% if not is_owner %}disabled{% endif %}>
+    <div class="wf-grid">
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>1. Potong upah hari tidak bekerja</h2></div>
+                <p class="wf-note mt-0 mb-3">Centang status apel yang <strong>dipotong</strong> dari gaji bulanan.</p>
+                {% for code, label in [("ALPA", "Tanpa keterangan (mangkir)"), ("IZIN", "Izin (keluar lokasi, pulang kampung, urusan pribadi)")] %}
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="unpaid_status" value="{{ code }}" id="unpaid_{{ code }}" {% if code in unpaid %}checked{% endif %}>
+                        <label class="form-check-label" for="unpaid_{{ code }}"><strong>{{ label }}</strong></label>
+                    </div>
+                {% endfor %}
+                {% for label, rule in [
+                    ("Sakit", "Dipotong, kecuali ada surat dokter (centang \"Surat dokter\" saat apel) — UU 13/2003 Ps. 93."),
+                    ("Cuti", "Dipotong, kecuali masih dalam jatah cuti tahunan 12 hari bagi yang sudah bekerja 12 bulan — UU 13/2003 Ps. 79. Jatah dihitung otomatis per tahun kerja."),
+                ] %}
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" checked disabled aria-label="{{ label }} selalu mengikuti UU">
+                        <label class="form-check-label"><strong>{{ label }}</strong> <span class="wf-chip is-info">Otomatis sesuai UU</span><small class="d-block text-muted">{{ rule }}</small></label>
+                    </div>
+                {% endfor %}
+                <div class="mt-3">
+                    <label class="form-label" for="divisor">Upah per hari = gaji sebulan ÷</label>
+                    <select class="form-select" name="hr.daily_wage_divisor" id="divisor">
+                        {% for value, label in divisors.items() %}<option value="{{ value }}" {% if settings.daily_wage_divisor == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="wf-alert is-info mt-3 mb-0" data-rules-example>
+                    <i class="bi bi-calculator" aria-hidden="true"></i>
+                    <div>Contoh gaji {{ example|rupiah }}, bulan 30 hari, 2 hari tidak bekerja (izin/tanpa ket./sakit tanpa surat dokter) → potong <strong data-example-out>{{ (example * 2 / (30 if settings.daily_wage_divisor == "KALENDER" else settings.daily_wage_divisor|int))|rupiah }}</strong>.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>2. Denda tertulis</h2></div>
+                <div class="row g-3">
+                    {% for key, label in [
+                        ("hr.fine_absent_per_day", "Mangkir per hari"),
+                        ("hr.fine_leave_site", "Keluar lokasi tanpa izin per kejadian"),
+                        ("hr.fine_late_return_per_day", "Terlambat kembali dari izin per hari"),
+                        ("hr.fine_short_notice", "Resign tanpa pemberitahuan cukup"),
+                    ] %}
+                        <div class="col-6">
+                            <label class="form-label" for="{{ key }}">{{ label }} (Rp)</label>
+                            <input class="form-control" type="number" min="0" step="1" name="{{ key }}" id="{{ key }}" value="{{ raw[key] }}">
+                        </div>
+                    {% endfor %}
+                    <div class="col-6">
+                        <label class="form-label" for="max_ded">Batas semua potongan per gaji (%)</label>
+                        <input class="form-control" type="number" min="0" max="50" step="1" name="hr.max_deduction_percent" id="max_ded" value="{{ raw['hr.max_deduction_percent'] }}">
+                        <div class="form-text">Maks 50% (PP 36/2021). Sisa denda dibawa ke gaji bulan berikutnya.</div>
+                    </div>
+                </div>
+                <p class="wf-note">Denda diusulkan sistem, diputuskan owner, lalu dipotong otomatis dari gaji. Hari tidak bekerja (bagian 1) <strong>tidak</strong> termasuk batas 50% karena memang tidak dibayar.</p>
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>3. Resign & mangkir</h2></div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="notice">Pemberitahuan resign (hari)</label>
+                        <input class="form-control" type="number" min="0" max="90" name="hr.notice_days" id="notice" value="{{ raw['hr.notice_days'] }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="deemed">Mangkir dianggap mengundurkan diri (hari)</label>
+                        <input class="form-control" type="number" min="5" max="30" name="hr.deemed_resign_days" id="deemed" value="{{ raw['hr.deemed_resign_days'] }}">
+                        <div class="form-text">Minimal 5 hari + 2 surat panggilan.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>4. Kontrak & operasional</h2></div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label" for="signer">Penandatangan perusahaan</label><input class="form-control" name="hr.employer_signer_name" id="signer" value="{{ raw['hr.employer_signer_name'] }}"></div>
+                    <div class="col-6"><label class="form-label" for="signer_pos">Jabatan</label><input class="form-control" name="hr.employer_signer_position" id="signer_pos" value="{{ raw['hr.employer_signer_position'] }}"></div>
+                    <div class="col-12"><label class="form-label" for="work_loc">Lokasi kerja & mess</label><input class="form-control" name="hr.work_location" id="work_loc" value="{{ raw['hr.work_location'] }}"></div>
+                    <div class="col-6"><label class="form-label" for="pp">No. pengesahan Peraturan Perusahaan</label><input class="form-control" name="hr.company_regulation_number" id="pp" value="{{ raw['hr.company_regulation_number'] }}"></div>
+                    <div class="col-6"><label class="form-label" for="ppw">Porsi per pekerja per sesi</label><input class="form-control" type="number" min="1" name="hr.portions_per_worker" id="ppw" value="{{ raw['hr.portions_per_worker'] }}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </fieldset>
+    {% if is_owner %}
+        <div class="wf-sticky-actions">
+            <span>Berlaku untuk kontrak baru. Kontrak lama tetap memakai aturan saat ditandatangani.</span>
+            <button class="btn app-btn-primary" type="submit" data-app-confirm="Simpan aturan gaji & potongan?"><i class="bi bi-save"></i> Simpan Aturan</button>
+        </div>
+    {% endif %}
+</form>
+</div>
+<script>
+(function () {
+    const select = document.getElementById("divisor");
+    const out = document.querySelector("[data-example-out]");
+    if (!select || !out) return;
+    select.addEventListener("change", function () {
+        const days = select.value === "KALENDER" ? 30 : parseInt(select.value, 10);
+        out.textContent = "Rp " + Math.round(3000000 * 2 / days).toLocaleString("id-ID");
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_contract_detail">
+{{ page_header(
+    "Kontrak " ~ contract.contract_number,
+    contract.employee.full_name ~ " · " ~ wf_labels.contract_type[contract.contract_type],
+    eyebrow="SDM · Karyawan & Kontrak",
+    actions=[{"label": "Cetak", "url": url_for('workforce.contract_print', contract_id=contract.id), "icon": "bi-printer"}] if contract.status != 'DRAFT' else []
+) }}
+{% include "hr/_tabs.html" %}
+
+{% if contract.status == 'DRAFT' %}
+    <div class="wf-alert is-info">
+        <i class="bi bi-phone" aria-hidden="true"></i>
+        <div>
+            <strong>Langkah berikut: karyawan membaca dan menandatangani.</strong>
+            Buka halaman tanda tangan di HP, serahkan ke karyawan untuk membaca seluruh isi, mengetik namanya, menggores tanda tangan, dan memotret KTP.
+            <div class="mt-2 d-flex flex-wrap gap-2">
+                <a class="btn btn-sm app-btn-primary" href="{{ url_for('workforce.contract_sign_employee', contract_id=contract.id) }}"><i class="bi bi-pen"></i> Tanda Tangan Karyawan</a>
+                <form method="post" action="{{ url_for('workforce.contract_cancel', contract_id=contract.id) }}" class="d-inline" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <button class="btn btn-sm app-btn-secondary" type="submit" data-app-confirm="Batalkan konsep kontrak ini?">Batalkan Konsep</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% elif contract.status == 'MENUNGGU_TTD_PERUSAHAAN' %}
+    <div class="wf-alert is-info">
+        <i class="bi bi-pen" aria-hidden="true"></i>
+        <div><strong>Karyawan sudah menandatangani.</strong> Isi surat sudah dikunci. {{ "Tanda tangani di bawah untuk mengaktifkan kontrak." if current_user.role == 'OWNER' else "Menunggu tanda tangan owner." }}</div>
+    </div>
+{% endif %}
+{% if contract.contract_type == 'PKWT' and contract.status == 'AKTIF' and not contract.disnaker_registered_at %}
+    <div class="wf-alert {{ 'is-danger' if disnaker_due and disnaker_due < today else '' }}">
+        <i class="bi bi-building" aria-hidden="true"></i>
+        <div><strong>Catatkan PKWT ini ke Disnaker paling lambat {{ disnaker_due.strftime('%d-%m-%Y') if disnaker_due else '-' }}.</strong> Setelah dicatat, isi nomor buktinya di bawah.</div>
+    </div>
+{% endif %}
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title">
+                <h2>Ringkasan</h2>
+                <span class="status-badge {{ 'success' if contract.status == 'AKTIF' else ('muted' if contract.status in ['BATAL', 'BERAKHIR'] else 'warning') }}">{{ wf_labels.contract_status[contract.status] }}</span>
+            </div>
+            <dl class="wf-kv">
+                <dt>Karyawan</dt><dd><a href="{{ url_for('workforce.employee_detail', employee_id=contract.employee_id) }}">{{ contract.employee.full_name }}</a></dd>
+                <dt>Jabatan</dt><dd>{{ contract.position }}</dd>
+                <dt>Berlaku</dt><dd>{{ contract.start_date.strftime('%d-%m-%Y') }} s/d {{ last_day.strftime('%d-%m-%Y') if last_day else "tidak tertentu" }}</dd>
+                {% if contract.probation_months %}<dt>Masa percobaan</dt><dd>{{ contract.probation_months }} bulan</dd>{% endif %}
+                <dt>Upah per bulan</dt><dd>{{ contract.monthly_salary|rupiah }}</dd>
+                <dt>Pemberitahuan resign</dt><dd>{{ contract.notice_days }} hari</dd>
+                <dt>Batas potongan</dt><dd>{{ contract.max_deduction_percent }}% upah per periode</dd>
+                <dt>Hari tidak dibayar</dt><dd>{{ (contract.unpaid_statuses or "-").replace("ALPA", "Tanpa keterangan").replace("IZIN", "Izin").replace("SAKIT", "Sakit").replace("CUTI", "Cuti").replace(",", ", ") }} · ÷ {{ "hari kalender" if contract.daily_wage_divisor == "KALENDER" else contract.daily_wage_divisor ~ " hari" }}</dd>
+                {% if contract.employee_signed_at %}<dt>TTD karyawan</dt><dd>{{ contract.employee_signed_at|wib }}</dd>{% endif %}
+                {% if contract.employer_signed_at %}<dt>TTD perusahaan</dt><dd>{{ contract.employer_signed_at|wib }} · {{ contract.employer_signer_name }}</dd>{% endif %}
+                {% if contract.disnaker_registered_at %}<dt>Disnaker</dt><dd>{{ contract.disnaker_registered_at.strftime('%d-%m-%Y') }} · {{ contract.disnaker_reference }}</dd>{% endif %}
+                {% if contract.ended_at %}<dt>Diakhiri</dt><dd>{{ contract.ended_at.strftime('%d-%m-%Y') }} · {{ wf_labels.exit_type.get(contract.end_reason, contract.end_reason) }}</dd>{% endif %}
+                {% if contract.end_compensation_amount and contract.end_compensation_amount > 0 %}<dt>Uang kompensasi</dt><dd>{{ contract.end_compensation_amount|rupiah }}</dd>{% endif %}
+            </dl>
+        </div>
+    </div>
+
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Tanda Tangan</h2></div>
+            <div class="wf-doc-signatures">
+                <div>
+                    <small class="text-muted d-block">Karyawan</small>
+                    <div class="wf-sign-box">{% if employee_signature %}<img class="wf-sign-image" src="{{ employee_signature }}" alt="Tanda tangan karyawan">{% else %}<span class="text-muted">Belum</span>{% endif %}</div>
+                    <strong>{{ contract.employee.full_name }}</strong>
+                    {% if has_ktp %}<div><a class="small" href="{{ url_for('workforce.contract_ktp', contract_id=contract.id) }}" target="_blank" rel="noopener">Lihat foto KTP</a></div>{% endif %}
+                </div>
+                <div>
+                    <small class="text-muted d-block">Perusahaan</small>
+                    <div class="wf-sign-box">{% if employer_signature %}<img class="wf-sign-image" src="{{ employer_signature }}" alt="Tanda tangan perusahaan">{% else %}<span class="text-muted">Belum</span>{% endif %}</div>
+                    <strong>{{ contract.employer_signer_name or "-" }}</strong>
+                </div>
+            </div>
+
+            {% if contract.status == 'MENUNGGU_TTD_PERUSAHAAN' and current_user.role == 'OWNER' %}
+                <hr>
+                <form method="post" action="{{ url_for('workforce.contract_sign_employer', contract_id=contract.id) }}" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    {% set pad_id = "employerSignPad" %}{% set pad_label = "Tanda tangan perusahaan" %}
+                    {% include "workforce/_sign_pad.html" %}
+                    <button class="btn app-btn-primary w-100" type="submit"><i class="bi bi-check2-circle"></i> Tanda Tangani & Aktifkan Kontrak</button>
+                </form>
+            {% endif %}
+
+            {% if contract.contract_type == 'PKWT' and contract.status in ['AKTIF', 'BERAKHIR'] and not contract.disnaker_registered_at %}
+                <hr>
+                <form method="post" action="{{ url_for('workforce.contract_disnaker', contract_id=contract.id) }}" class="row g-2 align-items-end" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="col-sm-5">
+                        <label class="form-label" for="registered_at">Tanggal dicatat Disnaker</label>
+                        <input class="form-control" type="date" name="registered_at" id="registered_at" value="{{ today.isoformat() }}" required>
+                    </div>
+                    <div class="col-sm-7">
+                        <label class="form-label" for="reference">Nomor / bukti pencatatan</label>
+                        <input class="form-control" name="reference" id="reference" required>
+                    </div>
+                    <div class="col-12"><button class="btn app-btn-primary" type="submit">Simpan Pencatatan Disnaker</button></div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card app-card mt-4">
+    <div class="card-body">
+        <div class="wf-section-title"><h2>Isi Surat</h2>{% if contract.html_snapshot %}<span class="status-badge success">Terkunci sejak ditandatangani karyawan</span>{% else %}<span class="status-badge warning">Pratinjau, belum dikunci</span>{% endif %}</div>
+        <div class="wf-doc">{{ body_html|safe }}</div>
+    </div>
+</div>
+</div>
+{% endblock %}

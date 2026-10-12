@@ -73,6 +73,8 @@ tax_migration = importlib.import_module(
 contract_documents_migration = importlib.import_module(
     "migrations.versions.i7d8e9f0a1b2_contract_documents_phase9"
 )
+workforce_migration = importlib.import_module("migrations.versions.j8e9f0a1b2c3_workforce_contracts")
+payslip_migration = importlib.import_module("migrations.versions.k9f0a1b2c3d4_payslip_receipts")
 
 
 def _versioned_model_tables():
@@ -116,6 +118,8 @@ def test_optimistic_locking_migration_covers_all_versioned_tables():
     migration_tables.update(sharia_credit_migration.VERSIONED_TABLES)
     migration_tables.update(tax_migration.VERSIONED_TABLES)
     migration_tables.update(contract_documents_migration.VERSIONED_TABLES)
+    migration_tables.update(workforce_migration.VERSIONED_TABLES)
+    migration_tables.update(payslip_migration.VERSIONED_TABLES)
 
     assert migration_tables == _versioned_model_tables()
 

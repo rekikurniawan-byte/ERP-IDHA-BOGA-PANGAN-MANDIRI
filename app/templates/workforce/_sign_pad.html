@@ -1,0 +1,90 @@
+{#- Kotak tanda tangan gores. Dipakai di dalam <form>; hasilnya PNG di input tersembunyi `signature_data`.
+    Variabel: pad_id (unik per halaman), pad_label. Form tidak terkirim bila kotak masih kosong. -#}
+<div class="mb-3" data-sign-pad="{{ pad_id }}">
+    <label class="form-label" for="{{ pad_id }}">{{ pad_label }}</label>
+    <canvas class="wf-sign-pad" id="{{ pad_id }}" aria-label="{{ pad_label }}"></canvas>
+    <input type="hidden" name="signature_data" value="">
+    <div class="wf-sign-actions">
+        <span>Gores tanda tangan dengan jari di dalam kotak.</span>
+        <button type="button" class="btn btn-sm app-btn-secondary" data-sign-clear>Ulangi</button>
+    </div>
+</div>
+<script>
+(function () {
+    const wrap = document.querySelector('[data-sign-pad="{{ pad_id }}"]');
+    if (!wrap) return;
+    const canvas = wrap.querySelector("canvas");
+    const input = wrap.querySelector('input[name="signature_data"]');
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let strokes = 0;
+    let last = null;
+
+    function resize() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.round(rect.width * ratio);
+        canvas.height = Math.round(rect.height * ratio);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#111827";
+        strokes = 0;
+        input.value = "";
+    }
+
+    function point(event) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    canvas.addEventListener("pointerdown", function (event) {
+        event.preventDefault();
+        canvas.setPointerCapture(event.pointerId);
+        drawing = true;
+        last = point(event);
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#111827";
+        ctx.fill();
+    });
+    canvas.addEventListener("pointermove", function (event) {
+        if (!drawing) return;
+        const next = point(event);
+        ctx.beginPath();
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.stroke();
+        last = next;
+    });
+    function finish() {
+        if (!drawing) return;
+        drawing = false;
+        strokes += 1;
+        input.value = canvas.toDataURL("image/png");
+    }
+    canvas.addEventListener("pointerup", finish);
+    canvas.addEventListener("pointercancel", finish);
+    wrap.querySelector("[data-sign-clear]").addEventListener("click", resize);
+
+    const form = wrap.closest("form");
+    if (form) {
+        form.addEventListener("submit", function (event) {
+            if (strokes === 0 || !input.value) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (window.appNotify) {
+                    window.appNotify("Tanda tangan belum digores.", "warning");
+                } else {
+                    alert("Tanda tangan belum digores.");
+                }
+            }
+        }, true);
+    }
+    window.addEventListener("load", resize);
+    resize();
+})();
+</script>

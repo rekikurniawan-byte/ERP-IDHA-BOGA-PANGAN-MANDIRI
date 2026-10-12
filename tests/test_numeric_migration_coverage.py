@@ -54,6 +54,9 @@ tax_h6 = importlib.import_module(
 contract_documents_i7 = importlib.import_module(
     "migrations.versions.i7d8e9f0a1b2_contract_documents_phase9"
 )
+workforce_j8 = importlib.import_module("migrations.versions.j8e9f0a1b2c3_workforce_contracts")
+payslip_k9 = importlib.import_module("migrations.versions.k9f0a1b2c3d4_payslip_receipts")
+pph21_n2 = importlib.import_module("migrations.versions.n2c3d4e5f6a7_pph21_payroll_snapshot")
 
 
 def _migration_columns(module):
@@ -101,6 +104,9 @@ def test_numeric_migration_columns_exist_in_models_and_match_scale():
         **_migration_columns(sharia_credit_g5),
         **_migration_columns(tax_h6),
         **_migration_columns(contract_documents_i7),
+        **_migration_columns(workforce_j8),
+        **_migration_columns(payslip_k9),
+        **_migration_columns(pph21_n2),
     }
 
     assert migration_columns

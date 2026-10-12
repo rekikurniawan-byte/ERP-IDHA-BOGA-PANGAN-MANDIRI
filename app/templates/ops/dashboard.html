@@ -155,5 +155,43 @@
             </div>
         </div>
     </div>
+
+    {# 6. Tim Dapur: hadir hari ini & kebutuhan orang besok (Modul Tenaga Kerja) #}
+    {% if staffing %}
+    <div class="rounded-2xl p-4 bg-card-surface border border-card-border shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">groups</span>
+                </span>
+                <span class="font-body-bold text-xs text-text-heading">Tim Besok · {{ staffing.day.strftime('%d-%m') }}</span>
+            </div>
+            {% if staffing.shortage %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-danger-bg text-status-danger-text">Kurang {{ staffing.shortage }} orang</span>
+            {% elif staffing.has_orders %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-success-bg text-status-success-text">Cukup</span>
+            {% endif %}
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            {% for s in staffing.sessions %}
+                <div class="rounded-xl p-2.5 bg-surface-container-low border border-card-border/60">
+                    <span class="font-micro-meta text-[10px] uppercase text-text-muted block">{{ s.label }}</span>
+                    <strong class="font-bold text-text-heading block mt-0.5">{{ s.needed }} orang</strong>
+                    <span class="font-micro-meta text-[10px] text-text-muted">{{ s.portions }} porsi</span>
+                </div>
+            {% endfor %}
+            <div class="rounded-xl p-2.5 bg-primary-fixed/20 border border-primary/20">
+                <span class="font-micro-meta text-[10px] uppercase text-primary font-bold block">Tersedia</span>
+                <strong class="font-bold text-primary block mt-0.5">{{ staffing.available }} orang</strong>
+                <span class="font-micro-meta text-[10px] text-primary">{{ staffing.away|length }} izin/mangkir</span>
+            </div>
+        </div>
+        {% if staffing.shortage and staffing.reserves %}
+            <p class="text-xs text-text-body">Hubungi cadangan:
+                {% for r in staffing.reserves %}{% if r.phone %}<a href="tel:{{ r.phone }}" class="font-bold text-primary">{{ r.full_name }}</a>{% else %}{{ r.full_name }}{% endif %}{{ ", " if not loop.last }}{% endfor %}
+            </p>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

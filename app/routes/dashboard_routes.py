@@ -193,8 +193,10 @@ def ops():
     """Beranda operasional mobile: ringkasan kondisi hari ini tanpa tombol pintasan."""
     from app.services.ops_navigation_service import get_ops_dashboard_data
 
+    from app.services.workforce_attendance_service import staffing_forecast
+
     data = get_ops_dashboard_data(current_user.branch_id)
-    return render_template("ops/dashboard.html", data=data)
+    return render_template("ops/dashboard.html", data=data, staffing=staffing_forecast(current_user.branch_id))
 
 
 

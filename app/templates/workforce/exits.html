@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_exits">
+{{ page_header("Karyawan Keluar", "Resign dengan pemberitahuan, kontrak habis, mangkir, atau diberhentikan, beserta penyelesaian akhirnya.", eyebrow="SDM · Karyawan & Kontrak",
+    actions=[{"label": "Ajukan Keluar", "url": url_for('workforce.exit_create'), "icon": "bi-box-arrow-right", "variant": "primary"}]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        {% if exits %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Karyawan</th><th>Jenis</th><th>Alasan</th><th>Pengajuan</th><th>Keluar</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for row in exits %}
+                            <tr>
+                                <td><a class="fw-semibold" href="{{ url_for('workforce.exit_detail', exit_id=row.id) }}">{{ row.employee.full_name }}</a></td>
+                                <td>{{ wf_labels.exit_type[row.exit_type] }}{% if row.short_notice_days %}<br><small class="text-danger">kurang {{ row.short_notice_days }} hari pemberitahuan</small>{% endif %}</td>
+                                <td>{{ wf_labels.exit_reason.get(row.reason_code, row.reason_code) }}</td>
+                                <td>{{ row.notice_date.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ row.effective_date.strftime('%d-%m-%Y') }}</td>
+                                <td><span class="status-badge {{ 'warning' if row.status == 'DIAJUKAN' else ('info' if row.status == 'DISETUJUI' else ('success' if row.status == 'SELESAI' else 'muted')) }}">{{ wf_labels.exit_status[row.status] }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-box-arrow-right"></i></div>
+                <h3>Belum ada karyawan keluar.</h3>
+                <p>Catat setiap pengunduran diri supaya masa pemberitahuan, serah terima, dan penyelesaian upahnya tertib.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

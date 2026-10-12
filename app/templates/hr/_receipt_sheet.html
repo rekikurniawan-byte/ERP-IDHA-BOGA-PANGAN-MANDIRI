@@ -1,0 +1,57 @@
+{#- Satu lembar kwitansi tanda terima gaji. Variabel: r (hasil build_receipt). -#}
+{% set c = r.company %}
+{% set rc = r.receipt %}
+<article class="doc-sheet doc-receipt" aria-label="Kwitansi gaji {{ r.employee.full_name }} {{ r.period }}">
+    {% if r.payroll.status not in ['POSTED', 'PAID'] %}<div class="doc-watermark">BELUM FINAL</div>{% endif %}
+    <header class="doc-head">
+        <div class="doc-brand">
+            <div class="doc-logo">{% set initials = (c.get("company_name") or "PT")[:2]|upper %}{% if c.get("company_logo_url") %}<img src="{{ c.get('company_logo_url') }}" alt="" onerror="this.parentNode.textContent='{{ initials }}'">{% else %}{{ initials }}{% endif %}</div>
+            <div>
+                <div class="doc-company">{{ c.get("company_name") }}</div>
+                <div class="doc-company-sub">{{ c.get("company_address") or "" }}</div>
+            </div>
+        </div>
+        <div class="doc-title">
+            <h1>KWITANSI</h1>
+            <div class="doc-meta">No. <strong>{{ r.number }}</strong></div>
+            <div class="doc-meta">Slip <strong>{{ r.slip_number }}</strong></div>
+        </div>
+    </header>
+
+    <table class="doc-receipt-table">
+        <tr><td>Telah terima dari</td><td><strong>{{ c.get("company_name") }}</strong></td></tr>
+        <tr><td>Uang sejumlah</td><td class="doc-receipt-words">{{ r.amount_words }}</td></tr>
+        <tr><td>Untuk pembayaran</td><td>Gaji bersih periode <strong>{{ r.period }}</strong> atas nama <strong>{{ r.employee.full_name }}</strong>{% if r.employee.nik %} (NIK {{ r.employee.nik }}){% endif %}, sesuai slip gaji {{ r.slip_number }}.</td></tr>
+        <tr><td>Cara bayar</td><td>{{ r.payment.method ~ " · " ~ r.payment.date.strftime('%d-%m-%Y') if r.payment else "Belum dicatat di sistem" }}</td></tr>
+    </table>
+
+    <div class="doc-receipt-amount">
+        <span>Jumlah</span>
+        <strong>{{ r.amount|rupiah }}</strong>
+    </div>
+
+    <div class="doc-receipt-date">{{ (c.get("company_address") or "").split(",")[-1].strip() or "" }}{{ ", " if c.get("company_address") }}{{ (rc.signed_at|wib)[:10] if rc else "...................." }}</div>
+    <section class="doc-sign">
+        <div>
+            <div>Yang menyerahkan,</div>
+            <div class="doc-sign-box"></div>
+            <span class="doc-sign-name">{{ rc.handed_by_name if rc else "........................" }}</span>
+            <div>{{ c.get("company_name") }}</div>
+        </div>
+        <div>
+            <div>Yang menerima,</div>
+            <div class="doc-sign-box">{% if r.signature %}<img src="{{ r.signature }}" alt="Tanda tangan {{ r.employee.full_name }}">{% endif %}</div>
+            <span class="doc-sign-name">{{ r.employee.full_name }}</span>
+            <div>Karyawan</div>
+        </div>
+    </section>
+
+    <footer class="doc-foot">
+        <span>
+            {% if rc and rc.method == 'DIGITAL' %}Ditandatangani elektronik di HP {{ rc.signed_at|wib }} · disaksikan {{ rc.handed_by_name }}
+            {% elif rc %}Tanda tangan basah dicatat {{ rc.signed_at|wib }} oleh {{ rc.handed_by_name }}
+            {% else %}Belum ditandatangani{% endif %}
+        </span>
+        <span>Kode verifikasi <code>{{ r.verification }}</code></span>
+    </footer>
+</article>

@@ -1,0 +1,134 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_employee_detail">
+{% set header_actions = [{"label": "Ubah Data", "url": url_for('hr.edit_employee', employee_id=employee.id), "icon": "bi-pencil"}] %}
+{% if employee.status == 'ACTIVE' %}
+    {% set header_actions = header_actions + [
+        {"label": "Proses Keluar", "url": url_for('workforce.exit_create', employee_id=employee.id), "icon": "bi-box-arrow-right"},
+    ] %}
+    {% if can_renew %}
+        {% set header_actions = header_actions + [{"label": "Perpanjang Kontrak" if contract else "Buat Kontrak", "url": url_for('workforce.contract_create', employee_id=employee.id), "icon": "bi-file-earmark-plus", "variant": "primary"}] %}
+    {% endif %}
+{% endif %}
+{{ page_header(employee.full_name, (employee.position or "Jabatan belum diisi") ~ " · " ~ wf_labels.employee_type.get(employee.employee_type, employee.employee_type), eyebrow="SDM · Karyawan & Kontrak", actions=header_actions) }}
+{% include "hr/_tabs.html" %}
+
+<div class="app-stat-grid">
+    <div class="app-stat-card"><div class="app-stat-icon stat-success"><i class="bi bi-person-check"></i></div><div><p>Hadir 30 Hari</p><h3>{{ attendance_counts.HADIR }}</h3><span class="app-stat-helper">dari {{ attendance|length }} apel tercatat</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-info"><i class="bi bi-door-open"></i></div><div><p>Izin/Sakit/Cuti</p><h3>{{ attendance_counts.IZIN + attendance_counts.SAKIT + attendance_counts.CUTI }}</h3><span class="app-stat-helper">30 hari terakhir</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-warning"><i class="bi bi-person-x"></i></div><div><p>Tanpa Keterangan</p><h3>{{ attendance_counts.ALPA }}</h3><span class="app-stat-helper">Tidak dibayar & bisa didenda</span></div></div>
+    <div class="app-stat-card"><div class="app-stat-icon stat-muted"><i class="bi bi-cash-stack"></i></div><div><p>Sisa Piutang</p><h3>{{ outstanding|rupiah }}</h3><span class="app-stat-helper">Dipotong maks 50% upah/periode</span></div></div>
+</div>
+
+<div class="wf-grid">
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Data Diri</h2><span class="status-badge {{ 'success' if employee.status == 'ACTIVE' else 'muted' }}">{{ employee.status|status_label }}</span></div>
+            <dl class="wf-kv">
+                <dt>NIK</dt><dd>{{ employee.nik or "-" }}</dd>
+                <dt>NPWP</dt><dd>{{ employee.npwp or "Menggunakan NIK" }}</dd>
+                <dt>Status PTKP</dt><dd><strong>{{ employee.ptkp_status or "TK/0" }}</strong>{% if not employee.ptkp_status %} <small class="text-muted">(default)</small>{% endif %}</dd>
+                <dt>No. HP</dt><dd>{{ employee.phone or "-" }}</dd>
+                <dt>Alamat asal</dt><dd>{{ employee.address or "-" }}</dd>
+                <dt>Cuti tahunan</dt><dd>{% if annual_leave.eligible %}Sisa <strong>{{ annual_leave.remaining }}</strong> dari 12 hari (terpakai {{ annual_leave.used }}, sampai {{ annual_leave.cycle[1].strftime('%d-%m-%Y') }}){% elif annual_leave.eligible_from %}Berhak mulai {{ annual_leave.eligible_from.strftime('%d-%m-%Y') }} (setelah 12 bulan kerja){% else %}Isi tanggal mulai kerja{% endif %}</dd>
+                <dt>Kontak darurat</dt><dd>{{ employee.emergency_contact_name or "-" }}{% if employee.emergency_contact_phone %} · {{ employee.emergency_contact_phone }}{% endif %}</dd>
+                <dt>Mulai kerja</dt><dd>{{ employee.join_date.strftime('%d-%m-%Y') if employee.join_date else "-" }}</dd>
+                {% if employee.exit_date %}<dt>Keluar</dt><dd>{{ employee.exit_date.strftime('%d-%m-%Y') }} · {{ wf_labels.exit_reason.get(employee.exit_reason, employee.exit_reason) }}</dd>{% endif %}
+            </dl>
+        </div>
+    </div>
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Kontrak</h2>{% if contract %}<span class="status-badge success">Berlaku</span>{% elif employee.employee_type == 'KARYAWAN' and employee.status == 'ACTIVE' %}<span class="status-badge danger">Tidak ada kontrak berlaku</span>{% endif %}</div>
+            <ul class="wf-list">
+                {% for row in contracts %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>{{ row.contract_number }} · {{ row.contract_type }}</strong><small>{{ row.start_date.strftime('%d-%m-%Y') }} – {{ (row.ended_at or row.end_date).strftime('%d-%m-%Y') if (row.ended_at or row.end_date) else "tetap" }} · {{ wf_labels.contract_status[row.status] }}</small></div>
+                        <div class="wf-item-actions"><a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.contract_detail', contract_id=row.id) }}">Buka</a></div>
+                    </li>
+                {% else %}
+                    <li class="wf-empty">Belum ada kontrak.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Izin & Mangkir</h2></div>
+            <ul class="wf-list">
+                {% for case in cases %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>Mangkir sejak {{ case.start_date.strftime('%d-%m-%Y') }}</strong><small>{{ wf_labels.case_status[case.status] }}{% if case.returned_date %} · kembali {{ case.returned_date.strftime('%d-%m-%Y') }}{% endif %}</small></div>
+                        <div class="wf-item-actions"><a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.case_detail', case_id=case.id) }}">Buka</a></div>
+                    </li>
+                {% endfor %}
+                {% for leave in leaves %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>{{ wf_labels.leave_type[leave.leave_type] }} · {{ leave.start_date.strftime('%d-%m-%Y') }} s/d {{ leave.expected_return_date.strftime('%d-%m-%Y') }}</strong><small>{{ wf_labels.leave_status[leave.status] }}{% if leave.actual_return_date %} · kembali {{ leave.actual_return_date.strftime('%d-%m-%Y') }}{% endif %} · {{ leave.reason }}</small></div>
+                    </li>
+                {% endfor %}
+                {% if not (cases or leaves) %}<li class="wf-empty">Belum ada catatan izin atau mangkir.</li>{% endif %}
+            </ul>
+        </div>
+    </div>
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="wf-section-title"><h2>Denda, Ganti Rugi & Keluar</h2></div>
+            <ul class="wf-list">
+                {% for charge in charges %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>{{ wf_labels.charge_type[charge.charge_type] }} {{ charge.amount|rupiah }}</strong><small>{{ wf_labels.charge_status[charge.status] }}{% if charge.status == 'AKTIF' %} · sisa {{ charge_remaining(charge)|rupiah }}{% endif %} · {{ charge.description }}</small></div>
+                    </li>
+                {% endfor %}
+                {% for row in exits %}
+                    <li class="wf-item">
+                        <div class="wf-item-main"><strong>{{ wf_labels.exit_type[row.exit_type] }} · {{ row.effective_date.strftime('%d-%m-%Y') }}</strong><small>{{ wf_labels.exit_status[row.status] }}</small></div>
+                        <div class="wf-item-actions"><a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.exit_detail', exit_id=row.id) }}">Buka</a></div>
+                    </li>
+                {% endfor %}
+                {% if not (charges or exits) %}<li class="wf-empty">Belum ada denda, ganti rugi, atau pengajuan keluar.</li>{% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card app-card mt-4">
+    <div class="card-body">
+        <div class="wf-section-title">
+            <h2>Slip Gaji &amp; Pajak</h2>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-sm app-btn-secondary" href="{{ url_for('workforce.employee_tax_1721_a1', employee_id=employee.id) }}" target="_blank" rel="noopener" title="Bukti Pemotongan PPh 21 Formulir 1721-A1 Tahunan"><i class="bi bi-printer"></i> Cetak Bukti Potong 1721-A1</a>
+                <span class="text-muted small">6 periode terakhir</span>
+            </div>
+        </div>
+        {% if payslips %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead><tr><th>Periode</th><th class="text-end">Potongan denda/ganti rugi</th><th class="text-end">Dibayar</th><th>Status</th><th class="text-end">Dokumen</th></tr></thead>
+                    <tbody>
+                        {% for row in payslips %}
+                            <tr>
+                                <td><a href="{{ url_for('hr.payroll_detail', payroll_id=row.payroll.id) }}">{{ "%02d"|format(row.payroll.period_month) }}-{{ row.payroll.period_year }}</a></td>
+                                <td class="text-end">{{ row.detail.charge_deduction|rupiah if row.detail.charge_deduction and row.detail.charge_deduction > 0 else "-" }}</td>
+                                <td class="text-end fw-semibold">{{ row.detail.final_salary|rupiah }}</td>
+                                <td>{% if row.receipt %}<span class="status-badge success">Diterima</span>{% else %}<span class="status-badge {{ 'muted' if row.payroll.status == 'DRAFT' else 'warning' }}">{{ row.payroll.status|status_label }}</span>{% endif %}</td>
+                                <td class="text-end">
+                                    <div class="table-actions" data-row-actions="true">
+                                        <a class="btn btn-sm app-btn-secondary" href="{{ url_for('payslip.print_slip', detail_id=row.detail.id) }}" target="_blank" rel="noopener">Slip</a>
+                                        {% if row.receipt %}<a class="btn btn-sm app-btn-secondary" href="{{ url_for('payslip.print_receipt', detail_id=row.detail.id) }}" target="_blank" rel="noopener">Kwitansi</a>{% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="wf-empty mb-0">Belum pernah masuk penggajian.</p>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Bukti Potong 1721-A1 - {{ doc.employee.full_name }} ({{ doc.year }})</title>
+    {% include "hr/_doc_styles.html" %}
+    <style>
+        .form-1721-box {
+            border: 2px solid #1c1917;
+            margin-bottom: 12px;
+        }
+        .form-1721-header {
+            display: grid;
+            grid-template-columns: 160px 1fr 140px;
+            border-bottom: 2px solid #1c1917;
+            text-align: center;
+            background: #faf7f4;
+        }
+        .form-1721-title {
+            padding: 10px;
+            border-left: 1px solid #1c1917;
+            border-right: 1px solid #1c1917;
+        }
+        .form-1721-section {
+            background: #f0ece6;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-top: 1px solid #1c1917;
+            border-bottom: 1px solid #1c1917;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+        .form-1721-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        .form-1721-table td, .form-1721-table th {
+            padding: 4px 8px;
+            border-bottom: 1px solid #e7e2dc;
+        }
+        .form-1721-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .form-1721-table tr.total-row {
+            font-weight: bold;
+            background: #faf7f4;
+            border-top: 1px solid #1c1917;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-toolbar">
+        <span class="doc-toolbar-title">Formulir 1721-A1 · {{ doc.employee.full_name }} · Tahun Pajak {{ doc.year }}</span>
+        <span class="doc-toolbar-actions">
+            {% if back_url %}<a class="doc-btn" href="{{ back_url }}">Kembali</a>{% endif %}
+            <button class="doc-btn is-primary" type="button" onclick="window.print()">Cetak / Simpan PDF (A4)</button>
+        </span>
+    </div>
+
+    <article class="doc-sheet" aria-label="Bukti Pemotongan 1721-A1 {{ doc.employee.full_name }}">
+        <div class="form-1721-box">
+            <div class="form-1721-header">
+                <div style="padding: 10px; display: flex; flex-direction: column; justify-content: center; font-size: 8pt; font-weight: bold;">
+                    KEMENTERIAN KEUANGAN RI<br>DIREKTORAT JENDERAL PAJAK
+                </div>
+                <div class="form-1721-title">
+                    <h2 style="margin: 0; font-size: 11pt; font-weight: 800;">BUKTI PEMOTONGAN PAJAK PENGHASILAN PASAL 21 BAGI PEGAWAI TETAP</h2>
+                    <div style="font-size: 8.5pt; color: var(--doc-muted); margin-top: 2px;">PER-16/PJ/2016 · PP 58/2023 · UU HARMONISASI PERATURAN PERPAJAKAN</div>
+                </div>
+                <div style="padding: 10px; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="font-size: 13pt; font-weight: 900;">1721 - A1</div>
+                    <div style="font-size: 8pt;">Tahun Pajak <strong>{{ doc.year }}</strong></div>
+                    <div style="font-size: 8pt;">Masa: <strong>01 – {{ "%02d"|format(doc.months_worked or 12) }}</strong></div>
+                </div>
+            </div>
+
+            <div class="form-1721-section">A. IDENTITAS PEMOTONG PAJAK (PERUSAHAAN)</div>
+            <table class="form-1721-table">
+                <tr><td style="width: 25%;">1. NPWP Pemotong</td><td style="width: 75%;"><strong>{{ doc.company.get('tax_npwp') or doc.company.get('company_npwp') or '-' }}</strong></td></tr>
+                <tr><td>2. Nama Perusahaan</td><td><strong>{{ doc.company.get('company_name') or 'PT Idha Boga Pangan Mandiri' }}</strong></td></tr>
+                <tr><td>3. Alamat Perusahaan</td><td>{{ doc.company.get('company_address') or '-' }}</td></tr>
+            </table>
+
+            <div class="form-1721-section">B. IDENTITAS PENERIMA PENGHASILAN (PEGAWAI)</div>
+            <table class="form-1721-table">
+                <tr><td style="width: 25%;">1. NPWP Pegawai</td><td style="width: 75%;">{{ doc.employee.npwp or '-' }}</td></tr>
+                <tr><td>2. NIK Pegawai</td><td>{{ doc.employee.nik or '-' }}</td></tr>
+                <tr><td>3. Nama Lengkap</td><td><strong>{{ doc.employee.full_name }}</strong></td></tr>
+                <tr><td>4. Alamat Lengkap</td><td>{{ doc.employee.address or '-' }}</td></tr>
+                <tr><td>5. Jabatan</td><td>{{ doc.employee.position or '-' }}</td></tr>
+                <tr><td>6. Status PTKP</td><td><strong>{{ doc.ptkp_status }}</strong> (Tanggungan: {{ doc.ptkp_status[3:] if doc.ptkp_status|length > 3 else '0' }})</td></tr>
+                <tr><td>7. Jumlah Bulan Bekerja</td><td>{{ doc.months_worked }} bulan</td></tr>
+            </table>
+
+            <div class="form-1721-section">C. RINCIAN PENGHASILAN DAN PENGHITUNGAN PPh PASAL 21</div>
+            <table class="form-1721-table">
+                <thead>
+                    <tr style="background: #faf7f4;">
+                        <th style="width: 70%; text-align: left;">URAIAN</th>
+                        <th style="width: 30%; text-align: right;">JUMLAH (RUPIAH)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>PENGHASILAN BRUTO:</strong></td><td></td></tr>
+                    <tr><td style="padding-left: 20px;">1. Gaji / Upah / Uang Lembur / Bonus / Tunjangan</td><td class="num">{{ doc.gross_salary|rupiah }}</td></tr>
+                    <tr class="total-row"><td>2. Jumlah Penghasilan Bruto (1)</td><td class="num"><strong>{{ doc.gross_salary|rupiah }}</strong></td></tr>
+
+                    <tr><td><strong>PENGURANGAN:</strong></td><td></td></tr>
+                    <tr><td style="padding-left: 20px;">3. Biaya Jabatan (5% x Bruto, maks Rp500.000/bulan)</td><td class="num">{{ doc.biaya_jabatan|rupiah }}</td></tr>
+                    <tr class="total-row"><td>4. Jumlah Pengurangan (3)</td><td class="num">{{ doc.biaya_jabatan|rupiah }}</td></tr>
+
+                    <tr><td><strong>PENGHITUNGAN PPh PASAL 21:</strong></td><td></td></tr>
+                    <tr><td>5. Jumlah Penghasilan Netto (2 - 4)</td><td class="num"><strong>{{ doc.netto|rupiah }}</strong></td></tr>
+                    <tr><td>6. Penghasilan Tidak Kena Pajak (PTKP {{ doc.ptkp_status }})</td><td class="num">{{ doc.ptkp_amount|rupiah }}</td></tr>
+                    <tr class="total-row"><td>7. Penghasilan Kena Pajak (PKP setahun, dibulatkan ke bawah)</td><td class="num"><strong>{{ doc.pkp|rupiah }}</strong></td></tr>
+                    <tr><td>8. PPh Pasal 21 Terutang (Tarif Pasal 17 UU HPP)</td><td class="num"><strong>{{ doc.pph21_annual|rupiah }}</strong></td></tr>
+                    <tr><td>9. PPh Pasal 21 yang Telah Dipotong / Disetor Masa Sebelumnya</td><td class="num">{{ doc.pph21_withheld|rupiah }}</td></tr>
+                    <tr class="total-row" style="background: #eef2ff;">
+                        <td><strong>10. PPh Pasal 21 Kurang / (Lebih) Dipotong (8 - 9)</strong></td>
+                        <td class="num"><strong>{{ doc.difference|rupiah }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="form-1721-section">D. TANDA TANGAN PEMOTONG PAJAK</div>
+            <div style="display: flex; justify-content: space-between; padding: 16px 20px; font-size: 9pt;">
+                <div>
+                    <div>Catatan:</div>
+                    <ul style="margin: 4px 0; padding-left: 16px; color: var(--doc-muted); font-size: 8pt;">
+                        <li>Bukti potong ini sah dibuat otomatis oleh sistem ERP PT Idha Boga Pangan Mandiri.</li>
+                        <li>Lampirkan lembar ini saat melaporkan SPT Tahunan PPh Orang Pribadi (Formulir 1770 S / 1770 SS).</li>
+                    </ul>
+                </div>
+                <div style="text-align: center; min-width: 220px;">
+                    <div>{{ doc.company.get('city') or 'Kayuagung' }}, 31 Desember {{ doc.year }}</div>
+                    <div style="margin-top: 4px;">Pemotong Pajak,</div>
+                    <div style="height: 60px;"></div>
+                    <div style="font-weight: bold; text-decoration: underline;">{{ doc.company.get('hr.employer_signer_name') or doc.company.get('invoice_authorized_name') or 'Direktur' }}</div>
+                    <div style="font-size: 8pt; color: var(--doc-muted);">{{ doc.company.get('company_name') or 'PT Idha Boga Pangan Mandiri' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="doc-foot">
+            <span>Formulir 1721-A1 · Arsip Pajak Karyawan</span>
+            <span>Dicetak otomatis dari Sistem ERP Terpusat</span>
+        </footer>
+    </article>
+</body>
+</html>

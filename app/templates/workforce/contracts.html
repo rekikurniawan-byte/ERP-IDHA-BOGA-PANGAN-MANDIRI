@@ -1,0 +1,69 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_contracts">
+{{ page_header("Kontrak Kerja", "Semua perjanjian kerja PKWT/PKWTT beserta status tanda tangan dan pencatatan Disnaker.", eyebrow="SDM · Karyawan & Kontrak",
+    actions=[{"label": "Buat Kontrak", "url": url_for('workforce.contract_create'), "icon": "bi-file-earmark-plus", "variant": "primary"}]) }}
+{% include "hr/_tabs.html" %}
+
+<div class="card app-card">
+    <div class="card-body">
+        <form method="get" class="app-filter" data-ui-form="true" data-form-kind="filter">
+            <div>
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select" name="status" id="status">
+                    <option value="">Semua status</option>
+                    {% for code, label in wf_labels.contract_status.items() %}
+                        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="app-filter-actions">
+                <button class="btn app-btn-primary" type="submit"><i class="bi bi-funnel"></i> Terapkan</button>
+                <a class="btn app-btn-secondary" href="{{ url_for('workforce.contracts') }}">Atur Ulang</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card app-card">
+    <div class="card-body">
+        {% if contracts %}
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr><th>Nomor</th><th>Karyawan</th><th>Jenis</th><th>Berlaku</th><th class="text-end">Upah</th><th>Status</th><th>Disnaker</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in contracts %}
+                            {% set last_day = contract_last_day(contract) %}
+                            <tr>
+                                <td><a class="fw-semibold" href="{{ url_for('workforce.contract_detail', contract_id=contract.id) }}">{{ contract.contract_number }}</a></td>
+                                <td>{{ contract.employee.full_name }}<br><small class="text-muted">{{ contract.position }}</small></td>
+                                <td>{{ contract.contract_type }}</td>
+                                <td>{{ contract.start_date.strftime('%d-%m-%Y') }} – {{ last_day.strftime('%d-%m-%Y') if last_day else "tetap" }}</td>
+                                <td class="text-end">{{ contract.monthly_salary|rupiah }}</td>
+                                <td><span class="status-badge {{ 'success' if contract.status == 'AKTIF' else ('muted' if contract.status in ['BATAL', 'BERAKHIR'] else 'warning') }}">{{ wf_labels.contract_status[contract.status] }}</span></td>
+                                <td>
+                                    {% if contract.contract_type != 'PKWT' %}<span class="text-muted">Tidak wajib</span>
+                                    {% elif contract.disnaker_registered_at %}<span class="status-badge success">Tercatat</span>
+                                    {% elif contract.status == 'AKTIF' %}{% set due = disnaker_due_date(contract) %}<span class="status-badge danger">Belum · tenggat {{ due.strftime('%d-%m') if due else '-' }}</span>
+                                    {% else %}<span class="text-muted">-</span>{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state app-empty-state" data-ui-empty-state="UI">
+                <div class="empty-state-icon"><i class="bi bi-file-earmark-text"></i></div>
+                <h3>Belum ada kontrak kerja.</h3>
+                <p>Buat kontrak untuk setiap karyawan supaya hak, kewajiban, dan sanksi tertulis jelas bagi kedua pihak.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

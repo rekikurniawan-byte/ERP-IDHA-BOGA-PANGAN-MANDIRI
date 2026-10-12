@@ -1,0 +1,120 @@
+{#- Isi surat perjanjian kerja. Dibekukan (snapshot) saat karyawan menandatangani;
+    jangan memakai data yang berubah-ubah setelah itu. Tanda tangan dicetak terpisah. -#}
+{% set is_pkwt = contract.contract_type == "PKWT" %}
+{% set pasal = namespace(n=0) %}
+<div class="wf-doc-body">
+    <h2>PERJANJIAN KERJA {{ "WAKTU TERTENTU" if is_pkwt else "WAKTU TIDAK TERTENTU" }}</h2>
+    <div class="wf-doc-number">Nomor: {{ contract.contract_number }}</div>
+
+    <p>Yang bertanda tangan di bawah ini:</p>
+    <ol>
+        <li>
+            <strong>{{ company.get("company_name") }}</strong>, beralamat di {{ company.get("company_address") or "-" }},
+            dalam hal ini diwakili oleh <strong>{{ signer_name or "-" }}</strong> selaku {{ signer_position or "-" }},
+            selanjutnya disebut <strong>PIHAK PERTAMA (Perusahaan)</strong>.
+        </li>
+        <li>
+            <strong>{{ employee.full_name }}</strong>, NIK {{ employee.nik or "-" }}, alamat {{ employee.address or "-" }},
+            No. HP {{ employee.phone or "-" }}, selanjutnya disebut <strong>PIHAK KEDUA (Karyawan)</strong>.
+        </li>
+    </ol>
+    <p>Kedua pihak sepakat mengikatkan diri dalam perjanjian kerja dengan ketentuan berikut.</p>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Jenis dan Jangka Waktu</h3>
+    {% if is_pkwt %}
+        <p>Perjanjian ini adalah Perjanjian Kerja Waktu Tertentu (PKWT) yang berlaku sejak
+        {{ contract.start_date.strftime('%d-%m-%Y') }} sampai {{ contract.end_date.strftime('%d-%m-%Y') }}
+        ({{ duration_months }} bulan), tanpa masa percobaan. Perpanjangan dibuat dengan perjanjian tertulis baru dan
+        seluruh PKWT tidak melebihi 5 (lima) tahun. Perjanjian ini dicatatkan oleh Perusahaan ke dinas ketenagakerjaan.</p>
+    {% else %}
+        <p>Perjanjian ini adalah Perjanjian Kerja Waktu Tidak Tertentu (PKWTT) yang berlaku sejak
+        {{ contract.start_date.strftime('%d-%m-%Y') }}.
+        {% if contract.probation_months %}Masa percobaan {{ contract.probation_months }} bulan dengan upah yang sama dengan Pasal 3.{% else %}Tanpa masa percobaan.{% endif %}</p>
+    {% endif %}
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Jabatan dan Tempat Kerja</h3>
+    <p>PIHAK KEDUA bekerja sebagai <strong>{{ contract.position }}</strong> di {{ contract.work_location or company.get("company_address") or "lokasi kerja Perusahaan" }},
+    tinggal di mess/lokasi kerja yang disediakan, dan mengikuti jadwal sesi produksi serta pengantaran yang ditetapkan Perusahaan.</p>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Upah dan Potongan Upah</h3>
+    <ol>
+        <li>Upah PIHAK KEDUA sebesar <strong>{{ contract.monthly_salary|rupiah }}</strong> per bulan, dibayar setiap bulan.</li>
+        {% set unpaid_names = {"IZIN": "izin", "SAKIT": "sakit tanpa surat keterangan dokter", "CUTI": "cuti di luar jatah cuti tahunan", "ALPA": "tidak masuk tanpa keterangan"} %}
+        {% set unpaid = [] %}
+        {% for code in (contract.unpaid_statuses or "").split(",") if code in unpaid_names %}{% do unpaid.append(unpaid_names[code]) %}{% endfor %}
+        {% if unpaid %}
+            <li>Hari tidak bekerja karena <strong>{{ unpaid|join(", ") }}</strong> tidak dibayar. Upah per hari dihitung
+            <strong>upah sebulan ÷ {{ "jumlah hari kalender bulan berjalan" if contract.daily_wage_divisor in [none, "", "KALENDER"] else contract.daily_wage_divisor ~ " hari" }}</strong>,
+            dikali jumlah hari tidak bekerja yang tercatat di apel harian.</li>
+            <li>Sesuai UU No. 13 Tahun 2003 Pasal 79 dan Pasal 93, upah tetap dibayar untuk sakit dengan surat keterangan dokter
+            dan untuk cuti tahunan 12 (dua belas) hari kerja bagi PIHAK KEDUA yang telah bekerja 12 (dua belas) bulan terus-menerus.</li>
+        {% else %}
+            <li>Ketidakhadiran tidak memotong upah bulanan.</li>
+        {% endif %}
+        <li>Denda dan ganti rugi dalam perjanjian ini dipotong dari upah dengan persetujuan tertulis PIHAK KEDUA melalui perjanjian ini.
+            Seluruh potongan paling banyak <strong>{{ contract.max_deduction_percent }}%</strong> dari upah setiap periode pembayaran;
+            sisanya menjadi utang PIHAK KEDUA kepada Perusahaan dan dipotong pada periode berikutnya.</li>
+        <li>Upah yang sudah menjadi hak PIHAK KEDUA tetap dibayarkan.</li>
+    </ol>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Kehadiran dan Izin Keluar Lokasi</h3>
+    <ol>
+        <li>PIHAK KEDUA wajib mengikuti apel harian yang dicatat Perusahaan.</li>
+        <li>Meninggalkan lokasi kerja/mess, pulang kampung, cuti, atau sakit wajib dengan izin dari Perusahaan yang mencantumkan tanggal berangkat dan tanggal kembali.</li>
+        <li>PIHAK KEDUA wajib kembali bekerja paling lambat pada tanggal kembali yang disetujui.</li>
+    </ol>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Sanksi Denda</h3>
+    <p>Atas pelanggaran berikut PIHAK KEDUA dikenai denda yang dipotong sesuai Pasal 3:</p>
+    <ul>
+        <li>tidak masuk kerja tanpa keterangan (mangkir): {{ contract.fine_absent_per_day|rupiah }} per hari;</li>
+        <li>meninggalkan lokasi kerja tanpa izin: {{ contract.fine_leave_site|rupiah }} per kejadian;</li>
+        <li>terlambat kembali dari izin: {{ contract.fine_late_return_per_day|rupiah }} per hari keterlambatan;</li>
+        <li>mengundurkan diri tanpa pemberitahuan {{ contract.notice_days }} hari sebelumnya: {{ contract.fine_short_notice|rupiah }}.</li>
+    </ul>
+    <p>Setiap denda ditetapkan secara tertulis oleh Perusahaan dan diberitahukan kepada PIHAK KEDUA beserta rinciannya.</p>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Pengunduran Diri</h3>
+    <p>PIHAK KEDUA yang ingin mengundurkan diri wajib mengajukan permohonan tertulis paling lambat
+    <strong>{{ contract.notice_days }} hari</strong> sebelum tanggal berhenti, tetap bekerja sampai tanggal tersebut,
+    dan menyelesaikan serah terima pekerjaan serta barang milik Perusahaan.</p>
+
+    {% if is_pkwt %}
+        {% set pasal.n = pasal.n + 1 %}
+        <h3>Pasal {{ pasal.n }} — Ganti Rugi Pengakhiran Sebelum Waktunya</h3>
+        <p>Sesuai Pasal 62 UU No. 13 Tahun 2003, pihak yang mengakhiri perjanjian ini sebelum jangka waktunya berakhir
+        (di luar sebab yang diatur undang-undang) wajib membayar ganti rugi kepada pihak lainnya sebesar upah PIHAK KEDUA
+        sampai batas waktu berakhirnya perjanjian. Ganti rugi yang menjadi kewajiban PIHAK KEDUA dipotong sesuai Pasal 3.</p>
+
+        {% set pasal.n = pasal.n + 1 %}
+        <h3>Pasal {{ pasal.n }} — Uang Kompensasi</h3>
+        <p>Saat perjanjian ini berakhir atau diakhiri, Perusahaan membayar uang kompensasi sesuai PP No. 35 Tahun 2021
+        sebesar masa kerja (bulan) dibagi 12 dikali upah sebulan, untuk masa kerja paling sedikit 1 (satu) bulan.</p>
+    {% endif %}
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Mangkir</h3>
+    <p>PIHAK KEDUA yang mangkir 5 (lima) hari kerja atau lebih berturut-turut tanpa keterangan tertulis yang sah
+    dan telah dipanggil Perusahaan 2 (dua) kali secara patut dan tertulis dapat dikualifikasikan mengundurkan diri.</p>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Dokumen Pribadi</h3>
+    <p>Perusahaan tidak menahan ijazah, KTP, atau dokumen pribadi asli PIHAK KEDUA. Perusahaan hanya menyimpan salinan/foto
+    yang diperlukan untuk administrasi.</p>
+
+    {% set pasal.n = pasal.n + 1 %}
+    <h3>Pasal {{ pasal.n }} — Ketentuan Lain dan Perselisihan</h3>
+    <p>Hal yang belum diatur mengikuti Peraturan Perusahaan{% if settings.company_regulation_number %} (pengesahan {{ settings.company_regulation_number }}){% endif %}
+    dan peraturan perundang-undangan ketenagakerjaan. Perselisihan diselesaikan secara musyawarah, dan bila tidak tercapai,
+    melalui mediasi dinas ketenagakerjaan setempat.</p>
+    {% if contract.notes %}<p><strong>Catatan:</strong> {{ contract.notes }}</p>{% endif %}
+
+    <p>Perjanjian ini dibaca, dipahami, dan ditandatangani secara elektronik oleh kedua pihak tanpa paksaan.
+    Masing-masing pihak berhak memperoleh salinannya.</p>
+</div>

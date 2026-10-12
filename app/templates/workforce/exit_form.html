@@ -1,0 +1,64 @@
+{% extends "layouts/base.html" %}
+{% from "components/page_header.html" import page_header %}
+
+{% block content %}
+<div data-ui-page="workforce_exit_form">
+{{ page_header("Ajukan Karyawan Keluar", "Tanggal keluar resign paling cepat " ~ settings.notice_days ~ " hari setelah pengajuan. Kurang dari itu tetap bisa dicatat, tetapi kena denda/ganti rugi sesuai kontrak.", eyebrow="SDM · Karyawan & Kontrak", actions=[]) }}
+{% include "hr/_tabs.html" %}
+
+<form method="post" class="card app-card" data-ui-form="true">
+    <div class="card-body">
+        {% include "components/csrf_token.html" %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="employee_id">Karyawan</label>
+                <select class="form-select" name="employee_id" id="employee_id" required>
+                    <option value="">Pilih karyawan</option>
+                    {% for employee in employees %}
+                        <option value="{{ employee.id }}" {% if form.get('employee_id')|string == employee.id|string %}selected{% endif %}>{{ employee.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="exit_type">Jenis</label>
+                <select class="form-select" name="exit_type" id="exit_type" required>
+                    {% for code, label in wf_labels.exit_type.items() if code != 'MANGKIR' %}
+                        <option value="{{ code }}" {% if form.get('exit_type') == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Mangkir diproses dari halaman Mangkir (butuh 2 surat panggilan).</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="notice_date">Tanggal pengajuan (surat resign diterima)</label>
+                <input class="form-control" type="date" name="notice_date" id="notice_date" value="{{ form.get('notice_date', '') }}" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="effective_date">Tanggal keluar (hari kerja terakhir)</label>
+                <input class="form-control" type="date" name="effective_date" id="effective_date" value="{{ form.get('effective_date', '') }}" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="reason_code">Alasan utama</label>
+                <select class="form-select" name="reason_code" id="reason_code" required>
+                    <option value="">Pilih alasan</option>
+                    {% for code, label in wf_labels.exit_reason.items() if code != 'MANGKIR' %}
+                        <option value="{{ code }}" {% if form.get('reason_code') == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="reason_notes">Keterangan</label>
+                <input class="form-control" name="reason_notes" id="reason_notes" value="{{ form.get('reason_notes', '') }}">
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="handover_notes">Serah terima pekerjaan & barang</label>
+                <textarea class="form-control" name="handover_notes" id="handover_notes" rows="2" placeholder="Contoh: kunci gudang, seragam, alat masak, tugas diserahkan ke ...">{{ form.get('handover_notes', '') }}</textarea>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <a class="btn app-btn-secondary" href="{{ url_for('workforce.exits') }}">Batal</a>
+            <button class="btn app-btn-primary" type="submit">Simpan & Hitung Penyelesaian</button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}

@@ -29,6 +29,7 @@ from app.models.finance import Invoice, InvoiceItem
 from app.models.master import BranchSetting
 from app.models.tax import (
     TAX_PAYMENT_PBJT,
+    TAX_PAYMENT_PPH21,
     TAX_PAYMENT_PPH25,
     TAX_PAYMENT_PPH29,
     TAX_PAYMENT_PPH_FINAL,
@@ -66,12 +67,14 @@ TAX_PAYMENT_LABELS = {
     TAX_PAYMENT_PBJT: "PBJT (pajak daerah)",
     TAX_PAYMENT_PPH25: "PPh Pasal 25 (angsuran)",
     TAX_PAYMENT_PPH29: "PPh Pasal 29 (kurang bayar tahunan)",
+    TAX_PAYMENT_PPH21: "PPh Pasal 21 (karyawan)",
 }
 TAX_PAYMENT_DEBIT = {
     TAX_PAYMENT_PPH_FINAL: "5014",
     TAX_PAYMENT_PBJT: "2010",
     TAX_PAYMENT_PPH25: "1009",
     TAX_PAYMENT_PPH29: "1009",
+    TAX_PAYMENT_PPH21: "2011",
 }
 TAX_PAYMENT_REFERENCE = "TAX_PAYMENT"
 TAX_WITHHOLDING_REFERENCE = "TAX_WITHHOLDING"
@@ -100,6 +103,10 @@ SETTING_DEFAULTS = {
     "tax.pbjt_effective_from": "",
     "tax.pbjt_include_delivery": "",
     "tax.pbjt_due_day": "15",
+    "tax.pph21_enabled": "",
+    "tax.pph21_effective_from": "",
+    "tax.pph21_borne_by": "KARYAWAN",
+    "tax.pph21_ter_verified": "",
     "company.directors": "",
     "company.shareholders": "",
 }
@@ -195,6 +202,10 @@ def get_tax_settings(branch_id) -> dict:
         "pbjt_effective_from": as_date("tax.pbjt_effective_from"),
         "pbjt_include_delivery": raw["tax.pbjt_include_delivery"] == "1",
         "pbjt_due_day": int(raw["tax.pbjt_due_day"]) if raw["tax.pbjt_due_day"].isdigit() else 15,
+        "pph21_enabled": raw["tax.pph21_enabled"] == "1",
+        "pph21_effective_from": as_date("tax.pph21_effective_from"),
+        "pph21_borne_by": raw["tax.pph21_borne_by"] if raw["tax.pph21_borne_by"] in ("KARYAWAN", "PERUSAHAAN") else "KARYAWAN",
+        "pph21_ter_verified": raw["tax.pph21_ter_verified"] == "1",
         "directors": raw["company.directors"],
         "shareholders": raw["company.shareholders"],
     }
@@ -208,6 +219,12 @@ def save_tax_settings(branch_id, form, actor):
     values = {key: str(form.get(key) or "").strip() for key in SETTING_DEFAULTS}
     values["tax.pbjt_enabled"] = "1" if form.get("tax.pbjt_enabled") else ""
     values["tax.pbjt_include_delivery"] = "1" if form.get("tax.pbjt_include_delivery") else ""
+    values["tax.pph21_enabled"] = "1" if form.get("tax.pph21_enabled") else ""
+    values["tax.pph21_ter_verified"] = "1" if form.get("tax.pph21_ter_verified") else ""
+    if values.get("tax.pph21_borne_by") not in ("KARYAWAN", "PERUSAHAAN"):
+        values["tax.pph21_borne_by"] = "KARYAWAN"
+    if values.get("tax.pph21_effective_from"):
+        _parse_date(values["tax.pph21_effective_from"])
 
     if values["tax.regime"] not in ("", REGIME_PP55, REGIME_NORMAL):
         raise TaxError("Rezim PPh tidak valid.")
@@ -829,6 +846,29 @@ def build_tax_month(branch_id, year, month):
     )
     pbjt_paid = paid(TAX_PAYMENT_PBJT)
 
+    from app.models.hr import Payroll, PayrollDetail
+
+    # PPh 21 karyawan: jumlah pph21_amount dari payroll yang sudah dicatat hutangnya (POSTED atau PAID) pada masa itu
+    pph21_row = (
+        db.session.query(
+            func.coalesce(func.sum(PayrollDetail.pph21_amount), 0),
+            func.max(Payroll.id),
+        )
+        .join(Payroll, Payroll.id == PayrollDetail.payroll_id)
+        .filter(
+            Payroll.branch_id == branch_id,
+            Payroll.period_year == year,
+            Payroll.period_month == month,
+            Payroll.status.in_(("POSTED", "PAID")),
+        )
+        .first()
+    )
+    pph21_due = _money(pph21_row[0]) if pph21_row else ZERO
+    pph21_payroll_id = pph21_row[1] if pph21_row and pph21_row[1] else None
+    pph21_paid = paid(TAX_PAYMENT_PPH21)
+    pph21_to_pay = max(pph21_due - pph21_paid, ZERO)
+    pph21_due_date = _due(year, month, PPH_DUE_DAY)
+
     year_start = date(year, 1, 1)
     monthly = []
     for m in range(1, 13):
@@ -880,6 +920,11 @@ def build_tax_month(branch_id, year, month):
         "pbjt_paid": pbjt_paid,
         "pbjt_to_pay": max(pbjt_collected - pbjt_paid, ZERO),
         "pbjt_due_date": _due(year, month, settings["pbjt_due_day"]),
+        "pph21_due": pph21_due,
+        "pph21_paid": pph21_paid,
+        "pph21_to_pay": pph21_to_pay,
+        "pph21_due_date": pph21_due_date,
+        "pph21_payroll_id": pph21_payroll_id,
         "monthly": monthly,
         "ytd_gross": ytd,
         "ytd_limit_pct": float(ytd / UMKM_GROSS_LIMIT * 100) if ytd > 0 else 0.0,
@@ -909,6 +954,8 @@ def tax_warnings(branch_id, settings, on_date, ytd_gross=None):
             warnings.append(f"Fasilitas PP 55 berakhir 31 Desember {last_year}; siapkan pembukuan tarif normal.")
     if regime == REGIME_PP55 and not pp55_certificate_valid(settings, on_date):
         warnings.append("Surat Keterangan PP 55 belum diisi/kedaluwarsa: pelanggan akan memotong PPh 23 2%, bukan 0,5%.")
+    if settings.get("pph21_enabled") and not settings.get("pph21_ter_verified"):
+        warnings.append("Tabel TER wajib dicek dengan Lampiran PP 58/2023 sebelum dipakai.")
     if ytd_gross is not None and ytd_gross >= UMKM_GROSS_LIMIT * Decimal("0.9"):
         warnings.append(
             f"Omzet tahun ini {_rupiah(ytd_gross)} mendekati/lewat Rp4,8 M: cek kewajiban PKP dan kelayakan PP 55 tahun depan."
@@ -931,7 +978,7 @@ def run_tax_reminders(branch_id=None, period_key=None, now=None):
 
     today = (now.date() if now else today_wib())
     settings = get_tax_settings(branch_id)
-    if not settings["regime"] and not settings["pbjt_enabled"]:
+    if not settings["regime"] and not settings["pbjt_enabled"] and not settings.get("pph21_enabled"):
         return {"message": "Pajak belum diaktifkan."}
     previous = today.replace(day=1) - timedelta(days=1)
     report = build_tax_month(branch_id, previous.year, previous.month)
@@ -956,6 +1003,10 @@ def run_tax_reminders(branch_id=None, period_key=None, now=None):
     if report["pph_final_to_pay"] > 0 and today.day in (10, 14, 15):
         notify("pph-final", f"Setor PPh final masa {masa}",
                f"Kurang setor {_rupiah(report['pph_final_to_pay'])}, paling lambat {report['pph_final_due_date'].strftime('%d-%m-%Y')}.",
+               "CRITICAL" if today.day >= 14 else "WARNING")
+    if report.get("pph21_to_pay", ZERO) > 0 and today.day in (10, 14, 15):
+        notify("pph21", f"Setor PPh 21 karyawan masa {masa}",
+               f"PPh 21 terutang belum disetor {_rupiah(report['pph21_to_pay'])}, paling lambat {report['pph21_due_date'].strftime('%d-%m-%Y')}.",
                "CRITICAL" if today.day >= 14 else "WARNING")
     pbjt_due = report["pbjt_due_date"]
     if report["pbjt_to_pay"] > 0 and today in (pbjt_due - timedelta(days=5), pbjt_due - timedelta(days=1), pbjt_due):

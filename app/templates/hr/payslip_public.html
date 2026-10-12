@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Slip Gaji {{ period }}</title>
+    {% include "hr/_doc_styles.html" %}
+    <style>
+        .pin-card { max-width: 380px; margin: 12vh auto 0; padding: 28px 24px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 32px rgba(28, 25, 23, 0.12); text-align: center; }
+        .pin-card h1 { margin: 6px 0 4px; font-size: 18px; }
+        .pin-card p { margin: 0 0 18px; color: var(--doc-muted); font-size: 14px; }
+        .pin-card input { width: 100%; padding: 14px; font-size: 26px; letter-spacing: 0.5em; text-align: center; border: 1px solid var(--doc-line); border-radius: 10px; }
+        .pin-card button { width: 100%; margin-top: 12px; padding: 14px; font-size: 15px; justify-content: center; }
+        .pin-error { margin-top: 12px; color: var(--doc-bad); font-size: 13px; }
+        .pin-lock { width: 52px; height: 52px; margin: 0 auto; border-radius: 14px; background: var(--doc-accent-soft); color: var(--doc-accent); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; }
+    </style>
+</head>
+<body>
+    <form method="post" class="pin-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="pin-lock">🔒</div>
+        <h1>Slip Gaji {{ period }}</h1>
+        <p>{{ detail.employee.full_name }} · masukkan 4 angka terakhir NIK Anda{% if not detail.employee.nik %} (atau No. HP){% endif %}.</p>
+        <input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required autofocus aria-label="PIN 4 angka">
+        <button class="doc-btn is-primary" type="submit">Buka Slip</button>
+        {% if error %}<div class="pin-error" role="alert">{{ error }}</div>{% endif %}
+    </form>
+</body>
+</html>

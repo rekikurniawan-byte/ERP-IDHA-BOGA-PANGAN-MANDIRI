@@ -6,6 +6,15 @@ from app.utils.clock import today_wib
 from app.extensions import db
 from app.models.master import Employee, EmployeeSkill
 from app.models.hr import Payroll, PayrollDetail, EmployeeSalaryHistory
+from app.services.employee_charge_service import allocate_detail_deductions, recalculate_detail
+from app.services.workforce_payroll_service import (
+    absence_deduction,
+    divisor_days,
+    pay_rules,
+    sync_payroll_workforce,
+    unpaid_absence_days,
+)
+from app.services.workforce_service import hr_settings
 
 
 # SDM2A_HR_SERVICE
@@ -92,14 +101,42 @@ def _add_employee_skills(employee_id, skill_names):
         ))
 
 
-def create_employee_record(*, branch_id, full_name, phone, join_date, salary_amount, skills_raw):
+PROFILE_FIELDS = (
+    "nik",
+    "address",
+    "position",
+    "emergency_contact_name",
+    "emergency_contact_phone",
+    "ptkp_status",
+    "npwp",
+)
+
+
+def _apply_profile(employee, profile):
+    """Data diri untuk kontrak kerja (Modul Tenaga Kerja) dan pajak."""
+    if not profile:
+        return
+    for field in PROFILE_FIELDS:
+        if field in profile:
+            val = str(profile.get(field) or "").strip() or None
+            if field == "ptkp_status" and val:
+                val = val.upper()
+            setattr(employee, field, val)
+    employee_type = str(profile.get("employee_type") or "").upper()
+    if employee_type in ("KARYAWAN", "CADANGAN"):
+        employee.employee_type = employee_type
+
+
+def create_employee_record(*, branch_id, full_name, phone, join_date, salary_amount, skills_raw, profile=None):
     employee = Employee(
         branch_id=branch_id,
         full_name=full_name,
         phone=phone or None,
         join_date=join_date,
         status="ACTIVE",
+        employee_type="KARYAWAN",
     )
+    _apply_profile(employee, profile)
 
     db.session.add(employee)
     db.session.flush()
@@ -128,8 +165,10 @@ def update_employee_record(
     salary_amount,
     salary_effective_date,
     skills_raw,
+    profile=None,
 ):
     employee.full_name = full_name
+    _apply_profile(employee, profile)
     employee.phone = phone or None
     employee.status = status
     employee.join_date = join_date
@@ -171,6 +210,8 @@ def generate_payroll(branch_id, period_month, period_year, created_by):
         Employee.query
         .filter_by(branch_id=branch_id)
         .filter(Employee.status == "ACTIVE")
+        # Tenaga cadangan (harian lepas) tidak digaji bulanan.
+        .filter(Employee.employee_type != "CADANGAN")
         .order_by(Employee.full_name.asc())
         .all()
     )
@@ -205,32 +246,47 @@ def generate_payroll(branch_id, period_month, period_year, created_by):
 
         prorata_deduction = max(0, float(monthly_salary or 0) - float(prorated_salary or 0))
 
+        # Hari tidak bekerja dipotong sesuai aturan di kontrak karyawan (Aturan Gaji & Potongan).
+        counted_start = max(employee.join_date or date(period_year, period_month, 1), date(period_year, period_month, 1))
+        rules = pay_rules(employee.id, branch_id, target_date)
+        alpa_days = unpaid_absence_days(employee.id, counted_start, target_date, rules["statuses"])
+        alpa_deduction = float(absence_deduction(monthly_salary, alpa_days, divisor_days(rules["divisor"], total_days)))
+        alpa_deduction = min(alpa_deduction, float(prorated_salary or 0))
+
         db.session.add(PayrollDetail(
             payroll_id=payroll.id,
             employee_id=employee.id,
             base_salary=monthly_salary,
             bonus=0,
-            deduction=prorata_deduction,
-            final_salary=prorated_salary,
+            deduction=prorata_deduction + alpa_deduction,
+            unpaid_absence_days=alpa_days,
+            final_salary=max(0, float(prorated_salary or 0) - alpa_deduction),
         ))
+
+    db.session.flush()
+    # Karyawan keluar + potongan denda/ganti rugi (maks 50% upah).
+    sync_payroll_workforce(payroll)
 
     return True, "Payroll berhasil dibuat.", payroll
 
 
 def recalculate_payroll_detail(detail):
-    detail.final_salary = float(detail.base_salary or 0) + float(detail.bonus or 0) - float(detail.deduction or 0)
-
-    if detail.final_salary < 0:
-        detail.final_salary = 0
-
-    return detail
+    # final = base + bonus + kompensasi keluar - potongan - potongan denda/ganti rugi
+    return recalculate_detail(detail)
 
 
 def update_payroll_detail_record(detail, *, base_salary, bonus, deduction):
+    from app.services.tax_pph21_service import compute_payroll_detail_pph21
+
     detail.base_salary = float(base_salary or 0)
     detail.bonus = float(bonus or 0)
     detail.deduction = float(deduction or 0)
+    if detail.payroll and detail.payroll.status == "DRAFT":
+        compute_payroll_detail_pph21(detail, detail.payroll)
     recalculate_payroll_detail(detail)
+    # Upah berubah -> batas potongan 50% ikut berubah.
+    if detail.payroll_id:
+        allocate_detail_deductions(detail, hr_settings(detail.payroll.branch_id)["max_deduction_percent"])
     _commit_or_rollback()
     return detail
 

@@ -2,94 +2,136 @@
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
-<div class="hr-master-settings-page-shell hr-enterprise-page" data-ui-section="true" data-fix69a-hr="employee-form">
+<div data-ui-page="hr_employee_form">
 {{ page_header(
-    ("Ubah" if employee else "Tambah") ~ " Karyawan",
-    "Input data karyawan internal perusahaan. Data gaji dipakai untuk generate payroll bulanan.",
-    eyebrow="SDM / Form Karyawan",
-    actions_class="hr-master-settings-header-actions",
-    actions=[
-        {"label": "Kembali ke Karyawan", "url": url_for('hr.employees'), "icon": "bi-arrow-left", "variant": "primary"},
-        {"label": "Aksi SDM", "icon": "bi-three-dots", "dropdown": [
-            {"label": "Dashboard SDM", "url": url_for('hr.index'), "icon": "bi-speedometer2"},
-            {"label": "Payroll", "url": url_for('hr.payrolls'), "icon": "bi-cash-coin"},
-            {"label": "Riwayat Pembayaran Gaji", "url": "/hr/payroll-payment-history", "icon": "bi-clock-history"},
-        ]},
-    ]
+    ("Ubah Data " ~ employee.full_name) if employee else "Tambah Karyawan",
+    "Data diri dipakai di surat kontrak dan surat panggilan; pastikan NIK dan alamat asal benar.",
+    eyebrow="SDM · Karyawan & Kontrak",
+    actions=[]
 ) }}
+{% include "hr/_tabs.html" %}
 
-<div class="hr-enterprise-grid two-col">
-    <div class="card app-card">
-        <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Employee Profile</span>
-                    <h2>Data Dasar Karyawan</h2>
+<form method="post" data-ui-form="true" class="app-form">
+    {% include "components/csrf_token.html" %}
+    <div class="wf-grid">
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Data Diri</h2></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="full_name">Nama lengkap (sesuai KTP)</label>
+                        <input type="text" name="full_name" id="full_name" class="form-control" required value="{{ employee.full_name if employee else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="nik">NIK</label>
+                        <input type="text" name="nik" id="nik" class="form-control" inputmode="numeric" maxlength="20" value="{{ employee.nik if employee and employee.nik else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="phone">No. HP</label>
+                        <input type="text" name="phone" id="phone" class="form-control" inputmode="tel" value="{{ employee.phone if employee and employee.phone else '' }}" placeholder="08xxxxxxxxxx">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="address">Alamat asal</label>
+                        <input type="text" name="address" id="address" class="form-control" value="{{ employee.address if employee and employee.address else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="emergency_contact_name">Kontak darurat</label>
+                        <input type="text" name="emergency_contact_name" id="emergency_contact_name" class="form-control" placeholder="Contoh: Ibu Siti (ibu)" value="{{ employee.emergency_contact_name if employee and employee.emergency_contact_name else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="emergency_contact_phone">No. HP kontak darurat</label>
+                        <input type="text" name="emergency_contact_phone" id="emergency_contact_phone" class="form-control" inputmode="tel" value="{{ employee.emergency_contact_phone if employee and employee.emergency_contact_phone else '' }}">
+                    </div>
                 </div>
             </div>
-            <form method="post" data-ui-form="true" class="app-form hr-employee-form">
-                {% include "components/csrf_token.html" %}
-                <div class="hr-form-grid two-col">
-                    <div>
-                        <label class="form-label">Nama Karyawan</label>
-                        <input type="text" name="full_name" class="form-control" required value="{{ employee.full_name if employee else '' }}">
+        </div>
+
+        <div class="card app-card">
+            <div class="card-body">
+                <div class="wf-section-title"><h2>Pekerjaan & Gaji</h2></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="employee_type">Jenis</label>
+                        <select name="employee_type" id="employee_type" class="form-select">
+                            <option value="KARYAWAN" {% if not employee or employee.employee_type == "KARYAWAN" %}selected{% endif %}>Karyawan (tinggal di lokasi)</option>
+                            <option value="CADANGAN" {% if employee and employee.employee_type == "CADANGAN" %}selected{% endif %}>Cadangan (harian lepas)</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="form-label">No. HP</label>
-                        <input type="text" name="phone" class="form-control" value="{{ employee.phone if employee else '' }}" placeholder="Contoh: 08xxxxxxxxxx">
+                    <div class="col-md-6">
+                        <label class="form-label" for="position">Jabatan</label>
+                        <input type="text" name="position" id="position" class="form-control" placeholder="Contoh: Juru masak" value="{{ employee.position if employee and employee.position else '' }}">
                     </div>
-                    <div>
-                        <label class="form-label">Tanggal Masuk</label>
-                        <input type="date" name="join_date" class="form-control" value="{{ employee.join_date if employee and employee.join_date else '' }}">
+                    <div class="col-md-6">
+                        <label class="form-label" for="join_date">Mulai kerja</label>
+                        <input type="date" name="join_date" id="join_date" class="form-control" value="{{ employee.join_date if employee and employee.join_date else '' }}">
                     </div>
-                    <div>
-                        <label class="form-label">Skill</label>
-                        <input type="text" name="skills" class="form-control" placeholder="Contoh: Dapur, Packing, Driver" value="{{ skill_text if skill_text is defined else '' }}">
-                        <small class="text-muted">Pisahkan dengan koma.</small>
+                    <div class="col-md-6">
+                        <label class="form-label" for="skills">Keahlian</label>
+                        <input type="text" name="skills" id="skills" class="form-control" placeholder="Dapur, Packing, Antar" value="{{ skill_text if skill_text is defined else '' }}">
                     </div>
-                    <div>
-                        <label class="form-label">Gaji</label>
-                        <input type="number" name="salary_amount" class="form-control" value="{{ latest_salary.salary_amount if latest_salary is defined and latest_salary else '' }}">
-                        <small class="text-muted">Isi jika ingin membuat/memperbarui riwayat gaji.</small>
+                    {% if contract is defined and contract %}
+                        <div class="col-12">
+                            <div class="wf-alert is-info mb-0">
+                                <i class="bi bi-lock" aria-hidden="true"></i>
+                                <div>Gaji {{ contract.monthly_salary|rupiah }}/bulan diatur kontrak <a href="{{ url_for('workforce.contract_detail', contract_id=contract.id) }}">{{ contract.contract_number }}</a>. Perubahan gaji lewat kontrak baru.</div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="col-md-6">
+                            <label class="form-label" for="salary_amount">Gaji per bulan (Rp)</label>
+                            <input type="number" min="0" step="1" name="salary_amount" id="salary_amount" class="form-control" value="{{ latest_salary.salary_amount|int if latest_salary is defined and latest_salary else '' }}">
+                            <div class="form-text">Karyawan tetap: gaji ditetapkan di kontrak kerja.</div>
+                        </div>
+                        {% if employee %}
+                            <div class="col-md-6">
+                                <label class="form-label" for="salary_effective_date">Gaji berlaku mulai</label>
+                                <input type="date" name="salary_effective_date" id="salary_effective_date" class="form-control">
+                                <div class="form-text">Kosong = hari ini.</div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    <div class="col-md-6">
+                        <label class="form-label" for="ptkp_status">Status PTKP (PPh 21)</label>
+                        <select name="ptkp_status" id="ptkp_status" class="form-select">
+                            {% set current_ptkp = employee.ptkp_status if employee and employee.ptkp_status else 'TK/0' %}
+                            <optgroup label="Tidak Kawin (TK)">
+                                <option value="TK/0" {% if current_ptkp == 'TK/0' %}selected{% endif %}>TK/0 — 0 Tanggungan (TER A)</option>
+                                <option value="TK/1" {% if current_ptkp == 'TK/1' %}selected{% endif %}>TK/1 — 1 Tanggungan (TER A)</option>
+                                <option value="TK/2" {% if current_ptkp == 'TK/2' %}selected{% endif %}>TK/2 — 2 Tanggungan (TER B)</option>
+                                <option value="TK/3" {% if current_ptkp == 'TK/3' %}selected{% endif %}>TK/3 — 3 Tanggungan (TER B)</option>
+                            </optgroup>
+                            <optgroup label="Kawin (K)">
+                                <option value="K/0" {% if current_ptkp == 'K/0' %}selected{% endif %}>K/0 — 0 Tanggungan (TER A)</option>
+                                <option value="K/1" {% if current_ptkp == 'K/1' %}selected{% endif %}>K/1 — 1 Tanggungan (TER B)</option>
+                                <option value="K/2" {% if current_ptkp == 'K/2' %}selected{% endif %}>K/2 — 2 Tanggungan (TER B)</option>
+                                <option value="K/3" {% if current_ptkp == 'K/3' %}selected{% endif %}>K/3 — 3 Tanggungan (TER C)</option>
+                            </optgroup>
+                        </select>
+                        <div class="form-text">Dasar tarif efektif (PP 58/2023). Default TK/0.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="npwp">NPWP (opsional)</label>
+                        <input type="text" name="npwp" id="npwp" class="form-control" placeholder="15/16 digit atau kosong" value="{{ employee.npwp if employee and employee.npwp else '' }}">
+                        <div class="form-text">Bila kosong, NIK KTP otomatis digunakan.</div>
                     </div>
                     {% if employee %}
-                        <div>
-                            <label class="form-label">Tanggal Berlaku Gaji</label>
-                            <input type="date" name="salary_effective_date" class="form-control">
-                            <small class="text-muted">Kosongkan jika berlaku hari ini.</small>
-                        </div>
-                        <div>
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select">
+                        <div class="col-md-6">
+                            <label class="form-label" for="status">Status</label>
+                            <select name="status" id="status" class="form-select">
                                 <option value="ACTIVE" {% if employee.status == "ACTIVE" %}selected{% endif %}>{{ "ACTIVE"|status_label }}</option>
                                 <option value="INACTIVE" {% if employee.status == "INACTIVE" %}selected{% endif %}>{{ "INACTIVE"|status_label }}</option>
                             </select>
+                            <div class="form-text">Karyawan berkontrak dinonaktifkan lewat Karyawan Keluar.</div>
                         </div>
                     {% endif %}
                 </div>
-                <div class="form-actions">
-                    <button class="btn app-btn-primary" type="submit"><i class="bi bi-save"></i> Simpan</button>
-                    <a href="{{ url_for('hr.employees') }}" class="btn app-btn-secondary">Batal</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card app-card hr-lifecycle-card">
-        <div class="card-body">
-            <div class="hr-section-title">
-                <div>
-                    <span>Catatan SDM</span>
-                    <h2>Aturan Input Karyawan</h2>
-                </div>
-            </div>
-            <div class="hr-health-list">
-                <div class="hr-health-item is-ok"><i class="bi bi-check-circle"></i><div><strong>Karyawan internal</strong><span>Hanya {{ term('worker', lower=True) }} yang masuk penggajian perusahaan.</span></div></div>
-                <div class="hr-health-item is-muted"><i class="bi bi-person-badge"></i><div><strong>{{ term('sub_client') }} bukan payroll</strong><span>{{ term('sub_client') }} tetap PIC lapangan/partner, bukan karyawan internal.</span></div></div>
-                <div class="hr-health-item is-warning"><i class="bi bi-cash"></i><div><strong>Salary history</strong><span>Gaji aktif dipakai saat generate payroll bulanan.</span></div></div>
             </div>
         </div>
     </div>
-</div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ url_for('workforce.employee_detail', employee_id=employee.id) if employee else url_for('hr.employees') }}" class="btn app-btn-secondary">Batal</a>
+        <button class="btn app-btn-primary" type="submit"><i class="bi bi-save"></i> Simpan</button>
+    </div>
+</form>
 </div>
 {% endblock %}

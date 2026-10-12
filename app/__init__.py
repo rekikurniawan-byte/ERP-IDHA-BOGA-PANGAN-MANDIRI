@@ -48,6 +48,32 @@ def _current_user_has_role(roles) -> bool:
     return role_in(current_user.role, roles)
 
 
+def _hr_nav():
+    """Tab menu SDM untuk halaman yang sedang dibuka (lihat hr_navigation_service)."""
+    from flask import request
+    from flask_login import current_user
+
+    from app.services.hr_navigation_service import hr_section_for, hr_tab_counts
+
+    section = hr_section_for(request.endpoint)
+    if not section or not current_user.is_authenticated:
+        return None
+    counts = hr_tab_counts(current_user.branch_id) if any(tab["count"] for tab in section["tabs"]) else {}
+    tabs = [
+        dict(tab, active=request.endpoint in tab["endpoints"], count_value=counts.get(tab["count"]) if tab["count"] else 0)
+        for tab in section["tabs"]
+    ]
+    return {"section": section, "tabs": tabs}
+
+
+def _hr_sections():
+    from flask import request
+
+    from app.services.hr_navigation_service import hr_sections
+
+    return hr_sections(request.endpoint)
+
+
 def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
@@ -63,6 +89,8 @@ def create_app():
     # Templates decide what to show through the same role table the routes
     # use, so a menu can never be hidden from a role that is allowed in.
     flask_app.jinja_env.globals["has_role"] = _current_user_has_role
+    flask_app.jinja_env.globals["hr_nav"] = _hr_nav
+    flask_app.jinja_env.globals["hr_sections"] = _hr_sections
 
     # Istilah bisnis per cabang ("Client", "Sub Client", ...), diatur OWNER di
     # Pengaturan Perusahaan. Lihat app/utils/terms.py.
@@ -100,6 +128,8 @@ def create_app():
     from app.routes.finance_routes import finance_bp
     from app.routes.accounting_routes import accounting_bp
     from app.routes.hr_routes import hr_bp
+    from app.routes.workforce_routes import workforce_bp
+    from app.routes.payslip_routes import payslip_bp, payslip_public_bp
     from app.routes.settings_routes import settings_bp
     from app.routes.costing_routes import costing_bp
     from app.routes.sop_routes import sop_bp
@@ -125,6 +155,9 @@ def create_app():
     flask_app.register_blueprint(finance_bp)
     flask_app.register_blueprint(accounting_bp)
     flask_app.register_blueprint(hr_bp)
+    flask_app.register_blueprint(workforce_bp)
+    flask_app.register_blueprint(payslip_bp)
+    flask_app.register_blueprint(payslip_public_bp)
     flask_app.register_blueprint(settings_bp)
     flask_app.register_blueprint(costing_bp)
     flask_app.register_blueprint(sop_bp)

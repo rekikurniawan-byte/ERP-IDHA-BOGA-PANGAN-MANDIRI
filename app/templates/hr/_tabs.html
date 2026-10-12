@@ -1,0 +1,12 @@
+{# Tab menu SDM: satu-satunya navigasi antarhalaman di dalam satu menu (lihat hr_navigation_service). #}
+{% set nav = hr_nav() %}
+{% if nav and nav.tabs|length > 1 %}
+<nav class="wf-tabs" aria-label="{{ nav.section.label }}">
+    {% for tab in nav.tabs %}
+        <a class="wf-tab {{ 'is-active' if tab.active else '' }}" href="{{ url_for(tab.endpoint) }}"{% if tab.active %} aria-current="page"{% endif %}>
+            {{ tab.label }}
+            {% if tab.count_value %}<span class="wf-tab-count">{{ tab.count_value }}</span>{% endif %}
+        </a>
+    {% endfor %}
+</nav>
+{% endif %}

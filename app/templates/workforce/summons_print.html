@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Panggilan {{ number }} - {{ case.employee.full_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ css_asset_version }}">
+    <style>
+        @page { size: A4 portrait; margin: 20mm 18mm; }
+        body { background: var(--surface-page); margin: 0; }
+        .print-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .print-sheet { padding: 24px 12px; }
+        @media print {
+            body { background: #fff; }
+            .print-bar { display: none; }
+            .print-sheet { padding: 0; }
+            .wf-doc { border: 0; padding: 0; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-bar">
+        <a class="btn app-btn-secondary" href="{{ url_for('workforce.case_detail', case_id=case.id) }}">Kembali</a>
+        <button class="btn app-btn-primary" type="button" onclick="window.print()">Cetak / Simpan PDF</button>
+    </div>
+    <div class="print-sheet">
+        <div class="wf-doc">
+            <p><strong>{{ company.get("company_name") }}</strong><br>{{ company.get("company_address") or "" }}{% if company.get("company_phone") %}<br>Telp. {{ company.get("company_phone") }}{% endif %}</p>
+            <h2>SURAT PANGGILAN {{ "PERTAMA" if number == 1 else "KEDUA" }}</h2>
+            <div class="wf-doc-number">Nomor: {{ summons_number }}</div>
+
+            <p>Kepada Yth.<br>
+            <strong>{{ case.employee.full_name }}</strong><br>
+            {{ case.employee.address or "Alamat sesuai data karyawan" }}<br>
+            No. HP {{ case.employee.phone or "-" }}</p>
+
+            <p>Dengan hormat,</p>
+            <p>Berdasarkan catatan apel harian, Saudara/i tidak berada di lokasi kerja dan tidak masuk bekerja tanpa keterangan tertulis yang sah
+            sejak tanggal <strong>{{ case.start_date.strftime('%d-%m-%Y') }}</strong> ({{ days }} hari{% if case.leave_id and case.leave %}, setelah izin yang seharusnya berakhir {{ case.leave.expected_return_date.strftime('%d-%m-%Y') }}{% endif %}).</p>
+            <p>Melalui surat ini Saudara/i dipanggil untuk <strong>kembali bekerja dan menghadap pimpinan perusahaan paling lambat tanggal
+            {{ report_by.strftime('%d-%m-%Y') }}</strong> di {{ settings.work_location or company.get("company_address") or "kantor perusahaan" }},
+            dengan membawa keterangan/bukti alasan ketidakhadiran.</p>
+            {% if number == 2 %}
+                <p>Ini adalah panggilan kedua setelah surat panggilan pertama nomor {{ case.summons_1_number }} tanggal {{ case.summons_1_date.strftime('%d-%m-%Y') }}.
+                Apabila Saudara/i tidak memenuhi panggilan ini dan mangkir {{ settings.deemed_resign_days }} hari kerja atau lebih berturut-turut,
+                perusahaan dapat mengkualifikasikan Saudara/i <strong>mengundurkan diri</strong> sesuai peraturan ketenagakerjaan dan perjanjian kerja,
+                serta memperhitungkan denda dan ganti rugi yang tercantum dalam perjanjian kerja.</p>
+            {% else %}
+                <p>Ketidakhadiran tanpa keterangan dapat dikenai sanksi sesuai perjanjian kerja.</p>
+            {% endif %}
+            <p>Demikian surat panggilan ini disampaikan untuk diperhatikan.</p>
+
+            <p class="mt-4">{{ summons_date.strftime('%d-%m-%Y') }}<br>{{ company.get("company_name") }}</p>
+            <div style="height: 80px"></div>
+            <p><strong>{{ settings.employer_signer_name or "........................" }}</strong><br>{{ settings.employer_signer_position }}</p>
+            <p class="text-muted small mt-4">Tembusan: arsip perusahaan. Simpan bukti pengiriman (foto tanda terima / tangkapan layar pesan).</p>
+        </div>
+    </div>
+</body>
+</html>

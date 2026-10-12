@@ -44,30 +44,37 @@
     <div class="app-stat-grid mb-4">
         <div class="app-stat-card">
             <div class="app-stat-icon stat-info"><i class="bi bi-graph-up"></i></div>
-            <div><p>Peredaran bruto</p><h3>{{ r.gross|rupiah }}</h3><small>tanpa PBJT &amp; ta'zir · {{ r.regime_label }}</small></div>
+            <div><p>Peredaran bruto</p><h3 class="wf-stat-money">{{ r.gross|rupiah }}</h3><small>tanpa PBJT &amp; ta'zir · {{ r.regime_label }}</small></div>
         </div>
         <div class="app-stat-card">
             <div class="app-stat-icon {{ 'stat-danger' if r.pph_final_to_pay > 0 else 'stat-success' }}"><i class="bi bi-bank"></i></div>
             <div>
-                <p>PPh final kurang setor</p><h3>{{ r.pph_final_to_pay|rupiah }}</h3>
+                <p>PPh final kurang setor</p><h3 class="wf-stat-money">{{ r.pph_final_to_pay|rupiah }}</h3>
                 <small>{% if r.regime == 'PP55' %}terutang {{ r.pph_final_due|rupiah }}, batas {{ r.pph_final_due_date.strftime('%d-%m-%Y') }}{% else %}tidak berlaku untuk rezim ini{% endif %}</small>
             </div>
         </div>
         <div class="app-stat-card">
             <div class="app-stat-icon {{ 'stat-warning' if r.pbjt_to_pay > 0 else 'stat-success' }}"><i class="bi bi-shop"></i></div>
             <div>
-                <p>PBJT belum disetor</p><h3>{{ r.pbjt_to_pay|rupiah }}</h3>
+                <p>PBJT belum disetor</p><h3 class="wf-stat-money">{{ r.pbjt_to_pay|rupiah }}</h3>
                 <small>{% if s.pbjt_enabled %}dipungut {{ r.pbjt_collected|rupiah }}, batas {{ r.pbjt_due_date.strftime('%d-%m-%Y') }}{% else %}PBJT belum diaktifkan{% endif %}</small>
             </div>
         </div>
         <div class="app-stat-card">
+            <div class="app-stat-icon {{ 'stat-danger' if r.pph21_to_pay > 0 else 'stat-success' }}"><i class="bi bi-people"></i></div>
+            <div>
+                <p>PPh 21 Karyawan</p><h3 class="wf-stat-money">{{ r.pph21_to_pay|rupiah }}</h3>
+                <small>{% if r.pph21_due > 0 %}terutang {{ r.pph21_due|rupiah }}, batas {{ r.pph21_due_date.strftime('%d-%m-%Y') }}{% elif r.pph21_enabled %}sudah lunas / nihil{% else %}PPh 21 dinonaktifkan{% endif %}</small>
+            </div>
+        </div>
+        <div class="app-stat-card">
             <div class="app-stat-icon stat-warning"><i class="bi bi-speedometer"></i></div>
-            <div><p>Omzet tahun {{ r.year }}</p><h3>{{ r.ytd_gross|rupiah }}</h3><small>{{ '%.1f'|format(r.ytd_limit_pct) }}% dari batas Rp4,8 M</small></div>
+            <div><p>Omzet tahun {{ r.year }}</p><h3 class="wf-stat-money">{{ r.ytd_gross|rupiah }}</h3><small>{{ '%.1f'|format(r.ytd_limit_pct) }}% dari batas Rp4,8 M</small></div>
         </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="app-card h-100">
                 <div class="card-header-clean"><div><h5>PPh {{ month_names[r.month] }} {{ r.year }}</h5><p>{{ r.regime_label }}</p></div></div>
                 <div class="table-responsive" data-mobile-table="scroll">
@@ -80,13 +87,13 @@
                             <tr><td>Sudah disetor sendiri</td><td class="text-end">− {{ r.pph_final_paid|rupiah }}</td></tr>
                             <tr><td><strong>Kurang setor</strong></td><td class="text-end"><strong>{{ r.pph_final_to_pay|rupiah }}</strong></td></tr>
                             {% endif %}
-                            <tr><td>PPh 23 dipotong pelanggan (kredit pajak)</td><td class="text-end">{{ r.withheld_pph23|rupiah }}</td></tr>
+                            <tr><td>PPh 23 dipotong pelanggan (kredit)</td><td class="text-end">{{ r.withheld_pph23|rupiah }}</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="app-card h-100">
                 <div class="card-header-clean"><div><h5>PBJT {{ month_names[r.month] }} {{ r.year }}</h5><p>{{ s.pbjt_region }}{% if s.npwpd %} · NPWPD {{ s.npwpd }}{% endif %}</p></div></div>
                 <div class="table-responsive" data-mobile-table="scroll">
@@ -95,6 +102,27 @@
                             <tr><td>Dipungut di invoice</td><td class="text-end">{{ r.pbjt_collected|rupiah }}</td></tr>
                             <tr><td>Sudah disetor</td><td class="text-end">− {{ r.pbjt_paid|rupiah }}</td></tr>
                             <tr><td><strong>Belum disetor</strong></td><td class="text-end"><strong>{{ r.pbjt_to_pay|rupiah }}</strong></td></tr>
+                            <tr><td>Jatuh tempo</td><td class="text-end">{{ r.pbjt_due_date.strftime('%d-%m-%Y') }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="app-card h-100">
+                <div class="card-header-clean">
+                    <div>
+                        <h5>PPh 21 Karyawan</h5>
+                        <p>{{ month_names[r.month] }} {{ r.year }}{% if r.pph21_payroll_id %} · <a href="{{ url_for('hr.payroll_detail', payroll_id=r.pph21_payroll_id) }}">Lihat Gaji</a>{% endif %}</p>
+                    </div>
+                </div>
+                <div class="table-responsive" data-mobile-table="scroll">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr><td>PPh 21 terutang masa ini</td><td class="text-end">{{ r.pph21_due|rupiah }}</td></tr>
+                            <tr><td>Sudah disetor (Kode PPH21)</td><td class="text-end">− {{ r.pph21_paid|rupiah }}</td></tr>
+                            <tr><td><strong>Kurang / belum disetor</strong></td><td class="text-end"><strong>{{ r.pph21_to_pay|rupiah }}</strong></td></tr>
+                            <tr><td>Jatuh tempo setor</td><td class="text-end">{{ r.pph21_due_date.strftime('%d-%m-%Y') }}</td></tr>
                         </tbody>
                     </table>
                 </div>

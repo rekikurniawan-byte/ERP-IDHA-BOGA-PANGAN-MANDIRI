@@ -36,6 +36,7 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("2009", "Dana Sosial (Ta'zir)", "LIABILITY"),
     # Pajak (Fase 8): PBJT titipan konsumen, bukan pendapatan.
     ("2010", "Hutang PBJT", "LIABILITY"),
+    ("2011", "Hutang PPh 21", "LIABILITY"),
     ("2101", "Akumulasi Penyusutan Peralatan", "CONTRA_ASSET"),
     ("2102", "Akumulasi Penyusutan Kendaraan", "CONTRA_ASSET"),
     ("2103", "Akumulasi Penyusutan Bangunan", "CONTRA_ASSET"),
@@ -61,6 +62,7 @@ DEFAULT_CHART_OF_ACCOUNTS = (
     ("5012", "Beban Penyusutan", "EXPENSE"),
     ("5013", "Beban Piutang Tak Tertagih", "EXPENSE"),
     ("5014", "Beban PPh Final", "EXPENSE"),
+    ("5015", "Beban PPh 21 Ditanggung Perusahaan", "EXPENSE"),
 )
 
 
