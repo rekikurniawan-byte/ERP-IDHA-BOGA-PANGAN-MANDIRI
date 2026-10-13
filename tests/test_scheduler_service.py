@@ -380,6 +380,21 @@ def test_run_job_now_enforces_idempotency_and_force_audit(app):
 def test_scheduled_jobs_page_and_heartbeat_alert(client, app):
     """Halaman Tugas Otomatis: OWNER/ADMIN bisa buka, DAPUR/PENGANTAR/portal ditolak; peringatan heartbeat muncul bila > 15 menit."""
     with app.app_context():
+        from app.services.ttl_cache_service import clear_cache
+
+        # Siapkan heartbeat segar dan bersihkan cache agar kondisi awal selalu sehat & mandiri
+        clear_cache()
+        ScheduledJobRun.query.filter_by(job_key="heartbeat").delete()
+        fresh_heartbeat = ScheduledJobRun(
+            job_key="heartbeat",
+            branch_id=None,
+            period_key=f"hb-fresh-{uuid4().hex[:4]}",
+            status="SUCCESS",
+            started_at=now_wib(),
+        )
+        db.session.add(fresh_heartbeat)
+        db.session.commit()
+
         branch = _create_branch("UI")
         owner = _create_user(branch, "OWNER")
         admin = _create_user(branch, "ADMIN")
@@ -415,12 +430,13 @@ def test_scheduled_jobs_page_and_heartbeat_alert(client, app):
         stale_heartbeat = ScheduledJobRun(
             job_key="heartbeat",
             branch_id=None,
-            period_key="2026-10-08T06:00",
+            period_key=f"hb-stale-{uuid4().hex[:4]}",
             status="SUCCESS",
             started_at=now_wib() - timedelta(minutes=30),
         )
         db.session.add(stale_heartbeat)
         db.session.commit()
+        clear_cache()
 
         _login_user(client, owner)
         res_warning = client.get("/settings/jobs")

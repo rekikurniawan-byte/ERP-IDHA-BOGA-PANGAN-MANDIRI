@@ -1168,6 +1168,7 @@ def company_regulation():
     return render_template(
         "workforce/company_regulation_print.html",
         settings=settings,
+        raw=settings["raw"],
         company=settings["company"],
         unpaid=[names[c] for c in settings["unpaid_statuses"] if c in names],
         divisor_label=DIVISOR_CHOICES.get(settings["daily_wage_divisor"], ""),

@@ -95,6 +95,8 @@ HR_SETTING_DEFAULTS = {
     # Keputusan owner 2026-10-11: setiap hari tidak bekerja dipotong, apa pun alasannya.
     "hr.unpaid_statuses": "IZIN,SAKIT,CUTI,ALPA",
     "hr.daily_wage_divisor": "KALENDER",
+    "hr.working_hours": "",
+    "hr.fine_fund_usage": "",
 }
 
 
@@ -171,6 +173,8 @@ def hr_settings(branch_id: int) -> dict:
     result["employer_signer_position"] = (raw.get("hr.employer_signer_position") or "Direktur").strip()
     result["work_location"] = (raw.get("hr.work_location") or company.get("company_address") or "").strip()
     result["company_regulation_number"] = (raw.get("hr.company_regulation_number") or "").strip()
+    result["working_hours"] = (raw.get("hr.working_hours") or "").strip()
+    result["fine_fund_usage"] = (raw.get("hr.fine_fund_usage") or "").strip()
     result["unpaid_statuses"] = parse_statuses(raw.get("hr.unpaid_statuses"))
     divisor = raw.get("hr.daily_wage_divisor") or "KALENDER"
     result["daily_wage_divisor"] = divisor if divisor in DIVISOR_CHOICES else "KALENDER"

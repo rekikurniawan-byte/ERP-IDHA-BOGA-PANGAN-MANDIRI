@@ -51,7 +51,7 @@
 
         <h3>Bab III · Waktu Kerja, Apel, dan Tempat Tinggal</h3>
         <ol>
-            <li>Waktu kerja <span class="fill">[isi: mis. 7 jam/hari 6 hari atau 8 jam/hari 5 hari seminggu, dan pengaturan sesi produksi siang/sore]</span>; kerja melebihi waktu tersebut dihitung lembur sesuai ketentuan.</li>
+            <li>Waktu kerja {% if settings.raw.get('hr.working_hours') %}{{ settings.raw.get('hr.working_hours') }}{% else %}<span class="fill">[isi: mis. 7 jam/hari 6 hari atau 8 jam/hari 5 hari seminggu, dan pengaturan sesi produksi siang/sore]</span>{% endif %}; kerja melebihi waktu tersebut dihitung lembur sesuai ketentuan.</li>
             <li>Setiap hari dilakukan apel kehadiran oleh perusahaan; status: hadir, izin, sakit, cuti, atau tanpa keterangan.</li>
             <li>Karyawan tinggal di mess/lokasi kerja yang disediakan dan wajib menjaga ketertiban mess.</li>
         </ol>
@@ -88,7 +88,7 @@
                 </ol>
             </li>
             <li>Setiap denda ditetapkan secara tertulis oleh pimpinan dan diberitahukan kepada karyawan beserta rinciannya.</li>
-            <li>Penggunaan uang denda <span class="fill">[isi: mis. untuk kesejahteraan karyawan]</span>, sesuai PP 36/2021.</li>
+            <li>Penggunaan uang denda {% if settings.raw.get('hr.fine_fund_usage') %}{{ settings.raw.get('hr.fine_fund_usage') }}{% else %}<span class="fill">[isi: mis. untuk kesejahteraan karyawan]</span>{% endif %}, sesuai PP 36/2021.</li>
         </ol>
 
         <h3>Bab VIII · Mangkir</h3>
