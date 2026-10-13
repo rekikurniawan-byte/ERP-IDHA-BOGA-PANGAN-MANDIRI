@@ -702,3 +702,252 @@
         padding: var(--space-4);
     }
 }
+
+/* --- Desktop internal biru (body.shell-internal, keputusan owner 2026-10-13) ----
+   Token warnanya di tokens.css. Blok ini hanya bentuk kerangka: sidebar terang,
+   topbar bersih, kotak cari, tata letak dua kolom, dan gerak perpindahan halaman. */
+body.shell-internal .app-sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    color: var(--text-secondary);
+    scrollbar-color: var(--gray-200) transparent;
+}
+
+body.shell-internal .sidebar-brand {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+body.shell-internal .sidebar-brand-link .brand-title { color: var(--text); }
+body.shell-internal .sidebar-brand-link .brand-subtitle { color: var(--text-muted); }
+
+body.shell-internal .brand-mark,
+body.shell-internal .company-logo-mark {
+    background: var(--brand-600);
+    border-radius: var(--radius);
+}
+
+body.shell-internal .sidebar-label {
+    color: var(--gray-400);
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+body.shell-internal .sidebar-section + .sidebar-section { border-top: 1px solid var(--border); }
+
+body.shell-internal .sidebar-link,
+body.shell-internal .sidebar-group-toggle {
+    color: var(--text-secondary);
+    border-radius: var(--radius);
+    transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+body.shell-internal .sidebar-link > .bi,
+body.shell-internal .sidebar-group-title > .bi {
+    color: var(--gray-400);
+    transition: color var(--dur-fast) ease;
+}
+
+body.shell-internal .sidebar-link:hover,
+body.shell-internal .sidebar-group-toggle:hover {
+    background: var(--gray-100);
+    color: var(--text);
+}
+
+body.shell-internal .sidebar-link:hover > .bi,
+body.shell-internal .sidebar-group-toggle:hover .sidebar-group-title > .bi { color: var(--brand-600); }
+
+body.shell-internal .sidebar-link.active {
+    background: var(--brand-600);
+    color: var(--text-on-brand);
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--shadow-brand);
+}
+
+body.shell-internal .sidebar-link.active > .bi { color: var(--text-on-brand); }
+body.shell-internal .sidebar-nav .sidebar-link.active .badge.badge { background-color: var(--surface); color: var(--brand-700); }
+body.shell-internal .sidebar-group-toggle.active { color: var(--text); }
+body.shell-internal .sidebar-group-toggle.active .sidebar-group-title > .bi { color: var(--brand-600); }
+body.shell-internal .sidebar-chevron { color: var(--gray-400); }
+
+body.shell-internal .sidebar-submenu {
+    margin-left: 21px;
+    border-left: 1px solid var(--border);
+}
+
+body.shell-internal .sidebar-sublink { color: var(--text-muted); }
+
+body.shell-internal .sidebar-sublink.active {
+    position: relative;
+    background: var(--brand-50);
+    color: var(--brand-700);
+    box-shadow: none;
+}
+
+body.shell-internal .sidebar-sublink.active::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--space-2) - 1px);
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--brand-600);
+}
+
+body.shell-internal .sidebar-sublink.active > .bi { color: var(--brand-600); }
+body.shell-internal .sidebar-nav form .sidebar-link { color: var(--danger-text); }
+body.shell-internal .sidebar-nav form .sidebar-link:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+body.shell-internal .app-topbar {
+    background: var(--surface-glass);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: saturate(1.4) blur(10px);
+}
+
+body.shell-internal .user-chip { border-radius: var(--radius); }
+body.shell-internal .user-avatar { border-radius: var(--radius-round); background: var(--brand-100); color: var(--brand-800); }
+body.shell-internal .content-area { padding: var(--space-5) var(--space-6) var(--space-8); }
+
+.topbar-center {
+    flex: 1;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.topbar-search-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    height: 38px;
+    padding: 0 var(--space-2) 0 var(--space-3);
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    cursor: text;
+    text-align: left;
+    transition: border-color var(--dur) ease, background-color var(--dur) ease, box-shadow var(--dur) ease;
+}
+
+.topbar-search-bar:hover { border-color: var(--border-strong); background: var(--surface); }
+.topbar-search-bar:focus-visible { outline: 0; border-color: var(--brand-500); box-shadow: var(--focus-ring); background: var(--surface); }
+.topbar-search-bar .search-icon { font-size: 14px; color: var(--gray-400); }
+
+.topbar-search-bar .search-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-search-bar .search-kbd-badge { display: inline-flex; align-items: center; gap: 3px; }
+
+.topbar-search-bar kbd {
+    min-width: 22px;
+    padding: 1px 6px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+    color: var(--text-muted);
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+}
+
+/* Dua kolom: isi + kolom kanan (hanya dashboard & halaman 360°). */
+.dash-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-5);
+    align-items: start;
+}
+
+.dash-main { min-width: 0; display: flex; flex-direction: column; gap: var(--space-5); }
+
+.dash-rail {
+    position: sticky;
+    top: calc(var(--topbar-height) + var(--space-4));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-height: calc(100vh - var(--topbar-height) - var(--space-8));
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gray-200) transparent;
+}
+
+.dash-row { display: grid; gap: var(--space-5); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 1279.98px) {
+    .dash-grid { grid-template-columns: minmax(0, 1fr); }
+    .dash-rail { position: static; max-height: none; overflow: visible; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767.98px) {
+    .dash-row, .dash-rail { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --- Gerak: perpindahan halaman halus, isi muncul bertahap ------------------- */
+/* Perpindahan antarhalaman. Root tanpa animasi, jadi hanya desktop internal
+   (yang memberi nama app-content) yang terlihat bergerak. */
+@view-transition { navigation: auto; }
+
+@keyframes app-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes app-fade-out { to { opacity: 0; } }
+@keyframes app-fade-in { from { opacity: 0; transform: translateY(4px); } }
+
+body.shell-internal .app-sidebar { view-transition-name: app-sidebar; }
+body.shell-internal .app-topbar { view-transition-name: app-topbar; }
+body.shell-internal .content-area { view-transition-name: app-content; }
+
+::view-transition-old(app-content) { animation: app-fade-out 120ms ease-in both; }
+::view-transition-new(app-content) { animation: app-fade-in 220ms var(--ease-out) both; }
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+
+body.shell-internal [data-rise] { animation: app-rise 360ms var(--ease-out) both; }
+body.shell-internal [data-rise="2"] { animation-delay: 50ms; }
+body.shell-internal [data-rise="3"] { animation-delay: 100ms; }
+body.shell-internal [data-rise="4"] { animation-delay: 150ms; }
+body.shell-internal [data-rise="5"] { animation-delay: 200ms; }
+
+/* Garis progres tipis di atas saat pindah halaman. */
+.nav-progress {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 2000;
+    height: 2px;
+    background: var(--brand-600);
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.nav-progress.is-active {
+    opacity: 1;
+    animation: nav-progress 2.4s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes nav-progress {
+    0% { transform: scaleX(0); }
+    40% { transform: scaleX(0.55); }
+    100% { transform: scaleX(0.92); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.shell-internal [data-rise],
+    .nav-progress.is-active,
+    ::view-transition-old(app-content),
+    ::view-transition-new(app-content) { animation: none; }
+}

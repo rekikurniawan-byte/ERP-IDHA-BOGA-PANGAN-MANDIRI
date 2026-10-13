@@ -1,3 +1,5 @@
+{%- set show_public = (public_view is defined and public_view) or not current_user.is_authenticated -%}
+{%- set is_internal = current_user.is_authenticated and current_user.role in ['OWNER', 'ADMIN', 'DAPUR'] -%}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -19,11 +21,27 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tom-select/tom-select.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr/flatpickr.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=css_asset_version) }}">
+    {% if is_internal and not show_public %}
+    {# Desktop internal: halaman menu & dasbor (hanya-baca) dimuat lebih dulu saat kursor berhenti di tautannya,
+       jadi pindah halaman terasa instan. /ops, notifikasi, unduhan, dan cetak sengaja tidak ikut. #}
+    <script type="speculationrules">
+    {"prefetch": [{"where": {"and": [
+        {"selector_matches": ".app-sidebar a[href], [data-prefetch] a[href], a[data-prefetch]"},
+        {"not": {"href_matches": "/ops*"}},
+        {"not": {"href_matches": "/settings/notifications*"}},
+        {"not": {"href_matches": "*export*"}},
+        {"not": {"href_matches": "*print*"}},
+        {"not": {"href_matches": "*cetak*"}},
+        {"not": {"href_matches": "*download*"}},
+        {"not": {"href_matches": "*csv*"}}
+    ]}, "eagerness": "moderate"}]}
+    </script>
+    {% endif %}
 </head>
-{% set show_public = (public_view is defined and public_view) or not current_user.is_authenticated %}
-<body class="{{ 'is-public' if show_public else 'is-authenticated' }}" data-endpoint="{{ request.endpoint or 'public' }}">
+<body class="{{ 'is-public' if show_public else 'is-authenticated' }}{{ ' shell-internal' if is_internal else '' }}" data-endpoint="{{ request.endpoint or 'public' }}">
 
     {% if not show_public %}
+        {% if is_internal %}<div class="nav-progress" id="navProgress" aria-hidden="true"></div>{% endif %}
         <a class="skip-link" href="#mainContent">Lewati ke konten utama</a>
         <div class="app-shell" data-layout-shell>
             {% include "layouts/sidebar.html" %}

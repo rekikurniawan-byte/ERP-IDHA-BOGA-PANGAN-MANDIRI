@@ -1,186 +1,111 @@
 {% extends "layouts/base.html" %}
+{% import "dashboard/_pulse.html" as ui with context %}
 
 {% block content %}
 {% set command = data.command_center %}
-<div class="page-header dashboard-role-header dashboard-command-header" data-ui-dashboard="admin" data-dashboard-command-center="admin">
-    <div class="dashboard-command-title-block">
-        <span class="eyebrow">Pusat Kendali</span>
-        <h1>{{ command.title }}</h1>
-        <p>{{ command.subtitle }}</p>
-    </div>
-
-    <div class="page-actions dashboard-page-actions">
-        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-primary">
-            <i class="bi bi-journal-text"></i>
-            Buka Order
-        </a>
-        <div class="dropdown app-action-dropdown dashboard-action-menu">
-            <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots"></i>
-                Aksi Lainnya
-            </button>
-            <div class="dropdown-menu dropdown-menu-end app-action-menu">
-                <a class="dropdown-item" href="{{ url_for('production.index') }}"><i class="bi bi-egg-fried"></i> Produksi</a>
-                <a class="dropdown-item" href="{{ url_for('delivery.index') }}"><i class="bi bi-truck"></i> Pengiriman</a>
-                {% if module_enabled('warung') %}
-                <a class="dropdown-item" href="{{ url_for('canteen.quick_sale') }}"><i class="bi bi-lightning-charge"></i> Warung Cepat</a>
-                {% endif %}
-                <a class="dropdown-item" href="{{ url_for('logistics.index') }}"><i class="bi bi-box-seam"></i> Stok</a>
-                <a class="dropdown-item" href="{{ url_for('settings.live_reminders') }}"><i class="bi bi-bell"></i> Pengingat</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% if scheduler_warning %}
-<div class="alert alert-danger d-flex justify-content-between align-items-center gap-3 mb-3" data-scheduler-warning="true">
-    <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-exclamation-octagon-fill fs-5"></i>
-        <span><strong>{{ scheduler_warning }}</strong></span>
-    </div>
-    <a href="{{ url_for('settings.scheduled_jobs') }}" class="btn btn-sm btn-danger text-nowrap">Buka Tugas Otomatis</a>
-</div>
-{% endif %}
-{% if auto_invoice_failures %}
-<div class="alert alert-danger d-flex justify-content-between align-items-center gap-3 mb-3" data-auto-invoice-failures="true">
-    <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-receipt-cutoff fs-5"></i>
-        <span><strong>{{ auto_invoice_failures }} invoice otomatis gagal terbit.</strong> Tagihan belum terkirim ke pelanggan sampai penyebabnya diperbaiki.</span>
-    </div>
-    <a href="{{ url_for('finance.auto_invoices') }}" class="btn btn-sm btn-danger text-nowrap">Buka Invoice Otomatis</a>
-</div>
-{% endif %}
-
-<section class="dashboard-section dashboard-command-decision" data-dashboard-section="admin-decision">
-    <div class="dashboard-command-hero dashboard-command-hero-{{ command.decision.status_class }}">
+<div class="dash-page" data-ui-dashboard="admin" data-dashboard-command-center="admin">
+    <header class="dash-head">
         <div>
-            <span class="eyebrow">Keputusan Operasional Cabang</span>
-            <h2>{{ command.decision.label }}</h2>
-            <p>{{ command.decision.summary }}</p>
+            <h1>Kendali Hari Ini</h1>
+            <p>{{ pulse.today_label }} · pesanan, pembayaran masuk, tagihan, dan pengiriman cabang</p>
         </div>
-        <div class="dashboard-command-backup-chip">
-            <span>Cadangan Data</span>
-            <strong>{{ command.backup.label }}</strong>
-            <small>Admin hanya melihat statusnya.</small>
-        </div>
-    </div>
-</section>
-
-<section class="dashboard-section" data-dashboard-section="admin-kpi">
-    <div class="dashboard-section-header dashboard-section-header-compact">
-        <div>
-            <h2>Kontrol Hari Ini</h2>
-            <p>Order, produksi, pengiriman, warung, stok, dan cadangan data dalam satu layar.</p>
-        </div>
-    </div>
-    <div class="dashboard-command-kpi-grid">
-        {% for kpi in command.kpis %}
-            <article class="dashboard-command-kpi dashboard-command-kpi-{{ kpi.tone }}">
-                <div class="dashboard-command-kpi-icon dashboard-command-kpi-icon-{{ kpi.tone }}"><i class="bi {{ kpi.icon }}"></i></div>
-                <div>
-                    <span>{{ kpi.label }}</span>
-                    <strong>{{ kpi.value }}</strong>
-                    <small>{{ kpi.caption }}</small>
+        <div class="dash-head-actions">
+            <div class="dropdown app-action-dropdown">
+                <button class="btn app-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots"></i> Aksi lainnya
+                </button>
+                <div class="dropdown-menu dropdown-menu-end app-action-menu">
+                    {% for item in command.detail_links %}
+                        <a class="dropdown-item" href="{{ url_for(item.endpoint) }}"><i class="bi {{ item.icon }}"></i> {{ item.title }}</a>
+                    {% endfor %}
                 </div>
-            </article>
-        {% endfor %}
-    </div>
-</section>
-
-{% if data.delivery_next_actions %}
-<section class="dashboard-section delivery-next-action-panel" data-delivery-next-action="admin-dashboard">
-    <div class="delivery-next-action-header">
-        <div>
-            <span class="eyebrow">Prioritas Admin</span>
-            <h2>{{ data.delivery_next_action_count }} pengiriman perlu dibuat</h2>
-            <p>Produksi sudah selesai, tetapi pengiriman (atau tambahannya) belum dibuat.</p>
+            </div>
+            <a href="{{ url_for('operational.orders') }}" class="btn app-btn-primary" data-prefetch>
+                <i class="bi bi-journal-text"></i> Buka Order
+            </a>
         </div>
-        <a href="{{ url_for('delivery.today') }}" class="btn btn-sm app-btn-secondary">
-            <i class="bi bi-truck"></i>
-            Pengiriman Hari Ini
-        </a>
-    </div>
+    </header>
 
-    <div class="delivery-next-action-grid">
-        {% for action in data.delivery_next_actions %}
-            <div class="delivery-next-action-card {% if not action.can_create_delivery %}is-blocked{% endif %}">
-                <div class="delivery-next-action-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                <div class="delivery-next-action-body">
-                    <strong>{{ action.title }}</strong>
-                    <p>{{ action.order_number }} · {{ action.order_date.strftime('%d-%m-%Y') }} · sisa {{ action.remaining_qty }} porsi.</p>
-                    <div class="delivery-next-action-meta">
-                        <span>Batch: {{ action.label }}</span>
-                        <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+    {{ ui.system_banners() }}
+
+    <section class="kpi-row" aria-label="Angka hari ini" data-prefetch>
+        {% for k in pulse.kpis %}{{ ui.kpi_card(k, loop.index) }}{% endfor %}
+    </section>
+
+    <div class="dash-grid">
+        <div class="dash-main">
+            {% if data.delivery_next_actions %}
+            <section class="panel" data-rise="2" data-delivery-next-action="admin-dashboard">
+                <div class="panel-head">
+                    <div>
+                        <h2>{{ data.delivery_next_action_count }} pengiriman perlu dibuat</h2>
+                        <p>Produksi sudah selesai, tetapi pengiriman (atau tambahannya) belum dibuat.</p>
+                    </div>
+                    <a class="panel-link" href="{{ url_for('delivery.today') }}">Pengiriman hari ini <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                <div class="panel-body">
+                    <div class="delivery-next-action-grid">
+                        {% for action in data.delivery_next_actions %}
+                            <div class="delivery-next-action-card {% if not action.can_create_delivery %}is-blocked{% endif %}">
+                                <div class="delivery-next-action-icon"><i class="bi bi-truck"></i></div>
+                                <div class="delivery-next-action-body">
+                                    <strong>{{ action.title }}</strong>
+                                    <p>{{ action.order_number }} · {{ action.order_date.strftime('%d-%m-%Y') }} · sisa {{ action.remaining_qty }} porsi.</p>
+                                    <div class="delivery-next-action-meta">
+                                        <span>Batch: {{ action.label }}</span>
+                                        <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
+                                    </div>
+                                </div>
+                                <div class="delivery-next-action-controls">
+                                    {% if action.can_create_delivery %}
+                                        <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=action.daily_order_id, delivery_type=action.delivery_type) }}" class="app-form" data-ui-form="true">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn app-btn-primary"><i class="bi bi-truck"></i> {{ action.action_label }}</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="status-badge status-danger">{{ action.blocking_reason }}</span>
+                                    {% endif %}
+                                    <a href="{{ url_for('operational.order_detail', order_id=action.daily_order_id) }}" class="btn app-btn-secondary">Detail Order</a>
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
-                <div class="delivery-next-action-controls">
-                    {% if action.can_create_delivery %}
-                        <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=action.daily_order_id, delivery_type=action.delivery_type) }}" class="app-form" data-ui-form="true">
-                            {% include "components/csrf_token.html" %}
-                            <button type="submit" class="btn app-btn-primary">
-                                <i class="bi bi-truck"></i>
-                                {{ action.action_label }}
-                            </button>
-                        </form>
-                    {% else %}
-                        <span class="status-badge status-danger">{{ action.blocking_reason }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('operational.order_detail', order_id=action.daily_order_id) }}" class="btn app-btn-secondary">Detail Order</a>
-                </div>
+            </section>
+            {% endif %}
+
+            <div class="dash-row">
+                {{ ui.suggestions_panel(pulse.suggestions, 3) }}
+                {{ ui.aging_panel(pulse.aging, 3) }}
             </div>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
 
-<section class="dashboard-section" data-dashboard-section="admin-reminder">
-    <div class="dashboard-section-header dashboard-section-header-compact">
-        <div>
-            <h2>Pengingat Operasional</h2>
-            <p>Hanya hal yang perlu dipantau admin cabang.</p>
+            <section class="panel" data-rise="4" aria-label="Kontrol hari ini">
+                <div class="panel-head">
+                    <div>
+                        <h2>Kontrol operasional</h2>
+                        <p>{{ command.decision.summary }}</p>
+                    </div>
+                </div>
+                <div class="panel-body flush">
+                    <table class="mini-table">
+                        <tbody>
+                            {% for kpi in command.kpis %}
+                                <tr>
+                                    <td style="width: 44px;"><span class="kpi-icon tone-{{ {'success': 'green', 'warning': 'amber', 'danger': 'red', 'info': 'blue'}.get(kpi.tone, 'blue') }}"><i class="bi {{ kpi.icon }}"></i></span></td>
+                                    <td><strong>{{ kpi.label }}</strong><div class="muted">{{ kpi.caption }}</div></td>
+                                    <td class="num"><strong>{{ kpi.value }}</strong></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
-        <a href="{{ url_for('settings.live_reminders') }}" class="btn btn-sm app-btn-secondary"><i class="bi bi-bell"></i> Pengingat</a>
-    </div>
 
-    {% if command.reminders %}
-        <div class="dashboard-command-reminder-grid">
-            {% for reminder in command.reminders %}
-                <a href="{{ url_for(reminder.endpoint) }}" class="dashboard-command-reminder dashboard-command-reminder-{{ reminder.status_class }}">
-                    <i class="bi {{ reminder.icon }}"></i>
-                    <span>
-                        <strong>{{ reminder.title }}</strong>
-                        <small>{{ reminder.detail }}</small>
-                    </span>
-                    <i class="bi bi-chevron-right dashboard-support-chevron"></i>
-                </a>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="dashboard-command-all-clear">
-            <i class="bi bi-check2-circle"></i>
-            <strong>Operasional cabang terkendali.</strong>
-            <span>Tidak ada pengiriman tertunda, stok kritis, atau pengingat prioritas cabang.</span>
-        </div>
-    {% endif %}
-</section>
-
-<section class="dashboard-section" data-dashboard-section="admin-detail-links">
-    <div class="dashboard-section-header dashboard-section-header-compact">
-        <div>
-            <h2>Akses Detail</h2>
-            <p>Shortcut tetap ada, tapi hanya yang benar-benar dipakai harian.</p>
-        </div>
+        <aside class="dash-rail" aria-label="Peringatan dan aktivitas">
+            {{ ui.alerts_panel(pulse.alerts) }}
+            {{ ui.activity_panel(pulse.activity) }}
+        </aside>
     </div>
-    <div class="dashboard-command-link-grid">
-        {% for item in command.detail_links %}
-            <a href="{{ url_for(item.endpoint) }}" class="dashboard-command-link-card">
-                <i class="bi {{ item.icon }}"></i>
-                <span>
-                    <strong>{{ item.title }}</strong>
-                    <small>{{ item.detail }}</small>
-                </span>
-            </a>
-        {% endfor %}
-    </div>
-</section>
+</div>
 {% endblock %}

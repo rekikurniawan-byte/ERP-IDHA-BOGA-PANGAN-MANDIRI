@@ -93,13 +93,29 @@ def test_main_js_is_behavior_only():
     assert len(js.splitlines()) < 900
 
 
-def test_primary_orange_passes_contrast_with_white_text():
+def _contrast_with_white(hex_code):
+    rgb = [int(hex_code[i:i + 2], 16) / 255.0 for i in (1, 3, 5)]
+    lum = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+    luminance = 0.2126 * lum[0] + 0.7152 * lum[1] + 0.0722 * lum[2]
+    return 1.05 / (luminance + 0.05)
+
+
+def test_primary_colors_pass_contrast_with_white_text():
+    """Tombol utama bertulisan putih: oranye (portal/publik) dan biru (desktop internal) >= 4.5:1."""
     tokens = _read("app/static/css/app/tokens.css")
     components = _read("app/static/css/app/components.css")
-
-    assert "--brand-700: #c2410c;" in tokens
     primary_block = components.split(".app-btn-primary {", 1)[1].split("}", 1)[0]
     assert "--bs-btn-bg: var(--brand-700);" in primary_block
+
+    root_block, internal_block = tokens.split("body.shell-internal {", 1)
+    orange = re.search(r"--brand-700: (#[0-9a-f]{6});", root_block).group(1)
+    assert orange == "#c2410c"
+    assert _contrast_with_white(orange) >= 4.5
+
+    # Desktop internal: tombol utama (700) dan menu aktif sidebar (600) bertulisan putih.
+    for shade in ("600", "700"):
+        blue = re.search(rf"--brand-{shade}: (#[0-9a-f]{{6}});", internal_block).group(1)
+        assert _contrast_with_white(blue) >= 4.5, f"brand-{shade} {blue}"
 
 
 def test_status_codes_show_indonesian_labels():

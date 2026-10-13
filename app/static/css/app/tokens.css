@@ -15,6 +15,28 @@
     --brand-800: #9a3412;
     --brand-900: #7c2d12;
 
+    /* Merek Internal: Biru modern (Tahap 1 internal, referensi MediCore).
+       Dipakai untuk desktop role internal (OWNER, ADMIN, DAPUR).
+       --blue-700 (#1d4ed8) memiliki rasio kontras 5.79:1 dengan putih (>= 4.5:1). */
+    --blue-50: #eff6ff;
+    --blue-100: #dbeafe;
+    --blue-200: #bfdbfe;
+    --blue-300: #93c5fd;
+    --blue-400: #60a5fa;
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --blue-700: #1d4ed8;
+    --blue-800: #1e40af;
+    --blue-900: #1e3a8a;
+
+    --surface-internal-page: #f8fafc;
+    --border-internal: #e2e8f0;
+    --sidebar-internal-bg: #ffffff;
+    --sidebar-internal-border: #f1f5f9;
+    --sidebar-internal-text: #475569;
+    --sidebar-internal-muted: #94a3b8;
+    --sidebar-internal-hover: #f1f5f9;
+
     /* Abu-abu netral untuk permukaan, garis, dan teks. */
     /* Netral hangat ("stone"), senada kertas & tinta halaman publik. */
     --gray-25: #fdfcfb;
@@ -163,4 +185,97 @@
     --bs-info-bg-subtle: var(--info-bg);
     --bs-info-border-subtle: var(--info-border);
     --bs-info-text-emphasis: var(--info-text);
+}
+
+/* --------------------------------------------------------------------------
+   Desktop internal (OWNER/ADMIN/DAPUR) -- biru, netral sejuk, sudut seragam.
+   Keputusan owner 2026-10-13. Dipasang di body.shell-internal, jadi portal,
+   halaman publik, dan aplikasi HP tetap memakai :root di atas.
+   Token turunan ikut ditulis ulang di sini: var() yang dihitung di :root
+   tidak ikut berubah walau warna dasarnya diganti.
+   -------------------------------------------------------------------------- */
+body.shell-internal {
+    --brand-50: #eff4ff;
+    --brand-100: #dbe6fe;
+    --brand-200: #bfd3fe;
+    --brand-300: #93b4fd;
+    --brand-400: #6090fa;
+    --brand-500: #3b6ff6;
+    --brand-600: #2557eb;
+    --brand-700: #1d45d8;
+    --brand-800: #1e3aaf;
+    --brand-900: #1e338a;
+
+    --gray-25: #fcfcfd;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+
+    --surface-page: #f4f6fa;
+    --surface: #ffffff;
+    --surface-muted: #f8fafc;
+    --surface-sunken: #f1f4f9;
+    --border: #e3e8ef;
+    --border-strong: #cdd5e0;
+    --text: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+
+    --chart-green: #12b76a;
+    --chart-amber: #f59e0b;
+    --chart-blue: #3b6ff6;
+    --chart-violet: #7c5cfc;
+    --chart-red: #f04438;
+    --violet-text: #5b3fd6;
+    --violet-bg: #f3f0ff;
+
+    /* Satu sudut untuk semua kotak: tegas, tidak bulat berlebihan. */
+    --radius-sm: 6px;
+    --radius: 6px;
+    --radius-lg: 6px;
+    --radius-pill: 6px;
+    --radius-round: 50%;
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 16px 32px -12px rgba(15, 23, 42, 0.22), 0 4px 10px -4px rgba(15, 23, 42, 0.08);
+    --focus-ring: 0 0 0 3px rgba(37, 87, 235, 0.18);
+    --shadow-brand: 0 1px 2px rgba(29, 69, 216, 0.25), 0 4px 10px -4px rgba(29, 69, 216, 0.45);
+    --surface-glass: rgba(255, 255, 255, 0.92);
+
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --dur-fast: 120ms;
+    --dur: 180ms;
+
+    --bs-body-color: #0f172a;
+    --bs-body-bg: #f4f6fa;
+    --bs-secondary-color: #334155;
+    --bs-tertiary-color: #64748b;
+    --bs-border-color: #e3e8ef;
+    --bs-border-radius: 6px;
+    --bs-border-radius-sm: 6px;
+    --bs-border-radius-lg: 6px;
+    --bs-border-radius-pill: 6px;
+    --bs-primary: #1d45d8;
+    --bs-primary-rgb: 29, 69, 216;
+    --bs-link-color: #1d45d8;
+    --bs-link-color-rgb: 29, 69, 216;
+    --bs-link-hover-color: #1e3aaf;
+    --bs-link-hover-color-rgb: 30, 58, 175;
+    --bs-heading-color: #0f172a;
+    --bs-emphasis-color: #0f172a;
+    --bs-focus-ring-color: rgba(37, 87, 235, 0.18);
+    --bs-primary-bg-subtle: #eff4ff;
+    --bs-primary-border-subtle: #bfd3fe;
+    --bs-primary-text-emphasis: #1e3aaf;
+    --bs-secondary-bg-subtle: #f1f5f9;
+    --bs-tertiary-bg: #f8fafc;
 }

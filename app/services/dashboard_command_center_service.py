@@ -159,7 +159,7 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
     reminders: List[Dict[str, Any]] = []
     if _int(finance.get("overdue_count")):
         reminders.append(_reminder(
-            "Piutang overdue",
+            "Piutang lewat jatuh tempo",
             f"{_int(finance.get('overdue_count'))} invoice lewat jatuh tempo.",
             "danger",
             "finance.receivables",
@@ -167,16 +167,16 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         ))
     if _int(ap.get("overdue_count")):
         reminders.append(_reminder(
-            "Hutang supplier overdue",
-            f"{_int(ap.get('overdue_count'))} bill supplier lewat jatuh tempo.",
+            "Hutang supplier lewat jatuh tempo",
+            f"{_int(ap.get('overdue_count'))} tagihan supplier lewat jatuh tempo.",
             "warning",
             "finance.supplier_bills",
             "bi-receipt-cutoff",
         ))
     if delivery_risk:
         reminders.append(_reminder(
-            "Delivery belum selesai",
-            f"{delivery_risk} delivery hari ini belum delivered.",
+            "Pengiriman belum selesai",
+            f"{delivery_risk} pengiriman hari ini belum diterima.",
             "warning",
             "delivery.today",
             "bi-truck",
@@ -191,7 +191,7 @@ def build_owner_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
         ))
     if _int(accounting.get("unbalanced_journal_count")):
         reminders.append(_reminder(
-            "Jurnal tidak balance",
+            "Jurnal tidak seimbang",
             f"{_int(accounting.get('unbalanced_journal_count'))} jurnal harus dicek.",
             "danger",
             "accounting.journals",
@@ -247,16 +247,16 @@ def build_admin_command_center(data: Dict[str, Any]) -> Dict[str, Any]:
     reminders: List[Dict[str, Any]] = []
     if delivery_action_count:
         reminders.append(_reminder(
-            "Delivery perlu dibuat",
-            f"{delivery_action_count} produksi sudah completed tetapi delivery belum lengkap.",
+            "Pengiriman perlu dibuat",
+            f"{delivery_action_count} produksi sudah selesai tetapi pengiriman belum lengkap.",
             "danger",
             "delivery.today",
             "bi-truck",
         ))
     if active_delivery:
         reminders.append(_reminder(
-            "Delivery berjalan",
-            f"{active_delivery} delivery masih preparing/on the way.",
+            "Pengiriman berjalan",
+            f"{active_delivery} pengiriman sedang disiapkan atau di jalan.",
             "warning",
             "delivery.index",
             "bi-truck-front",

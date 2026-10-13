@@ -673,3 +673,227 @@ document.addEventListener("DOMContentLoaded", function () {
         updatePreview(form);
     });
 });
+
+// Pencarian Global Internal (Ctrl+K)
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("globalSearchModal");
+    const trigger = document.getElementById("globalSearchTrigger");
+    const input = document.getElementById("globalSearchInput");
+    const resultsContainer = document.getElementById("globalSearchResults");
+    const closeBtn = document.getElementById("globalSearchClose");
+    if (!modal || !input || !resultsContainer) return;
+
+    let debounceTimer = null;
+    let activeIndex = -1;
+
+    function openSearch() {
+        if (!modal.open) {
+            modal.showModal();
+        }
+        input.value = "";
+        input.focus();
+        resetResults();
+    }
+
+    function closeSearch() {
+        if (modal.open) {
+            modal.close();
+        }
+    }
+
+    function resetResults() {
+        resultsContainer.innerHTML = "";
+        const hint = document.createElement("div");
+        hint.className = "global-search-hint";
+        const icon = document.createElement("i");
+        icon.className = "bi bi-keyboard";
+        const text = document.createElement("p");
+        text.textContent = "Ketik minimal 2 huruf untuk mencari pelanggan, mandor, invoice, pesanan, atau karyawan.";
+        const shortcuts = document.createElement("div");
+        shortcuts.className = "global-search-shortcuts";
+        const span1 = document.createElement("span");
+        span1.innerHTML = "<kbd>↑</kbd> <kbd>↓</kbd> Pilih";
+        const span2 = document.createElement("span");
+        span2.innerHTML = "<kbd>Enter</kbd> Buka";
+        const span3 = document.createElement("span");
+        span3.innerHTML = "<kbd>Esc</kbd> Tutup";
+        shortcuts.appendChild(span1);
+        shortcuts.appendChild(span2);
+        shortcuts.appendChild(span3);
+        hint.appendChild(icon);
+        hint.appendChild(text);
+        hint.appendChild(shortcuts);
+        resultsContainer.appendChild(hint);
+        activeIndex = -1;
+    }
+
+    if (trigger) {
+        trigger.addEventListener("click", openSearch);
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener("click", closeSearch);
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+            e.preventDefault();
+            if (modal.open) {
+                closeSearch();
+            } else {
+                openSearch();
+            }
+        }
+    });
+
+    input.addEventListener("input", function () {
+        const q = input.value.trim();
+        clearTimeout(debounceTimer);
+        if (q.length < 2) {
+            resetResults();
+            return;
+        }
+
+        debounceTimer = setTimeout(function () {
+            fetch("/search?q=" + encodeURIComponent(q))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    renderResults(data);
+                })
+                .catch(function () {
+                    resultsContainer.innerHTML = "";
+                    const err = document.createElement("div");
+                    err.className = "global-search-empty";
+                    err.textContent = "Gagal memuat hasil pencarian.";
+                    resultsContainer.appendChild(err);
+                });
+        }, 180);
+    });
+
+    function renderResults(data) {
+        resultsContainer.innerHTML = "";
+        activeIndex = -1;
+        if (!data || !data.results || data.results.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "global-search-empty";
+            const icon = document.createElement("i");
+            icon.className = "bi bi-search";
+            const p = document.createElement("p");
+            p.textContent = "Tidak ditemukan hasil untuk \"" + (data ? data.q : "") + "\"";
+            empty.appendChild(icon);
+            empty.appendChild(p);
+            resultsContainer.appendChild(empty);
+            return;
+        }
+
+        data.results.forEach(function (category) {
+            const catHeader = document.createElement("div");
+            catHeader.className = "global-search-category";
+            const catIcon = document.createElement("i");
+            catIcon.className = "bi " + (category.icon || "bi-folder");
+            const catName = document.createElement("span");
+            catName.textContent = category.category;
+            catHeader.appendChild(catIcon);
+            catHeader.appendChild(catName);
+            resultsContainer.appendChild(catHeader);
+
+            category.items.forEach(function (item) {
+                const link = document.createElement("a");
+                link.href = item.url;
+                link.className = "global-search-item";
+
+                const infoWrap = document.createElement("div");
+                infoWrap.className = "item-info";
+                const title = document.createElement("div");
+                title.className = "item-title";
+                title.textContent = item.title;
+                const sub = document.createElement("div");
+                sub.className = "item-subtitle";
+                sub.textContent = item.subtitle;
+                infoWrap.appendChild(title);
+                infoWrap.appendChild(sub);
+
+                link.appendChild(infoWrap);
+
+                if (item.badge) {
+                    const badge = document.createElement("span");
+                    badge.className = "item-badge";
+                    badge.textContent = item.badge;
+                    link.appendChild(badge);
+                }
+
+                resultsContainer.appendChild(link);
+            });
+        });
+    }
+
+    input.addEventListener("keydown", function (e) {
+        const items = resultsContainer.querySelectorAll(".global-search-item");
+        if (items.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIndex++;
+            if (activeIndex >= items.length) activeIndex = 0;
+            updateItemFocus(items);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIndex--;
+            if (activeIndex < 0) activeIndex = items.length - 1;
+            updateItemFocus(items);
+        } else if (e.key === "Enter") {
+            if (activeIndex >= 0 && items[activeIndex]) {
+                e.preventDefault();
+                items[activeIndex].click();
+            }
+        }
+    });
+
+    function updateItemFocus(items) {
+        items.forEach(function (el, idx) {
+            if (idx === activeIndex) {
+                el.classList.add("is-selected");
+                el.scrollIntoView({ block: "nearest" });
+            } else {
+                el.classList.remove("is-selected");
+            }
+        });
+    }
+});
+
+
+// --- Desktop internal: garis progres saat pindah halaman & angka KPI yang menghitung naik ---
+(function () {
+    const bar = document.getElementById("navProgress");
+    if (bar) {
+        const start = function () { bar.classList.remove("is-active"); void bar.offsetWidth; bar.classList.add("is-active"); };
+        document.addEventListener("click", function (event) {
+            const link = event.target.closest("a[href]");
+            if (!link || event.defaultPrevented || event.button !== 0) return;
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (link.target && link.target !== "_self") return;
+            if (link.hasAttribute("download") || link.dataset.bsToggle) return;
+            const url = new URL(link.href, window.location.href);
+            if (url.origin !== window.location.origin) return;
+            if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;
+            start();
+        });
+        document.addEventListener("submit", function (event) {
+            if (!event.defaultPrevented && !event.target.target) start();
+        });
+        window.addEventListener("pageshow", function () { bar.classList.remove("is-active"); });
+    }
+
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const plain = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
+    document.querySelectorAll("[data-count-to]").forEach(function (element) {
+        const target = Number(element.dataset.countTo) || 0;
+        const prefix = element.dataset.countFormat === "rupiah" ? "Rp " : "";
+        const started = performance.now();
+        const step = function (now) {
+            const t = reduce || !target ? 1 : Math.min((now - started) / 700, 1);
+            element.textContent = prefix + plain.format(Math.round(target * (1 - Math.pow(1 - t, 3))));
+            if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+})();

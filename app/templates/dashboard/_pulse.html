@@ -1,0 +1,177 @@
+{# Komponen dasbor desktop internal (keputusan owner 2026-10-13). Dipakai Dashboard Owner/Admin dan 360° Pelanggan.
+   Semua angka datang dari dashboard_pulse_service / client_360_service (data asli, tanpa karangan). #}
+
+{% macro money(value) -%}
+Rp {{ "{:,.0f}".format(value or 0).replace(",", ".") }}
+{%- endmacro %}
+
+{% macro number(value) -%}
+{{ "{:,.0f}".format(value or 0).replace(",", ".") }}
+{%- endmacro %}
+
+{% macro kpi_card(k, rise=1) %}
+<a href="{{ url_for(k.endpoint, **k.args) }}" class="kpi" data-rise="{{ rise }}" data-kpi="{{ k.key }}">
+    <div class="kpi-top">
+        <span class="kpi-icon tone-{{ k.tone }}"><i class="bi {{ k.icon }}" aria-hidden="true"></i></span>
+        <span class="kpi-label">{{ k.label }}</span>
+        <i class="bi bi-arrow-up-right kpi-go" aria-hidden="true"></i>
+    </div>
+    <div class="kpi-value" data-count-to="{{ k.value|round|int }}" data-count-format="{{ k.format }}">{% if k.format == 'rupiah' %}{{ money(k.value) }}{% else %}{{ number(k.value) }}{% endif %}</div>
+    <div class="kpi-meta">
+        {% if k.delta is not none %}
+            <span class="delta {{ 'is-up' if k.delta > 0 else 'is-down' if k.delta < 0 else 'is-flat' }}">
+                <i class="bi {{ 'bi-arrow-up-short' if k.delta > 0 else 'bi-arrow-down-short' if k.delta < 0 else 'bi-dash' }}" aria-hidden="true"></i>{{ '%.1f'|format(k.delta|abs) }}%
+            </span>
+            <span>{{ k.compare }}</span>
+        {% elif k.compare %}
+            <span class="delta is-flat">baru</span><span>belum ada pembanding</span>
+        {% else %}
+            <span>{{ k.caption }}</span>
+        {% endif %}
+    </div>
+    {% if k.spark %}
+        <div class="app-chart kpi-spark" data-apex-chart style="--chart-height: 44px;" role="img" aria-label="{{ k.label }} 30 hari terakhir">
+            <script type="application/json">{{ k.spark|tojson }}</script>
+        </div>
+    {% elif k.bar %}
+        <div>
+            <div class="stack-bar" role="img" aria-label="Komposisi {{ k.label }}">
+                {% for seg in k.bar %}{% if seg.percent > 0 %}<span class="is-{{ seg.tone }}" style="flex-grow: {{ seg.percent }}" title="{{ seg.label }}: {{ money(seg.amount) if k.format == 'rupiah' else number(seg.amount) }}"></span>{% endif %}{% endfor %}
+            </div>
+            <div class="stack-legend">
+                {% for seg in k.bar %}{% if seg.amount %}<span><i class="is-{{ seg.tone }}"></i>{{ seg.label }}<b>{{ money(seg.amount) if k.format == 'rupiah' else number(seg.amount) }}</b></span>{% endif %}{% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</a>
+{% endmacro %}
+
+{% macro alerts_panel(alerts, title="Perlu tindakan", rise=2) %}
+<section class="panel" data-rise="{{ rise }}" aria-label="{{ title }}">
+    <div class="panel-head">
+        <h2>{{ title }}</h2>
+        {% if alerts %}<span class="panel-count">{{ alerts|length }}</span>{% endif %}
+    </div>
+    {% if alerts %}
+        <div class="alert-list">
+            {% for a in alerts %}
+                <a href="{{ url_for(a.endpoint, **(a.args or {})) }}" class="alert-row is-{{ a.tone }}">
+                    <span class="kpi-icon"><i class="bi {{ a.icon }}" aria-hidden="true"></i></span>
+                    <span><strong>{{ a.title }}</strong><small>{{ a.detail }}</small></span>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="all-clear"><i class="bi bi-check2-circle" aria-hidden="true"></i><span>Tidak ada yang perlu ditindak sekarang.</span></div>
+    {% endif %}
+</section>
+{% endmacro %}
+
+{% macro activity_panel(rows, title="Aktivitas terbaru", rise=3, show_all=true) %}
+<section class="panel" data-rise="{{ rise }}" aria-label="{{ title }}">
+    <div class="panel-head">
+        <h2>{{ title }}</h2>
+        {% if show_all and current_user.role == 'OWNER' %}<a class="panel-link" href="{{ url_for('settings.audit_logs') }}">Semua <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
+    </div>
+    {% if rows %}
+        <ul class="feed">
+            {% for r in rows %}
+                <li>
+                    <span class="feed-icon"><i class="bi {{ r.icon or 'bi-activity' }}" aria-hidden="true"></i></span>
+                    <div>
+                        <div class="feed-text">{{ r.text }}</div>
+                        <div class="feed-meta"><span>{{ r.user }}</span><span>·</span><span>{{ r.when }}</span></div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="all-clear"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Belum ada aktivitas tercatat.</span></div>
+    {% endif %}
+</section>
+{% endmacro %}
+
+{% macro suggestions_panel(rows, rise=2) %}
+<section class="panel" data-rise="{{ rise }}" aria-label="Saran sistem">
+    <div class="panel-head">
+        <div>
+            <h2>Saran sistem</h2>
+            <p>Dihitung dari data hari ini; muncul hanya bila memang terjadi.</p>
+        </div>
+    </div>
+    <div class="panel-body flush">
+        {% if rows %}
+            <div class="insight-list">
+                {% for s in rows %}
+                    <div class="insight">
+                        <span class="kpi-icon tone-{{ 'red' if s.tone == 'bad' else 'amber' }}"><i class="bi {{ s.icon }}" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="insight-tag">{{ s.tag }}</span>
+                            <strong>{{ s.title }}</strong>
+                            <p>{{ s.detail }}</p>
+                            <a class="panel-link mt-1" href="{{ url_for(s.endpoint) }}">{{ s.action }} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="all-clear"><i class="bi bi-check2-circle" aria-hidden="true"></i><span>Tidak ada sinyal tunggakan, lonjakan porsi, atau seret kas saat ini.</span></div>
+        {% endif %}
+    </div>
+</section>
+{% endmacro %}
+
+{% macro aging_panel(aging, rise=3) %}
+<section class="panel" data-rise="{{ rise }}" aria-label="Umur piutang">
+    <div class="panel-head">
+        <div>
+            <h2>Umur piutang</h2>
+            <p>Sisa tagihan aktif menurut lama lewat jatuh tempo.</p>
+        </div>
+        <a class="panel-link" href="{{ url_for('finance.receivables') }}">Rincian <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    <div class="panel-body">
+        <div class="kpi-value mb-3">{{ money(aging.total) }}</div>
+        <div class="stack-bar" style="height: 10px;">
+            {% for b in aging.buckets %}{% if b.percent > 0 %}<span class="is-{{ b.tone }}" style="flex-grow: {{ b.percent }}" title="{{ b.label }}"></span>{% endif %}{% endfor %}
+        </div>
+        <div class="stack-legend">
+            {% for b in aging.buckets %}
+                <span><i class="is-{{ b.tone }}"></i>{{ b.label }}<b>{{ money(b.amount) }}</b></span>
+            {% endfor %}
+        </div>
+        {% if aging.late14 is defined and aging.late14 %}
+            <table class="mini-table mt-3">
+                <thead><tr><th>Menunggak &gt; 14 hari</th><th class="num">Sisa</th><th class="num">Hari</th></tr></thead>
+                <tbody>
+                    {% for row in aging.late14[:4] %}
+                        <tr><td>{{ row.name }}</td><td class="num">{{ money(row.amount) }}</td><td class="num">{{ row.days }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</section>
+{% endmacro %}
+
+{% macro system_banners() %}
+    {% if scheduler_warning %}
+    <div class="alert alert-danger d-flex justify-content-between align-items-center gap-3 mb-4" data-scheduler-warning="true">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+            <span><strong>{{ scheduler_warning }}</strong></span>
+        </div>
+        <a href="{{ url_for('settings.scheduled_jobs') }}" class="btn btn-sm btn-danger text-nowrap">Buka Tugas Otomatis</a>
+    </div>
+    {% endif %}
+    {% if auto_invoice_failures %}
+    <div class="alert alert-danger d-flex justify-content-between align-items-center gap-3 mb-4" data-auto-invoice-failures="true">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-receipt-cutoff fs-5"></i>
+            <span><strong>{{ auto_invoice_failures }} invoice otomatis gagal terbit.</strong> Tagihan belum terkirim ke pelanggan sampai penyebabnya diperbaiki.</span>
+        </div>
+        <a href="{{ url_for('finance.auto_invoices') }}" class="btn btn-sm btn-danger text-nowrap">Buka Invoice Otomatis</a>
+    </div>
+    {% endif %}
+{% endmacro %}

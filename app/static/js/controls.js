@@ -271,7 +271,9 @@
     }
 
     function token(name) {
-        return getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim() || name;
+        // Dibaca dari body: desktop internal mengganti token di body.shell-internal.
+        const value = getComputedStyle(document.body).getPropertyValue("--" + name).trim();
+        return value || getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim() || name;
     }
 
     function chartOptions(spec, element) {
@@ -335,6 +337,23 @@
             });
         }
 
+        if (spec.kind === "spark" && spec.area) {
+            const unit = spec.unit ? " " + spec.unit : "";
+            return Object.assign(base, {
+                chart: Object.assign(base.chart, { type: "area", sparkline: { enabled: true }, animations: { enabled: true, speed: 650 } }),
+                series: spec.series.map(function (series) { return { name: series.name, data: series.data }; }),
+                labels: spec.categories,
+                stroke: { width: 2, curve: "monotoneCubic" },
+                fill: { type: "gradient", gradient: { shadeIntensity: 0, opacityFrom: 0.28, opacityTo: 0, stops: [0, 100] } },
+                markers: { size: 0, hover: { size: 4 } },
+                tooltip: {
+                    theme: "light",
+                    x: { show: true, formatter: function (value, context) { return spec.categories[context.dataPointIndex] || value; } },
+                    y: { title: { formatter: function () { return ""; } }, formatter: function (value) { return format(value) + unit; } },
+                },
+            });
+        }
+
         if (spec.kind === "spark") {
             const unit = spec.unit ? " " + spec.unit : "";
             return Object.assign(base, {
@@ -367,16 +386,17 @@
                 labels: { rotate: 0, hideOverlappingLabels: true, style: { fontSize: "12px" } },
             },
             yaxis: { labels: { formatter: axisFormat, style: { fontSize: "12px" } }, forceNiceScale: true },
-            grid: { borderColor: token("border"), strokeDashArray: 4, padding: { left: 4, right: 8 } },
-            plotOptions: { bar: { columnWidth: spec.column_width || "58%", borderRadius: 4, borderRadiusApplication: "end" } },
+            grid: { borderColor: token("border"), strokeDashArray: 3, padding: { left: 4, right: 8 }, xaxis: { lines: { show: false } } },
+            plotOptions: { bar: { columnWidth: spec.column_width || "52%", borderRadius: 3, borderRadiusApplication: "end" } },
+            states: { hover: { filter: { type: "darken", value: 0.9 } }, active: { filter: { type: "none" } } },
             stroke: {
                 width: spec.series.map(function (series) { return (series.type || "") === "line" || spec.kind === "area" ? 2.5 : 0; }),
                 curve: "monotoneCubic", // tidak melampaui titik data seperti "smooth"
             },
             fill: spec.kind === "area"
-                ? { type: spec.series.map(function (series) { return series.type === "line" ? "solid" : "gradient"; }), gradient: { shadeIntensity: 0.4, opacityFrom: 0.32, opacityTo: 0.02, stops: [0, 95] } }
+                ? { type: spec.series.map(function (series) { return series.type === "line" ? "solid" : "gradient"; }), gradient: { shadeIntensity: 0, opacityFrom: 0.26, opacityTo: 0, stops: [0, 100] } }
                 : { opacity: 1 },
-            markers: { size: hasLine ? spec.series.map(function (series) { return series.type === "line" ? 3.5 : 0; }) : 0, strokeWidth: 2, strokeColors: token("surface"), hover: { sizeOffset: 2 } },
+            markers: { size: hasLine ? spec.series.map(function (series) { return series.type === "line" ? 3.5 : 0; }) : 0, strokeWidth: 2, strokeColors: token("surface"), hover: { size: 5 } },
         });
     }
 

@@ -47,7 +47,11 @@
                 {% for client in clients %}
                 <tr>
                     <td><strong>{{ client.client_code if client.client_code is defined else '-' }}</strong></td>
-                    <td>{{ client.name }}</td>
+                    <td>
+                        <a href="{{ url_for('master.client_360', client_id=client.id) }}" class="client-name-link fw-semibold">
+                            {{ client.name }}
+                        </a>
+                    </td>
                     <td>{{ client.phone if client.phone is defined and client.phone else '-' }}</td>
                     <td>{{ client.address if client.address is defined and client.address else '-' }}</td>
                     <td>

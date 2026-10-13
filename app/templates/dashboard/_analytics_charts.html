@@ -3,7 +3,7 @@
 {% set revenue_chart = analytics.revenue_spending %}
 {% set efficiency_chart = analytics.operational_efficiency %}
 {% set max_value = revenue_chart.max_value|default(0, true) %}
-{% include "dashboard/_revenue_explorer_panel.html" %}
+{% if not skip_revenue_explorer %}{% include "dashboard/_revenue_explorer_panel.html" %}{% endif %}
 
 <section class="dashboard-section dashboard-analytics-section" data-dashboard-section="analytics" data-dashboard-bar-analytics="true" data-revenue-spending-analytics="true" data-operational-efficiency-analytics="true" data-dashboard-role-access="owner-admin-only" data-mobile-theme="true" data-dashboard-placement="{{ analytics.placement.key|default('owner_admin_dashboard') }}" aria-labelledby="dashboardAnalyticsTitle">
     <div class="dashboard-section-header dashboard-analytics-header">

@@ -95,16 +95,22 @@ def owner():
     from app.services.opening_balance_service import branches_without_opening
     from app.services.path_report_service import build_path_summary
 
+    from app.services.dashboard_pulse_service import build_owner_pulse
+
     data = get_owner_dashboard_data(**_analytics_request_filters())
     return render_template("dashboard/owner.html", data=data, path_summary=build_path_summary(current_user.branch_id),
-                           branches_without_opening=branches_without_opening())
+                           branches_without_opening=branches_without_opening(),
+                           pulse=build_owner_pulse(current_user.branch_id, data["command_center"]))
 
 
 @dashboard_bp.route("/dashboard/admin")
 @role_required("ADMIN")
 def admin():
+    from app.services.dashboard_pulse_service import build_admin_pulse
+
     data = get_admin_dashboard_data(current_user.branch_id, **_analytics_request_filters())
-    return render_template("dashboard/admin.html", data=data)
+    return render_template("dashboard/admin.html", data=data,
+                           pulse=build_admin_pulse(current_user.branch_id, data["command_center"]))
 
 
 @dashboard_bp.route("/dashboard/revenue-explorer")
@@ -197,6 +203,160 @@ def ops():
 
     data = get_ops_dashboard_data(current_user.branch_id)
     return render_template("ops/dashboard.html", data=data, staffing=staffing_forecast(current_user.branch_id))
+
+
+@dashboard_bp.route("/search")
+@role_required("OWNER", "ADMIN", "DAPUR", "FINANCE", "ACCOUNTING", "LOGISTICS", "HR")
+def search():
+    """Pencarian global internal (Ctrl+K).
+
+    Hanya baca, branch-scoped, maksimal 5 hasil per kategori:
+    1. Pelanggan (Client) -> tautan ke 360° Pelanggan
+    2. Sub client (Mandor) -> tautan ke master mandor
+    3. Invoice -> tautan ke rincian invoice
+    4. Pesanan -> tautan ke rincian pesanan harian
+    5. Karyawan -> tautan ke daftar karyawan HR
+    """
+    from flask import jsonify
+    from sqlalchemy import or_
+    from app.models.master import Client, Mandor, Employee
+    from app.models.finance import Invoice
+    from app.models.operational import DailyOrder
+    from app.utils.labels import status_label
+
+    q = (request.args.get("q") or "").strip()
+    if not q or len(q) < 2:
+        return jsonify({"q": q, "results": [], "total": 0})
+
+    branch_id = current_user.branch_id
+
+    results = []
+
+    # 1. Pelanggan / Client
+    client_q = Client.query.filter(
+        or_(
+            Client.name.ilike(f"%{q}%"),
+            Client.client_code.ilike(f"%{q}%"),
+            Client.phone.ilike(f"%{q}%"),
+        )
+    )
+    if branch_id:
+        client_q = client_q.filter(Client.mandors.any(Mandor.branch_id == branch_id))
+    clients = client_q.limit(5).all()
+    if clients:
+        results.append({
+            "category": "Pelanggan",
+            "icon": "bi-building",
+            "items": [
+                {
+                    "title": c.name,
+                    "subtitle": f"Kode: {c.client_code or '-'} · Jalur: {c.customer_path or 'KONTRAK'}",
+                    "url": url_for("master.client_360", client_id=c.id),
+                    "badge": "Aktif" if getattr(c, "is_active", True) else "Nonaktif",
+                }
+                for c in clients
+            ],
+        })
+
+    # 2. Sub client / Mandor
+    mandor_q = Mandor.query.filter(
+        or_(
+            Mandor.name.ilike(f"%{q}%"),
+            Mandor.phone.ilike(f"%{q}%"),
+            Mandor.id_number.ilike(f"%{q}%"),
+        )
+    )
+    if branch_id:
+        mandor_q = mandor_q.filter(Mandor.branch_id == branch_id)
+    mandors = mandor_q.limit(5).all()
+    if mandors:
+        results.append({
+            "category": "Sub Client (Mandor)",
+            "icon": "bi-person-badge",
+            "items": [
+                {
+                    "title": m.name,
+                    "subtitle": f"Client: {m.client.name if m.client else '-'} · Telp: {m.phone or '-'}",
+                    "url": url_for("master.mandors") + f"?q={m.name}",
+                    "badge": "Aktif" if getattr(m, "is_active", True) else "Nonaktif",
+                }
+                for m in mandors
+            ],
+        })
+
+    # 3. Invoice
+    invoice_q = Invoice.query.filter(Invoice.invoice_number.ilike(f"%{q}%"))
+    if branch_id:
+        invoice_q = invoice_q.filter(Invoice.branch_id == branch_id)
+    invoices = invoice_q.order_by(Invoice.id.desc()).limit(5).all()
+    if invoices:
+        results.append({
+            "category": "Invoice",
+            "icon": "bi-receipt",
+            "items": [
+                {
+                    "title": inv.invoice_number,
+                    "subtitle": f"Rp {float(inv.total_amount or 0):,.0f} · Jatuh Tempo: {inv.due_date.strftime('%d/%m/%Y') if inv.due_date else '-'}".replace(",", "."),
+                    "url": url_for("finance.invoice_detail", invoice_id=inv.id),
+                    "badge": status_label(inv.status or "DRAFT"),
+                }
+                for inv in invoices
+            ],
+        })
+
+    # 4. Pesanan
+    order_q = DailyOrder.query.filter(DailyOrder.order_number.ilike(f"%{q}%"))
+    if branch_id:
+        order_q = order_q.filter(DailyOrder.branch_id == branch_id)
+    orders = order_q.order_by(DailyOrder.id.desc()).limit(5).all()
+    if orders:
+        results.append({
+            "category": "Pesanan",
+            "icon": "bi-journal-text",
+            "items": [
+                {
+                    "title": order.order_number or f"Order #{order.id}",
+                    "subtitle": f"Tanggal: {order.order_date.strftime('%d/%m/%Y') if order.order_date else '-'} · Shift: {order.meal_type or '-'}",
+                    "url": url_for("operational.order_detail", order_id=order.id),
+                    "badge": status_label(order.status or "DRAFT"),
+                }
+                for order in orders
+            ],
+        })
+
+    # 5. Karyawan
+    emp_q = Employee.query.filter(
+        or_(
+            Employee.full_name.ilike(f"%{q}%"),
+            Employee.nik.ilike(f"%{q}%"),
+            Employee.phone.ilike(f"%{q}%"),
+        )
+    )
+    if branch_id:
+        emp_q = emp_q.filter(Employee.branch_id == branch_id)
+    employees = emp_q.limit(5).all()
+    if employees:
+        results.append({
+            "category": "Karyawan",
+            "icon": "bi-people",
+            "items": [
+                {
+                    "title": emp.full_name,
+                    "subtitle": f"NIK: {emp.nik or '-'} · Posisi: {emp.position or '-'}",
+                    "url": url_for("hr.employees"),
+                    "badge": status_label(emp.status or "ACTIVE"),
+                }
+                for emp in employees
+            ],
+        })
+
+    total_count = sum(len(cat["items"]) for cat in results)
+    return jsonify({
+        "q": q,
+        "results": results,
+        "total": total_count,
+    })
+
 
 
 

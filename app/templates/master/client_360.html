@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+{% import "dashboard/_pulse.html" as ui with context %}
+
+{% block content %}
+{% set client = c.client %}
+<div class="dash-page" data-ui-page="client-360">
+    <nav class="mb-3" aria-label="Jejak halaman" data-rise>
+        <a class="panel-link" href="{{ url_for('master.clients') }}" data-prefetch><i class="bi bi-arrow-left" aria-hidden="true"></i> Daftar {{ term('client') }}</a>
+    </nav>
+
+    <section class="panel mb-4" data-rise aria-label="Profil {{ client.name }}">
+        <div class="profile">
+            <span class="profile-mark" aria-hidden="true">{{ client.name[:2]|upper }}</span>
+            <div>
+                <h1>{{ client.name }}</h1>
+                <div class="profile-tags">
+                    {% if client.client_code %}<span class="chip">{{ client.client_code }}</span>{% endif %}
+                    <span class="chip tone-blue">{{ c.path_label }}</span>
+                    <span class="chip {{ 'tone-green' if client.is_active else 'tone-neutral' }}">{{ 'Aktif' if client.is_active else 'Nonaktif' }}</span>
+                    {% if c.credit %}
+                        <span class="chip tone-{{ {'ACTIVE': 'green', 'WATCH': 'amber'}.get(c.credit.status, 'red') }}" title="{{ c.credit.reason }}">Kredit: {{ c.credit.label }}</span>
+                    {% endif %}
+                </div>
+                <div class="profile-contact">
+                    {% if c.pic %}<span><i class="bi bi-person" aria-hidden="true"></i>{{ c.pic.name }}{% if c.pic.position %} · {{ c.pic.position }}{% endif %}</span>{% endif %}
+                    {% if (c.pic and c.pic.phone) or client.phone %}<span><i class="bi bi-telephone" aria-hidden="true"></i>{{ c.pic.phone if c.pic and c.pic.phone else client.phone }}</span>{% endif %}
+                    {% if c.pic and c.pic.email %}<span><i class="bi bi-envelope" aria-hidden="true"></i>{{ c.pic.email }}</span>{% endif %}
+                    {% if client.address %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i>{{ client.address }}</span>{% endif %}
+                </div>
+            </div>
+            <div class="dash-head-actions">
+                <a class="btn app-btn-secondary" href="{{ url_for('master.edit_client', client_id=client.id) }}"><i class="bi bi-pencil"></i> Ubah</a>
+                <a class="btn app-btn-primary" href="{{ url_for('finance.receivables') }}"><i class="bi bi-cash-coin"></i> Tagihan</a>
+            </div>
+        </div>
+        <div class="facts">
+            <div class="fact"><span>Omzet 12 bulan</span><strong>{{ ui.money(c.stats.omzet_12) }}</strong></div>
+            <div class="fact"><span>Piutang berjalan</span><strong>{{ ui.money(c.stats.receivable) }}</strong>{% if c.aging.oldest_days %}<small>tertua {{ c.aging.oldest_days }} hari lewat tempo</small>{% endif %}</div>
+            <div class="fact"><span>Porsi 30 hari</span><strong>{{ ui.number(c.stats.porsi_30) }}</strong><small>{{ c.sub_clients|length }} {{ term('sub_client', lower=True) }}</small></div>
+            <div class="fact"><span>Pembayaran terakhir</span>
+                {% if c.stats.last_payment %}<strong>{{ ui.money(c.stats.last_payment.amount) }}</strong><small>{{ c.stats.last_payment.date.strftime('%d/%m/%Y') }}</small>
+                {% else %}<strong>—</strong><small>belum ada</small>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <div class="dash-grid">
+        <div class="dash-main">
+            <div class="dash-row">
+                <section class="panel" data-rise="2" aria-labelledby="billTitle">
+                    <div class="panel-head">
+                        <div><h2 id="billTitle">Ditagih vs dibayar</h2><p>6 bulan terakhir</p></div>
+                    </div>
+                    <div class="panel-body pt-2">
+                        <div class="app-chart" data-apex-chart style="--chart-height: 240px;" role="img" aria-label="Tagihan dan pembayaran per bulan">
+                            <script type="application/json">{{ c.chart|tojson }}</script>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel" data-rise="2" aria-labelledby="contractTitle">
+                    <div class="panel-head">
+                        <div><h2 id="contractTitle">Kontrak &amp; kredit</h2><p>Aturan yang berlaku untuk {{ term('client', lower=True) }} ini</p></div>
+                        {% if c.contract %}<a class="panel-link" href="{{ url_for('customer_success.contract_detail', contract_id=c.contract.id) }}">Buka <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
+                    </div>
+                    <div class="panel-body">
+                        {% if c.contract %}
+                            <dl class="kv">
+                                <dt>Nomor</dt><dd>{{ c.contract.number }}</dd>
+                                <dt>Status</dt><dd>{{ c.contract.status|status_label }}</dd>
+                                <dt>Berlaku</dt><dd>{{ c.contract.start.strftime('%d/%m/%Y') if c.contract.start else '—' }} – {{ c.contract.end.strftime('%d/%m/%Y') if c.contract.end else 'tanpa batas' }}</dd>
+                                {% if c.contract.days_left is not none %}<dt>Sisa masa</dt><dd>{{ c.contract.days_left }} hari</dd>{% endif %}
+                                {% if c.contract.due_days %}<dt>Tempo bayar</dt><dd>{{ c.contract.due_days }} hari</dd>{% endif %}
+                            </dl>
+                        {% else %}
+                            <p class="muted mb-3">Belum ada kontrak di cabang ini.</p>
+                        {% endif %}
+                        {% if c.credit %}
+                            <hr class="my-3">
+                            <dl class="kv">
+                                <dt>Batas kredit</dt><dd>{{ ui.money(c.credit.limit) if c.credit.limit else 'Belum disetel' }}</dd>
+                                <dt>Pemakaian</dt><dd>{{ ui.money(c.credit.exposure) }}</dd>
+                                {% if c.credit.limit %}<dt>Sisa batas</dt><dd>{{ ui.money(c.credit.available) }}</dd>{% endif %}
+                            </dl>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <section class="panel" data-rise="3" aria-labelledby="subTitle">
+                <div class="panel-head">
+                    <div><h2 id="subTitle">{{ term('sub_client') }}</h2><p>Porsi 30 hari, piutang, dan hutang warung pekerjanya</p></div>
+                    <a class="panel-link" href="{{ url_for('master.mandors') }}">Kelola <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                <div class="panel-body flush">
+                    {% if c.sub_clients %}
+                    <table class="mini-table">
+                        <thead><tr><th>Nama</th><th class="num">Lokasi</th><th class="num">Porsi 30 hari</th><th class="num">Piutang</th>{% if c.worker_debt_on %}<th class="num">Hutang warung</th>{% endif %}</tr></thead>
+                        <tbody>
+                            {% for m in c.sub_clients %}
+                                <tr>
+                                    <td><strong>{{ m.name }}</strong>{% if m.phone %}<div class="muted">{{ m.phone }}</div>{% endif %}</td>
+                                    <td class="num">{{ m.locations }}</td>
+                                    <td class="num">{{ ui.number(m.porsi_30) }}</td>
+                                    <td class="num">{{ ui.money(m.receivable) if m.receivable else '—' }}</td>
+                                    {% if c.worker_debt_on %}<td class="num">{{ ui.money(m.worker_debt) if m.worker_debt else '—' }}</td>{% endif %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <div class="all-clear"><i class="bi bi-diagram-3" aria-hidden="true"></i><span>Belum ada {{ term('sub_client', lower=True) }} di cabang ini.</span></div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="dash-row">
+                <section class="panel" data-rise="4" aria-labelledby="invTitle">
+                    <div class="panel-head">
+                        <h2 id="invTitle">Invoice terakhir</h2>
+                        <a class="panel-link" href="{{ url_for('finance.invoices') }}">Semua <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                    <div class="panel-body flush">
+                        {% if c.invoices %}
+                        <table class="mini-table">
+                            <thead><tr><th>Nomor</th><th class="num">Total</th><th class="num">Sisa</th></tr></thead>
+                            <tbody>
+                                {% for inv in c.invoices %}
+                                    <tr>
+                                        <td><a href="{{ url_for('finance.invoice_detail', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a><div class="muted">{{ inv.invoice_date.strftime('%d/%m/%Y') if inv.invoice_date }} · {{ inv.status|status_label }}</div></td>
+                                        <td class="num">{{ ui.money(inv.total_amount) }}</td>
+                                        <td class="num">{{ ui.money(inv.remaining_amount) if inv.remaining_amount else 'Lunas' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}<div class="all-clear"><i class="bi bi-receipt" aria-hidden="true"></i><span>Belum ada invoice.</span></div>{% endif %}
+                    </div>
+                </section>
+
+                <section class="panel" data-rise="4" aria-labelledby="ordTitle">
+                    <div class="panel-head">
+                        <h2 id="ordTitle">Pesanan terakhir</h2>
+                        <a class="panel-link" href="{{ url_for('operational.orders') }}">Semua <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                    <div class="panel-body flush">
+                        {% if c.orders %}
+                        <table class="mini-table">
+                            <thead><tr><th>Pesanan</th><th class="num">Porsi</th></tr></thead>
+                            <tbody>
+                                {% for o in c.orders %}
+                                    <tr>
+                                        <td><a href="{{ url_for('operational.order_detail', order_id=o.id) }}">{{ o.number or ('#' ~ o.id) }}</a><div class="muted">{{ o.date.strftime('%d/%m/%Y') }} · {{ 'Terkunci' if o.locked else o.status|status_label }}</div></td>
+                                        <td class="num">{{ ui.number(o.qty) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}<div class="all-clear"><i class="bi bi-journal" aria-hidden="true"></i><span>Belum ada pesanan.</span></div>{% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <section class="panel" data-rise="5" aria-labelledby="tlTitle">
+                <div class="panel-head"><div><h2 id="tlTitle">Riwayat</h2><p>Invoice, pembayaran, komplain, dan kontrak — terbaru di atas</p></div></div>
+                {% if c.timeline %}
+                <ul class="timeline">
+                    {% for t in c.timeline %}
+                        <li>
+                            <time>{{ t.date.strftime('%d/%m/%y') }}</time>
+                            <span class="kpi-icon tone-{{ t.tone }}"><i class="bi {{ t.icon }}" aria-hidden="true"></i></span>
+                            <div><a href="{{ url_for(t.endpoint, **t.args) }}">{{ t.title }}</a><p>{{ t.detail|status_label if t.detail and t.detail.isupper() else t.detail }}</p></div>
+                            <b>{{ ui.money(t.amount) if t.amount is not none else '' }}</b>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% else %}<div class="all-clear"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Belum ada riwayat.</span></div>{% endif %}
+            </section>
+        </div>
+
+        <aside class="dash-rail" aria-label="Peringatan dan aktivitas {{ client.name }}">
+            {{ ui.alerts_panel(c.alerts, "Perlu perhatian") }}
+            {{ ui.aging_panel(c.aging) }}
+            {{ ui.activity_panel(c.activity, "Perubahan data", show_all=false) }}
+        </aside>
+    </div>
+</div>
+{% endblock %}

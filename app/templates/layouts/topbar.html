@@ -10,6 +10,15 @@
         </div>
     </div>
 
+    <!-- Kotak cari besar di tengah dengan petunjuk Ctrl K -->
+    <div class="topbar-center d-none d-md-flex">
+        <button type="button" class="topbar-search-bar" id="globalSearchTrigger" aria-label="Pencarian global (Ctrl+K)">
+            <i class="bi bi-search search-icon" aria-hidden="true"></i>
+            <span class="search-text">Cari pelanggan, mandor, invoice, pesanan...</span>
+            <span class="search-kbd-badge"><kbd>Ctrl</kbd> <kbd>K</kbd></span>
+        </button>
+    </div>
+
     <div class="topbar-right">
         <div class="topbar-status d-none d-lg-flex" aria-label="Status sistem">
             <span class="status-dot"></span>
@@ -63,3 +72,27 @@
         </div>
     </div>
 </header>
+
+<!-- Modal Dialog Pencarian Global (Ctrl+K) -->
+<dialog id="globalSearchModal" class="global-search-modal" aria-label="Pencarian Global Sistem">
+    <div class="global-search-box">
+        <div class="global-search-input-wrap">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="globalSearchInput" class="global-search-input" placeholder="Cari pelanggan, mandor, invoice, pesanan, karyawan..." autocomplete="off">
+            <button type="button" id="globalSearchClose" class="global-search-close" aria-label="Tutup pencarian">
+                <kbd>Esc</kbd>
+            </button>
+        </div>
+        <div id="globalSearchResults" class="global-search-results">
+            <div class="global-search-hint">
+                <i class="bi bi-keyboard"></i>
+                <p>Ketik minimal 2 huruf untuk mencari pelanggan, mandor, invoice, pesanan, atau karyawan.</p>
+                <div class="global-search-shortcuts">
+                    <span><kbd>↑</kbd> <kbd>↓</kbd> Pilih</span>
+                    <span><kbd>Enter</kbd> Buka</span>
+                    <span><kbd>Esc</kbd> Tutup</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

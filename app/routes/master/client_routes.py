@@ -297,3 +297,17 @@ def toggle_client_pic(client_id, pic_id):
 
     flash(f"Status PIC {T.client_lower} berhasil diubah.", "success")
     return redirect(url_for("master.edit_client", client_id=client.id))
+
+
+@master_bp.route("/clients/<int:client_id>")
+@role_required("OWNER", "ADMIN", "FINANCE")
+def client_360(client_id):
+    from app.services.client_360_service import build_client_360
+
+    data = build_client_360(client_id, current_user.branch_id)
+    if not data:
+        flash(f"Data {T.client_lower} tidak ditemukan.", "warning")
+        return redirect(url_for("master.clients"))
+
+    return render_template("master/client_360.html", c=data)
+
