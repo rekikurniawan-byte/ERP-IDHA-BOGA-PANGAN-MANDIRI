@@ -5,10 +5,11 @@
 {% block content %}
 {% set worker_debt_on = module_enabled('worker_debt') %}
 <div class="canteen-page-shell" data-ui-page="index">
+{% set living_fact %}Hari ini: {{ today_sales_count }} transaksi ({{ today_total_amount|rupiah }}) · Kas {{ 'Terbuka' if cash_daily_today and cash_daily_today.status == 'OPEN' else ('Ditutup' if cash_daily_today and cash_daily_today.status == 'CLOSED' else 'Belum dibuka') }}{% endset %}
 {{ page_header(
     title='Warung',
     eyebrow='Modul Warung',
-    description=(('Kelola penjualan cash, QRIS, transfer, hutang ' ~ term('worker', lower=True) ~ ' internal, dan piutang buyer eksternal.') if worker_debt_on else 'Kelola penjualan cash, QRIS, transfer, dan piutang buyer eksternal.'),
+    description=living_fact,
     collapse=false,
     actions_class='canteen-header-actions',
     actions=[
@@ -28,7 +29,7 @@
         <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
         <div>
             <p>Cash</p>
-            <h3>{{ total_cash_sales|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_cash_sales|rupiah }}</h3>
             <span class="app-stat-helper">Tunai langsung lunas</span>
         </div>
     </div>
@@ -37,7 +38,7 @@
         <div class="app-stat-icon stat-info"><i class="bi bi-qr-code"></i></div>
         <div>
             <p>QRIS</p>
-            <h3>{{ total_qris_sales|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_qris_sales|rupiah }}</h3>
             <span class="app-stat-helper">Masuk rekening/QRIS</span>
         </div>
     </div>
@@ -46,7 +47,7 @@
         <div class="app-stat-icon stat-primary"><i class="bi bi-bank"></i></div>
         <div>
             <p>Transfer</p>
-            <h3>{{ total_transfer_sales|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_transfer_sales|rupiah }}</h3>
             <span class="app-stat-helper">Transfer bank</span>
         </div>
     </div>
@@ -55,7 +56,7 @@
         <div class="app-stat-icon stat-warning"><i class="bi bi-receipt"></i></div>
         <div>
             <p>Hutang Warung</p>
-            <h3>{{ total_debt_sales|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_debt_sales|rupiah }}</h3>
             <span class="app-stat-helper">Internal + eksternal</span>
         </div>
     </div>
@@ -65,7 +66,7 @@
         <div class="app-stat-icon stat-danger"><i class="bi bi-person-exclamation"></i></div>
         <div>
             <p>Sisa Hutang {{ term('worker') }}</p>
-            <h3>{{ total_unpaid_debt|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_unpaid_debt|rupiah }}</h3>
             <span class="app-stat-helper">Worker debt belum lunas</span>
         </div>
     </div>
@@ -75,9 +76,119 @@
         <div class="app-stat-icon stat-danger"><i class="bi bi-building-exclamation"></i></div>
         <div>
             <p>Piutang Eksternal</p>
-            <h3>{{ total_external_remaining|rupiah }}</h3>
+            <h3 class="ops-num">{{ total_external_remaining|rupiah }}</h3>
             <span class="app-stat-helper">Buyer luar/non-master</span>
         </div>
+    </div>
+</div>
+
+{# Task F: Grid Grafik Penjualan Jam Hari Ini + Kas Warung & 5 Pekerja Hutang Terbesar #}
+<div class="ops-canteen-grid">
+    <div class="app-card mb-0">
+        <div class="card-header-clean">
+            <div>
+                <h5>Penjualan per Jam Hari Ini</h5>
+                <p class="text-muted small mb-0">{{ ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][today.weekday()] }}, {{ today.day }} {{ ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][today.month - 1] }} {{ today.year }} · Tunai+QRIS vs Hutang</p>
+            </div>
+        </div>
+        <div class="p-3">
+            <div class="app-chart" data-apex-chart style="--chart-height: 260px;" role="img" aria-label="Grafik penjualan per jam hari ini">
+                <script type="application/json">{{ hourly_sales_spec|tojson }}</script>
+            </div>
+        </div>
+    </div>
+
+    <div class="ops-canteen-side-stack">
+        {# Kartu Kas Warung Hari Ini (Task F.3) #}
+        <div class="app-card mb-0">
+            <div class="card-header-clean d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>Kas Warung Hari Ini</h5>
+                    <p class="text-muted small mb-0">{{ today.strftime('%d-%m-%Y') }}</p>
+                </div>
+                <a href="{{ url_for('finance.daily_cash') }}" class="btn btn-sm app-btn-secondary">
+                    <i class="bi bi-cash me-1"></i> Tutup Kas
+                </a>
+            </div>
+            <div class="p-3">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <span class="text-muted d-block small">Status Kas</span>
+                        {% if not cash_daily_today %}
+                            <span class="status-badge warning">Belum dibuka</span>
+                        {% elif cash_daily_today.status == 'OPEN' %}
+                            <span class="status-badge info">Terbuka</span>
+                        {% elif cash_daily_today.status == 'CLOSED' %}
+                            <span class="status-badge success">Ditutup</span>
+                        {% else %}
+                            <span class="status-badge neutral">{{ cash_daily_today.status }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block small">Saldo Seharusnya</span>
+                        <strong class="ops-num d-block">{{ (cash_daily_today.closing_balance if cash_daily_today else 0)|rupiah }}</strong>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-muted d-block small">Kas Dihitung</span>
+                        <strong class="ops-num d-block">{{ (cash_daily_today.actual_cash if cash_daily_today else 0)|rupiah }}</strong>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-muted d-block small">Selisih Kas</span>
+                        {% set cash_diff = (cash_daily_today.cash_difference if cash_daily_today else 0) %}
+                        <strong class="ops-num d-block {% if cash_diff != 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                            {{ cash_diff|rupiah }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Panel 5 Pekerja Hutang Terbesar (Task F.2) #}
+        {% if worker_debt_on %}
+        <div class="app-card mb-0">
+            <div class="card-header-clean d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>5 Pekerja Hutang Terbesar</h5>
+                    <p class="text-muted small mb-0">Hutang warung aktif</p>
+                </div>
+                <a href="{{ url_for('canteen.debts') }}" class="btn btn-sm app-btn-ghost text-primary">Semua</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ term('worker') }}</th>
+                            <th class="text-end">Sisa Hutang</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_debt_workers %}
+                        {% set w = item.worker %}
+                        <tr>
+                            <td>
+                                <strong>{{ w.full_name }}</strong><br>
+                                <small class="text-muted">{{ w.mandor.name if w.mandor else '-' }}</small>
+                            </td>
+                            <td class="text-end fw-bold text-danger ops-num">{{ item.amount|rupiah }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('canteen.quick_sale') }}" class="btn btn-sm app-btn-primary">
+                                    Bayar
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-3 text-muted small">
+                                Tidak ada hutang warung aktif saat ini.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -85,7 +196,6 @@
     <div class="card-header-clean">
         <div>
             <h5>Aturan Pembayaran Warung</h5>
-            <p>Cash/QRIS/transfer langsung lunas.{% if worker_debt_on %} Hutang {{ term('worker', lower=True) }} masuk piutang karyawan.{% endif %} Hutang buyer luar masuk piutang warung eksternal.</p>
         </div>
     </div>
     <div class="canteen-rule-grid">
@@ -100,7 +210,7 @@
     <div class="card-header-clean">
         <div>
             <h5>Riwayat Transaksi Warung</h5>
-            <p>Daftar transaksi warung berdasarkan metode pembayaran dan tipe pembeli.</p>
+            <p class="text-muted small mb-0">{{ sales|length }} transaksi terpilih</p>
         </div>
     </div>
 
@@ -111,7 +221,7 @@
                     <th>Tanggal</th>
                     <th>Metode</th>
                     <th>Pembeli</th>
-                    <th>Total</th>
+                    <th class="text-end">Total</th>
                     <th>Barang</th>
                     <th>Referensi</th>
                     <th>Catatan</th>
@@ -137,7 +247,7 @@
                         <strong>{{ sale_buyer_label(sale) }}</strong><br>
                         <small class="text-muted">{{ sale_buyer_type(sale).replace('_', ' ') }}</small>
                     </td>
-                    <td><strong>{{ sale.total_amount|rupiah }}</strong></td>
+                    <td class="text-end"><strong class="ops-num">{{ sale.total_amount|rupiah }}</strong></td>
                     <td>{{ sale.items|length }} item</td>
                     <td>{{ sale.payment_reference or '-' }}</td>
                     <td>{{ sale.notes or '-' }}</td>
@@ -167,8 +277,8 @@
             <tfoot class="ops-tfoot-summary">
                 <tr>
                     <td colspan="3" class="text-end fw-bold">Total Transaksi (Daftar Tampil):</td>
-                    <td class="fw-bold">{{ total_filtered.amount|rupiah }}</td>
-                    <td class="fw-bold">{{ total_filtered.items }} item</td>
+                    <td class="text-end fw-bold ops-num">{{ total_filtered.amount|rupiah }}</td>
+                    <td class="fw-bold ops-num">{{ total_filtered.items }} item</td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
@@ -178,3 +288,4 @@
 </div>
 </div>
 {% endblock %}
+

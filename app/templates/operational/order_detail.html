@@ -4,8 +4,21 @@
 <div class="op-prod-delivery-page-shell" data-ui-page="order_detail">
 <header class="dash-head">
     <div>
-        <h1>{{ daily_order.order_number }}</h1>
-        <p>Tanggal order: {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="mb-0">{{ daily_order.order_number }}</h1>
+            {% if daily_order.is_locked %}
+                <span class="status-badge success">Terkunci</span>
+            {% else %}
+                <span class="status-badge neutral">Konsep</span>
+            {% endif %}
+        </div>
+        <p class="mb-1 text-muted">Tanggal order: {{ daily_order.order_date.strftime('%d-%m-%Y') }} · {{ total_locations }} lokasi · {{ total_lunch + total_dinner }} porsi</p>
+        {% if order_countdowns and not daily_order.is_locked %}
+            <div class="mt-2">
+                {% set countdowns = order_countdowns %}
+                {% include "operational/_countdown.html" %}
+            </div>
+        {% endif %}
     </div>
 
     <div class="dash-head-actions order-detail-actions op-prod-delivery-header-actions" data-op-prod-delivery-actions="UI">

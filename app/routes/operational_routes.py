@@ -491,6 +491,11 @@ def orders():
     today_card = _build_card_meta(today_order)
     tomorrow_card = _build_card_meta(tomorrow_order)
 
+    from app.services.ops_timeline_service import build_session_timeline, get_order_lock_countdowns
+    timeline = build_session_timeline(current_user.branch_id, today)
+    today_countdowns = get_order_lock_countdowns(today_order, on_date=today, branch_id=current_user.branch_id)
+    tomorrow_countdowns = get_order_lock_countdowns(tomorrow_order, on_date=tomorrow, branch_id=current_user.branch_id)
+
     overdue_unlocked_count = DailyOrder.query.filter(
         DailyOrder.branch_id == current_user.branch_id,
         DailyOrder.order_date < today,
@@ -552,6 +557,17 @@ def orders():
             "has_production": has_prod,
         })
 
+    date_groups = {}
+    for item in table_orders:
+        d = item["order"].order_date
+        if d not in date_groups:
+            date_groups[d] = {"count": 0, "total_qty": 0}
+        date_groups[d]["count"] += 1
+        date_groups[d]["total_qty"] += item["total_qty"]
+
+    for item in table_orders:
+        item["date_summary"] = date_groups[item["order"].order_date]
+
     status_options = [
         {"value": "ALL", "label": "Semua Status"},
         {"value": "DRAFT", "label": "Konsep (Belum Kunci)"},
@@ -576,6 +592,9 @@ def orders():
         today_formatted=today_formatted,
         today_card=today_card,
         tomorrow_card=tomorrow_card,
+        today_countdowns=today_countdowns,
+        tomorrow_countdowns=tomorrow_countdowns,
+        timeline=timeline,
         overdue_unlocked_count=overdue_unlocked_count,
         table_orders=table_orders,
         pagination=pagination,
@@ -838,6 +857,9 @@ def order_detail(order_id):
     meal_summary = get_order_meal_summary(daily_order)
     form_mandors, form_locations = get_form_master_data()
 
+    from app.services.ops_timeline_service import get_order_lock_countdowns
+    order_countdowns = get_order_lock_countdowns(daily_order)
+
     template_name = "ops/order_detail.html" if uses_ops_ui(current_user) else "operational/order_detail.html"
     return render_template(
         template_name,
@@ -860,6 +882,7 @@ def order_detail(order_id):
         meal_summary=meal_summary,
         form_mandors=form_mandors,
         form_locations=form_locations,
+        order_countdowns=order_countdowns,
     )
 
 

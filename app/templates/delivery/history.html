@@ -25,7 +25,7 @@
     <div class="panel-head">
         <div>
             <h2>Data Riwayat</h2>
-            <p>Pengiriman pengganti kurang kirim tetap ditampilkan, tapi bukan dasar invoice.</p>
+            <p>{{ deliveries|length }} pengiriman tercatat dalam arsip filter aktif.</p>
         </div>
     </div>
 
@@ -40,14 +40,15 @@
                     <th>Pengantar</th>
                     <th>Status</th>
                     <th>SLA</th>
-                    <th>Rencana</th>
-                    <th>Terkirim</th>
-                    <th>Kurang Kirim</th>
+                    <th class="text-end ops-num">Rencana</th>
+                    <th class="text-end ops-num">Terkirim</th>
+                    <th class="text-end ops-num">Kurang Kirim</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% set g_total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% set prev_deliv_date = namespace(val=none) %}
                 {% for delivery in deliveries %}
                 {% set total = namespace(planned=0, delivered=0, shortage=0) %}
                 {% set d_type = get_delivery_type_from_notes(delivery.notes) %}
@@ -59,6 +60,19 @@
                 {% set g_total.planned = g_total.planned + total.planned %}
                 {% set g_total.delivered = g_total.delivered + total.delivered %}
                 {% set g_total.shortage = g_total.shortage + total.shortage %}
+
+                {% if prev_deliv_date.val != delivery.delivery_date %}
+                    {% set prev_deliv_date.val = delivery.delivery_date %}
+                    {% set summary = deliv_date_summaries.get(delivery.delivery_date) if deliv_date_summaries else none %}
+                    <tr class="ops-date-group-row">
+                        <td colspan="10" class="ops-date-group-cell">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <strong>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</strong>
+                            <span class="ops-date-group-meta">· {{ summary.count if summary else 1 }} pengiriman · {{ summary.total_planned if summary else total.planned }} porsi</span>
+                        </td>
+                    </tr>
+                {% endif %}
+
                 <tr>
                     <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
                     <td>
@@ -95,9 +109,9 @@
                         <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
                         {% if sla.max_minutes_late %}<div class="muted-small">+{{ sla.max_minutes_late }} menit</div>{% endif %}
                     </td>
-                    <td>{{ total.planned|qty }} Porsi</td>
-                    <td>{{ total.delivered|qty }} Porsi</td>
-                    <td>
+                    <td class="text-end ops-num">{{ total.planned|qty }} Porsi</td>
+                    <td class="text-end ops-num">{{ total.delivered|qty }} Porsi</td>
+                    <td class="text-end ops-num">
                         {% if total.shortage > 0 %}
                             <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ total.shortage|qty }}</span>
                         {% else %}

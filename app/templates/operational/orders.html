@@ -6,7 +6,7 @@
     <header class="dash-head">
         <div>
             <h1>Order Harian</h1>
-            <p>{{ today_formatted }}</p>
+            <p>{{ today_formatted }}{% if overdue_unlocked_count > 0 %} · <span class="text-danger fw-semibold">{{ overdue_unlocked_count }} order belum dikunci</span>{% endif %}</p>
         </div>
         <div class="dash-head-actions">
             <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
@@ -14,6 +14,8 @@
             </a>
         </div>
     </header>
+
+    {% include "operational/_session_timeline.html" %}
 
     <div class="ops-grid-hero">
         <!-- Kartu HARI INI -->
@@ -81,6 +83,13 @@
                             <span class="ops-portion-val">{{ today_card.locations_count }}</span>
                         </div>
                     </div>
+
+                    {% if today_countdowns and not today_card.order.is_locked %}
+                        <div class="mt-3">
+                            {% set countdowns = today_countdowns %}
+                            {% include "operational/_countdown.html" %}
+                        </div>
+                    {% endif %}
 
                     <!-- Tombol utama besar sesuai status -->
                     <div class="mt-3 d-flex gap-2 align-items-center">
@@ -186,6 +195,13 @@
                         </div>
                     </div>
 
+                    {% if tomorrow_countdowns and not tomorrow_card.order.is_locked %}
+                        <div class="mt-3">
+                            {% set countdowns = tomorrow_countdowns %}
+                            {% include "operational/_countdown.html" %}
+                        </div>
+                    {% endif %}
+
                     <!-- Tombol utama sesuai status -->
                     <div class="mt-3 d-flex gap-2 align-items-center">
                         {% if not tomorrow_card.order.is_locked %}
@@ -245,7 +261,7 @@
         <div class="panel-head">
             <div>
                 <h2>Daftar Order</h2>
-                <p>Order yang sudah dikunci otomatis menjadi dasar produksi. Pengiriman dibuat dari halaman Kelola Order.</p>
+                <p>{{ table_orders|length }} order dalam rentang tanggal tampil.</p>
             </div>
         </div>
 
@@ -257,15 +273,27 @@
                             <th>Tanggal</th>
                             <th>No Order</th>
                             <th>Status</th>
-                            <th class="text-center">Lokasi</th>
-                            <th class="text-end">Siang</th>
-                            <th class="text-end">Sore</th>
-                            <th class="text-end">Total</th>
+                            <th class="text-center ops-num">Lokasi</th>
+                            <th class="text-end ops-num">Siang</th>
+                            <th class="text-end ops-num">Sore</th>
+                            <th class="text-end ops-num">Total</th>
                             <th class="text-end" style="min-width: 170px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% set prev_date = namespace(val=none) %}
                         {% for row in table_orders %}
+                        {% if prev_date.val != row.order.order_date %}
+                            {% set prev_date.val = row.order.order_date %}
+                            <tr class="ops-date-group-row">
+                                <td colspan="8" class="ops-date-group-cell">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    <strong>{{ row.day_name }}, {{ row.order.order_date.strftime('%d-%m-%Y') }}</strong>
+                                    <span class="ops-date-group-meta">· {{ row.date_summary.count }} order · {{ row.date_summary.total_qty }} porsi</span>
+                                    {% if row.is_today %}<span class="ops-chip ops-chip-today ms-2">Hari Ini</span>{% elif row.is_tomorrow %}<span class="ops-chip ops-chip-tomorrow ms-2">Besok</span>{% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
                         <tr class="{% if row.is_today %}ops-row-today{% elif row.is_overdue %}ops-row-overdue{% endif %}">
                             <td>
                                 <div>
@@ -291,10 +319,10 @@
                                     <span class="status-badge neutral">Konsep</span>
                                 {% endif %}
                             </td>
-                            <td class="text-center">{{ row.locations_count }}</td>
-                            <td class="text-end">{{ row.lunch_qty }}</td>
-                            <td class="text-end">{{ row.dinner_qty }}</td>
-                            <td class="text-end"><strong>{{ row.total_qty }}</strong></td>
+                            <td class="text-center ops-num">{{ row.locations_count }}</td>
+                            <td class="text-end ops-num">{{ row.lunch_qty }}</td>
+                            <td class="text-end ops-num">{{ row.dinner_qty }}</td>
+                            <td class="text-end ops-num"><strong>{{ row.total_qty }}</strong></td>
                             <td class="text-end">
                                 <div class="ops-actions">
                                     {% if not row.order.is_locked %}

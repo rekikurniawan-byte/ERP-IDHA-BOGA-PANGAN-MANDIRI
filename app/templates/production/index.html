@@ -1,414 +1,323 @@
 {% extends "layouts/base.html" %}
-{% from "components/page_header.html" import page_header %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
+
+{% macro render_board_card(prod) %}
+    {% set detail = prod.details[0] if prod.details else none %}
+    {% set planned = (detail.planned_qty | int) if detail else 0 %}
+    {% set actual = (detail.actual_qty | int) if detail else 0 %}
+    {% set n_wadah = ceil(planned / max_portions) if planned > 0 else 0 %}
+    {% set sla = calculate_production_sla(prod) %}
+    <div class="ops-board-card">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                {% if prod.production_type == "LUNCH" %}
+                    <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                {% else %}
+                    <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Sore</span>
+                {% endif %}
+                <a href="{{ url_for('production.detail', production_id=prod.id) }}" class="fw-bold text-decoration-none">
+                    #PRD-{{ prod.id }}
+                </a>
+            </div>
+            <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+        </div>
+        <div class="ops-board-card-meta">
+            <div>
+                <strong>{{ planned }}</strong> <span class="text-muted small">porsi target</span>
+                {% if actual > 0 %}
+                    · <strong>{{ actual }}</strong> <span class="text-muted small">selesai</span>
+                {% endif %}
+            </div>
+            <span class="ops-board-card-wadah" title="Maksimal {{ max_portions }} porsi per wadah">
+                <i class="bi bi-box-seam me-1"></i>{{ n_wadah }} Wadah
+            </span>
+        </div>
+        <div class="small text-muted">
+            <span>Target siap: <strong>{{ sla.target_ready_label }}</strong></span>
+            {% if prod.actual_completed_time %}
+                · <span>Selesai: <strong>{{ prod.actual_completed_time.strftime('%H.%M') }}</strong></span>
+            {% endif %}
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
+            {% if prod.status == "DRAFT" %}
+                <a href="{{ url_for('production.detail', production_id=prod.id) }}" class="btn btn-sm app-btn-primary flex-grow-1">
+                    <i class="bi bi-play-circle me-1"></i> Mulai Masak
+                </a>
+            {% elif prod.status == "IN_PROGRESS" %}
+                <a href="{{ url_for('production.detail', production_id=prod.id) }}" class="btn btn-sm app-btn-primary flex-grow-1">
+                    <i class="bi bi-check2-circle me-1"></i> Input Realisasi
+                </a>
+            {% else %}
+                <a href="{{ url_for('delivery.today') }}" class="btn btn-sm app-btn-primary flex-grow-1">
+                    <i class="bi bi-truck me-1"></i> Pengiriman
+                </a>
+                <a href="{{ url_for('production.detail', production_id=prod.id) }}" class="btn btn-sm app-btn-secondary">
+                    Detail
+                </a>
+            {% endif %}
+            <a href="{{ url_for('operational.kitchen_recap_hub', date=prod.production_date.strftime('%Y-%m-%d'), sesi=prod.production_type) }}" class="btn btn-sm app-btn-secondary" target="_blank" title="Cetak Rekap Dapur">
+                <i class="bi bi-printer me-1"></i> Rekap
+            </a>
+            {% if today_order %}
+            <a href="{{ url_for('operational.container_labels', order_id=today_order.id, sesi=prod.production_type) }}" class="btn btn-sm app-btn-secondary" target="_blank" title="Cetak Label Wadah">
+                <i class="bi bi-tag me-1"></i> Cetak Label
+            </a>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="index">
     <header class="dash-head">
         <div>
             <h1>Produksi Dapur</h1>
-            <p>Daftar produksi siang dan sore yang dibuat dari order harian yang sudah locked.</p>
+            <p>{{ today.strftime('%d-%m-%Y') }} · Batas {{ max_portions }} porsi/wadah · {{ productions|length }} kloter</p>
         </div>
-        <div class="dash-head-actions">
-            <a href="{{ url_for('operational.orders') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Kembali ke Order
+        <div class="dash-head-actions d-flex align-items-center gap-2">
+            <div class="btn-group" role="group" aria-label="Tampilan Produksi">
+                <a href="{{ url_for('production.index', view='papan') }}" class="btn btn-sm {% if view_mode != 'tabel' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi bi-kanban me-1"></i> Papan
+                </a>
+                <a href="{{ url_for('production.index', view='tabel') }}" class="btn btn-sm {% if view_mode == 'tabel' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi bi-table me-1"></i> Tabel
+                </a>
+            </div>
+            <a href="{{ url_for('operational.orders') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Order Harian
             </a>
         </div>
     </header>
 
-    {% set today_lunch = namespace(prod=none) %}
-    {% set today_dinner = namespace(prod=none) %}
-    {% for prod in productions %}
-        {% if today and prod.production_date == today %}
-            {% if prod.production_type == "LUNCH" and not today_lunch.prod %}
-                {% set today_lunch.prod = prod %}
-            {% elif prod.production_type == "DINNER" and not today_dinner.prod %}
-                {% set today_dinner.prod = prod %}
+    {% include "operational/_session_timeline.html" %}
+
+    {% if view_mode != 'tabel' %}
+        {# TAMPILAN PAPAN DAPUR (DEFAULT) #}
+        {% set draft_prods = [] %}
+        {% set progress_prods = [] %}
+        {% set completed_prods = [] %}
+        {% for p in productions %}
+            {% if p.production_date == today %}
+                {% if p.status == 'DRAFT' %}
+                    {% set _ = draft_prods.append(p) %}
+                {% elif p.status == 'IN_PROGRESS' %}
+                    {% set _ = progress_prods.append(p) %}
+                {% elif p.status == 'COMPLETED' %}
+                    {% set _ = completed_prods.append(p) %}
+                {% endif %}
             {% endif %}
-        {% endif %}
-    {% endfor %}
+        {% endfor %}
 
-    <!-- HERO DUA KARTU SESI PRODUKSI HARI INI -->
-    <div class="ops-grid-hero mb-4">
-        <!-- KARTU KLOTER SIANG (☀️) -->
-        <div class="panel ops-day-card">
+        <section class="panel mb-4">
             <div class="panel-head">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Kloter Siang</span>
-                    {% if today_lunch.prod %}
-                        <a href="{{ url_for('production.detail', production_id=today_lunch.prod.id) }}" class="fw-bold text-decoration-none text-primary">
-                            #PRD-{{ today_lunch.prod.id }}
-                        </a>
-                    {% endif %}
+                <div>
+                    <h2>Papan Dapur Hari Ini</h2>
+                    <p>Status pengerjaan kloter masak hari ini: Belum Mulai (DRAFT), Dimasak (IN_PROGRESS), Siap Kirim (COMPLETED).</p>
                 </div>
-                {% if today_lunch.prod %}
-                    {% if today_lunch.prod.status == "COMPLETED" %}
-                        <span class="status-badge status-locked">Selesai</span>
-                    {% elif today_lunch.prod.status == "IN_PROGRESS" %}
-                        <span class="status-badge status-progress">Sedang Masak</span>
-                    {% elif today_lunch.prod.status == "CANCELLED" %}
-                        <span class="status-badge status-danger">Dibatalkan</span>
-                    {% else %}
-                        <span class="status-badge status-draft">Konsep</span>
-                    {% endif %}
-                {% endif %}
             </div>
             <div class="panel-body">
-                {% if today_lunch.prod %}
-                    {% set detail_l = today_lunch.prod.details[0] if today_lunch.prod.details else none %}
-                    {% set planned_l = (detail_l.planned_qty | int) if detail_l else 0 %}
-                    {% set actual_l = (detail_l.actual_qty | int) if detail_l else 0 %}
-                    {% set sla_l = calculate_production_sla(today_lunch.prod) %}
-
-                    <!-- Stepper Dapur Siang -->
-                    <div class="ops-steps">
-                        <div class="ops-step-item is-done">
-                            <span class="ops-step-dot"></span>
-                            <span>Konsep</span>
+                <div class="ops-board-grid">
+                    <!-- Kolom 1: Belum Mulai (DRAFT) -->
+                    <div class="ops-board-col">
+                        <div class="ops-board-col-head">
+                            <span class="text-secondary"><i class="bi bi-pause-circle me-1"></i> Belum Mulai (DRAFT)</span>
+                            <span class="ops-board-col-count">{{ draft_prods|length }}</span>
                         </div>
-                        <span class="ops-step-arrow">→</span>
-                        <div class="ops-step-item {% if today_lunch.prod.status in ['IN_PROGRESS', 'COMPLETED'] %}is-done{% else %}is-pending{% endif %}">
-                            <span class="ops-step-dot"></span>
-                            <span>Dapur Masak</span>
-                        </div>
-                        <span class="ops-step-arrow">→</span>
-                        <div class="ops-step-item {% if today_lunch.prod.status == 'COMPLETED' %}is-done{% else %}is-pending{% endif %}">
-                            <span class="ops-step-dot"></span>
-                            <span>Siap Distribusi</span>
-                        </div>
-                    </div>
-
-                    <!-- Porsi Rencana vs Realisasi & SLA -->
-                    <div class="ops-portions-summary">
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Rencana</span>
-                            <span class="ops-portion-val">{{ planned_l }}</span>
-                        </div>
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Realisasi</span>
-                            <span class="ops-portion-val is-total">{{ actual_l }}</span>
-                        </div>
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Selisih</span>
-                            <span class="ops-portion-val">
-                                {% set diff_l = actual_l - planned_l %}
-                                {% if actual_l > 0 %}
-                                    {% if diff_l > 0 %}
-                                        <span class="ops-diff-chip is-increase">+{{ diff_l|qty }}</span>
-                                    {% elif diff_l < 0 %}
-                                        <span class="ops-shortage-badge">Kurang {{ (-diff_l)|qty }}</span>
-                                    {% else %}
-                                        <span class="ops-variance-ok">Pas</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="ops-portion-metric ms-auto text-end">
-                            <span class="ops-portion-label">Target Siap</span>
-                            <span class="ops-portion-val fs-6">
-                                <span class="status-badge {{ sla_l.badge_class }}">{{ sla_l.target_ready_label }}</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Tombol Aksi Utama Besar Sesuai Status -->
-                    <div class="mt-3 d-flex gap-2 align-items-center">
-                        {% if today_lunch.prod.status == "DRAFT" %}
-                            <a href="{{ url_for('production.detail', production_id=today_lunch.prod.id) }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-play-circle me-1"></i> Mulai Masak Siang
-                            </a>
-                        {% elif today_lunch.prod.status == "IN_PROGRESS" %}
-                            <a href="{{ url_for('production.detail', production_id=today_lunch.prod.id) }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-check2-circle me-1"></i> Input Realisasi & Selesaikan
-                            </a>
+                        {% for p in draft_prods %}
+                            {{ render_board_card(p) }}
                         {% else %}
-                            <a href="{{ url_for('delivery.index') }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-truck me-1"></i> Lihat Pengiriman Siang
-                            </a>
-                            <a href="{{ url_for('production.detail', production_id=today_lunch.prod.id) }}" class="btn app-btn-secondary">
-                                Detail
-                            </a>
-                        {% endif %}
-                        <a href="{{ url_for('operational.kitchen_recap_hub', date=today.strftime('%Y-%m-%d'), sesi='LUNCH') }}" class="btn app-btn-secondary" title="Cetak Rekap Dapur" target="_blank">
-                            <i class="bi bi-printer"></i>
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="empty-state app-empty-state-compact text-center py-4">
-                        <i class="bi bi-sun fs-3 text-muted mb-2"></i>
-                        <h6 class="mb-1">Belum ada produksi Siang hari ini.</h6>
-                        <p class="text-muted small mb-3">Pesanan makan siang belum dikunci atau belum dibuatkan jadwal dapur.</p>
-                        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-primary">
-                            <i class="bi bi-journal-text me-1"></i> Buka Order Harian
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- KARTU KLOTER SORE/MALAM (🌙) -->
-        <div class="panel ops-day-card">
-            <div class="panel-head">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Kloter Sore / Malam</span>
-                    {% if today_dinner.prod %}
-                        <a href="{{ url_for('production.detail', production_id=today_dinner.prod.id) }}" class="fw-bold text-decoration-none text-primary">
-                            #PRD-{{ today_dinner.prod.id }}
-                        </a>
-                    {% endif %}
-                </div>
-                {% if today_dinner.prod %}
-                    {% if today_dinner.prod.status == "COMPLETED" %}
-                        <span class="status-badge status-locked">Selesai</span>
-                    {% elif today_dinner.prod.status == "IN_PROGRESS" %}
-                        <span class="status-badge status-progress">Sedang Masak</span>
-                    {% elif today_dinner.prod.status == "CANCELLED" %}
-                        <span class="status-badge status-danger">Dibatalkan</span>
-                    {% else %}
-                        <span class="status-badge status-draft">Konsep</span>
-                    {% endif %}
-                {% endif %}
-            </div>
-            <div class="panel-body">
-                {% if today_dinner.prod %}
-                    {% set detail_d = today_dinner.prod.details[0] if today_dinner.prod.details else none %}
-                    {% set planned_d = (detail_d.planned_qty | int) if detail_d else 0 %}
-                    {% set actual_d = (detail_d.actual_qty | int) if detail_d else 0 %}
-                    {% set sla_d = calculate_production_sla(today_dinner.prod) %}
-
-                    <!-- Stepper Dapur Sore -->
-                    <div class="ops-steps">
-                        <div class="ops-step-item is-done">
-                            <span class="ops-step-dot"></span>
-                            <span>Konsep</span>
-                        </div>
-                        <span class="ops-step-arrow">→</span>
-                        <div class="ops-step-item {% if today_dinner.prod.status in ['IN_PROGRESS', 'COMPLETED'] %}is-done{% else %}is-pending{% endif %}">
-                            <span class="ops-step-dot"></span>
-                            <span>Dapur Masak</span>
-                        </div>
-                        <span class="ops-step-arrow">→</span>
-                        <div class="ops-step-item {% if today_dinner.prod.status == 'COMPLETED' %}is-done{% else %}is-pending{% endif %}">
-                            <span class="ops-step-dot"></span>
-                            <span>Siap Distribusi</span>
-                        </div>
-                    </div>
-
-                    <!-- Porsi Rencana vs Realisasi & SLA -->
-                    <div class="ops-portions-summary">
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Rencana</span>
-                            <span class="ops-portion-val">{{ planned_d }}</span>
-                        </div>
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Realisasi</span>
-                            <span class="ops-portion-val is-total">{{ actual_d }}</span>
-                        </div>
-                        <div class="ops-portion-metric">
-                            <span class="ops-portion-label">Selisih</span>
-                            <span class="ops-portion-val">
-                                {% set diff_d = actual_d - planned_d %}
-                                {% if actual_d > 0 %}
-                                    {% if diff_d > 0 %}
-                                        <span class="ops-diff-chip is-increase">+{{ diff_d|qty }}</span>
-                                    {% elif diff_d < 0 %}
-                                        <span class="ops-shortage-badge">Kurang {{ (-diff_d)|qty }}</span>
-                                    {% else %}
-                                        <span class="ops-variance-ok">Pas</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="ops-portion-metric ms-auto text-end">
-                            <span class="ops-portion-label">Target Siap</span>
-                            <span class="ops-portion-val fs-6">
-                                <span class="status-badge {{ sla_d.badge_class }}">{{ sla_d.target_ready_label }}</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Tombol Aksi Utama Besar Sesuai Status -->
-                    <div class="mt-3 d-flex gap-2 align-items-center">
-                        {% if today_dinner.prod.status == "DRAFT" %}
-                            <a href="{{ url_for('production.detail', production_id=today_dinner.prod.id) }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-play-circle me-1"></i> Mulai Masak Sore
-                            </a>
-                        {% elif today_dinner.prod.status == "IN_PROGRESS" %}
-                            <a href="{{ url_for('production.detail', production_id=today_dinner.prod.id) }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-check2-circle me-1"></i> Input Realisasi & Selesaikan
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('delivery.index') }}" class="btn app-btn-primary flex-grow-1">
-                                <i class="bi bi-truck me-1"></i> Lihat Pengiriman Sore
-                            </a>
-                            <a href="{{ url_for('production.detail', production_id=today_dinner.prod.id) }}" class="btn app-btn-secondary">
-                                Detail
-                            </a>
-                        {% endif %}
-                        <a href="{{ url_for('operational.kitchen_recap_hub', date=today.strftime('%Y-%m-%d'), sesi='DINNER') }}" class="btn app-btn-secondary" title="Cetak Rekap Dapur" target="_blank">
-                            <i class="bi bi-printer"></i>
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="empty-state app-empty-state-compact text-center py-4">
-                        <i class="bi bi-moon-stars fs-3 text-muted mb-2"></i>
-                        <h6 class="mb-1">Belum ada produksi Sore hari ini.</h6>
-                        <p class="text-muted small mb-3">Pesanan makan sore belum dikunci atau belum dibuatkan jadwal dapur.</p>
-                        <a href="{{ url_for('operational.orders') }}" class="btn app-btn-primary">
-                            <i class="bi bi-journal-text me-1"></i> Buka Order Harian
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    {{ global_filter_bar(filter_bar) }}
-
-    <section class="panel">
-        <div class="panel-head">
-            <div>
-                <h2>Daftar Produksi</h2>
-                <p>Produksi dibuat berdasarkan total porsi order terkunci.</p>
-            </div>
-        </div>
-
-        <div class="panel-body flush">
-            <div class="table-responsive">
-                <table class="table app-table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Tipe</th>
-                            <th>Status</th>
-                            <th>SLA</th>
-                            <th>Rencana Produksi</th>
-                            <th>Realisasi</th>
-                            <th>Catatan</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set ns = namespace(total_planned=0, total_actual=0) %}
-                        {% for production in productions %}
-                            {% set detail = production.details[0] if production.details else none %}
-                            {% set is_today = (today and production.production_date == today) %}
-                            {% if detail %}
-                                {% set ns.total_planned = ns.total_planned + (detail.planned_qty | int) %}
-                                {% set ns.total_actual = ns.total_actual + (detail.actual_qty | int) %}
-                            {% endif %}
-                            <tr class="{% if is_today %}ops-row-today{% endif %}">
-                                <td>
-                                    <a href="{{ url_for('production.detail', production_id=production.id) }}" class="fw-bold text-decoration-none text-primary">
-                                        {{ production.production_date.strftime('%d-%m-%Y') }}
-                                    </a>
-                                    {% if is_today %}
-                                        <span class="ops-chip ops-chip-today ms-1">Hari Ini</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if production.production_type == "LUNCH" %}
-                                        <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
-                                    {% else %}
-                                        <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Sore</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if production.status == "COMPLETED" %}
-                                        <span class="status-badge status-locked">Selesai</span>
-                                    {% elif production.status == "CANCELLED" %}
-                                        <span class="status-badge status-danger">Dibatalkan</span>
-                                    {% elif production.status == "IN_PROGRESS" %}
-                                        <span class="status-badge status-progress">Sedang Berjalan</span>
-                                    {% else %}
-                                        <span class="status-badge status-draft">Konsep</span>
-                                    {% endif %}
-                                </td>
-                                {% set sla = calculate_production_sla(production) %}
-                                <td>
-                                    <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
-                                    <div class="muted-small">Target {{ sla.target_ready_label }}</div>
-                                </td>
-                                <td>
-                                    {% if detail %}
-                                        <strong>{{ detail.planned_qty | int }}</strong> {{ detail.unit }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if detail %}
-                                        <strong>{{ detail.actual_qty | int }}</strong> {{ detail.unit }}
-                                        {% set diff = (detail.actual_qty | int) - (detail.planned_qty | int) %}
-                                        {% if detail.actual_qty > 0 %}
-                                            {% if diff > 0 %}
-                                                <span class="ops-diff-chip is-increase ms-1"><i class="bi bi-arrow-up-short"></i>+{{ diff|qty }}</span>
-                                            {% elif diff < 0 %}
-                                                <span class="ops-shortage-badge ms-1"><i class="bi bi-exclamation-triangle"></i>Kurang {{ (-diff)|qty }}</span>
-                                            {% else %}
-                                                <span class="ops-variance-ok ms-1"><i class="bi bi-check-lg"></i>Pas</span>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>{{ production.notes or '-' }}</td>
-                                <td class="text-end">
-                                    <div class="ops-actions d-inline-flex align-items-center gap-1">
-                                        <a href="{{ url_for('production.detail', production_id=production.id) }}" class="btn btn-sm app-btn-secondary">
-                                            Buka Batch
-                                        </a>
-
-                                        <div class="dropdown d-inline-block">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-popper-config='{"strategy":"fixed"}'>
-                                                <i class="bi bi-three-dots"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end app-action-menu">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ url_for('operational.kitchen_recap_hub', date=production.production_date.strftime('%Y-%m-%d'), sesi=production.production_type) }}" target="_blank">
-                                                        <i class="bi bi-printer me-2"></i> Cetak Rekap Dapur
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ url_for('operational.orders') }}">
-                                                        <i class="bi bi-journal-text me-2"></i> Buka Order Harian
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="8">
-                                    <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
-                                        <i class="bi bi-egg-fried"></i>
-                                        <h6>Belum ada produksi.</h6>
-                                        <p>Buat dari order harian yang sudah dikunci.</p>
-                                    </div>
-                                </td>
-                            </tr>
+                            <div class="text-muted small py-4 text-center">Tidak ada kloter konsep</div>
                         {% endfor %}
-                    </tbody>
-                    {% if productions %}
-                    <tfoot class="ops-tfoot-summary">
-                        <tr>
-                            <td colspan="4" class="text-end fw-bold">Total Porsi (Daftar Tampil):</td>
-                            <td class="fw-bold">{{ ns.total_planned }} Porsi</td>
-                            <td class="fw-bold">{{ ns.total_actual }} Porsi</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                    {% endif %}
-                </table>
+                    </div>
+
+                    <!-- Kolom 2: Dimasak (IN_PROGRESS) -->
+                    <div class="ops-board-col">
+                        <div class="ops-board-col-head">
+                            <span class="text-primary"><i class="bi bi-fire me-1"></i> Dimasak (IN_PROGRESS)</span>
+                            <span class="ops-board-col-count">{{ progress_prods|length }}</span>
+                        </div>
+                        {% for p in progress_prods %}
+                            {{ render_board_card(p) }}
+                        {% else %}
+                            <div class="text-muted small py-4 text-center">Tidak ada yang sedang dimasak</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Kolom 3: Siap Kirim (COMPLETED) -->
+                    <div class="ops-board-col">
+                        <div class="ops-board-col-head">
+                            <span class="text-success"><i class="bi bi-check-circle me-1"></i> Siap Kirim (COMPLETED)</span>
+                            <span class="ops-board-col-count">{{ completed_prods|length }}</span>
+                        </div>
+                        {% for p in completed_prods %}
+                            {{ render_board_card(p) }}
+                        {% else %}
+                            <div class="text-muted small py-4 text-center">Belum ada kloter selesai</div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    {% else %}
+        {# TAMPILAN TABEL (?view=tabel) #}
+        {{ global_filter_bar(filter_bar) }}
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>Daftar Produksi</h2>
+                    <p>{{ productions|length }} kloter produksi dalam rentang filter.</p>
+                </div>
+            </div>
+
+            <div class="panel-body flush">
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Tipe</th>
+                                <th>Status</th>
+                                <th>SLA</th>
+                                <th class="text-end ops-num">Rencana Produksi</th>
+                                <th class="text-end ops-num">Realisasi</th>
+                                <th>Catatan</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set ns = namespace(total_planned=0, total_actual=0) %}
+                            {% set prev_prod_date = namespace(val=none) %}
+                            {% for production in productions %}
+                                {% set detail = production.details[0] if production.details else none %}
+                                {% set is_today = (today and production.production_date == today) %}
+                                {% if detail %}
+                                    {% set ns.total_planned = ns.total_planned + (detail.planned_qty | int) %}
+                                    {% set ns.total_actual = ns.total_actual + (detail.actual_qty | int) %}
+                                {% endif %}
+
+                                {% if prev_prod_date.val != production.production_date %}
+                                    {% set prev_prod_date.val = production.production_date %}
+                                    {% set summary = prod_date_summaries.get(production.production_date) %}
+                                    <tr class="ops-date-group-row">
+                                        <td colspan="8" class="ops-date-group-cell">
+                                            <i class="bi bi-calendar3 me-1"></i>
+                                            <strong>{{ production.production_date.strftime('%d-%m-%Y') }}</strong>
+                                            <span class="ops-date-group-meta">· {{ summary.count if summary else 1 }} produksi · {{ summary.total_planned if summary else 0 }} porsi</span>
+                                            {% if is_today %}<span class="ops-chip ops-chip-today ms-2">Hari Ini</span>{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+
+                                <tr class="{% if is_today %}ops-row-today{% endif %}">
+                                    <td>
+                                        <a href="{{ url_for('production.detail', production_id=production.id) }}" class="fw-bold text-decoration-none text-primary">
+                                            {{ production.production_date.strftime('%d-%m-%Y') }}
+                                        </a>
+                                        {% if is_today %}
+                                            <span class="ops-chip ops-chip-today ms-1">Hari Ini</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if production.production_type == "LUNCH" %}
+                                            <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                                        {% else %}
+                                            <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Sore</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if production.status == "COMPLETED" %}
+                                            <span class="status-badge status-locked">Selesai</span>
+                                        {% elif production.status == "CANCELLED" %}
+                                            <span class="status-badge status-danger">Dibatalkan</span>
+                                        {% elif production.status == "IN_PROGRESS" %}
+                                            <span class="status-badge status-progress">Sedang Berjalan</span>
+                                        {% else %}
+                                            <span class="status-badge status-draft">Konsep</span>
+                                        {% endif %}
+                                    </td>
+                                    {% set sla = calculate_production_sla(production) %}
+                                    <td>
+                                        <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
+                                        <div class="muted-small">Target {{ sla.target_ready_label }}</div>
+                                    </td>
+                                    <td class="text-end ops-num">
+                                        {% if detail %}
+                                            <strong>{{ detail.planned_qty | int }}</strong> {{ detail.unit }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end ops-num">
+                                        {% if detail %}
+                                            <strong>{{ detail.actual_qty | int }}</strong> {{ detail.unit }}
+                                            {% set diff = (detail.actual_qty | int) - (detail.planned_qty | int) %}
+                                            {% if detail.actual_qty > 0 %}
+                                                {% if diff > 0 %}
+                                                    <span class="ops-diff-chip is-increase ms-1"><i class="bi bi-arrow-up-short"></i>+{{ diff|qty }}</span>
+                                                {% elif diff < 0 %}
+                                                    <span class="ops-shortage-badge ms-1"><i class="bi bi-exclamation-triangle"></i>Kurang {{ (-diff)|qty }}</span>
+                                                {% else %}
+                                                    <span class="ops-variance-ok ms-1"><i class="bi bi-check-lg"></i>Pas</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ production.notes or '-' }}</td>
+                                    <td class="text-end">
+                                        <div class="ops-actions d-inline-flex align-items-center gap-1">
+                                            <a href="{{ url_for('production.detail', production_id=production.id) }}" class="btn btn-sm app-btn-secondary">
+                                                Buka Batch
+                                            </a>
+
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-popper-config='{"strategy":"fixed"}'>
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end app-action-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ url_for('operational.kitchen_recap_hub', date=production.production_date.strftime('%Y-%m-%d'), sesi=production.production_type) }}" target="_blank">
+                                                            <i class="bi bi-printer me-2"></i> Cetak Rekap Dapur
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ url_for('operational.orders') }}">
+                                                            <i class="bi bi-journal-text me-2"></i> Buka Order Harian
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="8">
+                                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                            <i class="bi bi-egg-fried"></i>
+                                            <h6>Belum ada produksi.</h6>
+                                            <p>Buat dari order harian yang sudah dikunci.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if productions %}
+                        <tfoot class="ops-tfoot-summary">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Total Porsi (Daftar Tampil):</td>
+                                <td class="fw-bold text-end ops-num">{{ ns.total_planned }} Porsi</td>
+                                <td class="fw-bold text-end ops-num">{{ ns.total_actual }} Porsi</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </section>
+    {% endif %}
 </div>
 {% endblock %}

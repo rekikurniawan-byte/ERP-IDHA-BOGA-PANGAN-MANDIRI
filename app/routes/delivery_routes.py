@@ -4,7 +4,7 @@ from flask_login import current_user
 from app.extensions import db
 from datetime import datetime
 
-from app.utils.clock import today_wib
+from app.utils.clock import now_wib, to_wib, today_wib
 from app.services.ops_navigation_service import uses_ops_ui
 
 from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
@@ -536,7 +536,8 @@ def delete_attachment(attachment_id):
 @delivery_bp.route("/today")
 @role_required("ADMIN", "PENGANTAR", "ADMIN_OPERASIONAL")
 def today():
-    from datetime import date, datetime
+    from datetime import date, datetime, timedelta
+    from app.services.ops_timeline_service import build_session_timeline
 
     selected_date_text = request.args.get("date") or today_wib().isoformat()
 
@@ -559,6 +560,78 @@ def today():
         limit=6,
     )
 
+    timeline = build_session_timeline(current_user.branch_id, today_wib())
+
+    curr_now = now_wib()
+    map_markers = []
+    unmapped_locations_dict = {}
+
+    for d in deliveries:
+        deliv_type = get_delivery_type_from_notes(d.notes)
+        deliv_tol = d.late_tolerance_minutes or 15
+        for det in d.details:
+            loc = det.delivery_location
+            if not loc:
+                continue
+
+            if det.receipt and det.receipt.receive_time:
+                if d.target_arrival_time:
+                    limit = d.target_arrival_time + timedelta(minutes=deliv_tol)
+                    marker_color = "red" if to_wib(det.receipt.receive_time) > limit else "green"  # disimpan UTC
+                else:
+                    marker_color = "green"
+                marker_status = "Diterima"
+            elif d.status in ("IN_TRANSIT", "ON_THE_WAY"):
+                if d.target_arrival_time and curr_now > (d.target_arrival_time + timedelta(minutes=deliv_tol)):
+                    marker_color = "red"
+                    marker_status = "Di jalan (telat)"
+                else:
+                    marker_color = "blue"
+                    marker_status = "Di jalan"
+            else:
+                if d.target_dispatch_time and curr_now > (d.target_dispatch_time + timedelta(minutes=deliv_tol)):
+                    marker_color = "red"
+                    marker_status = "Belum berangkat (telat)"
+                else:
+                    marker_color = "gray"
+                    marker_status = "Belum berangkat"
+
+            has_coords = False
+            lat_f, lng_f = None, None
+            if loc.latitude is not None and loc.longitude is not None:
+                try:
+                    lat_f = float(loc.latitude)
+                    lng_f = float(loc.longitude)
+                    has_coords = True
+                except (ValueError, TypeError):
+                    has_coords = False
+
+            if has_coords:
+                map_markers.append({
+                    "id": loc.id,
+                    "name": loc.location_name,
+                    "mandor_name": det.mandor.name if det.mandor else "-",
+                    "lat": lat_f,
+                    "lng": lng_f,
+                    "color": marker_color,
+                    "status_label": marker_status,
+                    "planned_qty": det.planned_qty,
+                    "delivered_qty": det.delivered_qty or 0,
+                    "delivery_id": det.delivery_id,
+                    "delivery_number": d.delivery_number,
+                    "detail_url": url_for("delivery.detail", delivery_id=det.delivery_id),
+                })
+            else:
+                if loc.id not in unmapped_locations_dict:
+                    unmapped_locations_dict[loc.id] = {
+                        "id": loc.id,
+                        "name": loc.location_name,
+                        "mandor_name": det.mandor.name if det.mandor else "-",
+                        "edit_url": url_for("master.edit_location", location_id=loc.id),
+                    }
+
+    unmapped_locations = list(unmapped_locations_dict.values())
+
     template_name = "driver/today.html" if current_user.role == "PENGANTAR" else (
         "ops/today.html" if uses_ops_ui(current_user) else "delivery/today.html"
     )
@@ -570,6 +643,9 @@ def today():
         get_delivery_type_from_notes=get_delivery_type_from_notes,
         calculate_delivery_sla_summary=calculate_delivery_sla_summary,
         delivery_next_actions=delivery_next_actions,
+        timeline=timeline,
+        map_markers=map_markers,
+        unmapped_locations=unmapped_locations,
     )
 
 
@@ -660,12 +736,22 @@ def history():
 
         deliveries.append(delivery)
 
+    deliv_date_summaries = {}
+    for d in deliveries:
+        dt = d.delivery_date
+        planned_total = sum(det.planned_qty for det in d.details)
+        if dt not in deliv_date_summaries:
+            deliv_date_summaries[dt] = {"count": 0, "total_planned": 0}
+        deliv_date_summaries[dt]["count"] += 1
+        deliv_date_summaries[dt]["total_planned"] += planned_total
+
     template_name = "driver/history.html" if current_user.role == "PENGANTAR" else (
         "ops/history.html" if uses_ops_ui(current_user) else "delivery/history.html"
     )
     return render_template(
         template_name,
         deliveries=deliveries,
+        deliv_date_summaries=deliv_date_summaries,
         status_filter=status_filter,
         date_from_text=date_from_text,
         date_to_text=date_to_text,

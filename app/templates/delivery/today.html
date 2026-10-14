@@ -6,7 +6,7 @@
     <header class="dash-head">
         <div>
             <h1>Pengiriman Hari Ini</h1>
-            <p>Daftar delivery berdasarkan tanggal yang dipilih.</p>
+            <p>Tanggal {{ selected_date.strftime('%d-%m-%Y') }} · {{ deliveries|length }} pengiriman · {{ map_markers|length }} lokasi GPS</p>
         </div>
         <div class="dash-head-actions">
             <a href="{{ url_for('delivery.history') }}" class="btn btn-outline-secondary">
@@ -17,6 +17,8 @@
             </a>
         </div>
     </header>
+
+    {% include "operational/_session_timeline.html" %}
 
     <section class="panel mb-4">
         <div class="panel-body p-3">
@@ -29,6 +31,86 @@
             </form>
         </div>
     </section>
+
+    {# PANEL PETA PENGIRIMAN (Task E) #}
+    {% if map_markers or unmapped_locations %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+    <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+
+    <section class="panel mb-4" aria-label="Peta Pengiriman">
+        <div class="panel-head">
+            <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+                <div>
+                    <h2>Peta Lokasi Pengiriman Hari Ini</h2>
+                    <p>{{ map_markers|length }} lokasi dengan koordinat GPS · {{ unmapped_locations|length }} belum dipetakan</p>
+                </div>
+                <div class="ops-timeline-legend border-0 p-0">
+                    <span><i class="ops-timeline-dot is-gray"></i> Belum Berangkat</span>
+                    <span><i class="ops-timeline-dot is-blue"></i> Di Jalan</span>
+                    <span><i class="ops-timeline-dot is-green"></i> Diterima</span>
+                    <span><i class="ops-timeline-dot is-red"></i> Telat</span>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            {% if map_markers %}
+            <div id="opsDeliveryMap" class="ops-map-container"></div>
+            <script type="application/json" id="deliveryMapData">{{ map_markers|tojson }}</script>
+            <script>
+            (function() {
+                var el = document.getElementById('deliveryMapData');
+                if (!el || typeof L === 'undefined') return;
+                var data = JSON.parse(el.textContent || '[]');
+                if (!data.length) return;
+                var map = L.map('opsDeliveryMap');
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+                var colorMap = { gray: '#94a3b8', blue: '#0284c7', green: '#16a34a', red: '#dc2626' };
+                var bounds = [];
+                data.forEach(function(m) {
+                    var c = colorMap[m.color] || '#0284c7';
+                    var icon = L.divIcon({
+                        className: 'ops-map-pin',
+                        html: '<span style="display:block;width:16px;height:16px;border-radius:50%;background:' + c + ';border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></span>',
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+                    var marker = L.marker([m.lat, m.lng], { icon: icon }).addTo(map);
+                    var popup = '<div style="font-size:12px;line-height:1.4;">' +
+                        '<strong>' + m.name + '</strong><br>' +
+                        '<span style="color:#64748b;">' + m.mandor_name + '</span><br>' +
+                        '<span>Porsi: ' + m.planned_qty + ' target / ' + m.delivered_qty + ' diterima</span><br>' +
+                        '<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:bold;margin:4px 0;background:' + c + ';color:#fff;">' + m.status_label + '</span><br>' +
+                        '<a href="' + m.detail_url + '" class="btn btn-xs btn-primary mt-1" style="display:inline-block;color:#fff;text-decoration:none;">Buka Delivery ' + m.delivery_number + '</a>' +
+                        '</div>';
+                    marker.bindPopup(popup);
+                    bounds.push([m.lat, m.lng]);
+                });
+                if (bounds.length) { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 }); }
+            })();
+            </script>
+            {% endif %}
+
+            {% if unmapped_locations %}
+            <div class="ops-unmapped-list {% if map_markers %}mt-3{% endif %}">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-geo-alt-fill text-warning fs-5"></i>
+                    <strong>Belum ada titik GPS ({{ unmapped_locations|length }})</strong>
+                    <span class="text-muted small">— Koordinat lokasi tujuan belum diatur di master data.</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for loc in unmapped_locations %}
+                    <a href="{{ loc.edit_url }}" class="btn btn-sm btn-outline-warning text-dark text-decoration-none">
+                        <i class="bi bi-pencil-square me-1"></i> {{ loc.name }} ({{ loc.mandor_name }})
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
 
 {% if delivery_next_actions %}
 <section class="delivery-next-action-panel mt-4" data-delivery-next-action="delivery-today">
@@ -94,10 +176,10 @@
                     <th>Pengantar</th>
                     <th>Status</th>
                     <th>SLA</th>
-                    <th>Lokasi</th>
-                    <th>Rencana</th>
-                    <th>Terkirim</th>
-                    <th>Kurang Kirim</th>
+                    <th class="text-end ops-num">Lokasi</th>
+                    <th class="text-end ops-num">Rencana</th>
+                    <th class="text-end ops-num">Terkirim</th>
+                    <th class="text-end ops-num">Kurang Kirim</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -150,10 +232,10 @@
                         <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
                         <div class="muted-small">Tiba {{ sla.target_arrival_label }} · batas {{ sla.late_limit_label }}</div>
                     </td>
-                    <td><strong>{{ delivery.details|length }}</strong> Titik</td>
-                    <td>{{ total.planned|qty }} Porsi</td>
-                    <td>{{ total.delivered|qty }} Porsi</td>
-                    <td>
+                    <td class="text-end ops-num"><strong>{{ delivery.details|length }}</strong> Titik</td>
+                    <td class="text-end ops-num">{{ total.planned|qty }} Porsi</td>
+                    <td class="text-end ops-num">{{ total.delivered|qty }} Porsi</td>
+                    <td class="text-end ops-num">
                         {% if total.shortage > 0 %}
                             <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ total.shortage|qty }}</span>
                         {% else %}

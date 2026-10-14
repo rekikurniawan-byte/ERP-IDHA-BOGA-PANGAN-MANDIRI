@@ -1,0 +1,35 @@
+{# Partial Hitung Mundur Jam Kunci (Task C)
+   Script inline <= 25 baris memperbarui elemen [data-countdown-to] tiap detik tanpa menyentuh main.js #}
+{% if countdowns %}
+<div class="ops-countdown-group d-flex flex-wrap gap-2">
+    {% for c in countdowns %}
+    <span class="ops-countdown-chip is-{{ c.tone }}" data-countdown-to="{{ c.target_iso }}" data-session="{{ c.session_name|lower }}">
+        <i class="bi bi-clock-history me-1"></i>
+        <span class="ops-countdown-text">{{ c.text }}</span>
+    </span>
+    {% endfor %}
+</div>
+<script>
+(function() {
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function tick() {
+        var now = new Date();
+        document.querySelectorAll('[data-countdown-to]').forEach(function(el) {
+            var target = new Date(el.dataset.countdownTo);
+            var sec = Math.floor((target.getTime() - now.getTime()) / 1000);
+            var txt = el.querySelector('.ops-countdown-text') || el;
+            var sess = el.dataset.session || '';
+            if (sec <= 0) {
+                txt.textContent = 'Kunci ' + sess + ': Lewat jam kunci';
+                el.className = el.className.replace(/is-\w+/g, '').trim() + ' is-danger';
+            } else {
+                var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+                txt.textContent = 'Kunci ' + sess + ' dalam ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+                el.className = el.className.replace(/is-\w+/g, '').trim() + ' ' + (sec > 3600 ? 'is-normal' : sec > 900 ? 'is-warning' : 'is-danger');
+            }
+        });
+    }
+    if (!window._countdownTimer) { window._countdownTimer = setInterval(tick, 1000); }
+})();
+</script>
+{% endif %}

@@ -6,7 +6,7 @@
     <header class="dash-head">
         <div>
             <h1>Riwayat Perubahan Porsi</h1>
-            <p>Jejak audit perubahan porsi order harian dari Penjadwal (AUTO), Portal Client/Sub Client (PORTAL), dan Admin (ADMIN).</p>
+            <p class="text-muted small mb-0">{{ changes|length }} perubahan tercatat</p>
         </div>
         <div class="dash-head-actions">
             <a href="{{ url_for('operational.orders') }}" class="btn btn-outline-secondary">
@@ -61,7 +61,6 @@
         <div class="panel-head d-flex justify-content-between align-items-center">
             <div>
                 <h2>Log Perubahan Porsi</h2>
-                <p>Mencatat setiap kali porsi dibuat atau diubah beserta alasan penjelas dan waktu WIB.</p>
             </div>
             <span class="badge bg-secondary-subtle text-secondary border">{{ changes|length }} data ditemukan</span>
         </div>
@@ -80,12 +79,35 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% set HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'] %}
+                    {% set BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] %}
+                    {% set ns = namespace(current_date=none) %}
                     {% for c in changes %}
+                    {% set c_date = c.changed_at.strftime('%Y-%m-%d') %}
+                    {% if ns.current_date != c_date %}
+                        {% set ns.current_date = c_date %}
+                        {# Hitung total untuk tanggal ini #}
+                        {% set date_ns = namespace(count=0, porsi=0) %}
+                        {% for x in changes %}
+                            {% if x.changed_at.strftime('%Y-%m-%d') == c_date %}
+                                {% set date_ns.count = date_ns.count + 1 %}
+                                {% set date_ns.porsi = date_ns.porsi + x.new_qty %}
+                            {% endif %}
+                        {% endfor %}
+                        <tr class="ops-date-group-row">
+                            <td colspan="6" class="ops-date-group-cell">
+                                <i class="bi bi-calendar3 me-1 text-primary"></i>
+                                <span>{{ HARI[c.changed_at.weekday()] }}, {{ c.changed_at.day }} {{ BULAN[c.changed_at.month - 1] }} {{ c.changed_at.year }}</span>
+                                <span class="ops-date-group-meta">· {{ date_ns.count }} perubahan · {{ date_ns.porsi|qty }} porsi baru</span>
+                            </td>
+                        </tr>
+                    {% endif %}
                     {% set detail = c.daily_order_detail %}
                     {% set order = detail.daily_order if detail else None %}
                     <tr>
                         <td>
-                            <div class="fw-semibold text-dark">{{ c.changed_at.strftime('%d/%m/%Y %H.%M') }}</div>
+                            <div class="fw-semibold text-dark ops-num">{{ c.changed_at.strftime('%H.%M') }}</div>
+                            <small class="text-muted">{{ c.changed_at.strftime('%d/%m/%Y') }}</small>
                         </td>
                         <td>
                             <div>
@@ -133,7 +155,7 @@
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="d-inline-flex align-items-center gap-1 mb-1">
+                            <div class="d-inline-flex align-items-center gap-1 mb-1 ops-num">
                                 <span class="text-muted">{{ c.old_qty|qty }}</span>
                                 <i class="bi bi-arrow-right text-secondary small"></i>
                                 <span class="fw-bold {% if c.new_qty == 0 %}text-danger{% elif c.new_qty > c.old_qty %}text-success{% else %}text-warning-emphasis{% endif %}">
@@ -145,9 +167,9 @@
                                 {% if c.new_qty == 0 %}
                                     <span class="ops-diff-chip is-cancel"><i class="bi bi-x-circle me-1"></i> Batal (0)</span>
                                 {% elif diff > 0 %}
-                                    <span class="ops-diff-chip is-increase"><i class="bi bi-arrow-up-short"></i> +{{ diff|qty }} porsi</span>
+                                    <span class="ops-diff-chip is-increase ops-num"><i class="bi bi-arrow-up-short"></i> +{{ diff|qty }} porsi</span>
                                 {% elif diff < 0 %}
-                                    <span class="ops-diff-chip is-decrease"><i class="bi bi-arrow-down-short"></i> {{ diff|qty }} porsi</span>
+                                    <span class="ops-diff-chip is-decrease ops-num"><i class="bi bi-arrow-down-short"></i> {{ diff|qty }} porsi</span>
                                 {% else %}
                                     <span class="text-muted small">(tetap)</span>
                                 {% endif %}

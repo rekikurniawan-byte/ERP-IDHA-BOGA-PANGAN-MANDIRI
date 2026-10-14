@@ -1,0 +1,66 @@
+{# Partial Garis Waktu Sesi Hari Ini (Task B)
+   Dipakai di operational/orders.html, production/index.html, delivery/today.html.
+   Data berasal dari app.services.ops_timeline_service.build_session_timeline #}
+{% if timeline and timeline.sessions %}
+<div class="panel ops-timeline-panel mb-4" aria-label="Garis waktu sesi hari ini">
+    <div class="panel-head">
+        <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-primary"></i>
+                <h2 class="h6 mb-0">Garis Waktu Sesi Hari Ini</h2>
+                <span class="text-muted small">Sumbu 05.00 – 20.00 WIB</span>
+            </div>
+            {% if timeline.is_today and timeline.now_time_str %}
+            <span class="ops-chip ops-chip-today">
+                <i class="bi bi-broadcast me-1"></i> Sekarang {{ timeline.now_time_str }} WIB
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="ops-timeline-axis-ticks">
+            <span>05.00</span>
+            <span>08.00</span>
+            <span>11.00</span>
+            <span>14.00</span>
+            <span>17.00</span>
+            <span>20.00</span>
+        </div>
+        <div class="ops-timeline-tracks">
+            {% for sess in timeline.sessions %}
+            <div class="ops-timeline-row">
+                <div class="ops-timeline-row-label">
+                    <i class="bi {{ sess.icon }} me-1"></i>
+                    <strong>{{ sess.session_name }}</strong>
+                </div>
+                <div class="ops-timeline-track">
+                    {# Garis Sekarang hanya jika hari ini #}
+                    {% if timeline.is_today and timeline.now_pct is not none %}
+                    <div class="ops-timeline-now-line" style="left: {{ timeline.now_pct }}%" title="Sekarang: {{ timeline.now_time_str }} WIB">
+                        <span class="ops-timeline-now-badge">Sekarang</span>
+                    </div>
+                    {% endif %}
+
+                    {# Titik-titik sesi #}
+                    {% for pt in sess.points %}
+                    <div class="ops-timeline-point is-{{ pt.color }}" style="left: {{ pt.pct }}%" title="{{ pt.tooltip }}" data-bs-toggle="tooltip" data-bs-placement="top">
+                        <span class="ops-timeline-node"></span>
+                        <div class="ops-timeline-node-info">
+                            <span class="ops-timeline-node-label">{{ pt.label }}</span>
+                            <span class="ops-timeline-node-time">{{ pt.time_display if pt.time_display else '—' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="ops-timeline-legend">
+            <span><i class="ops-timeline-dot is-gray"></i> Belum</span>
+            <span><i class="ops-timeline-dot is-blue"></i> Berjalan</span>
+            <span><i class="ops-timeline-dot is-green"></i> Tepat</span>
+            <span><i class="ops-timeline-dot is-red"></i> Telat</span>
+        </div>
+    </div>
+</div>
+{% endif %}

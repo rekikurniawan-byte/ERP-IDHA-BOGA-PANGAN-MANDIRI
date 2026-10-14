@@ -43,11 +43,45 @@ def index():
         Production.id.desc()
     ).all()
 
+    view_mode = (request.args.get("view") or "papan").lower()
+    if view_mode not in ("papan", "tabel"):
+        view_mode = "papan"
+
+    today = today_wib()
+
+    from app.services.ops_timeline_service import build_session_timeline
+    from app.services.kitchen_recap_service import get_kitchen_max_portions_per_container
+    import math
+
+    timeline = build_session_timeline(current_user.branch_id, today)
+    max_portions = get_kitchen_max_portions_per_container(current_user.branch_id)
+    today_order = DailyOrder.query.filter_by(
+        branch_id=current_user.branch_id,
+        order_date=today,
+        is_locked=True
+    ).first()
+
+    prod_date_summaries = {}
+    for prod in productions:
+        d = prod.production_date
+        det = prod.details[0] if prod.details else None
+        p_qty = int(det.planned_qty) if det else 0
+        if d not in prod_date_summaries:
+            prod_date_summaries[d] = {"count": 0, "total_planned": 0}
+        prod_date_summaries[d]["count"] += 1
+        prod_date_summaries[d]["total_planned"] += p_qty
+
     template_name = "ops/production.html" if uses_ops_ui(current_user) else "production/index.html"
     return render_template(
         template_name,
         productions=productions,
-        today=today_wib(),
+        today=today,
+        timeline=timeline,
+        view_mode=view_mode,
+        max_portions=max_portions,
+        ceil=math.ceil,
+        today_order=today_order,
+        prod_date_summaries=prod_date_summaries,
         calculate_production_sla=calculate_production_sla,
         filter_bar=build_filter_bar_context(
             state=date_filter,

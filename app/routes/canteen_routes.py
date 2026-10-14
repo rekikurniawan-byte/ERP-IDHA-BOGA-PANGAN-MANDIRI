@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime, date
+from decimal import Decimal
+from collections import defaultdict
 import json
 
-from app.utils.clock import today_wib
+from app.utils.clock import today_wib, to_wib
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
@@ -143,6 +145,79 @@ def index():
     total_unpaid_debt = sum(get_debt_remaining_amount(debt) for debt in debts)
     total_external_remaining = sum(get_external_receivable_remaining_amount(row) for row in external_receivables)
 
+    # Task F: Data Hari Ini (Grafik per jam, Kas Harian, Top Hutang)
+    from app.services.canteen_pos_service import worker_balances
+    from app.services.daily_cash_service import get_daily_cash_by_date
+
+    today = today_wib()
+    today_sales = CanteenSale.query.filter_by(
+        branch_id=current_user.branch_id,
+        sale_date=today,
+    ).all()
+
+    # 1. Grafik batang penjualan per jam hari ini (06.00–23.00)
+    hourly_cash = defaultdict(float)
+    hourly_debt = defaultdict(float)
+    active_hours = set()
+    for s in today_sales:
+        created_wib = to_wib(s.created_at) if s.created_at else None
+        h = created_wib.hour if created_wib else 12
+        method = _sale_payment_method(s)
+        amount = float(s.total_amount or 0)
+        if method == "DEBT":
+            hourly_debt[h] += amount
+        else:
+            hourly_cash[h] += amount
+        active_hours.add(h)
+
+    if active_hours:
+        start_hour = max(6, min(active_hours) - 1)
+        end_hour = min(23, max(active_hours) + 1)
+    else:
+        start_hour = 6
+        end_hour = 18
+
+    chart_categories = [f"{h:02d}.00" for h in range(start_hour, end_hour + 1)]
+    cash_series_data = [hourly_cash[h] for h in range(start_hour, end_hour + 1)]
+    debt_series_data = [hourly_debt[h] for h in range(start_hour, end_hour + 1)]
+
+    hourly_sales_spec = {
+        "kind": "bar",
+        "format": "rupiah",
+        "height": 260,
+        "categories": chart_categories,
+        "series": [
+            {"name": "Tunai + QRIS", "color": "brand-600", "data": cash_series_data},
+            {"name": "Hutang", "color": "chart-amber", "data": debt_series_data},
+        ],
+    }
+
+    # 2. Panel 5 pekerja hutang terbesar (dari worker_balances, hanya bagian warung)
+    top_debt_workers = []
+    if module_enabled(WORKER_DEBT):
+        all_balances = worker_balances(current_user.branch_id)
+        warung_debts = [
+            (w_id, Decimal(b.get("warung") or 0))
+            for w_id, b in all_balances.items()
+            if Decimal(b.get("warung") or 0) > 0
+        ]
+        warung_debts.sort(key=lambda x: x[1], reverse=True)
+        top_5_items = warung_debts[:5]
+        top_worker_ids = [w_id for w_id, _ in top_5_items]
+        if top_worker_ids:
+            workers_obj = Worker.query.filter(Worker.id.in_(top_worker_ids)).all()
+            w_map = {w.id: w for w in workers_obj}
+            for w_id, amt in top_5_items:
+                w = w_map.get(w_id)
+                if w:
+                    top_debt_workers.append({
+                        "worker": w,
+                        "amount": amt,
+                    })
+
+    # 3. Kas warung hari ini
+    cash_daily_today = get_daily_cash_by_date(current_user.branch_id, today)
+
     return render_template(
         "canteen/index.html",
         sales=sales,
@@ -161,6 +236,12 @@ def index():
         sale_payment_method=_sale_payment_method,
         sale_buyer_type=_sale_buyer_type,
         sale_buyer_label=_sale_buyer_label,
+        hourly_sales_spec=hourly_sales_spec,
+        top_debt_workers=top_debt_workers,
+        cash_daily_today=cash_daily_today,
+        today=today,
+        today_sales_count=len(today_sales),
+        today_total_amount=sum(s.total_amount for s in today_sales),
         filter_bar=build_filter_bar_context(
             state=date_filter,
             action_url=url_for("canteen.index"),
