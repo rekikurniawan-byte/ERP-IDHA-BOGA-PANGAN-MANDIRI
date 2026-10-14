@@ -482,7 +482,7 @@
     <div class="panel-head">
         <div>
             <h2>Detail {{ term('sub_client') }} & Lokasi</h2>
-            <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat dikunci. Jika ada harga berbeda setelah dikunci, lihat Riwayat Revisi.</p>
+            <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat dikunci. Jika ada harga berbeda setelah dikunci, lihat Riwayat Perubahan Porsi.</p>
         </div>
     </div>
 
@@ -652,8 +652,8 @@
 <section class="panel mt-4">
     <div class="panel-head">
         <div>
-            <h2>Riwayat Revisi</h2>
-            <p>Semua perubahan order tercatat untuk kebutuhan audit.</p>
+            <h2>Riwayat Perubahan Porsi</h2>
+            <p>Semua perubahan porsi dari revisi maupun ubah porsi tercatat untuk kebutuhan audit.</p>
         </div>
     </div>
 
@@ -662,63 +662,53 @@
         <table class="table app-table align-middle">
             <thead>
                 <tr>
-                    <th>Waktu</th>
-                    <th>{{ term('sub_client') }}</th>
-                    <th>Lokasi</th>
-                    <th>Jenis</th>
-                    <th>Masuk/Keluar</th>
-                    <th>Siang</th>
-                    <th>Sore</th>
-                    <th>Harga Revisi</th>
+                    <th style="min-width: 130px;">Waktu</th>
+                    <th>Mandor / Lokasi</th>
+                    <th>Sesi</th>
+                    <th>Perubahan</th>
+                    <th class="text-end">Harga Revisi</th>
+                    <th>Sumber</th>
+                    <th>Oleh</th>
                     <th>Alasan</th>
                 </tr>
             </thead>
             <tbody>
-                {% set revision_found = namespace(value=false) %}
-
-                {% for detail in daily_order.details %}
-                    {% for revision in detail.revisions %}
-                        {% set revision_found.value = true %}
-                        <tr>
-                            <td>{{ revision.revision_time|wib('%d-%m-%Y %H:%M') }}</td>
-                            <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                            <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
-                            <td>{{ revision.revision_type|status_label }}</td>
-                            <td>{{ revision.revision_direction|status_label }}</td>
-                            <td>
-                                {% if revision.lunch_qty_change > 0 %}
-                                    <span class="ops-diff-chip is-increase">+{{ revision.lunch_qty_change }}</span>
-                                {% elif revision.lunch_qty_change < 0 %}
-                                    <span class="ops-diff-chip is-decrease">{{ revision.lunch_qty_change }}</span>
-                                {% else %}
-                                    <span class="text-muted">0</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if revision.dinner_qty_change > 0 %}
-                                    <span class="ops-diff-chip is-increase">+{{ revision.dinner_qty_change }}</span>
-                                {% elif revision.dinner_qty_change < 0 %}
-                                    <span class="ops-diff-chip is-decrease">{{ revision.dinner_qty_change }}</span>
-                                {% else %}
-                                    <span class="text-muted">0</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ revision.price_per_portion|rupiah if revision.price_per_portion else detail.price_per_portion|rupiah }}</td>
-                            <td>{{ revision.reason or '-' }}</td>
-                        </tr>
-                    {% endfor %}
-                {% endfor %}
-
-                {% if not revision_found.value %}
+                {% for item in portion_history %}
                 <tr>
-                    <td colspan="9">
+                    <td>
+                        <span class="fw-semibold text-dark">{{ item.time_str }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ item.mandor_name }}</strong><br>
+                        <small class="text-muted">{{ item.location_name }}</small>
+                    </td>
+                    <td>
+                        {% if 'Siang' in item.session %}<span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>{% endif %}
+                        {% if 'Sore' in item.session %}<span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Sore</span>{% endif %}
+                        {% if 'Siang' not in item.session and 'Sore' not in item.session %}{{ item.session }}{% endif %}
+                    </td>
+                    <td>
+                        <strong class="ops-num">{{ item.change_text }}</strong>
+                    </td>
+                    <td class="text-end ops-num">{{ item.price|rupiah if item.price is not none else '—' }}</td>
+                    <td>
+                        <span class="badge bg-{{ item.source_badge }}-subtle text-{{ item.source_badge }}-emphasis border">
+                            {{ item.source }}
+                        </span>
+                    </td>
+                    <td>{{ item.user_name }}</td>
+                    <td>{{ item.reason }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
                         <div class="empty-state app-empty-state">
-                            <i class="bi bi-clock-history"></i>
-                            <p>Belum ada revisi order.</p>
+                            <i class="bi bi-clock-history fs-3 text-muted d-block mb-1"></i>
+                            <p class="mb-0">Belum ada perubahan porsi.</p>
                         </div>
                     </td>
                 </tr>
-                {% endif %}
+                {% endfor %}
             </tbody>
         </table>
     </div>

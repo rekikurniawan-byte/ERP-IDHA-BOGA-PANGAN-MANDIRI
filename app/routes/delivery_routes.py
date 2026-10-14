@@ -646,6 +646,7 @@ def today():
         timeline=timeline,
         map_markers=map_markers,
         unmapped_locations=unmapped_locations,
+        now_time_wib=curr_now.strftime("%H.%M"),
     )
 
 

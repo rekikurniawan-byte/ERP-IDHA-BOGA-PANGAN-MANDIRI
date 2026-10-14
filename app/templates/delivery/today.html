@@ -243,10 +243,31 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <div class="ops-actions">
-                            <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
-                                Detail
-                            </a>
+                        <div class="ops-actions d-inline-flex align-items-center gap-1">
+                            {% if delivery.status == 'PREPARING' %}
+                                <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=delivery.id) }}" data-ui-form="true" class="d-inline" data-app-confirm="Catat {{ delivery.delivery_number }} berangkat sekarang ({{ now_time_wib }} WIB)?">
+                                    {% include "components/csrf_token.html" %}
+                                    <button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Catat {{ delivery.delivery_number }} berangkat sekarang ({{ now_time_wib }} WIB)?">
+                                        <i class="bi bi-truck me-1"></i> Berangkat
+                                    </button>
+                                </form>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-popper-config='{"strategy":"fixed"}'>
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end app-action-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}">
+                                                <i class="bi bi-eye me-2"></i> Detail
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                                    Detail
+                                </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

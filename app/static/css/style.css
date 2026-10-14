@@ -7309,6 +7309,7 @@ body.shell-internal .table > tbody > tr > td:last-child:has(.btn) .flex-wrap { f
     position: relative;
     flex-grow: 1;
     height: 14px;
+    margin: 30px 0 56px; /* ruang label di atas & dua jalur di bawah garis */
     background: var(--surface-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -7574,6 +7575,46 @@ body.shell-internal .table > tbody > tr > td:last-child:has(.btn) .flex-wrap { f
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+}
+
+/* Label titik yang berdekatan pindah ke atas garis; langkah tanpa jam ditulis di ujung baris. */
+.ops-timeline-point.is-up .ops-timeline-node-info { top: auto; bottom: 16px; }
+.ops-timeline-point.is-low .ops-timeline-node-info { top: 42px; }
+.ops-timeline-untimed {
+    flex: 0 0 auto;
+    max-width: 180px;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+/* Pop-up Input Order: prepay & details (Tahap 4 - Butir 2) */
+/* Selektor sengaja setara '.app-form .row > [class*="col"]' (display:flex) supaya bisa menyembunyikan. */
+.app-form .row > .ops-prepay {
+    display: none;
+}
+
+.app-form:has(select[name="mandor_id"] option[data-path="UMUM"]:checked) .row > .ops-prepay {
+    display: flex;
+}
+
+.ops-more {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-muted);
+}
+
+.ops-more summary {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.ops-more[open] {
+    padding-bottom: var(--space-3);
 }
 
 /* --- portal.css --- */

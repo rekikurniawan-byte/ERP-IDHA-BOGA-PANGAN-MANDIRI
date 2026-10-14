@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
-from app.utils.clock import today_wib
+from app.utils.clock import today_wib, to_wib
 from app.utils.decorators import role_required
 from app.services.audit_log_service import record_audit_log
 from app.services.ops_navigation_service import uses_ops_ui
@@ -10,7 +10,7 @@ from app.services.ops_navigation_service import uses_ops_ui
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderHppSnapshot, OrderHppStockConsumption
 from app.models.production import Production
 from app.models.delivery import Delivery, DeliveryDetail
-from app.models.master import Mandor, DeliveryLocation
+from app.models.master import Mandor, DeliveryLocation, User
 from app.services.operational_service import (
     get_or_create_daily_order,
     add_or_update_order_detail,
@@ -876,6 +876,97 @@ def order_detail(order_id):
     from app.services.ops_timeline_service import get_order_lock_countdowns
     order_countdowns = get_order_lock_countdowns(daily_order)
 
+    # Butir 1: Riwayat Perubahan Porsi gabungan (OrderRevision + OrderQtyChange)
+    # Temuan audit: OrderRevision.revision_time disimpan dalam UTC naif (datetime.utcnow),
+    # sehingga dikonversi ke WIB lewat to_wib(). Sedangkan OrderQtyChange.changed_at disimpan WIB (now_wib).
+    from app.services.auto_order_service import PORTION_ZERO_REASONS
+
+    user_ids = {rev.created_by for detail in daily_order.details for rev in detail.revisions if rev.created_by}
+    user_map = {}
+    if user_ids:
+        users = User.query.filter(User.id.in_(user_ids)).all()
+        user_map = {u.id: (u.full_name or u.username) for u in users}
+
+    portion_history = []
+    for detail in daily_order.details:
+        mandor_name = detail.mandor.name if detail.mandor else "-"
+        location_name = detail.delivery_location.location_name if detail.delivery_location else "-"
+        mandor_loc = f"{mandor_name} / {location_name}"
+
+        # 1. OrderRevision (jalur revisi lama)
+        for rev in detail.revisions:
+            wib_dt = to_wib(rev.revision_time)
+            changes = []
+            if rev.lunch_qty_change != 0:
+                changes.append(f"Siang {'+' if rev.lunch_qty_change > 0 else ''}{rev.lunch_qty_change}")
+            if rev.dinner_qty_change != 0:
+                changes.append(f"Sore {'+' if rev.dinner_qty_change > 0 else ''}{rev.dinner_qty_change}")
+            change_label = ", ".join(changes) if changes else (rev.revision_direction or "-")
+
+            if rev.lunch_qty_change != 0 and rev.dinner_qty_change != 0:
+                sesi = "Siang & Sore"
+            elif rev.lunch_qty_change != 0:
+                sesi = "Siang"
+            elif rev.dinner_qty_change != 0:
+                sesi = "Sore"
+            else:
+                sesi = "-"
+
+            user_disp = user_map.get(rev.created_by, f"User #{rev.created_by}" if rev.created_by else "-")
+            portion_history.append({
+                "timestamp": wib_dt,
+                "time_str": wib_dt.strftime("%d/%m/%Y %H.%M") if wib_dt else "-",
+                "mandor_location": mandor_loc,
+                "mandor_name": mandor_name,
+                "location_name": location_name,
+                "session": sesi,
+                "change_text": change_label,
+                "source": "Revisi lama",
+                "source_badge": "secondary",
+                "price": rev.price_per_portion,  # harga yang dipakai menagih porsi tambahan setelah kunci
+                "user_name": user_disp,
+                "reason": rev.reason or "-",
+            })
+
+        # 2. OrderQtyChange (jalur ubah porsi baru)
+        for qc in detail.qty_changes:
+            wib_dt = qc.changed_at
+            sesi = "Siang" if qc.meal_type == "LUNCH" else ("Sore" if qc.meal_type in ("DINNER", "SORE") else qc.meal_type)
+            change_label = f"{sesi} {qc.old_qty} → {qc.new_qty}"
+
+            if qc.source == "AUTO":
+                src_label = "Otomatis 18.00"
+                src_badge = "info"
+            elif qc.source == "PORTAL":
+                src_label = "Portal"
+                src_badge = "primary"
+            elif qc.source == "ADMIN":
+                src_label = "Ubah Porsi Admin"
+                src_badge = "warning"
+            else:
+                src_label = qc.source or "-"
+                src_badge = "secondary"
+
+            user_disp = (qc.user.full_name or qc.user.username) if qc.user else ("Sistem Penjadwal" if qc.source == "AUTO" else "-")
+            reason_disp = qc.note or PORTION_ZERO_REASONS.get(qc.reason_code, qc.reason_code) or "-"
+
+            portion_history.append({
+                "timestamp": wib_dt,
+                "time_str": wib_dt.strftime("%d/%m/%Y %H.%M") if wib_dt else "-",
+                "mandor_location": mandor_loc,
+                "mandor_name": mandor_name,
+                "location_name": location_name,
+                "session": sesi,
+                "change_text": change_label,
+                "source": src_label,
+                "source_badge": src_badge,
+                "price": None,  # ubah porsi memakai harga detail order
+                "user_name": user_disp,
+                "reason": reason_disp,
+            })
+
+    portion_history.sort(key=lambda x: x["timestamp"] if x["timestamp"] else datetime.min, reverse=True)
+
     template_name = "ops/order_detail.html" if uses_ops_ui(current_user) else "operational/order_detail.html"
     return render_template(
         template_name,
@@ -899,6 +990,7 @@ def order_detail(order_id):
         form_mandors=form_mandors,
         form_locations=form_locations,
         order_countdowns=order_countdowns,
+        portion_history=portion_history,
     )
 
 

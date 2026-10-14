@@ -17,7 +17,7 @@
                     <option value="">Pilih {{ term('sub_client') }}</option>
                     {% for mandor in mandors %}
                         {% set quote = (price_quotes or {}).get(mandor.id) %}
-                        <option value="{{ mandor.id }}">{{ mandor.name }} — {% if quote %}{{ quote.price|rupiah }}/porsi ({{ quote.source_label }}){% else %}harga belum diatur{% endif %}</option>
+                        <option value="{{ mandor.id }}" data-path="{{ mandor.client.customer_path if mandor.client else 'KONTRAK' }}">{{ mandor.name }} — {% if quote %}{{ quote.price|rupiah }}/porsi ({{ quote.source_label }}){% else %}harga belum diatur{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -47,7 +47,7 @@
             </div>
 
             {% if not is_after_lock %}
-            <div class="col-md-12">
+            <div class="col-md-12 ops-prepay">
                 <div class="border rounded p-3">
                     <strong>Pembayaran di muka</strong>
                     <span class="text-muted small">— wajib untuk pelanggan umum (total = harga × porsi + ongkir). {{ term('client') }} kontrak kosongkan saja.</span>
@@ -99,50 +99,57 @@
 
             {% if show_hpp_defaults is defined and show_hpp_defaults %}
             <div class="col-12">
-                <div class="alert alert-info mb-0">
-                    <strong>Default HPP opsional.</strong>
-                    Pilihan ini hanya untuk isian awal Snapshot HPP nanti. Tidak membuat snapshot otomatis, tidak memotong stok, dan tidak membuat jurnal.
-                </div>
-            </div>
+                <details class="ops-more">
+                    <summary>Lainnya: default menu & HPP (opsional)</summary>
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                <strong>Default HPP opsional.</strong>
+                                Pilihan ini hanya untuk isian awal Snapshot HPP nanti. Tidak membuat snapshot otomatis, tidak memotong stok, dan tidak membuat jurnal.
+                            </div>
+                        </div>
 
-            <div class="col-md-6">
-                <label class="form-label">Default Menu Siang</label>
-                <select name="default_lunch_menu_id" class="form-select app-input">
-                    <option value="">Belum ditentukan</option>
-                    {% for menu in menus %}
-                        <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Menu Siang</label>
+                            <select name="default_lunch_menu_id" class="form-select app-input">
+                                <option value="">Belum ditentukan</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-            <div class="col-md-6">
-                <label class="form-label">Default Menu Sore</label>
-                <select name="default_dinner_menu_id" class="form-select app-input">
-                    <option value="">Belum ditentukan</option>
-                    {% for menu in menus %}
-                        <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Menu Sore</label>
+                            <select name="default_dinner_menu_id" class="form-select app-input">
+                                <option value="">Belum ditentukan</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}">{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-            <div class="col-md-6">
-                <label class="form-label">Default Profil Kemasan</label>
-                <select name="default_packaging_profile_id" class="form-select app-input">
-                    <option value="">Tanpa profil kemasan default</option>
-                    {% for profile in packaging_profiles %}
-                        <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Profil Kemasan</label>
+                            <select name="default_packaging_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil kemasan default</option>
+                                {% for profile in packaging_profiles %}
+                                    <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-            <div class="col-md-6">
-                <label class="form-label">Default Profil Overhead</label>
-                <select name="default_overhead_profile_id" class="form-select app-input">
-                    <option value="">Tanpa profil overhead default</option>
-                    {% for profile in overhead_profiles %}
-                        <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
-                    {% endfor %}
-                </select>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Profil Overhead</label>
+                            <select name="default_overhead_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil overhead default</option>
+                                {% for profile in overhead_profiles %}
+                                    <option value="{{ profile.id }}">{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </details>
             </div>
             {% endif %}
         </div>
