@@ -1,110 +1,392 @@
 {% extends "layouts/base.html" %}
-{% from "components/page_header.html" import page_header %}
+{% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="orders">
-{{ page_header(
-    "Order Harian",
-    ("Daftar order catering harian berdasarkan " ~ term('sub_client', lower=True) ~ ", lokasi, porsi siang, dan porsi sore."),
-    eyebrow="Modul Operasional",
-    actions=[{"label": "Input Order", "url": url_for('operational.create_order'), "icon": "bi-plus-circle", "variant": "primary"}]
-) }}
-
-
-<div class="app-card">
-    <div class="card-header-clean">
+    <header class="dash-head">
         <div>
-            <h5>Daftar Order</h5>
-            <p>Order yang sudah dikunci otomatis menjadi dasar produksi. Pengiriman dibuat dari halaman Kelola Order.</p>
+            <h1>Order Harian</h1>
+            <p>{{ today_formatted }}</p>
+        </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+                <i class="bi bi-plus-circle"></i> Input Order
+            </a>
+        </div>
+    </header>
+
+    <div class="ops-grid-hero">
+        <!-- Kartu HARI INI -->
+        <div class="panel ops-day-card">
+            <div class="panel-head">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ops-chip ops-chip-today">Hari Ini</span>
+                    {% if today_card %}
+                        <a href="{{ url_for('operational.order_detail', order_id=today_card.order.id) }}" class="fw-bold text-decoration-none">
+                            {{ today_card.order.order_number }}
+                        </a>
+                    {% else %}
+                        <span class="text-muted small">Belum ada order hari ini</span>
+                    {% endif %}
+                </div>
+                {% if today_card %}
+                    {% if today_card.order.is_locked %}
+                        <span class="status-badge success">Terkunci</span>
+                    {% else %}
+                        <span class="status-badge neutral">Konsep</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if today_card %}
+                    <!-- Langkah status -->
+                    <div class="ops-steps">
+                        <div class="ops-step-item is-{{ today_card.step_konsep }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Konsep</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ today_card.step_kunci }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Terkunci</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ today_card.step_prod }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Produksi</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ today_card.step_kirim }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Dikirim</span>
+                        </div>
+                    </div>
+
+                    <!-- Porsi siang, sore, total, lokasi -->
+                    <div class="ops-portions-summary">
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Siang</span>
+                            <span class="ops-portion-val">{{ today_card.lunch_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Sore</span>
+                            <span class="ops-portion-val">{{ today_card.dinner_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Total Porsi</span>
+                            <span class="ops-portion-val is-total">{{ today_card.total_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric ms-auto text-end">
+                            <span class="ops-portion-label">Lokasi</span>
+                            <span class="ops-portion-val">{{ today_card.locations_count }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tombol utama besar sesuai status -->
+                    <div class="mt-3 d-flex gap-2 align-items-center">
+                        {% if not today_card.order.is_locked %}
+                            <form method="POST" action="{{ url_for('operational.lock_order', order_id=today_card.order.id) }}" data-app-confirm="Kunci order {{ today_card.order.order_date.strftime('%d-%m-%Y') }} ({{ today_card.total_qty }} porsi)? Setelah dikunci, perubahan harus lewat revisi." data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-lock-fill me-1"></i> Kunci Order Hari Ini
+                                </button>
+                            </form>
+                        {% elif not today_card.has_production %}
+                            <form method="POST" action="{{ url_for('operational.generate_production', order_id=today_card.order.id) }}" data-app-confirm="Sinkronkan order hari ini ke jadwal produksi dapur?" data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Sinkron Produksi
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{{ url_for('production.index') }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-fire me-1"></i> Lihat Produksi
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('operational.order_detail', order_id=today_card.order.id) }}" class="btn app-btn-secondary">
+                            Kelola Order
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-state app-empty-state-compact text-center py-4">
+                        <i class="bi bi-calendar-x fs-3 text-muted mb-2"></i>
+                        <h6 class="mb-1">Belum ada order untuk hari ini.</h6>
+                        <p class="text-muted small mb-3">Pesanan hari ini belum dibuat atau belum masuk sistem.</p>
+                        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Input Order Hari Ini
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Kartu BESOK -->
+        <div class="panel ops-day-card is-tomorrow">
+            <div class="panel-head">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ops-chip ops-chip-tomorrow">Besok</span>
+                    {% if tomorrow_card %}
+                        <a href="{{ url_for('operational.order_detail', order_id=tomorrow_card.order.id) }}" class="fw-bold text-decoration-none">
+                            {{ tomorrow_card.order.order_number }}
+                        </a>
+                    {% else %}
+                        <span class="text-muted small">Belum ada order besok</span>
+                    {% endif %}
+                </div>
+                {% if tomorrow_card %}
+                    {% if tomorrow_card.order.is_locked %}
+                        <span class="status-badge success">Terkunci</span>
+                    {% else %}
+                        <span class="status-badge neutral">Konsep</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if tomorrow_card %}
+                    <!-- Langkah status -->
+                    <div class="ops-steps">
+                        <div class="ops-step-item is-{{ tomorrow_card.step_konsep }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Konsep</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ tomorrow_card.step_kunci }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Terkunci</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ tomorrow_card.step_prod }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Produksi</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item is-{{ tomorrow_card.step_kirim }}">
+                            <span class="ops-step-dot"></span>
+                            <span>Dikirim</span>
+                        </div>
+                    </div>
+
+                    <!-- Porsi siang, sore, total, lokasi -->
+                    <div class="ops-portions-summary">
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Siang</span>
+                            <span class="ops-portion-val">{{ tomorrow_card.lunch_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Sore</span>
+                            <span class="ops-portion-val">{{ tomorrow_card.dinner_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Total Porsi</span>
+                            <span class="ops-portion-val is-total">{{ tomorrow_card.total_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric ms-auto text-end">
+                            <span class="ops-portion-label">Lokasi</span>
+                            <span class="ops-portion-val">{{ tomorrow_card.locations_count }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tombol utama sesuai status -->
+                    <div class="mt-3 d-flex gap-2 align-items-center">
+                        {% if not tomorrow_card.order.is_locked %}
+                            <form method="POST" action="{{ url_for('operational.lock_order', order_id=tomorrow_card.order.id) }}" data-app-confirm="Kunci order {{ tomorrow_card.order.order_date.strftime('%d-%m-%Y') }} ({{ tomorrow_card.total_qty }} porsi)? Setelah dikunci, perubahan harus lewat revisi." data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-lock-fill me-1"></i> Kunci Order Besok
+                                </button>
+                            </form>
+                        {% elif not tomorrow_card.has_production %}
+                            <form method="POST" action="{{ url_for('operational.generate_production', order_id=tomorrow_card.order.id) }}" data-app-confirm="Sinkronkan order besok ke jadwal produksi dapur?" data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Sinkron Produksi
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{{ url_for('production.index') }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-fire me-1"></i> Lihat Produksi
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('operational.order_detail', order_id=tomorrow_card.order.id) }}" class="btn app-btn-secondary">
+                            Kelola Order
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-state app-empty-state-compact text-center py-4">
+                        <i class="bi bi-clock-history fs-3 text-muted mb-2"></i>
+                        <h6 class="mb-1">Pesanan besok dibuat otomatis jam 18.00 WIB.</h6>
+                        <p class="text-muted small mb-3">Sistem penjadwal akan membuat order besok secara otomatis dari kontrak aktif.</p>
+                        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-secondary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i> Input Manual Lebih Awal
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>No Order</th>
-                    <th>Tanggal</th>
-                    <th>Status</th>
-                    <th>Kunci</th>
-                    <th>Total Lokasi</th>
-                    <th>Total Porsi</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in daily_orders %}
-                <tr>
-                    <td><strong>{{ order.order_number }}</strong></td>
-                    <td>{{ order.order_date.strftime('%d-%m-%Y') }}</td>
-                    <td>
-                        {% if order.status == "LOCKED" %}
-                            <span class="status-badge success">Terkunci</span>
+    <!-- Peringatan order lewat tanggal belum dikunci -->
+    {% if overdue_unlocked_count > 0 %}
+        <a href="{{ url_for('operational.orders', period_preset='all', status='OVERDUE') }}" class="alert-row is-warn mb-4 text-decoration-none">
+            <span class="kpi-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
+            <span>
+                <strong>{{ overdue_unlocked_count }} order lewat tanggal belum dikunci</strong>
+                <small>Klik untuk memfilter daftar dan segera kunci pesanan agar produksi dan pengiriman sinkron.</small>
+            </span>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </a>
+    {% endif %}
+
+    <!-- Filter Bar Global -->
+    {{ global_filter_bar(filter_bar) }}
+
+    <!-- Panel Tabel Riwayat (TANPA data-rise agar dropdown menu tidak tertutup) -->
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Daftar Order</h2>
+                <p>Order yang sudah dikunci otomatis menjadi dasar produksi. Pengiriman dibuat dari halaman Kelola Order.</p>
+            </div>
+        </div>
+
+        <div class="panel-body flush">
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>No Order</th>
+                            <th>Status</th>
+                            <th class="text-center">Lokasi</th>
+                            <th class="text-end">Siang</th>
+                            <th class="text-end">Sore</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end" style="min-width: 170px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_orders %}
+                        <tr class="{% if row.is_today %}ops-row-today{% elif row.is_overdue %}ops-row-overdue{% endif %}">
+                            <td>
+                                <div>
+                                    <strong>{{ row.day_name }}, {{ row.order.order_date.strftime('%d-%m-%Y') }}</strong>
+                                    {% if row.is_today %}
+                                        <span class="ops-chip ops-chip-today ms-1">Hari Ini</span>
+                                    {% elif row.is_tomorrow %}
+                                        <span class="ops-chip ops-chip-tomorrow ms-1">Besok</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('operational.order_detail', order_id=row.order.id) }}" class="fw-bold text-decoration-none">
+                                    {{ row.order.order_number }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if row.order.status == 'CANCELLED' %}
+                                    <span class="status-badge danger">Dibatalkan</span>
+                                {% elif row.order.is_locked %}
+                                    <span class="status-badge success">Terkunci</span>
+                                {% else %}
+                                    <span class="status-badge neutral">Konsep</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ row.locations_count }}</td>
+                            <td class="text-end">{{ row.lunch_qty }}</td>
+                            <td class="text-end">{{ row.dinner_qty }}</td>
+                            <td class="text-end"><strong>{{ row.total_qty }}</strong></td>
+                            <td class="text-end">
+                                <div class="ops-actions">
+                                    {% if not row.order.is_locked %}
+                                        <form method="POST" action="{{ url_for('operational.lock_order', order_id=row.order.id) }}" data-app-confirm="Kunci order {{ row.order.order_date.strftime('%d-%m-%Y') }} ({{ row.total_qty }} porsi)? Setelah dikunci, perubahan harus lewat revisi." data-ui-form="true" class="app-form d-inline-block">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn btn-sm app-btn-primary">
+                                                Kunci
+                                            </button>
+                                        </form>
+                                    {% elif not row.has_production %}
+                                        <form method="POST" action="{{ url_for('operational.generate_production', order_id=row.order.id) }}" data-ui-form="true" class="app-form d-inline-block">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn btn-sm app-btn-primary">
+                                                Sinkron Produksi
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm app-btn-secondary" type="button" aria-label="Aksi lain" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}'>
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end app-action-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('operational.order_detail', order_id=row.order.id) }}">
+                                                    <i class="bi bi-pencil-square me-1"></i> Kelola Order
+                                                </a>
+                                            </li>
+                                            {% if not row.order.is_locked %}
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('operational.add_order_detail', order_id=row.order.id) }}">
+                                                        <i class="bi bi-geo-alt me-1"></i> Tambah Lokasi
+                                                    </a>
+                                                </li>
+                                            {% else %}
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('production.index') }}">
+                                                        <i class="bi bi-fire me-1"></i> Lihat Produksi
+                                                    </a>
+                                                </li>
+                                                {% if row.has_production %}
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('operational.generate_production', order_id=row.order.id) }}" data-ui-form="true" class="app-form">
+                                                            {% include "components/csrf_token.html" %}
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="bi bi-arrow-repeat me-1"></i> Sinkron Ulang Produksi
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endif %}
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="status-badge neutral">Konsep</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if order.is_locked %}
-                            <span class="status-badge success">Terkunci</span>
-                        {% else %}
-                            <span class="status-badge info">Terbuka</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ order.details|length }}</td>
-                    <td>
-                        {% set total = namespace(value=0) %}
-                        {% for detail in order.details %}
-                            {% set total.value = total.value + detail.total_qty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                    <i class="bi bi-journal-text"></i>
+                                    <h6>Belum ada order harian sesuai filter.</h6>
+                                    <p>Gunakan tombol Input Order untuk membuat order baru, atau ubah filter tanggal.</p>
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
-                        {{ total.value }} Porsi
-                    </td>
-                    <td>
-                        <div class="table-actions">
-                            <a href="{{ url_for('operational.order_detail', order_id=order.id) }}" class="btn btn-sm app-btn-secondary">
-                                Kelola Order
-                            </a>
+                    </tbody>
+                </table>
+            </div>
 
-                            {% if not order.is_locked %}
-                                <a href="{{ url_for('operational.add_order_detail', order_id=order.id) }}" class="btn btn-sm app-btn-secondary">
-                                    Tambah Lokasi
-                                </a>
-
-                                <form method="POST" action="{{ url_for('operational.lock_order', order_id=order.id) }}" data-ui-form="true" class="app-form">
-                                    {% include "components/csrf_token.html" %}
-                                    <button type="submit" class="btn btn-sm app-btn-primary">
-                                        Kunci
-                                    </button>
-                                </form>
-                            {% else %}
-                                <form method="POST" action="{{ url_for('operational.generate_production', order_id=order.id) }}" data-ui-form="true" class="app-form">
-                                    {% include "components/csrf_token.html" %}
-                                    <button type="submit" class="btn btn-sm app-btn-primary">
-                                        Sinkron Produksi
-                                    </button>
-                                </form>
-
-                                <a href="{{ url_for('production.index') }}" class="btn btn-sm app-btn-secondary">
-                                    Lihat Produksi
-                                </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
-                            <i class="bi bi-journal-text"></i>
-                            <h6>Belum ada order harian.</h6>
-                            <p>Gunakan tombol Input Order untuk membuat order pertama.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+            <!-- Paginasi 20 baris -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div>
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('operational.orders', page=pagination.prev_num, period_preset=filter_bar.preset_value, start_date=filter_bar.start_value, end_date=filter_bar.end_value, status=filter_bar.status_value) }}" class="btn btn-sm app-btn-secondary">‹ Sebelumnya</a>
+                    {% else %}
+                        <span class="btn btn-sm app-btn-secondary disabled opacity-50">‹ Sebelumnya</span>
+                    {% endif %}
+                </div>
+                <span class="text-muted small">Halaman {{ pagination.page }} dari {{ pagination.pages }} (Total {{ pagination.total }} order)</span>
+                <div>
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('operational.orders', page=pagination.next_num, period_preset=filter_bar.preset_value, start_date=filter_bar.start_value, end_date=filter_bar.end_value, status=filter_bar.status_value) }}" class="btn btn-sm app-btn-secondary">Berikutnya ›</a>
+                    {% else %}
+                        <span class="btn btn-sm app-btn-secondary disabled opacity-50">Berikutnya ›</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
 </div>
 {% endblock %}

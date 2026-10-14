@@ -2,35 +2,37 @@
 
 {% block content %}
 <div class="kitchen-recap-shell" data-ui-kitchen-recap="UI" data-ui-print-export="UI">
-    <div class="page-header no-print">
+    <header class="dash-head no-print">
         <div>
-            <span class="eyebrow">Operasional Dapur | Siap Cetak</span>
             <h1>Rekap Dapur — Sesi {{ recap.meal_label }}{% if recap.scheduled_menu_name %}: {{ recap.scheduled_menu_name }}{% endif %}</h1>
             <p>Tanggal order: {{ recap.daily_order.order_date.strftime('%d-%m-%Y') }} | Order: {{ recap.daily_order.order_number }}</p>
         </div>
-        <div class="page-actions">
-            <button type="button" class="btn app-btn-primary" onclick="window.print()">
-                <i class="bi bi-printer"></i> Cetak Dokumen
-            </button>
-            <a href="{{ url_for('operational.order_detail', order_id=recap.daily_order.id) }}" class="btn app-btn-secondary">
+        <div class="dash-head-actions">
+            <a href="{{ url_for('operational.order_detail', order_id=recap.daily_order.id) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Kembali ke Order
             </a>
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Cetak Dokumen
+            </button>
         </div>
-    </div>
+    </header>
 
     {% if recap.print_status.any_stale or recap.print_status.recap_stale %}
-    <div class="app-card border-warning bg-warning-subtle text-warning-emphasis mb-3" data-stale-warning="true">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
-            <div>
-                <strong>Cetak ulang — data berubah sejak dicetak!</strong>
-                <p class="mb-0 small">Jumlah porsi atau rincian pesanan telah dimodifikasi setelah cetakan terakhir. Rekap ini menampilkan data terkini.</p>
+    <section class="panel border-warning bg-warning-subtle text-warning-emphasis mb-3" data-stale-warning="true">
+        <div class="panel-body">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+                <div>
+                    <strong>Cetak ulang — data berubah sejak dicetak!</strong>
+                    <p class="mb-0 small">Jumlah porsi atau rincian pesanan telah dimodifikasi setelah cetakan terakhir. Rekap ini menampilkan data terkini.</p>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
     {% endif %}
 
-    <div class="app-card print-doc-card">
+    <section class="panel print-doc-card">
+        <div class="panel-body">
         <!-- KOP PERUSAHAAN -->
         <div class="print-doc-header">
             <div>
@@ -142,6 +144,7 @@
                 </div>
             </div>
         </div>
-    </div>
+        </div>
+    </section>
 </div>
 {% endblock %}

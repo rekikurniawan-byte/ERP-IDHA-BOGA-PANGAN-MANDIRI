@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from datetime import datetime
+from app.utils.clock import today_wib
 
 from app.models.production import Production
 from app.models.operational import DailyOrder
@@ -11,6 +12,8 @@ from app.utils.decorators import role_required
 from app.services.atomic_transaction_service import atomic_business_action
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context, apply_date_range_to_query
 from app.services.ops_navigation_service import uses_ops_ui
+
+from app.utils.labels import status_label
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,7 @@ def index():
     return render_template(
         template_name,
         productions=productions,
+        today=today_wib(),
         calculate_production_sla=calculate_production_sla,
         filter_bar=build_filter_bar_context(
             state=date_filter,
@@ -53,7 +57,7 @@ def index():
             description="Custom tanggal dan status produksi dapur.",
             status_name="status",
             status_value=status_filter,
-            status_options=[{"value": "ALL", "label": "Semua Status"}] + [{"value": value, "label": value} for value in ALLOWED_STATUS],
+            status_options=[{"value": "ALL", "label": "Semua Status"}] + [{"value": value, "label": status_label(value)} for value in ALLOWED_STATUS],
         ),
     )
 

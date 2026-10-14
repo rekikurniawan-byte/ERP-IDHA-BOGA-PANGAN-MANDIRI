@@ -180,95 +180,123 @@ def index():
     )
 
 
-@canteen_bp.route("/quick", methods=["GET", "POST"])
-@role_required("ADMIN")
+POS_ROLES = ("ADMIN", "ADMIN_OPERASIONAL")
+
+
+def _pos_layout():
+    from app.services.ops_navigation_service import uses_ops_ui
+
+    return "layouts/ops_mobile.html" if uses_ops_ui(current_user) else "layouts/base.html"
+
+
+@canteen_bp.route("/quick")
+@role_required(*POS_ROLES)
 @module_required(WARUNG)
 def quick_sale():
-    items = get_quick_canteen_items()
-    workers = get_branch_workers() if module_enabled(WORKER_DEBT) else []
-    bank_accounts = _active_bank_accounts()
+    """Kasir cepat: pilih orang -> ketuk barang -> ketuk TUNAI/QRIS/HUTANG (keputusan owner 2026-10-13)."""
+    from app.services.canteen_pos_service import pos_items, pos_workers, recent_sales, worker_debt_limit
 
-    if request.method == "POST":
-        payment_method = request.form.get("payment_method") or request.form.get("sale_type") or "CASH"
-        buyer_type = request.form.get("buyer_type") or "GENERAL_BUYER"
-        worker_id = request.form.get("worker_id") or None
-        buyer_name = request.form.get("buyer_name")
-        buyer_company = request.form.get("buyer_company")
-        buyer_phone = request.form.get("buyer_phone")
-        payment_reference = request.form.get("payment_reference")
-        cash_bank_account_id = request.form.get("cash_bank_account_id") or None
-        cart_json = request.form.get("cart_json") or "[]"
-
-        if payment_method not in PAYMENT_METHODS:
-            flash("Metode pembayaran warung tidak valid.", "warning")
-            return redirect(url_for("canteen.quick_sale"))
-
-        try:
-            cart_items = json.loads(cart_json)
-        except json.JSONDecodeError:
-            flash("Data keranjang tidak valid.", "warning")
-            return redirect(url_for("canteen.quick_sale"))
-
-        if not cart_items:
-            flash("Keranjang masih kosong.", "warning")
-            return redirect(url_for("canteen.quick_sale"))
-
-        item_rows = []
-
-        for cart in cart_items:
-            is_custom = cart.get("is_custom")
-            item_id = cart.get("item_id")
-            item_name = cart.get("item_name")
-            qty = cart.get("qty")
-            price = cart.get("price")
-
-            if is_custom:
-                custom_item = get_or_create_custom_item(item_name, price)
-
-                if not custom_item:
-                    continue
-
-                item_id = custom_item.id
-
-            item_rows.append({
-                "item_id": item_id,
-                "qty": qty,
-                "price": price,
-            })
-
-        notes = request.form.get("notes") or "Transaksi cepat warung"
-
-        success, message, sale = create_canteen_sale(
-            branch_id=current_user.branch_id,
-            sale_date=today_wib(),
-            payment_method=payment_method,
-            buyer_type=buyer_type,
-            worker_id=worker_id,
-            buyer_name=buyer_name,
-            buyer_company=buyer_company,
-            buyer_phone=buyer_phone,
-            payment_reference=payment_reference,
-            cash_bank_account_id=cash_bank_account_id,
-            item_rows=item_rows,
-            notes=notes,
-            created_by=current_user.id
-        )
-
-        flash(message, "success" if success else "warning")
-
-        if success:
-            return redirect(url_for("canteen.index"))
-
-        return redirect(url_for("canteen.quick_sale"))
-
+    branch_id = current_user.branch_id
     return render_template(
-        "canteen/quick_sale.html",
-        items=items,
-        workers=workers,
-        bank_accounts=bank_accounts,
-        today=today_wib(),
-        buyer_types=BUYER_TYPES,
-        payment_methods=PAYMENT_METHODS,
+        "canteen/pos.html",
+        layout=_pos_layout(),
+        items=pos_items(branch_id),
+        workers=pos_workers(branch_id) if module_enabled(WORKER_DEBT) else [],
+        worker_debt_on=module_enabled(WORKER_DEBT),
+        debt_limit=int(worker_debt_limit(branch_id)),
+        recent=recent_sales(branch_id),
+        has_bank=bool(_active_bank_accounts()),
+    )
+
+
+def _pos_json(scope, payload, action):
+    """Jalankan aksi kasir sekali per kunci (ketuk dobel / sinyal putus tidak menyimpan dua kali)."""
+    from flask import jsonify
+    from app.services.atomic_transaction_service import atomic_business_action
+    from app.services.canteen_pos_service import CanteenPosError
+    from app.services.idempotency_service import (
+        IdempotencyConflictError,
+        mark_idempotency_completed,
+        reserve_idempotency_key,
+    )
+
+    key = str(payload.get("key") or "").strip()[:120]
+    if len(key) < 8:
+        return jsonify({"ok": False, "message": "Muat ulang halaman kasir."}), 400
+    try:
+        with atomic_business_action(
+            module="CANTEEN",
+            action=scope.upper(),
+            description="Kasir cepat warung.",
+            reference_type="canteen_sales",
+            user_id=current_user.id,
+            branch_id=current_user.branch_id,
+        ):
+            record, fresh = reserve_idempotency_key(
+                scope=scope,
+                key=key,
+                branch_id=current_user.branch_id,
+                user_id=current_user.id,
+                request_payload={k: v for k, v in payload.items() if k != "key"},
+            )
+            if not fresh:
+                if record.status == "COMPLETED" and record.response_payload_json:
+                    result = json.loads(record.response_payload_json)
+                    result["replayed"] = True
+                    return jsonify({"ok": True, **result})
+                return jsonify({"ok": False, "message": "Transaksi ini masih diproses. Tunggu sebentar."}), 409
+            result = action()
+            mark_idempotency_completed(record, reference_type=scope, reference_id=result.get("sale_id"), response_payload=result)
+    except CanteenPosError as exc:
+        return jsonify({"ok": False, "message": str(exc)}), 422
+    except IdempotencyConflictError:
+        return jsonify({"ok": False, "message": "Kunci transaksi bentrok. Muat ulang halaman kasir."}), 409
+    return jsonify({"ok": True, **result})
+
+
+@canteen_bp.route("/quick/checkout", methods=["POST"])
+@role_required(*POS_ROLES)
+@module_required(WARUNG)
+def quick_checkout():
+    from app.services.canteen_pos_service import checkout
+
+    payload = request.get_json(silent=True) or {}
+    return _pos_json(
+        "canteen_pos_checkout",
+        payload,
+        lambda: checkout(
+            branch_id=current_user.branch_id,
+            user_id=current_user.id,
+            method=payload.get("method"),
+            cart=payload.get("cart"),
+            worker_id=payload.get("worker_id") or None,
+            buyer_name=payload.get("buyer_name"),
+            cash_received=payload.get("cash_received"),
+        ),
+    )
+
+
+@canteen_bp.route("/quick/pay-debt", methods=["POST"])
+@role_required(*POS_ROLES)
+@module_required(WARUNG)
+def quick_pay_debt():
+    """Pekerja bayar/cicil hutang warung langsung di kasir (dialokasikan ke hutang terlama)."""
+    from app.services.canteen_pos_service import pay_worker_debts
+
+    if not module_enabled(WORKER_DEBT):
+        from flask import jsonify
+        return jsonify({"ok": False, "message": "Modul hutang pekerja belum aktif."}), 422
+    payload = request.get_json(silent=True) or {}
+    return _pos_json(
+        "canteen_pos_pay_debt",
+        payload,
+        lambda: pay_worker_debts(
+            branch_id=current_user.branch_id,
+            user_id=current_user.id,
+            worker_id=payload.get("worker_id"),
+            amount=payload.get("amount"),
+            method=payload.get("method"),
+        ),
     )
 
 
@@ -372,6 +400,8 @@ def debts():
         get_debt_remaining_amount=get_debt_remaining_amount,
         get_external_receivable_paid_amount=get_external_receivable_paid_amount,
         get_external_receivable_remaining_amount=get_external_receivable_remaining_amount,
+        bank_accounts=_active_bank_accounts(),
+        today=today_wib(),
     )
 
 

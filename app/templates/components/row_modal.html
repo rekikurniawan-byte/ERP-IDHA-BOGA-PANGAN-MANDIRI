@@ -1,0 +1,34 @@
+{# Pop-up ubah cepat dari kolom aksi tabel (keputusan owner 2026-10-14).
+   Pola sama dengan "Ubah Porsi" di Detail Order: ikon + judul + subjudul, isian, Batal + Simpan.
+   Form mengirim ke route POST halaman ubah yang sudah ada (nama field sama persis); halaman
+   ubah penuh tetap ada sebagai cadangan bila validasi gagal.
+   Pakai: {% call row_modal("modalEditMandor-" ~ m.id, "Ubah Mandor", m.name, url_for(...)) %} ...isian... {% endcall %}
+   Letakkan di luar tabel/panel (akhir block content). #}
+{% macro row_modal(modal_id, title, subtitle, action, icon="bi-pencil-square", submit_label="Simpan Perubahan", confirm=None) %}
+<div class="modal fade text-start" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ action }}" class="app-form" data-ui-form="true"{% if confirm %} data-app-confirm="{{ confirm }}"{% endif %}>
+                {% include "components/csrf_token.html" %}
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="kpi-icon tone-blue"><i class="bi {{ icon }}" aria-hidden="true"></i></span>
+                        <div>
+                            <h5 class="modal-title mb-0" id="{{ modal_id }}-title">{{ title }}</h5>
+                            {% if subtitle %}<small class="text-muted">{{ subtitle }}</small>{% endif %}
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    {{ caller() }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-check-lg"></i> {{ submit_label }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}

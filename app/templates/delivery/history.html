@@ -1,32 +1,36 @@
 {% extends "layouts/base.html" %}
-{% from "components/page_header.html" import page_header %}
 {% from "components/global_filter_bar.html" import global_filter_bar %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="history">
-{{ page_header(
-    title='Riwayat Pengiriman',
-    eyebrow='Pengantar',
-    description='Arsip delivery selesai, dibatalkan, atau delivery tanggal sebelumnya.',
-    collapse=false,
-    actions=[
-        {'label': 'Pengiriman Hari Ini', 'url': url_for('delivery.today'), 'icon': 'bi-truck'},
-        {'label': 'Penerimaan', 'url': url_for('delivery.receiving'), 'icon': 'bi-clipboard-check'}
-    ]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>Riwayat Pengiriman</h1>
+        <p>Arsip delivery selesai, dibatalkan, atau delivery tanggal sebelumnya.</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-secondary">
+            <i class="bi bi-truck"></i> Pengiriman Hari Ini
+        </a>
+        <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clipboard-check"></i> Penerimaan
+        </a>
+    </div>
+</header>
 
 
 {{ global_filter_bar(filter_bar) }}
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Data Riwayat</h5>
+            <h2>Data Riwayat</h2>
             <p>Pengiriman pengganti kurang kirim tetap ditampilkan, tapi bukan dasar invoice.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -43,36 +47,69 @@
                 </tr>
             </thead>
             <tbody>
+                {% set g_total = namespace(planned=0, delivered=0, shortage=0) %}
                 {% for delivery in deliveries %}
                 {% set total = namespace(planned=0, delivered=0, shortage=0) %}
+                {% set d_type = get_delivery_type_from_notes(delivery.notes) %}
                 {% for detail in delivery.details %}
                     {% set total.planned = total.planned + detail.planned_qty %}
                     {% set total.delivered = total.delivered + detail.delivered_qty %}
                     {% set total.shortage = total.shortage + detail.shortage_qty %}
                 {% endfor %}
+                {% set g_total.planned = g_total.planned + total.planned %}
+                {% set g_total.delivered = g_total.delivered + total.delivered %}
+                {% set g_total.shortage = g_total.shortage + total.shortage %}
                 <tr>
                     <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
                     <td>
-                        <strong>{{ delivery.delivery_number }}</strong>
+                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="fw-bold text-decoration-none">
+                            {{ delivery.delivery_number }}
+                        </a>
                         {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
                             <div class="muted-small">Pengganti kekurangan</div>
                         {% endif %}
                     </td>
-                    <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
+                    <td>
+                        {% if "SIANG" in d_type.upper() or "LUNCH" in d_type.upper() %}
+                            <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                        {% elif "MALAM" in d_type.upper() or "DINNER" in d_type.upper() or "SORE" in d_type.upper() %}
+                            <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Malam</span>
+                        {% else %}
+                            <span class="status-badge neutral">{{ d_type }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
-                    <td>{{ delivery.status|status_label }}</td>
+                    <td>
+                        {% if delivery.status == "DELIVERED" %}
+                            <span class="status-badge status-locked">Terkirim</span>
+                        {% elif delivery.status == "ON_THE_WAY" %}
+                            <span class="status-badge status-progress">Dalam Perjalanan</span>
+                        {% elif delivery.status == "CANCELLED" %}
+                            <span class="status-badge status-danger">Dibatalkan</span>
+                        {% else %}
+                            <span class="status-badge status-draft">{{ delivery.status|status_label }}</span>
+                        {% endif %}
+                    </td>
                     {% set sla = calculate_delivery_sla_summary(delivery) %}
                     <td>
                         <span class="status-badge {{ sla.badge_class }}">{{ sla.label }}</span>
                         {% if sla.max_minutes_late %}<div class="muted-small">+{{ sla.max_minutes_late }} menit</div>{% endif %}
                     </td>
-                    <td>{{ total.planned }}</td>
-                    <td>{{ total.delivered }}</td>
-                    <td>{{ total.shortage }}</td>
+                    <td>{{ total.planned|qty }} Porsi</td>
+                    <td>{{ total.delivered|qty }} Porsi</td>
                     <td>
-                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
-                            Detail
-                        </a>
+                        {% if total.shortage > 0 %}
+                            <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ total.shortage|qty }}</span>
+                        {% else %}
+                            <span class="ops-variance-ok"><i class="bi bi-check-lg"></i> Lengkap (0)</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="ops-actions">
+                            <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                                Detail
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -86,8 +123,25 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% if deliveries %}
+            <tfoot class="ops-tfoot-summary">
+                <tr>
+                    <td colspan="6" class="text-end fw-bold">Total Porsi Riwayat:</td>
+                    <td class="fw-bold">{{ g_total.planned|qty }} Porsi</td>
+                    <td class="fw-bold">{{ g_total.delivered|qty }} Porsi</td>
+                    <td>
+                        {% if g_total.shortage > 0 %}
+                            <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ g_total.shortage|qty }}</span>
+                        {% else %}
+                            <span class="ops-variance-ok"><i class="bi bi-check-lg"></i> Lengkap (0)</span>
+                        {% endif %}
+                    </td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
-</div>
+</section>
 </div>
 {% endblock %}

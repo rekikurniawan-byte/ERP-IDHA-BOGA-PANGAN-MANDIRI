@@ -4,63 +4,68 @@
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-operational-page="monthly-catering-recap">
-    {{ page_header(
-        "Rekap Catering Bulanan",
-        "Rekap porsi, nilai catering, revisi tambah, delivery, dan status tagihan untuk dasar invoice periode.",
-        eyebrow="Operasional Catering",
-        actions=[
-            {"label": "Log Harian", "url": url_for('operational.daily_catering_log'), "icon": "bi-journal-text", "variant": "primary"},
-            {"label": "Invoice Periode", "url": url_for('finance.generate_period_invoice_preview'), "icon": "bi-receipt-cutoff"},
-        ]
-    ) }}
-
+    <header class="dash-head">
+        <div>
+            <h1>Rekap Catering Bulanan</h1>
+            <p>Rekap porsi, nilai catering, revisi tambah, delivery, dan status tagihan untuk dasar invoice periode.</p>
+        </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('finance.generate_period_invoice_preview') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-receipt-cutoff me-1"></i> Invoice Periode
+            </a>
+            <a href="{{ url_for('operational.daily_catering_log') }}" class="btn btn-primary">
+                <i class="bi bi-journal-text me-1"></i> Log Harian
+            </a>
+        </div>
+    </header>
 
     {{ global_filter_bar(filter_bar) }}
 
-    <div class="app-stat-grid app-stat-grid-compact app-stat-grid-4">
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-calendar3"></i></div>
+    <div class="kpi-row" data-rise="2">
+        <div class="kpi">
+            <span class="kpi-icon tone-blue"><i class="bi bi-calendar3"></i></span>
             <div>
-                <p>Periode</p>
-                <h3>{{ report.start_date.strftime('%d/%m') }} - {{ report.end_date.strftime('%d/%m') }}</h3>
-                <span class="app-stat-helper">{{ report.summary.locked_order_count }} order terkunci dari {{ report.summary.order_count }} order</span>
+                <span class="kpi-label">Periode</span>
+                <div class="kpi-val">{{ report.start_date.strftime('%d/%m') }} - {{ report.end_date.strftime('%d/%m') }}</div>
+                <span class="text-muted small">{{ report.summary.locked_order_count }} order terkunci dari {{ report.summary.order_count }} order</span>
             </div>
         </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+        <div class="kpi">
+            <span class="kpi-icon tone-blue"><i class="bi bi-journal-text"></i></span>
             <div>
-                <p>Total Porsi</p>
-                <h3>{{ report.summary.total_qty|qty }}</h3>
-                <span class="app-stat-helper">{{ report.summary.mandor_count }} {{ term('sub_client', lower=True) }} · {{ report.summary.location_count }} lokasi</span>
+                <span class="kpi-label">Total Porsi</span>
+                <div class="kpi-val">{{ report.summary.total_qty|qty }}</div>
+                <span class="text-muted small">{{ report.summary.mandor_count }} {{ term('sub_client', lower=True) }} · {{ report.summary.location_count }} lokasi</span>
             </div>
         </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-success"><i class="bi bi-cash-stack"></i></div>
+        <div class="kpi">
+            <span class="kpi-icon tone-green"><i class="bi bi-cash-stack"></i></span>
             <div>
-                <p>Nilai Catering</p>
-                <h3>{{ report.summary.base_amount|rupiah }}</h3>
-                <span class="app-stat-helper">Revisi tambah {{ report.summary.revision_amount|rupiah }}</span>
+                <span class="kpi-label">Nilai Catering</span>
+                <div class="kpi-val">{{ report.summary.base_amount|rupiah }}</div>
+                <span class="text-muted small">Revisi tambah {{ report.summary.revision_amount|rupiah }}</span>
             </div>
         </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div class="kpi">
+            <span class="kpi-icon tone-amber"><i class="bi bi-receipt"></i></span>
             <div>
-                <p>Kandidat Invoice</p>
-                <h3>{{ report.summary.invoice_candidate_amount|rupiah }}</h3>
-                <span class="app-stat-helper">{{ report.summary.ready_to_bill_count }} siap · {{ report.summary.invoiced_count }} sudah invoice</span>
+                <span class="kpi-label">Kandidat Invoice</span>
+                <div class="kpi-val">{{ report.summary.invoice_candidate_amount|rupiah }}</div>
+                <span class="text-muted small">{{ report.summary.ready_to_bill_count }} siap · {{ report.summary.invoiced_count }} sudah invoice</span>
             </div>
         </div>
     </div>
 
-    <div class="app-card">
-        <div class="card-header-clean">
+    <section class="panel" data-rise="3">
+        <div class="panel-head">
             <div>
-                <h5>Ringkasan per {{ term('sub_client') }}</h5>
+                <h2>Ringkasan per {{ term('sub_client') }}</h2>
                 <p>Gunakan tombol preview untuk lanjut ke halaman invoice periode tanpa membuat data invoice otomatis dari halaman ini.</p>
             </div>
         </div>
 
-        <div class="table-responsive">
+        <div class="panel-body flush">
+            <div class="table-responsive">
             <table class="table app-table align-middle">
                 <thead>
                     <tr>
@@ -109,17 +114,19 @@
                 </tbody>
             </table>
         </div>
-    </div>
+        </div>
+    </section>
 
-    <div class="app-card">
-        <div class="card-header-clean">
+    <section class="panel" data-rise="4">
+        <div class="panel-head">
             <div>
-                <h5>Detail Rekap per Lokasi</h5>
+                <h2>Detail Rekap per Lokasi</h2>
                 <p>Baris ini membantu cek detail porsi dan nilai sebelum masuk invoice periode.</p>
             </div>
         </div>
 
-        <div class="table-responsive">
+        <div class="panel-body flush">
+            <div class="table-responsive">
             <table class="table app-table align-middle">
                 <thead>
                     <tr>
@@ -143,11 +150,21 @@
                             <td><strong>{{ row.mandor_name }}</strong></td>
                             <td>{{ row.location_name }}</td>
                             <td class="text-end">{{ row.order_count }}</td>
-                            <td class="text-end">{{ row.lunch_qty|qty }}</td>
-                            <td class="text-end">{{ row.dinner_qty|qty }}</td>
+                            <td class="text-end">
+                                <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> {{ row.lunch_qty|qty }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> {{ row.dinner_qty|qty }}</span>
+                            </td>
                             <td class="text-end"><strong>{{ row.total_qty|qty }}</strong></td>
                             <td class="text-end">{{ row.delivered_qty|qty }}</td>
-                            <td class="text-end">{{ row.shortage_qty|qty }}</td>
+                            <td class="text-end">
+                                {% if row.shortage_qty > 0 %}
+                                    <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> {{ row.shortage_qty|qty }}</span>
+                                {% else %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
                             <td class="text-end">{{ row.base_amount|rupiah }}</td>
                             <td class="text-end">{{ row.revision_amount|rupiah }}</td>
                             <td class="text-end"><strong>{{ row.invoice_candidate_amount|rupiah }}</strong></td>
@@ -176,6 +193,7 @@
                 </tbody>
             </table>
         </div>
-    </div>
+        </div>
+    </section>
 </div>
 {% endblock %}

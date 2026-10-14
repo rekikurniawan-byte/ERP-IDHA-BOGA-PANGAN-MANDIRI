@@ -38,6 +38,7 @@ from app.utils.decorators import role_required
 from app.utils.roles import effective_role
 from app.services.global_filter_service import resolve_date_filter, build_filter_bar_context
 from app.services.atomic_transaction_service import atomic_business_action
+from app.utils.labels import status_label
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,8 @@ def index():
     return render_template(
         "delivery/index.html",
         deliveries=deliveries,
+        today=today_wib(),
+        calculate_delivery_sla_summary=calculate_delivery_sla_summary,
         get_delivery_type_from_notes=get_delivery_type_from_notes
     )
 
@@ -680,10 +683,10 @@ def history():
             status_value=status_filter,
             status_options=[
                 {"value": "ALL", "label": "Semua Status"},
-                {"value": "DRAFT", "label": "DRAFT"},
-                {"value": "DISPATCHED", "label": "DISPATCHED"},
-                {"value": "DELIVERED", "label": "DELIVERED"},
-                {"value": "CANCELLED", "label": "CANCELLED"},
+                {"value": "DRAFT", "label": status_label("DRAFT")},
+                {"value": "DISPATCHED", "label": status_label("DISPATCHED")},
+                {"value": "DELIVERED", "label": status_label("DELIVERED")},
+                {"value": "CANCELLED", "label": status_label("CANCELLED")},
             ],
         )
     )

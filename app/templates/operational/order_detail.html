@@ -2,25 +2,24 @@
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="order_detail">
-<div class="page-header">
+<header class="dash-head">
     <div>
-        <span class="eyebrow">Detail Order</span>
         <h1>{{ daily_order.order_number }}</h1>
         <p>Tanggal order: {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
     </div>
 
-    <div class="page-actions order-detail-actions op-prod-delivery-header-actions" data-op-prod-delivery-actions="UI">
+    <div class="dash-head-actions order-detail-actions op-prod-delivery-header-actions" data-op-prod-delivery-actions="UI">
         {% if not daily_order.is_locked %}
-            <form method="POST" action="{{ url_for('operational.lock_order', order_id=daily_order.id) }}" class="order-primary-action app-form" data-ui-form="true">
+            <form method="POST" action="{{ url_for('operational.lock_order', order_id=daily_order.id) }}" class="order-primary-action app-form" data-ui-form="true" data-app-confirm="Kunci order {{ daily_order.order_date.strftime('%d-%m-%Y') }} ({{ total_lunch + total_dinner }} porsi)? Setelah dikunci, perubahan harus lewat revisi.">
                 {% include "components/csrf_token.html" %}
-                <button type="submit" class="btn app-btn-primary">
+                <button type="submit" class="btn btn-primary">
                     <i class="bi bi-lock-fill"></i>
                     Kunci Order
                 </button>
             </form>
 
             <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-                <button class="btn app-btn-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots"></i>
                     Aksi Order
                 </button>
@@ -42,14 +41,14 @@
         {% else %}
             <form method="POST" action="{{ url_for('operational.generate_production', order_id=daily_order.id) }}" class="order-primary-action app-form" data-ui-form="true">
                 {% include "components/csrf_token.html" %}
-                <button type="submit" class="btn app-btn-primary">
+                <button type="submit" class="btn btn-primary">
                     <i class="bi bi-egg-fried"></i>
                     Sinkron Produksi
                 </button>
             </form>
 
             <div class="dropdown app-action-dropdown" data-action-dropdown="true">
-                <button class="btn app-btn-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="orderActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots"></i>
                     Aksi Order
                 </button>
@@ -61,40 +60,100 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('operational.add_increase_after_lock_route', order_id=daily_order.id) }}">
+                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalAddIncreaseAfterLock">
                             <i class="bi bi-plus-circle"></i>
                             Tambah Revisi Setelah Lock
-                        </a>
+                        </button>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('operational.create_order_hpp_snapshot_route', order_id=daily_order.id) }}">
+                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalCreateHppSnapshot">
                             <i class="bi bi-cash-stack"></i>
                             Buat Snapshot HPP
-                        </a>
+                        </button>
                     </li>
                 </ul>
             </div>
         {% endif %}
     </div>
-</div>
+</header>
 
+{# --- 1. Live Document Pipeline Stepper (5 Tahap Riil) --- #}
+{% set has_deliv = (lunch_delivery_data.has_delivery or dinner_delivery_data.has_delivery) %}
+{% set kitchen_done = (has_deliv or (delivery_ready_actions|length > 0)) %}
+{% set any_otw = false %}
+{% set any_delivered = false %}
+{% for d in (lunch_delivery_data.deliveries + dinner_delivery_data.deliveries) %}
+    {% if d.status == 'DELIVERED' %}{% set any_delivered = true %}{% endif %}
+    {% if d.status in ['ON_THE_WAY', 'DELIVERED'] %}{% set any_otw = true %}{% endif %}
+{% endfor %}
+
+<section class="ops-pipeline-card mb-4" data-ops-stepper="order-detail">
+    <div class="ops-pipeline-header">
+        <span class="ops-pipeline-title"><i class="bi bi-diagram-3 me-1"></i> Pipeline Dokumen Pesanan</span>
+        <span class="status-badge {% if daily_order.is_locked %}status-locked{% else %}status-draft{% endif %}">
+            {% if daily_order.is_locked %}<i class="bi bi-lock-fill me-1"></i> Terkunci{% else %}<i class="bi bi-unlock me-1"></i> Terbuka (Konsep){% endif %}
+        </span>
+    </div>
+    <div class="ops-pipeline-steps">
+        <div class="ops-pipeline-step {% if daily_order.is_locked %}is-done{% else %}is-active{% endif %}">
+            <span class="ops-pipeline-num">{% if daily_order.is_locked %}<i class="bi bi-check-lg"></i>{% else %}1{% endif %}</span>
+            <div class="ops-pipeline-text">
+                <span class="ops-pipeline-label">1. Konsep Order</span>
+                <span class="ops-pipeline-desc">{% if daily_order.is_locked %}Data siap{% else %}Input aktif{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="ops-pipeline-step {% if daily_order.is_locked %}is-done{% else %}is-pending{% endif %}">
+            <span class="ops-pipeline-num">{% if daily_order.is_locked %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}</span>
+            <div class="ops-pipeline-text">
+                <span class="ops-pipeline-label">2. Terkunci</span>
+                <span class="ops-pipeline-desc">{% if daily_order.is_locked %}Terkunci resmi{% else %}Menunggu lock{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="ops-pipeline-step {% if kitchen_done %}is-done{% elif daily_order.is_locked %}is-active{% else %}is-pending{% endif %}">
+            <span class="ops-pipeline-num">{% if kitchen_done %}<i class="bi bi-check-lg"></i>{% elif daily_order.is_locked %}3{% else %}3{% endif %}</span>
+            <div class="ops-pipeline-text">
+                <span class="ops-pipeline-label">3. Dapur Masak</span>
+                <span class="ops-pipeline-desc">{% if kitchen_done %}Produksi siap{% elif daily_order.is_locked %}Proses dapur{% else %}Antre kunci{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="ops-pipeline-step {% if any_delivered %}is-done{% elif any_otw or has_deliv %}is-active{% else %}is-pending{% endif %}">
+            <span class="ops-pipeline-num">{% if any_delivered %}<i class="bi bi-check-lg"></i>{% else %}4{% endif %}</span>
+            <div class="ops-pipeline-text">
+                <span class="ops-pipeline-label">4. Armada Jalan</span>
+                <span class="ops-pipeline-desc">{% if has_deliv %}{{ lunch_delivery_data.delivery_count + dinner_delivery_data.delivery_count }} dispatch{% else %}Belum berangkat{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="ops-pipeline-step {% if any_delivered %}is-done{% else %}is-pending{% endif %}">
+            <span class="ops-pipeline-num">{% if any_delivered %}<i class="bi bi-check-lg"></i>{% else %}5{% endif %}</span>
+            <div class="ops-pipeline-text">
+                <span class="ops-pipeline-label">5. Tanda Terima</span>
+                <span class="ops-pipeline-desc">{% if any_delivered %}Diterima lokasi{% else %}Belum sampai{% endif %}</span>
+            </div>
+        </div>
+    </div>
+</section>
 
 {% if daily_order.is_locked %}
-<div class="app-card soft-warning-card">
+<div class="alert alert-warning mb-4">
     <strong>Catatan alur revisi setelah dikunci:</strong>
-    <p>
+    <p class="mb-0">
         Jika ada revisi tambah setelah produksi atau pengiriman selesai, sistem akan menaikkan rencana produksi.
         Dapur harus menyelesaikan tambahan produksi dulu sebelum pengiriman tambahan bisa dibuat.
     </p>
 </div>
 
-<div class="app-card mt-4" data-kitchen-print-panel="true">
-    <div class="card-header-clean">
+<section class="panel mt-4" data-kitchen-print-panel="true">
+    <div class="panel-head">
         <div>
-            <h5><i class="bi bi-printer me-2 text-primary"></i>Cetak Rekap Dapur & Label Wadah</h5>
+            <h2><i class="bi bi-printer me-2 text-primary"></i>Cetak Rekap Dapur & Label Wadah</h2>
             <p>Rekap pesanan dapur dan label wadah per sesi untuk pesanan yang telah dikunci.</p>
         </div>
     </div>
+    <div class="panel-body">
     
     <div class="row g-3">
         <!-- Sesi Siang -->
@@ -177,7 +236,8 @@
             </div>
         </div>
     </div>
-</div>
+    </div>
+</section>
 {% endif %}
 
 {% if delivery_ready_actions %}
@@ -203,7 +263,7 @@
                     <p>{{ action.description }}</p>
                     <div class="delivery-next-action-meta">
                         <span>Order: {{ action.order_number }}</span>
-                        <span>Sisa: {{ action.remaining_qty }} porsi</span>
+                        <span>Sisa: {{ action.remaining_qty|qty }} porsi</span>
                         <span>Pengantar: {{ action.driver.name if action.driver else 'Belum tersedia' }}</span>
                     </div>
                 </div>
@@ -231,104 +291,65 @@
 </section>
 {% endif %}
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Default Menu & Profil HPP</h5>
-            <p>Default ini hanya untuk prefill saat membuat Snapshot HPP. Tidak otomatis memotong stok, tidak membuat jurnal, dan tidak mengubah invoice.</p>
+            <h2>Default Menu & Profil HPP</h2>
+            <p class="mb-0 text-muted">Menu siang: <strong>{{ daily_order.lunch_menu.menu_name if daily_order.lunch_menu else 'Belum ditentukan' }}</strong> &bull; Menu sore: <strong>{{ daily_order.dinner_menu.menu_name if daily_order.dinner_menu else 'Belum ditentukan' }}</strong> &bull; Kemasan: <strong>{{ daily_order.packaging_profile.profile_name if daily_order.packaging_profile else 'Belum ditentukan' }}</strong> &bull; Overhead: <strong>{{ daily_order.overhead_profile.profile_name if daily_order.overhead_profile else 'Belum ditentukan' }}</strong></p>
         </div>
-        <div class="table-actions">
-            <a href="{{ url_for('operational.update_order_hpp_defaults_route', order_id=daily_order.id) }}" class="btn btn-sm app-btn-secondary">
-                <i class="bi bi-pencil-square"></i>
-                Atur Default HPP
-            </a>
-        </div>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-md-3">
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-info"><i class="bi bi-egg-fried"></i></div>
-                <div>
-                    <span>Menu Siang</span>
-                    <strong>{{ daily_order.lunch_menu.menu_name if daily_order.lunch_menu else 'Belum ditentukan' }}</strong>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-info"><i class="bi bi-egg-fried"></i></div>
-                <div>
-                    <span>Menu Sore</span>
-                    <strong>{{ daily_order.dinner_menu.menu_name if daily_order.dinner_menu else 'Belum ditentukan' }}</strong>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-info"><i class="bi bi-box"></i></div>
-                <div>
-                    <span>Kemasan</span>
-                    <strong>{{ daily_order.packaging_profile.profile_name if daily_order.packaging_profile else 'Belum ditentukan' }}</strong>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-info"><i class="bi bi-gear"></i></div>
-                <div>
-                    <span>Overhead</span>
-                    <strong>{{ daily_order.overhead_profile.profile_name if daily_order.overhead_profile else 'Belum ditentukan' }}</strong>
-                </div>
-            </div>
+        <div>
+            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalHppDefaults">
+                <i class="bi bi-gear me-1"></i> Atur
+            </button>
         </div>
     </div>
-</div>
+</section>
 
 {% if daily_order.is_locked %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>HPP per Order</h5>
+            <h2>HPP per Order</h2>
             <p>Snapshot HPP membekukan biaya menu, kemasan, overhead, dan margin untuk order ini. Tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice.</p>
         </div>
-        <div class="table-actions">
-            <a href="{{ url_for('operational.create_order_hpp_snapshot_route', order_id=daily_order.id) }}" class="btn btn-sm app-btn-primary">
-                <i class="bi bi-cash-stack"></i>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateHppSnapshot">
+                <i class="bi bi-cash-stack me-1"></i>
                 Buat Snapshot HPP
-            </a>
+            </button>
         </div>
     </div>
 
+    <div class="panel-body">
     {% if latest_hpp_snapshot %}
-        <div class="app-stat-grid compact-grid">
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
+        <div class="kpi-row mb-3">
+            <div class="kpi">
+                <span class="kpi-icon tone-blue"><i class="bi bi-receipt"></i></span>
                 <div>
-                    <p>Snapshot Terakhir</p>
-                    <h3>{{ latest_hpp_snapshot.snapshot_number }}</h3>
-                    <span class="app-stat-helper">{{ latest_hpp_snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</span>
+                    <span class="kpi-label">Snapshot Terakhir</span>
+                    <div class="kpi-val">{{ latest_hpp_snapshot.snapshot_number }}</div>
+                    <span class="text-muted small">{{ latest_hpp_snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</span>
                 </div>
             </div>
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-warning"><i class="bi bi-calculator"></i></div>
+            <div class="kpi">
+                <span class="kpi-icon tone-amber"><i class="bi bi-calculator"></i></span>
                 <div>
-                    <p>HPP Total</p>
-                    <h3>{{ latest_hpp_snapshot.hpp_total|rupiah }}</h3>
-                    <span class="app-stat-helper">{{ latest_hpp_snapshot.hpp_per_portion|rupiah }} / porsi</span>
+                    <span class="kpi-label">HPP Total</span>
+                    <div class="kpi-val">{{ latest_hpp_snapshot.hpp_total|rupiah }}</div>
+                    <span class="text-muted small">{{ latest_hpp_snapshot.hpp_per_portion|rupiah }} / porsi</span>
                 </div>
             </div>
-            <div class="app-stat-card">
-                <div class="app-stat-icon stat-purple"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="kpi">
+                <span class="kpi-icon tone-violet"><i class="bi bi-graph-up-arrow"></i></span>
                 <div>
-                    <p>Estimasi Margin</p>
-                    <h3>{{ latest_hpp_snapshot.gross_margin_amount|rupiah }}</h3>
-                    <span class="app-stat-helper">{{ latest_hpp_snapshot.gross_margin_percentage|round(2) }}%</span>
+                    <span class="kpi-label">Estimasi Margin</span>
+                    <div class="kpi-val">{{ latest_hpp_snapshot.gross_margin_amount|rupiah }}</div>
+                    <span class="text-muted small">{{ latest_hpp_snapshot.gross_margin_percentage|round(2) }}%</span>
                 </div>
             </div>
         </div>
 
-        <div class="table-responsive mt-3">
+        <div class="table-responsive">
             <table class="table app-table align-middle">
                 <thead>
                     <tr>
@@ -344,7 +365,9 @@
                     {% for snapshot in hpp_snapshots %}
                     <tr>
                         <td>
-                            <strong>{{ snapshot.snapshot_number }}</strong>
+                            <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="fw-bold text-decoration-none">
+                                {{ snapshot.snapshot_number }}
+                            </a>
                             <div class="muted-small">{{ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</div>
                         </td>
                         <td>
@@ -357,20 +380,31 @@
                             {{ snapshot.gross_margin_amount|rupiah }}
                             <div class="muted-small">{{ snapshot.gross_margin_percentage|round(2) }}%</div>
                         </td>
-                        <td>
-                            <div class="d-flex gap-2 flex-wrap">
+                        <td class="text-end">
+                            <div class="ops-actions">
                                 <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
                                     Detail
                                 </a>
-                                {% if snapshot.stock_consumption %}
-                                    <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-sm app-btn-secondary">
-                                        Pemakaian Stok
-                                    </a>
-                                {% else %}
-                                    <a href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-sm app-btn-secondary">
-                                        Dry-run / Commit
-                                    </a>
-                                {% endif %}
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm app-btn-secondary" type="button" aria-label="Aksi lain" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}'>
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end app-action-menu">
+                                        {% if snapshot.stock_consumption %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}">
+                                                    <i class="bi bi-box-seam me-1"></i> Pemakaian Stok
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id) }}">
+                                                    <i class="bi bi-box-arrow-down me-1"></i> Dry-run / Commit Stok
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -379,91 +413,68 @@
             </table>
         </div>
     {% else %}
-        <div class="empty-state">
+        <div class="empty-state app-empty-state">
             <i class="bi bi-cash-stack"></i>
             <p>Belum ada snapshot HPP untuk order ini.</p>
             <span>Isi master menu, resep, profil HPP item, kemasan, dan overhead dulu sebelum membuat snapshot real.</span>
         </div>
     {% endif %}
-</div>
+    </div>
+</section>
 {% endif %}
 
-<div class="app-stat-grid">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-people"></i>
-        </div>
+<div class="kpi-row my-4">
+    <div class="kpi">
+        <span class="kpi-icon tone-amber"><i class="bi bi-sun"></i></span>
         <div>
-            <p>{{ term('sub_client') }} Unik</p>
-            <h3>{{ unique_mandors }}</h3>
-            <span class="app-stat-helper">Jumlah {{ term('sub_client', lower=True) }} berbeda</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-geo-alt"></i>
-        </div>
-        <div>
-            <p>Total Lokasi</p>
-            <h3>{{ total_locations }}</h3>
-            <span class="app-stat-helper">Detail {{ term('sub_client', lower=True) }}/lokasi</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-sun"></i>
-        </div>
-        <div>
-            <p>Total Porsi Siang</p>
-            <h3>{{ total_lunch }}</h3>
-            <span class="app-stat-helper">
-                Pengiriman direncanakan: {{ lunch_delivery_data.total_planned_delivery_qty }} dari {{ lunch_delivery_data.total_order_qty }}
+            <span class="kpi-label">Porsi Siang</span>
+            <div class="kpi-val">{{ total_lunch }}</div>
+            <span class="text-muted small">
+                Pengiriman: {{ lunch_delivery_data.total_planned_delivery_qty }} dari {{ lunch_delivery_data.total_order_qty }}
             </span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-moon"></i>
-        </div>
+    <div class="kpi">
+        <span class="kpi-icon tone-violet"><i class="bi bi-moon"></i></span>
         <div>
-            <p>Total Porsi Sore</p>
-            <h3>{{ total_dinner }}</h3>
-            <span class="app-stat-helper">
-                Pengiriman direncanakan: {{ dinner_delivery_data.total_planned_delivery_qty }} dari {{ dinner_delivery_data.total_order_qty }}
+            <span class="kpi-label">Porsi Sore</span>
+            <div class="kpi-val">{{ total_dinner }}</div>
+            <span class="text-muted small">
+                Pengiriman: {{ dinner_delivery_data.total_planned_delivery_qty }} dari {{ dinner_delivery_data.total_order_qty }}
             </span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-danger">
-            <i class="bi bi-lock-fill"></i>
-        </div>
+    <div class="kpi">
+        <span class="kpi-icon tone-green"><i class="bi bi-box-seam"></i></span>
         <div>
-            <p>Status Kunci</p>
-            <h3>{% if daily_order.is_locked %}Terkunci{% else %}Terbuka{% endif %}</h3>
-            <span class="app-stat-helper">
-                {% if daily_order.is_locked %}
-                    Order sudah dikunci
-                {% else %}
-                    Order masih bisa ditambah
-                {% endif %}
-            </span>
+            <span class="kpi-label">Total Porsi</span>
+            <div class="kpi-val">{{ total_lunch + total_dinner }}</div>
+            <span class="text-muted small">Total gabungan</span>
+        </div>
+    </div>
+
+    <div class="kpi">
+        <span class="kpi-icon tone-blue"><i class="bi bi-geo-alt"></i></span>
+        <div>
+            <span class="kpi-label">Lokasi</span>
+            <div class="kpi-val">{{ total_locations }}</div>
+            <span class="text-muted small">{{ unique_mandors }} {{ term('sub_client', lower=True) }} unik</span>
         </div>
     </div>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Detail {{ term('sub_client') }} & Lokasi</h5>
+            <h2>Detail {{ term('sub_client') }} & Lokasi</h2>
             <p>Rincian total porsi operasional per {{ term('sub_client', lower=True) }}/lokasi. Harga di tabel ini adalah harga awal saat dikunci. Jika ada harga berbeda setelah dikunci, lihat Riwayat Revisi.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -492,84 +503,28 @@
                             <div class="muted-small">Harga revisi lihat riwayat</div>
                         {% endif %}
                     </td>
-                    <td>{{ detail.lunch_qty }}</td>
-                    <td>{{ detail.dinner_qty }}</td>
+                    <td>
+                        <span class="ops-session-badge is-lunch">
+                            <i class="bi bi-sun"></i> {{ detail.lunch_qty }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="ops-session-badge is-dinner">
+                            <i class="bi bi-moon-stars"></i> {{ detail.dinner_qty }}
+                        </span>
+                    </td>
                     <td><strong>{{ detail.total_qty }}</strong></td>
                     <td>{{ detail.notes or '-' }}</td>
-                    <td>
-                        <div class="d-flex gap-2 flex-wrap">
-                            {% if current_user.role in ['ADMIN', 'OWNER'] %}
-                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalChangeQty-{{ detail.id }}">
-                                <i class="bi bi-pencil-square"></i> Ubah Porsi
-                            </button>
+                    <td class="text-end">
+                        <div class="ops-actions justify-content-end">
+                            {% if current_user.role in ['ADMIN', 'OWNER', 'ADMIN_OPERASIONAL'] %}
+                                <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalChangeQty-{{ detail.id }}" title="Ubah porsi langsung">
+                                    <i class="bi bi-pencil-square me-1"></i> Ubah Porsi
+                                </button>
+                            {% else %}
+                                <span class="text-muted small">-</span>
                             {% endif %}
-                            <a href="{{ url_for('operational.create_revision', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
-                                Revisi
-                            </a>
                         </div>
-
-                        {% if current_user.role in ['ADMIN', 'OWNER'] %}
-                        {# Modal Ubah Porsi Admin #}
-                        <div class="modal fade text-start" id="modalChangeQty-{{ detail.id }}" tabindex="-1" aria-labelledby="modalLabelChangeQty-{{ detail.id }}" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="POST" action="{{ url_for('operational.change_order_detail_qty', detail_id=detail.id) }}" class="app-form">
-                                        {% include "components/csrf_token.html" %}
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalLabelChangeQty-{{ detail.id }}">
-                                                <i class="bi bi-pencil-square me-1"></i> Ubah Porsi: {{ detail.mandor.name if detail.mandor else 'Sub Client' }}
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label class="form-label fw-bold">Lokasi Antar</label>
-                                                <input type="text" class="form-control" value="{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}" readonly disabled>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label fw-bold">Pilih Sesi</label>
-                                                <select name="meal_type" class="form-select" required>
-                                                    <option value="LUNCH">Siang (Porsi saat ini: {{ detail.lunch_qty }})</option>
-                                                    <option value="DINNER">Malam / Sore (Porsi saat ini: {{ detail.dinner_qty }})</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label fw-bold">Jumlah Porsi Baru</label>
-                                                <input type="number" name="new_qty" class="form-control" min="0" placeholder="Contoh: 35" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label fw-bold">Alasan Perubahan</label>
-                                                <textarea name="reason" class="form-control" rows="2" placeholder="Wajib diisi jika order sudah dikunci atau porsi diubah menjadi 0"></textarea>
-                                                <small class="text-muted">Setelah jam lock atau jika order terkunci, alasan wajib dicantumkan.</small>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label fw-bold">Kategori Alasan (Wajib jika porsi 0)</label>
-                                                <select name="reason_code" class="form-select">
-                                                    <option value="">-- Pilih jika porsi diubah ke 0 --</option>
-                                                    <option value="OFF_TODAY">Libur hari ini saja (aktif kembali besok)</option>
-                                                    <option value="OFF_UNTIL">Libur sementara sampai tanggal tertentu</option>
-                                                    <option value="PAUSE">Berhenti sementara (STOPPED)</option>
-                                                    <option value="PROJECT_DONE">Proyek selesai (STOPPED + tinjau kontrak)</option>
-                                                    <option value="NO_WORKERS">Pekerja tidak di lokasi</option>
-                                                    <option value="OTHER">Lainnya</option>
-                                                </select>
-                                            </div>
-                                            <div class="alert alert-warning py-2 mb-0 small">
-                                                <i class="bi bi-info-circle me-1"></i>
-                                                Jika pengiriman sesi ini sudah berjalan (on the way) atau diterima di lokasi, perubahan akan otomatis ditolak oleh sistem untuk semua pengguna termasuk Admin.
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                            <button type="submit" class="btn app-btn-primary">
-                                                <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                     </td>
                 </tr>
                 {% else %}
@@ -583,27 +538,51 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% if daily_order.details %}
+            <tfoot class="ops-tfoot-summary">
+                <tr>
+                    <td colspan="3" class="text-end">Total Ringkasan:</td>
+                    <td>
+                        <span class="ops-session-badge is-lunch">
+                            <i class="bi bi-sun"></i> {{ total_lunch }} Porsi
+                        </span>
+                    </td>
+                    <td>
+                        <span class="ops-session-badge is-dinner">
+                            <i class="bi bi-moon-stars"></i> {{ total_dinner }} Porsi
+                        </span>
+                    </td>
+                    <td>
+                        <strong class="text-dark">{{ total_lunch + total_dinner }} Porsi</strong>
+                    </td>
+                    <td colspan="2">
+                        <span class="text-muted small">{{ total_locations }} titik · {{ unique_mandors }} {{ term('sub_client', lower=True) }}</span>
+                    </td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
-</div>
+    </div>
+</section>
 
 {% if daily_order.is_locked %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Status Pengiriman Order</h5>
+            <h2>Status Pengiriman Order</h2>
             <p>Menunjukkan apakah masih ada sisa porsi yang belum dibuat pengiriman.</p>
         </div>
 
         <div class="table-actions">
             {% if lunch_delivery_data.latest_delivery %}
-                <a href="{{ url_for('delivery.detail', delivery_id=lunch_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                <a href="{{ url_for('delivery.detail', delivery_id=lunch_delivery_data.latest_delivery.id) }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-truck"></i>
                     Lihat Pengiriman Siang
                 </a>
             {% endif %}
             {% if dinner_delivery_data.latest_delivery %}
-                <a href="{{ url_for('delivery.detail', delivery_id=dinner_delivery_data.latest_delivery.id) }}" class="btn btn-sm app-btn-secondary">
+                <a href="{{ url_for('delivery.detail', delivery_id=dinner_delivery_data.latest_delivery.id) }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-truck"></i>
                     Lihat Pengiriman Sore
                 </a>
@@ -611,7 +590,8 @@
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -652,18 +632,20 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 {% endif %}
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Riwayat Revisi</h5>
+            <h2>Riwayat Revisi</h2>
             <p>Semua perubahan order tercatat untuk kebutuhan audit.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -690,8 +672,24 @@
                             <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</td>
                             <td>{{ revision.revision_type|status_label }}</td>
                             <td>{{ revision.revision_direction|status_label }}</td>
-                            <td>{{ revision.lunch_qty_change }}</td>
-                            <td>{{ revision.dinner_qty_change }}</td>
+                            <td>
+                                {% if revision.lunch_qty_change > 0 %}
+                                    <span class="ops-diff-chip is-increase">+{{ revision.lunch_qty_change }}</span>
+                                {% elif revision.lunch_qty_change < 0 %}
+                                    <span class="ops-diff-chip is-decrease">{{ revision.lunch_qty_change }}</span>
+                                {% else %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if revision.dinner_qty_change > 0 %}
+                                    <span class="ops-diff-chip is-increase">+{{ revision.dinner_qty_change }}</span>
+                                {% elif revision.dinner_qty_change < 0 %}
+                                    <span class="ops-diff-chip is-decrease">{{ revision.dinner_qty_change }}</span>
+                                {% else %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
                             <td>{{ revision.price_per_portion|rupiah if revision.price_per_portion else detail.price_per_portion|rupiah }}</td>
                             <td>{{ revision.reason or '-' }}</td>
                         </tr>
@@ -701,7 +699,7 @@
                 {% if not revision_found.value %}
                 <tr>
                     <td colspan="9">
-                        <div class="empty-state">
+                        <div class="empty-state app-empty-state">
                             <i class="bi bi-clock-history"></i>
                             <p>Belum ada revisi order.</p>
                         </div>
@@ -711,6 +709,355 @@
             </tbody>
         </table>
     </div>
+    </div>
+</section>
 </div>
+
+{# ================= MODAL-MODAL IN-PLACE (Diletakkan di luar table/panel sesuai A2) ================= #}
+
+{# Modal Ubah Porsi (satu-satunya jalur ubah porsi per baris; jalur Revisi lama dilepas dari tabel 2026-10-14) #}
+{% if current_user.role in ['ADMIN', 'OWNER', 'ADMIN_OPERASIONAL'] %}
+    {% for detail in daily_order.details %}
+    {# Modal Ubah Porsi Langsung #}
+    <div class="modal fade text-start" id="modalChangeQty-{{ detail.id }}" tabindex="-1" aria-labelledby="modalLabelChangeQty-{{ detail.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border">
+                <form method="POST" action="{{ url_for('operational.change_order_detail_qty', detail_id=detail.id) }}" class="app-form" data-ui-form="true">
+                    {% include "components/csrf_token.html" %}
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="app-stat-icon stat-info" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelChangeQty-{{ detail.id }}">
+                                    Ubah Porsi: {{ detail.mandor.name if detail.mandor else 'Sub Client' }}
+                                </h5>
+                                <span class="text-muted" style="font-size: 12px;">
+                                    {{ detail.delivery_location.location_name if detail.delivery_location else '-' }}
+                                </span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label app-label fw-bold mb-1">Lokasi Antar</label>
+                            <input type="text" class="form-control app-input bg-light" value="{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}" readonly disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label app-label fw-bold mb-1">Pilih Sesi Makanan</label>
+                            <select name="meal_type" class="form-select app-input" required>
+                                <option value="LUNCH">☀️ Siang (Porsi saat ini: {{ detail.lunch_qty|qty }})</option>
+                                <option value="DINNER">🌙 Malam / Sore (Porsi saat ini: {{ detail.dinner_qty|qty }})</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label app-label fw-bold mb-1">Jumlah Porsi Baru</label>
+                            <div class="input-group">
+                                <input type="number" name="new_qty" class="form-control app-input" min="0" placeholder="Contoh: 35" required>
+                                <span class="input-group-text bg-light text-muted small">porsi</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label app-label fw-bold mb-1">Alasan Perubahan</label>
+                            <textarea name="reason" class="form-control app-input" rows="2" placeholder="Wajib diisi jika order sudah dikunci atau porsi diubah menjadi 0"></textarea>
+                            <div class="form-text small text-muted">Setelah jam lock atau jika order terkunci, alasan wajib dicantumkan untuk jejak audit.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label app-label fw-bold mb-1">Kategori Alasan <span class="text-danger fw-normal">(Wajib jika porsi 0)</span></label>
+                            <select name="reason_code" class="form-select app-input">
+                                <option value="">-- Pilih jika porsi diubah ke 0 (Batal/Libur) --</option>
+                                <option value="OFF_TODAY">Libur hari ini saja (aktif kembali besok)</option>
+                                <option value="OFF_UNTIL">Libur sementara sampai tanggal tertentu</option>
+                                <option value="PAUSE">Berhenti sementara (STOPPED)</option>
+                                <option value="PROJECT_DONE">Proyek selesai (STOPPED + tinjau kontrak)</option>
+                                <option value="NO_WORKERS">Pekerja tidak di lokasi</option>
+                                <option value="OTHER">Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-start gap-2 rounded-3 border-0 small" style="background: var(--warning-bg); color: var(--warning-text); line-height: 1.45;">
+                            <i class="bi bi-shield-exclamation fs-6 flex-shrink-0 text-warning mt-0"></i>
+                            <div>Jika pengiriman sesi ini sudah berjalan <em>(on the way)</em> atau diterima di lokasi, perubahan otomatis ditolak oleh sistem untuk semua pengguna demi integritas logistik.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top py-2 px-4">
+                        <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm app-btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% endfor %}
+{% endif %}
+
+{# 3. Modal Tambah Revisi Setelah Lock (D1) #}
+{% if daily_order.is_locked and current_user.role in ['ADMIN', 'ADMIN_OPERASIONAL'] %}
+<div class="modal fade text-start" id="modalAddIncreaseAfterLock" tabindex="-1" aria-labelledby="modalLabelAddIncreaseAfterLock" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border">
+            <form method="POST" action="{{ url_for('operational.add_increase_after_lock_route', order_id=daily_order.id) }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="modal-header border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="app-stat-icon stat-primary" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                            <i class="bi bi-plus-circle"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelAddIncreaseAfterLock">
+                                Tambah Revisi Setelah Lock
+                            </h5>
+                            <span class="text-muted" style="font-size: 12px;">
+                                {{ daily_order.order_number }} · {{ daily_order.order_date.strftime('%d-%m-%Y') }}
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1">{{ term('sub_client') }}</label>
+                            <select name="mandor_id" class="form-select app-input" required>
+                                <option value="">Pilih {{ term('sub_client') }}</option>
+                                {% for mandor in form_mandors %}
+                                    <option value="{{ mandor.id }}">{{ mandor.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1">Lokasi Antar</label>
+                            <select name="delivery_location_id" class="form-select app-input" required>
+                                <option value="">Pilih Lokasi</option>
+                                {% for loc in form_locations %}
+                                    <option value="{{ loc.id }}">{{ loc.location_name }} ({{ loc.mandor.name if loc.mandor else '-' }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-sun text-warning me-1"></i> Porsi Siang</label>
+                            <input type="number" name="lunch_qty" class="form-control app-input" value="0" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-moon-stars text-primary me-1"></i> Porsi Sore</label>
+                            <input type="number" name="dinner_qty" class="form-control app-input" value="0" min="0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label app-label fw-bold mb-1">Catatan / Alasan</label>
+                            <textarea name="notes" class="form-control app-input" rows="2" placeholder="Catatan penambahan setelah order dikunci..."></textarea>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 mt-3 mb-0 d-flex align-items-start gap-2 rounded-3 border-0 small" style="background: var(--warning-bg); color: var(--warning-text); line-height: 1.45;">
+                        <i class="bi bi-shield-exclamation fs-6 flex-shrink-0 text-warning mt-0"></i>
+                        <div>Revisi tambah setelah lock otomatis menaikkan rencana produksi dapur. Pengiriman baru bisa dibuat setelah dapur menyelesaikan tambahan produksi.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm app-btn-primary">
+                        <i class="bi bi-save me-1"></i> Simpan Penambahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+{% endif %}
+
+{# 4. Modal Atur Default HPP (D2) #}
+{% if current_user.role in ['ADMIN', 'OWNER'] %}
+<div class="modal fade text-start" id="modalHppDefaults" tabindex="-1" aria-labelledby="modalLabelHppDefaults" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border">
+            <form method="POST" action="{{ url_for('operational.update_order_hpp_defaults_route', order_id=daily_order.id) }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="modal-header border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="app-stat-icon stat-info" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelHppDefaults">
+                                Atur Default Menu & Profil HPP
+                            </h5>
+                            <span class="text-muted" style="font-size: 12px;">
+                                {{ daily_order.order_number }} · Prefill untuk Snapshot HPP
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-sun text-warning me-1"></i> Default Menu Siang</label>
+                            <select name="default_lunch_menu_id" class="form-select app-input">
+                                <option value="">Belum ditentukan</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}" {% if daily_order.lunch_menu_id == menu.id %}selected{% endif %}>
+                                        {{ menu.menu_code }} - {{ menu.menu_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Pilihan awal saat membuat snapshot HPP siang.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-moon-stars text-primary me-1"></i> Default Menu Sore</label>
+                            <select name="default_dinner_menu_id" class="form-select app-input">
+                                <option value="">Belum ditentukan</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}" {% if daily_order.dinner_menu_id == menu.id %}selected{% endif %}>
+                                        {{ menu.menu_code }} - {{ menu.menu_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Pilihan awal saat membuat snapshot HPP sore.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-box me-1"></i> Default Profil Kemasan</label>
+                            <select name="default_packaging_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil kemasan default</option>
+                                {% for profile in packaging_profiles %}
+                                    <option value="{{ profile.id }}" {% if daily_order.packaging_profile_id == profile.id %}selected{% endif %}>
+                                        {{ profile.profile_code }} - {{ profile.profile_name }} ({{ profile.cost_per_portion|rupiah }}/porsi)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-sliders me-1"></i> Default Profil Overhead</label>
+                            <select name="default_overhead_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil overhead default</option>
+                                {% for profile in overhead_profiles %}
+                                    <option value="{{ profile.id }}" {% if daily_order.overhead_profile_id == profile.id %}selected{% endif %}>
+                                        {{ profile.profile_code }} - {{ profile.profile_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 mt-3 mb-0 d-flex align-items-start gap-2 rounded-3 border-0 small">
+                        <i class="bi bi-info-circle fs-6 flex-shrink-0 text-info mt-0"></i>
+                        <div>Default ini hanya digunakan untuk mengisi awal Snapshot HPP. Tidak otomatis memotong stok, tidak membuat jurnal akuntansi, dan tidak mengubah invoice pelanggan.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm app-btn-primary">
+                        <i class="bi bi-save me-1"></i> Simpan Default HPP
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# 5. Modal Buat Snapshot HPP (D3) #}
+{% if daily_order.is_locked and current_user.role in ['ADMIN', 'OWNER'] %}
+<div class="modal fade text-start" id="modalCreateHppSnapshot" tabindex="-1" aria-labelledby="modalLabelCreateHppSnapshot" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border">
+            <form method="POST" action="{{ url_for('operational.create_order_hpp_snapshot_route', order_id=daily_order.id) }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <div class="modal-header border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="app-stat-icon stat-success" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelCreateHppSnapshot">
+                                Buat Snapshot HPP
+                            </h5>
+                            <span class="text-muted" style="font-size: 12px;">
+                                {{ daily_order.order_number }} · Total: {{ (meal_summary.LUNCH.portion_qty + meal_summary.DINNER.portion_qty)|qty if meal_summary else (total_lunch + total_dinner) }} Porsi
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        {% if meal_summary and meal_summary.LUNCH.portion_qty > 0 %}
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-sun text-warning me-1"></i> Menu Siang <span class="text-danger">*</span></label>
+                            <select name="lunch_menu_id" class="form-select app-input" required>
+                                <option value="">Pilih menu siang</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}" {% if daily_order.lunch_menu_id == menu.id %}selected{% endif %}>{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Untuk {{ meal_summary.LUNCH.portion_qty|qty }} porsi siang.</div>
+                        </div>
+                        {% endif %}
+
+                        {% if meal_summary and meal_summary.DINNER.portion_qty > 0 %}
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-moon-stars text-primary me-1"></i> Menu Sore <span class="text-danger">*</span></label>
+                            <select name="dinner_menu_id" class="form-select app-input" required>
+                                <option value="">Pilih menu sore</option>
+                                {% for menu in menus %}
+                                    <option value="{{ menu.id }}" {% if daily_order.dinner_menu_id == menu.id %}selected{% endif %}>{{ menu.menu_code }} - {{ menu.menu_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Untuk {{ meal_summary.DINNER.portion_qty|qty }} porsi sore.</div>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-box me-1"></i> Profil Kemasan</label>
+                            <select name="packaging_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil kemasan</option>
+                                {% for profile in packaging_profiles %}
+                                    <option value="{{ profile.id }}" {% if daily_order.packaging_profile_id == profile.id %}selected{% endif %}>{{ profile.profile_code }} - {{ profile.profile_name }} ({{ profile.cost_per_portion|rupiah }}/porsi)</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Opsional. Boleh dikosongkan.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label app-label fw-bold mb-1"><i class="bi bi-sliders me-1"></i> Profil Overhead</label>
+                            <select name="overhead_profile_id" class="form-select app-input">
+                                <option value="">Tanpa profil overhead</option>
+                                {% for profile in overhead_profiles %}
+                                    <option value="{{ profile.id }}" {% if daily_order.overhead_profile_id == profile.id %}selected{% endif %}>{{ profile.profile_code }} - {{ profile.profile_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Opsional. Biaya listrik, gas, air, dsb.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label app-label fw-bold mb-1">Target Margin (%)</label>
+                            <input type="number" name="target_margin_percentage" class="form-control app-input" value="30" min="0" max="99" step="0.01">
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label app-label fw-bold mb-1">Catatan Snapshot</label>
+                            <input type="text" name="notes" class="form-control app-input" placeholder="Contoh: Snapshot HPP setelah order dikunci">
+                        </div>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 mt-3 mb-0 d-flex align-items-start gap-2 rounded-3 border-0 small">
+                        <i class="bi bi-info-circle fs-6 flex-shrink-0 text-info mt-0"></i>
+                        <div>Membekukan snapshot perhitungan HPP untuk analisis margin order ini. Tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice pelanggan.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Bekukan snapshot HPP untuk order {{ daily_order.order_number }}?">
+                        <i class="bi bi-cash-stack me-1"></i> Simpan Snapshot HPP
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -80,6 +80,17 @@ COMPANY_SETTINGS_SECTIONS = [
                 "type": "checkbox",
                 "required": False,
             },
+            {
+                "key": "warung.worker_debt_limit",
+                "label": L("Batas Hutang Warung per {worker} (Rp)"),
+                "help": L(
+                    "Kalau sisa hutang {worker_lower} melewati angka ini, kasir mendapat peringatan merah "
+                    "(transaksi tetap bisa disimpan). Isi 0 untuk tanpa batas."
+                ),
+                "type": "number",
+                "min": 0,
+                "required": False,
+            },
         ],
     },
     {
@@ -152,6 +163,8 @@ DEFAULT_SETTINGS = {
     "module_warung": "",
     "module_worker_debt": "",
     "kitchen.max_portions_per_container": "20",
+    # Keputusan owner 2026-10-13: batas hutang warung = peringatan saja, bukan blokir.
+    "warung.worker_debt_limit": "300000",
 }
 
 
@@ -211,6 +224,11 @@ def save_company_settings(branch_id, form_data):
                 raise ValueError("Maksimal porsi per wadah harus di antara 15 sampai 20.")
         except (ValueError, TypeError) as exc:
             raise ValueError("Maksimal porsi per wadah harus berupa angka antara 15 sampai 20.") from exc
+
+    raw_debt_limit = form_data.get("warung.worker_debt_limit")
+    if raw_debt_limit is not None and str(raw_debt_limit).strip() != "":
+        if not str(raw_debt_limit).strip().isdigit():
+            raise ValueError("Batas hutang warung harus angka bulat tanpa titik/koma (0 = tanpa batas).")
 
     saved_keys = []
 

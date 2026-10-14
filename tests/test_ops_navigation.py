@@ -42,10 +42,10 @@ def test_every_ops_page_has_exactly_one_door():
 
 
 def test_ops_bottom_tabs_count_and_keys():
-    """Tab bawah ada 5: Beranda, Pesanan, Dapur, Antar, Akun."""
+    """Tab bawah: Beranda, Pesanan, Dapur, Antar, Warung (2026-10-13; hanya bila modul aktif), Akun."""
     nav = ops_navigation_map()
-    assert len(nav["tabs"]) == 5
-    assert [tab["key"] for tab in nav["tabs"]] == ["home", "orders", "kitchen", "delivery", "account"]
+    assert len(nav["tabs"]) == 6
+    assert [tab["key"] for tab in nav["tabs"]] == ["home", "orders", "kitchen", "delivery", "warung", "account"]
 
 
 def test_notifications_not_in_bottom_tabs():

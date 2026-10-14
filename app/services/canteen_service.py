@@ -323,6 +323,22 @@ def create_canteen_sale(
     return True, "Transaksi warung berhasil disimpan.", sale
 
 
+def worker_debt_is_invoiced(worker_debt_id) -> bool:
+    """Sudah masuk invoice mandor yang tidak dibatalkan (aturan sama dengan saklar modul)."""
+    from app.models.finance import Invoice, InvoiceItem
+
+    return (
+        InvoiceItem.query.join(Invoice, Invoice.id == InvoiceItem.invoice_id)
+        .filter(
+            InvoiceItem.source_type == "WORKER_DEBT",
+            InvoiceItem.source_id == worker_debt_id,
+            Invoice.status != "CANCELLED",
+        )
+        .first()
+        is not None
+    )
+
+
 def get_debt_paid_amount(worker_debt):
     return sum(payment.amount for payment in worker_debt.payments)
 
@@ -356,6 +372,11 @@ def pay_worker_debt(worker_debt, payment_date, amount, notes, created_by, paymen
 
     if remaining <= 0:
         return False, "Hutang ini sudah lunas."
+
+    # Hutang yang sudah masuk invoice mandor ditagih lewat invoice itu; kalau
+    # pekerja juga bayar langsung di warung, uangnya tertagih dua kali.
+    if worker_debt_is_invoiced(locked_debt.id):
+        return False, "Hutang ini sudah masuk invoice mandor. Pelunasan lewat pembayaran invoice tersebut."
 
     if amount > remaining:
         return False, "Pembayaran melebihi sisa hutang."

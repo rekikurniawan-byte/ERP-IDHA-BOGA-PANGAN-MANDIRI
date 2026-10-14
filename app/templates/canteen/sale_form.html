@@ -149,11 +149,15 @@
             <textarea name="notes" class="form-control app-input" rows="3" placeholder="Contoh: pembelian mie dan kopi oleh {{ term('worker', lower=True) }}"></textarea>
         </div>
 
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">
+        <div class="form-actions mt-4 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary" data-app-confirm="Simpan transaksi penjualan warung ini?">
                 <i class="bi bi-save"></i>
                 Simpan Transaksi
             </button>
+            <a href="{{ url_for('canteen.index') }}" class="btn app-btn-secondary">
+                <i class="bi bi-x-circle"></i>
+                Batal
+            </a>
         </div>
     </form>
 </div>

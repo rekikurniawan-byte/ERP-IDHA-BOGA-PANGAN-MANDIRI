@@ -1,5 +1,6 @@
 ﻿{% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/row_modal.html" import row_modal %}
 
 {% block content %}
 <div class="logistics-hpp-page-shell" data-logistics-hpp-page="packaging_profiles">
@@ -77,7 +78,7 @@
                     <td>
                         <div class="table-actions">
                             <a href="{{ url_for('costing.hpp_calculator', packaging_profile_id=profile.id, portion_qty=100) }}" class="btn btn-sm app-btn-secondary">Pakai Hitung</a>
-                            <a href="{{ url_for('costing.edit_packaging_profile', profile_id=profile.id) }}" class="btn btn-sm app-btn-secondary">Ubah</a>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalEditPackaging-{{ profile.id }}"><i class="bi bi-pencil-square"></i> Ubah</button>
                             <form method="POST" action="{{ url_for('costing.toggle_packaging_profile', profile_id=profile.id) }}" class="d-inline app-form" data-ui-form="true">
                                 {% include "components/csrf_token.html" %}
                                 <button type="submit" class="btn btn-sm app-btn-secondary">
@@ -102,5 +103,16 @@
     </div>
 </div>
 </div>
+{% for profile in profiles %}
+{% call row_modal("modalEditPackaging-" ~ profile.id, "Ubah Profil Kemasan", profile.profile_name, url_for('costing.edit_packaging_profile', profile_id=profile.id)) %}
+    <div class="mb-3"><label class="form-label">Nama Profil Kemasan</label><input type="text" name="profile_name" class="form-control app-input" value="{{ profile.profile_name }}" required></div>
+    <div class="mb-3"><label class="form-label">Biaya Kemasan / Porsi</label><input type="number" name="cost_per_portion" class="form-control app-input" value="{{ profile.cost_per_portion }}" min="0" step="0.01" required></div>
+    <div class="mb-3"><label class="form-label">Catatan</label><textarea name="notes" class="form-control app-input" rows="2">{{ profile.notes or '' }}</textarea></div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_active" id="p-{{ profile.id }}-active" {% if profile.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="p-{{ profile.id }}-active">Aktif</label>
+    </div>
+{% endcall %}
+{% endfor %}
 {% endblock %}
 

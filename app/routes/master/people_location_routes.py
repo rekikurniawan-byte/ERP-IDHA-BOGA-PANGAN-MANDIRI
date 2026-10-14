@@ -36,9 +36,12 @@ def mandors():
 
     mandors = query.order_by(Mandor.name.asc()).all()
 
+    clients = Client.query.filter_by(is_active=True).order_by(Client.name.asc()).all()
+
     return render_template(
         "master/mandors.html",
         mandors=mandors,
+        clients=clients,
         q=q,
         status=status
     )
@@ -329,9 +332,15 @@ def workers():
 
     workers = query.order_by(Worker.full_name.asc()).all()
 
+    form_mandors = Mandor.query.filter_by(
+        branch_id=current_user.branch_id,
+        is_active=True
+    ).order_by(Mandor.name.asc()).all()
+
     return render_template(
         "master/workers.html",
         workers=workers,
+        form_mandors=form_mandors,
         q=q,
         status=status,
         statuses=WORKER_STATUSES
@@ -487,9 +496,15 @@ def drivers():
 
     drivers = query.order_by(Driver.name.asc()).all()
 
+    eligible_by_driver = {
+        driver.id: _eligible_pengantar_users(current_user.branch_id, current_driver_id=driver.id)
+        for driver in drivers
+    }
+
     return render_template(
         "master/drivers.html",
         drivers=drivers,
+        eligible_by_driver=eligible_by_driver,
         q=q,
         status=status
     )

@@ -1,146 +1,196 @@
 {% extends "layouts/base.html" %}
-{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-operational-page="daily-catering-log">
-    {{ page_header(
-        "Rekap Catering Harian",
-        ("Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per " ~ term('sub_client', lower=True) ~ "/lokasi."),
-        eyebrow="Operasional Catering",
-        actions=[
-            {"label": "Input Order", "url": url_for('operational.create_order'), "icon": "bi-plus-circle", "variant": "primary"},
-            {"label": "Rekap Catering Bulanan", "url": url_for('operational.monthly_catering_recap'), "icon": "bi-calendar3"},
-        ]
-    ) }}
+    <header class="dash-head">
+        <div>
+            <h1>Rekap Catering Harian</h1>
+            <p>Catatan harian realisasi order, pengiriman, shortage, dan status dasar tagihan per {{ term('sub_client', lower=True) }}/lokasi.</p>
+        </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('operational.monthly_catering_recap') }}" class="btn app-btn-secondary">
+                <i class="bi bi-calendar3"></i> Rekap Catering Bulanan
+            </a>
+            <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+                <i class="bi bi-plus-circle"></i> Input Order
+            </a>
+        </div>
+    </header>
 
+    <section class="panel" data-rise="1">
+        <div class="panel-body">
+            <form method="GET" action="{{ url_for('operational.daily_catering_log') }}" class="app-form" data-ui-form="true">
+                <div class="app-filter">
+                    <div class="form-group">
+                        <label for="date">Tanggal Log</label>
+                        <input type="date" id="date" name="date" class="form-control" value="{{ selected_date_value }}">
+                    </div>
+                    <div class="form-group d-flex align-items-end gap-2">
+                        <button type="submit" class="btn app-btn-primary">
+                            <i class="bi bi-funnel"></i>
+                            Terapkan Filter
+                        </button>
+                        <a href="{{ url_for('operational.daily_catering_log') }}" class="btn app-btn-ghost">Atur Ulang</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
 
-    <div class="app-card">
-        <form method="GET" action="{{ url_for('operational.daily_catering_log') }}" class="app-form" data-ui-form="true">
-            <div class="app-filter">
-                <div class="form-group">
-                    <label for="date">Tanggal Log</label>
-                    <input type="date" id="date" name="date" class="form-control" value="{{ selected_date_value }}">
-                </div>
-                <div class="form-group d-flex align-items-end gap-2">
-                    <button type="submit" class="btn app-btn-primary">
-                        <i class="bi bi-funnel"></i>
-                        Terapkan Filter
-                    </button>
-                    <a href="{{ url_for('operational.daily_catering_log') }}" class="btn app-btn-ghost">Atur Ulang</a>
-                </div>
+    <div class="kpi-row" data-rise="2">
+        <div class="kpi">
+            <div class="kpi-top">
+                <span class="kpi-icon tone-blue"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
+                <span class="kpi-label">Order Hari Ini</span>
             </div>
-        </form>
+            <div class="kpi-value">{{ report.summary.order_count }}</div>
+            <div class="kpi-meta">
+                <span>{{ report.summary.locked_count }} locked</span>
+            </div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-top">
+                <span class="kpi-icon tone-blue"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
+                <span class="kpi-label">Total Porsi</span>
+            </div>
+            <div class="kpi-value">{{ report.summary.total_qty|qty }}</div>
+            <div class="kpi-meta">
+                <span>Siang {{ report.summary.lunch_qty|qty }} · Sore {{ report.summary.dinner_qty|qty }}</span>
+            </div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-top">
+                <span class="kpi-icon tone-green"><i class="bi bi-truck" aria-hidden="true"></i></span>
+                <span class="kpi-label">Terkirim</span>
+            </div>
+            <div class="kpi-value">{{ report.summary.delivered_qty|qty }}</div>
+            <div class="kpi-meta">
+                <span>Kurang Kirim {{ report.summary.shortage_qty|qty }}</span>
+            </div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-top">
+                <span class="kpi-icon tone-blue"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+                <span class="kpi-label">Nilai Catering</span>
+            </div>
+            <div class="kpi-value">{{ report.summary.amount|rupiah }}</div>
+            <div class="kpi-meta">
+                <span>{{ report.summary.ready_to_bill_count }} siap tagih · {{ report.summary.invoiced_count }} sudah invoice</span>
+            </div>
+        </div>
     </div>
 
-    <div class="app-stat-grid">
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
+    <section class="panel" data-rise="3">
+        <div class="panel-head">
             <div>
-                <p>Order Hari Ini</p>
-                <h3>{{ report.summary.order_count }}</h3>
-                <span class="app-stat-helper">{{ report.summary.locked_count }} locked</span>
-            </div>
-        </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-journal-text"></i></div>
-            <div>
-                <p>Total Porsi</p>
-                <h3>{{ report.summary.total_qty|qty }}</h3>
-                <span class="app-stat-helper">Siang {{ report.summary.lunch_qty|qty }} · Sore {{ report.summary.dinner_qty|qty }}</span>
-            </div>
-        </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-success"><i class="bi bi-truck"></i></div>
-            <div>
-                <p>Terkirim</p>
-                <h3>{{ report.summary.delivered_qty|qty }}</h3>
-                <span class="app-stat-helper">Kurang Kirim {{ report.summary.shortage_qty|qty }}</span>
-            </div>
-        </div>
-        <div class="app-stat-card">
-            <div class="app-stat-icon stat-info"><i class="bi bi-receipt"></i></div>
-            <div>
-                <p>Nilai Catering</p>
-                <h3>{{ report.summary.amount|rupiah }}</h3>
-                <span class="app-stat-helper">{{ report.summary.ready_to_bill_count }} siap tagih · {{ report.summary.invoiced_count }} sudah invoice</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="app-card">
-        <div class="card-header-clean">
-            <div>
-                <h5>Detail Log {{ selected_date.strftime('%d-%m-%Y') }}</h5>
+                <h2>Detail Log {{ selected_date.strftime('%d-%m-%Y') }}</h2>
                 <p>Data dibaca dari order harian yang ada, pengiriman, dan item invoice. Halaman ini tidak mengubah database.</p>
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table app-table align-middle">
-                <thead>
-                    <tr>
-                        <th>No Order</th>
-                        <th>{{ term('sub_client') }} / PIC</th>
-                        <th>Lokasi</th>
-                        <th class="text-end">Siang</th>
-                        <th class="text-end">Sore</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-end">Terkirim</th>
-                        <th class="text-end">Kurang Kirim</th>
-                        <th class="text-end">Harga</th>
-                        <th class="text-end">Subtotal</th>
-                        <th>Status Tagih</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in report.rows %}
+        <div class="panel-body flush">
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
                         <tr>
-                            <td>
-                                <strong>{{ row.order.order_number }}</strong><br>
-                                {% if row.order.status == "LOCKED" %}
-                                    <span class="status-badge success">Terkunci</span>
+                            <th>No Order</th>
+                            <th>{{ term('sub_client') }} / PIC</th>
+                            <th>Lokasi</th>
+                            <th class="text-end">Siang</th>
+                            <th class="text-end">Sore</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Terkirim</th>
+                            <th class="text-end">Kurang Kirim</th>
+                            <th class="text-end">Harga</th>
+                            <th class="text-end">Subtotal</th>
+                            <th>Status Tagih</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.rows %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('operational.order_detail', order_id=row.order.id) }}" class="fw-bold text-decoration-none">{{ row.order.order_number }}</a><br>
+                                    {% if row.order.status == "LOCKED" %}
+                                        <span class="status-badge success">Terkunci</span>
+                                    {% else %}
+                                        <span class="status-badge neutral">Konsep</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.mandor_name }}</td>
+                                <td>{{ row.location_name }}</td>
+                                <td class="text-end">
+                                    <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> {{ row.lunch_qty|qty }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> {{ row.dinner_qty|qty }}</span>
+                                </td>
+                                <td class="text-end"><strong>{{ row.total_qty|qty }}</strong></td>
+                                <td class="text-end">{{ row.delivered_qty|qty }}</td>
+                                <td class="text-end">
+                                    {% if row.shortage_qty > 0 %}
+                                        <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> {{ row.shortage_qty|qty }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ row.price_per_portion|rupiah }}</td>
+                                <td class="text-end"><strong>{{ row.amount|rupiah }}</strong></td>
+                                <td>
+                                    {% if row.billing_state == "SUDAH_INVOICE" %}
+                                        <span class="status-badge status-completed">Sudah Invoice</span>
+                                    {% elif row.billing_state == "SIAP_TAGIH" %}
+                                        <span class="status-badge status-progress">Siap Tagih</span>
+                                    {% else %}
+                                        <span class="status-badge status-draft">Belum Lock</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="ops-actions">
+                                        <a href="{{ url_for('operational.order_detail', order_id=row.order.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="12">
+                                    <div class="empty-state">
+                                        <i class="bi bi-calendar-x"></i>
+                                        <p>Belum ada log catering untuk tanggal ini. Jika order belum dibuat, gunakan tombol Input Order di header.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if report.rows %}
+                    <tfoot class="ops-tfoot-summary">
+                        <tr>
+                            <td colspan="3" class="text-end">Total Ringkasan:</td>
+                            <td class="text-end">
+                                <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> {{ report.summary.lunch_qty|qty }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> {{ report.summary.dinner_qty|qty }}</span>
+                            </td>
+                            <td class="text-end"><strong>{{ report.summary.total_qty|qty }}</strong></td>
+                            <td class="text-end">{{ report.summary.delivered_qty|qty }}</td>
+                            <td class="text-end">
+                                {% if report.summary.shortage_qty > 0 %}
+                                    <span class="ops-shortage-badge">{{ report.summary.shortage_qty|qty }}</span>
                                 {% else %}
-                                    <span class="status-badge neutral">Konsep</span>
+                                    <span class="text-muted">0</span>
                                 {% endif %}
                             </td>
-                            <td>{{ row.mandor_name }}</td>
-                            <td>{{ row.location_name }}</td>
-                            <td class="text-end">{{ row.lunch_qty|qty }}</td>
-                            <td class="text-end">{{ row.dinner_qty|qty }}</td>
-                            <td class="text-end"><strong>{{ row.total_qty|qty }}</strong></td>
-                            <td class="text-end">{{ row.delivered_qty|qty }}</td>
-                            <td class="text-end">{{ row.shortage_qty|qty }}</td>
-                            <td class="text-end">{{ row.price_per_portion|rupiah }}</td>
-                            <td class="text-end"><strong>{{ row.amount|rupiah }}</strong></td>
-                            <td>
-                                {% if row.billing_state == "SUDAH_INVOICE" %}
-                                    <span class="status-badge status-completed">Sudah Invoice</span>
-                                {% elif row.billing_state == "SIAP_TAGIH" %}
-                                    <span class="status-badge status-progress">Siap Tagih</span>
-                                {% else %}
-                                    <span class="status-badge status-draft">Belum Lock</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="table-actions">
-                                    <a href="{{ url_for('operational.order_detail', order_id=row.order.id) }}" class="btn btn-sm app-btn-secondary">Detail</a>
-                                </div>
-                            </td>
+                            <td class="text-end">-</td>
+                            <td class="text-end"><strong>{{ report.summary.amount|rupiah }}</strong></td>
+                            <td colspan="2"><span class="text-muted small">{{ report.summary.order_count }} order</span></td>
                         </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="12">
-                                <div class="empty-state">
-                                    <i class="bi bi-calendar-x"></i>
-                                    <p>Belum ada log catering untuk tanggal ini. Jika order belum dibuat, gunakan tombol Input Order di header.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}

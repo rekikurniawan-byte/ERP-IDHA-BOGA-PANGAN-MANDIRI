@@ -13,15 +13,32 @@
     {% set order_form_title = "Order Harian" %}
     {% set order_form_description = "Buat order baru atau tambah detail pada order tanggal yang masih draft." %}
 {% endif %}
-{{ page_header(
-    order_form_title,
-    order_form_description,
-    eyebrow="Modul Operasional",
-    actions=[{"label": "Kembali", "url": url_for('operational.orders'), "icon": "bi-arrow-left"}]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>{{ order_form_title }}</h1>
+        <p>{{ order_form_description }}</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) if daily_order else url_for('operational.orders') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> {{ "Kembali ke Order" if daily_order else "Kembali" }}
+        </a>
+    </div>
+</header>
 
+{% if daily_order %}
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Dokumen Induk: <strong>{{ daily_order.order_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Status: <span class="status-badge {% if daily_order.is_locked %}status-locked{% else %}status-draft{% endif %}">{% if daily_order.is_locked %}Terkunci{% else %}Terbuka{% endif %}</span></span>
+    </div>
+</div>
+{% endif %}
 
-<div class="app-card">
+<section class="panel">
+    <div class="panel-body">
     {% if not mandors or not locations %}
         <div class="alert alert-warning">
             Data {{ term('sub_client', lower=True) }} atau lokasi pengiriman belum tersedia. Jalankan seed master operasional dulu sebelum input order.
@@ -113,12 +130,12 @@
             {% endif %}
 
             <div class="col-md-4">
-                <label class="form-label">Porsi Siang</label>
+                <label class="form-label"><i class="bi bi-sun text-warning me-1"></i> Porsi Siang</label>
                 <input type="number" name="lunch_qty" class="form-control app-input" value="0" min="0" required>
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Porsi Sore</label>
+                <label class="form-label"><i class="bi bi-moon-stars text-primary me-1"></i> Porsi Sore / Malam</label>
                 <input type="number" name="dinner_qty" class="form-control app-input" value="0" min="0" required>
             </div>
 
@@ -177,9 +194,12 @@
             {% endif %}
         </div>
 
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">
-                <i class="bi bi-save"></i>
+        <div class="form-actions mt-4 d-flex gap-2">
+            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) if daily_order else url_for('operational.orders') }}" class="btn btn-outline-secondary">
+                Batal
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i>
                 {% if daily_order %}
                     Simpan {{ term('sub_client') }}
                 {% else %}
@@ -188,6 +208,7 @@
             </button>
         </div>
     </form>
-</div>
+    </div>
+</section>
 </div>
 {% endblock %}

@@ -3,120 +3,143 @@
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="revision_form">
-{{ page_header(
-    daily_order.order_number,
-    (term('sub_client') ~ ": ") ~ detail.mandor.name ~ " | Lokasi: " ~ detail.delivery_location.location_name,
-    eyebrow="Revisi Order",
-    actions=[{"label": "Kembali", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"}]
-) }}
-
-
-<div class="app-stat-grid">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-sun"></i></div>
+    <header class="dash-head">
         <div>
-            <p>Porsi Siang Saat Ini</p>
-            <h3>{{ detail.lunch_qty }}</h3>
-            <span class="app-stat-helper">Porsi</span>
+            <h1>{{ daily_order.order_number }}</h1>
+            <p>{{ term('sub_client') }}: {{ detail.mandor.name }} | Lokasi: {{ detail.delivery_location.location_name }}</p>
+        </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali ke Order
+            </a>
+        </div>
+    </header>
+
+    <div class="ops-context-strip">
+        <div class="ops-context-meta">
+            <span>Dokumen Induk: <strong>{{ daily_order.order_number }}</strong></span>
+            <span>&bull;</span>
+            <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+            <span>&bull;</span>
+            <span>{{ term('sub_client') }}: <strong>{{ detail.mandor.name if detail.mandor else '-' }}</strong></span>
+            <span>&bull;</span>
+            <span>Lokasi: <strong>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}</strong></span>
+            <span>&bull;</span>
+            <span>Status: <span class="status-badge {% if daily_order.is_locked %}status-locked{% else %}status-draft{% endif %}">{% if daily_order.is_locked %}Terkunci{% else %}Terbuka{% endif %}</span></span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-moon"></i></div>
-        <div>
-            <p>Porsi Sore Saat Ini</p>
-            <h3>{{ detail.dinner_qty }}</h3>
-            <span class="app-stat-helper">Porsi</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-calculator"></i></div>
-        <div>
-            <p>Total Saat Ini</p>
-            <h3>{{ detail.total_qty }}</h3>
-            <span class="app-stat-helper">Siang + Sore</span>
-        </div>
-    </div>
-
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-danger"><i class="bi bi-lock"></i></div>
-        <div>
-            <p>Status Order</p>
-            <h3>{{ "LOCKED" if daily_order.is_locked else "OPEN" }}</h3>
-            <span class="app-stat-helper">{{ daily_order.status|status_label }}</span>
-        </div>
-    </div>
-</div>
-
-<div class="app-card">
-    <div class="card-header-clean">
-        <div>
-            <h5>Form Revisi Order</h5>
-            {% if daily_order.is_locked %}
-                <p>Order sudah dikunci. Sistem hanya mengizinkan revisi tambah.</p>
-            {% else %}
-                <p>Order belum dikunci. Sistem mengizinkan revisi tambah atau kurang.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <form method="POST" action="{{ url_for('operational.create_revision', detail_id=detail.id) }}" data-ui-form="true" class="app-form">
-        {% include "components/csrf_token.html" %}
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Jenis Konfirmasi</label>
-                <select name="revision_type" class="form-select app-input" required>
-                    <option value="">Pilih Jenis</option>
-                    <option value="PHONE">{{ "PHONE"|status_label }}</option>
-                    <option value="WHATSAPP">{{ "WHATSAPP"|status_label }}</option>
-                    <option value="MANUAL">{{ "MANUAL"|status_label }}</option>
-                </select>
+    <div class="kpi-row my-4">
+        <div class="kpi">
+            <span class="kpi-icon tone-amber"><i class="bi bi-sun"></i></span>
+            <div>
+                <span class="kpi-label">Porsi Siang Saat Ini</span>
+                <div class="kpi-val">{{ detail.lunch_qty }}</div>
+                <span class="text-muted small">Porsi</span>
             </div>
+        </div>
 
-            <div class="col-md-4">
-                <label class="form-label">Masuk/Keluar Revisi</label>
-                <select name="revision_direction" class="form-select app-input" required>
-                    <option value="">Pilih Revisi</option>
-                    <option value="INCREASE">Tambah Porsi</option>
+        <div class="kpi">
+            <span class="kpi-icon tone-violet"><i class="bi bi-moon"></i></span>
+            <div>
+                <span class="kpi-label">Porsi Sore Saat Ini</span>
+                <div class="kpi-val">{{ detail.dinner_qty }}</div>
+                <span class="text-muted small">Porsi</span>
+            </div>
+        </div>
 
-                    {% if not daily_order.is_locked %}
-                        <option value="DECREASE">Kurangi Porsi</option>
-                    {% endif %}
-                </select>
+        <div class="kpi">
+            <span class="kpi-icon tone-blue"><i class="bi bi-calculator"></i></span>
+            <div>
+                <span class="kpi-label">Total Saat Ini</span>
+                <div class="kpi-val">{{ detail.total_qty }}</div>
+                <span class="text-muted small">Siang + Sore</span>
+            </div>
+        </div>
+
+        <div class="kpi">
+            <span class="kpi-icon {% if daily_order.is_locked %}tone-red{% else %}tone-green{% endif %}"><i class="bi bi-lock"></i></span>
+            <div>
+                <span class="kpi-label">Status Order</span>
+                <div class="kpi-val">{{ ("LOCKED" if daily_order.is_locked else "OPEN")|status_label }}</div>
+                <span class="text-muted small">{{ daily_order.status|status_label }}</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Form Revisi Order</h2>
                 {% if daily_order.is_locked %}
-                    <small class="text-muted">Pengurangan tidak tersedia karena order sudah dikunci.</small>
+                    <p>Order sudah dikunci. Sistem hanya mengizinkan revisi tambah.</p>
+                {% else %}
+                    <p>Order belum dikunci. Sistem mengizinkan revisi tambah atau kurang.</p>
                 {% endif %}
             </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Status Kunci</label>
-                <input type="text" class="form-control app-input" value="{{ 'Terkunci' if daily_order.is_locked else 'Terbuka' }}" readonly>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Perubahan Porsi Siang</label>
-                <input type="number" name="lunch_qty_change" class="form-control app-input" value="0" min="0" required>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Perubahan Porsi Sore</label>
-                <input type="number" name="dinner_qty_change" class="form-control app-input" value="0" min="0" required>
-            </div>
-
-            <div class="col-md-12">
-                <label class="form-label">Alasan / Catatan Revisi</label>
-                <textarea name="reason" class="form-control app-input" rows="3" placeholder="Contoh: {{ term('sub_client') }} meminta tambahan porsi melalui WhatsApp"></textarea>
-            </div>
         </div>
 
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">
-                <i class="bi bi-save"></i>
-                Simpan Revisi
-            </button>
+        <div class="panel-body">
+        <form method="POST" action="{{ url_for('operational.create_revision', detail_id=detail.id) }}" data-ui-form="true" class="app-form">
+            {% include "components/csrf_token.html" %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Jenis Konfirmasi</label>
+                    <select name="revision_type" class="form-select app-input" required>
+                        <option value="">Pilih Jenis</option>
+                        <option value="PHONE">{{ "PHONE"|status_label }}</option>
+                        <option value="WHATSAPP">{{ "WHATSAPP"|status_label }}</option>
+                        <option value="MANUAL">{{ "MANUAL"|status_label }}</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Masuk/Keluar Revisi</label>
+                    <select name="revision_direction" class="form-select app-input" required>
+                        <option value="">Pilih Revisi</option>
+                        <option value="INCREASE">Tambah Porsi</option>
+
+                        {% if not daily_order.is_locked %}
+                            <option value="DECREASE">Kurangi Porsi</option>
+                        {% endif %}
+                    </select>
+                    {% if daily_order.is_locked %}
+                        <small class="text-muted">Pengurangan tidak tersedia karena order sudah dikunci.</small>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Status Kunci</label>
+                    <input type="text" class="form-control app-input" value="{{ 'Terkunci' if daily_order.is_locked else 'Terbuka' }}" readonly>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="bi bi-sun text-warning me-1"></i> Perubahan Porsi Siang</label>
+                    <input type="number" name="lunch_qty_change" class="form-control app-input" value="0" min="0" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="bi bi-moon-stars text-primary me-1"></i> Perubahan Porsi Sore / Malam</label>
+                    <input type="number" name="dinner_qty_change" class="form-control app-input" value="0" min="0" required>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Alasan / Catatan Revisi</label>
+                    <textarea name="reason" class="form-control app-input" rows="3" placeholder="Contoh: {{ term('sub_client') }} meminta tambahan porsi melalui WhatsApp"></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions mt-4 d-flex gap-2">
+                <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">
+                    Batal
+                </a>
+                <button type="submit" class="btn btn-primary" data-app-confirm="Simpan revisi porsi untuk {{ detail.mandor.name if detail.mandor else 'Sub Client' }}?">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Simpan Revisi
+                </button>
+            </div>
+        </form>
         </div>
-    </form>
-</div>
+    </section>
 </div>
 {% endblock %}

@@ -70,7 +70,8 @@ Dokumen acuan tunggal untuk semua fase berikutnya. Isinya adalah **keputusan own
 | BPJS | BPJS Ketenagakerjaan & Kesehatan | — | ⏸ ditunda owner (2026-10-12) |
 | Go-live | Daftar periksa go-live | Gemini | ✅ deployment/GO_LIVE_PILOT.md |
 | Warung | Kasir cepat (3 ketukan) + tab Warung di HP Admin Operasional | Claude | ✅ (belum commit) |
-| UI-1 | UI desktop internal gaya biru (contoh: kerangka + Dashboard Owner/Admin + 360° Pelanggan) | Gemini → dikerjakan ulang Claude | ✅ contoh siap dinilai owner (belum commit) |
+| UI-1 | UI desktop internal gaya biru (contoh: kerangka + Dashboard Owner/Admin + 360° Pelanggan) | Gemini → dikerjakan ulang Claude | ✅ contoh disetujui owner 2026-10-13 (belum commit) |
+| UI-2 | Sebar UI biru ke semua halaman desktop (7 batch per folder) | Gemini, audit Claude | ⏳ `PROMPT_GEMINI_UI_TAHAP2.md` |
 
 **Alasan urutan:** kontrak (3) adalah fondasi aturan; penjadwal (4) dibutuhkan pesanan jam 18.00 dan invoice jam 06.00; invoice (6) harus ada sebelum kontrol kredit (7) bisa menghitung tunggakan; pajak (8) mengubah isi invoice; surat kontrak (9) terakhir karena menjelaskan **semua** aturan fase 3–8 — kalau dibuat lebih awal isinya bisa tidak cocok dengan sistem.
 

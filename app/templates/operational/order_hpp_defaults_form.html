@@ -3,36 +3,50 @@
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_defaults_form" data-logistics-hpp-page="order_hpp_defaults_form">
-{{ page_header(
-    "Atur Default Menu & Profil HPP",
-    daily_order.order_number ~ " · " ~ daily_order.order_date.strftime('%d-%m-%Y'),
-    eyebrow="Default HPP Order",
-    actions=[{"label": "Kembali ke Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"}]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>Atur Default Menu & Profil HPP</h1>
+        <p>{{ daily_order.order_number }} · {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Order
+        </a>
+    </div>
+</header>
 
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Dokumen Induk: <strong>{{ daily_order.order_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Status: <span class="status-badge {% if daily_order.is_locked %}status-locked{% else %}status-draft{% endif %}">{% if daily_order.is_locked %}Terkunci{% else %}Terbuka{% endif %}</span></span>
+    </div>
+</div>
 
-
-<div class="app-card soft-warning-card">
+<div class="alert alert-warning mb-4">
     <strong>Default ini hanya untuk isian awal Snapshot HPP.</strong>
-    <p>
+    <p class="mb-0">
         Menyimpan default menu siang/sore, kemasan, dan overhead tidak membuat snapshot otomatis,
         tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice. Snapshot tetap harus dibuat manual dari order terkunci.
     </p>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Default HPP Order</h5>
+            <h2>Default HPP Order</h2>
             <p>Pilih data real jika sudah tersedia. Kalau belum ada menu/profil real, biarkan kosong dulu.</p>
         </div>
     </div>
 
+    <div class="panel-body">
     <form method="POST" class="app-form" data-ui-form="true">
         {% include "components/csrf_token.html" %}
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label">Default Menu Siang</label>
+                <label class="form-label"><i class="bi bi-sun text-warning me-1"></i> Default Menu Siang</label>
                 <select name="default_lunch_menu_id" class="form-select app-input">
                     <option value="">Belum ditentukan</option>
                     {% for menu in menus %}
@@ -45,7 +59,7 @@
             </div>
 
             <div class="col-md-6">
-                <label class="form-label">Default Menu Sore</label>
+                <label class="form-label"><i class="bi bi-moon-stars text-primary me-1"></i> Default Menu Sore / Malam</label>
                 <select name="default_dinner_menu_id" class="form-select app-input">
                     <option value="">Belum ditentukan</option>
                     {% for menu in menus %}
@@ -85,13 +99,14 @@
         </div>
 
         <div class="form-actions mt-4">
-            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">Batal</a>
-            <button type="submit" class="btn app-btn-primary">
+            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">
                 <i class="bi bi-save"></i>
                 Simpan Default HPP
             </button>
         </div>
     </form>
-</div>
+    </div>
+</section>
 </div>
 {% endblock %}

@@ -7,6 +7,8 @@ Aturan owner (2026-10-10 & 2026-10-11):
   2. Pesanan = sub-tab: Hari Ini (operational.orders) · Draf Portal (portal.admin_order_drafts) · Perubahan Porsi (operational.order_qty_changes) · Jadwal Menu (operational.menu_schedule).
   3. Dapur = sub-tab: Produksi (production.index) · Rekap Dapur (operational.kitchen_recap_hub) · Apel Tim (workforce.attendance).
   4. Antar = sub-tab: Pengiriman (delivery.today) · Serah Terima (delivery.receiving).
+  4b. Warung (2026-10-13) = kasir cepat (canteen.quick_sale); belanja & bayar hutang di satu layar.
+      Tab ini hanya tampil bila modul Warung cabang aktif.
   5. Akun = Akun Saya + ganti password + SOP + tombol Keluar (Keluar HANYA di sini).
 - Notifikasi hanya lewat lonceng di header (settings.notifications).
 - Halaman rincian memakai panah kembali ke daftar asalnya, sub-tab disembunyikan.
@@ -85,6 +87,14 @@ def ops_navigation_map() -> Dict[str, Any]:
                 "segments": antar_segments,
             },
             {
+                "key": "warung",
+                "label": "Warung",
+                "icon": "storefront",
+                "endpoint": "canteen.quick_sale",
+                "endpoints": ["canteen.quick_sale"],
+                "segments": [],
+            },
+            {
                 "key": "account",
                 "label": "Akun",
                 "icon": "person",
@@ -126,7 +136,11 @@ def is_ops_context(role: Optional[str] = None, endpoint: Optional[str] = None, u
 
 def build_ops_navigation(endpoint: str) -> Dict[str, Any]:
     """Navigasi siap pakai untuk template mobile operasional."""
+    from app.services.branch_module_service import WARUNG, module_enabled
+
     nav = ops_navigation_map()
+    if not module_enabled(WARUNG):
+        nav["tabs"] = [tab for tab in nav["tabs"] if tab["key"] != "warung"]
     active_key = None
 
     for tab in nav["tabs"]:

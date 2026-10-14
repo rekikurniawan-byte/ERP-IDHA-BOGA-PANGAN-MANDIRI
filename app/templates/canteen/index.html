@@ -158,6 +158,21 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% if sales %}
+            {% set total_filtered = namespace(amount=0, items=0) %}
+            {% for sale in sales %}
+                {% set total_filtered.amount = total_filtered.amount + sale.total_amount %}
+                {% set total_filtered.items = total_filtered.items + (sale.items|length) %}
+            {% endfor %}
+            <tfoot class="ops-tfoot-summary">
+                <tr>
+                    <td colspan="3" class="text-end fw-bold">Total Transaksi (Daftar Tampil):</td>
+                    <td class="fw-bold">{{ total_filtered.amount|rupiah }}</td>
+                    <td class="fw-bold">{{ total_filtered.items }} item</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
 </div>

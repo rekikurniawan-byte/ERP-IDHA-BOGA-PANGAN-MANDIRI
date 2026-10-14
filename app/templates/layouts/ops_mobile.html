@@ -71,9 +71,9 @@
         </div>
     </main>
 
-    {# Tab bawah 5: Beranda · Pesanan · Dapur · Antar · Akun #}
+    {# Tab bawah: Beranda · Pesanan · Dapur · Antar · Warung (bila modul aktif) · Akun #}
     <nav class="ops-mobile-nav fixed bottom-0 inset-x-0 mx-auto w-full max-w-[480px] z-50 pb-safe bg-card-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.06)] border-t border-card-border/60" aria-label="Navigasi Utama Operasional">
-        <div class="h-16 px-1 grid grid-cols-5 items-center">
+        <div class="h-16 px-1 grid items-center" style="grid-template-columns:repeat({{ nav.tabs|length or 5 }},minmax(0,1fr))">
             {% for tab in nav.tabs %}
                 <a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %} class="flex flex-col items-center justify-center h-16 transition-colors {{ 'text-primary font-body-bold' if tab.active else 'text-text-muted hover:text-text-body' }}">
                     <span class="material-symbols-outlined text-[24px] {{ '[font-variation-settings:\'FILL\'_1]' if tab.active else '' }}">{{ tab.icon }}</span>

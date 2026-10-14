@@ -13,6 +13,22 @@
     ]
 ) }}
 
+<div class="ops-context-strip mb-3">
+    <div class="ops-context-info">
+        <span class="ops-context-tag">{{ 'Piutang Eksternal' if is_external else 'Hutang Pekerja' }}</span>
+        <span class="ops-context-title">{{ debt.buyer_name if is_external else (debt.worker.full_name if debt.worker else '-') }}</span>
+        <span class="text-muted">·</span>
+        <span class="ops-context-sub">Total: {{ (debt.receivable_amount if is_external else debt.debt_amount)|rupiah }}</span>
+        <span class="text-muted">·</span>
+        <span class="ops-context-sub text-danger font-semibold">Sisa: {{ remaining_amount|rupiah }}</span>
+    </div>
+    <div class="ops-context-actions">
+        <a href="{{ url_for('canteen.debts') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Kontrol Hutang
+        </a>
+    </div>
+</div>
+
 <div class="app-stat-grid">
     <div class="app-stat-card">
         <div class="app-stat-icon stat-danger"><i class="bi bi-wallet2"></i></div>
@@ -98,11 +114,15 @@
             </div>
         </div>
 
-        <div class="form-actions mt-4">
-            <button type="submit" class="btn app-btn-primary">
+        <div class="form-actions mt-4 d-flex gap-2">
+            <button type="submit" class="btn app-btn-primary" data-app-confirm="Simpan pembayaran sebesar nilai yang dimasukkan?">
                 <i class="bi bi-save"></i>
                 Simpan Pembayaran
             </button>
+            <a href="{{ url_for('canteen.debts') }}" class="btn app-btn-secondary">
+                <i class="bi bi-x-circle"></i>
+                Batal
+            </a>
         </div>
     </form>
 </div>

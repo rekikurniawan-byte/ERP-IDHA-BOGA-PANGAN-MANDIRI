@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/row_modal.html" import row_modal %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -64,9 +65,7 @@
                     <td>{{ worker.notes or '-' }}</td>
                     <td>
                         <div class="table-actions">
-                            <a href="{{ url_for('master.edit_worker', worker_id=worker.id) }}" class="btn btn-sm app-btn-secondary">
-                                Ubah
-                            </a>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalEditWorker-{{ worker.id }}"><i class="bi bi-pencil-square"></i> Ubah</button>
 
                             <form method="POST" action="{{ url_for('master.toggle_worker', worker_id=worker.id) }}" data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}
@@ -98,4 +97,24 @@
     </div>
 </div>
 </div>
+{% for worker in workers %}
+{% call row_modal("modalEditWorker-" ~ worker.id, "Ubah " ~ term('worker'), worker.full_name ~ ((" · " ~ worker.worker_code) if worker.worker_code else ""), url_for('master.edit_worker', worker_id=worker.id)) %}
+    <div class="mb-3">
+        <label class="form-label">{{ term('sub_client') }}</label>
+        <select name="mandor_id" class="form-select app-input" required>
+            <option value="">- Pilih {{ term('sub_client', lower=True) }} -</option>
+            {% for m in form_mandors %}<option value="{{ m.id }}" {% if worker.mandor_id == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="mb-3"><label class="form-label">Nama {{ term('worker') }}</label><input type="text" name="full_name" class="form-control app-input" value="{{ worker.full_name }}" required></div>
+    <div class="mb-3"><label class="form-label">Telepon</label><input type="text" name="phone" class="form-control app-input" value="{{ worker.phone or '' }}"></div>
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select app-input" required>
+            {% for st in statuses %}<option value="{{ st }}" {% if worker.status == st %}selected{% endif %}>{{ st|status_label }}</option>{% endfor %}
+        </select>
+    </div>
+    <div><label class="form-label">Catatan</label><textarea name="notes" class="form-control app-input" rows="2">{{ worker.notes or '' }}</textarea></div>
+{% endcall %}
+{% endfor %}
 {% endblock %}

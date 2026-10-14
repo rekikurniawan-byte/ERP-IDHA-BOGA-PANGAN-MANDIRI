@@ -2,33 +2,28 @@
 
 {% block content %}
 <section class="page-section">
-    <div class="page-header">
-        <div class="page-header-main">
-            <span class="page-eyebrow">Operasional Dapur</span>
-            <h1 class="page-title">Jadwal Menu Harian</h1>
-            <p class="page-description">
-                Tentukan variasi menu untuk sesi Siang dan Malam setiap hari. Menu yang dijadwalkan akan otomatis tampil di akun portal pelanggan dan landing page.
-            </p>
+    <header class="dash-head">
+        <div>
+            <h1>Jadwal Menu Harian</h1>
+            <p>Tentukan variasi menu untuk sesi Siang dan Malam setiap hari. Menu yang dijadwalkan akan otomatis tampil di akun portal pelanggan dan landing page.</p>
         </div>
-        <div class="page-header-actions">
-            <div class="account-btn-group">
-                <a href="{{ url_for('costing.menus') }}" class="btn app-btn-secondary">
-                    <i class="bi bi-journal-richtext me-1"></i> Master Menu
-                </a>
-                <form method="POST" action="{{ url_for('operational.copy_last_week_menu_schedule') }}" class="d-inline-block m-0" onsubmit="return confirm('Salin menu dari minggu lalu ke minggu yang sedang dibuka ini? Jadwal yang sudah terisi akan diperbarui.');">
-                    {% include "components/csrf_token.html" %}
-                    <input type="hidden" name="target_week" value="{{ current_monday.strftime('%Y-%m-%d') }}">
-                    <button type="submit" class="btn app-btn-primary">
-                        <i class="bi bi-copy me-1"></i> Salin Minggu Lalu
-                    </button>
-                </form>
-            </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('costing.menus') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-richtext me-1"></i> Master Menu
+            </a>
+            <form method="POST" action="{{ url_for('operational.copy_last_week_menu_schedule') }}" class="d-inline-block m-0 app-form" data-ui-form="true" data-app-confirm="Salin menu dari minggu lalu ke minggu yang sedang dibuka ini? Jadwal yang sudah terisi akan diperbarui.">
+                {% include "components/csrf_token.html" %}
+                <input type="hidden" name="target_week" value="{{ current_monday.strftime('%Y-%m-%d') }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-copy me-1"></i> Salin Minggu Lalu
+                </button>
+            </form>
         </div>
-    </div>
+    </header>
 
     {# NAVIGASI MINGGU #}
-    <div class="app-card mb-4">
-        <div class="card-body py-2">
+    <section class="panel mb-4">
+        <div class="panel-body py-2">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <a href="{{ url_for('operational.menu_schedule', week=matrix.prev_monday.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary btn-sm">
@@ -47,33 +42,32 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
     {# GRID 7 HARI X SIANG / MALAM #}
     <div class="row g-3">
         {% for day in matrix.days %}
         <div class="col-12 col-md-6 col-xl-4">
-            <div class="app-card h-100 {% if day.is_today %}border-primary{% endif %}" style="{% if day.is_today %}border-width: 2px;{% endif %}">
-                <div class="card-header d-flex justify-content-between align-items-center {% if day.is_today %}bg-primary-subtle text-primary-emphasis{% endif %}">
+            <section class="panel h-100 {% if day.is_today %}ops-day-card{% endif %}">
+                <div class="panel-head d-flex justify-content-between align-items-center {% if day.is_today %}bg-primary-subtle text-primary-emphasis{% endif %}">
                     <div>
-                        <strong class="h6 mb-0">{{ day.day_name }}</strong>,
-                        <span class="small">{{ day.date.strftime('%d %b %Y') }}</span>
+                        <h2>{{ day.day_name }}, <span class="fs-6 fw-normal text-muted">{{ day.date.strftime('%d %b %Y') }}</span></h2>
                     </div>
                     {% if day.is_today %}
-                        <span class="badge bg-primary">Hari Ini</span>
+                        <span class="ops-chip ops-chip-today"><i class="bi bi-calendar-check me-1"></i> Hari Ini</span>
                     {% endif %}
                 </div>
-                <div class="card-body p-3">
+                <div class="panel-body p-3">
                     {# SESI SIANG #}
                     <div class="mb-3 pb-3 border-bottom">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge bg-warning-subtle text-warning-emphasis">
-                                <i class="bi bi-sun me-1"></i> Makan Siang
+                            <span class="ops-session-badge is-lunch">
+                                <i class="bi bi-sun"></i> Makan Siang
                             </span>
                             {% if day.lunch.menu %}
-                                <span class="badge bg-success-subtle text-success-emphasis">Terjadwal</span>
+                                <span class="badge bg-success-subtle text-success-emphasis border">Terjadwal</span>
                             {% else %}
-                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Kosong</span>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis border">Kosong</span>
                             {% endif %}
                         </div>
 
@@ -120,13 +114,13 @@
                     {# SESI MALAM #}
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge bg-indigo-subtle text-indigo-emphasis" style="background: var(--surface-muted); color: var(--text);">
-                                <i class="bi bi-moon-stars me-1"></i> Makan Malam
+                            <span class="ops-session-badge is-dinner">
+                                <i class="bi bi-moon-stars"></i> Makan Malam
                             </span>
                             {% if day.dinner.menu %}
-                                <span class="badge bg-success-subtle text-success-emphasis">Terjadwal</span>
+                                <span class="badge bg-success-subtle text-success-emphasis border">Terjadwal</span>
                             {% else %}
-                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Kosong</span>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis border">Kosong</span>
                             {% endif %}
                         </div>
 
@@ -170,7 +164,7 @@
                         </form>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
         {% endfor %}
     </div>

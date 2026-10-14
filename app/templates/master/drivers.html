@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/row_modal.html" import row_modal %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -57,9 +58,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            <a href="{{ url_for('master.edit_driver', driver_id=driver.id) }}" class="btn btn-sm app-btn-secondary">
-                                Ubah
-                            </a>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalEditDriver-{{ driver.id }}"><i class="bi bi-pencil-square"></i> Ubah</button>
 
                             <form method="POST" action="{{ url_for('master.toggle_driver', driver_id=driver.id) }}" data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}
@@ -85,4 +84,22 @@
     </div>
 </div>
 </div>
+{% for driver in drivers %}
+{% call row_modal("modalEditDriver-" ~ driver.id, "Ubah Pengantar", driver.name, url_for('master.edit_driver', driver_id=driver.id)) %}
+    <div class="mb-3"><label class="form-label">Nama Driver</label><input type="text" name="name" class="form-control app-input" value="{{ driver.name }}" required></div>
+    <div class="mb-3"><label class="form-label">Telepon</label><input type="text" name="phone" class="form-control app-input" value="{{ driver.phone or '' }}"></div>
+    <div class="mb-3"><label class="form-label">No Lisensi</label><input type="text" name="license_number" class="form-control app-input" value="{{ driver.license_number or '' }}"></div>
+    <div class="mb-3">
+        <label class="form-label">Akun login pengantar</label>
+        <select name="user_id" class="form-select app-input">
+            <option value="">-- Belum terhubung --</option>
+            {% for u in eligible_by_driver.get(driver.id, []) %}<option value="{{ u.id }}" {% if driver.user_id == u.id %}selected{% endif %}>{{ u.full_name or u.username }} ({{ u.username }})</option>{% endfor %}
+        </select>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_active" id="d-{{ driver.id }}-active" {% if driver.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="d-{{ driver.id }}-active">Aktif</label>
+    </div>
+{% endcall %}
+{% endfor %}
 {% endblock %}

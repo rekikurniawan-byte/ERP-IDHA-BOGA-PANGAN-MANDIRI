@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
+{% from "components/row_modal.html" import row_modal %}
 
 {% block content %}
 <div class="hr-master-settings-page-shell" data-ui-section="true">
@@ -61,9 +62,7 @@
                     <td>{{ mandor.workers|length if mandor.workers else 0 }}</td>
                     <td>
                         <div class="table-actions">
-                            <a href="{{ url_for('master.edit_mandor', mandor_id=mandor.id) }}" class="btn btn-sm app-btn-secondary">
-                                Ubah
-                            </a>
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalEditMandor-{{ mandor.id }}"><i class="bi bi-pencil-square"></i> Ubah</button>
 
                             <form method="POST" action="{{ url_for('master.toggle_mandor', mandor_id=mandor.id) }}" data-ui-form="true" class="app-form">
                                 {% include "components/csrf_token.html" %}
@@ -89,4 +88,21 @@
     </div>
 </div>
 </div>
+{% for mandor in mandors %}
+{% call row_modal("modalEditMandor-" ~ mandor.id, "Ubah " ~ term('sub_client'), mandor.name, url_for('master.edit_mandor', mandor_id=mandor.id)) %}
+    <div class="mb-3">
+        <label class="form-label">{{ term('client') }}</label>
+        <select name="client_id" class="form-select app-input">
+            <option value="">- Tidak dipilih -</option>
+            {% for client in clients %}<option value="{{ client.id }}" {% if mandor.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="mb-3"><label class="form-label">Nama {{ term('sub_client') }}</label><input type="text" name="name" class="form-control app-input" value="{{ mandor.name }}" required></div>
+    <div class="mb-3"><label class="form-label">Telepon</label><input type="text" name="phone" class="form-control app-input" value="{{ mandor.phone or '' }}"></div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_active" id="m-{{ mandor.id }}-active" {% if mandor.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="m-{{ mandor.id }}-active">Aktif</label>
+    </div>
+{% endcall %}
+{% endfor %}
 {% endblock %}

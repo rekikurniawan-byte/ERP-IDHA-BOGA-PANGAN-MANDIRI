@@ -908,12 +908,9 @@ body.shell-internal .content-area { padding: var(--space-5) var(--space-6) var(-
 
 body.shell-internal .app-sidebar { view-transition-name: app-sidebar; }
 body.shell-internal .app-topbar { view-transition-name: app-topbar; }
-body.shell-internal .content-area { view-transition-name: app-content; }
 
-::view-transition-old(app-content) { animation: app-fade-out 120ms ease-in both; }
-::view-transition-new(app-content) { animation: app-fade-in 220ms var(--ease-out) both; }
-::view-transition-old(root),
-::view-transition-new(root) { animation: none; }
+::view-transition-old(root) { animation: app-fade-out 120ms ease-in both; }
+::view-transition-new(root) { animation: app-fade-in 200ms var(--ease-out) both; }
 
 body.shell-internal [data-rise] { animation: app-rise 360ms var(--ease-out) both; }
 body.shell-internal [data-rise="2"] { animation-delay: 50ms; }
@@ -948,6 +945,6 @@ body.shell-internal [data-rise="5"] { animation-delay: 200ms; }
 @media (prefers-reduced-motion: reduce) {
     body.shell-internal [data-rise],
     .nav-progress.is-active,
-    ::view-transition-old(app-content),
-    ::view-transition-new(app-content) { animation: none; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation: none; }
 }

@@ -1,184 +1,249 @@
 {% extends "layouts/base.html" %}
 {% from "components/location_picker.html" import directions_link %}
-{% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="receiving">
-{{ page_header(
-    title='Penerimaan',
-    eyebrow='Pengantar',
-    description=('Daftar ' ~ term('sub_client', lower=True) ~ '/lokasi yang belum dan sudah dicatat penerimaannya.'),
-    collapse=false,
-    actions=[
-        {'label': 'Scan Label Wadah', 'url': url_for('delivery.scan'), 'icon': 'bi-qr-code-scan', 'variant': 'primary'},
-        {'label': 'Pengiriman', 'url': url_for('delivery.today', date=selected_date_text), 'icon': 'bi-truck'},
-        {'label': 'Riwayat', 'url': url_for('delivery.history'), 'icon': 'bi-clock-history'}
-    ]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>Penerimaan</h1>
+        <p>{{ 'Daftar ' ~ term('sub_client', lower=True) ~ '/lokasi yang belum dan sudah dicatat penerimaannya.' }}</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('delivery.scan') }}" class="btn app-btn-primary">
+            <i class="bi bi-qr-code-scan"></i> Scan Label Wadah
+        </a>
+        <a href="{{ url_for('delivery.today', date=selected_date_text) }}" class="btn app-btn-secondary">
+            <i class="bi bi-truck"></i> Pengiriman
+        </a>
+        <a href="{{ url_for('delivery.history') }}" class="btn app-btn-secondary">
+            <i class="bi bi-clock-history"></i> Riwayat
+        </a>
+    </div>
+</header>
 
-<div class="delivery-scan-banner mb-3" data-ui-delivery-scan-banner>
-    <a href="{{ url_for('delivery.scan') }}" class="btn btn-lg app-btn-primary delivery-scan-btn-hero w-100 py-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
-        <i class="bi bi-qr-code-scan fs-3"></i>
-        <span class="fs-5 fw-bold">Scan Label Wadah</span>
-    </a>
-</div>
+<section class="panel mb-4">
+    <div class="panel-body">
+        <form method="GET" action="{{ url_for('delivery.receiving') }}" class="app-filter app-form" data-ui-form="true">
+            <input type="date" name="date" class="form-control app-input" value="{{ selected_date_text }}">
+            <div class="app-filter-actions">
+                <button type="submit" class="btn app-btn-primary">Tampilkan</button>
+                <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">Hari Ini</a>
+            </div>
+        </form>
+    </div>
+</section>
 
-
-<div class="app-card">
-    <form method="GET" action="{{ url_for('delivery.receiving') }}" class="app-filter app-form" data-ui-form="true">
-        <input type="date" name="date" class="form-control app-input" value="{{ selected_date_text }}">
-        <div class="app-filter-actions">
-            <button type="submit" class="btn app-btn-primary">Tampilkan</button>
-            <a href="{{ url_for('delivery.receiving') }}" class="btn app-btn-secondary">Hari Ini</a>
+<div class="kpi-row mb-4">
+    <div class="kpi">
+        <div class="kpi-top">
+            <span class="kpi-label">Belum Dicatat</span>
+            <span class="kpi-icon tone-amber"><i class="bi bi-hourglass-split"></i></span>
         </div>
-    </form>
-</div>
-
-<div class="app-stat-grid mt-4">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-warning">
-            <i class="bi bi-hourglass-split"></i>
-        </div>
-        <div>
-            <p>Belum Dicatat</p>
-            <h3>{{ pending_details|length }}</h3>
-            <span class="app-stat-helper">Perlu catat terima</span>
-        </div>
+        <div class="kpi-val">{{ pending_details|length }}</div>
+        <div class="kpi-sub">Perlu catat terima</div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-success">
-            <i class="bi bi-check2-circle"></i>
+    <div class="kpi">
+        <div class="kpi-top">
+            <span class="kpi-label">Sudah Dicatat</span>
+            <span class="kpi-icon tone-green"><i class="bi bi-check2-circle"></i></span>
         </div>
-        <div>
-            <p>Sudah Dicatat</p>
-            <h3>{{ received_details|length }}</h3>
-            <span class="app-stat-helper">Sudah ada penerima</span>
-        </div>
+        <div class="kpi-val">{{ received_details|length }}</div>
+        <div class="kpi-sub">Sudah ada penerima</div>
     </div>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mb-4">
+    <div class="panel-head">
         <div>
-            <h5>Belum Dicatat Terima</h5>
+            <h2>Belum Dicatat Terima</h2>
             <p>Yang tampil di sini adalah detail pengiriman yang belum memiliki data penerima.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>No Pengiriman</th>
-                    <th>Tipe</th>
-                    <th>{{ term('sub_client') }}</th>
-                    <th>Lokasi</th>
-                    <th>Rencana</th>
-                    <th>Status Pengiriman</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for detail in pending_details %}
-                <tr>
-                    <td>
-                        <strong>{{ detail.delivery.delivery_number }}</strong>
-                        {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
-                            <div class="muted-small">Pengganti kekurangan</div>
-                        {% endif %}
-                    </td>
-                    <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
-                    <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
-                    <td>{{ detail.planned_qty }}</td>
-                    <td>{{ detail.delivery.status|status_label }}</td>
-                    <td>
-                        <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-primary">
-                            Catat Terima
-                        </a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">
-                            <i class="bi bi-check2-circle"></i>
-                            <p>Semua penerimaan pada tanggal ini sudah dicatat.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="panel-body flush">
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>No Pengiriman</th>
+                        <th>Tipe</th>
+                        <th>{{ term('sub_client') }}</th>
+                        <th>Lokasi</th>
+                        <th>Rencana</th>
+                        <th>Status Pengiriman</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set pending_total = namespace(planned=0) %}
+                    {% for detail in pending_details %}
+                    {% set d_type = get_delivery_type_from_notes(detail.delivery.notes) %}
+                    {% set pending_total.planned = pending_total.planned + detail.planned_qty %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('delivery.detail', delivery_id=detail.delivery.id) }}" class="fw-bold text-decoration-none">
+                                {{ detail.delivery.delivery_number }}
+                            </a>
+                            {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
+                                <div class="muted-small">Pengganti kekurangan</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if "SIANG" in d_type.upper() or "LUNCH" in d_type.upper() %}
+                                <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                            {% elif "MALAM" in d_type.upper() or "DINNER" in d_type.upper() or "SORE" in d_type.upper() %}
+                                <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Malam</span>
+                            {% else %}
+                                <span class="status-badge neutral">{{ d_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
+                        <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
+                        <td>{{ detail.planned_qty|qty }} Porsi</td>
+                        <td>
+                            {% if detail.delivery.status == "ON_THE_WAY" %}
+                                <span class="status-badge status-progress">Dalam Perjalanan</span>
+                            {% elif detail.delivery.status == "DELIVERED" %}
+                                <span class="status-badge status-locked">Terkirim</span>
+                            {% else %}
+                                <span class="status-badge status-draft">{{ detail.delivery.status|status_label }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="ops-actions">
+                                <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-primary">
+                                    Catat Terima
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-check2-circle"></i>
+                                <p>Semua penerimaan pada tanggal ini sudah dicatat.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if pending_details %}
+                <tfoot class="ops-tfoot-summary">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold">Total Porsi Menunggu Terima:</td>
+                        <td class="fw-bold">{{ pending_total.planned|qty }} Porsi</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
     </div>
-</div>
+</section>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mb-4">
+    <div class="panel-head">
         <div>
-            <h5>Sudah Dicatat Terima</h5>
+            <h2>Sudah Dicatat Terima</h2>
             <p>Bagian ini menampilkan pengiriman yang sudah memiliki penerima.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>No Pengiriman</th>
-                    <th>Tipe</th>
-                    <th>{{ term('sub_client') }}</th>
-                    <th>Lokasi</th>
-                    <th>Rencana</th>
-                    <th>Terkirim</th>
-                    <th>Kurang Kirim</th>
-                    <th>Penerima</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for detail in received_details %}
-                <tr>
-                    <td>
-                        <strong>{{ detail.delivery.delivery_number }}</strong>
-                        {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
-                            <div class="muted-small">Pengganti kekurangan</div>
-                        {% endif %}
-                    </td>
-                    <td>{{ get_delivery_type_from_notes(detail.delivery.notes) }}</td>
-                    <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
-                    <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
-                    <td>{{ detail.planned_qty }}</td>
-                    <td>{{ detail.delivered_qty }}</td>
-                    <td>
-                        {% if detail.shortage_qty > 0 %}
-                            <span class="status-badge status-danger">{{ detail.shortage_qty }}</span>
-                        {% else %}
-                            <span class="status-badge status-locked">0</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ detail.receipt.receiver_name if detail.receipt else '-' }}</td>
-                    <td>
-                        <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
-                            Ubah Penerimaan
-                        </a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="9">
-                        <div class="empty-state">
-                            <i class="bi bi-clock-history"></i>
-                            <p>Belum ada penerimaan yang tercatat pada tanggal ini.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="panel-body flush">
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>No Pengiriman</th>
+                        <th>Tipe</th>
+                        <th>{{ term('sub_client') }}</th>
+                        <th>Lokasi</th>
+                        <th>Rencana</th>
+                        <th>Terkirim</th>
+                        <th>Kurang Kirim</th>
+                        <th>Penerima</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set rec_total = namespace(planned=0, delivered=0, shortage=0) %}
+                    {% for detail in received_details %}
+                    {% set d_type = get_delivery_type_from_notes(detail.delivery.notes) %}
+                    {% set rec_total.planned = rec_total.planned + detail.planned_qty %}
+                    {% set rec_total.delivered = rec_total.delivered + detail.delivered_qty %}
+                    {% set rec_total.shortage = rec_total.shortage + detail.shortage_qty %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('delivery.detail', delivery_id=detail.delivery.id) }}" class="fw-bold text-decoration-none">
+                                {{ detail.delivery.delivery_number }}
+                            </a>
+                            {% if "SHORTAGE_REPLACEMENT" in (detail.delivery.notes or "") %}
+                                <div class="muted-small">Pengganti kekurangan</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if "SIANG" in d_type.upper() or "LUNCH" in d_type.upper() %}
+                                <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                            {% elif "MALAM" in d_type.upper() or "DINNER" in d_type.upper() or "SORE" in d_type.upper() %}
+                                <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Malam</span>
+                            {% else %}
+                                <span class="status-badge neutral">{{ d_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ detail.mandor.name if detail.mandor else '-' }}</td>
+                        <td>{{ detail.delivery_location.location_name if detail.delivery_location else '-' }}{% if detail.delivery_location %}{% set lp = location_photos_for(detail.delivery_location.id) %}<div class="mt-1 d-flex flex-wrap align-items-center gap-2">{% if lp %}<a href="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" target="_blank" rel="noopener" title="Foto lokasi"><img class="lp-mini" src="{{ url_for('location_photos.view', attachment_id=lp[0].id) }}" alt="Foto lokasi" loading="lazy"></a>{% else %}<span class="status-badge warning"><i class="bi bi-camera"></i> tanpa foto</span>{% endif %}{{ directions_link(detail.delivery_location) }}</div>{% endif %}</td>
+                        <td>{{ detail.planned_qty|qty }} Porsi</td>
+                        <td>{{ detail.delivered_qty|qty }} Porsi</td>
+                        <td>
+                            {% if detail.shortage_qty > 0 %}
+                                <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ detail.shortage_qty|qty }}</span>
+                            {% else %}
+                                <span class="ops-variance-ok"><i class="bi bi-check-lg"></i> Lengkap (0)</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ detail.receipt.receiver_name if detail.receipt else '-' }}</td>
+                        <td class="text-end">
+                            <div class="ops-actions">
+                                <a href="{{ url_for('delivery.receive', detail_id=detail.id) }}" class="btn btn-sm app-btn-secondary">
+                                    Ubah Penerimaan
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="bi bi-clock-history"></i>
+                                <p>Belum ada penerimaan yang tercatat pada tanggal ini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if received_details %}
+                <tfoot class="ops-tfoot-summary">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold">Total Porsi Sudah Diterima:</td>
+                        <td class="fw-bold">{{ rec_total.planned|qty }} Porsi</td>
+                        <td class="fw-bold">{{ rec_total.delivered|qty }} Porsi</td>
+                        <td>
+                            {% if rec_total.shortage > 0 %}
+                                <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ rec_total.shortage|qty }}</span>
+                            {% else %}
+                                <span class="ops-variance-ok"><i class="bi bi-check-lg"></i> Lengkap (0)</span>
+                            {% endif %}
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
     </div>
-</div>
+</section>
 </div>
 
 <div class="delivery-scan-sticky-mobile d-md-none">

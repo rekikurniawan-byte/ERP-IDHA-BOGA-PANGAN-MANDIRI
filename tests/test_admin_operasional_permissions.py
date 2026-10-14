@@ -81,9 +81,9 @@ def test_admin_operasional_denied_on_restricted_areas(app, client, auth_users):
         "/settings/users",
         "/settings/company",
         "/settings/backups",
-        # Warung (Canteen)
+        # Warung (Canteen): ringkasan & daftar hutang tetap Owner/Admin.
+        # Kasir cepat (/canteen/quick) dibuka untuk ADMIN_OPERASIONAL sejak 2026-10-13.
         "/canteen/",
-        "/canteen/quick",
         "/canteen/debts",
         # Customer Success Komplain (ditutup untuk ADMIN_OPERASIONAL)
         "/customer-success/complaints",

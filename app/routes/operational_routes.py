@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
@@ -8,6 +8,8 @@ from app.services.audit_log_service import record_audit_log
 from app.services.ops_navigation_service import uses_ops_ui
 
 from app.models.operational import DailyOrder, DailyOrderDetail, OrderHppSnapshot, OrderHppStockConsumption
+from app.models.production import Production
+from app.models.delivery import Delivery, DeliveryDetail
 from app.models.master import Mandor, DeliveryLocation
 from app.services.operational_service import (
     get_or_create_daily_order,
@@ -45,6 +47,7 @@ from app.services.catering_report_service import (
 from app.services.global_filter_service import (
     build_filter_bar_context,
     resolve_date_filter,
+    apply_date_range_to_query,
 )
 from app.utils.terms import T
 
@@ -406,15 +409,179 @@ def monthly_catering_recap():
         filter_bar=filter_bar,
     )
 
+_DAYS_ID = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+_MONTHS_ID = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def _format_id_date_full(d: date) -> str:
+    return f"{_DAYS_ID[d.weekday()]}, {d.day} {_MONTHS_ID[d.month]} {d.year}"
+
+
 @operational_bp.route("/orders")
 @role_required("ADMIN", "ADMIN_OPERASIONAL")
 def orders():
-    daily_orders = DailyOrder.query.filter_by(
-        branch_id=current_user.branch_id
-    ).order_by(DailyOrder.order_date.desc(), DailyOrder.id.desc()).all()
+    if uses_ops_ui(current_user):
+        daily_orders = DailyOrder.query.filter_by(
+            branch_id=current_user.branch_id
+        ).order_by(DailyOrder.order_date.desc(), DailyOrder.id.desc()).all()
+        return render_template("ops/orders.html", daily_orders=daily_orders)
 
-    template_name = "ops/orders.html" if uses_ops_ui(current_user) else "operational/orders.html"
-    return render_template(template_name, daily_orders=daily_orders)
+    today = today_wib()
+    tomorrow = today + timedelta(days=1)
+    today_formatted = _format_id_date_full(today)
+
+    today_order = DailyOrder.query.filter_by(
+        branch_id=current_user.branch_id,
+        order_date=today
+    ).first()
+
+    tomorrow_order = DailyOrder.query.filter_by(
+        branch_id=current_user.branch_id,
+        order_date=tomorrow
+    ).first()
+
+    def _build_card_meta(order):
+        if not order:
+            return None
+        lunch = sum(d.lunch_qty for d in order.details)
+        dinner = sum(d.dinner_qty for d in order.details)
+        total = sum(d.total_qty for d in order.details)
+        locations = len(order.details)
+
+        # Cek produksi
+        prods = Production.query.filter_by(
+            branch_id=order.branch_id,
+            production_date=order.order_date
+        ).all()
+        has_production = len(prods) > 0
+        production_done = has_production and all(p.status == "COMPLETED" for p in prods)
+
+        # Cek pengiriman
+        detail_ids = [d.id for d in order.details]
+        has_delivery = False
+        delivery_done = False
+        if detail_ids:
+            deliv_details = DeliveryDetail.query.filter(
+                DeliveryDetail.daily_order_detail_id.in_(detail_ids)
+            ).all()
+            if deliv_details:
+                has_delivery = True
+                deliv_ids = list(set(dd.delivery_id for dd in deliv_details))
+                delivs = Delivery.query.filter(Delivery.id.in_(deliv_ids)).all()
+                delivery_done = bool(delivs) and all(d.status in ("DELIVERED", "COMPLETED") for d in delivs)
+
+        step_konsep = "done" if order.is_locked else "active"
+        step_kunci = "done" if order.is_locked else "pending"
+        step_prod = "done" if production_done else ("active" if has_production else "pending")
+        step_kirim = "done" if delivery_done else ("active" if has_delivery else "pending")
+
+        return {
+            "order": order,
+            "lunch_qty": lunch,
+            "dinner_qty": dinner,
+            "total_qty": total,
+            "locations_count": locations,
+            "has_production": has_production,
+            "step_konsep": step_konsep,
+            "step_kunci": step_kunci,
+            "step_prod": step_prod,
+            "step_kirim": step_kirim,
+        }
+
+    today_card = _build_card_meta(today_order)
+    tomorrow_card = _build_card_meta(tomorrow_order)
+
+    overdue_unlocked_count = DailyOrder.query.filter(
+        DailyOrder.branch_id == current_user.branch_id,
+        DailyOrder.order_date < today,
+        DailyOrder.is_locked == False,
+        DailyOrder.status != "CANCELLED",
+    ).count()
+
+    date_filter = resolve_date_filter(request.args, default_preset="this_month")
+    status_filter = (request.args.get("status") or "ALL").upper().strip()
+    if status_filter not in ["ALL", "DRAFT", "LOCKED", "OVERDUE"]:
+        status_filter = "ALL"
+
+    query = DailyOrder.query.filter_by(branch_id=current_user.branch_id)
+    if status_filter == "OVERDUE":
+        query = query.filter(DailyOrder.order_date < today, DailyOrder.is_locked == False, DailyOrder.status != "CANCELLED")
+    else:
+        query = apply_date_range_to_query(query, DailyOrder.order_date, date_filter)
+        if status_filter == "DRAFT":
+            query = query.filter(DailyOrder.is_locked == False)
+        elif status_filter == "LOCKED":
+            query = query.filter(DailyOrder.is_locked == True)
+
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(DailyOrder.order_date.desc(), DailyOrder.id.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    daily_orders = pagination.items
+
+    order_dates = list(set(o.order_date for o in daily_orders))
+    existing_prod_dates = set()
+    if order_dates:
+        prods_batch = Production.query.filter(
+            Production.branch_id == current_user.branch_id,
+            Production.production_date.in_(order_dates)
+        ).with_entities(Production.production_date).all()
+        existing_prod_dates = set(p[0] for p in prods_batch)
+
+    table_orders = []
+    for order in daily_orders:
+        lunch = sum(d.lunch_qty for d in order.details)
+        dinner = sum(d.dinner_qty for d in order.details)
+        total = sum(d.total_qty for d in order.details)
+        is_today = (order.order_date == today)
+        is_tomorrow = (order.order_date == tomorrow)
+        is_overdue = (order.order_date < today and not order.is_locked and order.status != "CANCELLED")
+        day_name = _DAYS_ID[order.order_date.weekday()]
+        has_prod = order.order_date in existing_prod_dates
+
+        table_orders.append({
+            "order": order,
+            "lunch_qty": lunch,
+            "dinner_qty": dinner,
+            "total_qty": total,
+            "locations_count": len(order.details),
+            "is_today": is_today,
+            "is_tomorrow": is_tomorrow,
+            "is_overdue": is_overdue,
+            "day_name": day_name,
+            "has_production": has_prod,
+        })
+
+    status_options = [
+        {"value": "ALL", "label": "Semua Status"},
+        {"value": "DRAFT", "label": "Konsep (Belum Kunci)"},
+        {"value": "LOCKED", "label": "Terkunci"},
+        {"value": "OVERDUE", "label": "Lewat Tanggal Belum Kunci"},
+    ]
+    filter_bar = build_filter_bar_context(
+        state=date_filter,
+        action_url=url_for("operational.orders"),
+        reset_url=url_for("operational.orders"),
+        title="Filter Order Harian",
+        description="Filter berdasarkan rentang tanggal dan status order.",
+        status_name="status",
+        status_value=status_filter,
+        status_options=status_options,
+    )
+
+    return render_template(
+        "operational/orders.html",
+        today=today,
+        tomorrow=tomorrow,
+        today_formatted=today_formatted,
+        today_card=today_card,
+        tomorrow_card=tomorrow_card,
+        overdue_unlocked_count=overdue_unlocked_count,
+        table_orders=table_orders,
+        pagination=pagination,
+        daily_orders=daily_orders,
+        filter_bar=filter_bar,
+    )
 
 
 @operational_bp.route("/orders/create", methods=["GET", "POST"])
@@ -667,6 +834,10 @@ def order_detail(order_id):
     lunch_print_status = get_session_print_history(daily_order, "LUNCH")
     dinner_print_status = get_session_print_history(daily_order, "DINNER")
 
+    menus, packaging_profiles, overhead_profiles = get_active_hpp_master_data(current_user.branch_id)
+    meal_summary = get_order_meal_summary(daily_order)
+    form_mandors, form_locations = get_form_master_data()
+
     template_name = "ops/order_detail.html" if uses_ops_ui(current_user) else "operational/order_detail.html"
     return render_template(
         template_name,
@@ -683,6 +854,12 @@ def order_detail(order_id):
         latest_hpp_snapshot=latest_hpp_snapshot,
         lunch_print_status=lunch_print_status,
         dinner_print_status=dinner_print_status,
+        menus=menus,
+        packaging_profiles=packaging_profiles,
+        overhead_profiles=overhead_profiles,
+        meal_summary=meal_summary,
+        form_mandors=form_mandors,
+        form_locations=form_locations,
     )
 
 
@@ -863,6 +1040,9 @@ def create_order_hpp_snapshot_route(order_id):
                 description=f"Snapshot HPP dibuat untuk order {daily_order.order_number}.",
                 metadata={"snapshot_number": snapshot.snapshot_number, "hpp_total": snapshot.hpp_total},
             )
+            next_url = request.form.get("next")
+            if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+                return redirect(next_url)
             return redirect(url_for("operational.order_hpp_snapshot_detail", order_id=daily_order.id, snapshot_id=snapshot.id))
 
         return redirect(url_for("operational.create_order_hpp_snapshot_route", order_id=daily_order.id))

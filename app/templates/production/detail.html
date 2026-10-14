@@ -5,17 +5,22 @@
 {% set first_detail = production.details[0] if production.details else None %}
 {% set can_edit = can_update_production|default(false) %}
 
-<div class="page-header">
+<header class="dash-head">
     <div>
-        <span class="eyebrow">Detail Produksi</span>
-        <h1>Produksi {{ production.production_type|status_label }}</h1>
+        <div class="d-flex align-items-center gap-2">
+            <h1>Produksi {{ production.production_type|status_label }}</h1>
+            {% if production.production_type == "LUNCH" %}
+                <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+            {% else %}
+                <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Sore</span>
+            {% endif %}
+        </div>
         <p>Tanggal produksi: {{ production.production_date.strftime('%d-%m-%Y') }}</p>
     </div>
 
-    <div class="page-actions">
-        <a href="{{ url_for('production.index') }}" class="btn app-btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Kembali
+    <div class="dash-head-actions">
+        <a href="{{ url_for('production.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
         </a>
 
         <span class="status-badge 
@@ -32,13 +37,31 @@
             {{ production.status|status_label }}
         </span>
     </div>
+</header>
+
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Batch: <strong>Produksi {{ production.production_type|status_label }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ production.production_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Rencana: <strong>{{ (first_detail.planned_qty if first_detail else 0)|qty }} Porsi</strong></span>
+        <span>&bull;</span>
+        <span>Realisasi: <strong>{{ (first_detail.actual_qty if first_detail else 0)|qty }} Porsi</strong></span>
+        <span>&bull;</span>
+        <span>Status: <span class="status-badge {% if production.status == 'COMPLETED' %}status-locked{% elif production.status == 'IN_PROGRESS' %}status-progress{% elif production.status == 'CANCELLED' %}status-danger{% else %}status-draft{% endif %}">{{ production.status|status_label }}</span></span>
+    </div>
+    {% if related_daily_order %}
+        <a href="{{ url_for('operational.order_detail', order_id=related_daily_order.id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-journal-text me-1"></i> Buka Order
+        </a>
+    {% endif %}
 </div>
 
-
 {% if not can_edit %}
-<div class="app-card soft-info-card">
+<div class="alert alert-info mb-4">
     <strong>Mode pantau produksi</strong>
-    <p>Role kamu hanya dapat melihat data produksi. Realisasi produksi hanya dapat diinput oleh petugas DAPUR.</p>
+    <p class="mb-0">Role kamu hanya dapat melihat data produksi. Realisasi produksi hanya dapat diinput oleh petugas DAPUR.</p>
 </div>
 {% endif %}
 
@@ -50,19 +73,18 @@
             <h2>{{ production_delivery_action.title }}</h2>
             <p>{{ production_delivery_action.description }}</p>
         </div>
-        <a href="{{ url_for('operational.order_detail', order_id=related_daily_order.id) }}" class="btn btn-sm app-btn-secondary">
-            <i class="bi bi-journal-text"></i>
-            Lihat Order
+        <a href="{{ url_for('operational.order_detail', order_id=related_daily_order.id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-journal-text me-1"></i> Buka Order
         </a>
     </div>
     <div class="delivery-next-action-card {% if not production_delivery_action.can_create_delivery %}is-blocked{% endif %}">
         <div class="delivery-next-action-icon"><i class="bi bi-truck-front"></i></div>
         <div class="delivery-next-action-body">
             <strong>Order {{ production_delivery_action.order_number }}</strong>
-            <p>Batch {{ production_delivery_action.label }} masih punya {{ production_delivery_action.remaining_qty }} porsi yang belum masuk pengiriman aktif.</p>
+            <p>Batch {{ production_delivery_action.label }} masih punya {{ production_delivery_action.remaining_qty|qty }} porsi yang belum masuk pengiriman aktif.</p>
             <div class="delivery-next-action-meta">
-                <span>Total order: {{ production_delivery_action.total_order_qty }}</span>
-                <span>Sudah dikirim: {{ production_delivery_action.total_planned_delivery_qty }}</span>
+                <span>Total order: {{ production_delivery_action.total_order_qty|qty }}</span>
+                <span>Sudah dikirim: {{ production_delivery_action.total_planned_delivery_qty|qty }}</span>
                 <span>Pengantar: {{ production_delivery_action.driver.name if production_delivery_action.driver else 'Belum tersedia' }}</span>
             </div>
         </div>
@@ -70,9 +92,8 @@
             {% if production_delivery_action.can_create_delivery %}
                 <form method="POST" action="{{ url_for('delivery.create_from_order', order_id=related_daily_order.id, delivery_type=production_delivery_action.delivery_type) }}" class="app-form" data-ui-form="true">
                     {% include "components/csrf_token.html" %}
-                    <button type="submit" class="btn app-btn-primary">
-                        <i class="bi bi-truck"></i>
-                        {{ production_delivery_action.action_label }}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-truck me-1"></i> {{ production_delivery_action.action_label }}
                     </button>
                 </form>
             {% else %}
@@ -83,78 +104,73 @@
 </section>
 {% endif %}
 
-<div class="app-stat-grid">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-calendar-event"></i>
-        </div>
+<div class="kpi-row my-4">
+    <div class="kpi">
+        <span class="kpi-icon tone-blue"><i class="bi bi-calendar-event"></i></span>
         <div>
-            <p>Tanggal</p>
-            <h3>{{ production.production_date.strftime('%d-%m-%Y') }}</h3>
-            <span class="app-stat-helper">Tanggal produksi</span>
+            <span class="kpi-label">Tanggal</span>
+            <div class="kpi-val">{{ production.production_date.strftime('%d-%m-%Y') }}</div>
+            <span class="text-muted small">Tanggal produksi</span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-egg-fried"></i>
-        </div>
+    <div class="kpi">
+        <span class="kpi-icon tone-blue"><i class="bi bi-egg-fried"></i></span>
         <div>
-            <p>Tipe Produksi</p>
-            <h3>{{ production.production_type|status_label }}</h3>
-            <span class="app-stat-helper">Siang / sore</span>
+            <span class="kpi-label">Tipe Produksi</span>
+            <div class="kpi-val">{{ production.production_type|status_label }}</div>
+            <span class="text-muted small">Siang / sore</span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info">
-            <i class="bi bi-clipboard-data"></i>
-        </div>
+    <div class="kpi">
+        <span class="kpi-icon tone-amber"><i class="bi bi-clipboard-data"></i></span>
         <div>
-            <p>Rencana</p>
-            <h3>{{ (first_detail.planned_qty if first_detail else 0)|qty }}</h3>
-            <span class="app-stat-helper">Porsi direncanakan</span>
+            <span class="kpi-label">Rencana</span>
+            <div class="kpi-val">{{ (first_detail.planned_qty if first_detail else 0)|qty }}</div>
+            <span class="text-muted small">Porsi direncanakan</span>
         </div>
     </div>
 
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-success">
-            <i class="bi bi-check2-circle"></i>
-        </div>
+    <div class="kpi">
+        <span class="kpi-icon tone-green"><i class="bi bi-check2-circle"></i></span>
         <div>
-            <p>Realisasi</p>
-            <h3>{{ (first_detail.actual_qty if first_detail else 0)|qty }}</h3>
-            <span class="app-stat-helper">Porsi selesai</span>
+            <span class="kpi-label">Realisasi</span>
+            <div class="kpi-val">{{ (first_detail.actual_qty if first_detail else 0)|qty }}</div>
+            <span class="text-muted small">Porsi selesai</span>
         </div>
     </div>
 </div>
 
-<div class="app-card mt-4 sla-summary-card">
-    <div class="card-header-clean">
+<section class="panel mt-4 sla-summary-card">
+    <div class="panel-head d-flex justify-content-between align-items-center">
         <div>
-            <h5>SLA Produksi</h5>
+            <h2>SLA Produksi</h2>
             <p>Produksi dinilai dari target siap batch. Status ini membantu membaca risiko pengiriman sebelum terlambat.</p>
         </div>
         <span class="status-badge {{ production_sla.badge_class }}">{{ production_sla.label }}</span>
     </div>
-    <div class="sla-timeline-grid">
-        <div><span>Target Siap</span><strong>{{ production_sla.target_ready_label }}</strong></div>
-        <div><span>Batas SLA</span><strong>{{ production_sla.late_limit_label }}</strong></div>
-        <div><span>Actual Selesai</span><strong>{{ production_sla.actual_completed_label }}</strong></div>
-        <div><span>Status</span><strong>{{ production_sla.label }}</strong></div>
+    <div class="panel-body">
+        <div class="sla-timeline-grid">
+            <div><span>Target Siap</span><strong>{{ production_sla.target_ready_label }}</strong></div>
+            <div><span>Batas SLA</span><strong>{{ production_sla.late_limit_label }}</strong></div>
+            <div><span>Actual Selesai</span><strong>{{ production_sla.actual_completed_label }}</strong></div>
+            <div><span>Status</span><strong>{{ production_sla.label }}</strong></div>
+        </div>
+        <p class="muted-small mt-2 mb-0">{{ production_sla.reason }}</p>
     </div>
-    <p class="muted-small mt-2 mb-0">{{ production_sla.reason }}</p>
-</div>
+</section>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Detail Rencana Produksi</h5>
+            <h2>Detail Rencana Produksi</h2>
             <p>Rencana produksi dibuat otomatis dari order harian yang sudah dikunci.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -182,11 +198,11 @@
                     <td>
                         {% set diff = detail.actual_qty - detail.planned_qty %}
                         {% if diff > 0 %}
-                            <span class="status-badge status-progress">+{{ diff }}</span>
+                            <span class="ops-diff-chip is-increase"><i class="bi bi-arrow-up-short"></i> +{{ diff|qty }}</span>
                         {% elif diff < 0 %}
-                            <span class="status-badge status-danger">{{ diff }}</span>
+                            <span class="ops-shortage-badge"><i class="bi bi-exclamation-triangle"></i> Kurang {{ (-diff)|qty }} porsi</span>
                         {% else %}
-                            <span class="status-badge status-locked">0</span>
+                            <span class="ops-variance-ok"><i class="bi bi-check-lg"></i> Pas (0)</span>
                         {% endif %}
                     </td>
                     <td>{{ detail.notes or production.notes or '-' }}</td>
@@ -194,7 +210,7 @@
                 {% else %}
                 <tr>
                     <td colspan="5">
-                        <div class="empty-state">
+                        <div class="empty-state app-empty-state">
                             <i class="bi bi-egg-fried"></i>
                             <p>Belum ada detail produksi.</p>
                         </div>
@@ -204,16 +220,18 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Form Realisasi Produksi</h5>
+            <h2>Form Realisasi Produksi</h2>
             <p>Input realisasi hanya boleh dilakukan oleh role DAPUR.</p>
         </div>
     </div>
 
+    <div class="panel-body">
     {% if can_edit %}
         {% if first_detail %}
         <form method="POST" action="{{ url_for('production.update_realization', production_id=production.id) }}" data-ui-form="true" class="app-form">
@@ -245,15 +263,15 @@
                 </div>
 
                 <div class="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn app-btn-primary">
-                        <i class="bi bi-save"></i>
+                    <button type="submit" class="btn btn-primary" data-app-confirm="Simpan pembaruan realisasi produksi {{ production.production_type|status_label }} tanggal {{ production.production_date.strftime('%d-%m-%Y') }}?">
+                        <i class="bi bi-save me-1"></i>
                         Simpan Realisasi
                     </button>
                 </div>
             </div>
         </form>
         {% else %}
-            <div class="empty-state">
+            <div class="empty-state app-empty-state">
                 <i class="bi bi-exclamation-circle"></i>
                 <p>Detail produksi belum tersedia.</p>
             </div>
@@ -267,6 +285,7 @@
             </div>
         </div>
     {% endif %}
-</div>
+    </div>
+</section>
 </div>
 {% endblock %}

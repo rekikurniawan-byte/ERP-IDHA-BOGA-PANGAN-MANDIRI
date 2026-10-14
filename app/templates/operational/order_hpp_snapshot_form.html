@@ -3,53 +3,69 @@
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_snapshot_form" data-logistics-hpp-page="order_hpp_snapshot_form">
-{{ page_header(
-    "Buat Snapshot HPP",
-    daily_order.order_number ~ " · " ~ daily_order.order_date.strftime('%d-%m-%Y'),
-    eyebrow="HPP per Order",
-    actions=[{"label": "Kembali ke Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"}]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>Buat Snapshot HPP</h1>
+        <p>{{ daily_order.order_number }} · {{ daily_order.order_date.strftime('%d-%m-%Y') }}</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Order
+        </a>
+    </div>
+</header>
 
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Dokumen Induk: <strong>{{ daily_order.order_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Total Porsi: <strong>{{ (meal_summary.LUNCH.portion_qty + meal_summary.DINNER.portion_qty)|qty }} Porsi</strong></span>
+        <span>&bull;</span>
+        <span>Status: <span class="status-badge status-locked">Terkunci</span></span>
+    </div>
+</div>
 
-
-<div class="app-card soft-warning-card">
+<div class="alert alert-warning mb-4">
     <strong>Snapshot manual dan aman.</strong>
-    <p>
+    <p class="mb-0">
         Fitur ini hanya menyimpan hasil perhitungan HPP untuk order yang sudah dikunci.
         Tidak memotong stok, tidak membuat jurnal, dan tidak mengubah invoice.
         Jika order sudah punya default menu/profil HPP, pilihan form di bawah otomatis terisi.
     </p>
 </div>
 
-<div class="app-stat-grid mt-4">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-sun"></i></div>
+<div class="kpi-row my-4">
+    <div class="kpi">
+        <span class="kpi-icon tone-amber"><i class="bi bi-sun"></i></span>
         <div>
-            <p>Porsi Siang</p>
-            <h3>{{ meal_summary.LUNCH.portion_qty|qty }}</h3>
-            <span class="app-stat-helper">Revenue estimasi {{ meal_summary.LUNCH.revenue_total|rupiah }}</span>
+            <span class="kpi-label">Porsi Siang</span>
+            <div class="kpi-val">{{ meal_summary.LUNCH.portion_qty|qty }}</div>
+            <span class="text-muted small">Revenue estimasi {{ meal_summary.LUNCH.revenue_total|rupiah }}</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-moon"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-violet"><i class="bi bi-moon"></i></span>
         <div>
-            <p>Porsi Sore</p>
-            <h3>{{ meal_summary.DINNER.portion_qty|qty }}</h3>
-            <span class="app-stat-helper">Revenue estimasi {{ meal_summary.DINNER.revenue_total|rupiah }}</span>
+            <span class="kpi-label">Porsi Sore</span>
+            <div class="kpi-val">{{ meal_summary.DINNER.portion_qty|qty }}</div>
+            <span class="text-muted small">Revenue estimasi {{ meal_summary.DINNER.revenue_total|rupiah }}</span>
         </div>
     </div>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Form Snapshot HPP</h5>
+            <h2>Form Snapshot HPP</h2>
             <p>Pilih menu untuk porsi yang ada. Jika menu/profil belum ada, jangan submit dulu agar database utama tetap bersih.</p>
         </div>
     </div>
 
+    <div class="panel-body">
     {% if not menus %}
-        <div class="empty-state">
+        <div class="empty-state app-empty-state">
             <i class="bi bi-card-list"></i>
             <p>Belum ada menu aktif.</p>
             <span>Buat menu dan resep real dulu di Data Master → Menu & Resep.</span>
@@ -117,15 +133,16 @@
             </div>
         </div>
 
-        <div class="form-actions mt-4">
-            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn app-btn-secondary">Batal</a>
-            <button type="submit" class="btn app-btn-primary">
-                <i class="bi bi-save"></i>
+        <div class="form-actions mt-4 d-flex gap-2">
+            <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary" data-app-confirm="Bekukan snapshot HPP untuk order {{ daily_order.order_number }} ({{ (meal_summary.LUNCH.portion_qty + meal_summary.DINNER.portion_qty)|qty }} porsi)?">
+                <i class="bi bi-cash-stack me-1"></i>
                 Simpan Snapshot HPP
             </button>
         </div>
     </form>
     {% endif %}
-</div>
+    </div>
+</section>
 </div>
 {% endblock %}

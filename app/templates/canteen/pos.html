@@ -1,0 +1,597 @@
+{% extends layout %}
+
+{# Kasir cepat warung (keputusan owner 2026-10-13): pilih orang -> ketuk barang -> ketuk TUNAI / QRIS / HUTANG.
+   Dipakai di desktop (layouts/base.html) dan aplikasi HP Admin Operasional (layouts/ops_mobile.html),
+   jadi gayanya berdiri sendiri di bawah .pos. Harga dihitung ulang di server. #}
+{% block content %}
+<style>
+.pos{--pos-brand:#1e40af;--pos-brand-hover:#1d4ed8;--pos-brand-soft:#eff6ff;--pos-brand-line:#bfdbfe;--pos-text:#0f172a;--pos-muted:#64748b;--pos-line:#e2e8f0;--pos-card:#ffffff;--pos-page:#f8fafc;--pos-ok:#15803d;--pos-ok-bg:#f0fdf4;--pos-danger:#b91c1c;--pos-danger-bg:#fef2f2;--pos-info:#0284c7;--pos-info-bg:#f0f9ff;--pos-bottom:0px;color:var(--pos-text);font-size:15px;display:flex;flex-direction:column;gap:14px;max-width:1140px;width:100%;margin:0 auto}
+.pos.is-ops{--pos-bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
+.pos *{box-sizing:border-box}
+.pos [hidden]{display:none!important}
+.pos-body{display:flex;flex-direction:column;gap:14px}
+.pos-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pos-side{display:contents}
+.pos button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* Desktop Header & Context Strip */
+.pos-desk-header{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.pos-desk-title h2{font-size:20px;font-weight:800;color:#0f172a;margin:0 0 3px;letter-spacing:-.01em}
+.pos-desk-title p{font-size:13px;color:#64748b;margin:0}
+.pos-desk-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1e40af;background:#eff6ff;padding:3px 10px;border-radius:999px;border:1px solid #bfdbfe;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.pos-desk-actions{display:flex;gap:8px}
+.btn-pos-sec{display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;font-size:13px;font-weight:700;color:#334155;text-decoration:none;transition:all .15s ease}
+.btn-pos-sec:hover{background:#f8fafc;border-color:#94a3b8;color:#0f172a}
+
+.pos-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px 18px}
+.pos-strip-item{display:flex;flex-direction:column;gap:3px}
+.pos-strip-item .lbl{font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.pos-strip-item .val{font-size:15px;font-weight:800;color:#0f172a}
+.pos-strip-item .val.green{color:#15803d}
+.pos-strip-item .val.muted{color:#94a3b8}
+
+/* Mode Switcher */
+.pos-mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px}
+.pos-mode button{height:42px;border:0;border-radius:9px;background:transparent;color:#64748b;font-weight:700;font-size:14px;transition:all .15s ease}
+.pos-mode button.on{background:#1e40af;color:#ffffff;box-shadow:0 2px 6px rgba(30,64,175,.25)}
+
+/* Cards & Form Elements */
+.pos-card{background:var(--pos-card);border:1px solid var(--pos-line);border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.pos-label{font-size:12px;font-weight:700;color:var(--pos-muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+.pos-input{width:100%;height:46px;border:1.5px solid var(--pos-line);border-radius:12px;padding:0 14px;font-size:15px;background:#fff;color:var(--pos-text);transition:border-color .15s}
+.pos-input:focus{outline:0;border-color:var(--pos-brand);box-shadow:0 0 0 3px var(--pos-brand-soft)}
+.pos-results{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:260px;overflow:auto}
+.pos-results:empty{display:none}
+.pos-result{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:52px;padding:8px 12px;border:1px solid var(--pos-line);border-radius:12px;background:#fff;text-align:left;transition:background .15s}
+.pos-result:hover{background:#f8fafc}
+.pos-result:active,.pos-chip:active,.pos-tile:active{transform:scale(.98)}
+.pos-result strong{display:block;font-size:14.5px;color:#0f172a}
+.pos-result small{color:var(--pos-muted);font-size:12px}
+.pos-debt{font-size:13px;font-weight:700;color:var(--pos-danger);white-space:nowrap}
+.pos-debt.zero{color:var(--pos-ok)}
+.pos-chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.pos-chips::-webkit-scrollbar{display:none}
+.pos-chip{flex:0 0 auto;height:38px;padding:0 14px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;font-weight:600;font-size:13px;color:#334155;transition:all .15s ease}
+.pos-chip:hover{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.pos-chip.on{background:var(--pos-brand);border-color:var(--pos-brand);color:#fff}
+
+/* Buyer Card */
+.pos-buyer{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--pos-brand-soft);border:1.5px solid var(--pos-brand-line)}
+.pos-buyer .who{flex:1;min-width:0}
+.pos-buyer strong{display:block;font-size:16px;font-weight:800;color:#1e3a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-buyer small{display:block;color:#3b82f6;font-size:12.5px;font-weight:600;margin-top:2px}
+.pos-buyer.over{background:var(--pos-danger-bg);border-color:#fecaca}
+.pos-buyer.over strong{color:#991b1b}
+.pos-buyer.over small{color:#dc2626}
+.pos-x{width:38px;height:38px;border:1px solid var(--pos-line);border-radius:10px;background:#fff;color:var(--pos-muted);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
+.pos-x:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+
+/* Item Tiles */
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px}
+.pos-tile{position:relative;min-height:78px;padding:10px 8px;border:1.5px solid var(--pos-line);border-radius:14px;background:#fff;display:flex;flex-direction:column;justify-content:space-between;gap:4px;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:all .15s ease}
+.pos-tile:hover{border-color:#93c5fd;box-shadow:0 4px 10px rgba(30,64,175,.08)}
+.pos-tile span{font-weight:700;font-size:13.5px;line-height:1.25;color:#0f172a}
+.pos-tile b{font-size:13px;color:var(--pos-brand);font-weight:800}
+.pos-tile.in{border-color:var(--pos-brand);background:var(--pos-brand-soft)}
+.pos-tile i{position:absolute;top:-7px;right:-5px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;background:var(--pos-brand);color:#fff;font-style:normal;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(30,64,175,.3)}
+.pos-more{margin-top:10px}
+.pos-more summary{font-weight:700;font-size:13px;color:var(--pos-muted);cursor:pointer;padding:6px 0}
+.pos-row{display:grid;grid-template-columns:1fr 110px 64px;gap:6px;margin-top:6px}
+.pos-row .pos-input{height:44px;font-size:14px}
+.pos-add{height:44px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;font-size:18px}
+.pos-add:hover{background:#1e293b}
+
+/* Cart & Sidebar */
+.pos-bar{position:sticky;bottom:var(--pos-bottom);z-index:20;background:var(--pos-card);border:1px solid var(--pos-line);border-radius:16px 16px 12px 12px;box-shadow:0 -6px 24px rgba(0,0,0,.08);padding:12px 14px}
+.pos-lines{max-height:32vh;overflow:auto;display:none;flex-direction:column;gap:3px;margin-bottom:8px;border-bottom:1px dashed var(--pos-line);padding-bottom:8px}
+.pos-bar.open .pos-lines{display:flex}
+.pos-line{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;min-height:42px;padding:3px 0}
+.pos-line .nm{font-weight:600;font-size:13.5px;line-height:1.2;color:#0f172a}
+.pos-line .nm small{display:block;color:var(--pos-muted);font-weight:500;margin-top:2px}
+.pos-qty{display:flex;align-items:center;gap:3px}
+.pos-qty button{width:34px;height:34px;border:1px solid var(--pos-line);border-radius:8px;background:#f8fafc;font-size:18px;font-weight:700;color:var(--pos-text);display:flex;align-items:center;justify-content:center}
+.pos-qty button:hover{background:#e2e8f0}
+.pos-qty b{min-width:26px;text-align:center;font-size:14px}
+.pos-line .sub{font-weight:800;min-width:76px;text-align:right;font-size:13.5px;color:#0f172a}
+.pos-sum{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pos-sum button{border:0;background:none;padding:0;color:#2563eb;font-weight:700;font-size:13px}
+.pos-total{font-size:24px;font-weight:800;letter-spacing:-.01em;color:#0f172a}
+
+/* Cash & Quick Cash Chips */
+.pos-cash-box{display:none;flex-direction:column;gap:6px;margin-bottom:10px}
+.pos-bar.open .pos-cash-box{display:flex}
+.pos-cash{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.pos-cash .pos-input{height:42px;font-size:14px}
+.pos-change{font-weight:800;color:var(--pos-ok);white-space:nowrap;font-size:13px}
+.pos-quick-cash{display:flex;gap:4px;flex-wrap:wrap}
+.pos-cash-chip{height:28px;padding:0 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;font-size:11.5px;font-weight:700;color:#334155;transition:all .15s ease}
+.pos-cash-chip:hover{background:#eff6ff;border-color:#93c5fd;color:#1e40af}
+
+/* Payment Actions */
+.pos-pay{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
+.pos-pay button{height:52px;border:0;border-radius:12px;font-weight:800;font-size:14.5px;letter-spacing:.02em;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.08);transition:all .15s ease}
+.pos-pay button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.pos-pay .cash{background:#16a34a}
+.pos-pay .qris{background:#0284c7}
+.pos-pay .debt{background:#2563eb}
+.pos-pay .debt.over{background:#dc2626}
+.pos-pay button:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed;box-shadow:none;transform:none}
+.pos-pay.two{grid-template-columns:1fr 1fr}
+.pos-hint{font-size:12px;color:var(--pos-muted);margin-top:6px;text-align:center}
+.pos-warn{font-size:12.5px;font-weight:700;color:var(--pos-danger);margin-top:6px;padding:6px 8px;background:var(--pos-danger-bg);border:1px solid #fecaca;border-radius:8px}
+.pos-amounts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pos-note{font-size:12.5px;color:var(--pos-muted);margin-top:8px}
+.pos-recent{display:flex;flex-direction:column}
+.pos-recent div{display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--pos-line);font-size:13.5px}
+.pos-recent div:last-child{border-bottom:0}
+.pos-recent em{font-style:normal;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pos-recent .m-CASH{background:var(--pos-ok-bg);color:var(--pos-ok)}
+.pos-recent .m-QRIS,.pos-recent .m-TRANSFER{background:var(--pos-info-bg);color:var(--pos-info)}
+.pos-recent .m-DEBT{background:var(--pos-brand-soft);color:var(--pos-brand)}
+.pos-toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-20px);opacity:0;z-index:2000;max-width:min(92vw,440px);padding:12px 16px;border-radius:14px;font-weight:700;font-size:14.5px;color:#fff;background:var(--pos-ok);box-shadow:0 10px 30px rgba(0,0,0,.18);transition:opacity .2s,transform .2s;pointer-events:none}
+.pos-toast.show{opacity:1;transform:translate(-50%,0)}
+.pos-toast.err{background:var(--pos-danger)}
+.pos-toast.warn{background:#b45309}
+.pos-empty{color:var(--pos-muted);font-size:13.5px;padding:16px 4px;text-align:center}
+.pos[data-mode="pay"] .only-sell,.pos[data-mode="sell"] .only-pay{display:none!important}
+@media (min-width:900px){
+  .pos:not(.is-ops) .pos-body{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:14px;align-items:start}
+  .pos:not(.is-ops) .pos-side{position:sticky;top:14px;display:flex;flex-direction:column;gap:14px}
+  .pos:not(.is-ops) .pos-bar{position:static;box-shadow:none;border-radius:14px}
+  .pos:not(.is-ops) .pos-bar .pos-lines{display:flex;max-height:46vh}
+  .pos:not(.is-ops) .pos-bar .pos-cash-box{display:flex}
+  .pos:not(.is-ops) .pos-sum .toggle{display:none}
+}
+</style>
+
+<div class="pos{{ ' is-ops' if layout == 'layouts/ops_mobile.html' }}" id="pos" data-mode="sell"
+     data-checkout-url="{{ url_for('canteen.quick_checkout') }}"
+     data-pay-url="{{ url_for('canteen.quick_pay_debt') }}"
+     data-limit="{{ debt_limit }}" data-has-bank="{{ 1 if has_bank else 0 }}">
+
+    {% if layout != 'layouts/ops_mobile.html' %}
+    <div class="pos-desk-header">
+        <div class="pos-desk-title">
+            <div class="pos-desk-badge"><span class="badge-dot"></span> Point of Sale Warung</div>
+            <h2>Kasir Sentuh Warung Mandiri</h2>
+            <p>Pilih nama pekerja katering, pilih item belanja, dan pilih metode transaksi Tunai, QRIS, atau Hutang.</p>
+        </div>
+        <div class="pos-desk-actions">
+            <a href="{{ url_for('canteen.index') }}" class="btn-pos-sec">← Ringkasan Warung</a>
+            {% if worker_debt_on %}
+            <a href="{{ url_for('canteen.debts') }}" class="btn-pos-sec">Buku Hutang</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="pos-strip">
+        <div class="pos-strip-item">
+            <span class="lbl">TOTAL TRANSAKSI HARI INI</span>
+            <span class="val">{{ recent|length }} Transaksi</span>
+        </div>
+        <div class="pos-strip-item">
+            <span class="lbl">PUNDI OMZET HARI INI</span>
+            {% set omzet_today = recent|map(attribute='total')|sum %}
+            <span class="val green">Rp {{ "{:,.0f}".format(omzet_today).replace(",", ".") }}</span>
+        </div>
+        {% if worker_debt_on %}
+        <div class="pos-strip-item">
+            <span class="lbl">BATAS MAKS HUTANG PEKERJA</span>
+            <span class="val">Rp {{ "{:,.0f}".format(debt_limit).replace(",", ".") }}</span>
+        </div>
+        {% endif %}
+        <div class="pos-strip-item">
+            <span class="lbl">STATUS METODE QRIS</span>
+            <span class="val {{ 'green' if has_bank else 'muted' }}">{{ 'Tersedia' if has_bank else 'Belum Tersedia' }}</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="pos-head">
+        <h1>Kasir Warung</h1>
+    </div>
+    {% endif %}
+
+    {% if worker_debt_on %}
+    <div class="pos-mode" role="tablist" aria-label="Mode kasir">
+        <button type="button" class="on" data-mode-btn="sell" role="tab">Belanja</button>
+        <button type="button" data-mode-btn="pay" role="tab">Bayar Hutang</button>
+    </div>
+    {% endif %}
+
+    <div class="pos-body">
+        <div class="pos-main">
+            {% if worker_debt_on %}
+            <section class="pos-card" aria-label="Pembeli">
+                <p class="pos-label">Pilih Pekerja / Pembeli</p>
+                <div id="buyerSelected" class="pos-buyer" hidden>
+                    <div class="who"><strong id="buyerName"></strong><small id="buyerInfo"></small></div>
+                    <button type="button" class="pos-x" id="buyerClear" aria-label="Ganti pembeli">&times;</button>
+                </div>
+                <div id="buyerPicker">
+                    <input type="search" class="pos-input" id="workerSearch" placeholder="Ketik nama pekerja… (kosong = pembeli umum)" autocomplete="off" enterkeyhint="search">
+                    <div class="pos-results" id="workerResults"></div>
+                    <div class="pos-chips" id="workerChips" aria-label="Sering belanja"></div>
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="pos-card only-sell" aria-label="Barang">
+                <input type="search" class="pos-input" id="itemSearch" placeholder="Cari item barang warung…" autocomplete="off" enterkeyhint="done">
+                <div class="pos-grid" id="itemGrid"></div>
+                <details class="pos-more">
+                    <summary>Lainnya: barang belum terdaftar / pembeli luar</summary>
+                    <p class="pos-label" style="margin-top:8px">Barang lain</p>
+                    <div class="pos-row">
+                        <input class="pos-input" id="customName" placeholder="Nama barang" maxlength="150">
+                        <input class="pos-input" id="customPrice" inputmode="numeric" placeholder="Harga">
+                        <button type="button" class="pos-add" id="customAdd">+</button>
+                    </div>
+                    <p class="pos-label" style="margin-top:12px">Nama pembeli luar (untuk hutang non-pekerja)</p>
+                    <input class="pos-input" id="outsiderName" placeholder="Contoh: Pak Rudi / sopir PT ABC" maxlength="150">
+                </details>
+            </section>
+
+            {% if worker_debt_on %}
+            <section class="pos-card only-pay" aria-label="Bayar hutang">
+                <p class="pos-label">Bayar hutang warung</p>
+                <div id="payEmpty" class="pos-empty">Pilih pekerja dulu di atas.</div>
+                <div id="payBox" hidden>
+                    <input class="pos-input" id="payAmount" inputmode="numeric" placeholder="Jumlah dibayar (Rp)">
+                    <div class="pos-amounts" id="payAmounts"></div>
+                    <p class="pos-note" id="payInvoiced" hidden></p>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+
+        <div class="pos-side">
+            <section class="pos-bar only-sell" id="bar" aria-label="Keranjang">
+                <div class="pos-lines" id="cartLines"></div>
+                <div class="pos-cash-box">
+                    <div class="pos-cash">
+                        <input class="pos-input" id="cashReceived" inputmode="numeric" placeholder="Uang diterima (Rp)">
+                        <span class="pos-change" id="cashChange"></span>
+                    </div>
+                    <div class="pos-quick-cash">
+                        <button type="button" class="pos-cash-chip" data-val="exact">Uang Pas</button>
+                        <button type="button" class="pos-cash-chip" data-val="10000">10rb</button>
+                        <button type="button" class="pos-cash-chip" data-val="20000">20rb</button>
+                        <button type="button" class="pos-cash-chip" data-val="50000">50rb</button>
+                        <button type="button" class="pos-cash-chip" data-val="100000">100rb</button>
+                        <button type="button" class="pos-cash-chip" data-val="clear">Reset</button>
+                    </div>
+                </div>
+                <div class="pos-sum">
+                    <div><small id="cartCount" style="color:var(--pos-muted);font-weight:600">Keranjang kosong</small><div class="pos-total" id="cartTotal">Rp 0</div></div>
+                    <button type="button" class="toggle" id="barToggle">Rincian ▴</button>
+                </div>
+                <div class="pos-pay">
+                    <button type="button" class="cash" data-pay="CASH" disabled>TUNAI</button>
+                    <button type="button" class="qris" data-pay="QRIS" disabled>QRIS</button>
+                    <button type="button" class="debt" data-pay="DEBT" disabled>HUTANG</button>
+                </div>
+                <div class="pos-warn" id="limitWarn" hidden></div>
+            </section>
+
+            {% if worker_debt_on %}
+            <section class="pos-bar only-pay" aria-label="Terima pembayaran">
+                <div class="pos-sum"><div><small style="color:var(--pos-muted);font-weight:600">Diterima</small><div class="pos-total" id="payTotal">Rp 0</div></div></div>
+                <div class="pos-pay two">
+                    <button type="button" class="cash" data-receive="CASH" disabled>TUNAI</button>
+                    <button type="button" class="qris" data-receive="QRIS" disabled>QRIS</button>
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="pos-card" aria-label="Transaksi hari ini">
+                <p class="pos-label">Transaksi Hari Ini</p>
+                <div class="pos-recent" id="recent">
+                    {% for row in recent %}
+                    <div><span>{{ row.time }}</span><span>{{ row.who }}</span><em class="m-{{ row.method }}">{{ {'CASH':'Tunai','QRIS':'QRIS','TRANSFER':'Transfer','DEBT':'Hutang'}.get(row.method, row.method) }}</em><b>Rp {{ "{:,.0f}".format(row.total).replace(",", ".") }}</b></div>
+                    {% else %}
+                    <p class="pos-empty" id="recentEmpty">Belum ada transaksi hari ini.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+    <div class="pos-toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+    var root = document.getElementById("pos");
+    var ITEMS = {{ items|tojson }};
+    var WORKERS = {{ workers|tojson }};
+    var LIMIT = parseInt(root.dataset.limit || "0", 10) || 0;
+    var HAS_BANK = root.dataset.hasBank === "1";
+    var METHOD_LABEL = {CASH: "Tunai", QRIS: "QRIS", TRANSFER: "Transfer", DEBT: "Hutang"};
+    var CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+    var cart = [];          // {item_id|null, name, price, qty, custom}
+    var buyer = null;       // worker row
+    var busy = false;
+    var pendingKey = null;  // kunci dipakai ulang bila sinyal putus, supaya tidak tersimpan dua kali
+
+    function $(id) { return document.getElementById(id); }
+    function rp(n) { return "Rp " + Math.round(n || 0).toLocaleString("id-ID"); }
+    function digits(v) { return parseInt(String(v || "").replace(/[^0-9]/g, ""), 10) || 0; }
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+    function newKey() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(16).slice(2)); }
+    function total() { return cart.reduce(function (s, l) { return s + l.price * l.qty; }, 0); }
+
+    var toastTimer;
+    function toast(msg, kind) {
+        var t = $("toast");
+        t.textContent = msg; t.className = "pos-toast show" + (kind ? " " + kind : "");
+        clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.className = "pos-toast"; }, kind === "err" ? 4500 : 2600);
+    }
+
+    /* ---------- Barang ---------- */
+    function renderItems() {
+        var grid = $("itemGrid"); if (!grid) return;
+        var q = ($("itemSearch").value || "").trim().toLowerCase();
+        grid.innerHTML = "";
+        var shown = ITEMS.filter(function (it) { return !q || it.name.toLowerCase().indexOf(q) !== -1; });
+        if (!shown.length) { grid.appendChild(el("p", "pos-empty", ITEMS.length ? "Barang tidak ditemukan. Pakai “Barang lain” di bawah." : "Belum ada barang warung. Minta Admin mengisi master barang (kategori MERCHANDISE).")); return; }
+        shown.forEach(function (it) {
+            var line = cart.find(function (l) { return !l.custom && l.item_id === it.id; });
+            var b = el("button", "pos-tile" + (line ? " in" : ""));
+            b.type = "button";
+            b.appendChild(el("span", null, it.name));
+            b.appendChild(el("b", null, rp(it.price)));
+            if (line) b.appendChild(el("i", null, String(line.qty)));
+            b.addEventListener("click", function () { add({item_id: it.id, name: it.name, price: it.price}); });
+            grid.appendChild(b);
+        });
+    }
+    function add(entry) {
+        var line = cart.find(function (l) { return entry.custom ? (l.custom && l.name.toLowerCase() === entry.name.toLowerCase() && l.price === entry.price) : (!l.custom && l.item_id === entry.item_id); });
+        if (line) line.qty += 1; else cart.push({item_id: entry.item_id || null, name: entry.name, price: entry.price, qty: 1, custom: !!entry.custom});
+        if (navigator.vibrate) navigator.vibrate(12);
+        render();
+    }
+
+    /* ---------- Keranjang ---------- */
+    function renderCart() {
+        var box = $("cartLines"); box.innerHTML = "";
+        cart.forEach(function (l, i) {
+            var row = el("div", "pos-line");
+            var nm = el("div", "nm", l.name); nm.appendChild(el("small", null, rp(l.price)));
+            var qty = el("div", "pos-qty");
+            var minus = el("button", null, "−"); minus.type = "button"; minus.setAttribute("aria-label", "Kurangi " + l.name);
+            var plus = el("button", null, "+"); plus.type = "button"; plus.setAttribute("aria-label", "Tambah " + l.name);
+            minus.onclick = function () { l.qty -= 1; if (l.qty <= 0) cart.splice(i, 1); render(); };
+            plus.onclick = function () { l.qty += 1; render(); };
+            qty.appendChild(minus); qty.appendChild(el("b", null, String(l.qty))); qty.appendChild(plus);
+            row.appendChild(nm); row.appendChild(qty); row.appendChild(el("span", "sub", rp(l.price * l.qty)));
+            box.appendChild(row);
+        });
+        var count = cart.reduce(function (s, l) { return s + l.qty; }, 0);
+        var sum = total();
+        $("cartCount").textContent = count ? count + " barang" : "Keranjang kosong";
+        $("cartTotal").textContent = rp(sum);
+        var received = digits($("cashReceived").value);
+        $("cashChange").textContent = received && sum ? (received >= sum ? "Kembali " + rp(received - sum) : "Kurang " + rp(sum - received)) : "";
+        var outsider = ($("outsiderName").value || "").trim();
+        var empty = !cart.length || busy;
+        document.querySelector('[data-pay="CASH"]').disabled = empty;
+        document.querySelector('[data-pay="QRIS"]').disabled = empty || !HAS_BANK;
+        var debtBtn = document.querySelector('[data-pay="DEBT"]');
+        debtBtn.disabled = empty || (!buyer && !outsider);
+        var warn = $("limitWarn"), over = false;
+        if (buyer && LIMIT) {
+            var after = buyer.debt + sum;
+            over = after > LIMIT;
+            warn.hidden = !over;
+            warn.textContent = over ? "Hutang " + buyer.name + " jadi " + rp(after) + ", lewat batas " + rp(LIMIT) + "." : "";
+        } else { warn.hidden = true; }
+        debtBtn.classList.toggle("over", over);
+        debtBtn.textContent = over ? "HUTANG (LEWAT LIMIT)" : "HUTANG";
+    }
+
+    /* ---------- Pembeli ---------- */
+    function workerInfo(w) {
+        var parts = [];
+        if (w.group) parts.push(w.group);
+        parts.push(w.debt ? "Hutang " + rp(w.debt) : "Hutang Rp 0 (Lunas)");
+        if (LIMIT) {
+            var remaining = LIMIT - (w.debt || 0);
+            if (remaining > 0) parts.push("Sisa Limit " + rp(remaining));
+            else parts.push("Limit Habis (Maks " + rp(LIMIT) + ")");
+        }
+        return parts.join(" · ");
+    }
+    function renderBuyer() {
+        if (!$("buyerSelected")) return;
+        $("buyerSelected").hidden = !buyer;
+        $("buyerPicker").hidden = !!buyer;
+        if (buyer) {
+            $("buyerName").textContent = buyer.name;
+            $("buyerInfo").textContent = workerInfo(buyer) + (buyer.invoiced ? " · " + rp(buyer.invoiced) + " sudah ditagih ke mandor" : "");
+            $("buyerSelected").classList.toggle("over", !!(LIMIT && buyer.debt > LIMIT));
+        }
+        renderPay();
+    }
+    function pick(w) { buyer = w; $("workerSearch").value = ""; $("workerResults").innerHTML = ""; render(); }
+    function renderWorkerResults() {
+        var box = $("workerResults"); if (!box) return;
+        var q = ($("workerSearch").value || "").trim().toLowerCase();
+        box.innerHTML = "";
+        if (q.length < 2) return;
+        WORKERS.filter(function (w) { return (w.name + " " + w.code + " " + w.group).toLowerCase().indexOf(q) !== -1; }).slice(0, 8).forEach(function (w) {
+            var b = el("button", "pos-result"); b.type = "button";
+            var left = el("span"); left.appendChild(el("strong", null, w.name)); left.appendChild(el("small", null, w.group || ""));
+            b.appendChild(left); b.appendChild(el("span", "pos-debt" + (w.debt ? "" : " zero"), w.debt ? rp(w.debt) : "Lunas"));
+            b.onclick = function () { pick(w); };
+            box.appendChild(b);
+        });
+        if (!box.children.length) box.appendChild(el("p", "pos-empty", "Pekerja tidak ditemukan."));
+    }
+    function renderChips() {
+        var box = $("workerChips"); if (!box) return;
+        box.innerHTML = "";
+        var mode = root.dataset.mode;
+        var list = mode === "pay" ? WORKERS.filter(function (w) { return w.debt > 0; }).sort(function (a, b) { return b.debt - a.debt; }) : WORKERS.filter(function (w) { return w.visits > 0; });
+        list.slice(0, 12).forEach(function (w) {
+            var c = el("button", "pos-chip", w.name.split(" ")[0] + (mode === "pay" ? " · " + rp(w.debt) : "")); c.type = "button"; c.title = w.name;
+            c.onclick = function () { pick(w); };
+            box.appendChild(c);
+        });
+    }
+
+    /* ---------- Bayar hutang ---------- */
+    function renderPay() {
+        if (!$("payBox")) return;
+        $("payEmpty").hidden = !!buyer;
+        $("payBox").hidden = !buyer;
+        var amounts = $("payAmounts"); amounts.innerHTML = "";
+        if (buyer) {
+            $("payEmpty").textContent = "";
+            if (buyer.debt > 0) {
+                [buyer.debt, 50000, 20000, 10000].filter(function (v, i, a) { return v > 0 && v <= buyer.debt && a.indexOf(v) === i; }).forEach(function (v, i) {
+                    var c = el("button", "pos-chip", (i === 0 ? "Lunas " : "") + rp(v)); c.type = "button";
+                    c.onclick = function () { $("payAmount").value = v.toLocaleString("id-ID"); renderPayTotal(); };
+                    amounts.appendChild(c);
+                });
+            }
+            $("payInvoiced").hidden = !buyer.invoiced;
+            $("payInvoiced").textContent = buyer.invoiced ? rp(buyer.invoiced) + " sudah masuk invoice mandor — dibayar lewat invoice, bukan di warung." : "";
+            if (!buyer.debt) { $("payEmpty").hidden = false; $("payEmpty").textContent = buyer.name + " tidak punya hutang warung."; }
+        } else {
+            $("payEmpty").textContent = "Pilih pekerja dulu di atas.";
+        }
+        renderPayTotal();
+    }
+    function renderPayTotal() {
+        if (!$("payTotal")) return;
+        var amount = digits($("payAmount").value);
+        $("payTotal").textContent = rp(amount);
+        var ok = buyer && buyer.debt > 0 && amount > 0 && amount <= buyer.debt && !busy;
+        document.querySelector('[data-receive="CASH"]').disabled = !ok;
+        document.querySelector('[data-receive="QRIS"]').disabled = !ok || !HAS_BANK;
+    }
+
+    function render() { renderItems(); renderCart(); renderBuyer(); renderChips(); }
+
+    /* ---------- Kirim ---------- */
+    function send(url, body, done) {
+        if (busy) return;
+        busy = true; render();
+        pendingKey = pendingKey || newKey();
+        body.key = pendingKey;
+        fetch(url, {method: "POST", headers: {"Content-Type": "application/json", "Accept": "application/json", "X-CSRFToken": CSRF}, body: JSON.stringify(body), credentials: "same-origin"})
+            .then(function (r) { return r.json().then(function (j) { return {status: r.status, data: j}; }, function () { return {status: r.status, data: {ok: false, message: "Sesi habis atau server bermasalah. Muat ulang halaman."}}; }); })
+            .then(function (res) {
+                busy = false;
+                if (res.data.ok) { pendingKey = null; done(res.data); }
+                else {
+                    if (res.status >= 400 && res.status < 500 && res.status !== 409) pendingKey = null;
+                    toast(res.data.message || "Gagal menyimpan.", "err"); render();
+                }
+            })
+            .catch(function () { busy = false; toast("Sinyal putus. Ketuk lagi — transaksi tidak akan tersimpan dua kali.", "err"); render(); });
+    }
+    function addRecent(who, method, amount) {
+        var box = $("recent"); var empty = $("recentEmpty"); if (empty) empty.remove();
+        var now = new Date();
+        var row = el("div");
+        row.appendChild(el("span", null, String(now.getHours()).padStart(2, "0") + "." + String(now.getMinutes()).padStart(2, "0")));
+        row.appendChild(el("span", null, who));
+        row.appendChild(el("em", "m-" + method, METHOD_LABEL[method] || method));
+        row.appendChild(el("b", null, rp(amount)));
+        box.insertBefore(row, box.firstChild);
+        while (box.children.length > 8) box.removeChild(box.lastChild);
+    }
+
+    document.querySelectorAll("[data-pay]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var method = btn.dataset.pay;
+            if (!cart.length) return;
+            var outsider = ($("outsiderName").value || "").trim();
+            if (method === "DEBT" && buyer && LIMIT && buyer.debt + total() > LIMIT) {
+                if (!window.confirm("Hutang " + buyer.name + " jadi " + rp(buyer.debt + total()) + ", lewat batas " + rp(LIMIT) + ".\nTetap simpan sebagai hutang?")) return;
+            }
+            var received = digits($("cashReceived").value);
+            send(root.dataset.checkoutUrl, {
+                method: method,
+                worker_id: buyer ? buyer.id : null,
+                buyer_name: buyer ? null : (outsider || null),
+                cash_received: method === "CASH" && received ? received : null,
+                cart: cart.map(function (l) { return l.custom ? {custom: true, name: l.name, price: l.price, qty: l.qty} : {item_id: l.item_id, qty: l.qty}; })
+            }, function (data) {
+                var msg = data.message + (data.change ? " · Kembali " + rp(data.change) : "");
+                if (data.over_limit) msg += " · LEWAT BATAS";
+                toast(msg, data.over_limit ? "warn" : null);
+                if (buyer && data.debt_after != null) buyer.debt = data.debt_after;
+                addRecent(data.who, data.method, data.total);
+                cart = []; buyer = null; $("cashReceived").value = ""; $("outsiderName").value = "";
+                $("bar").classList.remove("open"); $("barToggle").textContent = "Rincian ▴";
+                render();
+                if (window.innerWidth >= 900 && $("workerSearch")) $("workerSearch").focus();
+            });
+        });
+    });
+    document.querySelectorAll("[data-receive]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            if (!buyer) return;
+            var amount = digits($("payAmount").value);
+            send(root.dataset.payUrl, {worker_id: buyer.id, amount: amount, method: btn.dataset.receive}, function (data) {
+                toast(data.message);
+                buyer.debt = data.remaining;
+                addRecent(data.worker, btn.dataset.receive, data.paid);
+                $("payAmount").value = ""; buyer = null; render();
+            });
+        });
+    });
+
+    /* ---------- Isian & pintasan ---------- */
+    if ($("workerSearch")) {
+        $("workerSearch").addEventListener("input", renderWorkerResults);
+        $("workerSearch").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") { e.preventDefault(); var first = $("workerResults").querySelector(".pos-result"); if (first) first.click(); }
+        });
+        $("buyerClear").addEventListener("click", function () { buyer = null; render(); $("workerSearch").focus(); });
+    }
+    $("itemSearch").addEventListener("input", renderItems);
+    $("itemSearch").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); var first = $("itemGrid").querySelector(".pos-tile"); if (first) { first.click(); this.select(); } }
+    });
+    $("customAdd").addEventListener("click", function () {
+        var name = ($("customName").value || "").trim(), price = digits($("customPrice").value);
+        if (!name || !price) { toast("Isi nama dan harga barang lain.", "err"); return; }
+        add({name: name, price: price, custom: true});
+        $("customName").value = ""; $("customPrice").value = "";
+    });
+    $("outsiderName").addEventListener("input", renderCart);
+    $("cashReceived").addEventListener("input", function () { var v = digits(this.value); this.value = v ? v.toLocaleString("id-ID") : ""; renderCart(); });
+    document.querySelectorAll(".pos-cash-chip").forEach(function (b) {
+        b.addEventListener("click", function () {
+            var val = b.dataset.val;
+            if (val === "exact") {
+                var sum = total();
+                $("cashReceived").value = sum ? sum.toLocaleString("id-ID") : "";
+            } else if (val === "clear") {
+                $("cashReceived").value = "";
+            } else if (val) {
+                $("cashReceived").value = parseInt(val, 10).toLocaleString("id-ID");
+            }
+            renderCart();
+        });
+    });
+    if ($("payAmount")) $("payAmount").addEventListener("input", function () { var v = digits(this.value); this.value = v ? v.toLocaleString("id-ID") : ""; renderPayTotal(); });
+    $("barToggle").addEventListener("click", function () {
+        var open = $("bar").classList.toggle("open");
+        this.textContent = open ? "Tutup ▾" : "Rincian ▴";
+    });
+    document.querySelectorAll("[data-mode-btn]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            root.dataset.mode = btn.dataset.modeBtn;
+            document.querySelectorAll("[data-mode-btn]").forEach(function (b) { b.classList.toggle("on", b === btn); });
+            render();
+        });
+    });
+
+    render();
+})();
+</script>
+{% endblock %}

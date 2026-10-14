@@ -53,27 +53,21 @@
                             <span class="status-badge danger">Belum Dibayar</span>
                         {% endif %}
                     </td>
-                    <td>
-                        {% set billed_invoice = billed_invoice_by_debt_id.get(debt.id) %}
-                        {% if billed_invoice %}
-                        <div class="small mb-1">
-                            <a href="{{ url_for('finance.invoice_detail', invoice_id=billed_invoice.id) }}">
-                                {{ billed_invoice.invoice_number }}
-                            </a>
+                    <td class="text-end">
+                        <div class="ops-actions">
+                            {% set billed_invoice = billed_invoice_by_debt_id.get(debt.id) %}
+                            {% if billed_invoice %}
+                                <a href="{{ url_for('finance.invoice_detail', invoice_id=billed_invoice.id) }}" class="btn btn-sm app-btn-secondary">
+                                    <i class="bi bi-receipt me-1"></i> Buka Invoice
+                                </a>
+                            {% elif debt.status != "PAID" %}
+                                <button type="button" class="btn btn-sm app-btn-primary" data-bs-toggle="modal" data-bs-target="#modalPayDebt-{{ debt.id }}">
+                                    Bayar
+                                </button>
+                            {% else %}
+                                <span class="text-muted small">Lunas</span>
+                            {% endif %}
                         </div>
-                        <span class="text-muted small d-block mb-1">Sudah ditagihkan formal</span>
-                        {% endif %}
-                        {% if billed_invoice %}
-                        <a href="{{ url_for('finance.invoice_detail', invoice_id=billed_invoice.id) }}" class="btn btn-sm app-btn-secondary">
-                            Buka Invoice
-                        </a>
-                        {% elif debt.status != "PAID" %}
-                        <a href="{{ url_for('canteen.debt_payment', debt_id=debt.id) }}" class="btn btn-sm app-btn-secondary">
-                            Bayar
-                        </a>
-                        {% else %}
-                        -
-                        {% endif %}
                     </td>
                 </tr>
                 {% else %}
@@ -88,6 +82,23 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% if debts %}
+            {% set debt_tot = namespace(amount=0, paid=0, remaining=0) %}
+            {% for d in debts %}
+                {% set debt_tot.amount = debt_tot.amount + d.debt_amount %}
+                {% set debt_tot.paid = debt_tot.paid + get_debt_paid_amount(d) %}
+                {% set debt_tot.remaining = debt_tot.remaining + get_debt_remaining_amount(d) %}
+            {% endfor %}
+            <tfoot class="ops-tfoot-summary">
+                <tr>
+                    <td colspan="2" class="text-end fw-bold">Total Hutang Pekerja:</td>
+                    <td class="fw-bold">{{ debt_tot.amount|rupiah }}</td>
+                    <td class="fw-bold">{{ debt_tot.paid|rupiah }}</td>
+                    <td class="fw-bold text-danger">{{ debt_tot.remaining|rupiah }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
 </div>
@@ -123,7 +134,7 @@
                     <td>{{ row.buyer_phone or '-' }}</td>
                     <td>{{ row.receivable_amount|rupiah }}</td>
                     <td>{{ get_external_receivable_paid_amount(row)|rupiah }}</td>
-                    <td><strong>{{ get_external_receivable_remaining_amount(row)|rupiah }}</strong></td>
+                    <td><strong class="text-danger">{{ get_external_receivable_remaining_amount(row)|rupiah }}</strong></td>
                     <td>
                         {% if row.status == "PAID" %}
                             <span class="status-badge success">Lunas</span>
@@ -133,14 +144,16 @@
                             <span class="status-badge danger">Belum Dibayar</span>
                         {% endif %}
                     </td>
-                    <td>
-                        {% if row.status != "PAID" %}
-                        <a href="{{ url_for('canteen.external_receivable_payment', receivable_id=row.id) }}" class="btn btn-sm app-btn-secondary">
-                            Bayar
-                        </a>
-                        {% else %}
-                        -
-                        {% endif %}
+                    <td class="text-end">
+                        <div class="ops-actions">
+                            {% if row.status != "PAID" %}
+                            <button type="button" class="btn btn-sm app-btn-primary" data-bs-toggle="modal" data-bs-target="#modalPayReceivable-{{ row.id }}">
+                                Bayar
+                            </button>
+                            {% else %}
+                            <span class="text-muted small">Lunas</span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -159,8 +172,182 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% if external_receivables %}
+            {% set ext_tot = namespace(amount=0, paid=0, remaining=0) %}
+            {% for r in external_receivables %}
+                {% set ext_tot.amount = ext_tot.amount + r.receivable_amount %}
+                {% set ext_tot.paid = ext_tot.paid + get_external_receivable_paid_amount(r) %}
+                {% set ext_tot.remaining = ext_tot.remaining + get_external_receivable_remaining_amount(r) %}
+            {% endfor %}
+            <tfoot class="ops-tfoot-summary">
+                <tr>
+                    <td colspan="3" class="text-end fw-bold">Total Piutang Eksternal:</td>
+                    <td class="fw-bold">{{ ext_tot.amount|rupiah }}</td>
+                    <td class="fw-bold">{{ ext_tot.paid|rupiah }}</td>
+                    <td class="fw-bold text-danger">{{ ext_tot.remaining|rupiah }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
 </div>
 </div>
+
+{# Modal-modal diletakkan di luar table/card di akhir blok content #}
+{% if worker_debt_on %}
+    {% for debt in debts %}
+        {% if debt.status != "PAID" and not billed_invoice_by_debt_id.get(debt.id) %}
+        <div class="modal fade text-start" id="modalPayDebt-{{ debt.id }}" tabindex="-1" aria-labelledby="modalLabelPayDebt-{{ debt.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border">
+                    <form method="POST" action="{{ url_for('canteen.debt_payment', debt_id=debt.id) }}" data-ui-form="true" class="app-form">
+                        {% include "components/csrf_token.html" %}
+                        <div class="modal-header border-bottom py-3 px-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="app-stat-icon stat-info" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div>
+                                    <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelPayDebt-{{ debt.id }}">
+                                        Bayar Hutang: {{ debt.worker.full_name if debt.worker else '-' }}
+                                    </h5>
+                                    <span class="text-muted" style="font-size: 12px;">
+                                        Sisa: {{ get_debt_remaining_amount(debt)|rupiah }} &bull; Total: {{ debt.debt_amount|rupiah }}
+                                    </span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label app-label fw-bold mb-1">Tanggal Bayar</label>
+                                    <input type="date" name="payment_date" class="form-control app-input" value="{{ today }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label app-label fw-bold mb-1">Jumlah Bayar</label>
+                                    <input type="number" name="amount" class="form-control app-input" value="{{ get_debt_remaining_amount(debt)|int }}" min="1" max="{{ get_debt_remaining_amount(debt)|int }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label app-label fw-bold mb-1">Metode Bayar</label>
+                                    <select name="payment_method" class="form-select app-input" required>
+                                        <option value="CASH">{{ "CASH"|status_label }}</option>
+                                        <option value="QRIS">{{ "QRIS"|status_label }}</option>
+                                        <option value="TRANSFER">{{ "TRANSFER"|status_label }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label app-label fw-bold mb-1">Status Saat Ini</label>
+                                    <input type="text" class="form-control app-input" value="{{ debt.status|status_label }}" readonly disabled>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label app-label fw-bold mb-1">Rekening QRIS / Transfer</label>
+                                    <select name="cash_bank_account_id" class="form-select app-input">
+                                        <option value="">- Pilih rekening jika QRIS/transfer -</option>
+                                        {% for account in bank_accounts %}
+                                        <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} / {{ account.account_number }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label app-label fw-bold mb-1">Referensi Pembayaran</label>
+                                    <input type="text" name="payment_reference" class="form-control app-input" placeholder="Opsional: no trx QRIS / bukti transfer">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label app-label fw-bold mb-1">Catatan</label>
+                                    <textarea name="notes" class="form-control app-input" rows="2" placeholder="Catatan pembayaran..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top py-2 px-4">
+                            <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Simpan pembayaran sebesar nilai yang dimasukkan?">
+                                <i class="bi bi-save me-1"></i> Simpan Pembayaran
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% for row in external_receivables %}
+    {% if row.status != "PAID" %}
+    <div class="modal fade text-start" id="modalPayReceivable-{{ row.id }}" tabindex="-1" aria-labelledby="modalLabelPayReceivable-{{ row.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border">
+                <form method="POST" action="{{ url_for('canteen.external_receivable_payment', receivable_id=row.id) }}" data-ui-form="true" class="app-form">
+                    {% include "components/csrf_token.html" %}
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="app-stat-icon stat-info" style="width: 36px; height: 36px; font-size: 16px; border-radius: 10px;">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fs-6 fw-bold mb-0" id="modalLabelPayReceivable-{{ row.id }}">
+                                    Bayar Piutang: {{ row.buyer_name }}
+                                </h5>
+                                <span class="text-muted" style="font-size: 12px;">
+                                    Sisa: {{ get_external_receivable_remaining_amount(row)|rupiah }} &bull; Total: {{ row.receivable_amount|rupiah }}
+                                </span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label app-label fw-bold mb-1">Tanggal Bayar</label>
+                                <input type="date" name="payment_date" class="form-control app-input" value="{{ today }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label app-label fw-bold mb-1">Jumlah Bayar</label>
+                                <input type="number" name="amount" class="form-control app-input" value="{{ get_external_receivable_remaining_amount(row)|int }}" min="1" max="{{ get_external_receivable_remaining_amount(row)|int }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label app-label fw-bold mb-1">Metode Bayar</label>
+                                <select name="payment_method" class="form-select app-input" required>
+                                    <option value="CASH">{{ "CASH"|status_label }}</option>
+                                    <option value="QRIS">{{ "QRIS"|status_label }}</option>
+                                    <option value="TRANSFER">{{ "TRANSFER"|status_label }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label app-label fw-bold mb-1">Status Saat Ini</label>
+                                <input type="text" class="form-control app-input" value="{{ row.status|status_label }}" readonly disabled>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label app-label fw-bold mb-1">Rekening QRIS / Transfer</label>
+                                <select name="cash_bank_account_id" class="form-select app-input">
+                                    <option value="">- Pilih rekening jika QRIS/transfer -</option>
+                                    {% for account in bank_accounts %}
+                                    <option value="{{ account.id }}">{{ account.bank_name }} - {{ account.account_name }} / {{ account.account_number }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label app-label fw-bold mb-1">Referensi Pembayaran</label>
+                                <input type="text" name="payment_reference" class="form-control app-input" placeholder="Opsional: no trx QRIS / bukti transfer">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label app-label fw-bold mb-1">Catatan</label>
+                                <textarea name="notes" class="form-control app-input" rows="2" placeholder="Catatan pembayaran..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top py-2 px-4">
+                        <button type="button" class="btn btn-sm app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm app-btn-primary" data-app-confirm="Simpan pembayaran sebesar nilai yang dimasukkan?">
+                            <i class="bi bi-save me-1"></i> Simpan Pembayaran
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
 {% endblock %}

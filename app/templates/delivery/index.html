@@ -1,80 +1,390 @@
-﻿{% extends "layouts/base.html" %}
+{% extends "layouts/base.html" %}
 {% from "components/page_header.html" import page_header %}
 
 {% block content %}
 <div class="op-prod-delivery-page-shell" data-ui-page="index">
-{{ page_header(
-    title='Daftar Pengiriman',
-    eyebrow='Modul Pengiriman',
-    description='Pengiriman dibuat dari produksi yang sudah completed dan dipakai untuk mencatat penerimaan di lokasi.',
-    collapse=false,
-    actions=[
-        {'label': 'Order Harian', 'url': url_for('operational.orders'), 'icon': 'bi-journal-text'}
-    ]
-) }}
-
-
-<div class="app-card">
-    <div class="card-header-clean">
+    <header class="dash-head">
         <div>
-            <h5>Pengiriman</h5>
-            <p>Pengiriman bukan dasar tagihan, tetapi wajib dicatat untuk kontrol distribusi.</p>
+            <h1>Daftar Pengiriman</h1>
+            <p>Pengiriman dibuat dari produksi yang sudah completed dan dipakai untuk mencatat penerimaan di lokasi.</p>
+        </div>
+        <div class="dash-head-actions">
+            <a href="{{ url_for('delivery.today') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-calendar-check me-1"></i> Hari Ini
+            </a>
+            <a href="{{ url_for('delivery.receiving') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-clipboard-check me-1"></i> Penerimaan
+            </a>
+            <a href="{{ url_for('delivery.scan') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-qr-code-scan me-1"></i> Scan
+            </a>
+            <a href="{{ url_for('operational.orders') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-text me-1"></i> Order Harian
+            </a>
+        </div>
+    </header>
+
+    {% set dlv_lunch = namespace(item=none, total_qty=0, received_count=0) %}
+    {% set dlv_dinner = namespace(item=none, total_qty=0, received_count=0) %}
+    {% for d in deliveries %}
+        {% set d_type = get_delivery_type_from_notes(d.notes)|upper %}
+        {% if today and d.delivery_date == today %}
+            {% if ("SIANG" in d_type or "LUNCH" in d_type) and not dlv_lunch.item %}
+                {% set dlv_lunch.item = d %}
+                {% for dt in d.details %}
+                    {% set dlv_lunch.total_qty = dlv_lunch.total_qty + dt.planned_qty %}
+                    {% if dt.receipt %}
+                        {% set dlv_lunch.received_count = dlv_lunch.received_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+            {% elif ("MALAM" in d_type or "DINNER" in d_type or "SORE" in d_type) and not dlv_dinner.item %}
+                {% set dlv_dinner.item = d %}
+                {% for dt in d.details %}
+                    {% set dlv_dinner.total_qty = dlv_dinner.total_qty + dt.planned_qty %}
+                    {% if dt.receipt %}
+                        {% set dlv_dinner.received_count = dlv_dinner.received_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    <!-- HERO DUA KARTU SESI ARMADA HARI INI -->
+    <div class="ops-grid-hero mb-4">
+        <!-- KARTU ARMADA SIANG (☀️) -->
+        <div class="panel ops-day-card">
+            <div class="panel-head">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Armada Siang</span>
+                    {% if dlv_lunch.item %}
+                        <a href="{{ url_for('delivery.detail', delivery_id=dlv_lunch.item.id) }}" class="fw-bold text-decoration-none text-primary">
+                            {{ dlv_lunch.item.delivery_number }}
+                        </a>
+                    {% endif %}
+                </div>
+                {% if dlv_lunch.item %}
+                    {% if dlv_lunch.item.status == "DELIVERED" %}
+                        <span class="status-badge status-locked">Terkirim</span>
+                    {% elif dlv_lunch.item.status == "ON_THE_WAY" %}
+                        <span class="status-badge status-progress">Dalam Perjalanan</span>
+                    {% elif dlv_lunch.item.status == "CANCELLED" %}
+                        <span class="status-badge status-danger">Dibatalkan</span>
+                    {% else %}
+                        <span class="status-badge status-draft">Disiapkan</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if dlv_lunch.item %}
+                    {% set sla_l = calculate_delivery_sla_summary(dlv_lunch.item) if calculate_delivery_sla_summary else none %}
+                    {% set loc_l = dlv_lunch.item.details|length %}
+                    {% set pct_l = (dlv_lunch.received_count * 100 / loc_l)|round|int if loc_l > 0 else 0 %}
+
+                    <!-- Stepper Armada Siang -->
+                    <div class="ops-steps">
+                        <div class="ops-step-item is-done">
+                            <span class="ops-step-dot"></span>
+                            <span>Disiapkan</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item {% if dlv_lunch.item.status in ['ON_THE_WAY', 'DELIVERED'] %}is-done{% else %}is-pending{% endif %}">
+                            <span class="ops-step-dot"></span>
+                            <span>Di Jalan</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item {% if dlv_lunch.item.status == 'DELIVERED' %}is-done{% else %}is-pending{% endif %}">
+                            <span class="ops-step-dot"></span>
+                            <span>Tiba di Lokasi</span>
+                        </div>
+                    </div>
+
+                    <!-- Metrik Distribusi & Pengantar -->
+                    <div class="ops-portions-summary">
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Porsi Lunch</span>
+                            <span class="ops-portion-val is-total">{{ dlv_lunch.total_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Lokasi Antar</span>
+                            <span class="ops-portion-val">{{ loc_l }} Titik</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Pengantar</span>
+                            <span class="ops-portion-val fs-6 text-truncate" style="max-width: 110px;">{{ dlv_lunch.item.driver.name if dlv_lunch.item.driver else '-' }}</span>
+                        </div>
+                        <div class="ops-portion-metric ms-auto text-end">
+                            <span class="ops-portion-label">Tanda Terima</span>
+                            <span class="ops-portion-val fs-6 fw-bold {% if pct_l == 100 %}text-success{% else %}text-primary{% endif %}">
+                                {{ dlv_lunch.received_count }}/{{ loc_l }} ({{ pct_l }}%)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Utama Besar Sesuai Status -->
+                    <div class="mt-3 d-flex gap-2 align-items-center">
+                        {% if dlv_lunch.item.status not in ["CANCELLED", "DELIVERED", "ON_THE_WAY"] %}
+                            <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=dlv_lunch.item.id) }}" data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-send-check me-1"></i> Catat Armada Siang Berangkat
+                                </button>
+                            </form>
+                        {% elif dlv_lunch.item.status == "ON_THE_WAY" %}
+                            <a href="{{ url_for('delivery.receiving', date=today.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-clipboard-check me-1"></i> Pantau & Catat Penerimaan
+                            </a>
+                            <a href="{{ url_for('delivery.detail', delivery_id=dlv_lunch.item.id) }}" class="btn app-btn-secondary">
+                                Manifest
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('delivery.detail', delivery_id=dlv_lunch.item.id) }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-check-all me-1"></i> Buka Manifest Terkirim
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('delivery.scan') }}" class="btn app-btn-secondary" title="Scan Label Wadah">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-state app-empty-state-compact text-center py-4">
+                        <i class="bi bi-truck fs-3 text-muted mb-2"></i>
+                        <h6 class="mb-1">Belum ada armada Siang hari ini.</h6>
+                        <p class="text-muted small mb-3">Pengiriman siang belum dibuat dari produksi dapur selesai.</p>
+                        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-primary">
+                            <i class="bi bi-calendar-check me-1"></i> Buka Dispatch Hari Ini
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- KARTU ARMADA SORE/MALAM (🌙) -->
+        <div class="panel ops-day-card">
+            <div class="panel-head">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Armada Sore / Malam</span>
+                    {% if dlv_dinner.item %}
+                        <a href="{{ url_for('delivery.detail', delivery_id=dlv_dinner.item.id) }}" class="fw-bold text-decoration-none text-primary">
+                            {{ dlv_dinner.item.delivery_number }}
+                        </a>
+                    {% endif %}
+                </div>
+                {% if dlv_dinner.item %}
+                    {% if dlv_dinner.item.status == "DELIVERED" %}
+                        <span class="status-badge status-locked">Terkirim</span>
+                    {% elif dlv_dinner.item.status == "ON_THE_WAY" %}
+                        <span class="status-badge status-progress">Dalam Perjalanan</span>
+                    {% elif dlv_dinner.item.status == "CANCELLED" %}
+                        <span class="status-badge status-danger">Dibatalkan</span>
+                    {% else %}
+                        <span class="status-badge status-draft">Disiapkan</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if dlv_dinner.item %}
+                    {% set sla_d = calculate_delivery_sla_summary(dlv_dinner.item) if calculate_delivery_sla_summary else none %}
+                    {% set loc_d = dlv_dinner.item.details|length %}
+                    {% set pct_d = (dlv_dinner.received_count * 100 / loc_d)|round|int if loc_d > 0 else 0 %}
+
+                    <!-- Stepper Armada Sore -->
+                    <div class="ops-steps">
+                        <div class="ops-step-item is-done">
+                            <span class="ops-step-dot"></span>
+                            <span>Disiapkan</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item {% if dlv_dinner.item.status in ['ON_THE_WAY', 'DELIVERED'] %}is-done{% else %}is-pending{% endif %}">
+                            <span class="ops-step-dot"></span>
+                            <span>Di Jalan</span>
+                        </div>
+                        <span class="ops-step-arrow">→</span>
+                        <div class="ops-step-item {% if dlv_dinner.item.status == 'DELIVERED' %}is-done{% else %}is-pending{% endif %}">
+                            <span class="ops-step-dot"></span>
+                            <span>Tiba di Lokasi</span>
+                        </div>
+                    </div>
+
+                    <!-- Metrik Distribusi & Pengantar -->
+                    <div class="ops-portions-summary">
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Porsi Dinner</span>
+                            <span class="ops-portion-val is-total">{{ dlv_dinner.total_qty }}</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Lokasi Antar</span>
+                            <span class="ops-portion-val">{{ loc_d }} Titik</span>
+                        </div>
+                        <div class="ops-portion-metric">
+                            <span class="ops-portion-label">Pengantar</span>
+                            <span class="ops-portion-val fs-6 text-truncate" style="max-width: 110px;">{{ dlv_dinner.item.driver.name if dlv_dinner.item.driver else '-' }}</span>
+                        </div>
+                        <div class="ops-portion-metric ms-auto text-end">
+                            <span class="ops-portion-label">Tanda Terima</span>
+                            <span class="ops-portion-val fs-6 fw-bold {% if pct_d == 100 %}text-success{% else %}text-primary{% endif %}">
+                                {{ dlv_dinner.received_count }}/{{ loc_d }} ({{ pct_d }}%)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Utama Besar Sesuai Status -->
+                    <div class="mt-3 d-flex gap-2 align-items-center">
+                        {% if dlv_dinner.item.status not in ["CANCELLED", "DELIVERED", "ON_THE_WAY"] %}
+                            <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=dlv_dinner.item.id) }}" data-ui-form="true" class="app-form flex-grow-1">
+                                {% include "components/csrf_token.html" %}
+                                <button type="submit" class="btn app-btn-primary w-100">
+                                    <i class="bi bi-send-check me-1"></i> Catat Armada Sore Berangkat
+                                </button>
+                            </form>
+                        {% elif dlv_dinner.item.status == "ON_THE_WAY" %}
+                            <a href="{{ url_for('delivery.receiving', date=today.strftime('%Y-%m-%d')) }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-clipboard-check me-1"></i> Pantau & Catat Penerimaan
+                            </a>
+                            <a href="{{ url_for('delivery.detail', delivery_id=dlv_dinner.item.id) }}" class="btn app-btn-secondary">
+                                Manifest
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('delivery.detail', delivery_id=dlv_dinner.item.id) }}" class="btn app-btn-primary flex-grow-1">
+                                <i class="bi bi-check-all me-1"></i> Buka Manifest Terkirim
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('delivery.scan') }}" class="btn app-btn-secondary" title="Scan Label Wadah">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-state app-empty-state-compact text-center py-4">
+                        <i class="bi bi-truck fs-3 text-muted mb-2"></i>
+                        <h6 class="mb-1">Belum ada armada Sore hari ini.</h6>
+                        <p class="text-muted small mb-3">Pengiriman sore belum dibuat dari produksi dapur selesai.</p>
+                        <a href="{{ url_for('delivery.today') }}" class="btn app-btn-primary">
+                            <i class="bi bi-calendar-check me-1"></i> Buka Dispatch Hari Ini
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div class="table-responsive app-table-wrapper">
-        <table class="table app-table align-middle">
-            <thead>
-                <tr>
-                    <th>No Pengiriman</th>
-                    <th>Tanggal</th>
-                    <th>Tipe</th>
-                    <th>Pengantar</th>
-                    <th>Status</th>
-                    <th>Total Detail</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for delivery in deliveries %}
-                <tr>
-                    <td><strong>{{ delivery.delivery_number }}</strong></td>
-                    <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
-                    <td>{{ get_delivery_type_from_notes(delivery.notes) }}</td>
-                    <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
-                    <td>
-                        {% if delivery.status == "DELIVERED" %}
-                            <span class="status-badge success">Terkirim</span>
-                        {% elif delivery.status == "ON_THE_WAY" %}
-                            <span class="status-badge warning">Dalam Perjalanan</span>
-                        {% elif delivery.status == "CANCELLED" %}
-                            <span class="status-badge status-cancelled">Dibatalkan</span>
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Pengiriman</h2>
+                <p>Pengiriman bukan dasar tagihan, tetapi wajib dicatat untuk kontrol distribusi.</p>
+            </div>
+        </div>
+
+        <div class="panel-body flush">
+            <div class="table-responsive app-table-wrapper">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>No Pengiriman</th>
+                            <th>Tanggal</th>
+                            <th>Tipe</th>
+                            <th>Pengantar</th>
+                            <th>Status</th>
+                            <th>Total Detail</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set ns = namespace(total_details=0) %}
+                        {% for delivery in deliveries %}
+                        {% set d_type = get_delivery_type_from_notes(delivery.notes) %}
+                        {% set ns.total_details = ns.total_details + (delivery.details|length) %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="fw-bold text-decoration-none">
+                                    {{ delivery.delivery_number }}
+                                </a>
+                                {% if "SHORTAGE_REPLACEMENT" in (delivery.notes or "") %}
+                                    <div class="muted-small">Pengganti kekurangan</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ delivery.delivery_date.strftime('%d-%m-%Y') }}</td>
+                            <td>
+                                {% if "SIANG" in d_type.upper() or "LUNCH" in d_type.upper() %}
+                                    <span class="ops-session-badge is-lunch"><i class="bi bi-sun"></i> Siang</span>
+                                {% elif "MALAM" in d_type.upper() or "DINNER" in d_type.upper() or "SORE" in d_type.upper() %}
+                                    <span class="ops-session-badge is-dinner"><i class="bi bi-moon-stars"></i> Malam</span>
+                                {% else %}
+                                    <span class="status-badge neutral">{{ d_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ delivery.driver.name if delivery.driver else '-' }}</td>
+                            <td>
+                                {% if delivery.status == "DELIVERED" %}
+                                    <span class="status-badge status-locked">Terkirim</span>
+                                {% elif delivery.status == "ON_THE_WAY" %}
+                                    <span class="status-badge status-progress">Dalam Perjalanan</span>
+                                {% elif delivery.status == "CANCELLED" %}
+                                    <span class="status-badge status-danger">Dibatalkan</span>
+                                {% else %}
+                                    <span class="status-badge status-draft">Disiapkan</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ delivery.details|length }}</strong> Lokasi</td>
+                            <td class="text-end">
+                                <div class="ops-actions d-inline-flex align-items-center gap-1">
+                                    {% if delivery.status == 'ON_THE_WAY' %}
+                                        <a href="{{ url_for('delivery.receiving', date=delivery.delivery_date.strftime('%Y-%m-%d')) }}" class="btn btn-sm app-btn-primary">
+                                            Penerimaan
+                                        </a>
+                                    {% elif delivery.status not in ['DELIVERED', 'CANCELLED'] %}
+                                        <form method="POST" action="{{ url_for('delivery.mark_dispatch', delivery_id=delivery.id) }}" data-ui-form="true" class="d-inline">
+                                            {% include "components/csrf_token.html" %}
+                                            <button type="submit" class="btn btn-sm app-btn-primary">
+                                                Berangkat
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-popper-config='{"strategy":"fixed"}'>
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end app-action-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}">
+                                                    <i class="bi bi-eye me-2"></i> Buka Manifest
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('delivery.scan') }}">
+                                                    <i class="bi bi-qr-code-scan me-2"></i> Scan Label Wadah
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="status-badge neutral">Disiapkan</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ delivery.details|length }}</td>
-                    <td>
-                        <a href="{{ url_for('delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm app-btn-secondary">
-                            Detail
-                        </a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
-                            <i class="bi bi-truck"></i>
-                            <h6>Belum ada pengiriman.</h6>
-                            <p>Buat dari order terkunci setelah produksi selesai.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state app-empty-state app-empty-state-compact app-empty-state-table">
+                                    <i class="bi bi-truck"></i>
+                                    <h6>Belum ada pengiriman.</h6>
+                                    <p>Buat dari order terkunci setelah produksi selesai.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if deliveries %}
+                    <tfoot class="ops-tfoot-summary">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">Total Titik Lokasi Antar:</td>
+                            <td class="fw-bold">{{ ns.total_details }} Titik</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 

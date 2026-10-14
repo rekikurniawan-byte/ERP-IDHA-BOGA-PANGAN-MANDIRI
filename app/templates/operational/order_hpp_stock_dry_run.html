@@ -3,83 +3,96 @@
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_stock_dry_run" data-logistics-hpp-page="order_hpp_stock_dry_run">
-{{ page_header(
-    snapshot.snapshot_number,
-    daily_order.order_number ~ " · simulasi dari komponen FOOD snapshot HPP.",
-    eyebrow="Simulasi Pemakaian Stok",
-    actions=[
-        {"label": "Kembali ke Snapshot", "url": url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id), "icon": "bi-arrow-left"},
-        {"label": "Detail Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-journal-text"},
-    ]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>{{ snapshot.snapshot_number }}</h1>
+        <p>{{ daily_order.order_number }} · simulasi dari komponen FOOD snapshot HPP.</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('operational.order_hpp_snapshot_detail', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Snapshot
+        </a>
+    </div>
+</header>
 
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Order: <strong>{{ daily_order.order_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Snapshot: <strong>{{ snapshot.snapshot_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Kesiapan Stok: <strong>{{ dry_run.summary.ready_count }}/{{ dry_run.summary.item_count }} Item Siap</strong></span>
+    </div>
+</div>
 
-
-<div class="app-card soft-warning-card">
+<div class="alert alert-warning mb-4">
     <strong>Kontrol aman sebelum commit.</strong>
-    <p>
+    <p class="mb-0">
         Halaman ini menghitung kebutuhan bahan dari snapshot HPP dan membandingkannya dengan stok saat ini.
         Commit hanya aktif kalau semua bahan cukup dan data konversi valid. Commit akan membuat StockMovement OUT, tetapi tetap tidak membuat jurnal, tidak mengubah invoice, dan tidak mengubah order.
     </p>
 </div>
 
-<div class="app-stat-grid mt-4">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-box-seam"></i></div>
+<div class="kpi-row my-4">
+    <div class="kpi">
+        <span class="kpi-icon tone-blue"><i class="bi bi-box-seam"></i></span>
         <div>
-            <p>Item Bahan</p>
-            <h3>{{ dry_run.summary.item_count }}</h3>
-            <span class="app-stat-helper">{{ dry_run.summary.food_component_count }} komponen FOOD</span>
+            <span class="kpi-label">Item Bahan</span>
+            <div class="kpi-val">{{ dry_run.summary.item_count }}</div>
+            <span class="text-muted small">{{ dry_run.summary.food_component_count }} komponen FOOD</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-success"><i class="bi bi-check-circle"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-green"><i class="bi bi-check-circle"></i></span>
         <div>
-            <p>Stok Cukup</p>
-            <h3>{{ dry_run.summary.ready_count }}</h3>
-            <span class="app-stat-helper">Item siap secara stok</span>
+            <span class="kpi-label">Stok Cukup</span>
+            <div class="kpi-val">{{ dry_run.summary.ready_count }}</div>
+            <span class="text-muted small">Item siap secara stok</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-danger"><i class="bi bi-exclamation-triangle"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-red"><i class="bi bi-exclamation-triangle"></i></span>
         <div>
-            <p>Stok Kurang</p>
-            <h3>{{ dry_run.summary.shortage_count }}</h3>
-            <span class="app-stat-helper">Perlu stok masuk sebelum commit</span>
+            <span class="kpi-label">Stok Kurang</span>
+            <div class="kpi-val">{{ dry_run.summary.shortage_count }}</div>
+            <span class="text-muted small">Perlu stok masuk sebelum commit</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-warning"><i class="bi bi-shield-exclamation"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-amber"><i class="bi bi-shield-exclamation"></i></span>
         <div>
-            <p>Butuh Cek</p>
-            <h3>{{ dry_run.summary.blocking_count }}</h3>
-            <span class="app-stat-helper">Data/konversi belum lengkap</span>
+            <span class="kpi-label">Butuh Cek</span>
+            <div class="kpi-val">{{ dry_run.summary.blocking_count }}</div>
+            <span class="text-muted small">Data/konversi belum lengkap</span>
         </div>
     </div>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Status Dry-run & Commit</h5>
+            <h2>Status Dry-run & Commit</h2>
             <p>Commit hanya boleh dilakukan sekali per snapshot supaya stok tidak terpotong dobel.</p>
         </div>
         <div class="table-actions">
             {% if dry_run.summary.is_ready_for_commit %}
-                <span class="status-badge success">Siap Disimpan</span>
+                <span class="status-badge status-completed">Siap Disimpan</span>
             {% else %}
-                <span class="status-badge warning">Belum Siap Disimpan</span>
+                <span class="status-badge status-progress">Belum Siap Disimpan</span>
             {% endif %}
         </div>
     </div>
 
+    <div class="panel-body">
     {% if existing_consumption %}
         <div class="alert alert-success mb-0">
             Snapshot ini sudah di-commit ke pemakaian stok dengan nomor
             <strong>{{ existing_consumption.consumption_number }}</strong>.
             Sistem memblok commit ulang agar stok tidak terpotong dua kali.
             <div class="mt-3">
-                <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=existing_consumption.id) }}" class="btn app-btn-secondary btn-sm">
+                <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=existing_consumption.id) }}" class="btn btn-outline-secondary btn-sm">
                     Lihat Pemakaian Stok
                 </a>
             </div>
@@ -100,7 +113,7 @@
                 <input type="text" name="notes" class="form-control app-input" placeholder="Opsional, contoh: pemakaian bahan produksi sesuai snapshot HPP">
             </div>
             <div class="col-md-3">
-                <button type="submit" class="btn app-btn-primary w-100" data-app-confirm="Catat pemakaian stok dari snapshot ini? Stok bahan akan berkurang dan proses tidak boleh diulang untuk snapshot yang sama.">
+                <button type="submit" class="btn btn-primary w-100" data-app-confirm="Catat pemakaian stok dari snapshot ini? Stok bahan akan berkurang dan proses tidak boleh diulang untuk snapshot yang sama.">
                     <i class="bi bi-check2-circle"></i>
                     Commit Pemakaian Stok
                 </button>
@@ -111,17 +124,19 @@
             Ada bahan yang stoknya kurang atau data konversinya belum lengkap. Perbaiki stok/konversi dulu sebelum commit.
         </div>
     {% endif %}
-</div>
+    </div>
+</section>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Rencana Pemakaian Bahan</h5>
+            <h2>Rencana Pemakaian Bahan</h2>
             <p>Kebutuhan bahan dikumpulkan dari semua line siang/sore pada snapshot.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -177,7 +192,7 @@
                 {% else %}
                     <tr>
                         <td colspan="7">
-                            <div class="empty-state">
+                            <div class="empty-state app-empty-state">
                                 <i class="bi bi-info-circle"></i>
                                 <h5>Tidak ada bahan FOOD untuk disimulasikan</h5>
                                 <p>Snapshot ini belum punya komponen bahan baku yang bisa dibandingkan dengan stok.</p>
@@ -188,18 +203,20 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 
 {% if dry_run.rows %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Rincian Sumber Komponen</h5>
+            <h2>Rincian Sumber Komponen</h2>
             <p>Detail asal kebutuhan bahan dari menu siang/sore pada snapshot.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -237,19 +254,21 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 {% endif %}
 
 {% if dry_run.skipped_components %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Komponen Tidak Bisa Diproses</h5>
+            <h2>Komponen Tidak Bisa Diproses</h2>
             <p>Komponen ini ada di snapshot, tapi tidak bisa dikaitkan ke master item aktif.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -275,7 +294,8 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 {% endif %}
 </div>
 {% endblock %}

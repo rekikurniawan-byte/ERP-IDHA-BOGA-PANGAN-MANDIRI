@@ -3,26 +3,44 @@
 
 {% block content %}
 <div class="logistics-hpp-page-shell op-prod-delivery-page-shell" data-ui-page="order_hpp_snapshot_detail" data-logistics-hpp-page="order_hpp_snapshot_detail">
-{% if snapshot.stock_consumption %}
-    {% set snapshot_detail_primary_action = {"label": "Pemakaian Stok", "url": url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id), "icon": "bi-check2-circle", "variant": "primary"} %}
-{% else %}
-    {% set snapshot_detail_primary_action = {"label": "Dry-run / Commit Stok", "url": url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id), "icon": "bi-box-arrow-down", "variant": "primary"} %}
-{% endif %}
-{{ page_header(
-    snapshot.snapshot_number,
-    daily_order.order_number ~ " · " ~ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M'),
-    eyebrow="Detail Snapshot HPP",
-    actions=[
-        snapshot_detail_primary_action,
-        {"label": "Kembali ke Order", "url": url_for('operational.order_detail', order_id=daily_order.id), "icon": "bi-arrow-left"},
-    ]
-) }}
+<header class="dash-head">
+    <div>
+        <h1>{{ snapshot.snapshot_number }}</h1>
+        <p>{{ daily_order.order_number }} · {{ snapshot.snapshot_date.strftime('%d-%m-%Y %H:%M') }}</p>
+    </div>
+    <div class="dash-head-actions">
+        <a href="{{ url_for('operational.order_detail', order_id=daily_order.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Order
+        </a>
+        {% if snapshot.stock_consumption %}
+            <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-primary">
+                <i class="bi bi-check2-circle"></i> Pemakaian Stok
+            </a>
+        {% else %}
+            <a href="{{ url_for('operational.order_hpp_snapshot_stock_dry_run', order_id=daily_order.id, snapshot_id=snapshot.id) }}" class="btn btn-primary">
+                <i class="bi bi-box-arrow-down"></i> Dry-run / Commit Stok
+            </a>
+        {% endif %}
+    </div>
+</header>
 
+<div class="ops-context-strip">
+    <div class="ops-context-meta">
+        <span>Order: <strong>{{ daily_order.order_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Tanggal: <strong>{{ daily_order.order_date.strftime('%d-%m-%Y') }}</strong></span>
+        <span>&bull;</span>
+        <span>Snapshot: <strong>{{ snapshot.snapshot_number }}</strong></span>
+        <span>&bull;</span>
+        <span>Total Porsi: <strong>{{ snapshot.total_portion|qty }} Porsi</strong></span>
+        <span>&bull;</span>
+        <span>Status: <span class="status-badge status-locked">Dibekukan</span></span>
+    </div>
+</div>
 
-
-<div class="app-card soft-warning-card">
+<div class="alert alert-warning mb-4">
     <strong>Snapshot ini dibekukan.</strong>
-    <p>
+    <p class="mb-0">
         Angka di halaman ini adalah hasil perhitungan saat snapshot dibuat.
         Perubahan harga bahan, resep, kemasan, atau overhead setelah ini tidak mengubah snapshot lama.
         Tombol <strong>Dry-run / Commit Stok</strong> akan mengecek stok dulu. Commit hanya bisa sekali dan akan membuat StockMovement OUT tanpa membuat jurnal/invoice.
@@ -30,70 +48,75 @@
 </div>
 
 {% if snapshot.stock_consumption %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Status Pemakaian Stok</h5>
+            <h2>Status Pemakaian Stok</h2>
             <p>Snapshot ini sudah diproses menjadi StockMovement OUT.</p>
         </div>
-        <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-sm app-btn-secondary">
-            Detail Pemakaian
-        </a>
+        <div>
+            <a href="{{ url_for('operational.order_hpp_stock_consumption_detail', order_id=daily_order.id, snapshot_id=snapshot.id, consumption_id=snapshot.stock_consumption.id) }}" class="btn btn-sm btn-outline-secondary">
+                Pemakaian Stok
+            </a>
+        </div>
     </div>
-    <span class="status-badge success">Tersimpan</span>
-    <span class="ms-2"><strong>{{ snapshot.stock_consumption.consumption_number }}</strong></span>
-    <div class="muted-small mt-2">
-        Tanggal {{ snapshot.stock_consumption.consumption_date.strftime('%d-%m-%Y') }} ·
-        {{ snapshot.stock_consumption.total_item_count }} item ·
-        estimasi biaya {{ snapshot.stock_consumption.total_cost|rupiah }}
+    <div class="panel-body">
+        <span class="status-badge status-completed">Tersimpan</span>
+        <span class="ms-2"><strong>{{ snapshot.stock_consumption.consumption_number }}</strong></span>
+        <div class="muted-small mt-2">
+            Tanggal {{ snapshot.stock_consumption.consumption_date.strftime('%d-%m-%Y') }} ·
+            {{ snapshot.stock_consumption.total_item_count }} item ·
+            estimasi biaya {{ snapshot.stock_consumption.total_cost|rupiah }}
+        </div>
     </div>
-</div>
+</section>
 {% endif %}
 
-<div class="app-stat-grid mt-4">
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-basket"></i></div>
+<div class="kpi-row my-4">
+    <div class="kpi">
+        <span class="kpi-icon tone-blue"><i class="bi bi-basket"></i></span>
         <div>
-            <p>Total Porsi</p>
-            <h3>{{ snapshot.total_portion|qty }}</h3>
-            <span class="app-stat-helper">Status {{ snapshot.status|status_label }}</span>
+            <span class="kpi-label">Total Porsi</span>
+            <div class="kpi-val">{{ snapshot.total_portion|qty }}</div>
+            <span class="text-muted small">Status {{ snapshot.status|status_label }}</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-info"><i class="bi bi-calculator"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-amber"><i class="bi bi-calculator"></i></span>
         <div>
-            <p>HPP Total</p>
-            <h3>{{ snapshot.hpp_total|rupiah }}</h3>
-            <span class="app-stat-helper">{{ snapshot.hpp_per_portion|rupiah }} / porsi</span>
+            <span class="kpi-label">HPP Total</span>
+            <div class="kpi-val">{{ snapshot.hpp_total|rupiah }}</div>
+            <span class="text-muted small">{{ snapshot.hpp_per_portion|rupiah }} / porsi</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-purple"><i class="bi bi-cash-stack"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-green"><i class="bi bi-cash-stack"></i></span>
         <div>
-            <p>Estimasi Pendapatan</p>
-            <h3>{{ snapshot.revenue_total|rupiah }}</h3>
-            <span class="app-stat-helper">Dari harga order saat snapshot</span>
+            <span class="kpi-label">Estimasi Pendapatan</span>
+            <div class="kpi-val">{{ snapshot.revenue_total|rupiah }}</div>
+            <span class="text-muted small">Dari harga order saat snapshot</span>
         </div>
     </div>
-    <div class="app-stat-card">
-        <div class="app-stat-icon stat-purple"><i class="bi bi-graph-up"></i></div>
+    <div class="kpi">
+        <span class="kpi-icon tone-violet"><i class="bi bi-graph-up"></i></span>
         <div>
-            <p>Margin Estimasi</p>
-            <h3>{{ snapshot.gross_margin_amount|rupiah }}</h3>
-            <span class="app-stat-helper">{{ snapshot.gross_margin_percentage|round(2) }}%</span>
+            <span class="kpi-label">Margin Estimasi</span>
+            <div class="kpi-val">{{ snapshot.gross_margin_amount|rupiah }}</div>
+            <span class="text-muted small">{{ snapshot.gross_margin_percentage|round(2) }}%</span>
         </div>
     </div>
 </div>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Ringkasan per Waktu Makan</h5>
+            <h2>Ringkasan per Waktu Makan</h2>
             <p>Biaya HPP dipisahkan antara siang dan sore sesuai porsi order.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -132,9 +155,9 @@
                     </td>
                     <td>
                         {% if line.calculation_status == 'COMPLETE' %}
-                            <span class="status-badge success">Lengkap</span>
+                            <span class="status-badge status-completed">Lengkap</span>
                         {% else %}
-                            <span class="status-badge warning">Peringatan</span>
+                            <span class="status-badge status-progress">Peringatan</span>
                             <div class="muted-small">{{ line.warning_text }}</div>
                         {% endif %}
                     </td>
@@ -143,17 +166,19 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Alokasi HPP per {{ term('sub_client') }} / Lokasi</h5>
+            <h2>Alokasi HPP per {{ term('sub_client') }} / Lokasi</h2>
             <p>Biaya snapshot dialokasikan proporsional per detail order dan waktu makan. Ini disiapkan untuk laporan laba/invoice berikutnya, tanpa mengubah invoice lama.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -195,7 +220,7 @@
                 {% else %}
                 <tr>
                     <td colspan="10">
-                        <div class="empty-state">
+                        <div class="empty-state app-empty-state">
                             <i class="bi bi-diagram-3"></i>
                             <p>Belum ada alokasi HPP per detail order.</p>
                             <span>Snapshot lama sebelum modul alokasi HPP final bisa belum punya alokasi. Buat snapshot baru untuk membekukan alokasi per {{ term('sub_client', lower=True) }}/lokasi.</span>
@@ -206,19 +231,21 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 
 
 {% for line in snapshot.lines %}
-<div class="app-card mt-4">
-    <div class="card-header-clean">
+<section class="panel mt-4">
+    <div class="panel-head">
         <div>
-            <h5>Komponen HPP {{ 'Siang' if line.meal_type == 'LUNCH' else 'Sore' if line.meal_type == 'DINNER' else line.meal_type }}</h5>
+            <h2>Komponen HPP {{ 'Siang' if line.meal_type == 'LUNCH' else 'Sore' if line.meal_type == 'DINNER' else line.meal_type }}</h2>
             <p>Rincian bahan, kemasan, dan overhead yang dibekukan ke snapshot.</p>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="panel-body flush">
+        <div class="table-responsive">
         <table class="table app-table align-middle">
             <thead>
                 <tr>
@@ -250,7 +277,7 @@
                 {% else %}
                 <tr>
                     <td colspan="8">
-                        <div class="empty-state">
+                        <div class="empty-state app-empty-state">
                             <i class="bi bi-info-circle"></i>
                             <p>Belum ada komponen tersimpan untuk line ini.</p>
                         </div>
@@ -260,7 +287,8 @@
             </tbody>
         </table>
     </div>
-</div>
+    </div>
+</section>
 {% endfor %}
 </div>
 {% endblock %}
