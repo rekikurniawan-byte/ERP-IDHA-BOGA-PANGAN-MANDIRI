@@ -417,6 +417,21 @@ def _format_id_date_full(d: date) -> str:
     return f"{_DAYS_ID[d.weekday()]}, {d.day} {_MONTHS_ID[d.month]} {d.year}"
 
 
+
+def _order_form_context():
+    """Data pilihan pop-up Input Order: sama persis dengan halaman create_order."""
+    mandors, locations = get_form_master_data()
+    menus, packaging_profiles, overhead_profiles = get_active_hpp_master_data(current_user.branch_id)
+    return {
+        "form_mandors": mandors,
+        "form_locations": locations,
+        "price_quotes": _price_quotes(mandors),
+        "bank_accounts": _bank_accounts(),
+        "menus": menus,
+        "packaging_profiles": packaging_profiles,
+        "overhead_profiles": overhead_profiles,
+    }
+
 @operational_bp.route("/orders")
 @role_required("ADMIN", "ADMIN_OPERASIONAL")
 def orders():
@@ -600,6 +615,7 @@ def orders():
         pagination=pagination,
         daily_orders=daily_orders,
         filter_bar=filter_bar,
+        **_order_form_context(),
     )
 
 

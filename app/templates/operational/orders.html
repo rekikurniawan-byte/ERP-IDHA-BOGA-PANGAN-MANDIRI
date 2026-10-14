@@ -9,7 +9,7 @@
             <p>{{ today_formatted }}{% if overdue_unlocked_count > 0 %} · <span class="text-danger fw-semibold">{{ overdue_unlocked_count }} order belum dikunci</span>{% endif %}</p>
         </div>
         <div class="dash-head-actions">
-            <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modalCreateOrder" class="btn app-btn-primary">
                 <i class="bi bi-plus-circle"></i> Input Order
             </a>
         </div>
@@ -121,7 +121,7 @@
                         <i class="bi bi-calendar-x fs-3 text-muted mb-2"></i>
                         <h6 class="mb-1">Belum ada order untuk hari ini.</h6>
                         <p class="text-muted small mb-3">Pesanan hari ini belum dibuat atau belum masuk sistem.</p>
-                        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-primary">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalCreateOrder" class="btn app-btn-primary">
                             <i class="bi bi-plus-circle me-1"></i> Input Order Hari Ini
                         </a>
                     </div>
@@ -232,7 +232,7 @@
                         <i class="bi bi-clock-history fs-3 text-muted mb-2"></i>
                         <h6 class="mb-1">Pesanan besok dibuat otomatis jam 18.00 WIB.</h6>
                         <p class="text-muted small mb-3">Sistem penjadwal akan membuat order besok secara otomatis dari kontrak aktif.</p>
-                        <a href="{{ url_for('operational.create_order') }}" class="btn app-btn-secondary btn-sm">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalCreateOrder" class="btn app-btn-secondary btn-sm">
                             <i class="bi bi-plus-circle me-1"></i> Input Manual Lebih Awal
                         </a>
                     </div>
@@ -416,5 +416,38 @@
             {% endif %}
         </div>
     </section>
+</div>
+{# Pop-up Input Order (keputusan owner 2026-10-14). Kirim ke operational.create_order; bila validasi gagal,
+   route membuka halaman penuh dengan pesan kesalahannya. Diletakkan di luar panel supaya bisa diklik. #}
+<div class="modal fade text-start" id="modalCreateOrder" tabindex="-1" aria-labelledby="modalCreateOrderTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('operational.create_order') }}" class="app-form" data-ui-form="true">
+                {% include "components/csrf_token.html" %}
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="kpi-icon tone-blue"><i class="bi bi-plus-circle" aria-hidden="true"></i></span>
+                        <div>
+                            <h5 class="modal-title mb-0" id="modalCreateOrderTitle">Input Order</h5>
+                            <small class="text-muted">Order baru, atau tambah {{ term('sub_client', lower=True) }} ke order tanggal yang masih terbuka</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    {% if not form_mandors or not form_locations %}
+                        <div class="alert alert-warning">Data {{ term('sub_client', lower=True) }} atau lokasi pengiriman belum tersedia.</div>
+                    {% endif %}
+                    {% with daily_order=None, is_after_lock=False, show_hpp_defaults=True, mandors=form_mandors, locations=form_locations, default_order_date=today.isoformat() %}
+                        {% include "operational/_order_form_fields.html" %}
+                    {% endwith %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn app-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn app-btn-primary"><i class="bi bi-check-lg"></i> Simpan Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
