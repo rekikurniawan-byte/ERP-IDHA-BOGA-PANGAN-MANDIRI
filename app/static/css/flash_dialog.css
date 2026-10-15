@@ -1,4 +1,4 @@
-/* Notifikasi Tengah Layar (Flash Dialog) - Antigravity ERP */
+/* Notifikasi Tengah Layar (Flash Dialog) - Antigravity ERP (Selaras UI Modern Biru & Slate) */
 
 body.flash-dialog-open {
     overflow: hidden !important;
@@ -13,16 +13,16 @@ dialog.app-flash-dialog {
     max-width: 440px;
     box-sizing: border-box;
     border: none;
-    border-radius: 20px;
+    border-radius: 16px;
     background: #ffffff;
-    color: #1f2937;
-    padding: 24px 20px 20px 20px;
-    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    color: var(--text, #0f172a);
+    padding: 24px 22px 22px 22px;
+    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
     z-index: 999999;
 }
 
 dialog.app-flash-dialog::backdrop {
-    background: rgba(15, 23, 42, 0.65);
+    background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
@@ -46,32 +46,37 @@ dialog.app-flash-dialog::backdrop {
 }
 
 .app-flash-dialog-icon.is-success {
-    background-color: #e6f4ea;
-    color: #137333;
+    background-color: var(--success-bg, #f0fdf4);
+    color: var(--success-text, #166534);
+    border: 1px solid var(--success-border, #bbf7d0);
 }
 
 .app-flash-dialog-icon.is-danger,
 .app-flash-dialog-icon.is-error {
-    background-color: #fce8e6;
-    color: #c5221f;
+    background-color: var(--danger-bg, #fef2f2);
+    color: var(--danger-text, #b42318);
+    border: 1px solid var(--danger-border, #fecdca);
 }
 
 .app-flash-dialog-icon.is-warning {
-    background-color: #fef7e0;
-    color: #b06000;
+    background-color: var(--warning-bg, #fffbeb);
+    color: var(--warning-text, #92400e);
+    border: 1px solid var(--warning-border, #fde68a);
 }
 
 .app-flash-dialog-icon.is-info {
-    background-color: #e8f0fe;
-    color: #1a73e8;
+    background-color: var(--info-bg, #eff6ff);
+    color: var(--info-text, #1e40af);
+    border: 1px solid var(--info-border, #bfdbfe);
 }
 
 .app-flash-dialog-title {
-    font-size: 18px;
+    font-size: 1.1875rem;
     font-weight: 700;
     line-height: 1.3;
     margin: 0;
-    color: #111827;
+    color: var(--text, #0f172a);
+    letter-spacing: -0.015em;
 }
 
 .app-flash-dialog-body {
@@ -85,38 +90,38 @@ dialog.app-flash-dialog::backdrop {
 }
 
 .app-flash-item {
-    font-size: 15px;
+    font-size: 0.9375rem;
     line-height: 1.45;
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: var(--radius, 8px);
     margin: 0;
     word-break: break-word;
     font-weight: 500;
 }
 
 .app-flash-item.alert-success {
-    background-color: #e6f4ea;
-    color: #137333;
-    border: 1px solid #ceead6;
+    background-color: var(--success-bg, #f0fdf4);
+    color: var(--success-text, #166534);
+    border: 1px solid var(--success-border, #bbf7d0);
 }
 
 .app-flash-item.alert-danger,
 .app-flash-item.alert-error {
-    background-color: #fce8e6;
-    color: #c5221f;
-    border: 1px solid #fad2cf;
+    background-color: var(--danger-bg, #fef2f2);
+    color: var(--danger-text, #b42318);
+    border: 1px solid var(--danger-border, #fecdca);
 }
 
 .app-flash-item.alert-warning {
-    background-color: #fef7e0;
-    color: #b06000;
-    border: 1px solid #feefc3;
+    background-color: var(--warning-bg, #fffbeb);
+    color: var(--warning-text, #92400e);
+    border: 1px solid var(--warning-border, #fde68a);
 }
 
 .app-flash-item.alert-info {
-    background-color: #e8f0fe;
-    color: #1a73e8;
-    border: 1px solid #d2e3fc;
+    background-color: var(--info-bg, #eff6ff);
+    color: var(--info-text, #1e40af);
+    border: 1px solid var(--info-border, #bfdbfe);
 }
 
 .app-flash-dialog-form {
@@ -126,16 +131,17 @@ dialog.app-flash-dialog::backdrop {
 
 .app-flash-dialog-btn {
     width: 100%;
-    height: 48px;
-    min-height: 48px;
-    background-color: #a33900;
+    height: 46px;
+    min-height: 46px;
+    background-color: var(--brand-700, #1d4ed8);
     color: #ffffff;
     border: none;
-    border-radius: 12px;
-    font-size: 15px;
+    border-radius: var(--radius, 8px);
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.28);
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -143,13 +149,14 @@ dialog.app-flash-dialog::backdrop {
 }
 
 .app-flash-dialog-btn:hover {
-    background-color: #8c3000;
+    background-color: var(--brand-800, #1e40af);
+    box-shadow: 0 6px 16px rgba(29, 78, 216, 0.38);
 }
 
 .app-flash-dialog-btn:focus-visible {
-    box-shadow: 0 0 0 3px rgba(163, 57, 0, 0.35);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
 .app-flash-dialog-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.99);
 }
