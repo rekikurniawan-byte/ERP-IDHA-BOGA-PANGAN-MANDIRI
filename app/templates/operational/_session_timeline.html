@@ -41,9 +41,14 @@
                     </div>
                     {% endif %}
 
-                    {# Titik-titik sesi #}
-                    {% for pt in sess.points %}
-                    <div class="ops-timeline-point is-{{ pt.color }}" style="left: {{ pt.pct }}%" title="{{ pt.tooltip }}" data-bs-toggle="tooltip" data-bs-placement="top">
+                    {# Titik-titik sesi: hanya yang punya jam asli. Yang belum dijadwalkan tidak diberi posisi karangan.
+                       Label titik yang berdekatan (< 9% sumbu) dipindah ke atas garis supaya tidak bertumpuk. #}
+                    {% set lane = namespace(down=-100, up=-100, low=-100) %}
+                    {% for pt in sess.points|selectattr('time_display')|sort(attribute='pct') %}
+                    {% if pt.pct - lane.down >= 9 %}{% set place = '' %}{% set lane.down = pt.pct %}
+                    {% elif pt.pct - lane.up >= 9 %}{% set place = ' is-up' %}{% set lane.up = pt.pct %}
+                    {% else %}{% set place = ' is-low' %}{% set lane.low = pt.pct %}{% endif %}
+                    <div class="ops-timeline-point is-{{ pt.color }}{{ place }}" style="left: {{ pt.pct }}%" title="{{ pt.tooltip }}" data-bs-toggle="tooltip" data-bs-placement="top">
                         <span class="ops-timeline-node"></span>
                         <div class="ops-timeline-node-info">
                             <span class="ops-timeline-node-label">{{ pt.label }}</span>
@@ -52,6 +57,8 @@
                     </div>
                     {% endfor %}
                 </div>
+                {% set untimed = sess.points|rejectattr('time_display')|map(attribute='label')|list %}
+                {% if untimed %}<span class="ops-timeline-untimed">Belum dijadwalkan: {{ untimed|join(', ') }}</span>{% endif %}
             </div>
             {% endfor %}
         </div>
