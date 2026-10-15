@@ -2,15 +2,12 @@
 
 Project Flask ERP ini memakai PostgreSQL saja. Tidak ada fallback ke SQLite.
 
-## Panduan Untuk Teman
+## Panduan Instalasi & Menjalankan Project
 
-Kalau mau menjalankan project ini di laptop baru, buka panduan lengkap ini:
+Untuk panduan instalasi lengkap, konfigurasi environment, migrasi, dan restore database dari awal, silakan buka:
 
-```text
-PANDUAN_TEMAN_JALANKAN_PROJECT.md
-```
-
-File itu berisi langkah detail dari install Git, Python, PostgreSQL, clone repo, restore database, sampai menjalankan aplikasi.
+- **[DOKUMENTASI_INSTALASI.md](file:///c:/Users/Acer/Downloads/ERP_PT_IDHA_BOGA_PANGAN_MANDIRI/DOKUMENTASI_INSTALASI.md)** (Panduan Standar Resmi)
+- **[PANDUAN_TEMAN_JALANKAN_PROJECT.md](file:///c:/Users/Acer/Downloads/ERP_PT_IDHA_BOGA_PANGAN_MANDIRI/PANDUAN_TEMAN_JALANKAN_PROJECT.md)** (Panduan Langkah-demi-Langkah Pemula)
 
 ## Panduan Arsitektur & Kamus Sistem (Wajib untuk Developer & AI)
 
