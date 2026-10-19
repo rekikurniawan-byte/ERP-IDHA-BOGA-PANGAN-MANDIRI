@@ -503,3 +503,162 @@ def test_staff_roles_can_access_menu_schedule_and_costing(app):
         # Costing menus page
         resp_cost = test_client.get("/costing/menus")
         assert resp_cost.status_code == 200
+
+
+def test_anonymous_view_menu_photo_permissions(app):
+    """Pengunjung anonim boleh melihat foto menu aktif cabang utama, ditolak bila menu nonaktif."""
+    with app.app_context():
+        env = _setup_test_environment()
+        branch = env["branch"]
+        admin = env["admin"]
+        uid = uuid4().hex[:6]
+
+        active_menu = Menu(
+            branch_id=branch.id,
+            menu_code=f"M_ACT_{uid}",
+            menu_name=f"Menu Aktif Publik {uid}",
+            menu_type="LUNCH",
+            default_selling_price=Decimal("20000.00"),
+            is_active=True,
+        )
+        inactive_menu = Menu(
+            branch_id=branch.id,
+            menu_code=f"M_INACT_{uid}",
+            menu_name=f"Menu Nonaktif Publik {uid}",
+            menu_type="LUNCH",
+            default_selling_price=Decimal("20000.00"),
+            is_active=False,
+        )
+        db.session.add_all([active_menu, inactive_menu])
+        db.session.commit()
+
+        photo1 = _fake_image_file("active.jpg")
+        photo2 = _fake_image_file("inactive.jpg")
+        add_menu_photos(active_menu, [photo1], acted_by=admin.id, commit=True)
+        add_menu_photos(inactive_menu, [photo2], acted_by=admin.id, commit=True)
+
+        active_att = get_menu_photos(active_menu.id)[0]
+        inactive_att = get_menu_photos(inactive_menu.id)[0]
+
+    test_client = app.test_client()
+    # 1. Menu aktif di cabang utama -> boleh (200)
+    resp_active = test_client.get(f"/menu-photos/{active_att.id}")
+    assert resp_active.status_code == 200
+
+    # 2. Menu nonaktif -> ditolak (403)
+    resp_inactive = test_client.get(f"/menu-photos/{inactive_att.id}")
+    assert resp_inactive.status_code == 403
+
+
+def test_arrivals_calculation_three_samples_wib(app):
+    """Test _arrivals: 3 terima siang jam 11.00-11.30 WIB + 3 terima sore 16.00-16.30 WIB -> hasil siang ≈ 11.15, sore ≈ 16.15."""
+    from datetime import datetime
+    from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
+    from app.models.master import Driver
+    from app.models.operational import DailyOrder, DailyOrderDetail
+    from app.services.public_site_service import _arrivals
+
+    with app.app_context():
+        env = _setup_test_environment()
+        branch = env["branch"]
+        admin = env["admin"]
+        today = date(2026, 10, 20)
+        uid = uuid4().hex[:6]
+
+        driver = Driver(branch_id=branch.id, name=f"Driver {uid}", phone="08129999", is_active=True)
+        client_item = Client(name=f"PT Klien {uid}", customer_path="KONTRAK", is_active=True)
+        db.session.add_all([driver, client_item])
+        db.session.flush()
+
+        mandor = Mandor(branch_id=branch.id, client_id=client_item.id, name=f"Mandor {uid}", phone="08128888", is_active=True)
+        db.session.add(mandor)
+        db.session.flush()
+
+        loc = DeliveryLocation(mandor_id=mandor.id, location_name="Pos Proyek", is_active=True)
+        db.session.add(loc)
+        db.session.flush()
+
+        order = DailyOrder(
+            branch_id=branch.id,
+            order_number=f"ORD-ARR-{uid}",
+            order_date=today,
+            status="LOCKED",
+            is_locked=True,
+            locked_at=datetime.utcnow(),
+            created_by=admin.id,
+        )
+        db.session.add(order)
+        db.session.flush()
+
+        order_detail = DailyOrderDetail(
+            daily_order_id=order.id,
+            mandor_id=mandor.id,
+            delivery_location_id=loc.id,
+            price_per_portion=Decimal("25000"),
+            lunch_qty=10,
+            dinner_qty=10,
+            total_qty=20,
+        )
+        db.session.add(order_detail)
+        db.session.flush()
+
+        # 3 siang: jam 11.00, 11.15, 11.30 WIB. (WIB - 7h = UTC 04.00, 04.15, 04.30)
+        # 3 sore: jam 16.00, 16.15, 16.30 WIB. (WIB - 7h = UTC 09.00, 09.15, 09.30)
+        lunch_utc = [datetime(2026, 10, 20, 4, 0), datetime(2026, 10, 20, 4, 15), datetime(2026, 10, 20, 4, 30)]
+        dinner_utc = [datetime(2026, 10, 20, 9, 0), datetime(2026, 10, 20, 9, 15), datetime(2026, 10, 20, 9, 30)]
+
+        for i, utc_time in enumerate(lunch_utc):
+            d = Delivery(
+                branch_id=branch.id,
+                delivery_number=f"DLV-{uid}-L-{i}",
+                delivery_date=today,
+                driver_id=driver.id,
+                created_by=admin.id,
+                notes="delivery_type=LUNCH",
+            )
+            db.session.add(d)
+            db.session.flush()
+            dd = DeliveryDetail(
+                delivery_id=d.id,
+                daily_order_detail_id=order_detail.id,
+                mandor_id=mandor.id,
+                delivery_location_id=loc.id,
+                planned_qty=10,
+                delivered_qty=10,
+            )
+            db.session.add(dd)
+            db.session.flush()
+            rc = DeliveryReceipt(delivery_detail_id=dd.id, receiver_name="Pak Mandor", receive_time=utc_time)
+            db.session.add(rc)
+
+        for i, utc_time in enumerate(dinner_utc):
+            d = Delivery(
+                branch_id=branch.id,
+                delivery_number=f"DLV-{uid}-D-{i}",
+                delivery_date=today,
+                driver_id=driver.id,
+                created_by=admin.id,
+                notes="delivery_type=DINNER",
+            )
+            db.session.add(d)
+            db.session.flush()
+            dd = DeliveryDetail(
+                delivery_id=d.id,
+                daily_order_detail_id=order_detail.id,
+                mandor_id=mandor.id,
+                delivery_location_id=loc.id,
+                planned_qty=10,
+                delivered_qty=10,
+            )
+            db.session.add(dd)
+            db.session.flush()
+            rc = DeliveryReceipt(delivery_detail_id=dd.id, receiver_name="Pak Mandor", receive_time=utc_time)
+            db.session.add(rc)
+
+        db.session.commit()
+
+        arrivals = _arrivals(branch.id, today)
+        assert "LUNCH" in arrivals
+        assert "DINNER" in arrivals
+        assert arrivals["LUNCH"] == "11.15"
+        assert arrivals["DINNER"] == "16.15"

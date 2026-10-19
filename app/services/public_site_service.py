@@ -94,6 +94,8 @@ def _arrivals(branch_id, today):
 
     receive_time disimpan UTC (delivery_service memakai datetime.utcnow)."""
     from app.models.delivery import Delivery, DeliveryDetail, DeliveryReceipt
+    from app.services.delivery_service import get_delivery_type_from_notes
+    from app.utils.clock import to_wib
 
     start = today - timedelta(days=29)
     rows = (
@@ -105,12 +107,13 @@ def _arrivals(branch_id, today):
     )
     minutes = {"LUNCH": [], "DINNER": []}
     for notes, received in rows:
-        kind = "DINNER" if "DINNER" in str(notes or "").upper() else "LUNCH"
-        local = received + timedelta(hours=7)
-        minutes[kind].append(local.hour * 60 + local.minute)
+        kind = get_delivery_type_from_notes(notes)
+        if kind in minutes and received is not None:
+            local = to_wib(received)
+            minutes[kind].append(local.hour * 60 + local.minute)
     result = {}
     for kind, values in minutes.items():
-        if values:
+        if len(values) >= 3:
             average = round(sum(values) / len(values))
             result[kind] = f"{average // 60:02d}.{average % 60:02d}"
     return result
@@ -181,12 +184,56 @@ def whatsapp_link(phone):
     return f"https://wa.me/{digits}"
 
 
+def _menu_week(branch_id, today):
+    from app.services.menu_schedule_service import get_weekly_schedule_matrix
+
+    end_date = today + timedelta(days=6)
+    m1 = get_weekly_schedule_matrix(branch_id, today)
+    all_days = list(m1.get("days") or [])
+    if end_date > m1["end_sunday"]:
+        m2 = get_weekly_schedule_matrix(branch_id, end_date)
+        all_days.extend(m2.get("days") or [])
+
+    week_days = [d for d in all_days if today <= d["date"] <= end_date]
+    week_days.sort(key=lambda x: x["date"])
+
+    has_any = any(
+        (d.get("lunch") and d["lunch"].get("menu")) or (d.get("dinner") and d["dinner"].get("menu"))
+        for d in week_days
+    )
+    if not has_any:
+        return None
+
+    items = []
+    for d in week_days:
+        lunch = d.get("lunch") or {}
+        dinner = d.get("dinner") or {}
+        l_menu = lunch.get("menu")
+        d_menu = dinner.get("menu")
+        l_photo = lunch.get("photo")
+        d_photo = dinner.get("photo")
+
+        items.append({
+            "date": d["date"],
+            "date_str": d.get("date_str") or d["date"].strftime("%Y-%m-%d"),
+            "day_name": d.get("day_name") or d["date"].strftime("%A"),
+            "is_today": d.get("is_today", False),
+            "lunch_name": l_menu.menu_name if l_menu else None,
+            "lunch_photo_id": l_photo.id if l_photo else None,
+            "dinner_name": d_menu.menu_name if d_menu else None,
+            "dinner_photo_id": d_photo.id if d_photo else None,
+            "primary_photo_id": l_photo.id if l_photo else (d_photo.id if d_photo else None),
+            "has_menu": bool(l_menu or d_menu),
+        })
+    return items
+
+
 def landing_context(today=None):
     today = today or today_wib()
     branch = _safe("cabang", _main_branch)
     if not branch:
         return {"performance": None, "arrivals": {}, "locations": None, "pricing": None, "menus": [], "weekly_menus": [],
-                "cutoffs": _safe("batas pesan", _cutoffs) or {}, **_common(None)}
+                "menu_week": None, "cutoffs": _safe("batas pesan", _cutoffs) or {}, **_common(None)}
     return {
         **_common(branch),
         "performance": _safe("kinerja", lambda: _performance(branch.id, today)),
@@ -198,6 +245,7 @@ def landing_context(today=None):
             "menu mingguan",
             lambda: __import__("app.services.menu_schedule_service", fromlist=["get_public_weekly_menu"]).get_public_weekly_menu(branch.id, today),
         ) or [],
+        "menu_week": _safe("menu minggu ini", lambda: _menu_week(branch.id, today)),
         "cutoffs": _safe("batas pesan", _cutoffs) or {},
     }
 

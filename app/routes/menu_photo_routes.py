@@ -26,7 +26,9 @@ def can_view_menu_photo(user, menu: Menu) -> bool:
         return False
 
     if not user or not getattr(user, "is_authenticated", False):
-        return bool(menu.is_active)
+        from app.services.public_site_service import main_branch_id
+
+        return bool(menu.is_active) and menu.branch_id == main_branch_id()
 
     role = effective_role(getattr(user, "role", None))
     if role in ("OWNER", "ADMIN"):
