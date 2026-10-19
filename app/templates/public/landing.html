@@ -16,25 +16,42 @@
         <section class="pub-hero">
             <div class="pub-wrap pub-hero-grid">
                 <div class="pub-hero-copy" data-reveal>
-                    <h1>Masakan rumahan, diantar <em>sebelum jam makan.</em></h1>
+                    <div class="pub-kicker-badge"><i class="bi bi-shield-fill-check"></i> Spesialis Katering Industri &amp; Pekerja Proyek</div>
+                    <h1>Porsi mantap pekerja proyek, <em>diantar tepat waktu ke lokasi.</em></h1>
                     <p class="pub-lead">
-                        Katering harian untuk pekerja proyek, kantor, acara, dan keluarga. Pesan berapa pun porsinya
-                        dari HP, tandai titik lokasi di peta, lalu pantau sampai makanan diterima.
-                        Perusahaan juga bisa berlangganan dengan kontrak dan tagihan bulanan.
+                        Katering harian kapasitas ribuan porsi untuk pekerja proyek konstruksi, pabrik, perkebunan, dan mess kontraktor di area Sungai Baung dan sekitarnya. Porsi padat energi, kemasan higienis tahan medan, dan alur kontrak B2B transparan.
                     </p>
                     <div class="pub-hero-actions">
+                        <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('public.partnership') }}">
+                            <i class="bi bi-briefcase-fill" aria-hidden="true"></i> Kerja sama untuk proyek
+                        </a>
+                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ url_for('public.partnership_apply') }}">
+                            Ajukan kerja sama <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
                         {% if site.portal_enabled %}
-                            <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">
-                                Pesan sekarang <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            <a class="pub-btn pub-btn-ghost pub-btn-light-ghost pub-btn-lg" href="{{ url_for('portal.register') }}">
+                                Pesan perorangan
                             </a>
                         {% endif %}
-                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ url_for('public.partnership') }}">
-                            Kerja sama untuk proyek
-                        </a>
                     </div>
                 </div>
 
                 <div class="pub-hero-side" data-reveal>
+                    <div class="pub-hero-food-card">
+                        <div class="pub-hero-food-media">
+                            <img src="{{ url_for('static', filename='img/catering_proyek_hero.jpg') }}" alt="Porsi Mantap Katering Pekerja Proyek PT Idha Boga Pangan Mandiri" loading="eager">
+                            <div class="pub-food-badge-top"><i class="bi bi-award-fill"></i> Porsi Mantap Pekerja Proyek</div>
+                            <div class="pub-food-tags-bottom">
+                                <span><i class="bi bi-fire"></i> Lauk Protein Padat Energi</span>
+                                <span><i class="bi bi-box-seam-fill"></i> Wadah Higienis Tahan Debu</span>
+                            </div>
+                        </div>
+                        <div class="pub-hero-food-caption">
+                            <strong>Standar Dapur Katering Industri</strong>
+                            <span>Dimasak segar subuh, nasi porsi kenyang, lauk gurih melimpah, dan sayur stamina bersegel rapi.</span>
+                        </div>
+                    </div>
+
                     {% include "components/public_board.html" %}
                     {% if perf %}
                         {% set spark_spec = {
@@ -74,6 +91,37 @@
                         {% if distance %}<li><strong>{{ distance.per_km|rupiah }}/km</strong>ongkir di bawah itu, minimal {{ distance.minimum|rupiah }}</li>{% endif %}
                     {% endif %}
                 </ul>
+
+                <div class="pub-trust-strip" aria-label="Keunggulan katering proyek kami">
+                    <div class="pub-trust-item">
+                        <div class="pub-trust-icon"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i></div>
+                        <div class="pub-trust-text">
+                            <strong>Kapasitas Ribuan Porsi</strong>
+                            <p>Dapur skala industri siap memasak massal untuk proyek besar dan pergantian shift pabrik.</p>
+                        </div>
+                    </div>
+                    <div class="pub-trust-item">
+                        <div class="pub-trust-icon"><i class="bi bi-alarm-fill" aria-hidden="true"></i></div>
+                        <div class="pub-trust-text">
+                            <strong>Tiba Sebelum Istirahat</strong>
+                            <p>Target jam tiba ketat: Makan siang &lt; 11.30 WIB &amp; makan sore &lt; 16.30 WIB tanpa meleset.</p>
+                        </div>
+                    </div>
+                    <div class="pub-trust-item">
+                        <div class="pub-trust-icon"><i class="bi bi-truck" aria-hidden="true"></i></div>
+                        <div class="pub-trust-text">
+                            <strong>Armada Siap Medan Proyek</strong>
+                            <p>Diantar dengan insulated food warmer ke titik pos, mess, basecamp, hingga dermaga.</p>
+                        </div>
+                    </div>
+                    <div class="pub-trust-item">
+                        <div class="pub-trust-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></div>
+                        <div class="pub-trust-text">
+                            <strong>Higienis &amp; Bebas Basi</strong>
+                            <p>Wadah sekat food-grade tertutup rapat, tahan debu proyek, dan standar sanitasi ketat.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -113,6 +161,115 @@
                                 {% if pricing and pricing.price %}<a class="pub-btn pub-btn-ghost" href="#biaya">Hitung biayanya</a>{% endif %}
                             </div>
                         {% endif %}
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="pub-section" id="pengiriman-lapangan">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Logistik &amp; Pengiriman Tepat Waktu di Site Proyek</h2>
+                    <p>Makanan panas tiba di pos dan mess tepat sebelum jam istirahat buruh. Sistem mencatat jam tiba, GPS, dan tanda terima digital di lapangan.</p>
+                </div>
+                <div class="pub-site-showcase" data-reveal>
+                    <div class="pub-site-media">
+                        <img src="{{ url_for('static', filename='img/catering_logistik_proyek.jpg') }}" alt="Pengiriman Katering di Mess dan Pos Lapangan Proyek" loading="lazy">
+                        <div class="pub-site-media-badge">
+                            <i class="bi bi-geo-alt-fill text-warning"></i> <strong>Pengantaran Langsung ke Pos &amp; Mess:</strong> Armada katering PT Idha Boga mengantarkan makanan menggunakan wadah stainless steel food warmer bersuhu terjaga.
+                        </div>
+                    </div>
+                    <div class="pub-site-points">
+                        <div class="pub-site-point">
+                            <div class="pub-site-point-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                            <div class="pub-site-point-text">
+                                <h3>Kontrak Transparan &amp; Invoice Akurat</h3>
+                                <p>Harga per porsi dikunci dalam kontrak B2B. Invoice bulanan hanya menagih porsi yang benar-benar diterima di lapangan tanpa perdebatan selisih.</p>
+                            </div>
+                        </div>
+                        <div class="pub-site-point">
+                            <div class="pub-site-point-icon"><i class="bi bi-phone-fill"></i></div>
+                            <div class="pub-site-point-text">
+                                <h3>Fleksibilitas Portal Mandor</h3>
+                                <p>Mandor atau pengawas lapangan dapat menyesuaikan jumlah porsi harian langsung dari HP mengikuti absensi pekerja dan shift lembur.</p>
+                            </div>
+                        </div>
+                        <div class="pub-site-point">
+                            <div class="pub-site-point-icon"><i class="bi bi-shop"></i></div>
+                            <div class="pub-site-point-text">
+                                <h3>Terintegrasi Warung &amp; Kantin Mess</h3>
+                                <p>Selain katering makan siang/sore, kami juga mengelola fasilitas warung mess untuk sembako dan logistik harian pekerja dengan sistem kasbon tertib.</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <a class="pub-btn pub-btn-primary" href="{{ url_for('public.partnership') }}">
+                                <i class="bi bi-arrow-right-circle-fill"></i> Pelajari Seluruh Alur Kerja Sama
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pub-section pub-section-alt" id="menu-proyek">
+            <div class="pub-wrap">
+                <div class="pub-section-head">
+                    <h2>Standar Menu Pekerja Lapangan: Padat Energi &amp; Bergizi</h2>
+                    <p>Porsi mantap mengenyangkan dengan kalori seimbang untuk menjaga produktivitas tenaga kerja fisik. Siklus menu bergilir 30 hari agar pekerja tidak jenuh.</p>
+                </div>
+                <div class="pub-project-menus" data-reveal>
+                    <article class="pub-project-menu-card">
+                        <div>
+                            <div class="pub-project-menu-tag"><i class="bi bi-stars"></i> Menu Favorit Proyek</div>
+                            <h3>Paket Ayam Goreng Rempah</h3>
+                            <ul class="pub-project-menu-items">
+                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Ayam Goreng Lengkuas / Bakar Madu</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Telur Bulat Balado Merah</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Tempe Bacem / Tahu Goreng Gurih</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Sayur Asem Segar / Labu Siam</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Sambal Terasi Ulek &amp; Pisang Segar</li>
+                            </ul>
+                        </div>
+                        <div class="pub-project-menu-meta">
+                            <span>Kaya karbohidrat kompleks &amp; protein hewani tinggi</span>
+                        </div>
+                    </article>
+
+                    <article class="pub-project-menu-card">
+                        <div>
+                            <div class="pub-project-menu-tag"><i class="bi bi-fire"></i> Menu Stamina Lembur</div>
+                            <h3>Paket Rendang Daging Sapi</h3>
+                            <ul class="pub-project-menu-items">
+                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Rendang Daging Sapi Empuk Gurih</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Perkedel Kentang Bumbu Daun Bawang</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Gulai Daun Singkong Gurih Santan</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Sambal Ijo Khas Nusantara</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Kerupuk Gurih &amp; Semangka Manis</li>
+                            </ul>
+                        </div>
+                        <div class="pub-project-menu-meta">
+                            <span>Asupan zat besi &amp; stamina untuk tugas berat</span>
+                        </div>
+                    </article>
+
+                    <article class="pub-project-menu-card">
+                        <div>
+                            <div class="pub-project-menu-tag"><i class="bi bi-shield-fill"></i> Menu Segar Sehat</div>
+                            <h3>Paket Ikan Tongkol Balado</h3>
+                            <ul class="pub-project-menu-items">
+                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Ikan Tongkol / Nila Balado Pedas</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Telur Dadar Tebal Daun Bawang</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Tumis Buncis Jagung Manis</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Sambal Bawang Segar</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Kerupuk Gurih &amp; Buah Jeruk</li>
+                            </ul>
+                        </div>
+                        <div class="pub-project-menu-meta">
+                            <span>Omega 3 &amp; serat vitamin penangkal dehidrasi</span>
+                        </div>
                     </article>
                 </div>
             </div>
