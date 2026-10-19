@@ -101,16 +101,16 @@ def _contrast_with_white(hex_code):
 
 
 def test_primary_colors_pass_contrast_with_white_text():
-    """Tombol utama bertulisan putih: oranye (portal/publik) dan biru (desktop internal) >= 4.5:1."""
+    """Tombol utama bertulisan putih >= 4.5:1. Sejak 2026-10-19 semua halaman biru (keputusan owner)."""
     tokens = _read("app/static/css/app/tokens.css")
     components = _read("app/static/css/app/components.css")
     primary_block = components.split(".app-btn-primary {", 1)[1].split("}", 1)[0]
     assert "--bs-btn-bg: var(--brand-700);" in primary_block
 
     root_block, internal_block = tokens.split("body.shell-internal {", 1)
-    orange = re.search(r"--brand-700: (#[0-9a-f]{6});", root_block).group(1)
-    assert orange == "#c2410c"
-    assert _contrast_with_white(orange) >= 4.5
+    for shade in ("600", "700"):
+        root_color = re.search(rf"--brand-{shade}: (#[0-9a-f]{{6}});", root_block).group(1)
+        assert _contrast_with_white(root_color) >= 4.5, f"root brand-{shade} {root_color}"
 
     # Desktop internal: tombol utama (700) dan menu aktif sidebar (600) bertulisan putih.
     for shade in ("600", "700"):
