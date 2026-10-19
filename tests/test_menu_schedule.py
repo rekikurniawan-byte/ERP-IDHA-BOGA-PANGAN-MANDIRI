@@ -513,8 +513,13 @@ def test_anonymous_view_menu_photo_permissions(app):
         admin = env["admin"]
         uid = uuid4().hex[:6]
 
+        from app.services.public_site_service import main_branch_id
+
+        mb_id = main_branch_id()
+        target_branch_id = mb_id if mb_id is not None else branch.id
+
         active_menu = Menu(
-            branch_id=branch.id,
+            branch_id=target_branch_id,
             menu_code=f"M_ACT_{uid}",
             menu_name=f"Menu Aktif Publik {uid}",
             menu_type="LUNCH",
@@ -522,7 +527,7 @@ def test_anonymous_view_menu_photo_permissions(app):
             is_active=True,
         )
         inactive_menu = Menu(
-            branch_id=branch.id,
+            branch_id=target_branch_id,
             menu_code=f"M_INACT_{uid}",
             menu_name=f"Menu Nonaktif Publik {uid}",
             menu_type="LUNCH",

@@ -4,24 +4,28 @@
 <footer class="pub-contact" id="kontak">
     <div class="pub-wrap">
         <div class="pub-contact-grid">
+            {# Halaman yang sudah berisi form/kontak sendiri (Ajukan kerja sama) menyetel hide_footer_cta. #}
+            {% if not hide_footer_cta %}
             <div>
                 <h2>Butuh katering untuk proyek, kantor, atau acara?</h2>
                 <p>Ceritakan lokasi, jumlah orang, dan jadwal makannya. Kami bantu hitung porsi, ongkir, dan jadwal kirim yang pas.</p>
                 <div class="pub-hero-actions">
                     {% if site.whatsapp_url %}
-                        <a class="pub-btn pub-btn-light pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">
-                            <i class="bi bi-whatsapp" aria-hidden="true"></i> Chat WhatsApp
+                        <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">
+                            <i class="bi bi-whatsapp" aria-hidden="true"></i> Hubungi via WhatsApp
                         </a>
-                    {% endif %}
-                    {% if request.endpoint != "public.partnership_apply" %}
-                        <a class="pub-btn pub-btn-outline pub-btn-lg" href="{{ url_for('public.partnership_apply') }}">Ajukan kerja sama proyek</a>
+                    {% else %}
+                        <a class="pub-btn pub-btn-primary pub-btn-lg" href="mailto:{{ site.email }}">
+                            <i class="bi bi-envelope-fill" aria-hidden="true"></i> Hubungi via Email
+                        </a>
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
             <dl>
                 <div><dt>Perusahaan</dt><dd>{{ company_name }}</dd></div>
                 {% if company.company_address %}<div><dt>Alamat</dt><dd>{{ company.company_address }}</dd></div>{% endif %}
-                {% if site.whatsapp_url %}<div><dt>Telepon / WhatsApp</dt><dd><a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">{{ company.company_phone }}</a></dd></div>{% endif %}
+                {% if site.whatsapp_url and company.company_phone %}<div><dt>Telepon / WhatsApp</dt><dd><a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">{{ company.company_phone }}</a></dd></div>{% endif %}
                 <div><dt>Email</dt><dd><a href="mailto:{{ site.email }}">{{ site.email }}</a></dd></div>
             </dl>
         </div>

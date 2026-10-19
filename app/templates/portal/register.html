@@ -6,8 +6,6 @@
 {% set form = data.form %}
 {% set company = global_company_settings %}
 {% set company_name = company.company_name or "PT Idha Boga Pangan Mandiri" %}
-{% set pricing = site.pricing if site else none %}
-{% set cutoffs = site.cutoffs if site else {} %}
 <div class="pub pub-auth pub-auth-wide" data-public-page="register">
     <aside class="pub-auth-side">
         <a class="pub-brand" href="{{ url_for('dashboard.index') }}">
@@ -20,18 +18,16 @@
             </span>
         </a>
 
+        <div class="pub-auth-picture-wrap" aria-hidden="true">
+            <picture class="pub-auth-picture">
+                <source media="(max-width: 768px)" srcset="{{ url_for('static', filename='img/public/panel-masuk-800.webp') }}">
+                <img src="{{ url_for('static', filename='img/public/panel-masuk-1600.webp') }}" width="1600" height="900" alt="" loading="lazy">
+            </picture>
+        </div>
+
         <div class="pub-auth-side-body">
-            <h1>Pesan katering untuk acara, kantor, atau rumah.</h1>
-            <ul class="pub-auth-list">
-                <li><strong>Bayar di muka</strong><span>Transfer lalu unggah bukti; pesanan diproses setelah pembayaran diperiksa.</span></li>
-                {% if cutoffs.LUNCH %}
-                    <li><strong>Batas pesan</strong><span>Makan siang sampai pukul {{ cutoffs.LUNCH }}{% if cutoffs.DINNER %}, makan sore sampai {{ cutoffs.DINNER }}{% endif %} di hari yang sama.</span></li>
-                {% endif %}
-                {% if pricing %}
-                    {% include "components/public_fee_rule.html" %}
-                {% endif %}
-                <li><strong>Untuk perusahaan &amp; proyek</strong><span>Butuh kiriman rutin dengan kontrak dan tagihan bulanan? <a href="{{ url_for('public.partnership') }}">Ajukan kerja sama</a>.</span></li>
-            </ul>
+            <h1>Pendaftaran pelanggan</h1>
+            <p>Akun mandiri untuk memesan makanan, menandai titik antar, dan melacak kiriman.</p>
         </div>
 
         <p class="pub-auth-help">Sudah punya akun? <a href="{{ data.login_url }}">Masuk di sini</a>.</p>
@@ -41,7 +37,7 @@
         {% include "components/public_flashes.html" %}
         <div class="pub-auth-card">
             <h2>Daftar pelanggan</h2>
-            <p>Buat akun untuk memesan katering dan mengirim bukti pembayaran.</p>
+            <p>Lengkapi data akun dan lokasi pengiriman Anda.</p>
 
             <form method="post" action="{{ url_for('portal.register') }}" class="app-form" data-ui-form="true" enctype="multipart/form-data">
                 {% include "components/csrf_token.html" %}
@@ -50,24 +46,24 @@
                     <h3>Data akun</h3>
                     <div class="pub-form-grid">
                         <label>
-                            <span>Nama lengkap</span>
+                            <span>Nama lengkap <span class="text-danger">*</span></span>
                             <input class="form-control" type="text" name="full_name" value="{{ form.get('full_name', '') }}" autocomplete="name" required>
                         </label>
                         <label>
-                            <span>Nomor HP</span>
+                            <span>Nomor HP <span class="text-danger">*</span></span>
                             <input class="form-control" type="tel" name="phone" value="{{ form.get('phone', '') }}" autocomplete="tel" placeholder="08..." required>
                         </label>
                         <label>
-                            <span>Email</span>
+                            <span>Email <span class="text-danger">*</span></span>
                             <input class="form-control" type="email" name="email" value="{{ form.get('email', '') }}" autocomplete="email" required>
-                            <small class="form-text text-muted">Dipakai untuk reset password dan kirim tagihan</small>
+                            <small class="form-text text-muted">Dipakai untuk reset sandi dan pemberitahuan</small>
                         </label>
                         <label>
-                            <span>Nama pengguna</span>
+                            <span>Nama pengguna <span class="text-danger">*</span></span>
                             <input class="form-control" type="text" name="username" value="{{ form.get('username', '') }}" autocomplete="username" autocapitalize="none" spellcheck="false" required>
                         </label>
                         <label>
-                            <span>Cabang</span>
+                            <span>Cabang <span class="text-danger">*</span></span>
                             <select class="form-select" name="branch_id" required>
                                 {% for branch in data.branches %}
                                     <option value="{{ branch.id }}" {% if form.get('branch_id')|string == branch.id|string %}selected{% endif %}>{{ branch.name }}</option>
@@ -75,28 +71,28 @@
                             </select>
                         </label>
                         <label>
-                            <span>Kata sandi</span>
+                            <span>Kata sandi <span class="text-danger">*</span></span>
                             <input class="form-control" type="password" name="password" autocomplete="new-password" minlength="8" required>
                         </label>
                         <label>
-                            <span>Ulangi kata sandi</span>
+                            <span>Ulangi kata sandi <span class="text-danger">*</span></span>
                             <input class="form-control" type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required>
                         </label>
                     </div>
                 </section>
 
                 <section class="pub-form-section">
-                    <h3>Alamat pengiriman</h3>
+                    <h3>Lokasi pengiriman</h3>
                     <div class="pub-form-grid">
-                        <label>
+                        <label class="is-wide">
                             <span>Nama lokasi</span>
-                            <input class="form-control" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, atau tempat acara">
+                            <input class="form-control" type="text" name="location_name" value="{{ form.get('location_name', '') }}" placeholder="Rumah, kantor, pos, atau basecamp">
                         </label>
                         <div class="is-wide">
-                            {{ location_picker(lat=form.get('latitude') or none, lng=form.get('longitude') or none, accuracy=form.get('gps_accuracy') or none, geo=site.geo if site else none, label="Titik lokasi pengiriman", required=not data.zones, help="Tekan tombol GPS saat Anda di lokasi, atau ketuk peta lalu geser penanda ke titik yang tepat. Titik ini dipakai pengantar dan untuk menghitung ongkir.") }}
+                            {{ location_picker(lat=form.get('latitude') or none, lng=form.get('longitude') or none, accuracy=form.get('gps_accuracy') or none, geo=site.geo if site else none, label="Titik lokasi pengiriman", required=not data.zones, help="Tandai titik lokasi pengantaran di peta untuk akurasi pengiriman dan perhitungan ongkir.") }}
                         </div>
                         <div class="is-wide">
-                            {{ photo_input(required=true, label="Foto lokasi antar", help="Foto titik serah terima: pagar, pintu, atau pos. Wajib 1, boleh sampai 3 foto.") }}
+                            {{ photo_input(required=true, label="Foto lokasi antar", help="Foto titik serah terima: pagar, pintu, atau pos. Wajib 1, maksimal 3 foto.") }}
                         </div>
                         {% if data.zones %}
                             <label class="is-wide">
@@ -110,7 +106,7 @@
                             </label>
                         {% endif %}
                         <label class="is-wide">
-                            <span>Alamat lengkap</span>
+                            <span>Alamat lengkap <span class="text-danger">*</span></span>
                             <textarea class="form-control" name="address" rows="3" required data-no-textarea-footer>{{ form.get('address', '') }}</textarea>
                         </label>
                         <label class="is-wide">
@@ -120,7 +116,7 @@
                     </div>
                 </section>
 
-                <button class="pub-btn pub-btn-primary pub-btn-lg" type="submit" data-submit-loading="Membuat akun...">
+                <button class="pub-btn pub-btn-primary pub-btn-lg w-100" type="submit" data-submit-loading="Membuat akun...">
                     Buat akun pelanggan <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </button>
             </form>

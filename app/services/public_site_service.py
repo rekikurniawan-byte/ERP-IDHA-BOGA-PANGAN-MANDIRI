@@ -198,7 +198,8 @@ def _menu_week(branch_id, today):
     week_days.sort(key=lambda x: x["date"])
 
     has_any = any(
-        (d.get("lunch") and d["lunch"].get("menu")) or (d.get("dinner") and d["dinner"].get("menu"))
+        (d.get("lunch") and d["lunch"].get("menu") and d["lunch"]["menu"].is_active) or
+        (d.get("dinner") and d["dinner"].get("menu") and d["dinner"]["menu"].is_active)
         for d in week_days
     )
     if not has_any:
@@ -208,10 +209,12 @@ def _menu_week(branch_id, today):
     for d in week_days:
         lunch = d.get("lunch") or {}
         dinner = d.get("dinner") or {}
-        l_menu = lunch.get("menu")
-        d_menu = dinner.get("menu")
-        l_photo = lunch.get("photo")
-        d_photo = dinner.get("photo")
+        l_raw = lunch.get("menu")
+        d_raw = dinner.get("menu")
+        l_menu = l_raw if (l_raw and getattr(l_raw, "is_active", False)) else None
+        d_menu = d_raw if (d_raw and getattr(d_raw, "is_active", False)) else None
+        l_photo = lunch.get("photo") if l_menu else None
+        d_photo = dinner.get("photo") if d_menu else None
 
         items.append({
             "date": d["date"],

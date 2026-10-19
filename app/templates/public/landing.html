@@ -13,123 +13,68 @@
     {% include "components/public_flashes.html" %}
 
     <main id="mainContent">
+        {# Bagian 1: Atas / Hero #}
         <section class="pub-hero">
-            <div class="pub-wrap pub-hero-grid">
+            <picture class="pub-hero-bg" aria-hidden="true">
+                <source media="(max-width: 768px)" srcset="{{ url_for('static', filename='img/public/hero-dapur-800.webp') }}">
+                <img src="{{ url_for('static', filename='img/public/hero-dapur-1600.webp') }}" width="1600" height="900" alt="" fetchpriority="high">
+            </picture>
+            <div class="pub-hero-overlay" aria-hidden="true"></div>
+            <div class="pub-wrap pub-hero-container">
                 <div class="pub-hero-copy" data-reveal>
-                    <div class="pub-kicker-badge"><i class="bi bi-shield-fill-check"></i> Spesialis Katering Industri &amp; Pekerja Proyek</div>
                     <h1>Porsi mantap pekerja proyek, <em>diantar tepat waktu ke lokasi.</em></h1>
                     <p class="pub-lead">
-                        Katering harian kapasitas ribuan porsi untuk pekerja proyek konstruksi, pabrik, perkebunan, dan mess kontraktor di area Sungai Baung dan sekitarnya. Porsi padat energi, kemasan higienis tahan medan, dan alur kontrak B2B transparan.
+                        Katering harian untuk pekerja proyek, pabrik, perkebunan, dan mess kontraktor dengan porsi padat energi serta alur pemesanan tertib.
                     </p>
                     <div class="pub-hero-actions">
-                        <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('public.partnership') }}">
-                            <i class="bi bi-briefcase-fill" aria-hidden="true"></i> Kerja sama untuk proyek
-                        </a>
-                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ url_for('public.partnership_apply') }}">
-                            Ajukan kerja sama <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                        </a>
                         {% if site.portal_enabled %}
-                            <a class="pub-btn pub-btn-ghost pub-btn-light-ghost pub-btn-lg" href="{{ url_for('portal.register') }}">
+                            <a class="pub-btn pub-btn-primary pub-btn-lg" href="{{ url_for('portal.register') }}">
                                 Pesan perorangan
                             </a>
                         {% endif %}
-                    </div>
-                </div>
-
-                <div class="pub-hero-side" data-reveal>
-                    <div class="pub-hero-food-card">
-                        <div class="pub-hero-food-media">
-                            <img src="{{ url_for('static', filename='img/catering_proyek_hero.jpg') }}" alt="Porsi Mantap Katering Pekerja Proyek PT Idha Boga Pangan Mandiri" loading="eager">
-                            <div class="pub-food-badge-top"><i class="bi bi-award-fill"></i> Porsi Mantap Pekerja Proyek</div>
-                            <div class="pub-food-tags-bottom">
-                                <span><i class="bi bi-fire"></i> Lauk Protein Padat Energi</span>
-                                <span><i class="bi bi-box-seam-fill"></i> Wadah Higienis Tahan Debu</span>
-                            </div>
-                        </div>
-                        <div class="pub-hero-food-caption">
-                            <strong>Standar Dapur Katering Industri</strong>
-                            <span>Dimasak segar subuh, nasi porsi kenyang, lauk gurih melimpah, dan sayur stamina bersegel rapi.</span>
-                        </div>
-                    </div>
-
-                    {% include "components/public_board.html" %}
-                    {% if perf %}
-                        {% set spark_spec = {
-                            "kind": "spark", "format": "count", "height": 84, "unit": "porsi",
-                            "categories": perf.series|map(attribute="label")|list,
-                            "series": [{"name": "Porsi terkirim", "color": "brand-500", "data": perf.series|map(attribute="qty")|list}],
-                        } %}
-                        <div class="pub-pulse" aria-labelledby="pubStatsTitle">
-                            <div class="pub-pulse-head">
-                                <h2 id="pubStatsTitle">30 hari terakhir</h2>
-                                <span>dari catatan pengiriman</span>
-                            </div>
-                            <dl class="pub-pulse-grid">
-                                <div><dt>porsi terkirim</dt><dd data-count="{{ perf.delivered_qty }}">{{ "{:,}".format(perf.delivered_qty)|replace(",", ".") }}</dd></div>
-                                {% if perf.on_time_rate is not none %}
-                                    <div><dt>tiba tepat waktu</dt><dd>{{ perf.on_time_rate|string|replace(".", ",") }}%</dd></div>
-                                {% endif %}
-                                {% if site.locations %}
-                                    <div><dt>lokasi dilayani</dt><dd data-count="{{ site.locations }}">{{ site.locations }}</dd></div>
-                                {% endif %}
-                            </dl>
-                            <div class="app-chart pub-spark" data-apex-chart role="img" aria-label="Porsi terkirim per hari selama 30 hari terakhir">
-                                <script type="application/json">{{ spark_spec|tojson }}</script>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="pub-wrap">
-                <ul class="pub-facts" aria-label="Aturan pemesanan">
-                    {% if cutoffs.LUNCH %}<li><strong>{{ cutoffs.LUNCH }}</strong>batas pesan makan siang</li>{% endif %}
-                    {% if cutoffs.DINNER %}<li><strong>{{ cutoffs.DINNER }}</strong>batas pesan makan sore</li>{% endif %}
-                    {% if pricing %}
-                        <li><strong>{{ "Tanpa minimal" if (pricing.min_portions or 1) <= 1 else pricing.min_portions ~ " porsi" }}</strong>{{ "pesan mulai 1 porsi" if (pricing.min_portions or 1) <= 1 else "minimal per pesanan" }}</li>
-                        {% if pricing.free_delivery_min %}<li><strong>Gratis ongkir</strong>mulai {{ pricing.free_delivery_min }} porsi per kiriman</li>{% endif %}
-                        {% if distance %}<li><strong>{{ distance.per_km|rupiah }}/km</strong>ongkir di bawah itu, minimal {{ distance.minimum|rupiah }}</li>{% endif %}
-                    {% endif %}
-                </ul>
-
-                <div class="pub-trust-strip" aria-label="Keunggulan katering proyek kami">
-                    <div class="pub-trust-item">
-                        <div class="pub-trust-icon"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i></div>
-                        <div class="pub-trust-text">
-                            <strong>Kapasitas Ribuan Porsi</strong>
-                            <p>Dapur skala industri siap memasak massal untuk proyek besar dan pergantian shift pabrik.</p>
-                        </div>
-                    </div>
-                    <div class="pub-trust-item">
-                        <div class="pub-trust-icon"><i class="bi bi-alarm-fill" aria-hidden="true"></i></div>
-                        <div class="pub-trust-text">
-                            <strong>Tiba Sebelum Istirahat</strong>
-                            <p>Target jam tiba ketat: Makan siang &lt; 11.30 WIB &amp; makan sore &lt; 16.30 WIB tanpa meleset.</p>
-                        </div>
-                    </div>
-                    <div class="pub-trust-item">
-                        <div class="pub-trust-icon"><i class="bi bi-truck" aria-hidden="true"></i></div>
-                        <div class="pub-trust-text">
-                            <strong>Armada Siap Medan Proyek</strong>
-                            <p>Diantar dengan insulated food warmer ke titik pos, mess, basecamp, hingga dermaga.</p>
-                        </div>
-                    </div>
-                    <div class="pub-trust-item">
-                        <div class="pub-trust-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></div>
-                        <div class="pub-trust-text">
-                            <strong>Higienis &amp; Bebas Basi</strong>
-                            <p>Wadah sekat food-grade tertutup rapat, tahan debu proyek, dan standar sanitasi ketat.</p>
-                        </div>
+                        <a class="pub-btn pub-btn-outline-light pub-btn-lg" href="{{ url_for('public.partnership') }}">
+                            Kerja sama proyek
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
+        {# Bagian 2: Papan hari ini + strip 3 angka #}
+        <section class="pub-section pub-section-today" id="papan-hari-ini">
+            <div class="pub-wrap pub-today-grid">
+                <div class="pub-today-board" data-reveal>
+                    {% include "components/public_board.html" %}
+                </div>
+                <div class="pub-today-stats" data-reveal>
+                    <div class="pub-section-head">
+                        <h2>Operasional hari ini</h2>
+                        <p>Catatan pengiriman ke lokasi, 30 hari terakhir.</p>
+                    </div>
+                    <dl class="pub-stats-strip">
+                        {% if perf and perf.delivered_qty is not none %}
+                            <div>
+                                <dt>Porsi terkirim (30 hari)</dt>
+                                <dd data-count="{{ perf.delivered_qty }}">{{ "{:,}".format(perf.delivered_qty)|replace(",", ".") }} porsi</dd>
+                            </div>
+                        {% endif %}
+                        {% if perf and perf.on_time_rate is not none %}
+                            <div>
+                                <dt>Tiba tepat waktu</dt>
+                                <dd>{{ perf.on_time_rate|string|replace(".", ",") }}%</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        {# Bagian 3: Dua cara pesan #}
         <section class="pub-section pub-section-alt" id="layanan">
             <div class="pub-wrap">
                 <div class="pub-section-head">
                     <h2>Pilih cara pesan yang cocok</h2>
-                    <p>Butuh makan rutin untuk banyak pekerja? Pakai kontrak dengan tagihan berkala. Untuk acara, kantor kecil, atau di rumah, pesan sendiri dan bayar di muka.</p>
+                    <p>Kontrak rutin untuk perusahaan dengan tagihan berkala, atau pesan sendiri dari HP dengan bayar di muka.</p>
                 </div>
                 <div class="pub-tracks">
                     <article class="pub-track pub-track-dark" data-reveal data-index="01">
@@ -142,8 +87,7 @@
                             <li>Kantor pusat memantau pesanan, tagihan, pembayaran, dan masa kontrak dari satu akun.</li>
                         </ul>
                         <div class="pub-track-actions">
-                            <a class="pub-btn pub-btn-light" href="{{ url_for('public.partnership') }}">Lihat alur lengkapnya</a>
-                            <a class="pub-btn pub-btn-outline-light" href="{{ url_for('public.partnership_apply') }}">Ajukan kerja sama</a>
+                            <a class="pub-btn pub-btn-primary" href="{{ url_for('public.partnership') }}">Kerja sama proyek</a>
                         </div>
                     </article>
                     <article class="pub-track" data-reveal data-index="02">
@@ -152,156 +96,75 @@
                         <ul>
                             <li>Daftar sekali, tandai titik lokasi Anda di peta, lalu pesan kapan saja.</li>
                             {% if pricing %}<li>{{ fee_sentence(pricing) }}</li>{% endif %}
-                            <li><strong>Bayar di muka</strong> lewat transfer lalu unggah bukti; pesanan diproses setelah pembayaran dicek.</li>
-                            <li>Lacak status pesanan dan sampaikan keluhan dari akun yang sama.</li>
+                            <li><strong>Bayar di muka</strong> lewat transfer lalu konfirmasi pesanan setelah diverifikasi.</li>
+                            <li>Lacak status pesanan dan sampaikan keluhan langsung dari akun Anda.</li>
                         </ul>
-                        {% if site.portal_enabled %}
-                            <div class="pub-track-actions">
-                                <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar &amp; pesan</a>
-                                {% if pricing and pricing.price %}<a class="pub-btn pub-btn-ghost" href="#biaya">Hitung biayanya</a>{% endif %}
-                            </div>
-                        {% endif %}
+                        <div class="pub-track-actions">
+                            {% if site.portal_enabled %}
+                                <a class="pub-btn pub-btn-primary" href="{{ url_for('portal.register') }}">Daftar pelanggan</a>
+                            {% elif pricing and pricing.price %}
+                                <a class="pub-btn pub-btn-primary" href="#biaya">Hitung biaya</a>
+                            {% endif %}
+                        </div>
                     </article>
                 </div>
             </div>
         </section>
 
-        <section class="pub-section" id="pengiriman-lapangan">
-            <div class="pub-wrap">
-                <div class="pub-section-head">
-                    <h2>Logistik &amp; Pengiriman Tepat Waktu di Site Proyek</h2>
-                    <p>Makanan panas tiba di pos dan mess tepat sebelum jam istirahat buruh. Sistem mencatat jam tiba, GPS, dan tanda terima digital di lapangan.</p>
-                </div>
-                <div class="pub-site-showcase" data-reveal>
-                    <div class="pub-site-media">
-                        <img src="{{ url_for('static', filename='img/catering_logistik_proyek.jpg') }}" alt="Pengiriman Katering di Mess dan Pos Lapangan Proyek" loading="lazy">
-                        <div class="pub-site-media-badge">
-                            <i class="bi bi-geo-alt-fill text-warning"></i> <strong>Pengantaran Langsung ke Pos &amp; Mess:</strong> Armada katering PT Idha Boga mengantarkan makanan menggunakan wadah stainless steel food warmer bersuhu terjaga.
-                        </div>
+        {# Bagian 4: Menu minggu ini (data asli) #}
+        {% if site.menu_week %}
+            <section class="pub-section" id="menu">
+                <div class="pub-wrap">
+                    <div class="pub-section-head">
+                        <h2>Menu minggu ini</h2>
+                        <p>Daftar masakan yang dijadwalkan dapur untuk 7 hari ke depan.</p>
                     </div>
-                    <div class="pub-site-points">
-                        <div class="pub-site-point">
-                            <div class="pub-site-point-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
-                            <div class="pub-site-point-text">
-                                <h3>Kontrak Transparan &amp; Invoice Akurat</h3>
-                                <p>Harga per porsi dikunci dalam kontrak B2B. Invoice bulanan hanya menagih porsi yang benar-benar diterima di lapangan tanpa perdebatan selisih.</p>
-                            </div>
-                        </div>
-                        <div class="pub-site-point">
-                            <div class="pub-site-point-icon"><i class="bi bi-phone-fill"></i></div>
-                            <div class="pub-site-point-text">
-                                <h3>Fleksibilitas Portal Mandor</h3>
-                                <p>Mandor atau pengawas lapangan dapat menyesuaikan jumlah porsi harian langsung dari HP mengikuti absensi pekerja dan shift lembur.</p>
-                            </div>
-                        </div>
-                        <div class="pub-site-point">
-                            <div class="pub-site-point-icon"><i class="bi bi-shop"></i></div>
-                            <div class="pub-site-point-text">
-                                <h3>Terintegrasi Warung &amp; Kantin Mess</h3>
-                                <p>Selain katering makan siang/sore, kami juga mengelola fasilitas warung mess untuk sembako dan logistik harian pekerja dengan sistem kasbon tertib.</p>
-                            </div>
-                        </div>
-                        <div style="margin-top: 8px;">
-                            <a class="pub-btn pub-btn-primary" href="{{ url_for('public.partnership') }}">
-                                <i class="bi bi-arrow-right-circle-fill"></i> Pelajari Seluruh Alur Kerja Sama
-                            </a>
-                        </div>
+                    <div class="pub-week-scroll" data-reveal>
+                        {% for day in site.menu_week %}
+                            <article class="pub-week-card{% if day.is_today %} is-today{% endif %}">
+                                {% if day.primary_photo_id %}
+                                    <div class="pub-week-media">
+                                        <img src="{{ url_for('menu_photos.view', attachment_id=day.primary_photo_id) }}" alt="Menu {{ day.day_name }}" loading="lazy">
+                                    </div>
+                                {% endif %}
+                                <div class="pub-week-body">
+                                    <header class="pub-week-day">
+                                        <h3>{{ day.day_name }}</h3>
+                                        {% if day.is_today %}<span class="pub-pill-today">Hari ini</span>{% endif %}
+                                    </header>
+                                    <dl class="pub-week-meals">
+                                        <div>
+                                            <dt>Siang</dt>
+                                            <dd>{{ day.lunch_name or "Menu disesuaikan harian" }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Sore</dt>
+                                            <dd>{{ day.dinner_name or "Menu disesuaikan harian" }}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </article>
+                        {% endfor %}
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section class="pub-section pub-section-alt" id="menu-proyek">
-            <div class="pub-wrap">
-                <div class="pub-section-head">
-                    <h2>Standar Menu Pekerja Lapangan: Padat Energi &amp; Bergizi</h2>
-                    <p>Porsi mantap mengenyangkan dengan kalori seimbang untuk menjaga produktivitas tenaga kerja fisik. Siklus menu bergilir 30 hari agar pekerja tidak jenuh.</p>
+            </section>
+        {% elif site.menus %}
+            <section class="pub-section" id="menu">
+                <div class="pub-wrap">
+                    <div class="pub-section-head">
+                        <h2>Menu yang sedang disajikan</h2>
+                        <p>Menu aktif yang disajikan dari dapur kami.</p>
+                    </div>
+                    <ul class="pub-menu" data-reveal>
+                        {% for menu in site.menus %}
+                            <li><strong>{{ menu.name }}</strong><span>{{ menu.type }}</span></li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <div class="pub-project-menus" data-reveal>
-                    <article class="pub-project-menu-card">
-                        <div>
-                            <div class="pub-project-menu-tag"><i class="bi bi-stars"></i> Menu Favorit Proyek</div>
-                            <h3>Paket Ayam Goreng Rempah</h3>
-                            <ul class="pub-project-menu-items">
-                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Ayam Goreng Lengkuas / Bakar Madu</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Telur Bulat Balado Merah</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Tempe Bacem / Tahu Goreng Gurih</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Sayur Asem Segar / Labu Siam</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Sambal Terasi Ulek &amp; Pisang Segar</li>
-                            </ul>
-                        </div>
-                        <div class="pub-project-menu-meta">
-                            <span>Kaya karbohidrat kompleks &amp; protein hewani tinggi</span>
-                        </div>
-                    </article>
+            </section>
+        {% endif %}
 
-                    <article class="pub-project-menu-card">
-                        <div>
-                            <div class="pub-project-menu-tag"><i class="bi bi-fire"></i> Menu Stamina Lembur</div>
-                            <h3>Paket Rendang Daging Sapi</h3>
-                            <ul class="pub-project-menu-items">
-                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Rendang Daging Sapi Empuk Gurih</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Perkedel Kentang Bumbu Daun Bawang</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Gulai Daun Singkong Gurih Santan</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Sambal Ijo Khas Nusantara</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Kerupuk Gurih &amp; Semangka Manis</li>
-                            </ul>
-                        </div>
-                        <div class="pub-project-menu-meta">
-                            <span>Asupan zat besi &amp; stamina untuk tugas berat</span>
-                        </div>
-                    </article>
-
-                    <article class="pub-project-menu-card">
-                        <div>
-                            <div class="pub-project-menu-tag"><i class="bi bi-shield-fill"></i> Menu Segar Sehat</div>
-                            <h3>Paket Ikan Tongkol Balado</h3>
-                            <ul class="pub-project-menu-items">
-                                <li><i class="bi bi-check-circle-fill"></i> Nasi Putih Pulen Porsi Mantap</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Ikan Tongkol / Nila Balado Pedas</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Telur Dadar Tebal Daun Bawang</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Tumis Buncis Jagung Manis</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Sambal Bawang Segar</li>
-                                <li><i class="bi bi-check-circle-fill"></i> Kerupuk Gurih &amp; Buah Jeruk</li>
-                            </ul>
-                        </div>
-                        <div class="pub-project-menu-meta">
-                            <span>Omega 3 &amp; serat vitamin penangkal dehidrasi</span>
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="pub-section" id="alur">
-            <div class="pub-wrap">
-                <div class="pub-section-head">
-                    <h2>Dari dapur sampai ke tangan Anda</h2>
-                    <p>Setiap langkah dicatat oleh petugas yang mengerjakannya, jadi yang Anda bayar sama dengan yang Anda terima.</p>
-                </div>
-                <ol class="pub-flow" data-reveal>
-                    <li>
-                        <h3>Anda memesan</h3>
-                        <p>Pesanan makan siang ditutup pukul {{ cutoffs.LUNCH or "10.00" }}, makan sore pukul {{ cutoffs.DINNER or "15.00" }}. Jumlah yang masuk langsung jadi rencana masak dapur.</p>
-                    </li>
-                    <li>
-                        <h3>Dapur memasak</h3>
-                        <p>Dimasak segar di hari yang sama dari bahan baku berkualitas sesuai standar resep.</p>
-                    </li>
-                    <li>
-                        <h3>Diantar ke titik Anda</h3>
-                        <p>Pengantar memakai titik peta lokasi Anda. Jam tiba, jumlah, dan nama penerima dicatat di tempat.</p>
-                    </li>
-                    <li>
-                        <h3>Bayar sesuai yang diterima</h3>
-                        <p>Pesanan pribadi dibayar di muka. Pelanggan kontrak ditagih per periode dari porsi yang benar-benar diterima.</p>
-                    </li>
-                </ol>
-            </div>
-        </section>
-
+        {# Bagian 5: Hitung biaya (kalkulator) #}
         {% if pricing and pricing.price %}
             <section class="pub-section pub-section-alt" id="biaya">
                 <div class="pub-wrap pub-estimate">
@@ -380,58 +243,6 @@
                         {% endif %}
                         <p class="pub-fine pub-fine-spaced">Perkiraan, bukan tagihan. Ongkir pasti dihitung dari titik lokasi Anda saat memesan.</p>
                     </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if site.weekly_menus %}
-            <section class="pub-section" id="menu">
-                <div class="pub-wrap">
-                    <div class="pub-section-head">
-                        <h2>Menu minggu ini</h2>
-                        <p>Menu pilihan bergizi dan lezat yang dijadwalkan dapur minggu ini.</p>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
-                        {% for menu in site.weekly_menus %}
-                            <article style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;">
-                                <div style="width: 100%; height: 180px; background: var(--bg-muted); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                                    {% if menu.photo_id %}
-                                        <img src="{{ url_for('menu_photos.view_photo', attachment_id=menu.photo_id) }}" alt="{{ menu.menu_name }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
-                                    {% else %}
-                                        <i class="bi bi-egg-fried" style="font-size: 3rem; color: var(--text-muted);"></i>
-                                    {% endif %}
-                                    {% if menu.days_label %}
-                                        <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: var(--text-xs); padding: 2px 8px; border-radius: var(--radius); backdrop-filter: blur(4px);">{{ menu.days_label }}</span>
-                                    {% endif %}
-                                </div>
-                                <div style="padding: var(--space-3); flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-                                    <div>
-                                        <h3 style="font-size: var(--text-base); margin: 0 0 4px 0; color: var(--text); font-weight: var(--font-semibold);">{{ menu.menu_name }}</h3>
-                                        {% if menu.description %}
-                                            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.4;">{{ menu.description }}</p>
-                                        {% endif %}
-                                    </div>
-                                    {% if menu.meals_label %}
-                                        <small style="margin-top: var(--space-2); color: var(--brand-700); font-size: var(--text-xs); font-weight: var(--font-semibold);">{{ menu.meals_label }}</small>
-                                    {% endif %}
-                                </div>
-                            </article>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-        {% elif site.menus %}
-            <section class="pub-section" id="menu">
-                <div class="pub-wrap">
-                    <div class="pub-section-head">
-                        <h2>Menu yang sedang disajikan</h2>
-                        <p>Menu berganti setiap hari. Untuk nasi kotak, snack rapat, atau pesanan khusus, hubungi kami.</p>
-                    </div>
-                    <ul class="pub-menu">
-                        {% for menu in site.menus %}
-                            <li><strong>{{ menu.name }}</strong><span>{{ menu.type }}</span></li>
-                        {% endfor %}
-                    </ul>
                 </div>
             </section>
         {% endif %}

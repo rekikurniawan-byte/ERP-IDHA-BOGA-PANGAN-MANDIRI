@@ -934,35 +934,40 @@ html:has(.pub) {
 
 .pub-hero {
     position: relative;
-    padding: 64px 0 0;
+    padding: clamp(48px, 6vw, 72px) 0;
     color: var(--on-ink-muted);
-    background:
-        radial-gradient(1000px 480px at 80% -10%, rgba(37, 99, 235, 0.25), transparent 65%),
-        radial-gradient(600px 300px at 20% 90%, rgba(59, 130, 246, 0.12), transparent 60%),
-        var(--ink);
+    background: var(--ink);
     overflow: hidden;
 }
 
-/* Kisi titik halus: tekstur, bukan gambar dekoratif. */
-.pub-hero::before {
-    content: "";
+.pub-hero-bg {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    background-size: 22px 22px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 85%);
+    width: 100%;
+    height: 100%;
+    z-index: 1;
     pointer-events: none;
 }
 
-.pub-hero > .pub-wrap {
-    position: relative;
+.pub-hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
 }
 
-.pub-hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-    gap: 64px;
-    align-items: center;
+.pub-hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: color-mix(in srgb, var(--ink) 68%, transparent);
+    pointer-events: none;
+}
+
+.pub-hero-container {
+    position: relative;
+    z-index: 3;
 }
 
 .pub-hero h1 {
@@ -2161,331 +2166,254 @@ html:has(.pub) {
     margin-top: 28px;
 }
 
-/* --- Komponen Spesialis Katering Industri & Pekerja Proyek --- */
-.pub-kicker-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    margin-bottom: 20px;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--brand-300);
-    background: rgba(37, 99, 235, 0.16);
-    border: 1px solid rgba(59, 130, 246, 0.35);
-    border-radius: 9999px;
+/* --- Bagian 2: Papan hari ini + strip angka --- */
+.pub-section-today {
+    padding: 48px 0;
 }
 
-.pub-btn-light-ghost {
-    color: var(--on-ink) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.pub-today-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    gap: 40px;
+    align-items: start;
 }
 
-.pub-btn-light-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff !important;
-}
-
-.pub-hero-food-card {
-    position: relative;
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-}
-
-.pub-hero-food-media {
-    position: relative;
+.pub-today-board {
     width: 100%;
-    height: 230px;
-    overflow: hidden;
-    background: var(--ink);
 }
 
-.pub-hero-food-media img {
+.pub-today-stats .pub-section-head {
+    margin-bottom: 24px;
+}
+
+.pub-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+}
+
+.pub-stats-strip > div {
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+}
+
+.pub-stats-strip dt {
+    font-size: 0.8125rem;
+    font-weight: var(--weight-medium);
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+}
+
+.pub-stats-strip dd {
+    margin: 0;
+    font-size: 1.1875rem;
+    font-weight: 750;
+    color: var(--ink);
+    line-height: 1.25;
+}
+
+/* --- Bagian 4: Menu minggu ini (geser horizontal di HP) --- */
+.pub-week-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pub-week-card {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.pub-week-card.is-today {
+    border-color: var(--brand-600);
+}
+
+.pub-week-media {
+    width: 100%;
+    height: 160px;
+    background: var(--paper-strong);
+    overflow: hidden;
+}
+
+.pub-week-media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.4s ease;
 }
 
-.pub-hero-food-card:hover .pub-hero-food-media img {
-    transform: scale(1.03);
-}
-
-.pub-food-badge-top {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #ffffff;
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    backdrop-filter: blur(6px);
-}
-
-.pub-food-tags-bottom {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.pub-food-tags-bottom span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 9px;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: #ffffff;
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    backdrop-filter: blur(4px);
-}
-
-.pub-hero-food-caption {
-    padding: 14px 18px;
-}
-
-.pub-hero-food-caption strong {
-    display: block;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--on-ink);
-    margin-bottom: 2px;
-}
-
-.pub-hero-food-caption span {
-    display: block;
-    font-size: 0.8125rem;
-    color: var(--on-ink-muted);
-    line-height: 1.4;
-}
-
-.pub-trust-strip {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin-top: 48px;
-    padding-top: 36px;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.pub-trust-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
+.pub-week-body {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-}
-
-.pub-trust-icon {
-    flex-shrink: 0;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    color: var(--brand-400);
-    background: rgba(37, 99, 235, 0.2);
-    border-radius: 10px;
-}
-
-.pub-trust-text strong {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--on-ink);
-    margin-bottom: 2px;
-}
-
-.pub-trust-text p {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--on-ink-muted);
-    line-height: 1.4;
-}
-
-.pub-site-showcase {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 40px;
-    align-items: center;
-    margin-top: 32px;
-}
-
-.pub-site-media {
-    position: relative;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.2);
-    border: 1px solid var(--paper-line);
-}
-
-.pub-site-media img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.pub-site-media-badge {
-    position: absolute;
-    bottom: 14px;
-    left: 14px;
-    right: 14px;
-    padding: 10px 14px;
-    background: rgba(15, 23, 42, 0.9);
-    color: #ffffff;
-    border-radius: 10px;
-    backdrop-filter: blur(8px);
-    font-size: 0.8125rem;
-    line-height: 1.4;
-}
-
-.pub-site-points {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    flex: 1;
+    gap: 12px;
 }
 
-.pub-site-point {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-}
-
-.pub-site-point-icon {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
+.pub-week-day {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1.375rem;
-    color: var(--brand-700);
-    background: var(--brand-50);
-    border: 1px solid var(--brand-100);
-    border-radius: 12px;
+    justify-content: space-between;
+    gap: 8px;
 }
 
-.pub-site-point-text h3 {
-    margin: 0 0 4px;
-    font-size: 1.0625rem;
-    font-weight: 700;
-    color: var(--ink);
-}
-
-.pub-site-point-text p {
+.pub-week-day h3 {
     margin: 0;
-    font-size: 0.9375rem;
-    color: var(--ink-muted);
-    line-height: 1.5;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
-.pub-project-menus {
+.pub-pill-today {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-on-brand);
+    background: var(--brand-700);
+    border-radius: var(--radius-sm);
+}
+
+.pub-week-meals {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.875rem;
+}
+
+.pub-week-meals dt {
+    font-weight: 700;
+    color: var(--brand-700);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.pub-week-meals dd {
+    margin: 0;
+    color: var(--ink);
+    line-height: 1.4;
+}
+
+/* --- Kerja sama: Aturan & Kartu info --- */
+.pub-rules-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
-    margin-top: 32px;
 }
 
-.pub-project-menu-card {
+.pub-rule-card {
+    padding: 24px;
     background: var(--surface);
     border: 1px solid var(--paper-line);
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: var(--radius);
 }
 
-.pub-project-menu-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.1);
-}
-
-.pub-project-menu-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--brand-700);
-    background: var(--brand-50);
-    border-radius: 6px;
-    margin-bottom: 12px;
-    align-self: flex-start;
-}
-
-.pub-project-menu-card h3 {
-    margin: 0 0 12px;
+.pub-rule-card h3 {
+    margin: 0 0 8px;
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--ink);
 }
 
-.pub-project-menu-items {
+.pub-rule-card p {
+    margin: 0 0 16px;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+}
+
+.pub-rule-list {
     list-style: none;
     padding: 0;
-    margin: 0 0 16px;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     font-size: 0.875rem;
     color: var(--ink-soft);
 }
 
-.pub-project-menu-items li {
+.pub-rule-list li {
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.pub-rule-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand-600);
+}
+
+.pub-rule-list strong {
+    color: var(--ink);
+}
+
+/* --- Auth & Panel Samping --- */
+.pub-auth-picture-wrap {
+    margin: 20px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--paper-line);
+}
+
+.pub-auth-picture img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+}
+
+.pub-auth-single {
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
+    min-height: 100vh;
+    padding: 40px 16px;
 }
 
-.pub-project-menu-items li i {
-    color: #16a34a;
-    font-size: 0.875rem;
+.pub-auth-single-main {
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
 }
 
-.pub-project-menu-meta {
-    padding-top: 14px;
-    border-top: 1px solid var(--paper-line);
-    font-size: 0.75rem;
-    color: var(--ink-muted);
+.pub-auth-single-brand {
+    margin-bottom: 24px;
+    text-align: center;
 }
 
+.pub-auth-single-brand .pub-brand {
+    justify-content: center;
+}
+
+/* --- Media Queries Mobile-First --- */
 @media (max-width: 1023.98px) {
-    .pub-trust-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .pub-site-showcase {
+    .pub-today-grid {
         grid-template-columns: minmax(0, 1fr);
-        gap: 28px;
+        gap: 32px;
     }
-    .pub-project-menus {
-        grid-template-columns: minmax(0, 1fr);
-    }
+
     .pub-apply-grid,
     .pub-faq-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -2496,29 +2424,54 @@ html:has(.pub) {
         position: static;
     }
 
-    .pub-features {
+    .pub-rules-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 767.98px) {
-    .pub-steps,
-    .pub-features {
+    .pub-today-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+
+    .pub-tracks {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .pub-steps > li:not(.pub-step-phase) {
-        padding: 18px 18px 18px 66px;
+    .pub-hero-actions {
+        flex-direction: column;
     }
 
-    .pub-steps > li:not(.pub-step-phase)::before {
-        top: 18px;
-        left: 16px;
+    .pub-hero-actions .pub-btn {
+        width: 100%;
     }
 
-    .pub-glance dl > div {
+    /* Auth di HP: formulir di atas, info/papan di bawah */
+    .pub-auth {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pub-auth-main {
+        order: 1;
+        width: 100%;
+    }
+
+    .pub-auth-side {
+        order: 2;
+        width: 100%;
+        margin-top: 32px;
+    }
+
+    .pub-rules-grid {
         grid-template-columns: minmax(0, 1fr);
-        gap: 2px;
+    }
+
+    /* Peta lokasi di HP: tinggi 240px */
+    .loc-picker-map,
+    #locPickerMap {
+        height: 240px;
     }
 
     .pub-form-card {
@@ -2538,3 +2491,14 @@ html:has(.pub) {
         padding: 32px 20px;
     }
 }
+
+@media (max-width: 575.98px) {
+    .pub-auth-picture-wrap {
+        display: none;
+    }
+
+    .pub-stats-strip {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+

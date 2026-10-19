@@ -15,19 +15,22 @@
             </span>
         </a>
 
+        <div class="pub-auth-picture-wrap" aria-hidden="true">
+            <picture class="pub-auth-picture">
+                <source media="(max-width: 768px)" srcset="{{ url_for('static', filename='img/public/panel-masuk-800.webp') }}">
+                <img src="{{ url_for('static', filename='img/public/panel-masuk-1600.webp') }}" width="1600" height="900" alt="" loading="lazy">
+            </picture>
+        </div>
+
         <div class="pub-auth-side-body">
-            <h1>Pesan catering harian, lacak pengiriman, dan bayar tagihan — semua dalam satu tempat.</h1>
+            <h1>Layanan katering harian terintegrasi</h1>
+            <p>Pemesanan teratur, monitoring jadwal pengiriman, dan pencatatan tanda terima di satu sistem.</p>
             {% include "components/public_board.html" %}
-            <ul class="pub-auth-list pub-auth-roles">
-                <li><strong>Tim katering</strong><span>Staf operasional, pengantar, dan administrasi.</span></li>
-                <li><strong>{{ term('client') }} &amp; {{ term('sub_client', lower=True) }}</strong><span>Pesanan, tagihan, pembayaran, kontrak.</span></li>
-                <li><strong>Pelanggan umum</strong><span>Pesan, bayar di muka, lacak pesanan.</span></li>
-            </ul>
         </div>
 
         <p class="pub-auth-help">
-            Lupa kata sandi? <a href="{{ url_for('auth.forgot_password') }}">Reset kata sandi di sini</a>{% if site and site.whatsapp_url %} atau
-            <a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">hubungi lewat WhatsApp</a>{% endif %}.
+            Butuh bantuan akses akun? <a href="{{ url_for('auth.forgot_password') }}">Reset kata sandi</a>{% if site and site.whatsapp_url %} atau
+            <a href="{{ site.whatsapp_url }}" target="_blank" rel="noopener">hubungi admin</a>{% endif %}.
         </p>
     </aside>
 
@@ -35,7 +38,7 @@
         {% include "components/public_flashes.html" %}
         <div class="pub-auth-card">
             <h2>Masuk</h2>
-            <p>Gunakan nama pengguna dari admin, atau yang Anda buat saat mendaftar.</p>
+            <p>Gunakan nama pengguna terdaftar atau yang diberikan oleh admin.</p>
 
             <form method="POST" action="{{ url_for('auth.login') }}" class="app-form" data-ui-form="true" data-form-kind="auth">
                 {% include "components/csrf_token.html" %}

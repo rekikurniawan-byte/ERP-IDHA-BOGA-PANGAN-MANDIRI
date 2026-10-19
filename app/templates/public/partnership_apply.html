@@ -15,7 +15,7 @@
                     <span>Formulir pengajuan</span>
                 </nav>
                 <h1>Ajukan kerja sama katering</h1>
-                <p class="pub-apply-lead">Isi sebisanya; yang bertanda <span class="text-danger">*</span> wajib. Pengajuan langsung masuk ke owner dan admin kami untuk dihubungi kembali.</p>
+                <p class="pub-apply-lead">Isi kebutuhan katering proyek Anda; tanda <span class="text-danger">*</span> wajib diisi. Tim kami akan menghubungi untuk tindak lanjut.</p>
 
                 {% include "components/public_flashes.html" %}
 
@@ -26,7 +26,13 @@
                     </div>
 
                     <section class="pub-form-card">
-                        <header><span>1</span><div><h2>Perusahaan &amp; kontak</h2><p>Siapa yang bisa kami hubungi.</p></div></header>
+                        <header>
+                            <span>1</span>
+                            <div>
+                                <h2>Perusahaan &amp; kontak</h2>
+                                <p>Identitas penanggung jawab atau pemohon.</p>
+                            </div>
+                        </header>
                         <div class="pub-form-grid">
                             <label class="is-wide">
                                 <span>Nama perusahaan / instansi <span class="text-danger">*</span></span>
@@ -52,32 +58,44 @@
                     </section>
 
                     <section class="pub-form-card">
-                        <header><span>2</span><div><h2>Proyek &amp; lokasi antar</h2><p>Ke mana makanan diantar setiap hari.</p></div></header>
+                        <header>
+                            <span>2</span>
+                            <div>
+                                <h2>Proyek &amp; lokasi antar</h2>
+                                <p>Titik pengiriman makanan harian.</p>
+                            </div>
+                        </header>
                         <div class="pub-form-grid">
                             <label class="is-wide">
                                 <span>Nama proyek / lokasi kerja <span class="text-danger">*</span></span>
-                                <input class="form-control" type="text" name="project_name" maxlength="150" required value="{{ f.get('project_name', '') }}" placeholder="Contoh: Pembangunan gudang B, area pabrik">
+                                <input class="form-control" type="text" name="project_name" maxlength="150" required value="{{ f.get('project_name', '') }}" placeholder="Contoh: Pembangunan gudang, area pabrik">
                             </label>
                             <label class="is-wide">
                                 <span>Alamat proyek</span>
-                                <textarea class="form-control" name="project_address" rows="2" data-no-textarea-footer placeholder="Desa, kecamatan, patokan, pintu masuk...">{{ f.get('project_address', '') }}</textarea>
+                                <textarea class="form-control" name="project_address" rows="2" data-no-textarea-footer placeholder="Desa, patokan jalan, pos satpam...">{{ f.get('project_address', '') }}</textarea>
                             </label>
                             <div class="is-wide">
-                                {{ location_picker(lat=f.get('latitude') or none, lng=f.get('longitude') or none, geo=site.geo, label="Titik lokasi antar", help="Tandai titik tempat makanan diterima (mes, pos, kantor lapangan). Bila belum tahu, isi alamatnya saja.") }}
+                                {{ location_picker(lat=f.get('latitude') or none, lng=f.get('longitude') or none, geo=site.geo, label="Titik lokasi antar", help="Tandai titik tempat makanan diterima (pos, mess, atau basecamp).") }}
                             </div>
                         </div>
                     </section>
 
                     <section class="pub-form-card">
-                        <header><span>3</span><div><h2>Kebutuhan makan</h2><p>Perkiraan saja; detailnya kita bahas bersama.</p></div></header>
+                        <header>
+                            <span>3</span>
+                            <div>
+                                <h2>Kebutuhan makan</h2>
+                                <p>Estimasi porsi dan jadwal pelaksanaan.</p>
+                            </div>
+                        </header>
                         <div class="pub-form-grid">
                             <label>
                                 <span>Jumlah pekerja</span>
-                                <input class="form-control" type="number" name="workers_count" min="1" step="1" inputmode="numeric" value="{{ f.get('workers_count', '') }}" placeholder="mis. 120">
+                                <input class="form-control" type="number" name="workers_count" min="1" step="1" inputmode="numeric" value="{{ f.get('workers_count', '') }}" placeholder="mis. 80">
                             </label>
                             <label>
                                 <span>Perkiraan porsi per hari</span>
-                                <input class="form-control" type="number" name="portions_per_day" min="1" step="1" inputmode="numeric" value="{{ f.get('portions_per_day', '') }}" placeholder="mis. 150">
+                                <input class="form-control" type="number" name="portions_per_day" min="1" step="1" inputmode="numeric" value="{{ f.get('portions_per_day', '') }}" placeholder="mis. 100">
                             </label>
                             <div class="is-wide">
                                 <span class="pub-field-label">Waktu makan</span>
@@ -97,7 +115,7 @@
                                 <input class="form-control" type="number" name="duration_months" min="1" max="120" step="1" inputmode="numeric" value="{{ f.get('duration_months', '') }}" placeholder="mis. 6">
                             </label>
                             <label class="is-wide">
-                                <span>Cara penagihan yang diinginkan</span>
+                                <span>Cara penagihan</span>
                                 <select class="form-select" name="payment_preference">
                                     {% set chosen_payment = f.get('payment_preference') or 'UNDECIDED' %}
                                     {% for key, label in payments.items() %}
@@ -109,15 +127,20 @@
                     </section>
 
                     <section class="pub-form-card">
-                        <header><span>4</span><div><h2>Keterangan</h2><p>Hal lain yang perlu kami tahu.</p></div></header>
+                        <header>
+                            <span>4</span>
+                            <div>
+                                <h2>Keterangan tambahan</h2>
+                                <p>Catatan khusus menu, shift, atau akses lokasi.</p>
+                            </div>
+                        </header>
                         <label class="pub-block-label">
                             <span class="visually-hidden">Keterangan</span>
-                            <textarea class="form-control" name="notes" rows="5" maxlength="4000" data-no-textarea-footer placeholder="Contoh: ada shift malam, jam istirahat 11.30, pekerja banyak yang tidak makan pedas, kendaraan harus lapor di pos satpam, ingin coba 1 minggu dulu...">{{ f.get('notes', '') }}</textarea>
+                            <textarea class="form-control" name="notes" rows="4" maxlength="4000" data-no-textarea-footer placeholder="Contoh: jam istirahat 11.30, ada pekerja non-pedas, izin masuk pos satpam...">{{ f.get('notes', '') }}</textarea>
                         </label>
                     </section>
 
                     <div class="pub-apply-submit">
-                        <p>Dengan mengirim, Anda setuju dihubungi lewat nomor atau email di atas. Tidak ada biaya pengajuan.</p>
                         <button class="pub-btn pub-btn-primary pub-btn-lg" type="submit" data-submit-loading="Mengirim...">
                             Kirim pengajuan <i class="bi bi-send" aria-hidden="true"></i>
                         </button>
@@ -127,25 +150,29 @@
 
             <aside class="pub-apply-side">
                 <div class="pub-apply-box">
-                    <h2>Setelah Anda kirim</h2>
+                    <h2>Tahap tindak lanjut</h2>
                     <ol>
-                        <li><strong>Masuk ke owner &amp; admin</strong><span>Pengajuan tercatat dengan nomor sendiri dan muncul di notifikasi kami.</span></li>
-                        <li><strong>Kami hubungi</strong><span>Lewat WhatsApp/telepon untuk memastikan kebutuhan dan jadwal survei.</span></li>
-                        <li><strong>Penawaran &amp; kontrak</strong><span>Harga, termin, dan jadwal kirim disepakati sebelum mulai.</span></li>
+                        <li><strong>Verifikasi data</strong><span>Admin memeriksa kebutuhan porsi dan rute lokasi pengiriman.</span></li>
+                        <li><strong>Konfirmasi &amp; survei</strong><span>Kami menghubungi Anda via telepon/WhatsApp untuk jadwal survei rute bila dibutuhkan.</span></li>
+                        <li><strong>Penawaran kontrak</strong><span>Draft harga dan termin penagihan disepakati sebelum layanan dimulai.</span></li>
                     </ol>
-                    <a class="pub-link" href="{{ url_for('public.partnership') }}#alur">Lihat alur lengkap <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                 </div>
-                <div class="pub-apply-box pub-apply-contact">
-                    <h2>Lebih suka langsung bicara?</h2>
-                    {% if site.whatsapp_url %}
-                        <a class="pub-btn pub-btn-outline" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp" aria-hidden="true"></i> WhatsApp</a>
-                    {% endif %}
-                    <a class="pub-btn pub-btn-ghost" href="mailto:{{ site.email }}"><i class="bi bi-envelope" aria-hidden="true"></i> {{ site.email }}</a>
-                </div>
+                {% if site.whatsapp_url or site.email %}
+                    <div class="pub-apply-box pub-apply-contact">
+                        <h2>Kontak langsung</h2>
+                        {% if site.whatsapp_url %}
+                            <a class="pub-btn pub-btn-outline" href="{{ site.whatsapp_url }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp" aria-hidden="true"></i> WhatsApp</a>
+                        {% endif %}
+                        {% if site.email %}
+                            <a class="pub-btn pub-btn-ghost" href="mailto:{{ site.email }}"><i class="bi bi-envelope" aria-hidden="true"></i> {{ site.email }}</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </aside>
         </div>
     </main>
 
+    {% set hide_footer_cta = true %}
     {% include "components/public_footer.html" %}
 </div>
 {% endblock %}
